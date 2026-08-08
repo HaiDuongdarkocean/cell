@@ -1,8 +1,8 @@
-// Player Mode overlay — fixed full-viewport layout that wraps the host player
-// element (light DOM) in the video stage area, with Cell UI controls around it.
-// The host player is positioned via ResizeObserver to match the video stage rect.
+// Player Mode overlay — fixed full-viewport layout that moves SubtitleBlock + NavCluster
+// into a bottom Player Action Dock while keeping the host video visible above.
+// See tasks/plan.md for the layout contract.
 
-import { memo, useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
@@ -120,7 +120,7 @@ function PlayerModeOverlayInner({
   const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
   const contentPctLoadedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const videoStageRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
 
@@ -139,35 +139,53 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
-  // Position the host player element (light DOM) to match the video stage rect.
-  // The host player is moved to document.body by SubtitlePanels with
-  // data-cell-player-mode-host attribute. ResizeObserver keeps it synced.
-  useLayoutEffect(() => {
-    const stage = videoStageRef.current;
-    if (!stage) return;
-    const hostPlayer = document.querySelector<HTMLElement>('[data-cell-player-mode-host]');
-    if (!hostPlayer) return;
-
-    const applyRect = (): void => {
-      const rect = stage.getBoundingClientRect();
-      hostPlayer.style.top = `${rect.top}px`;
-      hostPlayer.style.left = `${rect.left}px`;
-      hostPlayer.style.width = `${rect.width}px`;
-      hostPlayer.style.height = `${rect.height}px`;
+  // Canvas capture: draw host video frames onto a canvas in the overlay.
+  // Video stays in host container (no DOM move → no HLS.js disruption).
+  // Overlay bg black covers host completely; canvas shows video on top.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    // SSOT: read --color-overlay-background token once (canvas 2D can't use var()).
+    const overlayEl = canvas.closest('[data-cell-id="player-mode-overlay"]') as HTMLElement | null;
+    const letterboxColor =
+      overlayEl
+        ? getComputedStyle(overlayEl).getPropertyValue('--color-overlay-background').trim() || '#000'
+        : '#000';
+    let rafId = 0;
+    const draw = (): void => {
+      const video = document.querySelector('video');
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+        const stageW = canvas.clientWidth;
+        const stageH = canvas.clientHeight;
+        if (canvas.width !== stageW || canvas.height !== stageH) {
+          canvas.width = stageW;
+          canvas.height = stageH;
+        }
+        const vAspect = video.videoWidth / video.videoHeight;
+        const sAspect = stageW / stageH;
+        let dw: number, dh: number, dx: number, dy: number;
+        if (vAspect > sAspect) {
+          dw = stageW;
+          dh = stageW / vAspect;
+          dx = 0;
+          dy = (stageH - dh) / 2;
+        } else {
+          dh = stageH;
+          dw = stageH * vAspect;
+          dx = (stageW - dw) / 2;
+          dy = 0;
+        }
+        ctx.fillStyle = letterboxColor;
+        ctx.fillRect(0, 0, stageW, stageH);
+        ctx.drawImage(video, dx, dy, dw, dh);
+      }
+      rafId = requestAnimationFrame(draw);
     };
-
-    applyRect();
-
-    const ro = new ResizeObserver(applyRect);
-    ro.observe(stage);
-    // Also observe overlay parent for viewport changes not caught by ResizeObserver.
-    window.addEventListener('resize', applyRect);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', applyRect);
-    };
-  }, [viewport, contentPct, cueListOpen]);
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, []);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
   const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
@@ -269,8 +287,9 @@ function PlayerModeOverlayInner({
           style={{ height: `${layout.videoStageHeight}px` }}
           data-cell-id="player-mode-video-stage"
           aria-hidden="true"
-          ref={videoStageRef}
-        />
+        >
+          <canvas ref={canvasRef} className={styles.videoCanvas} />
+        </div>
 
         {/* Resize handle — only visible >480px (CSS controls display). */}
         <div
