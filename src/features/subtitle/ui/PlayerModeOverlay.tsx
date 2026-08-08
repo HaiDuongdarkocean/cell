@@ -139,12 +139,19 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
-  // Canvas capture: draw host video frames onto a canvas in the overlay.
-  // Video stays in host container (no DOM move → no HLS.js disruption).
-  // Overlay bg black covers host completely; canvas shows video on top.
+  // Canvas capture: only needed when NOT fullscreen (overlay bg covers host,
+  // canvas draws video frames). When fullscreen, cell root lives inside
+  // document.fullscreenElement — overlay is transparent, host video shows
+  // through natively (no canvas overhead, native quality).
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // Skip canvas when fullscreen — native video shows through transparent overlay.
+    if (document.fullscreenElement) {
+      canvas.style.display = 'none';
+      return;
+    }
+    canvas.style.display = '';
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     // SSOT: read --color-overlay-background token once (canvas 2D can't use var()).
