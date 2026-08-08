@@ -69,6 +69,8 @@ export interface MountSubtitleResult {
   unmount: () => void;
   /** Shadow host element — use `host.shadowRoot` to query subtitle line elements. */
   readonly host: HTMLElement;
+  /** Disable/enable fullscreen reparenting (used by Player Mode). */
+  setFullscreenReparentingEnabled: (enabled: boolean) => void;
   setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
   setHasSubtitle: (has: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -130,6 +132,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
   } = options;
 
   let controllerRef: SubtitlePanelsRef | null = null;
+  let fullscreenReparentingFn: ((enabled: boolean) => void) | null = null;
 
   const buildComponent = (): React.ReactElement => (
     <SubtitlePanels
@@ -149,6 +152,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       generateNativeEnabled={generateNativeEnabled}
       videoAspectRatio={videoAspectRatio}
       onTogglePlayerMode={onTogglePlayerMode}
+      setFullscreenReparentingEnabled={(enabled) => fullscreenReparentingFn?.(enabled)}
       onPrev={onPrev}
       onNext={onNext}
       onRepeat={onRepeat}
@@ -169,7 +173,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     />
   );
 
-  const { unmount, host, rootEl, root } = mountReactShadow(
+  const shadowMount = mountReactShadow(
     buildComponent(),
     {
       parent: container,
@@ -193,23 +197,27 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     },
   );
 
+  // Wire fullscreen reparenting toggle (used by Player Mode).
+  fullscreenReparentingFn = (enabled: boolean) => shadowMount.setFullscreenReparentingEnabled(enabled);
+
   // Re-render with ShadowThemeProvider so data-theme + color tokens resolve
   // inside the shadow boundary. Without this, [data-theme="dark"] selectors
   // never match and buttons fall back to light-theme colors (invisible on dark dock).
-  root.render(
-    createElement(ShadowThemeProvider, { container: rootEl, children: buildComponent() }),
+  shadowMount.root.render(
+    createElement(ShadowThemeProvider, { container: shadowMount.rootEl, children: buildComponent() }),
   );
 
   // Host fills the video container but lets clicks pass through to player controls.
   // pointer-events:none on host → player controls stay interactive.
   // .root (panelsRoot) sets pointer-events:auto on its interactive children.
-  host.id = 'cell-subtitle-root';
-  host.style.inset = '0';
-  host.style.pointerEvents = 'none';
+  shadowMount.host.id = 'cell-subtitle-root';
+  shadowMount.host.style.inset = '0';
+  shadowMount.host.style.pointerEvents = 'none';
 
   return {
-    unmount,
-    host,
+    unmount: shadowMount.unmount,
+    host: shadowMount.host,
+    setFullscreenReparentingEnabled: (enabled: boolean) => shadowMount.setFullscreenReparentingEnabled(enabled),
     setStyles: (t, n) => controllerRef?.setStyles(t, n),
     setHasSubtitle: (has) => controllerRef?.setHasSubtitle(has),
     setIsPlaying: (playing) => controllerRef?.setIsPlaying(playing),

@@ -1,5 +1,6 @@
 /* Player Mode overlay — fixed full-viewport layout.
-   Tokens from tokens.css (injected via Shadow DOM host). */
+   Background transparent: host player (light DOM, behind overlay) shows
+   through the video stage area. Dock + content have solid backgrounds. */
 
 .overlay {
   position: fixed;
@@ -7,7 +8,7 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--color-overlay-background);
+  background: transparent;
   z-index: var(--z-overlay-settings);
   pointer-events: auto;
   container-type: inline-size;
@@ -25,18 +26,13 @@
   overflow: hidden;
 }
 
-/* Video stage — canvas draws host video frames here. */
+/* Video stage — transparent area where host player (light DOM) shows through.
+   Host player is positioned via ResizeObserver to match this element's rect. */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
-  background: var(--color-overlay-background);
+  background: transparent;
   pointer-events: none;
-}
-
-.videoCanvas {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 /* Content other — CueList / dictionary sheet.

@@ -11,6 +11,7 @@ import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
+import { findHostPlayer } from '@/features/subtitle/logic/findHostPlayer';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
@@ -121,6 +122,8 @@ export interface SubtitlePanelsProps {
   videoAspectRatio?: number;
   /** Called when user toggles Player Mode. */
   onTogglePlayerMode?: (active: boolean) => void;
+  /** Disable/enable fullscreen reparenting (used by Player Mode). */
+  setFullscreenReparentingEnabled?: (enabled: boolean) => void;
   /** Bilingual cues for CueList in Player Mode. */
   cues?: BilingualCue[];
   /** Current video time in ms (for CueList highlight). */
@@ -164,6 +167,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       generateNativeEnabled: initialGenerateNativeEnabled = true,
       videoAspectRatio = 16 / 9,
       onTogglePlayerMode,
+      setFullscreenReparentingEnabled,
       cues: initialCues,
       currentTimeMs: initialCurrentTimeMs,
       offsetMs,
@@ -272,20 +276,29 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // cluster/button/text có pointer-events:auto nên không trigger drag.
     const rootRef = useRef<HTMLDivElement>(null);
 
-    // Player Mode: reparent #cell-subtitle-root to document.body (escape video
-    // container's stacking context), full-screen, z-index max. Canvas in overlay
-    // draws video frames on top of the host video.
-    // NOTE: scroll-lock + backdrop + host pointer-events override were removed
-    // because they did not fix cue-list/dictionary scroll reliably. Host page
-    // remains interactive; overlay children keep pointer-events:auto via CSS so
-    // dock/cue-list stay clickable. Revisit when designing a proper isolation
-    // layer (ponytail: known ceiling — host gestures may bleed through).
+    // Player Mode: wrap host player element into the overlay's video stage.
+    // 1. Exit host fullscreen if active (top layer blocks position:fixed overlay).
+    // 2. Move host player container to document.body (light DOM, preserves
+    //    host CSS — moving into shadow DOM would break CSS encapsulation).
+    // 3. Move #cell-subtitle-root to document.body (overlay UI, z-index max).
+    // 4. Disable fullscreen reparenting to prevent listener conflicts.
+    // 5. PlayerModeOverlay positions host player to match video stage rect.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
+    // Host player state (light DOM element that contains video + controls).
+    const hostPlayerState = useRef<{
+      el: HTMLElement;
+      parent: HTMLElement;
+      nextSibling: Node | null;
+      styles: { position: string; width: string; height: string; top: string; left: string; zIndex: string };
+    } | null>(null);
+
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
       if (playerMode) {
+        // --- Activate Player Mode ---
+        setFullscreenReparentingEnabled?.(false);
         playerModeSavedStyles.current = {
           zIndex: host.style.zIndex,
           position: host.style.position,
@@ -298,10 +311,48 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           playerModeOriginalParent.current = host.parentElement;
           document.body.appendChild(host);
         }
+
+        // Find + wrap host player element (light DOM, preserves host CSS).
+        const video = document.querySelector('video');
+        if (video instanceof HTMLVideoElement) {
+          const hostPlayer = findHostPlayer(video);
+          // Exit host fullscreen if active — top layer renders above
+          // position:fixed overlay, hiding Player Mode.
+          const exitFs = document.fullscreenElement
+            ? document.exitFullscreen().catch(() => undefined)
+            : Promise.resolve();
+          void exitFs.then(() => {
+            if (!hostPlayer.isConnected) return; // SPA nav removed it
+            // Save host player state for restore on exit.
+            hostPlayerState.current = {
+              el: hostPlayer,
+              parent: hostPlayer.parentElement ?? document.body,
+              nextSibling: hostPlayer.nextSibling,
+              styles: {
+                position: hostPlayer.style.position,
+                width: hostPlayer.style.width,
+                height: hostPlayer.style.height,
+                top: hostPlayer.style.top,
+                left: hostPlayer.style.left,
+                zIndex: hostPlayer.style.zIndex,
+              },
+            };
+            // Move host player to body, below overlay (z-index max-1).
+            hostPlayer.style.position = 'fixed';
+            hostPlayer.style.zIndex = '2147483646';
+            hostPlayer.style.top = '0';
+            hostPlayer.style.left = '0';
+            hostPlayer.style.width = '100%';
+            hostPlayer.style.height = '100%';
+            hostPlayer.setAttribute('data-cell-player-mode-host', '');
+            if (hostPlayer.parentElement !== document.body) {
+              document.body.appendChild(hostPlayer);
+            }
+          });
+        }
       } else {
-        // Only restore if we previously saved (i.e. exiting Player Mode).
-        // On first mount (playerMode=false, saved=null) don't touch styles —
-        // mountReactShadow/mountSubtitle already set them correctly.
+        // --- Deactivate Player Mode ---
+        setFullscreenReparentingEnabled?.(true);
         const saved = playerModeSavedStyles.current;
         if (saved) {
           host.style.zIndex = saved.zIndex;
@@ -314,8 +365,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           originalParent.appendChild(host);
         }
         playerModeOriginalParent.current = null;
+
+        // Restore host player to original position.
+        const hps = hostPlayerState.current;
+        if (hps) {
+          hps.el.removeAttribute('data-cell-player-mode-host');
+          hps.el.style.position = hps.styles.position;
+          hps.el.style.width = hps.styles.width;
+          hps.el.style.height = hps.styles.height;
+          hps.el.style.top = hps.styles.top;
+          hps.el.style.left = hps.styles.left;
+          hps.el.style.zIndex = hps.styles.zIndex;
+          if (hps.el.parentElement !== hps.parent) {
+            if (hps.nextSibling && hps.nextSibling.parentElement === hps.parent) {
+              hps.parent.insertBefore(hps.el, hps.nextSibling);
+            } else {
+              hps.parent.appendChild(hps.el);
+            }
+          }
+          hostPlayerState.current = null;
+        }
       }
-    }, [playerMode]);
+    }, [playerMode, setFullscreenReparentingEnabled]);
 
     const dragState = useRef<{
       startY: number;

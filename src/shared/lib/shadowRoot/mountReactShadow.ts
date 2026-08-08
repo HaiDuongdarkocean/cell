@@ -31,6 +31,8 @@ export interface ShadowMount {
   shadow: ShadowRoot;
   root: ReturnType<typeof createRoot>;
   unmount: () => void;
+  /** Temporarily disable/enable fullscreen reparenting (used by Player Mode). */
+  setFullscreenReparentingEnabled: (enabled: boolean) => void;
 }
 
 /**
@@ -68,7 +70,7 @@ export function mountReactShadow(
   const root = createRoot(rootEl);
   root.render(component);
 
-  const removeFullscreenListeners = reparentOnFullscreen
+  const fullscreenReparenting = reparentOnFullscreen
     ? attachFullscreenReparenting(host, parent)
     : null;
 
@@ -78,10 +80,13 @@ export function mountReactShadow(
     shadow,
     root,
     unmount: () => {
-      removeFullscreenListeners?.();
+      fullscreenReparenting?.cleanup();
       cleanupCss();
       root.unmount();
       host.remove();
+    },
+    setFullscreenReparentingEnabled: (enabled: boolean) => {
+      fullscreenReparenting?.setEnabled(enabled);
     },
   };
 }
@@ -89,8 +94,11 @@ export function mountReactShadow(
 function attachFullscreenReparenting(
   host: HTMLElement,
   parent: HTMLElement,
-): () => void {
+): { cleanup: () => void; setEnabled: (enabled: boolean) => void } {
+  let enabled = true;
+
   const onFullscreenChange = (): void => {
+    if (!enabled) return;
     const fsEl = document.fullscreenElement;
     if (fsEl && fsEl !== host.parentElement) {
       fsEl.appendChild(host);
@@ -107,8 +115,13 @@ function attachFullscreenReparenting(
     document.fullscreenElement.appendChild(host);
   }
 
-  return () => {
-    document.removeEventListener('fullscreenchange', onFullscreenChange);
-    document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+  return {
+    cleanup: () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+    },
+    setEnabled: (value: boolean) => {
+      enabled = value;
+    },
   };
 }
