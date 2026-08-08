@@ -42,10 +42,7 @@ CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 SESSION_ROOT = Path(r"C:\stealth-mcp-browser-sessions")
 MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
-CELL_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell-player-mode-alt\dist"
-# The master profile registered the Cell extension from cell\dist (different ID).
-# To reuse that profile entry, we sync worktree dist → cell\dist before launch.
-CELL_EXT_TARGET = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist"
+CELL_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist"
 UBLOCK_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite"
 
 # Files/dirs to copy from master (login + preferences only — exclude regenerable cache)
@@ -164,14 +161,6 @@ async def main() -> None:
     load_ublock = not args.no_ublock and Path(UBLOCK_EXT).exists()
     if not args.no_ublock and not load_ublock:
         print(f"[WARN] uBlock not found at {UBLOCK_EXT} — skipping", flush=True)
-
-    # --- 0b. Sync worktree dist → cell\dist so the master profile's extension entry loads our code.
-    # The master profile registered Cell from cell\dist (ID cnggdebgaglbfchjikompjlfhconopgj).
-    # cell-player-mode-alt\dist has a different ID. Syncing avoids Secure Preferences patching.
-    if Path(CELL_EXT_TARGET).exists():
-        shutil.rmtree(CELL_EXT_TARGET, ignore_errors=True)
-    shutil.copytree(CELL_EXT, CELL_EXT_TARGET, dirs_exist_ok=True)
-    print(f"[OK] Synced {CELL_EXT} → {CELL_EXT_TARGET}", flush=True)
 
     # --- 1. Clone master ---
     clone_dir = clone_master()

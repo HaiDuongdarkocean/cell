@@ -1,6 +1,6 @@
 /* Player Mode overlay — fixed full-viewport layout.
-   When fullscreen: transparent bg (host video shows through natively).
-   When not fullscreen: dark bg (canvas capture draws video on top). */
+   Host <video> is reparented into the video stage (real DOM child).
+   Overlay bg = dark letterbox around the video stage area. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -11,14 +11,6 @@
   z-index: var(--z-overlay-settings);
   pointer-events: auto;
   container-type: inline-size;
-}
-
-/* When cell root is inside fullscreen element, overlay bg transparent —
-   host video (sibling in fullscreen element) shows through.
-   Use :host() because the attribute is on the shadow host (#cell-subtitle-root),
-   and :global() selectors don't cross shadow boundaries. */
-:host([data-cell-player-mode='true']) .overlay {
-  background: transparent;
 }
 
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
@@ -33,23 +25,15 @@
   overflow: hidden;
 }
 
-/* Video stage — canvas draws host video frames here (non-fullscreen).
-   When fullscreen: transparent (host video shows through overlay). */
+/* Video stage — container for the reparented host <video>.
+   position:relative so the video (position:absolute, inset:0) fills it.
+   pointer-events:none lets clicks pass through to native video controls. */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
+  position: relative;
   background: var(--color-overlay-background);
   pointer-events: none;
-}
-
-:host([data-cell-player-mode='true']) .videoStage {
-  background: transparent;
-}
-
-.videoCanvas {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 /* Content other — CueList / dictionary sheet.
