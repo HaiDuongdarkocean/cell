@@ -112,6 +112,11 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // Vite 8 defaults to lightningcss for CSS minification, which silently
+    // strips valid CSS properties (overflow-y, overscroll-behavior, min-height)
+    // from CSS modules — especially ?inline imports for shadow DOM injection.
+    // esbuild preserves all properties. See vitejs/vite#22649.
+    cssMinify: false,
     rollupOptions: {
       input: {
         // The CRX plugin handles the popup and background entries; add the
