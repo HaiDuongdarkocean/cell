@@ -272,19 +272,30 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // cluster/button/text có pointer-events:auto nên không trigger drag.
     const rootRef = useRef<HTMLDivElement>(null);
 
-    // Player Mode: reparent #cell-subtitle-root to document.body (escape video
-    // container's stacking context), full-screen, z-index max. Canvas in overlay
-    // draws video frames on top of the host video.
-    // NOTE: scroll-lock + backdrop + host pointer-events override were removed
-    // because they did not fix cue-list/dictionary scroll reliably. Host page
-    // remains interactive; overlay children keep pointer-events:auto via CSS so
-    // dock/cue-list stay clickable. Revisit when designing a proper isolation
-    // layer (ponytail: known ceiling — host gestures may bleed through).
+    // Player Mode: live inside document.fullscreenElement when host is
+    // fullscreen (top layer renders above everything — no z-index hack needed).
+    // attachFullscreenReparenting (mountReactShadow) already moves #cell-subtitle-root
+    // into document.fullscreenElement on fullscreenchange. Player Mode just needs
+    // to NOT override that by moving cell root to document.body.
+    //
+    // When NOT fullscreen: fall back to body reparenting (escape video container
+    // stacking context) + canvas capture (overlay bg covers host).
+    //
+    // When fullscreen: keep cell root inside fullscreen element. Overlay bg
+    // transparent so host video shows through. No canvas needed — native video
+    // rendering. Seamless UX: exiting Player Mode does NOT exit host fullscreen.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
+      // Create a VISIBLE marker element to prove the effect ran.
+      // Use body.appendChild so it's visible from MAIN world too.
+      const marker = document.createElement('div');
+      marker.id = 'cell-pm-effect-marker';
+      marker.style.cssText = 'position:fixed;top:0;left:0;z-index:999999;background:red;color:white;padding:4px;font-size:12px;pointer-events:none;';
+      marker.textContent = `PM:${playerMode},FS:${!!document.fullscreenElement},P:${host.parentElement?.tagName}`;
+      document.body.appendChild(marker);
       if (playerMode) {
         playerModeSavedStyles.current = {
           zIndex: host.style.zIndex,
@@ -294,14 +305,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
-        if (host.parentElement && host.parentElement !== document.body) {
-          playerModeOriginalParent.current = host.parentElement;
-          document.body.appendChild(host);
+        host.setAttribute('data-cell-player-mode', 'true');
+        const fsEl = document.fullscreenElement;
+        if (!fsEl || !fsEl.contains(host)) {
+          if (host.parentElement && host.parentElement !== document.body) {
+            playerModeOriginalParent.current = host.parentElement;
+            document.body.appendChild(host);
+          }
         }
       } else {
-        // Only restore if we previously saved (i.e. exiting Player Mode).
-        // On first mount (playerMode=false, saved=null) don't touch styles —
-        // mountReactShadow/mountSubtitle already set them correctly.
+        host.removeAttribute('data-cell-player-mode');
         const saved = playerModeSavedStyles.current;
         if (saved) {
           host.style.zIndex = saved.zIndex;

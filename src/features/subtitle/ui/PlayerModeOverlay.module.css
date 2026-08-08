@@ -1,6 +1,6 @@
 /* Player Mode overlay — fixed full-viewport layout.
-   Tokens from tokens.css (injected via Shadow DOM host). */
-
+   When fullscreen: transparent bg (host video shows through natively).
+   When not fullscreen: dark bg (canvas capture draws video on top). */
 .overlay {
   position: fixed;
   inset: 0;
@@ -11,6 +11,14 @@
   z-index: var(--z-overlay-settings);
   pointer-events: auto;
   container-type: inline-size;
+}
+
+/* When cell root is inside fullscreen element, overlay bg transparent —
+   host video (sibling in fullscreen element) shows through.
+   Use :host() because the attribute is on the shadow host (#cell-subtitle-root),
+   and :global() selectors don't cross shadow boundaries. */
+:host([data-cell-player-mode='true']) .overlay {
+  background: transparent;
 }
 
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
@@ -25,12 +33,17 @@
   overflow: hidden;
 }
 
-/* Video stage — canvas draws host video frames here. */
+/* Video stage — canvas draws host video frames here (non-fullscreen).
+   When fullscreen: transparent (host video shows through overlay). */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
   background: var(--color-overlay-background);
   pointer-events: none;
+}
+
+:host([data-cell-player-mode='true']) .videoStage {
+  background: transparent;
 }
 
 .videoCanvas {
