@@ -1013,9 +1013,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // Manager panel is created asynchronously inside loadOverlayStyles().then()
   // so it can reuse the import button created by SubtitleOverlayController.
 
-  // Wire keyboard shortcuts. Capture phase (3rd arg = true) so we fire BEFORE
-  // YouTube's own keydown listeners (e.g. 't' = theater mode) and can block
-  // them via stopImmediatePropagation when the key matches a configured action.
+  // Wire keyboard shortcuts. window capture phase (3rd arg = true) so we fire
+  // BEFORE host keydown listeners (e.g. YouTube 't' = theater mode, space =
+  // play/pause) and can block them via stopImmediatePropagation when the key
+  // matches a configured action. See ADR-034 (listener on window, not document).
   const onKeydown = (e: KeyboardEvent) => {
     // Chrome hides the side panel when a tab enters fullscreen (Chromium
     // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
@@ -1180,7 +1181,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
     }
   };
-  document.addEventListener('keydown', onKeydown, true);
+  // ADR-034: listen on window capture (not document capture) so Cell fires
+  // BEFORE host keydown listeners (e.g. YouTube space = play/pause). window is
+  // the topmost ancestor — capture phase runs window → document → target.
+  // stopImmediatePropagation here blocks ALL downstream listeners (document,
+  // body, target, bubble) so host's space handler never runs when Cell handles it.
+  // ponytail ceiling: if a host listens on window capture AND registers before
+  // Cell, it runs first. Upgrade: CDP Input.dispatchKeyEvent interception.
+  window.addEventListener('keydown', onKeydown, true);
 
   // Wire timeupdate → send VIDEO_TIME_UPDATE to Side Panel (via background)
   // ponytail: throttle to ~4fps to avoid message flooding (timeupdate fires ~60fps)
@@ -1819,7 +1827,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
-    document.removeEventListener('keydown', onKeydown, true);
+    window.removeEventListener('keydown', onKeydown, true);
     document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
