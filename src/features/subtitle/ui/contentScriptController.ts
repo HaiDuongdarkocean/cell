@@ -1190,6 +1190,24 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // Cell, it runs first. Upgrade: CDP Input.dispatchKeyEvent interception.
   window.addEventListener('keydown', onKeydown, true);
 
+  // ADR-034 D2: also block keyup for configured actions. YouTube handles
+  // space on keyup (not keydown) — if Cell pauses on keydown but lets keyup
+  // through, YouTube's keyup handler plays the video again (double-toggle).
+  // Same guard as keydown: skip editable targets, only block configured keys.
+  const onKeyup = (e: KeyboardEvent) => {
+    if (isEditableTarget(e.target)) return;
+    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+      ctrl: e.ctrlKey,
+      shift: e.shiftKey,
+      alt: e.altKey,
+    });
+    if (action) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  };
+  window.addEventListener('keyup', onKeyup, true);
+
   // Wire timeupdate → send VIDEO_TIME_UPDATE to Side Panel (via background)
   // ponytail: throttle to ~4fps to avoid message flooding (timeupdate fires ~60fps)
   let lastTimeUpdateSent = 0;
@@ -1828,6 +1846,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
     window.removeEventListener('keydown', onKeydown, true);
+    window.removeEventListener('keyup', onKeyup, true);
     document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
