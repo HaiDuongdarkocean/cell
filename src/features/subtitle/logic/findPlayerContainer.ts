@@ -67,7 +67,7 @@ export function findFarthestSameSizeContainer(
 /** Find the largest <video> that has loaded data and a non-zero size. */
 export function findLargestPlayableVideo(): HTMLVideoElement | null {
   const videos = Array.from(document.querySelectorAll('video')).filter((v) => {
-    if (v.videoWidth <= 0 || v.readyState < 1) return false;
+    if (v.readyState < 1) return false;
     const rect = v.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   });
@@ -75,9 +75,15 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
   if (videos.length === 0) return null;
 
   videos.sort((a, b) => {
-    const aArea = a.videoWidth * a.videoHeight;
-    const bArea = b.videoWidth * b.videoHeight;
-    return bArea - aArea;
+    // Prefer videos with loaded metadata (videoWidth > 0) — they're the real
+    // playable target. Fall back to bounding-rect area when no video has
+    // loaded yet (CDN still fetching) so we pick the visually largest one.
+    const aMeta = a.videoWidth * a.videoHeight;
+    const bMeta = b.videoWidth * b.videoHeight;
+    if (aMeta > 0 || bMeta > 0) return bMeta - aMeta;
+    const aRect = a.getBoundingClientRect();
+    const bRect = b.getBoundingClientRect();
+    return (bRect.width * bRect.height) - (aRect.width * aRect.height);
   });
 
   return videos[0] ?? null;
