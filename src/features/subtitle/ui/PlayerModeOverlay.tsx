@@ -191,6 +191,21 @@ function PlayerModeOverlayInner({
       height: shadowHost.style.height,
       display: shadowHost.style.display,
     };
+    // Snapshot intermediate descendants BEFORE bounds effect mutates them.
+    // Bounds effect sets width/height/aspect-ratio/flex with !important on
+    // every resize; without this snapshot + restore in cleanup, those styles
+    // persist after exit and the video stays stretched instead of returning
+    // to host layout.
+    const savedDescendantStyles: Array<{ el: HTMLElement; props: Record<string, string> }> = [];
+    let desc: HTMLElement | null = player.firstElementChild as HTMLElement | null;
+    while (desc) {
+      const props: Record<string, string> = {};
+      for (const p of ['width', 'height', 'max-width', 'max-height', 'aspect-ratio', 'flex']) {
+        props[p] = desc.style.getPropertyValue(p);
+      }
+      savedDescendantStyles.push({ el: desc, props });
+      desc = desc.firstElementChild as HTMLElement | null;
+    }
 
     player.setAttribute('slot', 'cell-video');
     shadowHost.style.width = '100%';
@@ -218,6 +233,12 @@ function PlayerModeOverlayInner({
       player.style.minHeight = savedStyle.minHeight;
       player.style.margin = savedStyle.margin;
       player.style.boxSizing = savedStyle.boxSizing;
+      for (const { el, props } of savedDescendantStyles) {
+        for (const [p, val] of Object.entries(props)) {
+          el.style.removeProperty(p);
+          if (val) el.style.setProperty(p, val);
+        }
+      }
       shadowHost.style.width = savedHostStyle.width;
       shadowHost.style.height = savedHostStyle.height;
       shadowHost.style.display = savedHostStyle.display;
