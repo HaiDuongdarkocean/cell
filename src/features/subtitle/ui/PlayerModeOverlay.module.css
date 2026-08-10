@@ -145,7 +145,7 @@
   }
 }
 
-/* Player Action Dock — fixed at bottom, always visible.
+/* Player Action Dock — fixed at the bottom, always visible.
    Three regions mirror the original subtitle overlay: NavCluster left,
    SubtitleBlock center, action cluster right. */
 .dock {
@@ -212,7 +212,7 @@
 
 /* Player Mode icon size: override NavCluster/SubtitlePanels --cluster-icon-size
    clamp (max 20px) which is too small for 44px touch-target buttons.
-   24px/44px ≈ 55% ratio — matches normal mode's 20px/20px ≈ 59%. */
+   24px/44px ≈ 55% ratio — matches normal mode's 20px/34px ≈ 59%. */
 .dock .navArea :global(button) :global(span),
 .dock .navArea :global([role='button']) :global(span),
 .dock .actionArea :global(button) :global(span),
