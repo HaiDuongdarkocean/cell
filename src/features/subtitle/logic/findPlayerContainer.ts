@@ -36,6 +36,17 @@ export function findFarthestSameSizeContainer(
   video: HTMLVideoElement,
   tolerance: number = DEFAULT_SIZE_TOLERANCE,
 ): HTMLElement {
+  // YouTube: #movie_player is the player shell owning native controls + the
+  // video. The same-size walk overshoots to #player (outer layout wrapper with
+  // no controls), so the bounds effect walks #cinematics-container instead of
+  // .html5-video-container → video height collapses to 0. Short-circuit to the
+  // known shell when present. Ponytail ceiling: hardcoded YouTube selector;
+  // upgrade path = per-host adapter registry if more structured hosts appear.
+  const moviePlayer = document.querySelector('#movie_player');
+  if (moviePlayer instanceof HTMLElement && moviePlayer.contains(video)) {
+    return moviePlayer;
+  }
+
   const baseRect = video.getBoundingClientRect();
   const baseArea = baseRect.width * baseRect.height;
 
