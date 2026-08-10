@@ -188,7 +188,9 @@ Text
 - https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/
 
 Video
-- https://www.youtube.com/watch?v=YQHsXMglC9A
+- https://themoviebox.xyz/movies/oh-boy-was-i-wrong-about-her-KZp0CGxDxI2?id=2281575019673174328&type=/movie/detail&detailSe=&detailEp=&lang=en
+- https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100
+- https://moviepire.ru/watch/125988?s=1&e=2&me=10
 
 Video (anti-automation — MUST dùng stealth-chrome-devtools)
 - https://streamduck.site/ (phát hiện DevTools/automation → reload nếu dùng chrome-devtools)
