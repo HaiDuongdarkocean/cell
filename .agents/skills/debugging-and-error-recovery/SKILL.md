@@ -55,7 +55,7 @@ Code fixes belong in `learning-and-apply` atoms. Symptoms belong in the evidence
 ## The Debug Loop
 
 ```
-0. Contract → 1. Preserve → 2. Reproduce → 3. Localize → 4. Falsify → 5. Fix → 6. Verify → 7. Guard
+0. Contract → 1. Preserve → 2. Reproduce → 3. Localize → 4. Falsify → 5. Snippet Verify → 6. Fix → 7. Verify → 8. Guard
 ```
 
 Each arrow has a **guard**. If the guard fails, go back. Do not advance until the guard passes.
@@ -151,9 +151,39 @@ Then: popup status button shows "tracking"
 - Use different data: first, middle, last item.
 - Different context: fresh reload, hot reload, incognito, different host.
 
-## Step 5: Fix
+## Step 5: Snippet Verify
 
-**Purpose:** Change the smallest code that removes the root cause.
+**Purpose:** Prove the hypothesis on the real system before touching source code. Inject the fix directly into the runtime and confirm the symptom disappears.
+
+**Why this step exists:** A hypothesis that survives Step 4 falsification is still theory. A snippet that removes the symptom on the live system is the strongest possible falsification — it tests the hypothesis against real state, real DOM, real network, real config. If the snippet fails, the hypothesis is wrong and no amount of code editing will help.
+
+**Actions:**
+1. Translate the hypothesis into a minimal runtime patch.
+2. Inject it into the live system without rebuilding or reloading.
+3. Re-run the contract's "When" → "Then" against the patched system.
+4. Repeat the trigger 2-3 times to confirm the fix is stable, not a fluke.
+
+**Patch methods by bug type:**
+
+| Bug type | Snippet method | Verify by |
+|---|---|---|
+| CSS / layout | Inject `<style>` with `!important` override into the target root (document or shadow DOM) | `getComputedStyle`, `clientHeight`/`scrollHeight`, `getBoundingClientRect`, ... |
+| JS logic | Override the suspected function or variable in the live runtime | Re-run the failing action and inspect output |
+| Config / env | Override the config value or env var in the live process | Re-trigger the code path that reads it |
+| Data / state | Mutate the suspected state directly (storage, in-memory store, DOM attribute) | Re-render or re-read and check output |
+| Network / API | Mock the response via `fetch` override or DevTools network intercept | Re-trigger the request and inspect handling |
+
+**Guard:** Symptom disappears after snippet injection, reproduces without it. Repeat 2-3 times.
+
+**Loop back:** Snippet does not fix the symptom → hypothesis is incomplete or wrong → return to Step 4 with a new hypothesis. Do not advance to Step 6.
+
+**Common mistake:** Editing source code before the snippet proves the hypothesis. A rebuild cycle costs minutes; a snippet costs seconds. If the hypothesis is wrong, you have already wasted a rebuild.
+
+**Common mistake:** Snippet fixes the symptom but not the root cause. The snippet must target the hypothesized root cause, not paper over it with a broader override.
+
+## Step 6: Fix
+
+**Purpose:** Change the smallest code that removes the root cause, now that the snippet has proven the hypothesis.
 
 **Rules:**
 - Fix the shared function, not every caller.
@@ -162,20 +192,22 @@ Then: popup status button shows "tracking"
 - No empty `.catch` unless proven safe.
 - One fix per commit.
 - Prefer changing data flow over adding flags.
+- The source fix must produce the same effect as the snippet. If it does not, the snippet targeted a different code path than the source edit — return to Step 3.
 
-**Guard:** You can explain the fix in plain language without jargon.
+**Guard:** You can explain the fix in plain language without jargon, and the fix matches what the snippet proved.
 
-**Loop back:** The fix touches more than one responsibility. Split it.
+**Loop back:** The fix touches more than one responsibility. Split it. Or the fix does not reproduce the snippet's effect — re-localize.
 
-## Step 6: Verify
+## Step 7: Verify
 
-**Purpose:** Prove the fix fixed the root cause.
+**Purpose:** Prove the source fix fixed the root cause in the real build.
 
 **Run:**
 - The original reproduction.
 - The variant matrix.
 - Existing tests.
 - Build.
+- Build output inspection: verify the fix is present in the built artifact, not just the source. Builders and minifiers can silently strip or transform code — grep the bundle for the fix.
 - Visual / rendered state for UI: `getComputedStyle`, `getBoundingClientRect`, screenshot. DOM text alone is not proof.
 - Repeat the reproduction 2-3 times before declaring pass.
 
@@ -185,11 +217,11 @@ Then: popup status button shows "tracking"
 - UI state: popup open/closed, selection active/inactive.
 - Data shape: phrase vs. word, lemma vs. surface, known vs. unknown.
 
-**Guard:** All variants pass and existing tests still pass.
+**Guard:** All variants pass, existing tests pass, and the fix is visible in the build output.
 
-**Loop back:** A variant fails. Go back to Step 4.
+**Loop back:** A variant fails. Go back to Step 4. Or the build output is missing the fix — the builder stripped or transformed it; fix the build config before declaring pass.
 
-## Step 7: Guard
+## Step 8: Guard
 
 **Purpose:** Make the same failure expensive to reintroduce.
 
@@ -198,6 +230,7 @@ Then: popup status button shows "tracking"
 - Update docs / ADR if architecture changed.
 - Remove temporary instrumentation unless permanent.
 - Add an invariant if the bug came from a broken assumption.
+- If the bug was a builder silently stripping code, add a build-output assertion test.
 
 **Guard:** The regression test exists and passes.
 
@@ -212,9 +245,10 @@ Then: popup status button shows "tracking"
 | 2. Reproduce | Evidence board | Minimum steps | Bug triggers twice |
 | 3. Localize | Reproduction | Single surface | One code path identified |
 | 4. Falsify | Localized surface | Root cause | Hypothesis survived a test |
-| 5. Fix | Root cause | Minimal code change | Explained in plain language |
-| 6. Verify | Fix applied | All variants pass | Original + matrix + tests + build green |
-| 7. Guard | Verified fix | Regression test + docs | Test fails without fix, passes with it |
+| 5. Snippet Verify | Root cause hypothesis | Symptom gone on live system | Snippet removes symptom 2-3 times |
+| 6. Fix | Confirmed hypothesis | Minimal code change | Fix matches snippet effect, explained in plain language |
+| 7. Verify | Source fix applied | All variants pass | Original + matrix + tests + build green + fix present in build output |
+| 8. Guard | Verified fix | Regression test + docs | Test fails without fix, passes with it |
 
 ## Evidence by Bug Category
 
@@ -276,6 +310,9 @@ If the last answer is no, you do not understand it yet.
 | Popup wrong but token right | Different term keys between set and get | Log both keys |
 | UI data exists but user does not see it | DOM queried but not rendered/visible | `getComputedStyle` + `getBoundingClientRect` vs `innerText` |
 | Works first time, fails the second | State leak or cache reuse | Repeat the same action without reloading |
+| Source correct, runtime wrong | Builder/minifier silently strips or transforms code | Grep build output for the fix; compare source vs bundle |
+| Snippet fixes symptom, source fix does not | Snippet targeted a different code path than the source edit | Re-localize: trace which path the snippet actually patched |
+| Hypothesis feels right but snippet does nothing | Hypothesis is incomplete — second root cause hidden | Return to Step 4, look for a second failure layer |
 
 ## Data Flow Desync Patterns
 
@@ -317,6 +354,9 @@ Forbidden unless justified with evidence:
 - Declaring pass after one successful manual test or click. Repeat the action at least twice.
 - Treating DOM text as user-visible behavior.
 - Calling the same probe multiple times instead of capturing all needed evidence in one pass.
+- Editing source code before the snippet proves the hypothesis on the live system.
+- Declaring pass after the snippet works but before confirming the source fix produces the same effect in the real build.
+- Trusting the source file over the build output when the runtime behaves differently.
 
 ## Testing & Validation
 
@@ -348,12 +388,14 @@ Before declaring this skill complete on a debugging task, run this matrix:
 After any fix:
 
 - [ ] Root cause identified and documented.
+- [ ] Snippet injected on live system confirmed the hypothesis before source edit.
 - [ ] Fix addresses the root cause, not symptoms.
 - [ ] At least one alternative hypothesis falsified.
 - [ ] Evidence board updated before the fix.
 - [ ] Regression test exists and fails without the fix.
 - [ ] All existing tests pass.
 - [ ] Build succeeds.
+- [ ] Fix is present in the build output, not just the source file.
 - [ ] Original scenario verified end-to-end.
 - [ ] UI is visually verified (rendered rect, opacity, display), not just queried from DOM.
 - [ ] Boundary guards in place (frame, lifecycle, state).
