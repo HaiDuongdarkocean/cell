@@ -293,6 +293,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // Player Mode does NOT exit host fullscreen.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
+
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
@@ -310,6 +311,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         if (!fsEl || !fsEl.contains(host)) {
           if (host.parentElement && host.parentElement !== document.body) {
             playerModeOriginalParent.current = host.parentElement;
+            // Also save on the host element itself — PlayerModeOverlay (child)
+            // effect may run before or after this effect depending on React's
+            // effect ordering. Storing on the host ensures the exit branch can
+            // always recover the original parent regardless of who moved it.
+            const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
+            if (!hostWithProp.__cellOriginalParent) {
+              hostWithProp.__cellOriginalParent = host.parentElement;
+            }
             document.body.appendChild(host);
           }
         }
@@ -322,11 +331,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           host.style.inset = saved.inset;
           playerModeSavedStyles.current = null;
         }
-        const originalParent = playerModeOriginalParent.current;
+        const originalParent = playerModeOriginalParent.current
+          ?? (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent
+          ?? null;
         if (originalParent && host.parentElement !== originalParent) {
           originalParent.appendChild(host);
         }
         playerModeOriginalParent.current = null;
+        (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent = undefined;
       }
     }, [playerMode]);
 

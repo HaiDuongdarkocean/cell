@@ -161,6 +161,14 @@ function PlayerModeOverlayInner({
     // is still inside the player container, appendChild(player) would create a
     // DOM cycle. Move the host to body first to break the cycle.
     if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
+      // Save original parent on the host element itself so SubtitlePanels' exit
+      // branch can restore it. Use ??= so we don't overwrite if SubtitlePanels
+      // already saved it (effect order is not guaranteed).
+      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
+      if (!hostWithProp.__cellOriginalParent) {
+        hostWithProp.__cellOriginalParent = shadowHost.parentElement;
+      }
+      document.documentElement.setAttribute('data-cell-debug-saved', String(!!hostWithProp.__cellOriginalParent) + ':' + hostWithProp.__cellOriginalParent?.tagName);
       document.body.appendChild(shadowHost);
     }
     if (shadowHost.contains(player)) return;
