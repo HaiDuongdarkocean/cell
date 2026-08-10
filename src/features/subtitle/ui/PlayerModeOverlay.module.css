@@ -19,6 +19,21 @@
   max-height: none;
 }
 
+/* Cross-origin iframe (megaplay/vidnest): the video is not reparented into
+   the shadow stage; it stays in the host player's own DOM. Make the overlay
+   transparent and pass clicks through to the video. Only the dock, content
+   panel, and resize handle keep pointer-events:auto so they stay interactive. */
+.childFrame {
+  background: transparent;
+  pointer-events: none;
+}
+
+.childFrame .split,
+.childFrame .videoStage {
+  background: transparent;
+  pointer-events: none;
+}
+
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
    >480px: row (video left, content right, resizable).
    <480px: column (video top, content bottom — mobile stack). */
