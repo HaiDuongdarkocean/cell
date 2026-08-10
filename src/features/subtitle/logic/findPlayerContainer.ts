@@ -64,10 +64,14 @@ export function findFarthestSameSizeContainer(
   return farthest;
 }
 
-/** Find the largest <video> that has loaded data and a non-zero size. */
+/** Find the largest <video> with a non-zero bounding rect.
+ *
+ * Does NOT require readyState ≥ 1 — CDN-slow pages (e.g. themoviebox) can
+ * have readyState=0 for seconds while the video element is already visually
+ * present. Filtering by readyState would make findPlayerContainer return
+ * null, breaking Player Mode entry until metadata loads. */
 export function findLargestPlayableVideo(): HTMLVideoElement | null {
   const videos = Array.from(document.querySelectorAll('video')).filter((v) => {
-    if (v.readyState < 1) return false;
     const rect = v.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   });

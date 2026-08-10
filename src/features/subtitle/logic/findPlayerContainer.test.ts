@@ -144,11 +144,11 @@ describe('findPlayerContainer', () => {
       expect(findLargestPlayableVideo()).toBe(large);
     });
 
-    it('filters out videos with readyState 0', () => {
+    it('includes videos with readyState 0 when they have non-zero rect', () => {
       const video = createVideo(640, 360);
       Object.defineProperty(video, 'readyState', { value: 0, configurable: true });
 
-      expect(findLargestPlayableVideo()).toBeNull();
+      expect(findLargestPlayableVideo()).toBe(video);
     });
   });
 
