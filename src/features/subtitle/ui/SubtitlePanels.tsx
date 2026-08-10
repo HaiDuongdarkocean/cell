@@ -266,8 +266,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // to fill the viewport natively, no top-frame bridge or CSS reparenting.
       // attachFullscreenReparenting already moves #cell-subtitle-root into
       // document.fullscreenElement on fullscreenchange, so the overlay lives in
-      // the fullscreen top-layer. PlayerModeOverlay is transparent in child frame
-      // so the video shows through; Cell controls stay interactive.
+      // the fullscreen top-layer. PlayerModeOverlay reparents the player into
+      // the video stage so it stays responsive and controls remain interactive.
       if (isChildFrame()) {
         if (document.fullscreenElement) {
           try {
