@@ -1,4 +1,5 @@
-import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect } from 'react';
+import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect, Component } from 'react';
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
@@ -410,39 +411,41 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
     if (playerMode) {
       return (
-        <PlayerModeOverlay
-          targetStyle={targetStyle}
-          nativeStyle={nativeStyle}
-          hasSubtitle={hasSubtitle}
-          isPlaying={isPlaying}
-          repeatActive={repeatActive}
-          repeatIcon={repeatIcon}
-          repeatLabel={repeatLabel}
-          clusterSettings={clusterSettings}
-          blockSettings={blockSettings}
-          videoAspectRatio={videoAspectRatio}
-          onQuickAdd={onQuickAdd}
-          onEditCard={onEditCard}
-          onUpdateCurrentCard={onUpdateCurrentCard}
-          onGenerateNative={onGenerateNative}
-          onToggleSidePanel={onToggleSidePanel}
-          onToggleManager={onToggleManager}
-          generateNativeEnabled={generateNativeEnabled}
-          toolsExpanded={toolsExpanded}
-          onToggleTools={() => setToolsExpanded((value) => !value)}
-          onPrev={onPrev}
-          onNext={onNext}
-          onRepeat={onRepeat}
-          onRewind={onRewind}
-          onForward={onForward}
-          onPlayPause={onPlayPause}
-          onToggleCollapsed={handleToggleCollapsed}
-          onExit={handleTogglePlayerMode}
-          cues={cues as BilingualCue[]}
-          currentTimeMs={currentTimeMs}
-          offsetMs={offsetMs}
-          onSeek={onSeek}
-        />
+        <PlayerModeErrorBoundary>
+          <PlayerModeOverlay
+            targetStyle={targetStyle}
+            nativeStyle={nativeStyle}
+            hasSubtitle={hasSubtitle}
+            isPlaying={isPlaying}
+            repeatActive={repeatActive}
+            repeatIcon={repeatIcon}
+            repeatLabel={repeatLabel}
+            clusterSettings={clusterSettings}
+            blockSettings={blockSettings}
+            videoAspectRatio={videoAspectRatio}
+            onQuickAdd={onQuickAdd}
+            onEditCard={onEditCard}
+            onUpdateCurrentCard={onUpdateCurrentCard}
+            onGenerateNative={onGenerateNative}
+            onToggleSidePanel={onToggleSidePanel}
+            onToggleManager={onToggleManager}
+            generateNativeEnabled={generateNativeEnabled}
+            toolsExpanded={toolsExpanded}
+            onToggleTools={() => setToolsExpanded((value) => !value)}
+            onPrev={onPrev}
+            onNext={onNext}
+            onRepeat={onRepeat}
+            onRewind={onRewind}
+            onForward={onForward}
+            onPlayPause={onPlayPause}
+            onToggleCollapsed={handleToggleCollapsed}
+            onExit={handleTogglePlayerMode}
+            cues={cues as BilingualCue[]}
+            currentTimeMs={currentTimeMs}
+            offsetMs={offsetMs}
+            onSeek={onSeek}
+          />
+        </PlayerModeErrorBoundary>
       );
     }
 
@@ -628,3 +631,33 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     );
   },
 );
+
+class PlayerModeErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+
+  static getDerivedStateFromError(error: Error): { error: Error } {
+    return { error };
+  }
+
+  componentDidCatch(error: Error): void {
+    // eslint-disable-next-line no-console
+    console.error('[PlayerModeErrorBoundary]', error.message, error.stack);
+  }
+
+  render(): ReactNode {
+    if (this.state.error) {
+      return (
+        <div style={{ position: 'fixed', inset: 0, background: '#1a1a1a', color: '#ff4444', padding: 20, fontSize: 14, fontFamily: 'monospace', zIndex: 2147483647, overflow: 'auto' }}>
+          <div style={{ marginBottom: 8, color: '#fff', fontSize: 16 }}>Player Mode crashed:</div>
+          <div>{this.state.error.message}</div>
+          <pre style={{ marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{this.state.error.stack}</pre>
+          <div style={{ marginTop: 12, color: '#aaa' }}>Check console for details.</div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
