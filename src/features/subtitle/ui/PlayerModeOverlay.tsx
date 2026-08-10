@@ -15,6 +15,7 @@ import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { isChildFrame } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import styles from './PlayerModeOverlay.module.css';
@@ -159,6 +160,11 @@ function PlayerModeOverlayInner({
     const player = findPlayerContainer();
     if (!player) return;
     if (document.fullscreenElement) return;
+    // Cross-origin iframe (megaplay/vidnest): the top-frame bridge already
+    // makes the iframe fullscreen via CSS. Reparenting the player container
+    // here would move the <video> element in the DOM → Chrome reloads it →
+    // video goes black. Skip reparent; the Cell UI overlays on top.
+    if (isChildFrame()) return;
     if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
       const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
       if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
