@@ -161,10 +161,9 @@ function PlayerModeOverlayInner({
     const player = findPlayerContainer();
     if (!player) return;
     if (document.fullscreenElement) return;
-    // Cross-origin iframe (megaplay/vidnest): the top-frame bridge already
-    // makes the iframe fullscreen via CSS. Reparenting the player container
-    // here would move the <video> element in the DOM → Chrome reloads it →
-    // video goes black. Skip reparent; the Cell UI overlays on top.
+    // Cross-origin iframe (megaplay/vidnest): the video lives in the host
+    // player's own DOM and cannot be reparented across the same-origin
+    // boundary. Native fullscreen handles the viewport; skip reparent.
     if (isChildFrame()) return;
     if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
       const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
