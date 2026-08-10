@@ -1,6 +1,6 @@
 import { sendMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
-import { clearAutoLoadCache, initContentScriptController, installIframePlayerModeBridge } from '@/features/subtitle';
+import { clearAutoLoadCache, initContentScriptController } from '@/features/subtitle';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -190,9 +190,6 @@ window.addEventListener('message', (event) => {
 // Clear auto-load cache on every (re)inject — tab navigate re-injects the
 // content-script, so the per-URL cache must not survive across navigations.
 clearAutoLoadCache();
-// Top-frame Player Mode bridge: listens for child-iframe enter/exit requests
-// and reparents the iframe into a fullscreen overlay. No-op in child frames.
-installIframePlayerModeBridge();
 const scanner = new PageScanner();
 
 // Scan on page load — defer to DOMContentLoaded because content-script now

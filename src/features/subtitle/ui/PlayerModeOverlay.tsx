@@ -15,7 +15,7 @@ import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
-import { isChildFrame } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import styles from './PlayerModeOverlay.module.css';
@@ -127,6 +127,7 @@ function PlayerModeOverlayInner({
   const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
+  const isChild = isChildFrame();
 
   useEffect(() => {
     const onResize = (): void => {
@@ -384,7 +385,7 @@ function PlayerModeOverlayInner({
 
   return (
     <div
-      className={styles.overlay}
+      className={isChild ? `${styles.overlay} ${styles.childFrame}` : styles.overlay}
       data-cell-id="player-mode-overlay"
       role="application"
       aria-label="Player mode"

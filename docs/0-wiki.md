@@ -10,6 +10,8 @@ docs/           # Tài liệu dự án
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; Player Mode transparent/click-through overlay; host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
 ├── player-support.md                  # Live subtitle-list audit — player-side evidence for 9 sites; separates direct/metadata/encrypted entries, auth replay, and extension-delivery gaps; includes generic architecture constraints
+├── adr/                                 # Architecture Decision Records (per AGENTS.md: quyết định kiến trúc → docs/adr/<tên>.md)
+│   └── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng Fullscreen API thay vì top-frame bridge
 ├── specs/
 │   └── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 ├── design-system/                     # Design system reference docs & assets
@@ -50,12 +52,14 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
+**2026-08-11**: Khôi phục `docs/adr/` với ADR mới `native-fullscreen-iframe-player-mode.md`: child-iframe Player Mode dùng native Fullscreen API, xóa `iframePlayerModeBridge.ts`, thêm `iframeContext.ts`.
 **2026-08-05**: Thêm skill `testing-extension-browser` — 1 workflow duy nhất: nodriver spawn (anti-bot) + CDP `Extensions.loadUnpacked` (Chrome 137+ blocks `--load-extension`) + load 2 ext (Cell + uBlock) + navigate + reload. Script Python `script/test-cell-browser.py` chạy qua `uv run --python 3.11 --with nodriver`.
 **2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.
 **2026-08-03**: `content-script.ts` `PageScanner` chạy trong iframe có `<video>` (moviepire.ru → vidnest.fun `Nest` provider) để bắt `<track>` subtitle URLs.
 
 ## Lịch sử cleanup tài liệu
 
+**2026-08-11**: `docs/adr/` được khôi phục. ADR `native-fullscreen-iframe-player-mode.md` ghi quyết định chuyển child-iframe Player Mode sang native Fullscreen API và xóa `iframePlayerModeBridge.ts`.
 **2026-07-XX**: Consolidated toàn bộ docs legacy vào `2-architechture-system.md`. Đã xóa:
 - `docs/adr/` (76 ADR files) — quyết định kiến trúc giờ được tham chiếu inline trong `2-architechture-system.md` qua `**ADR-NNN**` markers
 - `docs/specs/` (40+ PRD files) — spec chi tiết đã được implement, code là nguồn sự thật
