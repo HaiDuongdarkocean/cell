@@ -13,6 +13,16 @@
   container-type: inline-size;
 }
 
+/* Fullscreen: player stays in place (can't move fullscreen element into
+   shadow DOM). Overlay renders on top with transparent video stage so
+   the player shows through. Only the dock + content panel have backgrounds. */
+.overlay[data-cell-fullscreen='true'] {
+  background: transparent;
+}
+.overlay[data-cell-fullscreen='true'] .videoStage {
+  background: transparent;
+}
+
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
    >480px: row (video left, content right, resizable).
    <480px: column (video top, content bottom — mobile stack). */

@@ -126,6 +126,17 @@ function PlayerModeOverlayInner({
   const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
+  // Track fullscreen state — in fullscreen the player stays in place (can't
+  // move fullscreen element into shadow DOM without exiting fullscreen).
+  // The overlay renders on top with a transparent video stage so the player
+  // shows through.
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const onFsChange = (): void => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    onFsChange();
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
 
   useEffect(() => {
     const onResize = (): void => {
@@ -156,6 +167,12 @@ function PlayerModeOverlayInner({
 
     const player = findPlayerContainer();
     if (!player) return;
+    // In fullscreen: the player IS the fullscreen element. Moving it into
+    // the shadow host would exit fullscreen (Chrome quirk). Keep player in
+    // place; the overlay renders on top with a transparent video stage so
+    // the player shows through. Also keep the host inside the fullscreen
+    // element so it stays visible.
+    if (document.fullscreenElement) return;
     // React runs child effects before parent effects, so SubtitlePanels' effect
     // (which moves #cell-subtitle-root to body) hasn't fired yet. If the host
     // is still inside the player container, appendChild(player) would create a
@@ -165,10 +182,9 @@ function PlayerModeOverlayInner({
       // branch can restore it. Use ??= so we don't overwrite if SubtitlePanels
       // already saved it (effect order is not guaranteed).
       const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
-      if (!hostWithProp.__cellOriginalParent) {
+      if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
         hostWithProp.__cellOriginalParent = shadowHost.parentElement;
       }
-      document.documentElement.setAttribute('data-cell-debug-saved', String(!!hostWithProp.__cellOriginalParent) + ':' + hostWithProp.__cellOriginalParent?.tagName);
       document.body.appendChild(shadowHost);
     }
     if (shadowHost.contains(player)) return;
@@ -316,6 +332,7 @@ function PlayerModeOverlayInner({
     <div
       className={styles.overlay}
       data-cell-id="player-mode-overlay"
+      data-cell-fullscreen={isFullscreen ? 'true' : 'false'}
       role="application"
       aria-label="Player mode"
     >
