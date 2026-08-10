@@ -10,6 +10,18 @@ describe('PlayerModeOverlay.module.css', () => {
     expect(css).toMatch(/\.contentOther\s*\{[^}]*pointer-events:\s*auto/s);
   });
 
+  it('slotted player in video stage is interactive', () => {
+    expect(css).toMatch(/\.videoStage\s+::slotted\(\[slot=['"]cell-video['"]\]\)\s*\{[^}]*pointer-events:\s*auto/s);
+  });
+
+  it('does not use a transparent click-through child-frame overlay', () => {
+    // The previous childFrame hack made the overlay transparent and passed
+    // pointer events through because the video stayed behind the overlay.
+    // Now the player is projected into the video stage, so no special
+    // child-frame CSS is needed.
+    expect(css).not.toMatch(/\.childFrame/s);
+  });
+
   it('cue list wrapper is NOT a scroll container (overflow:hidden — CueList .list is sole scroller)', () => {
     expect(css).toMatch(/\.cueListWrap\s*\{[^}]*overflow:\s*hidden/s);
     expect(css).not.toMatch(/\.cueListWrap\s*\{[^}]*overflow-y:\s*auto/s);
