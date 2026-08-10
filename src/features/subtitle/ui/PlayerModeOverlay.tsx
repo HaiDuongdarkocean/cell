@@ -127,7 +127,6 @@ function PlayerModeOverlayInner({
   const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
-  const isChild = isChildFrame();
 
   useEffect(() => {
     const onResize = (): void => {
@@ -395,7 +394,7 @@ function PlayerModeOverlayInner({
 
   return (
     <div
-      className={isChild ? `${styles.overlay} ${styles.childFrame}` : styles.overlay}
+      className={styles.overlay}
       data-cell-id="player-mode-overlay"
       role="application"
       aria-label="Player mode"
