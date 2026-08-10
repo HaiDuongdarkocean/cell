@@ -279,6 +279,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const ok = await requestIframePlayerModeEnter();
         if (ok) {
           setPlayerMode(true);
+          // The top-frame resize (width:100vw, height:100dvh) triggers a resize
+          // event inside the iframe → megaplay/vidnest players pause the video.
+          // Wait for the resize to settle, then resume playback.
+          setTimeout(() => {
+            if (!isPlaying) onPlayPause();
+          }, 400);
           return;
         }
       }
@@ -287,7 +293,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         requestIframePlayerModeExit();
       }
       setPlayerMode((prev) => togglePlayerMode(prev));
-    }, [playerMode]);
+    }, [playerMode, isPlaying, onPlayPause]);
 
     useEffect(() => {
       onTogglePlayerMode?.(playerMode);

@@ -31,11 +31,11 @@ interface TopFrameState {
     height: string;
     position: string;
     zIndex: string;
-    inset: string;
     top: string;
     left: string;
     margin: string;
     border: string;
+    inset: string;
   };
 }
 
@@ -73,13 +73,10 @@ function findIframeBySource(src: string): HTMLIFrameElement | null {
   return null;
 }
 
-/** Enter top-frame Player Mode: set iframe to position:fixed;inset:0 WITHOUT
- *  reparenting. Moving an iframe in the DOM triggers a reload in Chrome, which
- *  destroys the child-frame Cell state and forces the user to click Player Mode
- *  again. Setting position:fixed on the iframe in place achieves fullscreen
- *  coverage without any reload — the iframe stays in its original DOM position
- *  but visually covers the entire viewport. A dark backdrop div sits behind it
- *  to mask host UI around the iframe (letterboxing). */
+/** Enter top-frame Player Mode: set iframe to position:fixed;inset:0; fullscreen.
+ *  Changing width/height triggers a resize event inside the iframe → megaplay
+ *  players pause the video. The child frame handles this by calling video.play()
+ *  after receiving the ENTERED acknowledgement (see SubtitlePanels auto-resume). */
 function enterTopFramePlayerMode(frameSrc: string): boolean {
   if (topState) return true; // already active
   const iframe = findIframeBySource(frameSrc);
@@ -90,28 +87,18 @@ function enterTopFramePlayerMode(frameSrc: string): boolean {
     height: iframe.style.height,
     position: iframe.style.position,
     zIndex: iframe.style.zIndex,
-    inset: iframe.style.inset,
     top: iframe.style.top,
     left: iframe.style.left,
     margin: iframe.style.margin,
     border: iframe.style.border,
+    inset: iframe.style.inset,
   };
 
-  // Dark backdrop behind the iframe — masks host UI without touching the iframe.
-  const backdrop = document.createElement('div');
-  backdrop.id = 'cell-player-mode-top-overlay';
-  backdrop.style.cssText = [
-    'position:fixed',
-    'inset:0',
-    'width:100vw',
-    'height:100dvh',
-    'z-index:2147483646',
-    'background:#000',
-    'pointer-events:none',
-  ].join(';');
-  document.body.appendChild(backdrop);
-
-  // Iframe: position:fixed in place — NO DOM move, NO reload.
+  // Iframe: position:fixed fullscreen — NO DOM move, NO reload, NO backdrop.
+  // The iframe covers 100vw x 100dvh so there's nothing to mask. A separate
+  // backdrop div would paint on top of the iframe because the iframe's
+  // z-index is relative to its parent's stacking context (nested), while the
+  // backdrop's z-index is root-level — they don't compare.
   iframe.style.setProperty('position', 'fixed', 'important');
   iframe.style.setProperty('inset', '0', 'important');
   iframe.style.setProperty('width', '100vw', 'important');
@@ -124,7 +111,7 @@ function enterTopFramePlayerMode(frameSrc: string): boolean {
   return true;
 }
 
-/** Exit top-frame Player Mode: restore iframe inline styles + remove backdrop. */
+/** Exit top-frame Player Mode: restore iframe inline styles. */
 function exitTopFramePlayerMode(): boolean {
   if (!topState) return false;
   const s = topState;
@@ -134,13 +121,12 @@ function exitTopFramePlayerMode(): boolean {
   s.iframe.style.height = s.savedStyle.height;
   s.iframe.style.position = s.savedStyle.position;
   s.iframe.style.zIndex = s.savedStyle.zIndex;
-  s.iframe.style.inset = s.savedStyle.inset;
   s.iframe.style.top = s.savedStyle.top;
   s.iframe.style.left = s.savedStyle.left;
   s.iframe.style.margin = s.savedStyle.margin;
   s.iframe.style.border = s.savedStyle.border;
+  s.iframe.style.inset = s.savedStyle.inset;
 
-  document.querySelector('#cell-player-mode-top-overlay')?.remove();
   return true;
 }
 
