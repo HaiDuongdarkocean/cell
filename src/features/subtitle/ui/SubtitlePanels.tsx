@@ -12,6 +12,7 @@ import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
+import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
@@ -268,8 +269,25 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
+      // Cross-origin iframe (AnimeKai/megaplay, moviepire/vidnest): the child
+      // frame overlay cannot cover the top viewport because position:fixed is
+      // bounded by the iframe browsing context. Request the top frame to
+      // reparent the <iframe> element into a fullscreen overlay first; the
+      // child-frame overlay then fills the (now fullscreen) iframe. If the top
+      // frame does not acknowledge within 2s, fall back to in-frame mode.
+      if (isChildFrame() && !playerMode) {
+        const ok = await requestIframePlayerModeEnter();
+        if (ok) {
+          setPlayerMode(true);
+          return;
+        }
+      }
+      // Exit: notify top frame to restore the iframe before tearing down child UI.
+      if (isChildFrame() && playerMode) {
+        requestIframePlayerModeExit();
+      }
       setPlayerMode((prev) => togglePlayerMode(prev));
-    }, []);
+    }, [playerMode]);
 
     useEffect(() => {
       onTogglePlayerMode?.(playerMode);
