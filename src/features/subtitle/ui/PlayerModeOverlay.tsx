@@ -151,11 +151,19 @@ function PlayerModeOverlayInner({
     const stage = videoStageRef.current;
     if (!stage) return;
     const root = stage.getRootNode();
-    const host = root instanceof ShadowRoot ? root.host : null;
-    if (!(host instanceof HTMLElement)) return;
+    const shadowHost = root instanceof ShadowRoot ? root.host : null;
+    if (!(shadowHost instanceof HTMLElement)) return;
 
     const player = findPlayerContainer();
     if (!player) return;
+    // React runs child effects before parent effects, so SubtitlePanels' effect
+    // (which moves #cell-subtitle-root to body) hasn't fired yet. If the host
+    // is still inside the player container, appendChild(player) would create a
+    // DOM cycle. Move the host to body first to break the cycle.
+    if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
+      document.body.appendChild(shadowHost);
+    }
+    if (shadowHost.contains(player)) return;
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
@@ -173,7 +181,7 @@ function PlayerModeOverlayInner({
     player.style.display = 'block';
     player.style.position = 'relative';
     player.style.flex = '0 0 auto';
-    host.appendChild(player);
+    shadowHost.appendChild(player);
 
     return () => {
       player.removeAttribute('slot');
