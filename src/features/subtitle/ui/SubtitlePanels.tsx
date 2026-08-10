@@ -292,7 +292,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         await document.exitFullscreen();
       }
       setPlayerMode((prev) => togglePlayerMode(prev));
-    }, [playerMode, addToast]);
+    }, [addToast]);
 
     useEffect(() => {
       onTogglePlayerMode?.(playerMode);
