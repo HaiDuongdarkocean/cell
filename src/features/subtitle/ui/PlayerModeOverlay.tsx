@@ -160,19 +160,30 @@ function PlayerModeOverlayInner({
 
     const player = findPlayerContainer();
     if (!player) return;
-    if (document.fullscreenElement) return;
-    // Cross-origin iframe (megaplay/vidnest): the video lives in the host
-    // player's own DOM and cannot be reparented across the same-origin
-    // boundary. Native fullscreen handles the viewport; skip reparent.
-    if (isChildFrame()) return;
-    if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
-      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
-      if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
-        hostWithProp.__cellOriginalParent = shadowHost.parentElement;
+    // Top frame: if the host page/video is already in native fullscreen, don't
+    // try to reparent the player while the fullscreen top-layer is active.
+    // Child frame: we intentionally enter native fullscreen on the child
+    // document first, so the shadow host is already inside
+    // document.fullscreenElement; reparenting the player here is safe and
+    // happens within the same child document.
+    const isChild = isChildFrame();
+    if (!isChild && document.fullscreenElement) return;
+    if (isChild) {
+      // In child-frame native fullscreen the shadow host is managed by
+      // attachFullscreenReparenting (moved into document.fullscreenElement on
+      // fullscreenchange). Don't move it to body; just reparent the player into
+      // the shadow host's light DOM slot.
+      if (shadowHost.contains(player)) return;
+    } else {
+      if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
+        const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
+        if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
+          hostWithProp.__cellOriginalParent = shadowHost.parentElement;
+        }
+        document.body.appendChild(shadowHost);
       }
-      document.body.appendChild(shadowHost);
+      if (shadowHost.contains(player)) return;
     }
-    if (shadowHost.contains(player)) return;
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
