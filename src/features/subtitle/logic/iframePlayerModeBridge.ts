@@ -25,20 +25,17 @@ const ENTERED_MSG = '__CELL_PLAYER_MODE_ENTERED';
 const EXITED_MSG = '__CELL_PLAYER_MODE_EXITED';
 
 interface TopFrameState {
-  overlay: HTMLDivElement;
   iframe: HTMLIFrameElement;
-  originalParent: HTMLElement;
-  originalNextSibling: Node | null;
   savedStyle: {
     width: string;
     height: string;
     position: string;
     zIndex: string;
-    flex: string;
-    margin: string;
+    inset: string;
     top: string;
     left: string;
-    inset: string;
+    margin: string;
+    border: string;
   };
 }
 
@@ -76,62 +73,58 @@ function findIframeBySource(src: string): HTMLIFrameElement | null {
   return null;
 }
 
-/** Enter top-frame Player Mode: create overlay + reparent the iframe. */
+/** Enter top-frame Player Mode: set iframe to position:fixed;inset:0 WITHOUT
+ *  reparenting. Moving an iframe in the DOM triggers a reload in Chrome, which
+ *  destroys the child-frame Cell state and forces the user to click Player Mode
+ *  again. Setting position:fixed on the iframe in place achieves fullscreen
+ *  coverage without any reload — the iframe stays in its original DOM position
+ *  but visually covers the entire viewport. A dark backdrop div sits behind it
+ *  to mask host UI around the iframe (letterboxing). */
 function enterTopFramePlayerMode(frameSrc: string): boolean {
   if (topState) return true; // already active
   const iframe = findIframeBySource(frameSrc);
   if (!iframe) return false;
-
-  const originalParent = iframe.parentElement;
-  if (!originalParent) return false;
-  const originalNextSibling = iframe.nextSibling;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'cell-player-mode-top-overlay';
-  overlay.style.cssText = [
-    'position:fixed',
-    'inset:0',
-    'width:100vw',
-    'height:100dvh',
-    'z-index:2147483647',
-    'background:#000',
-    'display:block',
-    'margin:0',
-    'border:none',
-    'padding:0',
-    'max-width:none',
-    'max-height:none',
-  ].join(';');
-  document.body.appendChild(overlay);
 
   const savedStyle = {
     width: iframe.style.width,
     height: iframe.style.height,
     position: iframe.style.position,
     zIndex: iframe.style.zIndex,
-    flex: iframe.style.flex,
-    margin: iframe.style.margin,
+    inset: iframe.style.inset,
     top: iframe.style.top,
     left: iframe.style.left,
-    inset: iframe.style.inset,
+    margin: iframe.style.margin,
+    border: iframe.style.border,
   };
-  iframe.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'width:100%',
-    'height:100%',
-    'border:none',
-    'margin:0',
-    'padding:0',
-    'z-index:1',
-  ].join(';');
-  overlay.appendChild(iframe);
 
-  topState = { overlay, iframe, originalParent, originalNextSibling, savedStyle };
+  // Dark backdrop behind the iframe — masks host UI without touching the iframe.
+  const backdrop = document.createElement('div');
+  backdrop.id = 'cell-player-mode-top-overlay';
+  backdrop.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'width:100vw',
+    'height:100dvh',
+    'z-index:2147483646',
+    'background:#000',
+    'pointer-events:none',
+  ].join(';');
+  document.body.appendChild(backdrop);
+
+  // Iframe: position:fixed in place — NO DOM move, NO reload.
+  iframe.style.setProperty('position', 'fixed', 'important');
+  iframe.style.setProperty('inset', '0', 'important');
+  iframe.style.setProperty('width', '100vw', 'important');
+  iframe.style.setProperty('height', '100dvh', 'important');
+  iframe.style.setProperty('z-index', '2147483647', 'important');
+  iframe.style.setProperty('margin', '0', 'important');
+  iframe.style.setProperty('border', 'none', 'important');
+
+  topState = { iframe, savedStyle };
   return true;
 }
 
-/** Exit top-frame Player Mode: restore iframe + remove overlay. */
+/** Exit top-frame Player Mode: restore iframe inline styles + remove backdrop. */
 function exitTopFramePlayerMode(): boolean {
   if (!topState) return false;
   const s = topState;
@@ -141,18 +134,13 @@ function exitTopFramePlayerMode(): boolean {
   s.iframe.style.height = s.savedStyle.height;
   s.iframe.style.position = s.savedStyle.position;
   s.iframe.style.zIndex = s.savedStyle.zIndex;
-  s.iframe.style.flex = s.savedStyle.flex;
-  s.iframe.style.margin = s.savedStyle.margin;
+  s.iframe.style.inset = s.savedStyle.inset;
   s.iframe.style.top = s.savedStyle.top;
   s.iframe.style.left = s.savedStyle.left;
-  s.iframe.style.inset = s.savedStyle.inset;
+  s.iframe.style.margin = s.savedStyle.margin;
+  s.iframe.style.border = s.savedStyle.border;
 
-  if (s.originalNextSibling && s.originalNextSibling.parentElement === s.originalParent) {
-    s.originalParent.insertBefore(s.iframe, s.originalNextSibling);
-  } else {
-    s.originalParent.appendChild(s.iframe);
-  }
-  s.overlay.remove();
+  document.querySelector('#cell-player-mode-top-overlay')?.remove();
   return true;
 }
 
