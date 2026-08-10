@@ -126,80 +126,6 @@ function PlayerModeOverlayInner({
   const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  // Track fullscreen state. In fullscreen the player (fullscreen element) is
-  // top-layer and cannot be reparented into shadow DOM without Chrome exiting
-  // fullscreen. Instead: (1) the overlay div uses Popover API to promote itself
-  // to the top layer so it renders above the fullscreen element, (2) the
-  // fullscreen element is scaled+translated via transform to fit inside the
-  // overlay's video stage, (3) the video stage is a pointer-events:none hole so
-  // the scaled player (with its native controls) shows through and stays
-  // clickable.
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  useEffect(() => {
-    const onFsChange = (): void => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFsChange);
-    onFsChange();
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, []);
-
-  // Popover: promote overlay to top layer so it renders above the fullscreen
-  // element. Without this, the fullscreen element (top layer) would cover the
-  // overlay (which lives in document.body via the shadow host). Manual popover
-  // = no light-dismiss, stays until hidePopover(). Only needed in fullscreen —
-  // in normal mode the overlay's z-index already places it above the player.
-  useEffect(() => {
-    const el = overlayRef.current;
-    if (!el || typeof el.showPopover !== 'function') return;
-    if (isFullscreen) {
-      el.showPopover();
-    } else if (el.matches(':popover-open')) {
-      el.hidePopover();
-    }
-  }, [isFullscreen]);
-
-  // Transform the fullscreen element (player container) to fit inside the
-  // overlay's video stage. transform = translate(tx,ty) scale(s) with
-  // transform-origin:0 0. GPU compositing — no reflow, no fullscreen exit.
-  // Recomputed when viewport/contentPct/aspect/fullscreen change.
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const fsEl = document.fullscreenElement;
-    if (!(fsEl instanceof HTMLElement)) return;
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-    if (screenW <= 0 || screenH <= 0) return;
-    const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
-    const dockH = layout.dockHeight;
-    const splitH = Math.max(viewport.h - dockH, 0);
-    // Video stage rect within the overlay (overlay is position:fixed inset:0).
-    let stageX = 0, stageY = 0, stageW: number, stageH: number;
-    if (viewport.w >= 480) {
-      // Row: video left (1 - contentPct), content right.
-      const contentW = (viewport.w * contentPct) / 100;
-      stageW = Math.max(viewport.w - contentW, 0);
-      stageH = splitH;
-    } else {
-      // Column: video top (intrinsic height), content bottom.
-      stageW = viewport.w;
-      stageH = layout.videoStageHeight;
-    }
-    if (stageW <= 0 || stageH <= 0) return;
-    const scale = Math.min(stageW / screenW, stageH / screenH);
-    if (!(scale > 0) || !Number.isFinite(scale)) return;
-    const scaledW = screenW * scale;
-    const scaledH = screenH * scale;
-    const tx = stageX + (stageW - scaledW) / 2;
-    const ty = stageY + (stageH - scaledH) / 2;
-    const savedTransform = fsEl.style.transform;
-    const savedOrigin = fsEl.style.transformOrigin;
-    fsEl.style.transformOrigin = '0 0';
-    fsEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-    return () => {
-      fsEl.style.transform = savedTransform;
-      fsEl.style.transformOrigin = savedOrigin;
-    };
-  }, [isFullscreen, viewport, contentPct, videoAspectRatio]);
 
   useEffect(() => {
     const onResize = (): void => {
@@ -230,11 +156,10 @@ function PlayerModeOverlayInner({
 
     const player = findPlayerContainer();
     if (!player) return;
-    // In fullscreen: the player IS the fullscreen element. Moving it into
-    // the shadow host would exit fullscreen (Chrome quirk). Keep player in
-    // place; the transform effect scales it to fit the video stage, and the
-    // overlay (Popover top layer) renders above with a pointer-events:none
-    // hole in the video stage so the player + native controls show through.
+    // SubtitlePanels exits fullscreen before toggling playerMode (await
+    // exitFullscreen), so by the time this effect runs the document is no
+    // longer fullscreen and the player can be safely reparented into the
+    // shadow host's video stage.
     if (document.fullscreenElement) return;
     // React runs child effects before parent effects, so SubtitlePanels' effect
     // (which moves #cell-subtitle-root to body) hasn't fired yet. If the host
@@ -393,11 +318,8 @@ function PlayerModeOverlayInner({
 
   return (
     <div
-      ref={overlayRef}
       className={styles.overlay}
       data-cell-id="player-mode-overlay"
-      data-cell-fullscreen={isFullscreen ? 'true' : 'false'}
-      popover="manual"
       role="application"
       aria-label="Player mode"
     >

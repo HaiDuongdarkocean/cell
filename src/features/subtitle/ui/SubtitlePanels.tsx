@@ -259,12 +259,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onPlayPause();
     }, [onPlayPause]);
 
-    const handleTogglePlayerMode = useCallback((): void => {
-      // Keep fullscreen active when entering Player Mode — PlayerModeOverlay
-      // detects fullscreen via document.fullscreenElement and skips moving the
-      // player (Chrome exits fullscreen if the fullscreen element is reparented
-      // into shadow DOM). The overlay renders on top with a transparent video
-      // stage so the fullscreen player shows through.
+    const handleTogglePlayerMode = useCallback(async (): Promise<void> => {
+      // Exit fullscreen BEFORE toggling playerMode. The fullscreen element is
+      // top-layer and cannot be reparented into shadow DOM without Chrome
+      // exiting fullscreen. await ensures the document is no longer fullscreen
+      // when PlayerModeOverlay mounts, so the player-move effect runs the
+      // normal flow (reparent into video stage). No race condition.
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
       setPlayerMode((prev) => togglePlayerMode(prev));
     }, []);
 
@@ -306,10 +309,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.position = 'fixed';
         host.style.inset = '0';
         host.setAttribute('data-cell-player-mode', 'true');
-        // Always move host to body — PlayerModeOverlay uses Popover API to
-        // promote the overlay div to the top layer (above fullscreen element)
-        // when fullscreen, so the host does NOT need to live inside the
-        // fullscreen element. Keeping it in body simplifies restore-on-exit.
         if (host.parentElement && host.parentElement !== document.body) {
           playerModeOriginalParent.current = host.parentElement;
           // Also save on the host element itself — PlayerModeOverlay (child)
