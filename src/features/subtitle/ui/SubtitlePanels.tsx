@@ -306,20 +306,21 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.position = 'fixed';
         host.style.inset = '0';
         host.setAttribute('data-cell-player-mode', 'true');
-        const fsEl = document.fullscreenElement;
-        if (!fsEl || !fsEl.contains(host)) {
-          if (host.parentElement && host.parentElement !== document.body) {
-            playerModeOriginalParent.current = host.parentElement;
-            // Also save on the host element itself — PlayerModeOverlay (child)
-            // effect may run before or after this effect depending on React's
-            // effect ordering. Storing on the host ensures the exit branch can
-            // always recover the original parent regardless of who moved it.
-            const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
-            if (!hostWithProp.__cellOriginalParent) {
-              hostWithProp.__cellOriginalParent = host.parentElement;
-            }
-            document.body.appendChild(host);
+        // Always move host to body — PlayerModeOverlay uses Popover API to
+        // promote the overlay div to the top layer (above fullscreen element)
+        // when fullscreen, so the host does NOT need to live inside the
+        // fullscreen element. Keeping it in body simplifies restore-on-exit.
+        if (host.parentElement && host.parentElement !== document.body) {
+          playerModeOriginalParent.current = host.parentElement;
+          // Also save on the host element itself — PlayerModeOverlay (child)
+          // effect may run before or after this effect depending on React's
+          // effect ordering. Storing on the host ensures the exit branch can
+          // always recover the original parent regardless of who moved it.
+          const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
+          if (!hostWithProp.__cellOriginalParent) {
+            hostWithProp.__cellOriginalParent = host.parentElement;
           }
+          document.body.appendChild(host);
         }
       } else {
         host.removeAttribute('data-cell-player-mode');
