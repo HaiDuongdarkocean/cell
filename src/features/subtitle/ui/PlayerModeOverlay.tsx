@@ -173,14 +173,30 @@ function PlayerModeOverlayInner({
       position: player.style.position,
       flex: player.style.flex,
       display: player.style.display,
+      flexDirection: player.style.flexDirection,
+      justifyContent: player.style.justifyContent,
+      alignItems: player.style.alignItems,
     };
 
     player.setAttribute('slot', 'cell-video');
     player.style.width = '100%';
-    player.style.height = '100%';
-    player.style.display = 'block';
+    // height:100% doesn't reliably fill the slot's stage (display:contents
+    // on the slot can break the containing block). Use the stage's pixel
+    // height so flex centering has a definite container to center within.
+    const stageHeight = stage.getBoundingClientRect().height;
+    player.style.height = `${stageHeight}px`;
+    player.style.display = 'flex';
+    player.style.flexDirection = 'column';
+    player.style.justifyContent = 'center';
+    player.style.alignItems = 'center';
     player.style.position = 'relative';
     player.style.flex = '0 0 auto';
+    // object-fit:contain on the video ensures letterboxing within the
+    // art-video-player (which keeps its natural aspect-ratio height).
+    const centerStyle = document.createElement('style');
+    centerStyle.setAttribute('data-cell-player-mode', 'center');
+    centerStyle.textContent = 'video{object-fit:contain!important}';
+    player.appendChild(centerStyle);
     shadowHost.appendChild(player);
 
     return () => {
@@ -190,6 +206,10 @@ function PlayerModeOverlayInner({
       player.style.position = savedStyle.position;
       player.style.flex = savedStyle.flex;
       player.style.display = savedStyle.display;
+      player.style.flexDirection = savedStyle.flexDirection;
+      player.style.justifyContent = savedStyle.justifyContent;
+      player.style.alignItems = savedStyle.alignItems;
+      centerStyle.remove();
       if (originalParent && player.parentElement !== originalParent) {
         if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
           originalParent.insertBefore(player, originalNextSibling);
