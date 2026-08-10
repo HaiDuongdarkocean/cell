@@ -188,26 +188,59 @@ function PlayerModeOverlayInner({
       flexDirection: player.style.flexDirection,
       justifyContent: player.style.justifyContent,
       alignItems: player.style.alignItems,
+      maxWidth: player.style.maxWidth,
+      maxHeight: player.style.maxHeight,
+      minWidth: player.style.minWidth,
+      minHeight: player.style.minHeight,
+      margin: player.style.margin,
+      boxSizing: player.style.boxSizing,
+    };
+    const savedHostStyle = {
+      width: shadowHost.style.width,
+      height: shadowHost.style.height,
+      display: shadowHost.style.display,
     };
 
     player.setAttribute('slot', 'cell-video');
-    player.style.width = '100%';
-    // height:100% doesn't reliably fill the slot's stage (display:contents
-    // on the slot can break the containing block). Use the stage's pixel
-    // height so flex centering has a definite container to center within.
-    const stageHeight = stage.getBoundingClientRect().height;
-    player.style.height = `${stageHeight}px`;
+    // Use the stage's pixel rect as the single source of truth for player
+    // bounds. width:100% / height:100% would resolve against the slot's
+    // containing block (display:contents can break it) or the host page's
+    // CSS, neither of which reliably equals the videoStage. Pixel values
+    // bypass both and make the player fill the stage exactly.
+    const stageRect = stage.getBoundingClientRect();
+    const stageW = Math.max(Math.round(stageRect.width), 0);
+    const stageH = Math.max(Math.round(stageRect.height), 0);
+    // Host must fill the overlay so the slotted player (light DOM child of
+    // the host) has a definite containing block to inherit size from.
+    shadowHost.style.width = '100%';
+    shadowHost.style.height = '100%';
+    shadowHost.style.display = 'block';
+    // Reset every size constraint the host page may have set on the player
+    // (max-width, aspect-ratio via min-height, margin:auto centering, …).
+    // Without these resets the player can stay smaller than the stage even
+    // when width/height are forced.
+    player.style.boxSizing = 'border-box';
+    player.style.width = `${stageW}px`;
+    player.style.height = `${stageH}px`;
+    player.style.maxWidth = 'none';
+    player.style.maxHeight = 'none';
+    player.style.minWidth = '0';
+    player.style.minHeight = '0';
+    player.style.margin = '0';
     player.style.display = 'flex';
     player.style.flexDirection = 'column';
     player.style.justifyContent = 'center';
-    player.style.alignItems = 'center';
+    // stretch so the <video> child fills the player's cross axis; the video
+    // keeps its aspect ratio via object-fit:contain below.
+    player.style.alignItems = 'stretch';
     player.style.position = 'relative';
     player.style.flex = '0 0 auto';
-    // object-fit:contain on the video ensures letterboxing within the
-    // art-video-player (which keeps its natural aspect-ratio height).
+    // Force the inner <video> to fill the player container and letterbox via
+    // object-fit:contain. Without width/height:100% the video keeps its
+    // host-page sizing and the player container ends up smaller than stage.
     const centerStyle = document.createElement('style');
     centerStyle.setAttribute('data-cell-player-mode', 'center');
-    centerStyle.textContent = 'video{object-fit:contain!important}';
+    centerStyle.textContent = 'video{width:100%!important;height:100%!important;object-fit:contain!important}';
     player.appendChild(centerStyle);
     shadowHost.appendChild(player);
 
@@ -221,6 +254,15 @@ function PlayerModeOverlayInner({
       player.style.flexDirection = savedStyle.flexDirection;
       player.style.justifyContent = savedStyle.justifyContent;
       player.style.alignItems = savedStyle.alignItems;
+      player.style.maxWidth = savedStyle.maxWidth;
+      player.style.maxHeight = savedStyle.maxHeight;
+      player.style.minWidth = savedStyle.minWidth;
+      player.style.minHeight = savedStyle.minHeight;
+      player.style.margin = savedStyle.margin;
+      player.style.boxSizing = savedStyle.boxSizing;
+      shadowHost.style.width = savedHostStyle.width;
+      shadowHost.style.height = savedHostStyle.height;
+      shadowHost.style.display = savedHostStyle.display;
       centerStyle.remove();
       if (originalParent && player.parentElement !== originalParent) {
         if (originalNextSibling && originalNextSibling.parentElement === originalParent) {

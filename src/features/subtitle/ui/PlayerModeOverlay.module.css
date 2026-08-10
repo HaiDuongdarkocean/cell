@@ -4,6 +4,7 @@
 .overlay {
   position: fixed;
   inset: 0;
+  width: 100vw;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -11,23 +12,11 @@
   z-index: var(--z-overlay-settings);
   pointer-events: auto;
   container-type: inline-size;
-  /* Popover UA adds margin/border/padding + default sizing — neutralize so
-     the overlay fills the viewport exactly when promoted to top layer. */
   margin: 0;
   border: none;
   padding: 0;
-  width: 100vw;
   max-width: none;
   max-height: none;
-}
-
-/* Fullscreen: overlay uses Popover API to reach the top layer (above the
-   fullscreen element). The overlay background stays dark so it covers the
-   area outside the video stage. The video stage itself is a transparent,
-   pointer-events:none hole — the fullscreen element (scaled via transform
-   to fit the stage) shows through and its native controls stay clickable. */
-.overlay[data-cell-fullscreen='true'] .videoStage {
-  background: transparent;
 }
 
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
