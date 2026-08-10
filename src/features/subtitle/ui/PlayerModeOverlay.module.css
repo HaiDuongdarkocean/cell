@@ -25,15 +25,21 @@
   overflow: hidden;
 }
 
-/* Video stage — container for the reparented host <video>.
+/* Video stage — container for the slotted host player.
    position:relative so the video (position:absolute, inset:0) fills it.
-   pointer-events:none lets clicks pass through to native video controls. */
+   pointer-events:none lets clicks pass through to native video controls.
+   The player container is assigned via slot="cell-video" from the host's
+   light DOM, so its CSS stays in the document scope. */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
   position: relative;
   background: var(--color-overlay-background);
   pointer-events: none;
+}
+
+.videoStage slot[name="cell-video"] {
+  display: contents;
 }
 
 /* Content other — CueList / dictionary sheet.
