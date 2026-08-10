@@ -147,6 +147,8 @@ function PlayerModeOverlayInner({
   // (so controls + their CSS keep working) while the <slot> projects it into the
   // shadow DOM video stage. Saved state (parent, nextSibling, inline styles) is
   // restored on cleanup so exiting Player Mode puts the player back exactly.
+  // Runs ONCE on mount — does NOT re-run on viewport/contentPct changes (a
+  // separate bounds effect handles responsive resize without re-parenting).
   useEffect(() => {
     const stage = videoStageRef.current;
     if (!stage) return;
@@ -156,19 +158,8 @@ function PlayerModeOverlayInner({
 
     const player = findPlayerContainer();
     if (!player) return;
-    // SubtitlePanels exits fullscreen before toggling playerMode (await
-    // exitFullscreen), so by the time this effect runs the document is no
-    // longer fullscreen and the player can be safely reparented into the
-    // shadow host's video stage.
     if (document.fullscreenElement) return;
-    // React runs child effects before parent effects, so SubtitlePanels' effect
-    // (which moves #cell-subtitle-root to body) hasn't fired yet. If the host
-    // is still inside the player container, appendChild(player) would create a
-    // DOM cycle. Move the host to body first to break the cycle.
     if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
-      // Save original parent on the host element itself so SubtitlePanels' exit
-      // branch can restore it. Use ??= so we don't overwrite if SubtitlePanels
-      // already saved it (effect order is not guaranteed).
       const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
       if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
         hostWithProp.__cellOriginalParent = shadowHost.parentElement;
@@ -202,42 +193,9 @@ function PlayerModeOverlayInner({
     };
 
     player.setAttribute('slot', 'cell-video');
-    // Use the stage's pixel rect as the single source of truth for player
-    // bounds. width:100% / height:100% would resolve against the slot's
-    // containing block (display:contents can break it) or the host page's
-    // CSS, neither of which reliably equals the videoStage. Pixel values
-    // bypass both and make the player fill the stage exactly.
-    const stageRect = stage.getBoundingClientRect();
-    const stageW = Math.max(Math.round(stageRect.width), 0);
-    const stageH = Math.max(Math.round(stageRect.height), 0);
-    // Host must fill the overlay so the slotted player (light DOM child of
-    // the host) has a definite containing block to inherit size from.
     shadowHost.style.width = '100%';
     shadowHost.style.height = '100%';
     shadowHost.style.display = 'block';
-    // Reset every size constraint the host page may have set on the player
-    // (max-width, aspect-ratio via min-height, margin:auto centering, …).
-    // Without these resets the player can stay smaller than the stage even
-    // when width/height are forced.
-    player.style.boxSizing = 'border-box';
-    player.style.width = `${stageW}px`;
-    player.style.height = `${stageH}px`;
-    player.style.maxWidth = 'none';
-    player.style.maxHeight = 'none';
-    player.style.minWidth = '0';
-    player.style.minHeight = '0';
-    player.style.margin = '0';
-    player.style.display = 'flex';
-    player.style.flexDirection = 'column';
-    player.style.justifyContent = 'center';
-    // stretch so the <video> child fills the player's cross axis; the video
-    // keeps its aspect ratio via object-fit:contain below.
-    player.style.alignItems = 'stretch';
-    player.style.position = 'relative';
-    player.style.flex = '0 0 auto';
-    // Force the inner <video> to fill the player container and letterbox via
-    // object-fit:contain. Without width/height:100% the video keeps its
-    // host-page sizing and the player container ends up smaller than stage.
     const centerStyle = document.createElement('style');
     centerStyle.setAttribute('data-cell-player-mode', 'center');
     centerStyle.textContent = 'video{width:100%!important;height:100%!important;object-fit:contain!important}';
@@ -273,6 +231,45 @@ function PlayerModeOverlayInner({
       }
     };
   }, []);
+
+  // Responsive bounds: update player + intermediate container pixel sizes to
+  // match the video stage. Re-runs on viewport/contentPct changes so the player
+  // co/dãn theo stage khi resize window hoặc kéo resize handle. Does NOT
+  // re-parent the player (the mount effect above handles that once).
+  useEffect(() => {
+    const stage = videoStageRef.current;
+    if (!stage) return;
+    const root = stage.getRootNode();
+    const shadowHost = root instanceof ShadowRoot ? root.host : null;
+    if (!(shadowHost instanceof HTMLElement)) return;
+    const slot = stage.querySelector('slot[name="cell-video"]') as HTMLSlotElement | null;
+    const player = slot?.assignedElements()[0] as HTMLElement | undefined;
+    if (!player) return;
+    const stageRect = stage.getBoundingClientRect();
+    const stageW = Math.max(Math.round(stageRect.width), 0);
+    const stageH = Math.max(Math.round(stageRect.height), 0);
+    if (stageW <= 0 || stageH <= 0) return;
+    player.style.boxSizing = 'border-box';
+    player.style.width = `${stageW}px`;
+    player.style.height = `${stageH}px`;
+    player.style.maxWidth = 'none';
+    player.style.maxHeight = 'none';
+    player.style.minWidth = '0';
+    player.style.minHeight = '0';
+    player.style.margin = '0';
+    player.style.display = 'block';
+    player.style.position = 'relative';
+    let child: HTMLElement | null = player.firstElementChild as HTMLElement | null;
+    while (child) {
+      child.style.setProperty('width', `${stageW}px`, 'important');
+      child.style.setProperty('height', `${stageH}px`, 'important');
+      child.style.setProperty('max-width', 'none', 'important');
+      child.style.setProperty('max-height', 'none', 'important');
+      child.style.setProperty('aspect-ratio', 'auto', 'important');
+      child.style.setProperty('flex', '1 1 0', 'important');
+      child = child.firstElementChild as HTMLElement | null;
+    }
+  }, [viewport, contentPct]);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
   const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
