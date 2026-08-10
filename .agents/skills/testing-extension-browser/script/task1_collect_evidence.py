@@ -138,12 +138,29 @@ async def main():
     await tab.save_screenshot(str(ss2))
     print(f"[OK] Screenshot after Player Mode: {ss2}")
 
+    # Step 3: click exit Player Mode button (bottom-right of dock)
+    print("[..] Clicking Player Mode exit button...")
+    # The exit button is in the dock's action area, bottom-right.
+    # In fullscreen (2560x1440) the button is ~34px at far right/bottom.
+    exit_x = 2520
+    exit_y = 1410
+    await click(tab, exit_x, exit_y)
+    await asyncio.sleep(3)
+
+    ss3 = Path(os.environ.get("TEMP", "/tmp")) / f"task1_after_exit_{int(time.time())}.png"
+    await tab.save_screenshot(str(ss3))
+    print(f"[OK] Screenshot after exit: {ss3}")
+
+    exit_evidence = await eval_top(tab, "JSON.stringify({isFullscreen: !!document.fullscreenElement, el: document.fullscreenElement?.tagName + '#' + (document.fullscreenElement?.id || '')})")
+    print(f"[OK] Exit evidence: {exit_evidence}")
+
     evidence_path = Path(os.environ.get("TEMP", "/tmp")) / f"task1_evidence_{int(time.time())}.json"
     with open(evidence_path, 'w') as f:
         json.dump({
             "url": ANIMEKAI_URL,
             "top_evidence": json.loads(top_evidence) if isinstance(top_evidence, str) and top_evidence.startswith('{') else top_evidence,
-            "screenshots": {"before_pm": str(ss1), "after_pm": str(ss2)}
+            "exit_evidence": json.loads(exit_evidence) if isinstance(exit_evidence, str) and exit_evidence.startswith('{') else exit_evidence,
+            "screenshots": {"before_pm": str(ss1), "after_pm": str(ss2), "after_exit": str(ss3)}
         }, f, indent=2)
     print(f"[OK] Evidence saved: {evidence_path}")
 

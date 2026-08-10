@@ -14,18 +14,14 @@ Earlier T045/ADR-078 Player Mode worked well for same-origin players (YouTube, t
 
 ## Decision
 
-Use the native Fullscreen API inside the child iframe.
+Use the native Fullscreen API inside the child iframe, and project the host player into the Player Mode `videoStage` within the same child document.
 
 - When the user toggles Player Mode in a child frame, call `document.documentElement.requestFullscreen()`.
 - The browser puts the child document in fullscreen top-layer, so the Cell overlay (already `position: fixed; inset: 0` on `#cell-subtitle-root`) now fills the real viewport.
 - Sync `playerMode` state with the `fullscreenchange` event: `setPlayerMode(document.fullscreenElement === document.documentElement)`.
 - Skip body-reparenting of the shadow host in child frames; `attachFullscreenReparenting` (configured by `mountReactShadow`) already moves `#cell-subtitle-root` into `document.fullscreenElement` on fullscreen change.
-- Make `PlayerModeOverlay` transparent and click-through in child frames by adding a `.childFrame` CSS class:
-  - `background: transparent` and `pointer-events: none` on the overlay root.
-  - `.split` and `.videoStage` also transparent / `pointer-events: none`.
-  - Dock, content panel, resize handle, and subtitle area keep `pointer-events: auto` so controls remain usable.
-
-This removes `iframePlayerModeBridge.ts` entirely. `isChildFrame` is moved to a new `iframeContext.ts` file.
+- In `PlayerModeOverlay`, find the player container with `findPlayerContainer()` and reparent it into the shadow host's light DOM as the `cell-video` slot. Because this is the same child document, the move does not trigger a cross-origin violation and the video keeps playing.
+- Use the same `PlayerModeOverlay.module.css` for child and top frames: the `videoStage` has a dark letterbox background and the slotted player is sized to the stage by the responsive geometry effect. The slotted player gets `pointer-events: auto` so native controls remain clickable.
 
 ## Consequences
 
@@ -41,13 +37,14 @@ This removes `iframePlayerModeBridge.ts` entirely. `isChildFrame` is moved to a 
 
 - Requires `allow="fullscreen"` on the `<iframe>`. If a site omits it, `requestFullscreen()` rejects and Player Mode can't activate for that player.
 - Native fullscreen is a browser top-layer; OS-level exit (Esc) also exits Cell Player Mode, which is expected and consistent.
-- The video is not physically moved into the Cell video stage, so the `videoStage` slot is empty. The layout still uses the video stage height to size the transparent area, but the video is visible behind the transparent overlay; `contentOther`/`dock` cover their normal regions.
+- The host player is reparented within the child document into the `videoStage` slot. While this is the same-origin document, any provider scripts that assume the player stays in its original parent could be affected; the mount effect preserves `originalParent`/`originalNextSibling` and the cleanup restores them on exit.
 
 ## Alternatives Considered
 
 1. **Top-frame bridge with iframe reparenting** (status quo before this ADR): rejected because of `findIframeBySource` unreliability, header stacking, black screen, and HLS redirect issues.
 2. **CSS-only theater mode in child frame (maximize iframe inside page)**: rejected because it cannot escape the top page layout and the header remains visible.
 3. **Capture video to canvas and draw on overlay**: rejected as too heavy, would lose player controls and native subtitle rendering, and requires significant new code.
+4. **Transparent click-through overlay with video behind**: rejected because the player is not physically in the `videoStage`, making responsive sizing and pointer-event routing fragile (the video could be covered by other panels and native controls became unreliable).
 
 ## Implementation Notes
 
@@ -59,9 +56,10 @@ This removes `iframePlayerModeBridge.ts` entirely. `isChildFrame` is moved to a 
   - `playerMode` host style effect skips `document.body` reparenting when `isChildFrame()`.
 
 - `PlayerModeOverlay.tsx` / `.module.css`:
-  - Adds `isChildFrame()` class to the overlay.
-  - `.childFrame` makes the overlay root transparent and pointer-events passthrough.
-  - Children with interactive controls keep `pointer-events: auto`.
+  - Mount effect no longer returns early for child frames; it reparents the player container into the shadow host slot `cell-video`.
+  - Top frame: if the host page is already in native fullscreen, the mount effect returns early.
+  - Child frame: the shadow host is already inside `document.fullscreenElement`, so the mount effect does not move it to `document.body`.
+  - Removed the `.childFrame` transparent/click-through override; the overlay and `videoStage` use the same dark letterbox background and slotted `pointer-events: auto` as the top frame.
 
 - `iframePlayerModeBridge.ts` deleted.
 - `iframeContext.ts` created with `isChildFrame`.
@@ -73,14 +71,14 @@ This removes `iframePlayerModeBridge.ts` entirely. `isChildFrame` is moved to a 
 - `npm run build` ✅
 - `npx vite build --mode development` ✅
 - `npx jest --selectProjects unit --testPathPatterns "...PlayerModeOverlay..."` ✅
-- Browser test on AnimeKai: native fullscreen of the `#player-iframe` element produced a full-viewport, playing video with no header visible, confirming the browser-level fullscreen approach is sound.
+- Browser test on AnimeKai: Player Mode activated, video projected into the left `videoStage`, right cue list and bottom dock visible, exit button restored the in-page view. Subagent vision verification passed.
 
 ## AC (Acceptance Criteria)
 
 1. On AnimeKai child iframe, pressing Player Mode calls `document.documentElement.requestFullscreen()`.
 2. The video and Cell overlay fill the entire screen; the top page header is not visible.
-3. The video is not reparented and does not reload; it stays playing.
+3. The host player is reparented into the Cell `videoStage` slot without crossing the same-origin boundary, so the video stays playing and is not reloaded.
 4. Cell Player Mode controls (dock, cue list, resize handle, subtitle area) are visible and interactive.
-5. Clicks on the video area pass through to the native player controls (play/pause, etc.).
-6. Exiting fullscreen (Player Mode button or Esc) restores the normal in-page overlay and the video continues.
+5. The video fits the `videoStage` and is responsive to viewport changes; the slotted player keeps `pointer-events: auto` so native controls are clickable.
+6. Exiting fullscreen (Player Mode exit button or Esc) restores the normal in-page overlay and the video continues.
 7. Top-frame Player Mode (YouTube/themoviebox) still reparents the host player into the video stage unchanged.
