@@ -1,7 +1,8 @@
-// Player Mode overlay — fixed full-viewport layout that moves the host <video>
-// element into the video stage (as a real DOM child), with Cell UI controls
-// around it. The video element is reparented from the host player into the
-// shadow DOM video stage on mount, and restored on unmount.
+// Player Mode overlay — fixed full-viewport layout that slots the host player
+// container into the video stage via the "cell-video" slot. The container stays
+// in the document's light DOM (so its CSS and controls keep working) while the
+// <slot> projects it into the shadow DOM video stage. The container is restored
+// to its original parent on unmount.
 
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
@@ -13,6 +14,7 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
+import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import styles from './PlayerModeOverlay.module.css';
@@ -140,42 +142,51 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
-  // Reparent host <video> into the video stage (shadow DOM child).
-  // The video element keeps playing across the DOM move — no reload, no
-  // re-buffer. Saved state (parent + nextSibling + styles) is restored on
-  // cleanup so exiting Player Mode puts the video back exactly where it was.
+  // Move the host player container into the shadow host's light DOM and assign
+  // it to the "cell-video" slot. The container stays in the document's CSS scope
+  // (so controls + their CSS keep working) while the <slot> projects it into the
+  // shadow DOM video stage. Saved state (parent, nextSibling, inline styles) is
+  // restored on cleanup so exiting Player Mode puts the player back exactly.
   useEffect(() => {
     const stage = videoStageRef.current;
-    const video = document.querySelector('video');
-    if (!stage || !(video instanceof HTMLVideoElement)) return;
-    const originalParent = video.parentElement;
-    const originalNextSibling = video.nextSibling;
+    if (!stage) return;
+    const root = stage.getRootNode();
+    const host = root instanceof ShadowRoot ? root.host : null;
+    if (!(host instanceof HTMLElement)) return;
+
+    const player = findPlayerContainer();
+    if (!player) return;
+
+    const originalParent = player.parentElement;
+    const originalNextSibling = player.nextSibling;
     const savedStyle = {
-      position: video.style.position,
-      width: video.style.width,
-      height: video.style.height,
-      objectFit: video.style.objectFit,
-      flex: video.style.flex,
+      width: player.style.width,
+      height: player.style.height,
+      position: player.style.position,
+      flex: player.style.flex,
+      display: player.style.display,
     };
-    // Move video into the stage and fill it (object-fit:contain = letterbox).
-    stage.appendChild(video);
-    video.style.position = 'absolute';
-    video.style.inset = '0';
-    video.style.width = '100%';
-    video.style.height = '100%';
-    video.style.objectFit = 'contain';
+
+    player.setAttribute('slot', 'cell-video');
+    player.style.width = '100%';
+    player.style.height = '100%';
+    player.style.display = 'block';
+    player.style.position = 'relative';
+    player.style.flex = '0 0 auto';
+    host.appendChild(player);
+
     return () => {
-      // Restore video to original position + styles.
-      video.style.position = savedStyle.position;
-      video.style.width = savedStyle.width;
-      video.style.height = savedStyle.height;
-      video.style.objectFit = savedStyle.objectFit;
-      video.style.flex = savedStyle.flex;
-      if (originalParent && video.parentElement !== originalParent) {
+      player.removeAttribute('slot');
+      player.style.width = savedStyle.width;
+      player.style.height = savedStyle.height;
+      player.style.position = savedStyle.position;
+      player.style.flex = savedStyle.flex;
+      player.style.display = savedStyle.display;
+      if (originalParent && player.parentElement !== originalParent) {
         if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
-          originalParent.insertBefore(video, originalNextSibling);
+          originalParent.insertBefore(player, originalNextSibling);
         } else {
-          originalParent.appendChild(video);
+          originalParent.appendChild(player);
         }
       }
     };
@@ -282,7 +293,9 @@ function PlayerModeOverlayInner({
           data-cell-id="player-mode-video-stage"
           aria-hidden="true"
           ref={videoStageRef}
-        />
+        >
+          <slot name="cell-video" />
+        </div>
 
         {/* Resize handle — only visible >480px (CSS controls display). */}
         <div

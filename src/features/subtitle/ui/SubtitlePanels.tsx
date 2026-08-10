@@ -259,6 +259,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [onPlayPause]);
 
     const handleTogglePlayerMode = useCallback((): void => {
+      // If a host player is already in fullscreen, exit it first before moving
+      // its container. Moving the fullscreen element into itself would create a
+      // DOM cycle and throw; exiting gives us a clean document to work in.
+      if (document.fullscreenElement) {
+        void document.exitFullscreen();
+      }
       setPlayerMode((prev) => togglePlayerMode(prev));
     }, []);
 
