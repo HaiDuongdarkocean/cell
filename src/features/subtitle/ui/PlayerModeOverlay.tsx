@@ -15,7 +15,6 @@ import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
-import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import styles from './PlayerModeOverlay.module.css';
@@ -159,30 +158,15 @@ function PlayerModeOverlayInner({
 
     const player = findPlayerContainer();
     if (!player) return;
-    // Top frame: if the host page/video is already in native fullscreen, don't
-    // try to reparent the player while the fullscreen top-layer is active.
-    // Child frame: we intentionally enter native fullscreen on the child
-    // document first, so the shadow host is already inside
-    // document.fullscreenElement; reparenting the player here is safe and
-    // happens within the same child document.
-    const isChild = isChildFrame();
-    if (!isChild && document.fullscreenElement) return;
-    if (isChild) {
-      // In child-frame native fullscreen the shadow host is managed by
-      // attachFullscreenReparenting (moved into document.fullscreenElement on
-      // fullscreenchange). Don't move it to body; just reparent the player into
-      // the shadow host's light DOM slot.
-      if (shadowHost.contains(player)) return;
-    } else {
-      if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
-        const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
-        if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
-          hostWithProp.__cellOriginalParent = shadowHost.parentElement;
-        }
-        document.body.appendChild(shadowHost);
+    if (document.fullscreenElement) return;
+    if (player.contains(shadowHost) && shadowHost.parentElement !== document.body) {
+      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
+      if (!hostWithProp.__cellOriginalParent && shadowHost.parentElement) {
+        hostWithProp.__cellOriginalParent = shadowHost.parentElement;
       }
-      if (shadowHost.contains(player)) return;
+      document.body.appendChild(shadowHost);
     }
+    if (shadowHost.contains(player)) return;
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
@@ -498,7 +482,7 @@ function PlayerModeOverlayInner({
                   </IconButton>
                 )}
                 {onGenerateNative && (
-                  <IconButton aria-label="Generate native subtitle" title="Generate native (G)" data-cell-id="generate-native-btn" size="sm" onClick={onGenerateNative} disabled={!generateNativeEnabled}>
+                  <IconButton aria-label="Generate native subtitle" title="Generate native (H)" data-cell-id="generate-native-btn" size="sm" onClick={onGenerateNative} disabled={!generateNativeEnabled}>
                     <Icon name="languages" size={18} />
                   </IconButton>
                 )}
@@ -519,7 +503,7 @@ function PlayerModeOverlayInner({
                 <Icon name="subtitleManager" size={18} />
               </IconButton>
             )}
-            <IconButton aria-label="Exit player mode" title="Exit player mode" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
+            <IconButton aria-label="Exit player mode" title="Exit player mode (Esc)" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
               <Icon name="minimize" size={18} />
             </IconButton>
           </div>

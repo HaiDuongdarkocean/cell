@@ -1179,6 +1179,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         void handleGenerateNative();
         break;
       }
+      case 'toggle-player-mode': {
+        blockController?.togglePlayerMode();
+        break;
+      }
     }
   };
   // ADR-034: listen on window capture (not document capture) so Cell fires
@@ -1405,6 +1409,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const m = msg as { type?: string; payload?: unknown };
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = m.payload as AutoLoadSubtitlesPayload;
+      try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
 
       // Skip duplicate payloads to avoid re-loading the same subtitle and
       // restarting translate prefill (e.g. when PAGE_SCAN_RESULT or network

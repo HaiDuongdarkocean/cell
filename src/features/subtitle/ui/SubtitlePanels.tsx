@@ -12,7 +12,7 @@ import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
-import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
+import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
@@ -78,6 +78,8 @@ export interface SubtitlePanelsRef {
   setCues: (cues: BilingualCue[]) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
+  /** Toggle Player Mode (same as clicking the Player Mode button). */
+  togglePlayerMode: () => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -224,6 +226,44 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
+    const handleToggleCollapsed = useCallback((): void => {
+      setCollapsed((prev) => !prev);
+      onToggleCollapsed();
+    }, [onToggleCollapsed]);
+
+    const handlePlayPause = useCallback((): void => {
+      onPlayPause();
+    }, [onPlayPause]);
+
+    const handleTogglePlayerMode = useCallback(async (): Promise<void> => {
+      if (isChildFrame()) {
+        if (playerMode) {
+          requestIframePlayerModeExit();
+          setPlayerMode(false);
+          return;
+        }
+        // The child document cannot walk through a cross-origin iframe to the
+        // host page's .player-wrap. Ask the top-frame bridge to move that host
+        // first; only then mount the child overlay inside the projected iframe.
+        if (await requestIframePlayerModeEnter()) {
+          setPlayerMode(true);
+        } else {
+          addToast('Player mode could not reach the host player', 'error');
+        }
+        return;
+      }
+
+      // Exit fullscreen BEFORE toggling playerMode. The fullscreen element is
+      // top-layer and cannot be reparented into shadow DOM without Chrome
+      // exiting fullscreen. await ensures the document is no longer fullscreen
+      // when PlayerModeOverlay mounts, so the player-move effect runs the
+      // normal flow (reparent into video stage). No race condition.
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      setPlayerMode((prev) => togglePlayerMode(prev));
+    }, [addToast, playerMode]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -247,70 +287,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setYOffsetPercent,
         setCues,
         setCurrentTimeMs,
+        togglePlayerMode: () => { void handleTogglePlayerMode(); },
       }),
-      [addToast, clearToasts],
+      [addToast, clearToasts, handleTogglePlayerMode],
     );
-
-    const handleToggleCollapsed = useCallback((): void => {
-      setCollapsed((prev) => !prev);
-      onToggleCollapsed();
-    }, [onToggleCollapsed]);
-
-    const handlePlayPause = useCallback((): void => {
-      onPlayPause();
-    }, [onPlayPause]);
-
-    const handleTogglePlayerMode = useCallback(async (): Promise<void> => {
-      // Cross-origin iframe (AnimeKai/megaplay, moviepire/vidnest): use the
-      // native Fullscreen API on the child document. Browser scales the iframe
-      // to fill the viewport natively, no top-frame bridge or CSS reparenting.
-      // attachFullscreenReparenting already moves #cell-subtitle-root into
-      // document.fullscreenElement on fullscreenchange, so the overlay lives in
-      // the fullscreen top-layer. PlayerModeOverlay reparents the player into
-      // the video stage so it stays responsive and controls remain interactive.
-      if (isChildFrame()) {
-        if (document.fullscreenElement) {
-          try {
-            await document.exitFullscreen();
-          } catch {
-            /* ignore — browser may already be exiting */
-          }
-        } else {
-          try {
-            await document.documentElement.requestFullscreen();
-          } catch {
-            addToast('Player mode requires fullscreen permission', 'error');
-          }
-        }
-        return;
-      }
-
-      // Top frame (YouTube/themoviebox): exit any host fullscreen before
-      // reparenting the video into the Player Mode shadow stage. The fullscreen
-      // element is top-layer and cannot be reparented without Chrome exiting it.
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
-      setPlayerMode((prev) => togglePlayerMode(prev));
-    }, [addToast]);
 
     useEffect(() => {
       onTogglePlayerMode?.(playerMode);
     }, [onTogglePlayerMode, playerMode]);
-
-    // Cross-origin iframe: keep playerMode in sync with the child document's
-    // native fullscreen state. When requestFullscreen() succeeds, the overlay
-    // mounts; pressing Esc or calling exitFullscreen() tears it down. We only
-    // treat "document.documentElement is the fullscreen element" as Player Mode
-    // so that site-initiated <video> fullscreen doesn't force the overlay on.
-    useEffect(() => {
-      if (!isChildFrame()) return;
-      const onFullscreenChange = (): void => {
-        setPlayerMode(document.fullscreenElement === document.documentElement);
-      };
-      document.addEventListener('fullscreenchange', onFullscreenChange);
-      return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-    }, [setPlayerMode]);
 
     // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
     // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
@@ -346,11 +330,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.position = 'fixed';
         host.style.inset = '0';
         host.setAttribute('data-cell-player-mode', 'true');
-        if (isChildFrame()) {
-          // Native fullscreen: attachFullscreenReparenting already moves the host
-          // into document.fullscreenElement. Don't override by reparenting to body.
-          return;
-        }
         if (host.parentElement && host.parentElement !== document.body) {
           playerModeOriginalParent.current = host.parentElement;
           // Also save on the host element itself — PlayerModeOverlay (child)
@@ -371,13 +350,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           host.style.position = saved.position;
           host.style.inset = saved.inset;
           playerModeSavedStyles.current = null;
-        }
-        if (isChildFrame()) {
-          // attachFullscreenReparenting will restore the host to its mount parent
-          // on fullscreen exit. Don't reparent it here.
-          playerModeOriginalParent.current = null;
-          (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent = undefined;
-          return;
         }
         const originalParent = playerModeOriginalParent.current
           ?? (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent
@@ -587,7 +559,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   {onGenerateNative && (
                     <IconButton
                       aria-label="Generate native subtitle"
-                      title="Generate native (G)"
+                      title="Generate native (H)"
                       data-cell-id="generate-native-btn"
                       size="sm"
                       onClick={onGenerateNative}
@@ -633,7 +605,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               )}
               <IconButton
                 aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
-                title={playerMode ? 'Exit player mode' : 'Enter player mode'}
+                title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
                 data-cell-id="player-mode-btn"
                 size="sm"
                 onClick={handleTogglePlayerMode}

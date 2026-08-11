@@ -11,6 +11,11 @@ import type { WebTokenizeController } from '@/features/tokenize/controller/webTo
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
+import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
+
+// Top-frame coordinator for Player Mode when the actual video is inside a
+// cross-origin iframe. Child frames request the host container via postMessage.
+installIframePlayerModeBridge();
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
 // cannot see this because ISOLATED world globals are not shared with MAIN).
