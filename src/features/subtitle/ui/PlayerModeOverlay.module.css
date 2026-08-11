@@ -145,7 +145,7 @@
   }
 }
 
-/* Player Action Dock — fixed at the bottom, always visible.
+/* Player Action Dock — fixed at bottom, always visible.
    Three regions mirror the original subtitle overlay: NavCluster left,
    SubtitleBlock center, action cluster right. */
 .dock {

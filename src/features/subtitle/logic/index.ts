@@ -10,4 +10,4 @@ export * from './subtitleDragDrop';
 export * from './subtitleBlockDrag';
 export * from './subtitleOffset';
 export * from './playerModeGeometry';
-export * from './iframeContext';
+export * from './iframePlayerModeBridge';

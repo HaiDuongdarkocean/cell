@@ -468,6 +468,13 @@ export class ReactSubtitleController {
     window.addEventListener('resize', onResize);
   }
 
+  /** Toggle Player Mode via keyboard shortcut 'g'. Delegates to the mounted
+   *  SubtitlePanels ref, which flips playerMode state and calls
+   *  onTogglePlayerMode → handlePlayerModeToggle. */
+  togglePlayerMode(): void {
+    this.mount.togglePlayerMode();
+  }
+
   /** Current active cue indices from the engine. */
   getActiveIndices(): { target: number; native: number } {
     return this.engine.getActiveIndices();

@@ -90,6 +90,7 @@ export interface MountSubtitleResult {
   setCues: (cues: BilingualCue[]) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
+  togglePlayerMode: () => void;
 }
 
 export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResult {
@@ -229,5 +230,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     clearToasts: () => controllerRef?.clearToasts(),
     setCues: (cues) => controllerRef?.setCues(cues),
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
+    togglePlayerMode: () => controllerRef?.togglePlayerMode(),
   };
 }

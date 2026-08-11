@@ -242,7 +242,6 @@ export async function handleAutoLoadSubtitles(
     target ? fetchAndParseSubtitle(target.url, resolveFormat(target.format, target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
     native ? fetchAndParseSubtitle(native.url, resolveFormat(native.format, native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
   ]);
-
   const targetCues = targetResult?.success ? targetResult.cues : [];
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
 
