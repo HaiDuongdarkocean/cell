@@ -31,6 +31,7 @@ const EXITED_MSG = '__CELL_PLAYER_MODE_EXITED';
 interface TopFrameState {
   host: HTMLElement;
   fillStyle: HTMLStyleElement;
+  fallbackStyle: HTMLStyleElement | null;
 }
 
 let topState: TopFrameState | null = null;
@@ -69,10 +70,10 @@ function findIframeBySource(src: string): HTMLIFrameElement | null {
 
 /**
  * Find the farthest ancestor of `iframe` whose bounding rect matches the
- * iframe's rect (same width AND height). This is the outermost container that
- * wraps the player without extra padding — e.g. `.player-wrap` on AnimeKai.
- * Generic: no hardcoded class names, adapts to any site layout.
- * Ponytail: O(depth) walk, depth is typically < 10 in player DOM.
+ * iframe's rect (same width AND height). Stop at the deepest direct child of
+ * <body> that matches — do not consider <body> or <html>, because fullscreen on
+ * body/html can reload the page or cause layout bugs (e.g. moviepire has
+ * #root/body/html all matching the iframe size).
  */
 function findFarthestSameSizeContainer(iframe: HTMLIFrameElement): HTMLElement {
   const iw = Math.round(iframe.getBoundingClientRect().width);
@@ -83,6 +84,10 @@ function findFarthestSameSizeContainer(iframe: HTMLIFrameElement): HTMLElement {
     const r = el.getBoundingClientRect();
     if (Math.round(r.width) === iw && Math.round(r.height) === ih) {
       farthest = el;
+      // Do not walk above the deepest direct child of <body>. That child is the
+      // real top-level player container; <body> and <html> are too broad and
+      // can cause full-page fullscreen or iframe reloads.
+      if (el.parentElement === document.body) break;
     }
     el = el.parentElement;
   }
@@ -125,13 +130,34 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
     // requestFullscreen() auto-exits any existing fullscreen (site's own)
     // and enters ours in one step — same user gesture, no Chrome block.
     await host.requestFullscreen();
+    topState = { host, fillStyle, fallbackStyle: null };
+    return true;
   } catch {
-    fillStyle.remove();
-    return false;
+    // A child iframe's `postMessage` cannot carry the user's activation to the
+    // top frame. Keep the same carefully selected host and use a reversible
+    // fixed fallback instead of showing a failure toast. This path is scoped to
+    // the matched player container, not body/html or Cell's own hosts.
+    const fallbackStyle = document.createElement('style');
+    fallbackStyle.setAttribute('data-cell-player-mode', 'fallback');
+    fallbackStyle.textContent = [
+      '[data-cell-player-mode-host] {',
+      '  position:fixed!important;inset:0!important;',
+      '  width:100vw!important;height:100dvh!important;',
+      '  max-width:none!important;max-height:none!important;',
+      '  z-index:2147483647!important;',
+      '  overflow:hidden!important;',
+      '}',
+      '[data-cell-player-mode-host] iframe {',
+      '  position:absolute!important;inset:0!important;',
+      '  width:100%!important;height:100%!important;',
+      '  border:none!important;display:block!important;',
+      '}',
+    ].join('');
+    host.setAttribute('data-cell-player-mode-host', '');
+    document.head.appendChild(fallbackStyle);
+    topState = { host, fillStyle, fallbackStyle };
+    return true;
   }
-
-  topState = { host, fillStyle };
-  return true;
 }
 
 /** Exit top-frame Player Mode: exit fullscreen + remove fill style. */
@@ -144,6 +170,8 @@ async function exitTopFramePlayerMode(): Promise<boolean> {
     try { await document.exitFullscreen(); }
     catch { /* best effort */ }
   }
+  s.fallbackStyle?.remove();
+  s.host.removeAttribute('data-cell-player-mode-host');
   s.fillStyle.remove();
   return true;
 }
