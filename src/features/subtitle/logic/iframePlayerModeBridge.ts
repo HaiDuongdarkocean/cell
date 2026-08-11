@@ -1,13 +1,17 @@
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
+import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
+
 // Iframe Player Mode bridge — top-frame coordinator.
 //
 // When the host video lives inside a cross-origin iframe (AnimeKai/megaplay,
 // moviepire/vidnest, etc.), the child-frame Cell overlay cannot cover the
 // top-level viewport because `position:fixed` is bounded by the iframe's
-// browsing context. The child frame posts a request to the top frame; the top
-// frame creates a fullscreen overlay and reparents the <iframe> element itself
-// (which lives in the top document) into the overlay's video stage. The iframe
-// fills the stage → the child-frame Cell overlay (already `position:fixed;
-// inset:0` inside the iframe) now covers the full iframe = full viewport.
+// browsing context. The top frame uses the native Fullscreen API on the host
+// container (e.g. `.player-wrap`) — no DOM move, no iframe reload, and the
+// browser top-layer guarantees nothing can z-index over it. The iframe fills
+// the fullscreen element → the child-frame Cell overlay (already
+// `position:fixed; inset:0` inside the iframe) covers the full viewport.
 //
 // Message protocol (postMessage, cross-origin safe):
 //   child → top:  { type: '__CELL_PLAYER_MODE_ENTER', frameSrc: string }
@@ -25,21 +29,8 @@ const ENTERED_MSG = '__CELL_PLAYER_MODE_ENTERED';
 const EXITED_MSG = '__CELL_PLAYER_MODE_EXITED';
 
 interface TopFrameState {
-  overlay: HTMLDivElement;
   host: HTMLElement;
-  originalParent: HTMLElement;
-  originalNextSibling: Node | null;
-  savedStyle: {
-    width: string;
-    height: string;
-    position: string;
-    zIndex: string;
-    flex: string;
-    margin: string;
-    top: string;
-    left: string;
-    inset: string;
-  };
+  fillStyle: HTMLStyleElement;
 }
 
 let topState: TopFrameState | null = null;
@@ -77,97 +68,83 @@ function findIframeBySource(src: string): HTMLIFrameElement | null {
 }
 
 /**
- * Find the host player element in the top document. AnimeKai puts the player
- * iframe inside `.player-wrap`; moving only the iframe leaves the host layout
- * behind and makes Player Mode appear to zoom only the child browsing context.
- * Walk from iframe to the nearest known player host, then fall back to iframe.
+ * Find the farthest ancestor of `iframe` whose bounding rect matches the
+ * iframe's rect (same width AND height). This is the outermost container that
+ * wraps the player without extra padding — e.g. `.player-wrap` on AnimeKai.
+ * Generic: no hardcoded class names, adapts to any site layout.
+ * Ponytail: O(depth) walk, depth is typically < 10 in player DOM.
  */
-function findPlayerHost(iframe: HTMLIFrameElement): HTMLElement {
-  const host = iframe.closest('.player-wrap')
-    ?? iframe.closest('[data-player-wrap]')
-    ?? iframe.closest('#player')
-    ?? iframe.closest('.player');
-  return host instanceof HTMLElement ? host : iframe;
+function findFarthestSameSizeContainer(iframe: HTMLIFrameElement): HTMLElement {
+  const iw = Math.round(iframe.getBoundingClientRect().width);
+  const ih = Math.round(iframe.getBoundingClientRect().height);
+  let el: HTMLElement | null = iframe.parentElement;
+  let farthest: HTMLElement | null = null;
+  while (el && el !== document.body) {
+    const r = el.getBoundingClientRect();
+    if (Math.round(r.width) === iw && Math.round(r.height) === ih) {
+      farthest = el;
+    }
+    el = el.parentElement;
+  }
+  return farthest ?? iframe;
 }
 
-/** Enter top-frame Player Mode: create overlay + reparent the host player. */
-function enterTopFramePlayerMode(frameSrc: string): boolean {
+/**
+ * Enter top-frame Player Mode using the native Fullscreen API. No DOM move →
+ * no iframe reload. Browser top-layer guarantees nothing can z-index over it.
+ * If the site already has its own fullscreen active, requestFullscreen() on
+ * our host auto-exits the old fullscreen and enters ours in one step — no
+ * need to exitFullscreen() first (which would consume the user gesture and
+ * block the subsequent requestFullscreen()).
+ */
+async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
   if (topState) return true; // already active
   const iframe = findIframeBySource(frameSrc);
   if (!iframe) return false;
 
-  const host = findPlayerHost(iframe);
-  const originalParent = host.parentElement;
-  if (!originalParent) return false;
-  const originalNextSibling = host.nextSibling;
+  const host = findFarthestSameSizeContainer(iframe);
 
-  const overlay = document.createElement('div');
-  overlay.id = 'cell-player-mode-top-overlay';
-  overlay.style.cssText = [
-    'position:fixed',
-    'inset:0',
-    'width:100vw',
-    'height:100dvh',
-    'z-index:2147483647',
-    'background:#000',
-    'display:block',
-    'margin:0',
-    'border:none',
-    'padding:0',
-    'max-width:none',
-    'max-height:none',
-  ].join(';');
-  document.body.appendChild(overlay);
+  // Force the player container chain to fill the fullscreen host. Scope to
+  // .player-main + iframe only — Cell's own overlay hosts (#cell-universal-
+  // panel-host, .js-cell-orbital-badge-host) must NOT be stretched, otherwise
+  // they cover the iframe and block pointer events on the video.
+  const fillStyle = document.createElement('style');
+  fillStyle.setAttribute('data-cell-player-mode', 'fill');
+  fillStyle.textContent = [
+    ':fullscreen .player-main,',
+    ':fullscreen .player-main iframe,',
+    ':fullscreen iframe {',
+    '  width:100%!important;height:100%!important;',
+    '  position:absolute!important;inset:0!important;',
+    '  border:none!important;display:block!important;',
+    '}',
+  ].join('');
+  document.head.appendChild(fillStyle);
 
-  const savedStyle = {
-    width: host.style.width,
-    height: host.style.height,
-    position: host.style.position,
-    zIndex: host.style.zIndex,
-    flex: host.style.flex,
-    margin: host.style.margin,
-    top: host.style.top,
-    left: host.style.left,
-    inset: host.style.inset,
-  };
-  host.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'width:100%',
-    'height:100%',
-    'border:none',
-    'margin:0',
-    'padding:0',
-    'z-index:1',
-  ].join(';');
-  overlay.appendChild(host);
+  try {
+    // requestFullscreen() auto-exits any existing fullscreen (site's own)
+    // and enters ours in one step — same user gesture, no Chrome block.
+    await host.requestFullscreen();
+  } catch {
+    fillStyle.remove();
+    return false;
+  }
 
-  topState = { overlay, host, originalParent, originalNextSibling, savedStyle };
+  topState = { host, fillStyle };
   return true;
 }
 
-/** Exit top-frame Player Mode: restore iframe + remove overlay. */
-function exitTopFramePlayerMode(): boolean {
+/** Exit top-frame Player Mode: exit fullscreen + remove fill style. */
+async function exitTopFramePlayerMode(): Promise<boolean> {
   if (!topState) return false;
   const s = topState;
   topState = null;
 
-  s.host.style.width = s.savedStyle.width;
-  s.host.style.height = s.savedStyle.height;
-  s.host.style.position = s.savedStyle.position;
-  s.host.style.zIndex = s.savedStyle.zIndex;
-  s.host.style.flex = s.savedStyle.flex;
-  s.host.style.margin = s.savedStyle.margin;
-  s.host.style.top = s.savedStyle.top;
-  s.host.style.left = s.savedStyle.left;
-  s.host.style.inset = s.savedStyle.inset;
-
-  if (s.originalNextSibling && s.originalNextSibling.parentElement === s.originalParent) {
-    s.originalParent.insertBefore(s.host, s.originalNextSibling);
-  } else {
-    s.originalParent.appendChild(s.host);
+  if (document.fullscreenElement === s.host) {
+    try { await document.exitFullscreen(); }
+    catch { /* best effort */ }
   }
-  s.overlay.remove();
+  s.fillStyle.remove();
   return true;
 }
 
@@ -179,6 +156,40 @@ function notifyChild(entered: boolean, childSource: Window): void {
       '*',
     );
   } catch { /* cross-origin — best effort */ }
+}
+
+/**
+ * Notify the child iframe via its contentWindow (used when top frame triggers
+ * PM itself, without receiving a request from the child first).
+ */
+function notifyChildByIframe(entered: boolean): void {
+  const iframe = topState?.host?.querySelector('iframe')
+    ?? document.querySelector('iframe');
+  try {
+    iframe?.contentWindow?.postMessage(
+      { type: entered ? ENTERED_MSG : EXITED_MSG },
+      '*',
+    );
+  } catch { /* cross-origin — best effort */ }
+}
+
+/**
+ * Toggle top-frame Player Mode from the top frame itself (user pressed `g`
+ * while focus is on the top document, not inside the iframe). Enter if idle,
+ * exit if active. Notifies the child iframe so it can mount/unmount its
+ * subtitle overlay.
+ */
+export async function toggleTopFramePlayerMode(): Promise<void> {
+  if (window.self !== window.top) return; // only top frame
+  if (topState) {
+    const ok = await exitTopFramePlayerMode();
+    if (ok) notifyChildByIframe(false);
+  } else {
+    const iframe = document.querySelector('iframe');
+    if (!iframe?.src) return;
+    const ok = await enterTopFramePlayerMode(iframe.src);
+    if (ok) notifyChildByIframe(true);
+  }
 }
 
 /**
@@ -195,15 +206,55 @@ export function installIframePlayerModeBridge(): () => void {
     if (!childSource) return;
 
     if (data.type === ENTER_MSG && typeof data.frameSrc === 'string') {
-      const ok = enterTopFramePlayerMode(data.frameSrc);
-      if (ok) notifyChild(true, childSource);
+      void enterTopFramePlayerMode(data.frameSrc).then((ok) => {
+        if (ok) notifyChild(true, childSource);
+      });
     } else if (data.type === EXIT_MSG) {
-      const ok = exitTopFramePlayerMode();
-      if (ok) notifyChild(false, childSource);
+      void exitTopFramePlayerMode().then((ok) => {
+        if (ok) notifyChild(false, childSource);
+      });
     }
   };
   window.addEventListener('message', handler);
-  return () => window.removeEventListener('message', handler);
+
+  // Esc (browser native fullscreen exit) → notify child EXITED.
+  const onFullscreenChange = (): void => {
+    if (!document.fullscreenElement && topState) {
+      void exitTopFramePlayerMode();
+      notifyChildByIframe(false);
+    }
+  };
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+
+  // Top-frame keyboard handler: when the video lives in a cross-origin iframe,
+  // SubtitlePanels doesn't mount on the top frame (no <video> here), so the
+  // regular content-script keyboard handler is never registered. Listen for the
+  // configured 'toggle-player-mode' shortcut directly and toggle PM via the
+  // bridge. Skipped when a <video> exists on the top frame (same-origin sites
+  // use the regular SubtitlePanels flow).
+  let shortcuts = DEFAULT_KEYBOARD_SHORTCUTS;
+  void loadSettings().then((s) => {
+    if (s.keyboardShortcuts?.length) shortcuts = s.keyboardShortcuts;
+  });
+  const onKeydown = (e: KeyboardEvent): void => {
+    if (isEditableTarget(e.target)) return;
+    if (document.querySelector('video')) return; // has video → SubtitlePanels handles
+    if (!document.querySelector('iframe')) return; // no iframe → nothing to do
+    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+      ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey,
+    });
+    if (action !== 'toggle-player-mode') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    void toggleTopFramePlayerMode();
+  };
+  window.addEventListener('keydown', onKeydown, true);
+
+  return () => {
+    window.removeEventListener('message', handler);
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+    window.removeEventListener('keydown', onKeydown, true);
+  };
 }
 
 /**
