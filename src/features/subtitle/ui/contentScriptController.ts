@@ -49,6 +49,7 @@ import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Subtit
 
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, ParsedFile } from '@/features/subtitle';
+import { toggleTopFramePlayerMode } from '@/features/subtitle/logic/iframePlayerModeBridge';
 
 // === Subtitle Overlay Integration ===
 
@@ -1180,7 +1181,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         break;
       }
       case 'toggle-player-mode': {
-        blockController?.togglePlayerMode();
+        if (blockController) {
+          blockController.togglePlayerMode();
+        } else {
+          // Top frame without SubtitlePanels (video lives in a cross-origin
+          // iframe). Toggle PM via the iframe bridge — reparent the host
+          // container into a fullscreen overlay and notify the child.
+          toggleTopFramePlayerMode();
+        }
         break;
       }
     }

@@ -200,6 +200,24 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
 
+    // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
+    // mounts/unmounts when the user presses `g` on the top document (not inside
+    // the iframe). When the child triggers PM itself, requestIframePlayerModeEnter
+    // resolves on ENTERED and handleTogglePlayerMode sets playerMode — this
+    // listener is redundant but harmless (setPlayerMode is idempotent).
+    useEffect(() => {
+      if (!isChildFrame()) return;
+      const onMessage = (e: MessageEvent): void => {
+        if (e.data?.type === '__CELL_PLAYER_MODE_ENTERED') {
+          setPlayerMode(true);
+        } else if (e.data?.type === '__CELL_PLAYER_MODE_EXITED') {
+          setPlayerMode(false);
+        }
+      };
+      window.addEventListener('message', onMessage);
+      return () => window.removeEventListener('message', onMessage);
+    }, []);
+
     useEffect(() => {
       const root = rootRef.current;
       if (!root) return;
@@ -237,14 +255,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
     const handleTogglePlayerMode = useCallback(async (): Promise<void> => {
       if (isChildFrame()) {
+        // Guard: if the iframe (or video inside) is currently in fullscreen,
+        // exit it first so the top frame can enter Cell Player Mode fullscreen
+        // on the host container. Fullscreen is from the child browsing context,
+        // so we must exit it from the child, then ask the top frame.
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        }
         if (playerMode) {
           requestIframePlayerModeExit();
           setPlayerMode(false);
           return;
         }
-        // The child document cannot walk through a cross-origin iframe to the
-        // host page's .player-wrap. Ask the top-frame bridge to move that host
-        // first; only then mount the child overlay inside the projected iframe.
+        // Ask the top-frame bridge to request fullscreen on the host container.
         if (await requestIframePlayerModeEnter()) {
           setPlayerMode(true);
         } else {
