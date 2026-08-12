@@ -210,7 +210,7 @@ function PlayerModeOverlayInner({
     shadowHost.style.display = 'block';
     const centerStyle = document.createElement('style');
     centerStyle.setAttribute('data-cell-player-mode', 'center');
-    centerStyle.textContent = 'video{width:100%!important;height:100%!important;object-fit:contain!important}';
+    centerStyle.textContent = 'video{position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important}';
     player.appendChild(centerStyle);
     shadowHost.appendChild(player);
 
