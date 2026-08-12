@@ -27,7 +27,6 @@ describe('mountSubtitle', () => {
       targetStyle: baseStyle,
       nativeStyle: baseStyle,
       collapsed: false,
-      hasSubtitle: true,
       isPlaying: true,
       repeatActive: false,
       onPrev: noop,

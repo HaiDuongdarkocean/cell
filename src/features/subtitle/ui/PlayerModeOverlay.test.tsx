@@ -63,7 +63,6 @@ function renderPlayerMode(): HTMLElement {
     <PlayerModeOverlay
       targetStyle={style}
       nativeStyle={style}
-      hasSubtitle
       isPlaying
       repeatActive={false}
       videoAspectRatio={16 / 9}
@@ -98,7 +97,6 @@ function renderPlayerModeWithCues(cues?: BilingualCue[]): HTMLElement {
     <PlayerModeOverlay
       targetStyle={style}
       nativeStyle={style}
-      hasSubtitle
       isPlaying
       repeatActive={false}
       videoAspectRatio={16 / 9}

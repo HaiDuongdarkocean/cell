@@ -35,7 +35,6 @@ export function Showcase(): ReactElement {
             targetStyle={DEFAULT_OVERLAY_STYLE_TARGET}
             nativeStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
             collapsed={false}
-            hasSubtitle
             isPlaying={isPlaying}
             repeatActive={repeatActive}
             yOffsetPercent={75}

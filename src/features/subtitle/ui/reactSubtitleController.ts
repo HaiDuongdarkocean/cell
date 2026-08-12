@@ -43,7 +43,6 @@ export class ReactSubtitleController {
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private yOffsetPersistTimer: ReturnType<typeof setTimeout> | null = null;
-  private hasSubtitle = false;
   private isPlaying = false;
   private repeatActive = false;
   private repeatIcon: IconCatalogKey = 'navRepeat';
@@ -118,7 +117,6 @@ export class ReactSubtitleController {
       targetStyle,
       nativeStyle,
       collapsed: false,
-      hasSubtitle: false,
       isPlaying: this.isPlaying,
       repeatActive: false,
       repeatIcon: this.repeatIcon,
@@ -232,8 +230,6 @@ export class ReactSubtitleController {
   }
 
   private syncFromEngine(): void {
-    this.hasSubtitle = this.engine.hasSubtitles();
-    this.mount.setHasSubtitle(this.hasSubtitle);
     this.setIsPlaying(!this.video.paused);
     this.onCuesUpdated?.();
   }
@@ -295,11 +291,7 @@ export class ReactSubtitleController {
   loadCues(cues: readonly SrtCue[]): void;
   loadCues(hasSubtitle: boolean): void;
   loadCues(arg: readonly SrtCue[] | boolean): void {
-    if (typeof arg === 'boolean') {
-      this.hasSubtitle = arg;
-      this.mount.setHasSubtitle(arg);
-      return;
-    }
+    if (typeof arg === 'boolean') return;
     this.engine.loadCues([...arg]);
     this.engine.onTimeUpdate();
     this.syncFromEngine();

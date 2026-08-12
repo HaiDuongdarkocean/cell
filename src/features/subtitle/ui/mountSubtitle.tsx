@@ -30,7 +30,6 @@ export interface MountSubtitleOptions {
   nativeStyle: OverlayStyleConfig;
 
   collapsed: boolean;
-  hasSubtitle: boolean;
   isPlaying: boolean;
   repeatActive: boolean;
   repeatIcon?: IconCatalogKey;
@@ -70,7 +69,6 @@ export interface MountSubtitleResult {
   /** Shadow host element — use `host.shadowRoot` to query subtitle line elements. */
   readonly host: HTMLElement;
   setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
-  setHasSubtitle: (has: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
   setRepeatActive: (active: boolean) => void;
   setRepeatIcon: (icon: IconCatalogKey, label?: string) => void;
@@ -99,7 +97,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     targetStyle,
     nativeStyle,
     collapsed,
-    hasSubtitle,
     isPlaying,
     repeatActive,
     repeatIcon,
@@ -138,7 +135,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       targetStyle={targetStyle}
       nativeStyle={nativeStyle}
       collapsed={collapsed}
-      hasSubtitle={hasSubtitle}
       isPlaying={isPlaying}
       repeatActive={repeatActive}
       repeatIcon={repeatIcon}
@@ -212,7 +208,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     unmount,
     host,
     setStyles: (t, n) => controllerRef?.setStyles(t, n),
-    setHasSubtitle: (has) => controllerRef?.setHasSubtitle(has),
     setIsPlaying: (playing) => controllerRef?.setIsPlaying(playing),
     setRepeatActive: (active) => controllerRef?.setRepeatActive(active),
     setRepeatIcon: (icon, label) => controllerRef?.setRepeatIcon(icon, label),

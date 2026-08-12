@@ -30,8 +30,6 @@ export interface PlayerModeOverlayProps {
   /** Subtitle overlay styles from extension popup. */
   targetStyle: OverlayStyleConfig;
   nativeStyle: OverlayStyleConfig;
-  /** Whether a subtitle is currently loaded. */
-  hasSubtitle: boolean;
   /** Whether the video is playing. */
   isPlaying: boolean;
   /** Repeat AB-loop mode state. */
@@ -86,7 +84,6 @@ export interface PlayerModeOverlayProps {
 function PlayerModeOverlayInner({
   targetStyle,
   nativeStyle,
-  hasSubtitle,
   isPlaying,
   repeatActive,
   repeatIcon,
@@ -304,6 +301,10 @@ function PlayerModeOverlayInner({
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
+        // In native fullscreen: let the browser exit fullscreen (don't
+        // preventDefault). The fullscreenchange listener in SubtitlePanels
+        // exits Player Mode. Esc in fullscreen is a one-step exit.
+        if (document.fullscreenElement) return;
         e.preventDefault();
         e.stopPropagation();
         if (cueListOpen) {
@@ -437,7 +438,6 @@ function PlayerModeOverlayInner({
         <div className={styles.navArea}>
           <NavCluster
             collapsed={false}
-            hasSubtitle={hasSubtitle}
             isPlaying={isPlaying}
             repeatActive={repeatActive}
             repeatIcon={repeatIcon}
