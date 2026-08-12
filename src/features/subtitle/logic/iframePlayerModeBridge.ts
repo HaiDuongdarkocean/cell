@@ -1,6 +1,6 @@
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 
 // Iframe Player Mode bridge — top-frame coordinator.
 //
@@ -254,22 +254,21 @@ export function installIframePlayerModeBridge(): () => void {
   };
   document.addEventListener('fullscreenchange', onFullscreenChange);
 
-  // Top-frame keyboard handler: when the video lives in a cross-origin iframe,
-  // SubtitlePanels doesn't mount on the top frame (no <video> here), so the
-  // regular content-script keyboard handler is never registered. Listen for the
-  // configured 'toggle-player-mode' shortcut directly and toggle PM via the
-  // bridge. Skipped when a <video> exists on the top frame (same-origin sites
-  // use the regular SubtitlePanels flow).
+  // The top document has no <video>, so its content-script controller is not
+  // mounted. Capture G here for cross-origin iframe players (AnimeKai, Moviepire,
+  // etc.) and route it through the same top-frame Player Mode flow.
   let shortcuts = DEFAULT_KEYBOARD_SHORTCUTS;
-  void loadSettings().then((s) => {
-    if (s.keyboardShortcuts?.length) shortcuts = s.keyboardShortcuts;
+  void loadSettings().then((settings) => {
+    if (settings.keyboardShortcuts?.length) shortcuts = settings.keyboardShortcuts;
   });
   const onKeydown = (e: KeyboardEvent): void => {
     if (isEditableTarget(e.target)) return;
-    if (document.querySelector('video')) return; // has video → SubtitlePanels handles
-    if (!document.querySelector('iframe')) return; // no iframe → nothing to do
+    if (document.querySelector('video')) return;
+    if (!document.querySelector('iframe')) return;
     const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
-      ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey,
+      ctrl: e.ctrlKey,
+      shift: e.shiftKey,
+      alt: e.altKey,
     });
     if (action !== 'toggle-player-mode') return;
     e.preventDefault();

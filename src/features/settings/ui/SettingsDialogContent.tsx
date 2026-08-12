@@ -78,13 +78,14 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
   'toggle-panel': 'Toggle panel',
   'toggle-translate': 'Toggle auto-translate',
   'generate-native': 'Generate native subtitle',
+  'toggle-player-mode': 'Toggle Player Mode',
   'quick-update': 'Card Creator: Quick update',
   'edit-card': 'Card Creator: Edit card',
 };
 
 const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
   'prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'toggle-overlay', 'toggle-panel', 'toggle-translate',
-  'generate-native', 'quick-update', 'edit-card',
+  'generate-native', 'toggle-player-mode', 'quick-update', 'edit-card',
 ];
 
 /**

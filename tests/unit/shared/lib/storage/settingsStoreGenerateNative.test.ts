@@ -18,7 +18,7 @@ const chromeMock = {
 };
 (global as { chrome?: unknown }).chrome = chromeMock;
 
-describe('settingsStore schema v12 migration (generate-native shortcut)', () => {
+describe('settingsStore keyboard shortcut migrations', () => {
   beforeEach(() => {
     Object.keys(storage).forEach((k) => delete storage[k]);
     chromeMock.storage.local.get.mockClear();
@@ -37,12 +37,18 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
     const result = await loadSettings();
 
     expect(result.keyboardShortcuts).toEqual(
-      expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
+      expect.arrayContaining([
+        { action: 'generate-native', key: 'h' },
+        { action: 'toggle-player-mode', key: 'g' },
+      ]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(19);
+    expect(stored.schemaVersion).toBe(20);
     expect(stored.keyboardShortcuts).toEqual(
-      expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
+      expect.arrayContaining([
+        { action: 'generate-native', key: 'h' },
+        { action: 'toggle-player-mode', key: 'g' },
+      ]),
     );
   });
 
@@ -65,12 +71,14 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
     expect(generateNativeBindings[0].key).toBe('h');
   });
 
-  it('DEFAULT_SETTINGS includes generate-native shortcut with key g', () => {
+  it('DEFAULT_SETTINGS assigns H to generate-native and G to Player Mode', () => {
     const generateNative = DEFAULT_SETTINGS.keyboardShortcuts.find((s) => s.action === 'generate-native');
-    expect(generateNative).toEqual({ action: 'generate-native', key: 'g' });
+    const playerMode = DEFAULT_SETTINGS.keyboardShortcuts.find((s) => s.action === 'toggle-player-mode');
+    expect(generateNative).toEqual({ action: 'generate-native', key: 'h' });
+    expect(playerMode).toEqual({ action: 'toggle-player-mode', key: 'g' });
   });
 
-  it('migrates v18 settings to v19 and appends play-pause shortcut', async () => {
+  it('migrates v18 settings to v20 and appends play-pause shortcut', async () => {
     const v18KeyboardShortcuts = DEFAULT_SETTINGS.keyboardShortcuts.filter((s) => s.action !== 'play-pause');
     const v18Settings = {
       ...DEFAULT_SETTINGS,
@@ -85,7 +93,7 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
       expect.arrayContaining([{ action: 'play-pause', key: ' ' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(19);
+    expect(stored.schemaVersion).toBe(20);
     const playPauseBindings = stored.keyboardShortcuts.filter((s) => s.action === 'play-pause');
     expect(playPauseBindings.length).toBe(1);
     expect(playPauseBindings[0].key).toBe(' ');

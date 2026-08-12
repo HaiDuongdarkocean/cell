@@ -30,8 +30,13 @@ describe('handleShortcutKey', () => {
     expect(action).toBe('toggle-panel');
   });
 
-  it('returns generate-native action when key is "g"', () => {
+  it('returns Player Mode action when key is "g"', () => {
     const action = handleShortcutKey('g', shortcuts, createDivTarget());
+    expect(action).toBe('toggle-player-mode');
+  });
+
+  it('returns generate-native action when key is "h"', () => {
+    const action = handleShortcutKey('h', shortcuts, createDivTarget());
     expect(action).toBe('generate-native');
   });
 

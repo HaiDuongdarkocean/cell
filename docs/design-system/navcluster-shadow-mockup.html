@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NavCluster Shadow Mockup v3 — Real ICON_CATALOG SVGs</title>
+<style>
+  /* === Tokens thật từ tokens.css === */
+  :root {
+    --radius-full: 9999px;
+    --color-overlay-text: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --iconbutton-bg: transparent;
+    --iconbutton-fg: var(--color-text-secondary);
+    --iconbutton-hover-bg: var(--color-surface-hover);
+    --iconbutton-hover-fg: var(--color-text);
+    --iconbutton-radius: var(--radius-full);
+    --cluster-btn-size: 34px;
+    --cluster-icon-size: 20px;
+    --cluster-icon-size-sm: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #fafafa; padding: 20px; }
+
+  /* === Stage === */
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    height: 260px;
+    margin: 10px auto;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg, linear-gradient(135deg, #2a2a2a, #0a0a0a));
+    transition: background 300ms;
+  }
+  .stage.dark   { --bg: linear-gradient(135deg, #2a2a2a, #0a0a0a); }
+  .stage.light  { --bg: linear-gradient(135deg, #f5f5f5, #e0e0e0); }
+  .stage.white  { --bg: #ffffff; }
+  .stage.video  { --bg: url('https://image.tmdb.org/t/p/original/9fa41bG6uiFI2cDq9rDAhM1eBdK.jpg') center/cover; }
+  .stage.color  { --bg: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+
+  /* === Overlay container (mimic SubtitlePanels root) === */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    pointer-events: none;
+  }
+
+  /* === NavCluster (left) === */
+  .navCluster {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    pointer-events: auto;
+  }
+  .navCol {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* === clusterRight === */
+  .clusterRight {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: auto;
+  }
+  .clusterRightRow {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  /* === IconButton ghost — CHÍNH XÁC từ IconButton.module.css === */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--iconbutton-bg);     /* transparent */
+    border: none;
+    border-radius: var(--iconbutton-radius);
+    cursor: pointer;
+    color: var(--color-overlay-text);     /* NavCluster override: #ffffff */
+    transition: background 150ms, color 150ms, transform 150ms;
+    padding: 0;
+    flex-shrink: 0;
+    width: var(--cluster-btn-size);
+    height: var(--cluster-btn-size);
+  }
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--color-overlay-text);
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* active state (repeat button) */
+  .btn.active {
+    color: #60a5fa;
+  }
+
+  /* === Icon span — Icon.module.css .wrap === */
+  .btn .iconWrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cluster-icon-size);
+    height: var(--cluster-icon-size);
+  }
+  .btn.sm .iconWrap {
+    width: var(--cluster-icon-size-sm);
+    height: var(--cluster-icon-size-sm);
+  }
+  /* .wrap > svg */
+  .btn .iconWrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* === Option A — drop-shadow nhẹ === */
+  .opt-a .btn .iconWrap svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  /* === Option B — drop-shadow medium (Facebook outline) === */
+  .opt-b .btn .iconWrap svg {
+    filter:
+      drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+  }
+
+  /* === Option C — drop-shadow cinema === */
+  .opt-c .btn .iconWrap svg {
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.9));
+  }
+
+  /* === Option D — Facebook avatar-outline ring + drop-shadow === */
+  .opt-d .btn {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  }
+  .opt-d .btn .iconWrap svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  }
+
+  /* === Controls === */
+  .controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 16px auto;
+    max-width: 960px;
+  }
+  .toggle-btn {
+    padding: 8px 16px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #222;
+    color: #fafafa;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .toggle-btn.active { background: #3b82f6; border-color: #3b82f6; }
+
+  .label {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+  }
+  .stage.light .label, .stage.white .label { color: rgba(0,0,0,0.6); text-shadow: none; }
+
+  h2 { text-align: center; margin: 16px 0 4px; font-size: 15px; }
+  .hint { text-align: center; font-size: 13px; color: #a3a3a3; margin-bottom: 8px; }
+  .spec {
+    max-width: 960px;
+    margin: 6px auto;
+    padding: 6px 12px;
+    background: #1a1a1a;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #a3a3a3;
+    font-family: monospace;
+  }
+  .info {
+    max-width: 960px;
+    margin: 12px auto;
+    padding: 12px 16px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #d4d4d4;
+  }
+  .info code { background: #333; padding: 2px 6px; border-radius: 4px; color: #fbbf24; font-size: 12px; }
+  .info strong { color: #fafafa; }
+
+  .iconLabel {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<h2>NavCluster Shadow Mockup v3 — Real ICON_CATALOG SVGs</h2>
+<p class="hint">SVG thật từ src/shared/icons/svg/. NavCluster (left) + clusterRight (right). IconButton ghost transparent. Toggle nền + hover.</p>
+
+<div class="info">
+  <strong>Icons thật:</strong> navPrev, navRepeat, navNext, navRewind, navPlay, navForward (left) + zap, pencil, sidePanel, languages, chevronLeft, rotateCcw, subtitleManager, maximize (right).<br>
+  <strong>Stroke 1.5</strong> (Lucide convention). navPlay/navPause có <code>fill="currentColor"</code> glyph. Tất cả dùng <code>stroke="currentColor"</code> → inherit <code>color: #ffffff</code>.
+</div>
+
+<div class="controls">
+  <button class="toggle-btn active" data-bg="dark">Dark</button>
+  <button class="toggle-btn" data-bg="light">Light</button>
+  <button class="toggle-btn" data-bg="white">Pure white</button>
+  <button class="toggle-btn" data-bg="video">Video</button>
+  <button class="toggle-btn" data-bg="color">Solid color</button>
+</div>
+
+<!-- === Option A === -->
+<h2>Option A — drop-shadow nhẹ</h2>
+<div class="spec">filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))</div>
+<div class="stage dark" id="stage-a">
+  <div class="overlay opt-a">
+    <!-- NavCluster left -->
+    <div class="navCluster">
+      <div class="navCol">
+        <!-- navPrev: circle + chevron left -->
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M13.5 9L10.5 12L13.5 15"/></svg></span></button>
+        <!-- navRewind: circular arrow + "5" -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <!-- navRepeat: circular arrow loop -->
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/></svg></span></button>
+        <!-- navPlay: circle + filled triangle -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <!-- navNext: circle + chevron right -->
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10.5 9L13.5 12L10.5 15"/></svg></span></button>
+        <!-- navForward: circular arrow + "10" -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209"/><path d="M7.5 10.5L10 8.5V15.5"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z"/></svg></span></button>
+      </div>
+    </div>
+    <!-- clusterRight -->
+    <div class="clusterRight">
+      <div class="clusterRightRow">
+        <!-- zap -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span></button>
+        <!-- pencil -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <!-- sidePanel -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg></span></button>
+        <!-- languages -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <!-- chevronLeft -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span></button>
+        <!-- rotateCcw -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <!-- subtitleManager -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg></span></button>
+        <!-- maximize -->
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span></button>
+      </div>
+    </div>
+  </div>
+  <span class="label">A</span>
+</div>
+
+<!-- === Option B === -->
+<h2>Option B — drop-shadow medium (Facebook outline)</h2>
+<div class="spec">filter: drop-shadow(0 1px 2px rgba(0,0,0,0.85)) drop-shadow(0 0 1px rgba(0,0,0,0.6))</div>
+<div class="stage dark" id="stage-b">
+  <div class="overlay opt-b">
+    <div class="navCluster">
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M13.5 9L10.5 12L13.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10.5 9L13.5 12L10.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209"/><path d="M7.5 10.5L10 8.5V15.5"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z"/></svg></span></button>
+      </div>
+    </div>
+    <div class="clusterRight">
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span></button>
+      </div>
+    </div>
+  </div>
+  <span class="label">B</span>
+</div>
+
+<!-- === Option C === -->
+<h2>Option C — drop-shadow cinema (offset)</h2>
+<div class="spec">filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.9))</div>
+<div class="stage dark" id="stage-c">
+  <div class="overlay opt-c">
+    <div class="navCluster">
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M13.5 9L10.5 12L13.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10.5 9L13.5 12L10.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209"/><path d="M7.5 10.5L10 8.5V15.5"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z"/></svg></span></button>
+      </div>
+    </div>
+    <div class="clusterRight">
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span></button>
+      </div>
+    </div>
+  </div>
+  <span class="label">C</span>
+</div>
+
+<!-- === Option D === -->
+<h2>Option D — Facebook avatar-outline ring + drop-shadow</h2>
+<div class="spec">box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25) + filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6))</div>
+<div class="stage dark" id="stage-d">
+  <div class="overlay opt-d">
+    <div class="navCluster">
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M13.5 9L10.5 12L13.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none"/></svg></span></button>
+      </div>
+      <div class="navCol">
+        <button class="btn"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10.5 9L13.5 12L10.5 15"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209"/><path d="M7.5 10.5L10 8.5V15.5"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z"/></svg></span></button>
+      </div>
+    </div>
+    <div class="clusterRight">
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></span></button>
+      </div>
+      <div class="clusterRightRow">
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg></span></button>
+        <button class="btn sm"><span class="iconWrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg></span></button>
+      </div>
+    </div>
+  </div>
+  <span class="label">D</span>
+</div>
+
+<script>
+  const stages = ['a','b','c','d'].map(l => document.getElementById('stage-' + l));
+  const toggles = document.querySelectorAll('.toggle-btn');
+  toggles.forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggles.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const bg = btn.dataset.bg;
+      stages.forEach(s => {
+        s.classList.remove('dark', 'light', 'white', 'video', 'color');
+        s.classList.add(bg);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
