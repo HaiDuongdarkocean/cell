@@ -287,6 +287,12 @@ function PlayerModeOverlayInner({
       child.style.setProperty('flex', '1 1 0', 'important');
       child = child.firstElementChild as HTMLElement | null;
     }
+    // Generic: notify the host page's player JS that the player size changed.
+    // Most video players (YouTube, Video.js, JW Player, etc.) listen for
+    // window resize to recalculate control bar widths and layout. Without
+    // this, controls keep their old pixel widths after reparenting+resize
+    // (e.g. YouTube .ytp-chrome-bottom keeps right:470px instead of 12px).
+    window.dispatchEvent(new Event('resize'));
   }, [viewport, contentPct]);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
