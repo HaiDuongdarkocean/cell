@@ -14,6 +14,7 @@ export type ShortcutAction =
   | 'toggle-panel'
   | 'toggle-translate'
   | 'generate-native'
+  | 'toggle-player-mode'
   | 'quick-update'
   | 'edit-card'
   | 'play-pause';

@@ -89,6 +89,8 @@ export interface MountSubtitleResult {
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
   togglePlayerMode: () => void;
+  /** Toggle Split View — CueList panel beside video container (page thường only). */
+  toggleSplitView: () => void;
 }
 
 export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResult {
@@ -226,5 +228,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setCues: (cues) => controllerRef?.setCues(cues),
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),
+    toggleSplitView: () => controllerRef?.toggleSplitView(),
   };
 }

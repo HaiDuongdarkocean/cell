@@ -7,7 +7,7 @@
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { SubtitlePanel } from './SubtitlePanel';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -423,14 +423,12 @@ function PlayerModeOverlayInner({
           data-cell-id="player-mode-content"
         >
           {cueListOpen && cues && cues.length > 0 && onSeek && (
-            <div className={styles.cueListWrap}>
-              <CueList
-                cues={cues}
-                currentTimeMs={currentTimeMs ?? 0}
-                offsetMs={offsetMs}
-                onSeek={onSeek}
-              />
-            </div>
+            <SubtitlePanel
+              cues={cues}
+              currentTimeMs={currentTimeMs ?? 0}
+              offsetMs={offsetMs}
+              onSeek={onSeek}
+            />
           )}
         </div>
       </div>

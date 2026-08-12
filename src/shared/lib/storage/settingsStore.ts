@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFA
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 19;
+export const CURRENT_SCHEMA_VERSION = 20;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -338,6 +338,27 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'play-pause')) {
       merged.keyboardShortcuts = [...shortcuts, { action: 'play-pause', key: ' ' }];
     }
+    return merged;
+  },
+  // v19 → v20: restore Player Mode shortcut (G) and move generate-native to H.
+  // Older builds assigned G to generate-native and removed toggle-player-mode.
+  19: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 20 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    const normalized = shortcuts.map((shortcut: Record<string, unknown>) => {
+      if (shortcut.action === 'generate-native' && shortcut.key === 'g'
+        && !shortcut.ctrl && !shortcut.shift && !shortcut.alt) {
+        return { ...shortcut, key: 'h' };
+      }
+      return shortcut;
+    });
+    if (!normalized.some((shortcut: Record<string, unknown>) => shortcut.action === 'toggle-player-mode')) {
+      normalized.push({ action: 'toggle-player-mode', key: 'g' });
+    }
+    if (!normalized.some((shortcut: Record<string, unknown>) => shortcut.action === 'generate-native')) {
+      normalized.push({ action: 'generate-native', key: 'h' });
+    }
+    merged.keyboardShortcuts = normalized;
     return merged;
   },
 };

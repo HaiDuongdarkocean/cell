@@ -467,6 +467,11 @@ export class ReactSubtitleController {
     this.mount.togglePlayerMode();
   }
 
+  /** Toggle Split View — CueList panel beside video container (page thường only). */
+  toggleSplitView(): void {
+    this.mount.toggleSplitView();
+  }
+
   /** Current active cue indices from the engine. */
   getActiveIndices(): { target: number; native: number } {
     return this.engine.getActiveIndices();

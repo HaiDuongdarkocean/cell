@@ -102,6 +102,23 @@ describe('findPlayerContainer', () => {
       expect(result).toBe(player);
     });
 
+    it('reaches a wider ancestor when it owns player controls', () => {
+      const video = createVideo(640, 360);
+      const videoWrapper = document.createElement('div');
+      const shell = document.createElement('div');
+      const controls = document.createElement('button');
+
+      document.body.appendChild(shell);
+      shell.appendChild(videoWrapper);
+      videoWrapper.appendChild(video);
+      shell.appendChild(controls);
+
+      setBoundingClientRect(videoWrapper, 640, 360);
+      setBoundingClientRect(shell, 800, 400); // area ratio 1.39, within shell bounds
+
+      expect(findFarthestSameSizeContainer(video)).toBe(shell);
+    });
+
     it('respects the tolerance parameter', () => {
       const video = createVideo(640, 360);
       const player = document.createElement('div');

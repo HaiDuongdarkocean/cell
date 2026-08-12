@@ -49,8 +49,6 @@ import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Subtit
 
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, ParsedFile } from '@/features/subtitle';
-import { toggleTopFramePlayerMode } from '@/features/subtitle/logic/iframePlayerModeBridge';
-
 // === Subtitle Overlay Integration ===
 
 /** Load overlay style + block + cluster settings from chrome.storage.local, fallback to defaults. ADR-013, ADR-025. */
@@ -1113,11 +1111,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         break;
       }
       case 'toggle-panel': {
-        // Call toggleSidePanel directly. Per Chrome sidePanel docs, a keyboard
-        // shortcut is a valid user gesture for sidePanel.open() — no need to
-        // route through a synthetic button click. toggleSidePanel sends
-        // OPEN/CLOSE_SIDE_PANEL to background, which calls chrome.sidePanel.
-        toggleSidePanel();
+        // Page thường: toggle Split View (CueList beside video container).
+        // Player Mode: already returned early above (PlayerModeOverlay handles 't').
+        blockController.toggleSplitView();
+        break;
+      }
+      case 'toggle-player-mode': {
+        blockController.togglePlayerMode();
         break;
       }
       case 'toggle-translate': {
@@ -1178,17 +1178,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       // Generate native subtitle manually (button or shortcut).
       case 'generate-native': {
         void handleGenerateNative();
-        break;
-      }
-      case 'toggle-player-mode': {
-        if (blockController) {
-          blockController.togglePlayerMode();
-        } else {
-          // Top frame without SubtitlePanels (video lives in a cross-origin
-          // iframe). Toggle PM via the iframe bridge — reparent the host
-          // container into a fullscreen overlay and notify the child.
-          toggleTopFramePlayerMode();
-        }
         break;
       }
     }

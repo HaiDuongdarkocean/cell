@@ -14,6 +14,15 @@ import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag'
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
+import { SubtitlePanel } from './SubtitlePanel';
+import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import subtitlePanelCss from './SubtitlePanel.module.css?inline';
+import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
+import iconCss from '@/shared/icons/Icon.module.css?inline';
+import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -78,6 +87,8 @@ export interface SubtitlePanelsRef {
   setCurrentTimeMs: (timeMs: number) => void;
   /** Toggle Player Mode (same as clicking the Player Mode button). */
   togglePlayerMode: () => void;
+  /** Toggle Split View — CueList panel beside video container (page thường only). */
+  toggleSplitView: () => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -194,6 +205,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
+    const [splitViewOpen, setSplitViewOpen] = useState(false);
+    const [splitViewPct, setSplitViewPct] = useState(30);
+    const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
 
     // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
     // mounts/unmounts when the user presses `g` on the top document (not inside
@@ -285,6 +299,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       setPlayerMode((prev) => togglePlayerMode(prev));
     }, [addToast, playerMode]);
 
+    const handleToggleSplitView = useCallback((): void => {
+      if (playerMode) return;
+      setSplitViewOpen((v) => !v);
+    }, [playerMode]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -308,8 +327,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setCues,
         setCurrentTimeMs,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
+        toggleSplitView: () => { handleToggleSplitView(); },
       }),
-      [addToast, clearToasts, handleTogglePlayerMode],
+      [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView],
     );
 
     useEffect(() => {
@@ -430,6 +450,189 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         }
       };
     }, [playerMode]);
+
+    // Split View — page thường only (not Player Mode). Finds the video container
+    // and wraps it in a flex row: video stage (flex:1) + CueList panel (fixed %)
+    // with a resize handle. The video container stays in light DOM (CSS/controls
+    // keep working). CueList renders via portal into the panel div.
+    useEffect(() => {
+      if (!splitViewOpen || playerMode) return;
+      const playerShell = findPlayerContainer();
+      if (!playerShell) return;
+
+      const originalParent = playerShell.parentElement;
+      if (!originalParent) return;
+      const originalNextSibling = playerShell.nextSibling;
+
+      // Capture the player's original height — the parent may not have a fixed
+      // height, so `height:100%` on the wrapper would expand to fit CueList
+      // content (19885px for a full movie). Pin the wrapper to the player's
+      // original pixel height instead. Clamp to viewport height: on sites where
+      // the video overflows its container (e.g. vidrock.ru with intrinsic 1906×1430
+      // in a 986px viewport), using the full player height would make the wrapper
+      // + panel overflow the viewport and cover the video.
+      const playerRect = playerShell.getBoundingClientRect();
+      const wrapperH = Math.min(Math.round(playerRect.height), window.innerHeight);
+
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-cell-split-view', 'wrapper');
+      wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperH}px;overflow:hidden;position:relative;`;
+
+      const stageCell = document.createElement('div');
+      stageCell.setAttribute('data-cell-split-view', 'stage');
+      stageCell.style.cssText = 'flex:1 1 0;min-width:0;height:100%;position:relative;overflow:hidden;';
+
+      const panel = document.createElement('div');
+      panel.setAttribute('data-cell-split-view', 'panel');
+      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;`;
+
+      // Attach a shadow root to the panel so the design-system tokens
+      // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
+      // CSS resolve identically to Player Mode (which renders inside the main
+      // shadow root). Without this, the panel is in light DOM and tokens are
+      // undefined → colors fall back to browser defaults.
+      const panelShadow = panel.attachShadow({ mode: 'open' });
+      injectShadowCss(panelShadow, {
+        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss],
+      });
+      const panelInner = document.createElement('div');
+      panelInner.setAttribute('data-theme', 'dark');
+      panelInner.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
+      panelShadow.appendChild(panelInner);
+
+      const handle = document.createElement('div');
+      handle.setAttribute('data-cell-split-view', 'handle');
+      handle.style.cssText = 'flex:0 0 6px;height:100%;background:var(--color-border,#333);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
+
+      const fillStyle = document.createElement('style');
+      fillStyle.setAttribute('data-cell-split-view', 'fill');
+      fillStyle.textContent = [
+        '[data-cell-split-view="stage"] video,',
+        '[data-cell-split-view="stage"] > * {',
+        '  width:100%!important;height:100%!important;',
+        '  max-width:none!important;max-height:none!important;',
+        '  object-fit:contain!important;',
+        '}',
+      ].join('');
+      document.head.appendChild(fillStyle);
+
+      stageCell.appendChild(playerShell);
+      wrapper.appendChild(stageCell);
+      wrapper.appendChild(handle);
+      wrapper.appendChild(panel);
+
+      if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
+        originalParent.insertBefore(wrapper, originalNextSibling);
+      } else {
+        originalParent.appendChild(wrapper);
+      }
+
+      // Resize the shell and its primary descendant chain together. Player
+      // controls and Cell's overlay host often live several wrappers below the
+      // shell; resizing only the direct child leaves the overlay wider than the
+      // video stage and it paints over the CueList panel.
+      const savedPlayerStyles: Array<{ el: HTMLElement; props: Record<string, string> }> = [];
+      let sized: HTMLElement | null = playerShell;
+      while (sized) {
+        const props: Record<string, string> = {};
+        for (const property of ['width', 'height', 'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio', 'flex', 'margin', 'box-sizing']) {
+          props[property] = sized.style.getPropertyValue(property);
+        }
+        savedPlayerStyles.push({ el: sized, props });
+        sized = sized.firstElementChild as HTMLElement | null;
+      }
+
+      const resizePlayerChain = (): void => {
+        const stageRect = stageCell.getBoundingClientRect();
+        const stageW = Math.max(Math.round(stageRect.width), 0);
+        const stageH = Math.max(Math.round(stageRect.height), 0);
+
+        for (const { el } of savedPlayerStyles) {
+          el.style.setProperty('width', `${stageW}px`, 'important');
+          el.style.setProperty('height', `${stageH}px`, 'important');
+          el.style.setProperty('max-width', 'none', 'important');
+          el.style.setProperty('max-height', 'none', 'important');
+          el.style.setProperty('min-width', '0', 'important');
+          el.style.setProperty('min-height', '0', 'important');
+          el.style.setProperty('aspect-ratio', 'auto', 'important');
+          el.style.setProperty('flex', '1 1 0', 'important');
+          el.style.setProperty('margin', '0', 'important');
+          el.style.setProperty('box-sizing', 'border-box', 'important');
+        }
+        window.dispatchEvent(new Event('resize'));
+      };
+      resizePlayerChain();
+
+      const stageResizeObserver = new ResizeObserver(resizePlayerChain);
+      stageResizeObserver.observe(stageCell);
+
+      setSplitViewPortalTarget(panelInner);
+
+      let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
+      const onPointerDown = (e: PointerEvent): void => {
+        e.preventDefault();
+        dragStart = { x: e.clientX, startPct: splitViewPct, wrapperW: wrapper.getBoundingClientRect().width };
+        handle.setPointerCapture(e.pointerId);
+      };
+      const onPointerMove = (e: PointerEvent): void => {
+        if (!dragStart || dragStart.wrapperW <= 0) return;
+        const deltaPct = -((e.clientX - dragStart.x) / dragStart.wrapperW) * 100;
+        const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
+        panel.style.flexBasis = `${next}%`;
+        resizePlayerChain();
+        setSplitViewPct(next);
+      };
+      const onPointerUp = (e: PointerEvent): void => {
+        dragStart = null;
+        try { handle.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+        setSplitViewPct((pct) => {
+          setStorage({ [STORAGE_KEYS.SPLIT_VIEW_PCT]: pct }).catch(() => undefined);
+          return pct;
+        });
+      };
+      handle.addEventListener('pointerdown', onPointerDown);
+      handle.addEventListener('pointermove', onPointerMove);
+      handle.addEventListener('pointerup', onPointerUp);
+      handle.addEventListener('pointercancel', onPointerUp);
+
+      return () => {
+        handle.removeEventListener('pointerdown', onPointerDown);
+        setSplitViewPortalTarget(null);
+        handle.removeEventListener('pointermove', onPointerMove);
+        handle.removeEventListener('pointerup', onPointerUp);
+        handle.removeEventListener('pointercancel', onPointerUp);
+        stageResizeObserver.disconnect();
+        fillStyle.remove();
+        for (const { el, props } of savedPlayerStyles) {
+          for (const [property, value] of Object.entries(props)) {
+            el.style.removeProperty(property);
+            if (value) el.style.setProperty(property, value);
+          }
+        }
+        if (originalParent && playerShell.parentElement === stageCell) {
+          if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
+            originalParent.insertBefore(playerShell, originalNextSibling);
+          } else {
+            originalParent.appendChild(playerShell);
+          }
+        }
+        wrapper.remove();
+        window.dispatchEvent(new Event('resize'));
+      };
+    }, [splitViewOpen, playerMode]);
+
+    // Load persisted splitViewPct on mount.
+    useEffect(() => {
+      let cancelled = false;
+      getStorage<Record<string, number>>(STORAGE_KEYS.SPLIT_VIEW_PCT)
+        .then((data) => {
+          const stored = data[STORAGE_KEYS.SPLIT_VIEW_PCT];
+          if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
+          setSplitViewPct(Math.min(Math.max(stored, 20), 60));
+        })
+        .catch(() => undefined);
+      return () => { cancelled = true; };
+    }, []);
 
     const dragState = useRef<{
       startY: number;
@@ -614,11 +817,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 >
                   {onToggleSidePanel && (
                     <IconButton
-                      aria-label="Toggle subtitle side panel"
-                      title="Toggle side panel (T)"
+                      aria-label={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
+                      title="Toggle subtitle list (T)"
                       data-cell-id="panel-toggle-btn"
                       size="sm"
-                      onClick={onToggleSidePanel}
+                      onClick={handleToggleSplitView}
                     >
                       <Icon name="sidePanel" size={18} />
                     </IconButton>
@@ -725,6 +928,17 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           <div className={styles.hintLayer} data-cell-id="subtitle-hint-layer">
             <SubtitleHint onClick={() => setHintOpen(false)} />
           </div>
+        )}
+
+        {splitViewOpen && splitViewPortalTarget && cues.length > 0 && onSeek && createPortal(
+          <SubtitlePanel
+            cues={[...cues]}
+            currentTimeMs={currentTimeMs}
+            offsetMs={offsetMs}
+            onSeek={onSeek}
+            onClose={handleToggleSplitView}
+          />,
+          splitViewPortalTarget,
         )}
       </div>
     );

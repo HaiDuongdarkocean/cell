@@ -119,8 +119,10 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { action: 'toggle-panel', key: 't' },
   // ADR-021 D7: combo Ctrl+Shift+T toggle auto-translate (no conflict with single 't' toggle-panel).
   { action: 'toggle-translate', key: 't', ctrl: true, shift: true },
-  // ADR-021 D7: generate native subtitle manually from active target.
-  { action: 'generate-native', key: 'g' },
+  // Player Mode — G matches the Player Mode button tooltip.
+  { action: 'toggle-player-mode', key: 'g' },
+  // Generate native subtitle manually from active target.
+  { action: 'generate-native', key: 'h' },
   // ADR-026: Card Creator entry shortcuts — q quick-update, e edit-card.
   { action: 'quick-update', key: 'q' },
   { action: 'edit-card', key: 'e' },
@@ -300,6 +302,8 @@ export const STORAGE_KEYS = {
   DICTIONARY_SEARCH_HISTORY: 'dictionarySearchHistory',
   /** Player Mode split content width % (20-60). Survives reload + re-enter. */
   PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
+  /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
+  SPLIT_VIEW_PCT: 'splitViewPct',
 } as const;
 
 // === Popup Dimensions ===

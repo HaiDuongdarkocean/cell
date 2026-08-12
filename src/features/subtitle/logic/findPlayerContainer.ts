@@ -26,11 +26,15 @@ export function findPlayerContainer(
 }
 
 /**
- * Walk up from a <video> element to the farthest ancestor whose bounding area
- * is within `tolerance` of the video's area.
+ * Walk up from a <video> element to the farthest player ancestor.
  *
- * Skips zero-area ancestors (e.g. YouTube's .html5-video-container placeholder)
- * and stops as soon as the area changes beyond the tolerance.
+ * Normal ancestors must stay within `tolerance` of the previous stable
+ * container. Some players put the video in an aspect-ratio wrapper while the
+ * controls live on a wider shell; that shell is accepted when its area remains
+ * within a safe 0.5–1.5 ratio of the video and it owns interactive controls.
+ * The walk continues after rejected wrappers so the farthest valid player shell
+ * can still be found. This is the shared container algorithm for Player Mode
+ * and Split View.
  */
 export function findFarthestSameSizeContainer(
   video: HTMLVideoElement,
@@ -51,7 +55,10 @@ export function findFarthestSameSizeContainer(
   const baseArea = baseRect.width * baseRect.height;
 
   let farthest: HTMLElement = video;
+  let referenceArea = baseArea;
   let el: HTMLElement | null = video.parentElement;
+  const MIN_PLAYER_AREA_RATIO = 0.5;
+  const MAX_PLAYER_AREA_RATIO = 1.5;
 
   while (el && el !== document.body) {
     const rect = el.getBoundingClientRect();
@@ -62,14 +69,23 @@ export function findFarthestSameSizeContainer(
       continue;
     }
 
-    const diff = Math.abs(area - baseArea) / baseArea;
+    const diff = Math.abs(area - referenceArea) / referenceArea;
+    const ratioToVideo = area / baseArea;
+    const hasControls = Boolean(el.querySelector(
+      'button, [role="button"], input[type="range"], video[controls]',
+    ));
+    const isControlShell = hasControls
+      && ratioToVideo >= MIN_PLAYER_AREA_RATIO
+      && ratioToVideo <= MAX_PLAYER_AREA_RATIO;
 
-    if (diff <= tolerance) {
+    if (diff <= tolerance || isControlShell) {
       farthest = el;
-      el = el.parentElement;
-    } else {
-      break;
+      referenceArea = area;
     }
+
+    // Do not stop on a rejected intermediate wrapper. A wider ancestor can be
+    // the actual player shell (e.g. video aspect-ratio wrapper → controls shell).
+    el = el.parentElement;
   }
 
   return farthest;
