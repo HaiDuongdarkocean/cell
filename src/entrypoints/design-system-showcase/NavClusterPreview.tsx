@@ -4,7 +4,6 @@ import { Button } from '@/shared/ui';
 
 export function NavClusterPreview(): React.JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
-  const [hasSubtitle, setHasSubtitle] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [repeatActive, setRepeatActive] = useState(false);
 
@@ -35,7 +34,6 @@ export function NavClusterPreview(): React.JSX.Element {
       >
         <NavCluster
           collapsed={collapsed}
-          hasSubtitle={hasSubtitle}
           isPlaying={isPlaying}
           repeatActive={repeatActive}
           {...actions}
@@ -44,9 +42,6 @@ export function NavClusterPreview(): React.JSX.Element {
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
         <Button size="sm" onClick={() => setCollapsed((v) => !v)}>
           Toggle collapsed
-        </Button>
-        <Button size="sm" onClick={() => setHasSubtitle((v) => !v)}>
-          Toggle has subtitle
         </Button>
         <Button size="sm" onClick={() => setIsPlaying((v) => !v)}>
           Toggle play

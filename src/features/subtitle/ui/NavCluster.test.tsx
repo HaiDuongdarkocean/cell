@@ -13,8 +13,8 @@ const handlers = {
 };
 
 describe('NavCluster', () => {
-  it('renders expanded controls when a subtitle is present', () => {
-    render(<NavCluster collapsed={false} hasSubtitle {...handlers} />);
+  it('renders expanded controls', () => {
+    render(<NavCluster collapsed={false} {...handlers} />);
     expect(screen.getByTestId('nav-cluster')).toBeInTheDocument();
     expect(screen.getByTestId('nav-prev')).toBeInTheDocument();
     expect(screen.getByTestId('nav-next')).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('NavCluster', () => {
   });
 
   it('calls handlers when buttons are clicked', () => {
-    render(<NavCluster collapsed={false} hasSubtitle {...handlers} />);
+    render(<NavCluster collapsed={false} {...handlers} />);
     fireEvent.click(screen.getByTestId('nav-prev'));
     fireEvent.click(screen.getByTestId('nav-next'));
     fireEvent.click(screen.getByTestId('nav-repeat'));
@@ -40,13 +40,16 @@ describe('NavCluster', () => {
   });
 
   it('renders collapsed button when collapsed', () => {
-    render(<NavCluster collapsed hasSubtitle {...handlers} />);
+    render(<NavCluster collapsed {...handlers} />);
     expect(screen.getByTestId('nav-expand')).toBeInTheDocument();
     expect(screen.queryByTestId('nav-prev')).not.toBeInTheDocument();
   });
 
-  it('shows no-sub icon when no subtitle is loaded', () => {
-    render(<NavCluster collapsed={false} hasSubtitle={false} {...handlers} />);
-    expect(screen.getByTestId('nav-no-sub')).toBeInTheDocument();
+  it('renders full controls (no hasSubtitle prop needed)', () => {
+    render(<NavCluster collapsed={false} {...handlers} />);
+    expect(screen.getByTestId('nav-cluster')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-prev')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-next')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-play')).toBeInTheDocument();
   });
 });

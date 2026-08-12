@@ -60,8 +60,6 @@ export interface SubtitlePanelsRef {
   addToast: (message: string, variant?: ToastVariant) => void;
   /** Clear all toasts. */
   clearToasts: () => void;
-  /** Update whether a subtitle is currently loaded. */
-  setHasSubtitle: (has: boolean) => void;
   /** Update whether the video is playing. */
   setIsPlaying: (playing: boolean) => void;
   /** Update the repeat AB-loop active state. */
@@ -86,7 +84,6 @@ export interface SubtitlePanelsProps {
   targetStyle: OverlayStyleConfig;
   nativeStyle: OverlayStyleConfig;
   collapsed: boolean;
-  hasSubtitle: boolean;
   isPlaying: boolean;
   repeatActive: boolean;
   repeatIcon?: IconCatalogKey;
@@ -141,7 +138,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       targetStyle: initialTargetStyle,
       nativeStyle: initialNativeStyle,
       collapsed: initialCollapsed,
-      hasSubtitle: initialHasSubtitle,
       isPlaying: initialIsPlaying,
       repeatActive: initialRepeatActive,
       repeatIcon: initialRepeatIcon = 'repeat',
@@ -178,7 +174,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [targetStyle, setTargetStyle] = useState(initialTargetStyle);
     const [nativeStyle, setNativeStyle] = useState(initialNativeStyle);
     const [collapsed, setCollapsed] = useState(initialCollapsed);
-    const [hasSubtitle, setHasSubtitle] = useState(initialHasSubtitle);
     const [isPlaying, setIsPlaying] = useState(initialIsPlaying);
     const [repeatActive, setRepeatActive] = useState(initialRepeatActive);
     const [repeatIcon, setRepeatIcon] = useState<IconCatalogKey>(initialRepeatIcon);
@@ -276,11 +271,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         return;
       }
 
-      // Exit fullscreen BEFORE toggling playerMode. The fullscreen element is
-      // top-layer and cannot be reparented into shadow DOM without Chrome
+      // Exit site fullscreen BEFORE toggling playerMode. The fullscreen element
+      // is top-layer and cannot be reparented into shadow DOM without Chrome
       // exiting fullscreen. await ensures the document is no longer fullscreen
-      // when PlayerModeOverlay mounts, so the player-move effect runs the
-      // normal flow (reparent into video stage). No race condition.
+      // when PlayerModeOverlay mounts, so the player-move effect runs the normal
+      // flow (reparent into video stage). After mount, the native-fullscreen
+      // effect requests fullscreen on #cell-subtitle-root — SSOT with Flow 2.
+      // If the site was already in fullscreen, the exit consumed the user
+      // gesture, so requestFullscreen() may fail → CSS fallback covers this.
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
@@ -300,7 +298,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setHintOpen,
         addToast,
         clearToasts,
-        setHasSubtitle,
         setIsPlaying,
         setRepeatActive,
         setRepeatIcon,
@@ -383,6 +380,55 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerModeOriginalParent.current = null;
         (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent = undefined;
       }
+    }, [playerMode]);
+
+    // Native fullscreen — SSOT with Flow 2 (iframe bridge). After Player Mode
+    // mounts and the host reparenting effect above moves #cell-subtitle-root to
+    // document.body with position:fixed;inset:0 (CSS fallback), request native
+    // fullscreen on the host. Top-layer rendering guarantees nothing can
+    // z-index over it — no z-index:2147483647 hack needed.
+    //
+    // Transient activation from the toggle gesture (keyboard `g` or button
+    // click) is still valid when this effect runs (React render+effects <100ms,
+    // activation window ~5s). If the site was already in fullscreen,
+    // handleTogglePlayerMode exited it first (consuming the gesture), so
+    // requestFullscreen() may fail here — the CSS fallback covers that case.
+    //
+    // On Esc: browser exits fullscreen → fullscreenchange → setPlayerMode(false).
+    // PlayerModeOverlay's Esc handler skips preventDefault when in native
+    // fullscreen so the browser can process the exit.
+    useEffect(() => {
+      if (!playerMode) return;
+      const host = document.querySelector('#cell-subtitle-root');
+      if (!(host instanceof HTMLElement)) return;
+
+      let ourFullscreenActive = false;
+
+      const onFullscreenChange = (): void => {
+        if (document.fullscreenElement === host) {
+          ourFullscreenActive = true;
+        } else if (ourFullscreenActive) {
+          // Our fullscreen exited (Esc, browser UI, or another element) → exit PM.
+          ourFullscreenActive = false;
+          setPlayerMode(false);
+        }
+      };
+      document.addEventListener('fullscreenchange', onFullscreenChange);
+
+      // Request native fullscreen. requestFullscreen() auto-exits any existing
+      // fullscreen in one step — same user gesture, no Chrome block.
+      if (document.fullscreenElement !== host) {
+        host.requestFullscreen().catch(() => { /* CSS fallback active */ });
+      } else {
+        ourFullscreenActive = true;
+      }
+
+      return () => {
+        document.removeEventListener('fullscreenchange', onFullscreenChange);
+        if (ourFullscreenActive && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => undefined);
+        }
+      };
     }, [playerMode]);
 
     const dragState = useRef<{
@@ -470,7 +516,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           <PlayerModeOverlay
             targetStyle={targetStyle}
             nativeStyle={nativeStyle}
-            hasSubtitle={hasSubtitle}
             isPlaying={isPlaying}
             repeatActive={repeatActive}
             repeatIcon={repeatIcon}
@@ -518,7 +563,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         <div className={styles.navLayer}>
           <NavCluster
             collapsed={collapsed}
-            hasSubtitle={hasSubtitle}
             isPlaying={isPlaying}
             repeatActive={repeatActive}
             repeatIcon={repeatIcon}

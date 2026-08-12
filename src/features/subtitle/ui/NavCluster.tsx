@@ -8,8 +8,6 @@ import styles from './NavCluster.module.css';
 interface NavClusterProps {
   /** Whether the cluster is collapsed to a circular drag handle. */
   collapsed: boolean;
-  /** Whether a subtitle is currently loaded. */
-  hasSubtitle: boolean;
   /** Whether the video is playing. */
   isPlaying?: boolean;
   /** Repeat AB-loop mode state. */
@@ -38,7 +36,6 @@ interface NavClusterProps {
 
 function NavClusterInner({
   collapsed,
-  hasSubtitle,
   isPlaying = false,
   repeatActive = false,
   repeatIcon = 'navRepeat',
@@ -55,7 +52,6 @@ function NavClusterInner({
   const rootClass = [
     styles.cluster,
     collapsed ? styles.collapsed : '',
-    hasSubtitle ? '' : styles.noSub,
   ]
     .filter(Boolean)
     .join(' ');
@@ -116,11 +112,6 @@ function NavClusterInner({
           <Icon name="navForward" size={18} />
         </IconButton>
       </div>
-      {hasSubtitle ? null : (
-        <div className={styles.noSub} data-cell-id="nav-no-sub">
-          <Icon name="flag" size={20} />
-        </div>
-      )}
     </div>
   );
 }
