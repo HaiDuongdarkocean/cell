@@ -10,13 +10,13 @@
 - [x] Refactor `MasteryBadge` in-progress icon to use `Spinner`
 - [x] Remove duplicate `@keyframes spin` and `.spinner` CSS
 - [x] Verify: typecheck, build (prod + dev) pass
-- [~] Subagent verify AC for Loop 1
+- [x] Subagent verify AC for Loop 1
 
 ## Loop 2 — Card enter/expand animations SSOT
-- [ ] Discover duplicate `fade-in` / `slide-down` keyframes in VideoCard/SubtitleCard
-- [ ] Extract shared animation keyframes
+- [x] Discover duplicate `fade-in` / `slide-down` keyframes in VideoCard/SubtitleCard
+- [ ] Extract shared animation keyframes (requires shared CSS module due to CSS Modules scoping)
 - [ ] Refactor VideoCard and SubtitleCard to use shared animation
-- [ ] Verify: typecheck, test:unit, build pass
+- [ ] Verify: typecheck, build pass
 - [ ] Subagent verify AC for Loop 2
 
 ## Loop 3 — Empty state SSOT
