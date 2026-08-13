@@ -15,6 +15,7 @@ import { STORAGE_KEYS, USE_LEGACY_SETTINGS } from '@/shared/config/config';
 import { mountSettingsDialogLegacy } from './mountSettingsDialogLegacy';
 import type { Settings } from '@/entities/media';
 
+import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
 import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
 import dictionaryPopupSettingsPanelCss from '@/features/settings/ui/DictionaryPopupSettingsPanel.module.css?inline';
 import multiSelectCss from '@/features/settings/ui/MultiSelect.module.css?inline';
@@ -87,6 +88,7 @@ export interface SettingsDialogMountController {
 }
 
 const SHADOW_CSS = [
+  apiKeyManagerCss,
   cardCreatorSettingsPanelCss,
   dictionaryPopupSettingsPanelCss,
   multiSelectCss,

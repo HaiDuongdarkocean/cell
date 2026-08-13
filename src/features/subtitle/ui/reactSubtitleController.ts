@@ -12,6 +12,7 @@ import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
+import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
@@ -59,6 +60,8 @@ export class ReactSubtitleController {
   private previewTextPersistTimer: ReturnType<typeof setTimeout> | null = null;
   private previewTargetText = 'This is how the target subtitle will look.';
   private previewNativeText = 'This is how the native subtitle will look.';
+  private hasSearchKeys = false;
+  private onOpenSettingsCallback: (() => void) | null = null;
 
   private playerModeResizeHandler: (() => void) | null = null;
 
@@ -70,6 +73,9 @@ export class ReactSubtitleController {
   public onToggleSidePanel?: () => void;
   /** Called when active cue indices change (for subtitle tokenize rendering). */
   public onCuesUpdated?: () => void;
+  /** Called when the user selects a search result to download + load. Delegates
+   *  to contentScriptController which handles the actual fetch + loadBilingualCues. */
+  public onSearchResultSelect?: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 
   /** Whether Player Mode overlay is currently active. */
   public isPlayerModeActive = false;
@@ -214,6 +220,9 @@ export class ReactSubtitleController {
       onGenerateNative: () => this.onGenerateNative(),
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
       appearance: this.buildAppearanceState(),
+      hasSearchKeys: this.hasSearchKeys,
+      onOpenSettings: this.onOpenSettingsCallback ?? (() => undefined),
+      onSearchResultSelect: (result, role, cues) => this.onSearchResultSelect?.(result, role, cues),
     };
   }
 
@@ -459,6 +468,12 @@ export class ReactSubtitleController {
     // React mount happens in the constructor; no additional init required.
   }
 
+  /** Force re-render of the manager panel with current state (e.g. after
+   *  setting callbacks that were undefined at construction time). */
+  refreshManagerState(): void {
+    this.mount.setManager(this.buildManagerState());
+  }
+
   // === Subtitle manager panel (legacy managerPanel replacement) ===
 
   updateManagerItems(role: 'target' | 'native', items: import('./subtitlePanelModel').SubtitlePanelItem[], activeIndex: number): void {
@@ -478,6 +493,21 @@ export class ReactSubtitleController {
 
   closeManager(): void {
     this.mount.setManagerOpen(false);
+  }
+
+  /** Update whether subtitle search API keys are configured. Controls search UI
+   *  availability in the manager panel. Triggers re-render so the panel reflects
+   *  the new state immediately. */
+  setHasSearchKeys(has: boolean): void {
+    this.hasSearchKeys = has;
+    this.mount.setManager(this.buildManagerState());
+  }
+
+  /** Store the callback that opens extension settings (e.g. to configure search
+   *  API keys). Called by contentScriptController during wiring. */
+  onOpenSettings(callback: () => void): void {
+    this.onOpenSettingsCallback = callback;
+    this.mount.setManager(this.buildManagerState());
   }
 
   // === Tokenize / dictionary: state is stored in the cue engine. ===

@@ -1,0 +1,404 @@
+/* Search section — sits above Target/Native sections, separated by border-bottom */
+.section {
+  padding-block: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-1) var(--space-4);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Form — two rows: input+lang on first, season/episode+button on second */
+.searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+}
+
+.inputRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Layout-only overrides for shared Input/Select/Button components */
+.queryInput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.langSelect {
+  flex: 0 0 auto;
+  min-width: 96px;
+}
+
+.seasonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.numberField {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.numberLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.numberInput {
+  width: 56px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.searchButton {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Results area wrapper */
+.resultsArea {
+  margin-top: var(--space-3);
+}
+
+/* Results — role="listbox" container, scroll within section */
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 40vh;
+  padding: 0 var(--space-4);
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+}
+
+/* Each result row — button wrapper inside li */
+.resultItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  list-style: none;
+}
+
+.resultItem[aria-selected="true"] {
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.resultButton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-2-5) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.resultButton:hover {
+  background: var(--color-surface-hover);
+}
+
+.resultItem[aria-selected="true"] .resultButton {
+  background: transparent;
+}
+
+.resultButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Subtitle name — truncate with ellipsis */
+.resultName {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultItem[aria-selected="true"] .resultName {
+  color: var(--color-primary);
+}
+
+/* Meta — language · source · format · badges (small, muted) */
+.resultMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.resultMeta > span + span::before {
+  content: '·';
+  margin-right: var(--space-2);
+  color: var(--color-border-emphasized);
+}
+
+.resultBadge {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-secondary);
+}
+
+/* === Preview panel — subtitle content preview before loading === */
+.previewPanel {
+  margin: 0 var(--space-4);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.previewHeadInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.previewHeadName {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewHeadMeta {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.previewList {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.previewLoading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3);
+}
+
+.previewError {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.previewCue {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.previewCue:last-child {
+  border-bottom: 0;
+}
+
+.previewCue:hover {
+  background: var(--color-surface-hover);
+}
+
+.previewCueTime {
+  flex-shrink: 0;
+  min-width: 3.2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+  padding: var(--space-1-5) var(--space-2);
+  user-select: none;
+}
+
+.previewCueText {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.previewMore {
+  padding: var(--space-1-5) var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.previewFooter {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.previewFooter > button {
+  flex: 1;
+}
+
+/* Skeleton loading */
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-4);
+  list-style: none;
+  margin: 0;
+}
+
+.skeletonItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 52px;
+  padding: var(--space-2-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-skeleton, rgba(255,255,255,0.06));
+  opacity: 0.6;
+}
+
+/* Error state */
+.errorState {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) var(--space-4) 0;
+  padding: var(--space-2-5) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-error-subtle, rgba(239,68,68,0.1));
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}
+
+.errorText {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Empty state */
+.emptyState {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* No keys — collapsed state, hint text + link */
+.noKeySection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.noKeyHint {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Mobile (≤479px) — form wraps to column, full-width controls */
+@media (max-width: 479px) {
+  .sectionHead,
+  .searchForm,
+  .resultsList,
+  .skeletonList,
+  .emptyState,
+  .noKeySection {
+    padding-inline: var(--space-3);
+  }
+
+  .inputRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .queryInput {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .langSelect {
+    width: 100%;
+  }
+
+  .seasonRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .numberInput {
+    width: 100%;
+  }
+
+  .searchButton {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .errorState {
+    margin-inline: var(--space-3);
+  }
+}

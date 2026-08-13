@@ -16,6 +16,11 @@ import type {
   ConversionPhase,
   BilingualCue,
 } from '@/entities/media/types';
+import type {
+  SubtitleSearchResult,
+  SearchError,
+  KeyQuotaInfo,
+} from '@/features/subtitle/logic/subtitleSearchTypes';
 
 // === Message Types ===
 
@@ -83,7 +88,10 @@ export type MessageType =
   | 'LOOKUP_RESULT'
   | 'LOOKUP_CANCEL'
   | 'CAPTURE_TAB_SCREENSHOT'
-  | 'SUBTITLE_DISCOVERY_SIGNAL';
+  | 'SUBTITLE_DISCOVERY_SIGNAL'
+  | 'SEARCH_SUBTITLES'
+  | 'RESOLVE_SUBTITLE_DOWNLOAD'
+  | 'GET_KEY_QUOTA';
 
 // === Message Request ===
 
@@ -357,6 +365,7 @@ export interface TranslateResult {
 /** Background → offscreen: delegate a fetch() call (M15 — SW idle eviction safety). */
 export interface FetchRequestPayload {
   readonly url: string;
+
   readonly options?: {
     readonly method?: string;
     readonly headers?: Record<string, string>;
@@ -653,4 +662,43 @@ export type MessageHandler<T = unknown> = (
 
 export interface DownloadListResponse {
   readonly downloads: DownloadItem[];
+}
+
+// === Subtitle Search messages (spec subtitle-search.md) ===
+
+/** Content-script → background: search subtitles from external providers. */
+export interface SearchSubtitlesPayload {
+  readonly query: string;
+  readonly languages: readonly string[];
+  readonly season?: number;
+  readonly episode?: number;
+}
+
+/** Background → content-script: search results or error. */
+export interface SearchSubtitlesResult {
+  readonly results?: SubtitleSearchResult[];
+  readonly error?: SearchError;
+}
+
+/** Content-script → background: resolve download for a search result. */
+export interface ResolveSubtitleDownloadPayload {
+  readonly result: SubtitleSearchResult;
+  readonly role: 'target' | 'native';
+}
+
+/** Background → content-script: downloaded subtitle content or error. */
+export interface ResolveSubtitleDownloadResult {
+  readonly content?: string;
+  readonly format?: 'srt' | 'vtt' | 'ass';
+  readonly error?: SearchError;
+}
+
+/** Content-script → background: get key quota info for UI display. */
+export interface GetKeyQuotaPayload {
+  readonly provider?: 'subdl' | 'opensubtitles';
+}
+
+/** Background → content-script: key quota info. */
+export interface GetKeyQuotaResult {
+  readonly quotas: KeyQuotaInfo[];
 }

@@ -184,3 +184,21 @@ export const DetectedSubtitlesPayloadSchema = z.object({
   origin: z.string().optional(),
   movieId: z.union([z.string(), z.number().int()]).optional(),
 });
+
+// === Subtitle Search payloads (spec subtitle-search.md) ===
+
+export const SearchSubtitlesPayloadSchema = z.object({
+  query: z.string().min(1),
+  languages: z.array(z.string()),
+  season: z.number().int().min(0).optional(),
+  episode: z.number().int().min(0).optional(),
+});
+
+export const ResolveSubtitleDownloadPayloadSchema = z.object({
+  result: z.record(z.string(), z.unknown()),
+  role: z.enum(['target', 'native']),
+});
+
+export const GetKeyQuotaPayloadSchema = z.object({
+  provider: z.enum(['subdl', 'opensubtitles']).optional(),
+}).optional();

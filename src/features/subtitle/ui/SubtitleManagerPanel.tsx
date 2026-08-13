@@ -4,12 +4,15 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Button } from '@/shared/ui/Button';
 import { Tabs } from '@/shared/ui/Tabs';
 import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
+import { SubtitleSearchPanel } from './SubtitleSearchPanel';
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
+import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
+import type { SrtCue } from '@/entities/media';
 import styles from './SubtitleManagerPanel.module.css';
 
 export interface AppearanceState {
@@ -42,6 +45,9 @@ export interface SubtitleManagerPanelProps {
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
   generateNativeDisabled?: boolean;
   appearance?: AppearanceState;
+  readonly hasSearchKeys: boolean;
+  readonly onOpenSettings: () => void;
+  readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -59,6 +65,8 @@ function getSourceLabel(source: SubtitlePanelItem['source']): string {
   switch (source) {
     case 'imported':
       return 'Imported';
+    case 'searched':
+      return 'Searched';
     case 'translated':
       return 'Translated';
     default:
@@ -321,6 +329,9 @@ export function SubtitleManagerPanel({
   onOffsetChange,
   generateNativeDisabled,
   appearance,
+  hasSearchKeys,
+  onOpenSettings,
+  onSearchResultSelect,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
     offset: formatSigned(defaultOffsets.target),
@@ -456,6 +467,13 @@ export function SubtitleManagerPanel({
       </div>
 
       <div className={styles.tracksBody}>
+        <div data-cell-id="manager-search-section">
+          <SubtitleSearchPanel
+            hasSearchKeys={hasSearchKeys}
+            onOpenSettings={onOpenSettings}
+            onSearchResultSelect={onSearchResultSelect}
+          />
+        </div>
         <SectionPanel
           role="target"
           label={targetLabel}

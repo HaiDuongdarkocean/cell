@@ -13,6 +13,9 @@ export function sendMessage<T = unknown>(
   if (override) {
     return override(message) as Promise<T>;
   }
+  if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+    return Promise.resolve(undefined as T);
+  }
   return chrome.runtime.sendMessage(message) as Promise<T>;
 }
 
