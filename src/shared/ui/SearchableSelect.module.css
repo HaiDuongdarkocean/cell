@@ -140,6 +140,7 @@
 
 /* === Options list === */
 .list {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
   flex: 1 1 auto;
   min-height: 0;
   margin: 0;
@@ -147,17 +148,6 @@
   list-style: none;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
-}
-
-.list::-webkit-scrollbar {
-  width: var(--space-1-5);
-}
-
-.list::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
 }
 
 .option {

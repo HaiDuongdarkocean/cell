@@ -127,14 +127,32 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `87c5eab8`) ✅
 - **Status:** Complete.
 
-### Loop 6 — (pending candidates)
-- Themed scrollbar CSS in `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`, `SettingsDialog`.
+### Loop 6 — Themed scrollbar SSOT
+- **Discovery:** 6 module CSS files duplicated the same themed scrollbar pattern (`scrollbar-width: thin`, `scrollbar-color`, `::-webkit-scrollbar` track/thumb/hover).
+- **Plan:** Mở rộng `Scrollable.module.css` với `.themed` (space-1-5) và `.themedWide` (space-2); dùng `composes` thay thế các block.
+- **AC:**
+  1. `Scrollable.module.css` chứa `.themed` và `.themedWide`.
+  2. Không còn `scrollbar-width`, `scrollbar-color`, hay `::-webkit-scrollbar` track/thumb/hover trong `.module.css` khác.
+  3. Build + tests pass.
+- **Do:**
+  - Thêm `.themed` và `.themedWide` vào `Scrollable.module.css`.
+  - Chuyển `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`, `SettingsDialog` module CSS sang dùng `composes: themed` / `themedWide`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - Targeted unit tests (`Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`, `SettingsDialog`) ✅
+  - Subagent review (agent id `5eceb00c`) ✅
+- **Status:** Complete. Các global CSS files (`popup/global.css`, `sidepanel/global.css`, `components.css`) vẫn còn scrollbar riêng vì chúng phục vụ page/shadow DOM, nằm ngoài scope CSS modules.
+
+### Loop 7 — (pending candidates)
+- Global scrollbar CSS trong `popup/global.css`, `sidepanel/global.css`, `components.css`, và inline HTML.
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header / actions layout pattern consolidation.
 - Finish remaining empty states (`ImagePanel`, `CandidateView`).
 
 ## Loop count / goal check
 
-- **Loops completed:** 5
+- **Loops completed:** 6
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 3 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5)
+- **Confirmation questions asked to user:** 4 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6)

@@ -5,3 +5,37 @@
 .hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Themed thin scrollbar — transparent track, themed thumb.
+   Use `.themed` (space-1-5) or `.themedWide` (space-2) on scrollable containers. */
+.themed {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+.themed::-webkit-scrollbar {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+}
+
+.themed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.themed::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+.themed::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+.themedWide {
+  composes: themed;
+}
+
+.themedWide::-webkit-scrollbar {
+  width: var(--space-2);
+  height: var(--space-2);
+}

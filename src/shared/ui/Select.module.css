@@ -72,6 +72,7 @@
 .menu {
   position: absolute;
   top: calc(100% + var(--space-1));
+  composes: themed from '@/shared/ui/Scrollable.module.css';
   /* Width follows content so a narrow trigger doesn't clip long options,
      but never shrinks below the trigger and is capped to guard very long
      items. */
@@ -84,9 +85,6 @@
   z-index: var(--z-dropdown);
   max-height: min(var(--select-menu-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow-y: auto;
-  /* Design-system scrollbar (same as Dialog and SearchableSelect). */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 /* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
@@ -100,23 +98,6 @@
 .menuAlignRight {
   right: 0;
   left: auto;
-}
-
-.menu::-webkit-scrollbar {
-  width: var(--space-1-5);
-}
-
-.menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.menu::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-
-.menu::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
 }
 
 .option {

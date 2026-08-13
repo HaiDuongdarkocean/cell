@@ -73,10 +73,27 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [ ] Không còn `scrollbar-width: none` và `::-webkit-scrollbar { display: none; }` trong các `.module.css` khác.
   - [ ] Build pass.
 
-## Loop 6+ (future loops)
-- Themed scrollbar CSS dư thừa trong `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`.
+## Loop 6 — Themed scrollbar SSOT
+- **Why:** Các `.module.css` lặp lại pattern themed scrollbar (`scrollbar-width: thin` + `scrollbar-color` + `::-webkit-scrollbar` track/thumb/hover).
+- **What:** Mở rộng `Scrollable.module.css` thêm `.themed` (width 1.5) và `.themedWide` (width 2); dùng `composes` thay thế.
+- **Files:**
+  - `src/shared/ui/Scrollable.module.css`
+  - `src/shared/ui/Dialog.module.css`
+  - `src/shared/ui/Select.module.css`
+  - `src/shared/ui/SearchableSelect.module.css`
+  - `src/features/settings/ui/MultiSelect.module.css`
+  - `src/features/cardCreator/ui/QueueSidebar.module.css`
+  - `src/features/settings/ui/SettingsDialog.module.css`
+- **AC:**
+  - [ ] `Scrollable.module.css` chứa `.themed` và `.themedWide`.
+  - [ ] Không còn `scrollbar-width: thin`, `scrollbar-color`, `::-webkit-scrollbar` track/thumb/hover trong các `.module.css` khác.
+  - [ ] Build + tests pass.
+
+## Loop 7+ (future loops)
+- Global scrollbar CSS trong `global.css` (popup/sidepanel) và `components.css` (shadow DOM).
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header/actions layout patterns trong popup/subtitle/universal panel.
+- Finish remaining empty states (`ImagePanel`, `CandidateView`).
 
 ## Verification pattern
 Sau mỗi loop:

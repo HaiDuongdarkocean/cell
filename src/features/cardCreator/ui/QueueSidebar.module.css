@@ -4,6 +4,7 @@
 */
 
 .cc-queue {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -13,18 +14,6 @@
   min-width: calc(var(--space-5) * 8);
   max-width: calc(var(--space-5) * 11);
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
-}
-
-.cc-queue::-webkit-scrollbar { width: var(--space-1-5); }
-.cc-queue::-webkit-scrollbar-track { background: transparent; }
-.cc-queue::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-.cc-queue::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
 }
 
 .cc-queue__header {
