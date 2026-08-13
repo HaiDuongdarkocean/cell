@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import styles from './SourceBadge.module.css';
+import { Badge } from '@/shared/ui/Badge';
 
 export type DictionarySource =
   | 'cambridge'
@@ -8,7 +8,7 @@ export type DictionarySource =
   | 'collins'
   | 'longman';
 
-export interface SourceBadgeProps extends HTMLAttributes<HTMLSpanElement> {
+export interface SourceBadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
   /** The dictionary source. */
   source: DictionarySource;
   children: ReactNode;
@@ -18,13 +18,14 @@ export interface SourceBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 /**
  * SourceBadge — small label indicating the dictionary source of an entry.
- * Uses `--color-background-muted` with pill radius.
+ * Uses the shared Badge atom with a muted pill style.
  */
-export function SourceBadge({ source, children, className, size = 'md', ...rest }: SourceBadgeProps): React.JSX.Element {
-  const cls = [styles.badge, styles[size], className ?? ''].filter(Boolean).join(' ');
+export function SourceBadge({ source, children, size = 'md', ...rest }: SourceBadgeProps): React.JSX.Element {
+  const badgeSize = size === 'sm' ? 'xs' : 'sm';
+
   return (
-    <span className={cls} aria-label={`Source: ${source}`} {...rest}>
+    <Badge variant="muted" size={badgeSize} aria-label={`Source: ${source}`} {...rest}>
       {children}
-    </span>
+    </Badge>
   );
 }

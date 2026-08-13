@@ -1,8 +1,8 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import styles from './Badge.module.css';
 
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning';
-type BadgeSize = 'sm' | 'md';
+type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning' | 'muted';
+type BadgeSize = 'xs' | 'sm' | 'md';
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /** Visual variant. Default: default. */

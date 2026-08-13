@@ -227,9 +227,23 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `display: flex` dư thừa trong các class trên.
   - [x] Build + `BottomSheet` tests pass.
 
-## Loop 17+ (future loops)
-- Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) consolidate với `Badge`/`Chip`.
-- Toast / notice patterns (`SubtitleToast`, `CardCreatorDialog` notice, `SubtitleSearchPanel` error, `DownloadCard` error).
+## Loop 17 — SourceBadge → Badge SSOT
+- **Why:** `SourceBadge` tự định nghĩa toàn bộ pill CSS trong khi `Badge` đã có.
+- **What:** Thêm `muted` variant và `xs` size vào `Badge`; chuyển `SourceBadge` thành wrapper của `Badge`; xóa `SourceBadge.module.css`.
+- **Files:**
+  - `src/shared/ui/Badge.{tsx,module.css}`
+  - `src/shared/domain/dictionary/atoms/SourceBadge.tsx`
+  - `src/shared/domain/dictionary/atoms/SourceBadge.module.css` (delete)
+  - `src/shared/styles/tokens.json` (optional: badge-muted tokens)
+- **AC:**
+  - [x] `Badge` hỗ trợ `variant="muted"` (nền muted, chữ secondary) và `size="xs"` (`font-size-2xs`).
+  - [x] `SourceBadge` là wrapper của `Badge` với `aria-label` từ `source`.
+  - [x] Xóa `SourceBadge.module.css`.
+  - [x] Build + `SourceBadge` / `Badge` tests pass.
+
+## Loop 18+ (future loops)
+- Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`) consolidate với `Badge`/`Chip`.
+- Toast / notice patterns (`SubtitleToast`, `CardCreatorDialog` notice, `SubtitleSearchPanel` error, `DownloadCard` error, `QueueSidebar` status, `SubtitleManagerPanel` error).
 
 ## Verification pattern
 Sau mỗi loop:
