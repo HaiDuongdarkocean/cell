@@ -1,12 +1,24 @@
 .alert {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
   padding: var(--alert-padding) var(--space-4);
   border-radius: var(--alert-radius);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: var(--leading-normal);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 .default {

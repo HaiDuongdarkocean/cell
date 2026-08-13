@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDictionaryPanel } from './useDictionaryPanel';
+import { Alert } from '@/shared/ui/Alert';
+import { HStack } from '@/shared/ui/Stack';
 import { SearchField } from '@/shared/ui/SearchField';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
@@ -298,17 +300,20 @@ export function DictionaryPanelView({
       {panel.isLoading && !panel.currentResult && (
         panel.searchTerm.trim()
           ? <CandidateSkeleton term={panel.searchTerm.trim()} />
-          : <div className={styles.loading} data-cell-id="dictionary-loading">
+          : <HStack align="center" justify="center" gap="2" className={styles.loading} role="status" data-cell-id="dictionary-loading">
               <Spinner size="md" />
               <span>Looking up…</span>
-            </div>
+            </HStack>
       )}
 
       {panel.error && (
-        <div className={styles.error} role="alert" data-cell-id="dictionary-error">
-          <Icon name="alertCircle" size={20} />
-          <span>{panel.error}</span>
-        </div>
+        <Alert
+          variant="error"
+          icon={<Icon name="alertCircle" size={20} />}
+          description={panel.error}
+          role="alert"
+          data-cell-id="dictionary-error"
+        />
       )}
 
       {!panel.isLoading && !panel.error && !panel.currentResult && (
