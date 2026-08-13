@@ -3,6 +3,7 @@ import { useDictionaryPanel } from './useDictionaryPanel';
 import { SearchField } from '@/shared/ui/SearchField';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/icons/Icon';
 import {
   addSearchHistoryTerm,
@@ -311,13 +312,14 @@ export function DictionaryPanelView({
       )}
 
       {!panel.isLoading && !panel.error && !panel.currentResult && (
-        <div className={styles.dictionaryEmpty} role="status" data-cell-id="dictionary-empty">
-          <div className={styles.dictionaryEmptyIcon} aria-hidden="true">
-            <Icon name="bookOpen" size={36} />
-          </div>
-          <div className={styles.dictionaryEmptyTitle}>Ready when you are</div>
-          <div className={styles.dictionaryEmptyDescription}>Search for a word to explore its meaning.</div>
-        </div>
+        <EmptyState
+          size="compact"
+          className={styles.dictionaryEmpty}
+          icon={<Icon name="bookOpen" size={36} />}
+          title="Ready when you are"
+          description="Search for a word to explore its meaning."
+          data-cell-id="dictionary-empty"
+        />
       )}
 
       {allCandidates.length > 0 && (

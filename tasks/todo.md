@@ -17,17 +17,18 @@
 - [x] Extract shared animation keyframes to `CardAnimations.module.css`
 - [x] Refactor VideoCard and SubtitleCard to use shared animation classes
 - [x] Verify: typecheck, build (prod + dev) pass
-- [~] Subagent verify AC for Loop 2
+- [x] Subagent verify AC for Loop 2
 
 ## Loop 3 — Empty state SSOT
-- [ ] Discover duplicate empty state markup/CSS
-- [ ] Extend `EmptyState` with compact variant
-- [ ] Refactor `DictionaryPanelView`, `ImagePanel`, `TranslatePanel` to use `EmptyState`
-- [ ] Remove duplicate empty state CSS
-- [ ] Verify: typecheck, test:unit, build pass
-- [ ] Subagent verify AC for Loop 3
+- [x] Discover duplicate empty state markup/CSS
+- [x] Extend `EmptyState` with `size` prop (`md`, `compact`, `sm`) and extra props passthrough
+- [x] Refactor `DictionaryPanelView`, `TranslatePanel`, `LinksPanel` to use `EmptyState`
+- [x] Remove duplicate empty state CSS (`cellTranslateEmpty`, `cellLinksEmpty`, `cellAudioEmpty`, visual `dictionaryEmpty`)
+- [x] Verify: typecheck, build (prod + dev), targeted unit tests pass
+- [x] Subagent verify AC for Loop 3
 
-## Loop 4+ (future)
+## Loop 4 — Remaining empty states / chip / badge (future)
+- [ ] Migrate `ImagePanel` and `CandidateView` definition empty states to `EmptyState`
 - [ ] Scrollbar CSS consolidation
 - [ ] Domain chip/badge consolidation to shared `Chip`/`Badge`
 - [ ] Header/actions layout pattern consolidation

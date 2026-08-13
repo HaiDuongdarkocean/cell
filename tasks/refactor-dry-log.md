@@ -69,14 +69,35 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `75ad504a`) ✅
 - **Status:** Complete.
 
-### Loop 3 — (pending candidates)
-- Empty state SSOT (`EmptyState` + dictionary panels)
+### Loop 3 — Empty state SSOT
+- **Discovery:** `DictionaryPanelView`, `TranslatePanel`, `LinksPanel` each had their own empty-state markup and CSS; `shared/ui/EmptyState` only had a single large `md` size.
+- **Plan:** Extend `EmptyState` with `size` (`md`/`compact`/`sm`) and extra-props passthrough; replace dictionary panel empties; remove duplicate CSS.
+- **AC:**
+  1. `EmptyState` supports `size` prop and passes `data-*`/extra props to the root.
+  2. `DictionaryPanelView`, `TranslatePanel`, `LinksPanel` use `EmptyState`.
+  3. No `.cellTranslateEmpty`, `.cellLinksEmpty`, `.cellAudioEmpty`, or visual `.dictionaryEmpty` CSS remains.
+  4. Tests and build pass.
+- **Do:**
+  - Extended `EmptyState` with `size` prop, `HTMLAttributes` passthrough, and compact/sm CSS variants.
+  - Added unit tests for size and data attributes.
+  - Replaced empty state in `DictionaryPanelView` (compact), `TranslatePanel` (sm), and `LinksPanel` (sm).
+  - Removed redundant empty-state CSS blocks from `DictionaryPanelView.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - Targeted unit tests (`EmptyState`, `DictionaryPanelView`, `TranslatePanel`, `LinksPanel`) ✅
+  - Subagent review (agent id `e6cd3503`) ✅
+- **Status:** Complete. Future: `ImagePanel` and `CandidateView` empty states remain.
+
+### Loop 4 — (pending candidates)
+- Finish remaining empty states (`ImagePanel`, `CandidateView`)
 - Scrollbar CSS consolidation
 - Domain chip/badge consolidation (`Chip` / `Badge`)
 - Header / actions layout pattern consolidation
 
 ## Loop count / goal check
 
-- **Loops completed:** 2
+- **Loops completed:** 3
 - **Goal reached?** No — additional duplicate UI patterns remain.
 - **Confirmation questions asked to user:** 1 ("continue Loop 3?" on 2026-08-13)

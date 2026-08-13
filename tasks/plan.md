@@ -17,32 +17,32 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - `src/entrypoints/popup/components/media/SubtitleCard.tsx`, `SubtitleCard.module.css`
   - `src/shared/domain/learning/atoms/MasteryBadge.tsx`, `MasteryBadge.module.css`
 - **AC:**
-  - [ ] Chỉ còn duy nhất một `@keyframes spin` trong `src/`, tại `Spinner.module.css`.
-  - [ ] Các trạng thái loading vẫn render spinner có kích thước và màu tương đương.
-  - [ ] `npm run typecheck`, `npm run test:unit`, `npm run build` đều pass.
+  - [x] Chỉ còn duy nhất một `@keyframes spin` trong `src/`, tại `Spinner.module.css`.
+  - [x] Các trạng thái loading vẫn render spinner có kích thước và màu tương đương.
+  - [x] `npm run typecheck`, `npm run test:unit` liên quan, `npm run build` đều pass.
 
 ## Loop 2 — Card enter/expand animations SSOT
 - **Why:** `VideoCard.module.css` và `SubtitleCard.module.css` cùng chứa `@keyframes fade-in` và `@keyframes slide-down`.
-- **What:** Tách keyframes ra shared style và dùng `composes`/global class; card vẫn giữ animation.
+- **What:** Tạo `src/shared/ui/CardAnimations.module.css` làm SSOT; `VideoCard` và `SubtitleCard` import class `fadeIn`, `urlPanel`, `copiedBadge` từ đó.
 - **Files:**
-  - `src/entrypoints/popup/components/media/VideoCard.module.css`
-  - `src/entrypoints/popup/components/media/SubtitleCard.module.css`
-  - `src/shared/styles/` (nếu cần thêm file SSOT)
+  - `src/entrypoints/popup/components/media/VideoCard.{tsx,module.css}`
+  - `src/entrypoints/popup/components/media/SubtitleCard.{tsx,module.css}`
+  - `src/shared/ui/CardAnimations.module.css` (new)
 - **AC:**
-  - [ ] Chỉ còn một nguồn `fade-in` và `slide-down`.
-  - [ ] Build/test pass, card vẫn fade-in/url panel vẫn slide-down.
+  - [x] Chỉ còn một nguồn `fade-in` và `slide-down`.
+  - [x] Build/test pass, card vẫn fade-in/url panel vẫn slide-down.
 
 ## Loop 3 — Empty state SSOT
 - **Why:** `DictionaryPanelView`, `ImagePanel`, `TranslatePanel` tự viết markup empty state và CSS riêng; `shared/ui/EmptyState` đã tồn tại.
-- **What:** Mở rộng `EmptyState` với variant nhỏ gọn (`size="sm"` hoặc `compact`), thay thế empty state tùy chỉnh, xóa CSS dư.
+- **What:** Mở rộng `EmptyState` với `size` prop (`md` / `compact` / `sm`) để hỗ trợ cả empty state lớn (48px) và panel (36px/24px); thay thế empty state tùy chỉnh trong `DictionaryPanelView` và `TranslatePanel`; xóa CSS dư.
 - **Files:**
-  - `src/shared/ui/EmptyState.tsx`, `EmptyState.module.css`
+  - `src/shared/ui/EmptyState.tsx`, `EmptyState.module.css`, `EmptyState.test.tsx`
   - `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`, `DictionaryPanelView.module.css`
-  - `src/features/dictionaryPopup/ui/ImagePanel.tsx`
   - `src/features/dictionaryPopup/ui/TranslatePanel.tsx`
 - **AC:**
-  - [ ] Không còn `.dictionaryEmpty`, `.cellImageEmpty`, `.cellTranslateEmpty` CSS trùng lặp.
-  - [ ] `EmptyState` vẫn hiển thị đúng icon/title/description/action ở cả hai kích thước.
+  - [ ] `EmptyState` hỗ trợ `size` prop với ít nhất `sm` và `compact`.
+  - [ ] `DictionaryPanelView` và `TranslatePanel` dùng `EmptyState` thay vì markup/CSS riêng.
+  - [ ] Không còn `.dictionaryEmpty`, `.cellTranslateEmpty` CSS trùng lặp.
   - [ ] Build/test pass.
 
 ## Loop 4+ (future loops)

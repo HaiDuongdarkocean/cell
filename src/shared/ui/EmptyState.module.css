@@ -1,5 +1,5 @@
 /* === EmptyState — Astryx pattern ===
-   Centered flex column: 48px icon → heading-3 title → body description → action. */
+   Centered flex column: icon → title → description → action. */
 
 .root {
   display: flex;
@@ -12,13 +12,29 @@
   font-family: var(--font-family);
 }
 
+/* === md (default) — 48px icon, heading-3 title === */
+.root.md {
+  padding: var(--space-6) var(--space-4);
+  gap: var(--space-3);
+}
+
+/* === compact — 36px icon, base title, sm description === */
+.root.compact {
+  padding: var(--space-6) var(--space-4);
+  gap: var(--space-1);
+}
+
+/* === sm — 24px icon, base title, compact padding === */
+.root.sm {
+  padding: var(--space-4) var(--space-2);
+  gap: var(--space-1);
+}
+
 .icon {
-  width: var(--space-12);
-  height: var(--space-12);
-  color: var(--color-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-text-secondary);
 }
 
 .icon svg {
@@ -26,21 +42,71 @@
   height: 100%;
 }
 
+.iconMd {
+  width: var(--space-12);
+  height: var(--space-12);
+}
+
+.iconCompact {
+  width: var(--space-9);
+  height: var(--space-9);
+}
+
+.iconSm {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
 .title {
+  color: var(--color-text);
+}
+
+.titleMd {
   font-size: var(--text-heading-3-font-size);
   font-weight: var(--text-heading-3-font-weight);
   line-height: var(--text-heading-3-line-height);
   letter-spacing: var(--text-heading-3-letter-spacing);
-  color: var(--color-text);
+}
+
+.titleCompact {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.titleSm {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--tracking-normal);
 }
 
 .description {
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.descriptionMd {
   max-width: calc(var(--space-5) * 16);
   font-size: var(--font-size-base);
-  line-height: var(--leading-normal);
-  color: var(--color-text-secondary);
+}
+
+.descriptionCompact {
+  max-width: 28ch;
+  font-size: var(--font-size-sm);
+}
+
+.descriptionSm {
+  max-width: 28ch;
+  font-size: var(--font-size-sm);
 }
 
 .action {
   margin-top: var(--space-2);
+}
+
+.root.sm .action,
+.root.compact .action {
+  margin-top: var(--space-1);
 }
