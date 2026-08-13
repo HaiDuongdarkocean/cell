@@ -4,6 +4,8 @@ import styles from './Chip.module.css';
 interface ChipBaseProps {
   /** Visual style. Default: default. */
   variant?: 'default' | 'outline';
+  /** Color accent. Default: none. */
+  color?: 'success' | 'error';
   /** Selected (active) state — only meaningful when `as="button"`. */
   selected?: boolean;
   /** Size. Default: md. */
@@ -34,6 +36,7 @@ type ChipProps = ChipAsButton | ChipAsSpan;
  */
 export function Chip({
   variant = 'default',
+  color,
   selected = false,
   size = 'md',
   leadingIcon,
@@ -41,7 +44,7 @@ export function Chip({
   className,
   ...rest
 }: ChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[variant], styles[size], selected ? styles.selected : '', className ?? '']
+  const cls = [styles.chip, styles[variant], color ? styles[color] : '', styles[size], selected ? styles.selected : '', className ?? '']
     .filter(Boolean)
     .join(' ');
 

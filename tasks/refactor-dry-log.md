@@ -90,14 +90,33 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `e6cd3503`) ✅
 - **Status:** Complete. Future: `ImagePanel` and `CandidateView` empty states remain.
 
-### Loop 4 — (pending candidates)
+### Loop 4 — Synonym/Antonym chip SSOT
+- **Discovery:** `SynonymChip` and `AntonymChip` had nearly identical code and separate CSS modules, only differing by token (`color-success` vs `color-error`).
+- **Plan:** Extend `shared/ui/Chip` with a `color` prop (`success`/`error`), convert `SynonymChip` and `AntonymChip` into thin wrappers around `Chip`, delete their CSS modules.
+- **AC:**
+  1. `Chip` supports `color?: 'success' | 'error'`.
+  2. `SynonymChip`/`AntonymChip` render `Chip` with the correct color and no longer have `.module.css` files.
+  3. Tests and build pass.
+- **Do:**
+  - Added `color` prop to `Chip` with `.success`/`.error` styles, hover, focus, and disabled states.
+  - Updated `Chip.test.tsx` and `Chip.showcase.tsx`.
+  - Replaced `SynonymChip`/`AntonymChip` bodies with `Chip` wrappers and dropped their CSS modules.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - Targeted unit tests (`Chip`, `SynonymChip`, `AntonymChip`) ✅
+  - Subagent review (agent id `aee8e9f1`) ✅
+- **Status:** Complete.
+
+### Loop 5 — (pending candidates)
 - Finish remaining empty states (`ImagePanel`, `CandidateView`)
 - Scrollbar CSS consolidation
-- Domain chip/badge consolidation (`Chip` / `Badge`)
+- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`)
 - Header / actions layout pattern consolidation
 
 ## Loop count / goal check
 
-- **Loops completed:** 3
+- **Loops completed:** 4
 - **Goal reached?** No — additional duplicate UI patterns remain.
 - **Confirmation questions asked to user:** 1 ("continue Loop 3?" on 2026-08-13)

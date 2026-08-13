@@ -45,9 +45,23 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [ ] Không còn `.dictionaryEmpty`, `.cellTranslateEmpty` CSS trùng lặp.
   - [ ] Build/test pass.
 
-## Loop 4+ (future loops)
+## Loop 4 — Synonym/Antonym chip SSOT
+- **Why:** `SynonymChip` và `AntonymChip` là hai component gần như giống hệt, chỉ khác màu token (success/error). `shared/ui/Chip` đã tồn tại.
+- **What:** Mở rộng `Chip` với `color` prop (`success`/`error`), chuyển `SynonymChip` và `AntonymChip` dùng `Chip`, xóa CSS module riêng.
+- **Files:**
+  - `src/shared/ui/Chip.{tsx,module.css,test.tsx}`
+  - `src/shared/domain/dictionary/atoms/SynonymChip.{tsx,module.css,test.tsx,showcase.tsx}`
+  - `src/shared/domain/dictionary/atoms/AntonymChip.{tsx,module.css,test.tsx,showcase.tsx}`
+  - `src/shared/domain/dictionary/atoms/index.ts`
+  - `docs/2-architechture-system.md`
+- **AC:**
+  - [ ] `Chip` hỗ trợ `color?: 'default' | 'success' | 'error'`.
+  - [ ] `SynonymChip` và `AntonymChip` render `Chip` với màu tương ứng, không còn CSS module riêng.
+  - [ ] Tests + build pass.
+
+## Loop 5+ (future loops)
 - Scrollbar CSS dư thừa trong `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `SettingsDialog`, `QueueSidebar`.
-- Domain chip/badge (`SynonymChip`, `AntonymChip`, `WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`) soạn lại qua `Chip`/`Badge` variants.
+- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header/actions layout patterns trong popup/subtitle/universal panel.
 
 ## Verification pattern

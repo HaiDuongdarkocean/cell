@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import styles from './SynonymChip.module.css';
+import { Chip } from '@/shared/ui/Chip';
 
 export interface SynonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** The synonym word to display and look up. */
@@ -14,22 +14,22 @@ export interface SynonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement
  * SynonymChip — interactive pill button that triggers a dictionary lookup for a
  * synonym. Tinted green (success) to signal same-meaning relationship.
  *
- * Touch target: 40px (adapts to 44px on coarse pointers via --touch-target).
+ * Now a thin wrapper around `shared/ui/Chip`.
  */
 export function SynonymChip({
   word,
   onLookup,
-  className,
   onClick,
   size = 'md',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  color: _color,
   ...rest
 }: SynonymChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[size], className ?? ''].filter(Boolean).join(' ');
-
   return (
-    <button
-      type="button"
-      className={cls}
+    <Chip
+      as="button"
+      color="success"
+      size={size}
       aria-label={`Look up synonym: ${word}`}
       onClick={(e) => {
         onClick?.(e);
@@ -38,6 +38,6 @@ export function SynonymChip({
       {...rest}
     >
       {word}
-    </button>
+    </Chip>
   );
 }
