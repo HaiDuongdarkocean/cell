@@ -890,7 +890,7 @@
     {
       "type": "experience",
       "id": "ux-fullscreen-target-shared-container",
-      "title": "Fullscreen target shared container",
+      "title": "Fullscreen target shared container — transform in-place, never reparent",
       "category": [
         "ux",
         "rendering"
@@ -900,9 +900,12 @@
         "shared-container",
         "side-panel",
         "overlay",
-        "content-script"
+        "content-script",
+        "reparenting",
+        "top-layer",
+        "replaced-element"
       ],
-      "trigger": "Multiple UI pieces must remain visible together in fullscreen but the browser API fullscreens only one element."
+      "trigger": "Multiple UI pieces must stay visible together in fullscreen but the browser API fullscreens only one element, or a layout wrapper must arrange the fullscreen element's children."
     },
     {
       "type": "experience",

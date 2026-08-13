@@ -61,6 +61,15 @@ export function findFarthestSameSizeContainer(
   const MAX_PLAYER_AREA_RATIO = 1.5;
 
   while (el && el !== document.body) {
+    // Skip Cell's own Split View elements (wrapper/stage/handle/panel) —
+    // they're ancestors of the video after a normal→fullscreen→normal
+    // transition but are NOT the real player shell. Walking through them
+    // would return the old wrapper as playerShell, breaking the next run.
+    if (el.hasAttribute('data-cell-split-view')) {
+      el = el.parentElement;
+      continue;
+    }
+
     const rect = el.getBoundingClientRect();
     const area = rect.width * rect.height;
 
