@@ -1,4 +1,5 @@
 import { useState, type HTMLAttributes, type ReactNode } from 'react';
+import { HStack } from './Stack';
 import { IconButton } from './IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Alert.module.css';
@@ -8,6 +9,8 @@ type AlertVariant = 'default' | 'success' | 'warning' | 'error';
 export interface AlertProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
   /** Visual variant. Default: default. */
   variant?: AlertVariant;
+  /** Optional leading icon. */
+  icon?: ReactNode;
   /** Alert title. */
   title?: ReactNode;
   /** Alert description. */
@@ -23,6 +26,7 @@ export interface AlertProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'
  */
 export function Alert({
   variant = 'default',
+  icon,
   title,
   description,
   onDismiss,
@@ -42,10 +46,13 @@ export function Alert({
 
   return (
     <div className={cls} role={role} {...rest}>
-      <div className={styles.content}>
-        {title && <div className={styles.title}>{title}</div>}
-        {description && <div className={styles.description}>{description}</div>}
-      </div>
+      <HStack align="center" gap="2" className={styles.body}>
+        {icon && <span className={styles.icon}>{icon}</span>}
+        <div className={styles.content}>
+          {title && <div className={styles.title}>{title}</div>}
+          {description && <div className={styles.description}>{description}</div>}
+        </div>
+      </HStack>
       {onDismiss && (
         <IconButton
           type="button"

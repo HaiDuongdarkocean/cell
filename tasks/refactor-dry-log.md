@@ -213,13 +213,32 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `097d0f52`) ✅
 - **Status:** Complete. Outer `.header` containers vẫn giữ flex vì là container semantic `<header>`, không nằm trong scope của lần này. `Dialog` `.headerRightGroup` và các media card flex còn lại là ứng cử viên tiếp theo.
 
-### Loop 10 — (pending candidates)
-- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`) — đa số là design-system atoms chưa dùng rộng.
-- Loading/error state patterns trong `DictionaryPanelView.module.css` / toàn hệ thống.
-- Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
+### Loop 10 — DictionaryPanelView alert/loading SSOT
+- **Discovery:** `DictionaryPanelView.module.css` có `.error` banner và `.loading` card tự định nghĩa; `shared/ui/Alert` đã tồn tại, `HStack` đã có từ Loop 9.
+- **Plan:** Mở rộng `Alert` với `icon` prop; dùng `Alert` cho `panel.error`; dùng `HStack` cho loading state; xóa CSS dư.
+- **AC:**
+  1. `Alert` hỗ trợ `icon?: ReactNode`.
+  2. `DictionaryPanelView` dùng `Alert` cho error và `HStack` cho loading.
+  3. Không còn `.error` CSS; `.loading` chỉ còn color/background/padding.
+  4. Build + tests pass.
+- **Do:**
+  - Updated `Alert.tsx` to accept and render `icon` prop.
+  - Updated `Alert.module.css` with `.body` and `.icon` styles; aligned dismiss button center.
+  - Added `Alert.test.tsx` icon test.
+  - Refactored `DictionaryPanelView.tsx` loading state to use `HStack`.
+  - Refactored `DictionaryPanelView.tsx` error state to use `Alert`.
+  - Removed `.error` block and flex properties from `.loading` in `DictionaryPanelView.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `Alert.test.tsx` ✅
+  - `DictionaryPanelView.test.tsx` ✅
+  - Subagent review (agent id `a047025f`) ✅
+- **Status:** Complete. Các pill error/success trong `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` còn lại là ứng cử viên Loop 11.
 
 ## Loop count / goal check
 
-- **Loops completed:** 9
+- **Loops completed:** 10
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9)

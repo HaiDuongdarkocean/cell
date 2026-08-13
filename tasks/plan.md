@@ -134,10 +134,31 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `display: flex; align-items: center; justify-content: space-between` CSS dư thừa trong các inner class đã refactor.
   - [x] Build + tests pass.
 
-## Loop 10+ (future loops)
+## Loop 10 — DictionaryPanelView alert/loading SSOT
+- **Why:** `DictionaryPanelView.module.css` vẫn có `.error` banner và `.loading` card tự định nghĩa, trong khi `shared/ui/Alert` đã tồn tại và `HStack` đã có từ Loop 9.
+- **What:** Mở rộng `Alert` với `icon` prop để hỗ trợ error banner; dùng `Alert` cho `panel.error`; dùng `HStack` cho loading state; xóa CSS dư thừa.
+- **Files:**
+  - `src/shared/ui/Alert.{tsx,module.css,test.tsx}`
+  - `src/features/dictionaryPopup/ui/DictionaryPanelView.{tsx,module.css}`
+- **AC:**
+  - [x] `Alert` hỗ trợ `icon?: ReactNode`.
+  - [x] `DictionaryPanelView` dùng `Alert` cho `panel.error` thay vì `.error` CSS riêng.
+  - [x] `DictionaryPanelView` dùng `HStack` cho loading state thay vì `.loading` CSS có `display: flex`.
+  - [x] Không còn `.error` CSS; `.loading` chỉ còn color/background/padding.
+  - [x] Build + tests pass.
+
+## Loop 11 — Error/success pill SSOT (future)
+- **Why:** `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` có `.error`/`.success` pill gần giống nhau; cần mở rộng `Alert` thêm `size`/`appearance` hoặc xác định dùng chung `Alert`.
+- **Files:**
+  - `src/shared/ui/Alert.{tsx,module.css,test.tsx}`
+  - `src/features/dictionary/ui/ResourcesPanel.{tsx,module.css}`
+  - `src/features/dictionary/ui/ImportProgress.{tsx,module.css}`
+  - `src/features/tts/ui/TtsVoiceManagerPanel.{tsx,module.css}`
+
+## Loop 12+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Loading/error state patterns trong `DictionaryPanelView.module.css` / toàn hệ thống.
-- Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
+- Header/actions layout patterns còn lại (`Dialog` header right group, media card layouts).
+- Design-system-showcase `index.html` inline scrollbar.
 
 ## Verification pattern
 Sau mỗi loop:
