@@ -71,7 +71,7 @@ function NavClusterInner({
   if (collapsed) {
     return (
       <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
-        <IconButton
+        <IconButton variant="transparent"
           className={styles.collapsedBtn}
           aria-label="Expand subtitle navigation"
           data-cell-id="nav-expand"
@@ -86,10 +86,10 @@ function NavClusterInner({
   return (
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
       <div className={styles.main} data-cell-id="nav-main">
-        <IconButton aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
+        <IconButton variant="transparent" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
           <Icon name="navPrev" size={20} />
         </IconButton>
-        <IconButton
+        <IconButton variant="transparent"
           aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
           data-cell-id="nav-repeat"
           onClick={onRepeat}
@@ -97,18 +97,18 @@ function NavClusterInner({
         >
           <Icon name={repeatIcon} size={20} />
         </IconButton>
-        <IconButton aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
+        <IconButton variant="transparent" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
           <Icon name="navNext" size={20} />
         </IconButton>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
-        <IconButton aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
+        <IconButton variant="transparent" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
           <Icon name="navRewind" size={18} />
         </IconButton>
-        <IconButton aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
+        <IconButton variant="transparent" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
           <Icon name={isPlaying ? 'navPause' : 'navPlay'} size={18} />
         </IconButton>
-        <IconButton aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
+        <IconButton variant="transparent" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
           <Icon name="navForward" size={18} />
         </IconButton>
       </div>
