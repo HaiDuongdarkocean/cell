@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import styles from './AntonymChip.module.css';
+import { Chip } from '@/shared/ui/Chip';
 
 export interface AntonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** The antonym word to display and look up. */
@@ -14,22 +14,22 @@ export interface AntonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement
  * AntonymChip — interactive pill button that triggers a dictionary lookup for an
  * antonym. Tinted red (error) to signal opposite-meaning relationship.
  *
- * Touch target: 40px (adapts to 44px on coarse pointers via --touch-target).
+ * Now a thin wrapper around `shared/ui/Chip`.
  */
 export function AntonymChip({
   word,
   onLookup,
-  className,
   onClick,
   size = 'md',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  color: _color,
   ...rest
 }: AntonymChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[size], className ?? ''].filter(Boolean).join(' ');
-
   return (
-    <button
-      type="button"
-      className={cls}
+    <Chip
+      as="button"
+      color="error"
+      size={size}
       aria-label={`Look up antonym: ${word}`}
       onClick={(e) => {
         onClick?.(e);
@@ -38,6 +38,6 @@ export function AntonymChip({
       {...rest}
     >
       {word}
-    </button>
+    </Chip>
   );
 }

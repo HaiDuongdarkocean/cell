@@ -32,6 +32,13 @@ describe('Chip', () => {
     }
   });
 
+  it('renders color accents', () => {
+    const { container: success } = render(<Chip as="button" color="success">Success</Chip>);
+    expect(success.firstChild).toHaveClass('success');
+    const { container: error } = render(<Chip as="button" color="error">Error</Chip>);
+    expect(error.firstChild).toHaveClass('error');
+  });
+
   it('renders all sizes', () => {
     const sizes = ['sm', 'md'] as const;
     for (const size of sizes) {

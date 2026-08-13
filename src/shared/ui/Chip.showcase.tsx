@@ -14,6 +14,10 @@ export function Showcase(): ReactElement {
         <Chip size="sm">Small</Chip>
         <Chip size="md">Medium</Chip>
       </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <Chip as="button" color="success">Success</Chip>
+        <Chip as="button" color="error">Error</Chip>
+      </div>
     </div>
   );
 }
