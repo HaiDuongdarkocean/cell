@@ -5,7 +5,6 @@ import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitleP
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
-import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
 import styles from './SubtitleManagerPanel.module.css';
@@ -49,7 +48,6 @@ interface SectionState {
 
 const defaultOffsets = { target: 0, native: 0 };
 const OFFSET_STEP = 0.5;
-const MAX_OFFSET_SECONDS = 60;
 
 function getSourceLabel(source: SubtitlePanelItem['source']): string {
   switch (source) {
@@ -62,8 +60,8 @@ function getSourceLabel(source: SubtitlePanelItem['source']): string {
   }
 }
 
-function clampSeconds(seconds: number): number {
-  return clampOffsetMs(Math.round(seconds * 1000)) / 1000;
+function roundSeconds(seconds: number): number {
+  return Math.round(seconds * 1000) / 1000;
 }
 
 function formatSigned(seconds: number): string {
@@ -128,10 +126,6 @@ function OffsetStepper({
   setState: (s: SectionState) => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
 }): React.JSX.Element {
-  const currentSeconds = state.lastValid;
-  const atMin = currentSeconds <= -MAX_OFFSET_SECONDS;
-  const atMax = currentSeconds >= MAX_OFFSET_SECONDS;
-
   const commitOffset = useCallback(
     (offsetStr: string) => {
       const seconds = parseFloat(offsetStr);
@@ -139,9 +133,9 @@ function OffsetStepper({
         setState({ offset: formatSigned(state.lastValid), saveState: 'saved', lastValid: state.lastValid });
         return;
       }
-      const clamped = clampSeconds(seconds);
-      onOffsetChange?.(role, Math.round(clamped * 1000));
-      setState({ offset: formatSigned(clamped), saveState: 'saved', lastValid: clamped });
+      const rounded = roundSeconds(seconds);
+      onOffsetChange?.(role, Math.round(rounded * 1000));
+      setState({ offset: formatSigned(rounded), saveState: 'saved', lastValid: rounded });
     },
     [role, state.lastValid, setState, onOffsetChange],
   );
@@ -159,7 +153,7 @@ function OffsetStepper({
   };
 
   const bump = (delta: number): void => {
-    const next = clampSeconds(state.lastValid + delta);
+    const next = roundSeconds(state.lastValid + delta);
     commitOffset(formatSigned(next));
   };
 
@@ -184,7 +178,6 @@ function OffsetStepper({
           aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
           data-cell-id={`manager-offset-dec-${role}`}
           onClick={() => bump(-OFFSET_STEP)}
-          disabled={atMin}
         >
           -0.5s
         </button>
@@ -207,7 +200,6 @@ function OffsetStepper({
           aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
           data-cell-id={`manager-offset-inc-${role}`}
           onClick={() => bump(OFFSET_STEP)}
-          disabled={atMax}
         >
           +0.5s
         </button>
