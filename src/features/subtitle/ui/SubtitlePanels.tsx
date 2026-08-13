@@ -2,7 +2,7 @@ import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffe
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
+import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue, SrtCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
@@ -10,6 +10,7 @@ import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
+import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { resolveSplitViewWrapperHeight, togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
@@ -42,6 +43,12 @@ export interface ManagerState {
   onOffsetChange?: (role: 'target' | 'native', ms: number) => void;
   /** Appearance view props — when provided, "Customize appearance" button shows in footer. */
   appearance?: AppearanceState;
+  /** Whether subtitle search API keys are configured (controls search UI availability). */
+  hasSearchKeys: boolean;
+  /** Open extension settings (e.g. to configure search API keys). */
+  onOpenSettings: () => void;
+  /** User selected a search result to download + load (delegated to contentScriptController). */
+  onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
 
 export interface OffsetState {
@@ -211,6 +218,18 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
+    // Track the normal-branch wrapper so we can clean it up when transitioning
+    // to fullscreen (the wrapper can't be removed while playerShell — now the
+    // fullscreen element — is inside it; we remove it on the next normal run).
+    const splitViewWrapperRef = useRef<HTMLDivElement | null>(null);
+
+    // Track fullscreen state so split view re-runs when fullscreen changes.
+    useEffect(() => {
+      const onChange = (): void => setIsFullscreen(Boolean(document.fullscreenElement));
+      document.addEventListener('fullscreenchange', onChange);
+      return () => document.removeEventListener('fullscreenchange', onChange);
+    }, []);
 
     // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
     // mounts/unmounts when the user presses `g` on the top document (not inside
@@ -454,14 +473,53 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, [playerMode]);
 
-    // Split View — page thường only (not Player Mode). Finds the video container
-    // and wraps it in a flex row: video stage (flex:1) + CueList panel (fixed %)
+    // Split View — page thường + fullscreen. Finds the video container and
+    // arranges it in a flex row: video stage (flex:1) + CueList panel (fixed %)
     // with a resize handle. The video container stays in light DOM (CSS/controls
     // keep working). CueList renders via portal into the panel div.
+    //
+    // Fullscreen: when playerShell IS document.fullscreenElement, moving it
+    // exits fullscreen (Chrome reparenting behavior). Instead, transform
+    // playerShell into a flex container and move its children into stageCell.
+    // playerShell stays as the top-layer fullscreen element — no exit.
     useEffect(() => {
       if (!splitViewOpen || playerMode) return;
-      const playerShell = findPlayerContainer();
+      let playerShell = findPlayerContainer();
       if (!playerShell) return;
+
+      // playerShell or any descendant (e.g. <video> itself) may be the
+      // fullscreen element. Moving playerShell in either case exits fullscreen.
+      let fsEl = document.fullscreenElement;
+      let isPlayerFullscreen = !!fsEl && (fsEl === playerShell || playerShell.contains(fsEl));
+
+      // If playerShell is an ANCESTOR of the fullscreen element (not the
+      // fullscreen element itself), the fullscreen branch would move the
+      // fullscreen element among playerShell's children → exits fullscreen.
+      // Use the fullscreen element as playerShell instead — it's the
+      // top-layer element and can be transformed in place.
+      if (isPlayerFullscreen && fsEl !== playerShell && fsEl instanceof HTMLElement) {
+        const video = playerShell.querySelector('video');
+        if (video && fsEl.contains(video)) {
+          playerShell = fsEl;
+        } else {
+          isPlayerFullscreen = false;
+        }
+      }
+
+      // <video> is a replaced element — display:flex has no effect, children
+      // are not rendered. When the video itself is the fullscreen element,
+      // re-request fullscreen on its parent container so we can transform THAT
+      // into a flex row. The effect re-runs on fullscreenchange (isFullscreen
+      // dep), at which point findPlayerContainer returns the parent container.
+      if (isPlayerFullscreen && playerShell.tagName === 'VIDEO') {
+        const parent = playerShell.parentElement;
+        if (parent && parent !== document.body) {
+          void document.exitFullscreen().then(() => {
+            void parent.requestFullscreen().catch(() => undefined);
+          });
+          return;
+        }
+      }
 
       const originalParent = playerShell.parentElement;
       if (!originalParent) return;
@@ -480,16 +538,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       const playerShellStyleProperties = [
         'position', 'inset', 'top', 'right', 'bottom', 'left', 'width', 'height',
         'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio',
-        'flex', 'margin', 'box-sizing',
+        'flex', 'margin', 'box-sizing', 'display', 'flex-direction',
       ];
       const savedPlayerShellStyles: Record<string, string> = {};
       for (const property of playerShellStyleProperties) {
         savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
       }
-
-      const wrapper = document.createElement('div');
-      wrapper.setAttribute('data-cell-split-view', 'wrapper');
-      wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeight};overflow:hidden;position:relative;`;
 
       const stageCell = document.createElement('div');
       stageCell.setAttribute('data-cell-split-view', 'stage');
@@ -517,37 +571,78 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       handle.setAttribute('data-cell-split-view', 'handle');
       handle.style.cssText = 'flex:0 0 6px;height:100%;background:var(--color-border,#333);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
 
-      if (playerComputedStyle.position === 'fixed') {
-        playerShell.style.setProperty('position', 'absolute', 'important');
-        playerShell.style.setProperty('inset', '0', 'important');
-      }
-      playerShell.style.setProperty('width', '100%', 'important');
-      playerShell.style.setProperty('height', '100%', 'important');
-      playerShell.style.setProperty('max-width', 'none', 'important');
-      playerShell.style.setProperty('max-height', 'none', 'important');
-      playerShell.style.setProperty('min-width', '0', 'important');
-      playerShell.style.setProperty('min-height', '0', 'important');
-      playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
-      playerShell.style.setProperty('margin', '0', 'important');
-      playerShell.style.setProperty('box-sizing', 'border-box', 'important');
+      // Wrapper only needed in the normal (non-fullscreen) branch.
+      let wrapper: HTMLDivElement | null = null;
 
-      stageCell.appendChild(playerShell);
-      wrapper.appendChild(stageCell);
-      wrapper.appendChild(handle);
-      wrapper.appendChild(panel);
-
-      if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
-        originalParent.insertBefore(wrapper, originalNextSibling);
+      if (isPlayerFullscreen) {
+        // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
+        // it exits fullscreen. Instead, move playerShell's children into
+        // stageCell and transform playerShell into a flex row container.
+        // #cell-subtitle-root stays as a direct child (position:fixed overlay
+        // relative to the fullscreen element — covers full viewport).
+        // If playerShell is still inside an old wrapper from a previous normal
+        // run, leave it — the wrapper is an ancestor of the fullscreen element
+        // and won't be visible in top-layer. It gets cleaned up on the next
+        // normal run (via splitViewWrapperRef).
+        const childrenToMove = Array.from(playerShell.children).filter(
+          (child) => child.id !== 'cell-subtitle-root',
+        );
+        for (const child of childrenToMove) {
+          stageCell.appendChild(child);
+        }
+        playerShell.style.setProperty('display', 'flex', 'important');
+        playerShell.style.setProperty('flex-direction', 'row', 'important');
+        playerShell.appendChild(stageCell);
+        playerShell.appendChild(handle);
+        playerShell.appendChild(panel);
       } else {
-        originalParent.appendChild(wrapper);
+        // NORMAL: wrap playerShell in a flex row wrapper.
+        wrapper = document.createElement('div');
+        wrapper.setAttribute('data-cell-split-view', 'wrapper');
+        wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeight};overflow:hidden;position:relative;`;
+
+        if (playerComputedStyle.position === 'fixed') {
+          playerShell.style.setProperty('position', 'absolute', 'important');
+          playerShell.style.setProperty('inset', '0', 'important');
+        }
+        playerShell.style.setProperty('width', '100%', 'important');
+        playerShell.style.setProperty('height', '100%', 'important');
+        playerShell.style.setProperty('max-width', 'none', 'important');
+        playerShell.style.setProperty('max-height', 'none', 'important');
+        playerShell.style.setProperty('min-width', '0', 'important');
+        playerShell.style.setProperty('min-height', '0', 'important');
+        playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
+        playerShell.style.setProperty('margin', '0', 'important');
+        playerShell.style.setProperty('box-sizing', 'border-box', 'important');
+
+        // Move playerShell into new stageCell FIRST (detaches from old
+        // wrapper's stageCell if transitioning from a previous normal run).
+        stageCell.appendChild(playerShell);
+        wrapper.appendChild(stageCell);
+        wrapper.appendChild(handle);
+        wrapper.appendChild(panel);
+
+        // Now safe to remove old wrapper — playerShell already moved out.
+        if (splitViewWrapperRef.current && splitViewWrapperRef.current !== wrapper) {
+          splitViewWrapperRef.current.remove();
+        }
+        splitViewWrapperRef.current = wrapper;
+
+        if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
+          originalParent.insertBefore(wrapper, originalNextSibling);
+        } else {
+          originalParent.appendChild(wrapper);
+        }
       }
 
       setSplitViewPortalTarget(panelInner);
 
+      // Drag resize: measure the flex container (wrapper or playerShell).
+      const flexContainer = wrapper ?? playerShell;
       let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
       const onPointerDown = (e: PointerEvent): void => {
         e.preventDefault();
-        dragStart = { x: e.clientX, startPct: splitViewPct, wrapperW: wrapper.getBoundingClientRect().width };
+        dragStart = { x: e.clientX, startPct: splitViewPct, wrapperW: flexContainer.getBoundingClientRect().width };
         handle.setPointerCapture(e.pointerId);
       };
       const onPointerMove = (e: PointerEvent): void => {
@@ -576,21 +671,69 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointermove', onPointerMove);
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
+        if (isPlayerFullscreen) {
+          // Move children back from stageCell to playerShell (preserving order).
+          const childrenToRestore = Array.from(stageCell.children);
+          // If playerShell was detached by the site's React re-render (common
+          // when exiting fullscreen — the site recreates the player shell),
+          // skip moving children back. They're in a detached subtree anyway;
+          // the site's React will render a fresh video + controls. The normal
+          // branch effect re-run will find the new playerShell + video.
+          const playerShellInDom = document.body.contains(playerShell);
+          if (playerShellInDom) {
+            for (const child of childrenToRestore) {
+              playerShell.appendChild(child);
+            }
+            // #cell-subtitle-root was filtered out when moving to stageCell.
+            // attachFullscreenReparenting placed it as the last child — move it
+            // back to the end so z-index stacking matches the pre-split state.
+            const cellRoot = playerShell.querySelector('#cell-subtitle-root');
+            if (cellRoot && cellRoot.parentElement === playerShell) {
+              playerShell.appendChild(cellRoot);
+            }
+          }
+          stageCell.remove();
+          handle.remove();
+          panel.remove();
+        } else {
+          // Check if playerShell BECAME the fullscreen element since this
+          // effect ran (AC4: user entered fullscreen while Split View was
+          // open in normal mode). Moving playerShell would exit fullscreen —
+          // skip the move and leave wrapper/stageCell in place. The new
+          // effect run (fullscreen branch) will transform playerShell in
+          // place. The old wrapper gets cleaned up on the next normal run.
+          const currentFs = document.fullscreenElement;
+          const playerNowFullscreen = !!currentFs
+            && (currentFs === playerShell || playerShell.contains(currentFs));
+          if (playerNowFullscreen) {
+            // Don't move playerShell (would exit fullscreen). Leave wrapper
+            // and stageCell (they contain playerShell). Remove handle and
+            // panel (siblings of stageCell, don't contain playerShell).
+            // The fullscreen branch will create new ones inside playerShell.
+            // splitViewWrapperRef still points to this wrapper — the next
+            // normal run (after fullscreen exit) will remove it.
+            handle.remove();
+            panel.remove();
+          } else {
+            if (originalParent && playerShell.parentElement === stageCell) {
+              if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
+                originalParent.insertBefore(playerShell, originalNextSibling);
+              } else {
+                originalParent.appendChild(playerShell);
+              }
+            }
+            wrapper?.remove();
+            splitViewWrapperRef.current = null;
+          }
+        }
+        // Restore all saved styles (display+flex-direction in fullscreen, all in normal).
         for (const property of playerShellStyleProperties) {
           playerShell.style.removeProperty(property);
           const value = savedPlayerShellStyles[property];
           if (value) playerShell.style.setProperty(property, value);
         }
-        if (originalParent && playerShell.parentElement === stageCell) {
-          if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
-            originalParent.insertBefore(playerShell, originalNextSibling);
-          } else {
-            originalParent.appendChild(playerShell);
-          }
-        }
-        wrapper.remove();
       };
-    }, [splitViewOpen, playerMode]);
+    }, [splitViewOpen, playerMode, isFullscreen]);
 
     // Load persisted splitViewPct on mount.
     useEffect(() => {
@@ -870,6 +1013,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               onOffsetChange={manager.onOffsetChange}
               generateNativeDisabled={!generateNativeEnabled}
               appearance={manager.appearance}
+              hasSearchKeys={manager.hasSearchKeys}
+              onOpenSettings={manager.onOpenSettings}
+              onSearchResultSelect={manager.onSearchResultSelect}
             />
           </div>,
           portalTarget,

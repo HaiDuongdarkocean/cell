@@ -1,10 +1,10 @@
 {
   "id": "ux-fullscreen-target-shared-container",
-  "title": "Fullscreen target shared container",
+  "title": "Fullscreen target shared container — transform in-place, never reparent",
   "category": ["ux", "rendering"],
-  "tags": ["fullscreen", "shared-container", "side-panel", "overlay", "content-script"],
-  "trigger": "Multiple UI pieces must remain visible together in fullscreen but the browser API fullscreens only one element.",
-  "principle": "When sibling UI must stay visible in fullscreen, the fullscreen element must be their common ancestor, not the media element. If you can't control the fullscreen target (CSP + isolated world + user gesture constraints), move your UI into the fullscreen element as a flex sibling or fixed overlay instead of trying to redirect the target.",
+  "tags": ["fullscreen", "shared-container", "side-panel", "overlay", "content-script", "reparenting", "top-layer", "replaced-element"],
+  "trigger": "Multiple UI pieces must stay visible together in fullscreen but the browser API fullscreens only one element, or a layout wrapper must arrange the fullscreen element's children.",
+  "principle": "When sibling UI must stay visible in fullscreen, the fullscreen element must be their common ancestor, not the media element. Moving the fullscreen element itself (reparenting it into a wrapper) exits fullscreen — Chrome's top-layer detaches on DOM removal. Transform the fullscreen element IN-PLACE into a flex container and move its CHILDREN into a stage cell instead. If the fullscreen element is a replaced element (<video>) that can't host siblings, exit fullscreen and re-request on its parent container — better than fixed overlay because the parent can host real flex siblings.",
   "cases": [
     {
       "context": "Player fullscreen button targets the video element — sibling subtitle panel disappears because it's outside the fullscreen layer",
@@ -12,15 +12,21 @@
       "good": "// Let player's chosen element be fullscreenElement, move panel INTO it\nfullscreenEl.addEventListener('fullscreenchange', () => {\n  if (document.fullscreenElement) {\n    fullscreenEl.appendChild(panel);\n    fullscreenEl.style.display = 'flex'; // video + panel side-by-side\n  } else {\n    originalParent.appendChild(panel); // restore on exit\n  }\n});"
     },
     {
-      "context": "Fullscreen element is a bare <video> that can't host rendered siblings — need fallback",
+      "context": "Split View wants to wrap the fullscreen player container in a flex row (video stage + CueList panel). Moving the fullscreen element into a new wrapper exits fullscreen.",
+      "bad": "// Wrap playerShell in a flex row wrapper (normal-page pattern)\nconst wrapper = document.createElement('div');\nwrapper.style.display = 'flex';\nstageCell.appendChild(playerShell); // REPARENTING fullscreen element → browser exits fullscreen\nwrapper.appendChild(stageCell);\nwrapper.appendChild(panel);\noriginalParent.appendChild(wrapper);",
+      "good": "// Transform fullscreen element IN-PLACE into flex container, move children\nconst children = Array.from(playerShell.children).filter(c => c.id !== 'cell-subtitle-root');\nfor (const child of children) stageCell.appendChild(child); // move children, NOT playerShell\nplayerShell.style.display = 'flex';\nplayerShell.style.flexDirection = 'row';\nplayerShell.appendChild(stageCell);\nplayerShell.appendChild(handle);\nplayerShell.appendChild(panel); // playerShell stays top-layer, no exit"
+    },
+    {
+      "context": "Fullscreen element is a bare <video> (replaced element) that can't host rendered siblings — need fallback",
       "bad": "// Assume fullscreen element is always a container\nfullscreenEl.appendChild(panel); // <video> can't render sibling divs → panel invisible",
-      "good": "// Fallback to fixed overlay when fullscreen element is <video>\nif (document.fullscreenElement.tagName === 'VIDEO') {\n  panel.style.cssText = 'position:fixed;right:0;top:0;width:30vw;height:100vh;z-index:2147483647';\n} else {\n  fullscreenEl.appendChild(panel); // container can host siblings\n}"
+      "good": "// Re-request fullscreen on parent container (can host flex siblings)\nif (document.fullscreenElement?.tagName === 'VIDEO') {\n  const parent = video.parentElement;\n  await document.exitFullscreen();\n  await parent.requestFullscreen(); // parent is a container → can be flex\n  // effect re-runs on fullscreenchange, findPlayerContainer returns parent\n} else {\n  fullscreenEl.appendChild(panel); // container can host siblings\n}"
     }
   ],
   "applyFor": [
     "Video players with side panels (subtitle, playlist, chat, annotations)",
     "Media players where controls/overlays must stay beside the video in fullscreen",
     "Content scripts that inject sibling UI into a site's native player",
-    "Any fullscreen transition where the browser API targets a child but a sibling must remain visible"
+    "Any fullscreen transition where the browser API targets a child but a sibling must remain visible",
+    "Layout wrappers (Split View, Picture-in-Picture) that need to rearrange the fullscreen element's children"
   ]
 }
