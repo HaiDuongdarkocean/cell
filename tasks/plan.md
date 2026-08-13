@@ -190,9 +190,21 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `display: flex` dư thừa trong các class trên.
   - [x] Build + tests pass.
 
-## Loop 14+ (future loops)
-- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header/actions layout patterns còn lại (media card actions, `BottomSheet` header).
+## Loop 14 — WordChip → Chip SSOT
+- **Why:** `WordChip` tự định nghĩa toàn bộ chip CSS trong khi `Chip` đã có; cần mở rộng `Chip` thêm màu `primary`, `warning`, `muted` để hỗ trợ `new`/`learning`/`mastered`/`unknown`.
+- **What:** Mở rộng `Chip` color variants; chuyển `WordChip` thành wrapper của `Chip`; xóa `WordChip.module.css`.
+- **Files:**
+  - `src/shared/ui/Chip.{tsx,module.css,test.tsx,showcase.tsx}`
+  - `src/shared/domain/learning/atoms/WordChip.{tsx,module.css,test.tsx,showcase.tsx}`
+- **AC:**
+  - [x] `Chip` hỗ trợ `color: 'primary' | 'warning' | 'muted'` (giữ `success`/`error`).
+  - [x] `WordChip` dùng `Chip as="button"` với `color` mapping từ `status`.
+  - [x] Xóa `WordChip.module.css` hoặc chỉ còn CSS cần thiết (nếu có).
+  - [x] Tests + build pass.
+
+## Loop 15+ (future loops)
+- Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) consolidate với `Badge`/`Chip`.
+- Header/actions layout patterns còn lại (`BottomSheet` header).
 - Design-system-showcase `index.html` inline scrollbar.
 
 ## Verification pattern
