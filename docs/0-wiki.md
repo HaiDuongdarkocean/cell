@@ -11,9 +11,12 @@ docs/           # Tài liệu dự án
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; Player Mode transparent/click-through overlay; host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
 ├── player-support.md                  # Live subtitle-list audit — player-side evidence for 9 sites; separates direct/metadata/encrypted entries, auth replay, and extension-delivery gaps; includes generic architecture constraints
 ├── adr/                                 # Architecture Decision Records (per AGENTS.md: quyết định kiến trúc → docs/adr/<tên>.md)
-│   └── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng native Fullscreen API và project player vào videoStage thay vì top-frame bridge
+│   ├── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng native Fullscreen API và project player vào videoStage thay vì top-frame bridge
+│   ├── subtitle-appearance-in-manager.md        # Di chuyển subtitle appearance customization từ Settings sang Subtitle Manager Panel
+│   └── 079-subtitle-search.md                   # WHY: client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry
 ├── specs/
-│   └── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
+│   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
+│   └── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
@@ -53,6 +56,8 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
+**2026-08-13**: Subtitle Manager search UI sửa Shadow DOM CSS injection: thêm search/preview và shared atom CSS vào `mountSubtitle`, khắc phục layout raw browser trên host page.
+**2026-08-13**: Thêm ADR `079-subtitle-search.md` — WHY decisions cho subtitle search (client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry). Spec: `docs/specs/subtitle-search.md`.
 **2026-08-13**: Thêm spec `subtitle-appearance-in-manager.md` + ADR `subtitle-appearance-in-manager.md`: di chuyển subtitle appearance customization (Target/Native style, Block position/scale/opacity, NavCluster) từ Settings Dialog sang Subtitle Manager Panel. 4 components moved từ `settings/ui/` sang `subtitle/ui/appearance/`. `appearanceShadowCss.ts` manifest tạo SSOT cho shadow CSS.
 **2026-08-11**: Khôi phục `docs/adr/` với ADR mới `native-fullscreen-iframe-player-mode.md`: child-iframe Player Mode dùng native Fullscreen API, project player vào Cell `videoStage` slot trong cùng child document, xóa `iframePlayerModeBridge.ts`, thêm `iframeContext.ts`.
 **2026-08-05**: Thêm skill `testing-extension-browser` — 1 workflow duy nhất: nodriver spawn (anti-bot) + CDP `Extensions.loadUnpacked` (Chrome 137+ blocks `--load-extension`) + load 2 ext (Cell + uBlock) + navigate + reload. Script Python `script/test-cell-browser.py` chạy qua `uv run --python 3.11 --with nodriver`.

@@ -299,5 +299,23 @@ export interface Settings {
   // === Dictionary Popup (spec §9.3) — schema v14 ===
   /** Dictionary Popup settings (trigger mode, tabs, size, translate, external links). */
   readonly dictionaryPopup?: DictionaryPopupSettings;
+  // === Subtitle Search (spec subtitle-search.md) — schema v21 ===
+  /** API keys for subtitle search providers (SubDL, OpenSubtitles). */
+  readonly subtitleApiKeys?: SubtitleApiKey[];
+}
+
+// === Subtitle Search API Key (schema v21) ===
+
+export type SubtitleApiKeyProvider = 'subdl' | 'opensubtitles';
+export type SubtitleApiKeyStatus = 'unverified' | 'active' | 'rate-limited' | 'invalid';
+
+export interface SubtitleApiKey {
+  readonly id: string;
+  readonly provider: SubtitleApiKeyProvider;
+  readonly key: string;
+  readonly label?: string;
+  readonly status: SubtitleApiKeyStatus;
+  readonly addedAt: number;
+  readonly rateLimitedUntil?: number;
 }
 

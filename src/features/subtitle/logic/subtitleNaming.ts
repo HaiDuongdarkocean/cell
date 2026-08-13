@@ -9,10 +9,12 @@ import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
  *   it takes precedence over the ISO label so the user sees YouTube's name.
  * - **imported**: `{filename without extension}` (e.g. `my-subtitle` from
  *   `my-subtitle.srt`). Filename >20 chars → truncate + `…`.
+ * - **searched**: same filename-based format as **imported** (subtitle came
+ *   from a search result, so its filename is the friendly name).
  *
  * Pure function — no side effects, fully unit-testable.
  *
- * @param source - 'auto' (detected by extension) | 'imported' (user file)
+ * @param source - 'auto' (detected) | 'imported' (user file) | 'searched' (search result)
  * @param language - ISO 639-1 code for 'auto' (e.g. 'en'). Ignored for 'imported'.
  * @param index - 0-based position in the matches list (used for 'auto' numbering)
  * @param filename - Original filename for 'imported' (with extension)
@@ -20,13 +22,13 @@ import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
  * @returns Friendly display name
  */
 export function formatSubtitleName(
-  source: 'auto' | 'imported',
+  source: 'auto' | 'imported' | 'searched',
   language: string,
   index: number,
   filename?: string,
   displayName?: string,
 ): string {
-  if (source === 'imported' && filename) {
+  if ((source === 'imported' || source === 'searched') && filename) {
     const nameWithoutExt = filename.replace(/\.(srt|vtt|ass|ssa)$/i, '');
     return nameWithoutExt.length > 20
       ? nameWithoutExt.slice(0, 20) + '…'

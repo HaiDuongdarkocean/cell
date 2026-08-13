@@ -61,6 +61,7 @@ import { wireEvents } from './wireEvents';
 import { registerDownloadHandlers } from './handlers/download';
 import { registerMediaDetectionHandlers } from './handlers/mediaDetection';
 import { registerSubtitleHandlers } from './handlers/subtitle';
+import { registerSubtitleSearchHandlers } from './handlers/subtitleSearch';
 import { registerSettingsHandlers } from './handlers/settings';
 import { registerSidePanelRelayHandlers } from './handlers/sidePanelRelay';
 import { registerYouTubeFallbackHandlers } from './handlers/youtubeDetection';
@@ -228,6 +229,7 @@ export class BackgroundService implements BackgroundContext {
     registerDownloadHandlers(this);
     registerMediaDetectionHandlers(this);
     registerSubtitleHandlers(this);
+    registerSubtitleSearchHandlers(this);
     registerSettingsHandlers(this);
     registerSidePanelRelayHandlers(this);
     registerDetectionDispatchHandlers(this);

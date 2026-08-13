@@ -43,7 +43,7 @@ describe('settingsStore keyboard shortcut migrations', () => {
       ]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(20);
+    expect(stored.schemaVersion).toBe(21);
     expect(stored.keyboardShortcuts).toEqual(
       expect.arrayContaining([
         { action: 'generate-native', key: 'h' },
@@ -93,7 +93,7 @@ describe('settingsStore keyboard shortcut migrations', () => {
       expect.arrayContaining([{ action: 'play-pause', key: ' ' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(20);
+    expect(stored.schemaVersion).toBe(21);
     const playPauseBindings = stored.keyboardShortcuts.filter((s) => s.action === 'play-pause');
     expect(playPauseBindings.length).toBe(1);
     expect(playPauseBindings[0].key).toBe(' ');

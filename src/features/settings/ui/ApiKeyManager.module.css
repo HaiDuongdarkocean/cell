@@ -1,0 +1,162 @@
+/* === ApiKeyManager — subtitle search API key CRUD (spec subtitle-search.md) ===
+   Uses design tokens only (no hardcoded colors/sizes). 1 column, key cards
+   stack vertically (responsive spec §Responsive). */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* === Provider group === */
+.providerGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.providerHeader {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  padding: 0 var(--space-0-5);
+}
+
+/* === Key card === */
+.keyCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.keyCardRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.keyLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.keyMasked {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono, var(--font-family));
+  letter-spacing: var(--tracking-wide);
+}
+
+.keyMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.keyActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+/* === Status badge color overrides (spec: active=green, rate-limited=amber,
+   invalid=red, unverified=gray). Badge variants: success/warning/destructive/default. === */
+.statusActive {
+  /* uses Badge variant="success" */
+}
+
+.statusRateLimited {
+  /* uses Badge variant="warning" */
+}
+
+.statusInvalid {
+  /* uses Badge variant="destructive" */
+}
+
+.statusUnverified {
+  /* uses Badge variant="default" */
+}
+
+/* === Add-key form === */
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
+  min-width: 0;
+}
+
+.addFormRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.addFormLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.addFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* === Inline edit row === */
+.editRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.editActions {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+
+/* === Empty state === */
+.emptyHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-0-5);
+}
+
+/* === Confirm dialog body === */
+.confirmBody {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+}
+
+.confirmFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

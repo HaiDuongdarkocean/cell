@@ -9,7 +9,13 @@ import type { ToastVariant } from './SubtitleToast';
 import subtitleBlockCss from './SubtitleBlock.module.css?inline';
 import navClusterCss from './NavCluster.module.css?inline';
 import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
+import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
 import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import inputCss from '@/shared/ui/Input.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
+import tabsCss from '@/shared/ui/Tabs.module.css?inline';
 import subtitleToastCss from './SubtitleToast.module.css?inline';
 import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
@@ -180,7 +186,13 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitleBlockCss,
         navClusterCss,
         subtitleManagerCss,
+        subtitleSearchCss,
         subtitleOffsetCss,
+        buttonCss,
+        inputCss,
+        selectCss,
+        skeletonCss,
+        tabsCss,
         subtitleToastCss,
         subtitleHintCss,
         subtitlePanelsCss,

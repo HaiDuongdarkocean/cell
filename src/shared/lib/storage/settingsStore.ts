@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFA
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 20;
+export const CURRENT_SCHEMA_VERSION = 21;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -359,6 +359,13 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       normalized.push({ action: 'generate-native', key: 'h' });
     }
     merged.keyboardShortcuts = normalized;
+    return merged;
+  },
+  // v20 → v21: add subtitleApiKeys (spec subtitle-search.md). Additive — existing
+  // users get empty array default; no existing fields touched.
+  20: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 21 } as Record<string, unknown>;
+    merged.subtitleApiKeys = Array.isArray(merged.subtitleApiKeys) ? merged.subtitleApiKeys : [];
     return merged;
   },
 };

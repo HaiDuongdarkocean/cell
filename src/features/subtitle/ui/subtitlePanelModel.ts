@@ -12,7 +12,7 @@ export interface SubtitlePanelItem {
   readonly format: string;
   /** Bytes, optional. */
   readonly size?: number;
-  readonly source: 'auto' | 'imported' | 'translated';
+  readonly source: 'auto' | 'imported' | 'translated' | 'searched';
   readonly role: 'target' | 'native';
   /** Position within role section. */
   readonly index: number;

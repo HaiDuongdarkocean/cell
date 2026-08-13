@@ -40,6 +40,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -60,6 +63,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={onSelect}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -76,6 +82,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -94,6 +103,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={onClose}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -111,6 +123,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={onClose}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -128,6 +143,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onOffsetChange={onOffsetChange}
       />,
     );
@@ -148,6 +166,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onOffsetChange={onOffsetChange}
       />,
     );
@@ -166,6 +187,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onOffsetChange={onOffsetChange}
       />,
     );
@@ -184,6 +208,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onOffsetChange={onOffsetChange}
       />,
     );
@@ -207,6 +234,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onOffsetChange={onOffsetChange}
       />,
     );
@@ -236,6 +266,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onImport={onImport}
       />,
     );
@@ -254,6 +287,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={onGenerateNative}
       />,
     );
@@ -271,6 +307,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -288,6 +327,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={onSelect}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -304,6 +346,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={-1}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
       />,
     );
 
@@ -324,6 +369,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,
@@ -341,6 +389,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
       />,
     );
@@ -357,6 +408,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,
@@ -382,6 +436,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,
@@ -402,6 +459,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,
@@ -422,6 +482,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={onClose}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,
@@ -441,6 +504,9 @@ describe('SubtitleManagerPanel', () => {
         nativeActiveIndex={0}
         onSelect={jest.fn()}
         onClose={jest.fn()}
+        hasSearchKeys={false}
+        onOpenSettings={jest.fn()}
+        onSearchResultSelect={jest.fn()}
         onGenerateNative={jest.fn()}
         {...appearanceProps}
       />,

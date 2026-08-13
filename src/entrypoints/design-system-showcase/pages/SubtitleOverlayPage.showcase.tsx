@@ -60,6 +60,9 @@ export function Showcase(): ReactElement {
               onImport: () => {},
               onGenerateNative: () => {},
               onOffsetChange: () => {},
+              hasSearchKeys: false,
+              onOpenSettings: () => {},
+              onSearchResultSelect: () => {},
             }}
             offset={{
               targetMs: 0,

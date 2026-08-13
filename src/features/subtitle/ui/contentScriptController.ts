@@ -26,6 +26,7 @@ import {
   loadSettingsOrToast,
   navigateCue,
   toggleOverlayState,
+  parseSubtitle,
 } from '@/features/subtitle';
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
@@ -48,8 +49,9 @@ import type { LookupResult } from '@/features/dictionaryPopup/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
-import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
+import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult, ResolveSubtitleDownloadResult } from '@/entities/message';
 import type { SubtitlePanelItem, ParsedFile } from '@/features/subtitle';
+import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 // === Subtitle Overlay Integration ===
 
 /** Load overlay style + block + cluster settings from chrome.storage.local, fallback to defaults. ADR-013, ADR-025. */
@@ -758,6 +760,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
     blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     blockController.onToggleSidePanel = toggleSidePanel;
+    blockController.onSearchResultSelect = (result, role, cues) => { void handleSearchResultSelect(result, role, cues); };
+    blockController.setHasSearchKeys(hasSearchKeys());
+    // Force re-render with the new onSearchResultSelect callback.
+    blockController.refreshManagerState();
+    blockController.onOpenSettings(() => { void sendMessage({ type: MESSAGE_TYPES.OPEN_SIDE_PANEL, payload: { tabId: undefined } }); });
     // ADR-025: offset provider already wired in ReactSubtitleController constructor.
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
@@ -908,13 +915,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let importedNativeItems: SubtitlePanelItem[] = [];
   let activeImportTargetIndex = 0;
   let activeImportNativeIndex = 0;
+  // Subtitle search: items per role (panel display + select), parsed cue cache.
+  let searchedTargetItems: SubtitlePanelItem[] = [];
+  let searchedNativeItems: SubtitlePanelItem[] = [];
+  let activeSearchedTargetIndex = 0;
+  let activeSearchedNativeIndex = 0;
+  // Cache parsed cues by search result.id — avoids re-fetch + re-parse on reselect.
+  const parsedSearchCache = new Map<string, SrtCue[]>();
   // ADR-015: auto-detected subtitle items per role (panel display + refresh after select)
   let autoTargetItems: SubtitlePanelItem[] = [];
   let autoNativeItems: SubtitlePanelItem[] = [];
   // Track which source is currently active per role (so merged panel highlights
   // the correct item when both auto + imported exist).
-  let activeTargetSource: 'auto' | 'imported' = 'auto';
-  let activeNativeSource: 'auto' | 'imported' | 'translated' = 'auto';
+  let activeTargetSource: 'auto' | 'imported' | 'searched' = 'auto';
+  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' = 'auto';
   // Generate-native: virtual replacement slot in the native manager panel.
   // Underlying auto/imported arrays are not mutated; this slot replaces the
   // active native item in the merged panel display and provides translated cues.
@@ -937,10 +951,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   const mergedPanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
     const autoItems = role === 'target' ? autoTargetItems : autoNativeItems;
     const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
+    const searchedItems = role === 'target' ? searchedTargetItems : searchedNativeItems;
     const autoActive = role === 'target' ? activeTargetIndex : activeNativeIndex;
     const importActive = role === 'target' ? activeImportTargetIndex : activeImportNativeIndex;
+    const searchedActive = role === 'target' ? activeSearchedTargetIndex : activeSearchedNativeIndex;
     const source = role === 'target' ? activeTargetSource : activeNativeSource;
-    const baseItems = [...autoItems, ...importedItems];
+    const baseItems = [...autoItems, ...importedItems, ...searchedItems];
 
     // No subtitles → default to Off (index -1)
     if (baseItems.length === 0 && !(role === 'native' && translatedNativeSlot)) {
@@ -956,6 +972,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       if (source === 'translated') {
         return { items, activeIndex: idx };
       }
+      if (source === 'searched' && searchedItems.length > 0) {
+        const baseIdx = autoItems.length + importedItems.length + searchedActive;
+        return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
+      }
       if (source === 'imported' && importedItems.length > 0) {
         const baseIdx = autoItems.length + importActive;
         return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
@@ -964,6 +984,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
     }
 
+    if (source === 'searched' && searchedItems.length > 0) {
+      return { items: baseItems, activeIndex: autoItems.length + importedItems.length + searchedActive };
+    }
     if (source === 'imported' && importedItems.length > 0) {
       return { items: baseItems, activeIndex: autoItems.length + importActive };
     }
@@ -1765,6 +1788,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       await onPanelSelect(role, item.index);
       return;
     }
+    if (item.source === 'searched') {
+      await onSearchedSelect(role, item.index);
+      return;
+    }
     if (item.source === 'translated') {
       if (role === 'native' && translatedNativeSlot) {
         activeNativeSource = 'translated';
@@ -1841,6 +1868,122 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     } catch {
       // ponytail: storage might not be available in test contexts — ignore
     }
+  }
+
+  /**
+   * Subtitle search: user selected a search result from SubtitleSearchPanel.
+   * Sends RESOLVE_SUBTITLE_DOWNLOAD to background → parses content → caches
+   * cues by result.id → creates a 'searched' panel item → loads bilingual cues.
+   * Re-selecting the same result uses the parsedSearchCache (no re-fetch).
+   */
+  async function handleSearchResultSelect(result: SubtitleSearchResult, role: 'target' | 'native', preloadedCues?: SrtCue[]): Promise<void> {
+    // Cache hit: reuse parsed cues (user re-selected a previously loaded result).
+    const cachedCues = preloadedCues ?? parsedSearchCache.get(result.id);
+    let cues: SrtCue[];
+    if (cachedCues) {
+      cues = cachedCues;
+      // Ensure cache is populated when preloaded cues are passed from preview.
+      if (preloadedCues && !parsedSearchCache.has(result.id)) {
+        parsedSearchCache.set(result.id, cues);
+      }
+    } else {
+      // Ask background to resolve the download (fetch + decode archive).
+      const response = await sendMessage<{ success?: boolean; data?: ResolveSubtitleDownloadResult; error?: string }>({
+        type: MESSAGE_TYPES.RESOLVE_SUBTITLE_DOWNLOAD,
+        payload: { result, role },
+      });
+      if (!response?.success || !response.data?.content) {
+        const msg = response?.error ?? response?.data?.error?.type ?? 'download failed';
+        showToast(`Could not load subtitle: ${msg}`, container, { variant: 'error' });
+        return;
+      }
+      const parsed = parseSubtitle(response.data.content, response.data.format ?? result.format);
+      if (!parsed.success || parsed.cues.length === 0) {
+        showToast(`Could not parse subtitle: ${parsed.error ?? 'no cues'}`, container, { variant: 'error' });
+        return;
+      }
+      cues = parsed.cues;
+      parsedSearchCache.set(result.id, cues);
+    }
+
+    // Build panel item + append to the searched items array for this role.
+    const items = role === 'target' ? searchedTargetItems : searchedNativeItems;
+    const existingIdx = items.findIndex((it) => it.id === `searched-${role}-${result.id}`);
+    if (existingIdx >= 0) {
+      // Already in the panel — just select it.
+      await onSearchedSelect(role, existingIdx);
+      return;
+    }
+    const item: SubtitlePanelItem = {
+      id: `searched-${role}-${result.id}`,
+      name: result.name,
+      format: result.format,
+      source: 'searched',
+      role,
+      index: items.length,
+    };
+    if (role === 'target') {
+      searchedTargetItems = [...searchedTargetItems, item];
+      activeSearchedTargetIndex = item.index;
+      activeTargetSource = 'searched';
+    } else {
+      searchedNativeItems = [...searchedNativeItems, item];
+      activeSearchedNativeIndex = item.index;
+      activeNativeSource = 'searched';
+    }
+    // Search selection resets the translated native slot (new native source).
+    if (role === 'native') clearTranslatedNativeState();
+    refreshPanel(role);
+    if (role === 'target') { refreshPanel('native'); updateGenerateNativeEnabled(); }
+
+    // Load cues (D1 merge keeps the other side).
+    if (role === 'target') {
+      blockController?.loadBilingualCues(cues, []);
+      latestTargetCues = cues;
+    } else {
+      blockController?.loadBilingualCues([], cues);
+    }
+    showOverlay();
+    syncSidePanelFromBlock();
+    debouncedToast(`Loaded ${result.name}`, container, { variant: 'success' });
+  }
+
+  /**
+   * User selected an already-loaded searched subtitle via the manager panel.
+   * Loads cues from parsedSearchCache by the searched item index.
+   */
+  async function onSearchedSelect(role: 'target' | 'native', index: number): Promise<void> {
+    const items = role === 'target' ? searchedTargetItems : searchedNativeItems;
+    if (index >= items.length) return;
+    const item = items[index];
+    if (role === 'target') { activeSearchedTargetIndex = index; activeTargetSource = 'searched'; }
+    else { activeSearchedNativeIndex = index; activeNativeSource = 'searched'; }
+    refreshPanel(role);
+
+    // Retrieve cues from cache by result.id (encoded in item.id).
+    const resultId = item.id.replace(`searched-${role}-`, '');
+    const cues = parsedSearchCache.get(resultId);
+    if (!cues) return;
+
+    if (role === 'target') {
+      blockController?.loadBilingualCues(cues, []);
+      latestTargetCues = cues;
+      clearTranslatedNativeState();
+      activeNativeSource = 'auto';
+      activeNativeIndex = 0;
+      refreshPanel('native');
+      updateGenerateNativeEnabled();
+    } else {
+      blockController?.loadBilingualCues([], cues);
+    }
+    showOverlay();
+    syncSidePanelFromBlock();
+    debouncedToast(`Switched to ${item.name}`, container, { variant: 'success' });
+  }
+
+  /** Check if the user has configured any subtitle search API keys. */
+  function hasSearchKeys(): boolean {
+    return (currentSettings?.subtitleApiKeys?.length ?? 0) > 0;
   }
 
   // Re-send SUBTITLE_CUES_LOADED when tab becomes visible again.

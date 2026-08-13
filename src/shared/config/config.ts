@@ -261,6 +261,8 @@ export const DEFAULT_SETTINGS: Settings = {
   cardCreator: DEFAULT_CARD_CREATOR_SETTINGS,
   // === Dictionary Popup (spec §9.3) — schema v14 ===
   dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  // === Subtitle Search (spec subtitle-search.md) — schema v21 ===
+  subtitleApiKeys: [],
 };
 
 /**
@@ -304,6 +306,9 @@ export const STORAGE_KEYS = {
   PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
   /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
   SPLIT_VIEW_PCT: 'splitViewPct',
+  /** Per-key subtitle quota ledger in session storage (spec subtitle-search.md).
+   *  Session-only: per-profile, not synced, survives SW restart. */
+  SUBTITLE_KEY_LEDGER: 'subtitleKeyLedger',
 } as const;
 
 // === Popup Dimensions ===
