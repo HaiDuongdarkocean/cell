@@ -107,10 +107,23 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] `components.css` không còn block scrollbar.
   - [x] Build + tests pass.
 
-## Loop 8+ (future loops)
+## Loop 8 — Remaining empty states SSOT
+- **Why:** `ImagePanel.tsx` và `CandidateView.tsx` vẫn dùng markup + CSS thủ công cho empty state thay vì `EmptyState` component đã có từ Loop 3.
+- **What:** Thay thế bằng `<EmptyState size="sm" ...>`; xóa `.cellImageEmpty`, `.cellImageEmptyIcon`, `.cellImageEmptyTitle`, `.cellDefEmpty` trong `DictionaryPanelView.module.css`.
+- **Files:**
+  - `src/features/dictionaryPopup/ui/ImagePanel.tsx`
+  - `src/features/dictionaryPopup/ui/CandidateView.tsx`
+  - `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css`
+- **AC:**
+  - [x] `ImagePanel.tsx` dùng `EmptyState`.
+  - [x] `CandidateView.tsx` dùng `EmptyState`.
+  - [x] Không còn `.cellImageEmpty`, `.cellImageEmptyIcon`, `.cellImageEmptyTitle`, `.cellDefEmpty`.
+  - [x] Build + tests pass.
+
+## Loop 9+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header/actions layout patterns trong popup/subtitle/universal panel.
-- Finish remaining empty states (`ImagePanel`, `CandidateView`).
+- Loading/error state patterns trong `DictionaryPanelView.module.css`.
 - Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Verification pattern

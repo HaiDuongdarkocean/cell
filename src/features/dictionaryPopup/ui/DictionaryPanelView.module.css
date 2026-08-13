@@ -402,12 +402,6 @@
   overscroll-behavior: contain;
 }
 
-.cellDefEmpty {
-  color: var(--color-text-secondary);
-  font-style: italic;
-  padding: var(--space-1) 0;
-}
-
 .dictionaryEmpty {
   flex: 1 1 auto;
   min-height: 0;
@@ -615,44 +609,15 @@
   flex-direction: column;
 }
 
-.cellImageEmpty {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-}
-
-.cellImageEmptyIcon, .cellImageEmptyTitle {
-  display: none;
-}
-
 .cellImageEmptyAction {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-0-5);
   color: var(--color-primary);
   text-decoration: none;
   font-size: var(--font-size-xs);
   white-space: nowrap;
-  background: none;
-  border: none;
-  padding: 0;
-  height: auto;
-  min-height: 0;
-  min-width: 0;
-  cursor: pointer;
 }
 
 .cellImageEmptyAction:hover {
   text-decoration: underline;
-}
-
-.cellImageEmptyAction svg {
-  display: none;
 }
 
 .cellTranslate {
