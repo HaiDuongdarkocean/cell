@@ -1,4 +1,4 @@
-import { Button, IconButton } from '@/shared/ui';
+import { Button, HStack, IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SelectionBar.module.css';
 
@@ -12,7 +12,13 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
   if (selectionCount === 0) return null;
 
   return (
-    <div className={styles.selectionBar} data-cell-id="selection-bar">
+    <HStack
+      align="center"
+      justify="between"
+      gap="2"
+      className={styles.selectionBar}
+      data-cell-id="selection-bar"
+    >
       <IconButton
         size="sm"
         onClick={onClear}
@@ -33,6 +39,6 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       >
         Download
       </Button>
-    </div>
+    </HStack>
   );
 }

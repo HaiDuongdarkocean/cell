@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { HStack } from '@/shared/ui';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Icon } from '@/shared/icons/Icon';
@@ -48,7 +49,7 @@ export function UniversalPanelHeader({
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
-      <div className={styles.toggleCluster} role="group" aria-label="Tokenize controls">
+      <HStack align="center" gap="3" className={styles.toggleCluster} role="group" aria-label="Tokenize controls">
         {TOGGLE_ITEMS.map((item) => {
           const checked = tokenizeState[item.key];
           // Subtitle toggle is independent — always interactive.
@@ -68,7 +69,7 @@ export function UniversalPanelHeader({
             </label>
           );
         })}
-      </div>
+      </HStack>
 
       <IconButton
         size="sm"
