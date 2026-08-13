@@ -1,4 +1,5 @@
 @import '../../../shared/styles/tokens.css';
+@import '../../../shared/styles/scrollbars-document.css';
 
 /* ============================================================
    Reset — matches prototype
@@ -12,23 +13,6 @@ html, body { font-family: var(--font-family); font-size: var(--font-size-base); 
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-/* ============================================================
-   Scrollbar — theme-aware (matches prototype exactly)
-   ============================================================ */
-*::-webkit-scrollbar { width: var(--space-1-5); height: var(--space-1-5); }
-*::-webkit-scrollbar-track { background: var(--color-scrollbar-track); }
-*::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
 }
 
 /* ============================================================

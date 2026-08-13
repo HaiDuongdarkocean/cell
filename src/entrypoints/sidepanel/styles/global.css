@@ -1,4 +1,8 @@
 @import '../../../shared/styles/tokens.css';
+@import '../../../shared/styles/scrollbars-document.css';
+
+/* Sidepanel uses transparent scrollbar track over dark video backdrop */
+:root { --scrollbar-track: transparent; }
 
 /* ============================================================
    Sidepanel reset — dark backdrop (subtitle reader context)
@@ -26,21 +30,6 @@ html, body {
 body {
   background-color: var(--color-background);
   color: var(--color-text);
-}
-
-/* Scrollbar — theme-aware */
-*::-webkit-scrollbar { width: var(--space-1-5); height: var(--space-1-5); }
-*::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 /* Theme transition */

@@ -15,10 +15,10 @@
         background: var(--color-background);
       }
       ::-webkit-scrollbar { width: var(--space-1-5); }
-      ::-webkit-scrollbar-track { background: var(--color-scrollbar-track); }
-      ::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: var(--radius-xs); }
+      ::-webkit-scrollbar-track { background: var(--scrollbar-track, var(--color-scrollbar-track)); }
+      ::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: var(--radius-full); }
       ::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
-      html { scrollbar-width: thin; scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track); }
+      html { scrollbar-width: thin; scrollbar-color: var(--color-scrollbar-thumb) var(--scrollbar-track, var(--color-scrollbar-track)); }
     </style>
     <script>
       // Minimal chrome.storage mock so settings/theme panels can render outside the extension.
