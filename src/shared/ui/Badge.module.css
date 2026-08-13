@@ -11,6 +11,11 @@
   white-space: nowrap;
 }
 
+.xs {
+  padding: var(--space-0-5) var(--space-2);
+  font-size: var(--font-size-2xs);
+}
+
 .sm {
   padding: var(--space-0-5) var(--space-2);
   font-size: var(--badge-font-size);
@@ -50,4 +55,9 @@
 .warning {
   background: var(--color-warning);
   color: var(--color-text-primary);
+}
+
+.muted {
+  background: var(--badge-muted-bg);
+  color: var(--badge-muted-fg);
 }

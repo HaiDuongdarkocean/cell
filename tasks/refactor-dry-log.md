@@ -372,8 +372,28 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `724663d4`) ✅
 - **Status:** Complete. Domain badges and toast/notice patterns remain out of scope.
 
+### Loop 17 — SourceBadge → Badge SSOT
+- **Discovery:** `SourceBadge` tự định nghĩa toàn bộ pill CSS trong khi `Badge` đã có.
+- **Plan:** Thêm `muted` variant và `xs` size vào `Badge`; chuyển `SourceBadge` thành wrapper của `Badge`; xóa `SourceBadge.module.css`.
+- **AC:**
+  1. `Badge` hỗ trợ `variant="muted"` và `size="xs"`.
+  2. `SourceBadge` là wrapper của `Badge` với `aria-label` từ `source`.
+  3. Xóa `SourceBadge.module.css`.
+  4. Build + `SourceBadge` / `Badge` tests pass.
+- **Do:**
+  - Added `muted` variant and `xs` size to `Badge`.
+  - Added `--badge-muted-bg` / `--badge-muted-fg` tokens to `tokens.json`.
+  - Rewrote `SourceBadge` as a `Badge` wrapper.
+  - Deleted `SourceBadge.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `SourceBadge` / `Badge` unit tests ✅ (`resolveWordAtTip` test has pre-existing jsdom failure)
+  - Subagent review (agent id `a799dbef`) ✅
+- **Status:** Complete. `StatusBadge`, `FrequencyBadge`, `MasteryBadge` and toast/notice patterns remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 16
+- **Loops completed:** 17
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13; "continue Loop 15?" after Loop 14; "continue Loop 16?" after Loop 15)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13; "continue Loop 15?" after Loop 14; "continue Loop 16?" after Loop 15; "continue Loop 17?" after Loop 16)
