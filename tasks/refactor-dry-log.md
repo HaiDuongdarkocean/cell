@@ -332,8 +332,48 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Attempted browser preview; static server setup hit a transient environment issue with `dist/` being removed between build and request. Unit/build checks pass.
 - **Status:** Complete. Domain badges (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) remain out of scope.
 
+### Loop 15 — Design-system-showcase scrollbar SSOT
+- **Discovery:** `src/entrypoints/design-system-showcase/index.html` nhúng CSS `::-webkit-scrollbar` trực tiếp, trùng với `src/shared/styles/scrollbars-document.css`.
+- **Plan:** Bỏ scrollbar CSS inline; import `scrollbars-document.css` trong `main.tsx` để dùng SSOT.
+- **AC:**
+  1. Xóa `::-webkit-scrollbar` và `scrollbar-*` inline trong `index.html`.
+  2. `main.tsx` import `scrollbars-document.css`.
+  3. Showcase vẫn hiển thị đúng, scrollbar theming hoạt động.
+  4. Build pass.
+- **Do:**
+  - Removed inline scrollbar CSS from `design-system-showcase/index.html`.
+  - Added `import '@/shared/styles/scrollbars-document.css';` to `main.tsx`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - Subagent review (agent id `446476ac`) ✅
+  - `npm run test:unit` has 42 pre-existing failures unrelated to this change (jsdom environment, `PlayerModeOverlay` CSS snapshot, `WebTriggerController`, `DictionaryTab`).
+- **Status:** Complete. Domain badges, `BottomSheet` header, toast/notice patterns remain out of scope.
+
+### Loop 16 — BottomSheet layout HStack/VStack/Flex SSOT
+- **Discovery:** `BottomSheet` `.overlay`/`.sheet`/`.header`/`.footer`/`content` còn tự định nghĩa flex trong khi `HStack`/`VStack`/`Flex` đã có.
+- **Plan:** Dùng `Flex` cho `.overlay`, `VStack` cho `.sheet` và `.content`, `HStack` cho `.header` và `.footer`; xóa CSS flex dư. Cần `forwardRef` và `HTMLAttributes` cho `Flex`/`VStack`/`HStack`.
+- **AC:**
+  1. `BottomSheet.overlay` dùng `Flex` với `align="end"` `justify="center"`.
+  2. `BottomSheet.sheet` dùng `VStack`.
+  3. `BottomSheet.content` dùng `VStack`.
+  4. `BottomSheet.header` và `.footer` dùng `HStack`.
+  5. Không còn `display: flex` dư thừa trong các class trên.
+  6. Build + `BottomSheet` tests pass.
+- **Do:**
+  - Converted `BottomSheet` overlay, sheet, content, header, footer to `Flex`/`VStack`/`HStack`.
+  - Removed redundant `display: flex` from `BottomSheet.module.css`.
+  - Updated `Stack.tsx` `StackBase`, `VStack`, `HStack` to use `forwardRef`.
+  - Updated `Flex.tsx` to use `forwardRef` and extend `HTMLAttributes<HTMLDivElement>` for `onClick`/`onKeyDown` passthrough.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `Stack` / `Flex` / `Dialog` / `BottomSheet` unit tests ✅
+  - Subagent review (agent id `724663d4`) ✅
+- **Status:** Complete. Domain badges and toast/notice patterns remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 14
+- **Loops completed:** 16
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13; "continue Loop 15?" after Loop 14; "continue Loop 16?" after Loop 15)

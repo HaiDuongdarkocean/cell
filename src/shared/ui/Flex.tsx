@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { forwardRef } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode, Ref } from 'react';
 import styles from './Flex.module.css';
 
 type FlexDirection = 'row' | 'column' | 'row-reverse' | 'column-reverse';
@@ -7,7 +8,7 @@ type FlexAlign = 'start' | 'center' | 'end' | 'stretch' | 'baseline';
 type FlexWrap = 'nowrap' | 'wrap' | 'wrap-reverse';
 type SpacingToken = '0' | '0-5' | '1' | '1-5' | '2' | '2-5' | '3' | '3-5' | '4' | '4-5' | '5' | '6' | '7' | '8' | '9' | '10' | '12' | '16' | '20' | '24';
 
-export interface FlexProps {
+export interface FlexProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className' | 'style'> {
   children?: ReactNode;
   direction?: FlexDirection;
   justify?: FlexJustify;
@@ -53,17 +54,21 @@ const wrapMap: Record<FlexWrap, string> = {
  * Flex — neutral flexbox layout primitive. No opinionated padding/gap.
  * Props control direction, justify, align, wrap, gap, and inline mode.
  */
-export function Flex({
-  direction = 'row',
-  justify = 'start',
-  align = 'stretch',
-  wrap = 'nowrap',
-  gap,
-  inline = false,
-  className,
-  style,
-  children,
-}: FlexProps): React.JSX.Element {
+export const Flex = forwardRef<HTMLDivElement, FlexProps>(function Flex(
+  {
+    direction = 'row',
+    justify = 'start',
+    align = 'stretch',
+    wrap = 'nowrap',
+    gap,
+    inline = false,
+    className,
+    style,
+    children,
+    ...rest
+  }: FlexProps,
+  ref: Ref<HTMLDivElement>,
+): React.JSX.Element {
   const cls = [
     styles.flex,
     directionMap[direction],
@@ -75,5 +80,5 @@ export function Flex({
     className ?? '',
   ].filter(Boolean).join(' ');
 
-  return <div className={cls} style={style}>{children}</div>;
-}
+  return <div ref={ref} className={cls} style={style} {...rest}>{children}</div>;
+});

@@ -1,4 +1,5 @@
-import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
+import { forwardRef } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode, Ref } from 'react';
 import styles from './Stack.module.css';
 
 type StackDirection = 'vertical' | 'horizontal';
@@ -36,17 +37,20 @@ const justifyMap: Record<StackJustify, string> = {
   between: styles.justifyBetween,
 };
 
-function StackBase({
-  direction = 'vertical',
-  gap,
-  align = 'stretch',
-  justify = 'start',
-  divider = false,
-  className,
-  style,
-  children,
-  ...rest
-}: StackProps): React.JSX.Element {
+const StackBase = forwardRef<HTMLDivElement, StackProps>(function StackBase(
+  {
+    direction = 'vertical',
+    gap,
+    align = 'stretch',
+    justify = 'start',
+    divider = false,
+    className,
+    style,
+    children,
+    ...rest
+  }: StackProps,
+  ref: Ref<HTMLDivElement>,
+): React.JSX.Element {
   const cls = [
     styles.stack,
     directionMap[direction],
@@ -57,21 +61,21 @@ function StackBase({
     className ?? '',
   ].filter(Boolean).join(' ');
 
-  return <div className={cls} style={style} {...rest}>{children}</div>;
-}
+  return <div ref={ref} className={cls} style={style} {...rest}>{children}</div>;
+});
 
 /**
  * VStack — vertical stack layout primitive. direction defaults to 'vertical'.
  * Neutral: no opinionated padding/gap. Props control spacing, align, justify, divider.
  */
-export function VStack(props: Omit<StackProps, 'direction'>): React.JSX.Element {
-  return <StackBase direction="vertical" {...props} />;
-}
+export const VStack = forwardRef<HTMLDivElement, Omit<StackProps, 'direction'>>(function VStack(props, ref) {
+  return <StackBase ref={ref} direction="vertical" {...props} />;
+});
 
 /**
  * HStack — horizontal stack layout primitive. direction defaults to 'horizontal'.
  * Neutral: no opinionated padding/gap. Props control spacing, align, justify, divider.
  */
-export function HStack(props: Omit<StackProps, 'direction'>): React.JSX.Element {
-  return <StackBase direction="horizontal" {...props} />;
-}
+export const HStack = forwardRef<HTMLDivElement, Omit<StackProps, 'direction'>>(function HStack(props, ref) {
+  return <StackBase ref={ref} direction="horizontal" {...props} />;
+});

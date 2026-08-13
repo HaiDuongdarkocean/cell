@@ -1,5 +1,6 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { Flex, HStack, VStack } from '.';
 import { IconButton } from './IconButton';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './BottomSheet.module.css';
@@ -60,15 +61,18 @@ export function BottomSheet({
   if (!open) return null;
 
   return (
-    <div
+    <Flex
+      align="end"
+      justify="center"
       className={styles.overlay}
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
       role="presentation"
       data-cell-id={dataTestId}
     >
-      <div
+      <VStack
         ref={panelRef}
+        gap="3"
         className={styles.sheet}
         onClick={handlePanelClick}
         role="dialog"
@@ -77,7 +81,12 @@ export function BottomSheet({
       >
         <div className={styles.dragHandle} aria-hidden="true" />
         {(title || onOpenChange) && (
-          <div className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}>
+          <HStack
+            align="center"
+            justify={centerTitle ? 'center' : 'between'}
+            gap="2"
+            className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}
+          >
             {title && (
               <h2 id="bottom-sheet-title" className={styles.title}>{title}</h2>
             )}
@@ -89,11 +98,11 @@ export function BottomSheet({
             >
               <Icon name="x" size={20} />
             </IconButton>
-          </div>
+          </HStack>
         )}
-        {children && <div className={styles.content}>{children}</div>}
-        {footer && <div className={styles.footer}>{footer}</div>}
-      </div>
-    </div>
+        {children && <VStack gap="3">{children}</VStack>}
+        {footer && <HStack align="center" justify="between" gap="2" className={styles.footer}>{footer}</HStack>}
+      </VStack>
+    </Flex>
   );
 }
