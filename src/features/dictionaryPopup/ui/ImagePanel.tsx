@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
 import type { ImageItem } from '../types';
@@ -41,18 +42,22 @@ export function ImagePanel({
   if (items.length === 0) {
     return (
       <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
-        <div className={styles.cellImageEmpty}>
-          <span className={styles.cellImageEmptyIcon}><Icon name="image" size={24} /></span>
-          <span className={styles.cellImageEmptyTitle}>No images</span>
-          <a
-            href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.cellImageEmptyAction}
-          >
-            Search Google Images →
-          </a>
-        </div>
+        <EmptyState
+          size="sm"
+          icon={<Icon name="image" size={24} />}
+          title="No images"
+          action={
+            <a
+              href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.cellImageEmptyAction}
+            >
+              Search Google Images →
+            </a>
+          }
+          data-cell-id="dictionary-image-empty"
+        />
       </div>
     );
   }

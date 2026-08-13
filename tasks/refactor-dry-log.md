@@ -168,14 +168,35 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `11496acc`) ✅
 - **Status:** Complete. `design-system-showcase/index.html` vẫn còn inline scrollbar vì là standalone page không load `global.css`; đánh dấu out-of-scope cho loop này.
 
-### Loop 8 — (pending candidates)
-- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header / actions layout patterns trong popup/subtitle/universal panel.
-- Finish remaining empty states (`ImagePanel`, `CandidateView`).
+### Loop 8 — Remaining empty states SSOT
+- **Discovery:** `ImagePanel.tsx` và `CandidateView.tsx` vẫn dùng markup + CSS thủ công cho empty state (`cellImageEmpty`, `cellImageEmptyIcon`, `cellImageEmptyTitle`, `cellDefEmpty`) thay vì `EmptyState` component đã có từ Loop 3.
+- **Plan:** Thay thế bằng `<EmptyState size="sm" ...>`; xóa các class CSS dư thừa trong `DictionaryPanelView.module.css`. Giữ lại `.cellImageEmptyAction` vì nó là style riêng cho link `Google Images`.
+- **AC:**
+  1. `ImagePanel.tsx` dùng `EmptyState`.
+  2. `CandidateView.tsx` dùng `EmptyState`.
+  3. Không còn `.cellImageEmpty`, `.cellImageEmptyIcon`, `.cellImageEmptyTitle`, `.cellDefEmpty`.
+  4. Build + tests pass.
+- **Do:**
+  - Updated `ImagePanel.tsx` to use `EmptyState` with `icon`, `title`, and `action`.
+  - Updated `CandidateView.tsx` to use `EmptyState` with `icon` and `description` for no definitions.
+  - Removed unused CSS classes from `DictionaryPanelView.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `ImagePanel` and `CandidateView` unit tests ✅
+  - `npm run test:unit` has pre-existing failures (dictionary fixture, jsdom `elementFromPoint`, `import.meta.env`, PlayerModeOverlay CSS, DictionaryTab translate tab) unrelated to this loop; targeted tests pass.
+  - Subagent review (agent id `b01ea064`) ✅
+- **Status:** Complete. `AudioPanel` uses synthetic TTS fallback (intentional design, not empty state). `MediaList` drag-drop empty state remains as future candidate.
+
+### Loop 9 — (pending candidates)
+- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`) — đa số là design-system atoms chưa dùng rộng.
+- Header / actions layout patterns trong popup/subtitle/universal panel (dùng Flex/Stack SSOT).
+- Loading/error state patterns trong `DictionaryPanelView.module.css`.
 - Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Loop count / goal check
 
-- **Loops completed:** 7
+- **Loops completed:** 8
 - **Goal reached?** No — additional duplicate UI patterns remain.
 - **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7)

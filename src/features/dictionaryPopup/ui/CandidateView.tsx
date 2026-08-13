@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { rankToBand } from '@/shared/lib/frequencyBand';
 import { nextStatus } from '../services/wordStatusStore';
 import { useCandidate } from './useCandidate';
@@ -193,10 +194,12 @@ export function CandidateView({
 
         <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
-          <div className={styles.cellDefEmpty}>
-            <Icon name="info" size={24} />
-            <span>No definitions found. Import a dictionary in Settings → Resources.</span>
-          </div>
+          <EmptyState
+            size="sm"
+            icon={<Icon name="info" size={24} />}
+            description="No definitions found. Import a dictionary in Settings → Resources."
+            data-cell-id="dictionary-definitions-empty"
+          />
         ) : (
           candidate.definitions.map((def) => (
             <DefinitionItem
