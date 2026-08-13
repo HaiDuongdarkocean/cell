@@ -214,9 +214,21 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Showcase vẫn hiển thị đúng, scrollbar theming hoạt động.
   - [x] Build pass.
 
-## Loop 16+ (future loops)
+## Loop 16 — BottomSheet layout HStack/VStack/Flex SSOT
+- **Why:** `BottomSheet` `.overlay`/`.sheet`/`.header`/`.footer`/`content` còn tự định nghĩa flex trong khi `HStack`/`VStack`/`Flex` đã có.
+- **What:** Dùng `Flex` cho `.overlay`, `VStack` cho `.sheet` và `.content`, `HStack` cho `.header` và `.footer`; xóa CSS flex dư.
+- **Files:**
+  - `src/shared/ui/BottomSheet.{tsx,module.css}`
+- **AC:**
+  - [x] `BottomSheet.overlay` dùng `Flex` với `align="end"` `justify="center"`.
+  - [x] `BottomSheet.sheet` dùng `VStack`.
+  - [x] `BottomSheet.content` dùng `VStack`.
+  - [x] `BottomSheet.header` và `.footer` dùng `HStack`.
+  - [x] Không còn `display: flex` dư thừa trong các class trên.
+  - [x] Build + `BottomSheet` tests pass.
+
+## Loop 17+ (future loops)
 - Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) consolidate với `Badge`/`Chip`.
-- Header/actions layout patterns còn lại (`BottomSheet` header).
 - Toast / notice patterns (`SubtitleToast`, `CardCreatorDialog` notice, `SubtitleSearchPanel` error, `DownloadCard` error).
 
 ## Verification pattern
