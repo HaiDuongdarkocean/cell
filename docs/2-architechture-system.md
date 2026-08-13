@@ -104,7 +104,7 @@ src/
 │   │   ├── CheckboxGroup.tsx + .module.css # Managed list of checkboxes
 │   │   ├── Dialog.tsx + .module.css        # Accessible modal overlay + panel (DeleteConfirmModal now uses this)
 │   │   ├── Drawer.tsx + .module.css        # Slide-in panel with overlay
-│   │   ├── EmptyState.tsx + .module.css    # Empty list/panel placeholder
+│   │   ├── EmptyState.tsx + .module.css    # Empty list/panel placeholder with md/compact/sm sizes and data-* passthrough
 │   │   ├── ErrorBoundary.tsx + .module.css # React error boundary (class component — React requirement) with reload fallback
 │   │   ├── FormGroup.tsx + .module.css     # Label + children wrapper with consistent spacing
 │   │   ├── Header.tsx + .module.css        # Top chrome with title and actions

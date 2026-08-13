@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
@@ -48,13 +49,17 @@ export function TranslatePanel({
     return (
       <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <div className={styles.cellTranslateError}>{error}</div>
-        <div className={styles.cellTranslateEmpty}>
-          <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
-          <span className={styles.cellTranslateEmptyTitle}>No translation</span>
-          <Button variant="outline" size="sm" onClick={onTranslate}>
-            Translate to {targetLang}
-          </Button>
-        </div>
+        <EmptyState
+          size="sm"
+          icon={<Icon name="languages" size={24} />}
+          title="No translation"
+          action={
+            <Button variant="outline" size="sm" onClick={onTranslate}>
+              Translate to {targetLang}
+            </Button>
+          }
+          data-cell-id="dictionary-translate-empty"
+        />
       </div>
     );
   }
@@ -83,13 +88,17 @@ export function TranslatePanel({
 
   return (
     <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
-      <div className={styles.cellTranslateEmpty}>
-        <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
-        <span className={styles.cellTranslateEmptyTitle}>No translation</span>
-        <Button variant="outline" size="sm" loading={loading} onClick={onTranslate}>
-          Translate to {targetLang}
-        </Button>
-      </div>
+      <EmptyState
+        size="sm"
+        icon={<Icon name="languages" size={24} />}
+        title="No translation"
+        action={
+          <Button variant="outline" size="sm" loading={loading} onClick={onTranslate}>
+            Translate to {targetLang}
+          </Button>
+        }
+        data-cell-id="dictionary-translate-empty"
+      />
     </div>
   );
 }
