@@ -3,6 +3,7 @@ import type { DetectedSubtitle } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Spinner } from '@/shared/ui/Spinner';
+import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
 import { formatFileSize } from '@/entrypoints/popup/utils/format';
@@ -74,7 +75,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
   return (
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
-      className={`${styles.card} ${downloading ? styles.downloading : ''}`}
+      className={`${styles.card} ${cardAnimations.fadeIn} ${downloading ? styles.downloading : ''}`}
       data-cell-id="subtitle-item"
       data-id={subtitle.id}
     >
@@ -139,7 +140,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <div className={styles.urlPanel} data-cell-id="subtitle-url-row">
+        <div className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="subtitle-url-row">
           <button
             type="button"
             className={styles.copyBtn}
@@ -150,7 +151,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             <Icon name="copy" size={14} />
             <span className={styles.urlText}>{subtitle.url}</span>
           </button>
-          {copied && <span className={styles.copiedBadge} data-cell-id="subtitle-copied-toast">Copied</span>}
+          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}
         </div>
       )}
     </Card>

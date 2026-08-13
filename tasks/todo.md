@@ -14,10 +14,10 @@
 
 ## Loop 2 — Card enter/expand animations SSOT
 - [x] Discover duplicate `fade-in` / `slide-down` keyframes in VideoCard/SubtitleCard
-- [ ] Extract shared animation keyframes (requires shared CSS module due to CSS Modules scoping)
-- [ ] Refactor VideoCard and SubtitleCard to use shared animation
-- [ ] Verify: typecheck, build pass
-- [ ] Subagent verify AC for Loop 2
+- [x] Extract shared animation keyframes to `CardAnimations.module.css`
+- [x] Refactor VideoCard and SubtitleCard to use shared animation classes
+- [x] Verify: typecheck, build (prod + dev) pass
+- [~] Subagent verify AC for Loop 2
 
 ## Loop 3 — Empty state SSOT
 - [ ] Discover duplicate empty state markup/CSS
