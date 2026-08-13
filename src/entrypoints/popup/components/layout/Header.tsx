@@ -1,4 +1,5 @@
 import styles from './Header.module.css';
+import { HStack } from '@/shared/ui';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 
@@ -23,11 +24,11 @@ export function Header({
 }: HeaderProps): React.JSX.Element {
   return (
     <header className={styles.header}>
-      <div className={styles.headerLeft}>
+      <HStack align="center" gap="2" className={styles.headerLeft}>
         <Icon name="play" className={styles.headerIcon} />
         <h1 className={styles.headerTitle}>Cell</h1>
-      </div>
-      <div className={styles.headerRight}>
+      </HStack>
+      <HStack align="center" gap="0-5" className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}
         <IconButton
           size="sm"
@@ -80,7 +81,7 @@ export function Header({
         >
           <Icon name="settings" className={styles.icon} />
         </IconButton>
-      </div>
+      </HStack>
     </header>
   );
 }

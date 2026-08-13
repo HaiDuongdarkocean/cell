@@ -189,14 +189,37 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `b01ea064`) ✅
 - **Status:** Complete. `AudioPanel` uses synthetic TTS fallback (intentional design, not empty state). `MediaList` drag-drop empty state remains as future candidate.
 
-### Loop 9 — (pending candidates)
+### Loop 9 — Header / action layout SSOT
+- **Discovery:** `Header`, `SelectionBar`, `UniversalPanelHeader` tự định nghĩa `display: flex; align-items: center; justify-content: space-between; gap: ...` cho các cluster/dòng hành động, trong khi `HStack`/`VStack` đã tồn tại.
+- **Plan:** Mở rộng `StackProps` với `HTMLAttributes<HTMLDivElement>` để `HStack`/`VStack` forward `role`, `aria-*`, `data-*`; chuyển `headerLeft`/`headerRight`, `selectionBar`, `toggleCluster` sang `HStack`; xóa CSS flex dư thừa.
+- **AC:**
+  1. `HStack`/`VStack` accept div HTML attributes.
+  2. Các header row / action bar trong scope dùng `HStack`.
+  3. Không còn `display: flex; align-items: center;` CSS trong các inner class đã refactor.
+  4. Build + tests pass.
+- **Do:**
+  - Updated `Stack.tsx` to extend `HTMLAttributes<HTMLDivElement>` and spread `...rest`.
+  - Added native-attribute test to `Stack.test.tsx`.
+  - Refactored `popup/Header` to use `HStack` for left/right clusters.
+  - Refactored `popup/SelectionBar` to use `HStack` as outer container.
+  - Refactored `UniversalPanelHeader` to use `HStack` for toggle cluster.
+  - Removed redundant flex CSS from `Header.module.css`, `SelectionBar.module.css`, `UniversalPanelHeader.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `Stack.test.tsx` ✅
+  - `UniversalPanel.test.tsx` ✅
+  - Subagent review (agent id `097d0f52`) ✅
+- **Status:** Complete. Outer `.header` containers vẫn giữ flex vì là container semantic `<header>`, không nằm trong scope của lần này. `Dialog` `.headerRightGroup` và các media card flex còn lại là ứng cử viên tiếp theo.
+
+### Loop 10 — (pending candidates)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`) — đa số là design-system atoms chưa dùng rộng.
-- Header / actions layout patterns trong popup/subtitle/universal panel (dùng Flex/Stack SSOT).
-- Loading/error state patterns trong `DictionaryPanelView.module.css`.
+- Loading/error state patterns trong `DictionaryPanelView.module.css` / toàn hệ thống.
 - Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Loop count / goal check
 
-- **Loops completed:** 8
+- **Loops completed:** 9
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8)

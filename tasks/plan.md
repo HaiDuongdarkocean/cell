@@ -120,10 +120,23 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `.cellImageEmpty`, `.cellImageEmptyIcon`, `.cellImageEmptyTitle`, `.cellDefEmpty`.
   - [x] Build + tests pass.
 
-## Loop 9+ (future loops)
+## Loop 9 — Header / action layout SSOT
+- **Why:** `Header`, `SelectionBar`, `UniversalPanelHeader` và nhiều component khác tự định nghĩa lại `display: flex; align-items: center; justify-content: space-between; gap: ...` thay vì dùng `HStack`/`Flex` đã có.
+- **What:** Mở rộng `HStack`/`VStack` để hỗ trợ `role`, `aria-*`, `data-*`; chuyển các header row / action bar / toggle cluster sang `HStack`; xóa CSS flex trùng lặp.
+- **Files:**
+  - `src/shared/ui/Stack.tsx`, `Stack.test.tsx`
+  - `src/entrypoints/popup/components/layout/Header.{tsx,module.css}`
+  - `src/entrypoints/popup/components/SelectionBar.{tsx,module.css}`
+  - `src/features/universalPanel/UniversalPanelHeader.{tsx,module.css}`
+- **AC:**
+  - [x] `HStack`/`VStack` accept div HTML attributes.
+  - [x] Các header row / action bar trong scope dùng `HStack`/`Flex`.
+  - [x] Không còn `display: flex; align-items: center; justify-content: space-between` CSS dư thừa trong các inner class đã refactor.
+  - [x] Build + tests pass.
+
+## Loop 10+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header/actions layout patterns trong popup/subtitle/universal panel.
-- Loading/error state patterns trong `DictionaryPanelView.module.css`.
+- Loading/error state patterns trong `DictionaryPanelView.module.css` / toàn hệ thống.
 - Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Verification pattern

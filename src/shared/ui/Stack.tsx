@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 import styles from './Stack.module.css';
 
 type StackDirection = 'vertical' | 'horizontal';
@@ -6,7 +6,7 @@ type StackAlign = 'start' | 'center' | 'end' | 'stretch';
 type StackJustify = 'start' | 'center' | 'end' | 'between';
 type SpacingToken = '0' | '0-5' | '1' | '1-5' | '2' | '2-5' | '3' | '3-5' | '4' | '4-5' | '5' | '6' | '7' | '8' | '9' | '10' | '12' | '16' | '20' | '24';
 
-export interface StackProps {
+export interface StackProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'className' | 'style'> {
   children?: ReactNode;
   direction?: StackDirection;
   gap?: SpacingToken;
@@ -45,6 +45,7 @@ function StackBase({
   className,
   style,
   children,
+  ...rest
 }: StackProps): React.JSX.Element {
   const cls = [
     styles.stack,
@@ -56,7 +57,7 @@ function StackBase({
     className ?? '',
   ].filter(Boolean).join(' ');
 
-  return <div className={cls} style={style}>{children}</div>;
+  return <div className={cls} style={style} {...rest}>{children}</div>;
 }
 
 /**
