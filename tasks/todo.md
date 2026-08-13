@@ -1,44 +1,33 @@
-# Player Mode Prototype Tasks
+# UI DRY → SSOT Refactor Tasks
 
-- [x] Task 1: Define pure Player Mode geometry/state contract
-  - Acceptance: mode toggle state, dock height, viewport bounds, and dictionary sheet clamp are typed/pure and cover 320px/480px edge cases.
-  - Verify: focused unit tests pass; `npm run typecheck`.
-  - Files: subtitle logic/types and tests only.
-  - Dependencies: None.
+## Loop 1 — Loading spinner SSOT
+- [x] Discover duplicate `@keyframes spin` / `.spinner` CSS
+- [x] Plan spinner SSOT (use `shared/ui/Spinner`)
+- [x] Refactor `Button` loading to use `Spinner`
+- [x] Refactor `IconButton` loading to use `Spinner`
+- [x] Refactor `VideoCard` downloading indicator to use `Spinner`
+- [x] Refactor `SubtitleCard` downloading indicator to use `Spinner`
+- [x] Refactor `MasteryBadge` in-progress icon to use `Spinner`
+- [x] Remove duplicate `@keyframes spin` and `.spinner` CSS
+- [x] Verify: typecheck, build (prod + dev) pass
+- [~] Subagent verify AC for Loop 1
 
-- [x] Task 2: Build the fixed Player Mode shell and bottom Player Action Dock
-  - Acceptance: VideoStage, empty ContentOther, and PlayerActionDock render only when active; SubtitleBlock is above NavCluster; host caption layer remains independent.
-  - Verify: component tests; `npm run build`.
-  - Files: subtitle UI components/CSS and tests, max 5 files.
-  - Dependencies: Task 1.
+## Loop 2 — Card enter/expand animations SSOT
+- [ ] Discover duplicate `fade-in` / `slide-down` keyframes in VideoCard/SubtitleCard
+- [ ] Extract shared animation keyframes
+- [ ] Refactor VideoCard and SubtitleCard to use shared animation
+- [ ] Verify: typecheck, test:unit, build pass
+- [ ] Subagent verify AC for Loop 2
 
-- [x] Task 3: Move toolbar actions without losing current functionality
-  - Acceptance: player-mode button uses the old generate-native slot; generate-native remains reachable under tools toggle; all existing callbacks remain wired.
-  - Verify: component tests query each `data-cell-id`; `npm run typecheck` and `npm run build`.
-  - Files: `SubtitlePanels.tsx`, related test/CSS.
-  - Dependencies: Task 2.
+## Loop 3 — Empty state SSOT
+- [ ] Discover duplicate empty state markup/CSS
+- [ ] Extend `EmptyState` with compact variant
+- [ ] Refactor `DictionaryPanelView`, `ImagePanel`, `TranslatePanel` to use `EmptyState`
+- [ ] Remove duplicate empty state CSS
+- [ ] Verify: typecheck, test:unit, build pass
+- [ ] Subagent verify AC for Loop 3
 
-- [x] Task 4: Integrate resizable Dictionary sheet above the dock
-  - Acceptance: lookup opens the existing Dictionary behavior; sheet can resize with Pointer Events; min/max clamp leaves PlayerActionDock visible; Escape and close work.
-  - Verify: geometry/component tests; `npm run test:unit`; `npm run build`.
-  - Files: dictionary positioning integration, subtitle shell/CSS, tests.
-  - Dependencies: Task 2.
-
-- [x] Task 5: Responsive polish and accessibility
-  - Acceptance: 320px, 480px, tablet, desktop, safe-area, reduced-motion, focus, and no-subtitle states work without overflow or inaccessible controls.
-  - Verify: `npm run typecheck`, `npm run test:unit`, `npm run build`, `npx vite build --mode development`.
-  - Files: relevant CSS/tests only.
-  - Dependencies: Tasks 3–4.
-
-- [x] Task 6: Real browser prototype verification
-  - Acceptance: extension loads in stealth Chrome; verify Player Mode on/off, simultaneous captions, dictionary resize/coverage, and all actions at required breakpoints.
-  - Verify: `testing-extension-browser` + `browser-testing-with-devtools`; record pass/fail evidence.
-  - Files: no source changes unless a defect is found.
-  - Dependencies: Task 5.
-  - Evidence: VidNest live browser verified video top alignment, dock composition, and host-style restore; Dictionary bounds verified by unit test because this page exposed no Cell subtitle cue to trigger a live lookup.
-
-## Checkpoints
-
-- After Tasks 1–2: shell renders and tests/build pass.
-- After Tasks 3–4: full core flow works with tools and dictionary.
-- After Tasks 5–6: responsive/accessibility and real-browser verification pass.
+## Loop 4+ (future)
+- [ ] Scrollbar CSS consolidation
+- [ ] Domain chip/badge consolidation to shared `Chip`/`Badge`
+- [ ] Header/actions layout pattern consolidation

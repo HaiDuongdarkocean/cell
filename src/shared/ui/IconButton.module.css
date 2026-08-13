@@ -92,14 +92,6 @@
 /* === Loading (spec §5.1 — Spinner replaces icon + aria-busy) === */
 .loading { pointer-events: none; }
 
-.spinner {
-  animation: spin var(--duration-1000) linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* === Focus ring (global :focus-visible also applies, this is per-atom for offset) === */
 .iconBtn:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
@@ -109,5 +101,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .iconBtn { transition: none; animation: none; }
-  .spinner { animation: none; }
 }

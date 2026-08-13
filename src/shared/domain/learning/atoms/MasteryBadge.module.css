@@ -19,11 +19,6 @@
   flex-shrink: 0;
 }
 
-.icon svg {
-  width: 100%;
-  height: 100%;
-}
-
 .progress {
   font-variant-numeric: tabular-nums;
 }
@@ -57,17 +52,4 @@
   color: var(--color-success);
 }
 
-/* spinner icon rotation */
-.icon :global(svg) {
-  animation: spin var(--duration-1000) linear infinite;
-}
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .icon :global(svg) {
-    animation: none;
-  }
-}
