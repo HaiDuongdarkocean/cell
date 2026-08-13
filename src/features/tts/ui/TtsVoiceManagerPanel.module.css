@@ -10,24 +10,6 @@
   color: var(--color-text);
 }
 
-.error {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-error-subtle);
-  border: var(--border-width-hairline) solid var(--color-error);
-  border-radius: var(--radius-pill);
-  color: var(--color-error);
-  font-size: var(--font-size-base);
-}
-
-.status {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-success-subtle);
-  border: var(--border-width-hairline) solid var(--color-success);
-  border-radius: var(--radius-pill);
-  color: var(--color-success);
-  font-size: var(--font-size-base);
-}
-
 .muted {
   color: var(--color-text-secondary);
   font-size: var(--font-size-base);

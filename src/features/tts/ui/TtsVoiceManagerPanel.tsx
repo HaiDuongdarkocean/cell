@@ -8,6 +8,7 @@
 //     settings.tts.savedVoices: {voiceName, lang, order}[] (checked only).
 
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactElement, type DragEvent } from 'react';
+import { Alert } from '@/shared/ui/Alert';
 import { Button, Card, IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
@@ -257,8 +258,8 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
 
   return (
     <div className={styles.panel} data-cell-id="tts-voice-manager">
-      {loadError && <div className={styles.error} role="alert">{loadError}</div>}
-      {statusMsg && <div className={styles.status} role="status">{statusMsg}</div>}
+      {loadError && <Alert variant="error" description={loadError} role="alert" />}
+      {statusMsg && <Alert variant="success" description={statusMsg} role="status" />}
 
       {/* === Card 1: TTS Settings === */}
       <Card className={styles.card}>

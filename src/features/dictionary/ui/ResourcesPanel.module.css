@@ -39,20 +39,4 @@
   border: var(--border-width-hairline) dashed var(--color-border);
 }
 
-.error {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-error-subtle);
-  color: var(--color-error);
-  border: var(--border-width-hairline) solid var(--color-error);
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-base);
-}
 
-.success {
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-success-subtle);
-  color: var(--color-success);
-  border: var(--border-width-hairline) solid var(--color-success);
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-base);
-}

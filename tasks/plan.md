@@ -147,13 +147,21 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `.error` CSS; `.loading` chỉ còn color/background/padding.
   - [x] Build + tests pass.
 
-## Loop 11 — Error/success pill SSOT (future)
-- **Why:** `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` có `.error`/`.success` pill gần giống nhau; cần mở rộng `Alert` thêm `size`/`appearance` hoặc xác định dùng chung `Alert`.
+## Loop 11 — Error/success pill SSOT
+- **Why:** `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` có `.error`/`.success` pill gần giống nhau; đã có `Alert` từ Loop 10.
+- **What:** Thay thế các `.error`/`.success`/`.status` thủ công bằng `Alert` component; xóa CSS dư thừa.
 - **Files:**
-  - `src/shared/ui/Alert.{tsx,module.css,test.tsx}`
   - `src/features/dictionary/ui/ResourcesPanel.{tsx,module.css}`
   - `src/features/dictionary/ui/ImportProgress.{tsx,module.css}`
   - `src/features/tts/ui/TtsVoiceManagerPanel.{tsx,module.css}`
+  - `src/shared/ui/Alert.module.css`
+- **AC:**
+  - [x] `ResourcesPanel` dùng `Alert` cho error/success.
+  - [x] `ImportProgress` dùng `Alert` cho error.
+  - [x] `TtsVoiceManagerPanel` dùng `Alert` cho error/status.
+  - [x] Không còn `.error`/`.success`/`.status` alert blocks trong các CSS module trên.
+  - [x] `Alert.module.css` root có `width: 100%`.
+  - [x] Build + tests pass.
 
 ## Loop 12+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
