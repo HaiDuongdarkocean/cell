@@ -5,6 +5,29 @@
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/media';
 
 /**
+ * Cell UI shadow host selectors — all extension UI panels mounted in shadow DOM.
+ * Used to detect when focus/interaction is inside Cell UI so host shortcuts
+ * can be blocked and dictionary lookup can be skipped.
+ * Kept in sync with UI_HOST_SELECTORS in webTriggerController.ts and
+ * EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts.
+ */
+const CELL_UI_HOST_SELECTORS =
+  '#cell-subtitle-root, #cell-settings-dialog-host, #cell-card-creator-host, ' +
+  '#cell-universal-panel-host, .js-cell-popup-host, .js-cell-orbital-badge-host, ' +
+  '.js-cell-token-badge-host';
+
+/**
+ * Check if a keyboard event originated from inside a Cell UI shadow host.
+ * Uses `composedPath()` to cross shadow DOM boundaries — `e.target` is
+ * retargeted to the shadow host, so `target.closest()` can't see inside.
+ */
+export function isInsideCellUi(e: KeyboardEvent): boolean {
+  return e.composedPath().some(
+    (el) => el instanceof Element && el.matches(CELL_UI_HOST_SELECTORS),
+  );
+}
+
+/**
  * Check if the event target is an editable element (input, textarea, select,
  * or contenteditable). Shortcuts should NOT fire when focus is in these elements.
  */

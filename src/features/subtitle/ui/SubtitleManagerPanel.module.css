@@ -3,7 +3,7 @@
   flex-direction: column;
   width: 100%;
   max-width: 680px;
-  max-height: min(680px, 100dvh - 2 * var(--space-4));
+  max-height: 90vh;
   background-color: var(--color-surface-popover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-dialog);
@@ -127,7 +127,7 @@
   background: var(--color-primary-subtle);
 }
 
-/* Off option — compact, muted, always at bottom of track list */
+/* Off option — compact, muted, first item in track list */
 .offRow {
   min-height: 44px;
   color: var(--color-text-secondary);
@@ -350,74 +350,47 @@
   outline-offset: 2px;
 }
 
-/* Footer — sticky bottom, flex row */
+/* Footer — sticky bottom, flex row. Both buttons share equal flex basis so
+   they line up evenly when there is room, and wrap when there isn't. */
 .footer {
   flex: 0 0 auto;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-4) var(--space-5);
 }
 
-.customizeBtn {
-  flex: 0 0 auto;
-  min-height: 40px;
-  padding: var(--space-1-5) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-element);
-  background: transparent;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--transition-fast, 150ms);
-}
-
-.customizeBtn:hover {
-  background: var(--color-surface-hover);
-}
-
-.generateBtn {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: var(--space-1-5) var(--space-3);
-  border: 0;
-  border-radius: var(--radius-element);
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--transition-fast, 150ms);
-}
-
-.generateBtn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.generateBtn:active:not(:disabled) {
-  background: var(--color-primary-active);
-  transform: scale(0.97);
-}
-
-.generateBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Layout-only overrides for shared Button in footer (styling from Button.module.css).
+   basis:0 + grow:1 → both buttons share the row evenly when there is room.
+   min-width:max-content → buttons never shrink below their label width (no truncation);
+   when both can't fit, flex-wrap pushes the second button (Generate native) to a new line. */
+.footerCustomize,
+.footerGenerate {
+  flex: 1 1 0;
+  min-width: max-content;
 }
 
 /* Mobile */
 @media (max-width: 479px) {
   .header,
   .footer,
-  .sectionHead,
-  .appearanceSectionHead {
+  .sectionHead {
     padding-inline: var(--space-3);
   }
 
-  .sectionBody,
-  .appearanceSectionBody {
+  .sectionBody {
+    padding-inline: var(--space-3);
+  }
+
+  .previewWrap {
+    padding-inline: var(--space-3);
+  }
+
+  .tabsList {
+    margin-inline: var(--space-3);
+  }
+
+  .tabContent {
     padding-inline: var(--space-3);
   }
 
@@ -450,6 +423,8 @@
 .appearanceBody {
   flex: 1 1 auto;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .backBtn {
@@ -467,37 +442,42 @@
   font-weight: var(--font-weight-medium);
   text-align: left;
   cursor: pointer;
-  transition: background var(--transition-fast, 150ms);
+  transition: color var(--transition-fast, 150ms) var(--ease-out, ease-out);
 }
 
 .backBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
+  color: var(--color-primary);
 }
 
-.appearanceSection {
-  padding-block: var(--space-2) var(--space-4);
+/* Sticky compact preview */
+.previewWrap {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: var(--space-2) var(--space-4);
 }
 
-.appearanceSection + .appearanceSection {
-  padding-top: var(--space-4);
-}
-
-.appearanceSectionHead {
+/* Tabs */
+.tabsRoot {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-height: 44px;
-  padding: var(--space-1) var(--space-4);
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.appearanceSectionTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-}
-
-.appearanceSectionBody {
+.tabsList {
+  display: flex;
+  gap: 0;
   padding: 0 var(--space-4);
+  margin: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+}
+
+.tabContent {
+  padding: var(--space-3) var(--space-4) var(--space-5);
+  overflow-y: auto;
+  flex: 1 1 auto;
 }
 

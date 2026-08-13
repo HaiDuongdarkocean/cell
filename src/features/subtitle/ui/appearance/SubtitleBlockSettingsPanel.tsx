@@ -20,11 +20,11 @@ export function SubtitleBlockSettingsPanel({
 }: SubtitleBlockSettingsPanelProps): ReactElement {
   return (
     <div className={styles.container} data-cell-id="subtitle-block-settings-panel">
-      {/* Position (Y) */}
+      {/* Vertical position */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
           <label className={styles.label} htmlFor="block-y-offset">
-            Position (Y)
+            Vertical position
           </label>
           <span className={styles.value}>{settings.yOffsetPercent}%</span>
         </div>
@@ -35,19 +35,19 @@ export function SubtitleBlockSettingsPanel({
           max={95}
           step={1}
           onChange={(v) => onChange({ yOffsetPercent: v })}
-          aria-label="Block vertical position"
+          aria-label="Vertical position"
           data-cell-id="block-y-offset"
         />
         <p className={styles.hint}>0% = top, 95% = bottom. Drag the block on video also sets this.</p>
       </div>
 
-      {/* Global scale */}
+      {/* Scale */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
           <label className={styles.label} htmlFor="block-global-scale">
-            Global scale
+            Scale
           </label>
-          <span className={styles.value}>{settings.globalScale.toFixed(1)}x</span>
+          <span className={styles.value}>{settings.globalScale.toFixed(1)}×</span>
         </div>
         <Slider
           id="block-global-scale"
@@ -56,7 +56,7 @@ export function SubtitleBlockSettingsPanel({
           max={2}
           step={0.1}
           onChange={(v) => onChange({ globalScale: v })}
-          aria-label="Global subtitle scale"
+          aria-label="Scale"
           data-cell-id="block-global-scale"
         />
       </div>

@@ -17,6 +17,7 @@ import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerMode
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { buildClusterCssVars } from './subtitleUI';
 import styles from './PlayerModeOverlay.module.css';
 import panelStyles from './SubtitlePanels.module.css';
 
@@ -296,13 +297,7 @@ function PlayerModeOverlayInner({
   }, [viewport, contentPct]);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
-  const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
-  const clusterRightStyle: React.CSSProperties = {
-    '--cluster-btn-size': `clamp(${Math.round(clusterBtnSize * 0.65)}px, ${Math.round(clusterBtnSize * 0.15)}cqw, ${clusterBtnSize}px)`,
-    '--cluster-icon-size': `clamp(${Math.round(clusterBtnSize * 0.35)}px, ${Math.round(clusterBtnSize * 0.082)}cqw, 20px)`,
-    '--cluster-text-opacity': String(clusterSettings?.textOpacity ?? 1),
-    '--cluster-bg-opacity': String(clusterSettings?.bgOpacity ?? 0.2),
-  } as React.CSSProperties;
+  const clusterRightStyle = buildClusterCssVars(clusterSettings);
 
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {

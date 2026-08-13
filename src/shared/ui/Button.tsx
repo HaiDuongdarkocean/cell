@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Button.module.css';
 
@@ -32,7 +32,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Variants: primary, secondary, outline, ghost, destructive, link.
  * Sizes: sm, md, lg.
  */
-export function Button({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -44,7 +44,7 @@ export function Button({
   disabled,
   className,
   ...rest
-}: ButtonProps): React.JSX.Element {
+}: ButtonProps, ref): React.JSX.Element {
   const cls = [
     styles.button,
     styles[variant],
@@ -59,6 +59,7 @@ export function Button({
 
   return (
     <button
+      ref={ref}
       type="button"
       className={cls}
       disabled={disabled || loading}
@@ -75,4 +76,4 @@ export function Button({
       {trailingIcon && <span className={styles.trailingIcon}>{trailingIcon}</span>}
     </button>
   );
-}
+});

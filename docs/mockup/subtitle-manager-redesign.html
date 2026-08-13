@@ -76,8 +76,8 @@
     .footer .btn-ghost:hover { background: var(--color-surface-hover); }
 
     /* Appearance view */
-    .back-btn { display: flex; align-items: center; gap: var(--space-1-5); width: 100%; min-height: 44px; padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-align: left; cursor: pointer; }
-    .back-btn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .back-btn { display: flex; align-items: center; gap: var(--space-1-5); width: 100%; min-height: 44px; padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-align: left; cursor: pointer; transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out); }
+    .back-btn:hover { color: var(--color-primary); }
     .back-btn .arrow { flex: 0 0 16px; font-size: 16px; line-height: 1; }
     .app-section { padding-block: var(--space-2) var(--space-4); }
     .app-section + .app-section { padding-top: var(--space-4); }
@@ -97,9 +97,67 @@
     .app-toggle[aria-pressed="true"] { background: var(--color-primary); color: var(--color-primary-foreground); }
     .app-toggle .dot { width: 8px; height: 8px; margin-right: var(--space-1-5); border-radius: 50%; background: currentColor; opacity: 0.5; }
     .app-toggle[aria-pressed="true"] .dot { opacity: 1; }
-    .app-preview { padding: var(--space-3) var(--space-2); margin-bottom: var(--space-3); border-radius: var(--radius-element); background: #000; text-align: center; }
-    .app-preview span { display: inline-block; font-size: 20px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 2px; }
     .app-radio-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+    /* Appearance view — Phase 3 minimal: flat tabs + 160px preview */
+    .app-preview-wrap { padding: 0 var(--space-4) var(--space-2); }
+    .app-preview { position: relative; height: 160px; border-radius: var(--radius-element); background: var(--color-overlay-background); overflow: hidden; container-type: inline-size; }
+
+    /* Overlay root — matches SubtitlePanels.module.css .root */
+    .app-preview-overlay { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: clamp(var(--space-1), 1.5cqw, var(--space-3)); padding: 0 clamp(var(--space-1), 2cqw, var(--space-4)); container-type: inline-size; }
+
+    /* NavCluster — matches NavCluster.module.css .cluster */
+    .app-preview-nav { display: flex; flex-direction: row; align-items: center; gap: var(--space-1); flex: 0 0 auto; --cluster-btn-size: clamp(22px, 5cqw, 34px); --cluster-icon-size: clamp(12px, 2.8cqw, 20px); --cluster-text-opacity: 1; --cluster-bg-opacity: 0.2; }
+    .app-preview-nav-col { display: flex; flex-direction: column; align-items: center; gap: clamp(2px, 0.4cqw, var(--space-1)); }
+    .app-preview-nav-col.secondary { gap: var(--space-1); }
+    .app-preview-nav-btn { width: var(--cluster-btn-size); height: var(--cluster-btn-size); min-width: var(--cluster-btn-size); min-height: var(--cluster-btn-size); opacity: var(--cluster-text-opacity); color: var(--color-overlay-text); background: rgba(0, 0, 0, var(--cluster-bg-opacity)); border: none; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0; cursor: default; flex-shrink: 0; }
+    .app-preview-nav-btn .icon-wrap { width: var(--cluster-icon-size); height: var(--cluster-icon-size); display: inline-flex; align-items: center; justify-content: center; }
+    .app-preview-nav-btn .icon-wrap svg { width: 100%; height: 100%; display: block; }
+
+    /* SubtitleBlock — matches SubtitleBlock.module.css .block */
+    .app-preview-text { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); flex: 1 1 0; min-width: 0; }
+    .app-preview-line { width: fit-content; max-width: 100%; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: clamp(10px, 2.4cqw, 14px); line-height: var(--leading-normal); color: #fff; background: rgba(0,0,0,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .app-preview-line.native { font-size: clamp(8px, 2cqw, 12px); opacity: 0.85; }
+
+    /* Toolbar (clusterRight) — matches OverlayPreview.module.css .clusterRight */
+    .app-preview-toolbar { display: flex; flex-direction: row; align-items: center; gap: var(--space-1); flex: 0 0 auto; --cluster-btn-size: clamp(22px, 5cqw, 34px); --cluster-icon-size: clamp(12px, 2.8cqw, 20px); --cluster-text-opacity: 1; --cluster-bg-opacity: 0.2; }
+    .app-preview-toolbar-col { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+    .app-preview-toolbar-btn { width: var(--cluster-btn-size); height: var(--cluster-btn-size); min-width: var(--cluster-btn-size); min-height: var(--cluster-btn-size); opacity: var(--cluster-text-opacity); color: var(--color-overlay-text); background: rgba(0, 0, 0, var(--cluster-bg-opacity)); border: none; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; padding: 0; cursor: default; flex-shrink: 0; }
+    .app-preview-toolbar-btn .icon-wrap { width: var(--cluster-icon-size); height: var(--cluster-icon-size); display: inline-flex; align-items: center; justify-content: center; }
+    .app-preview-toolbar-btn .icon-wrap svg { width: 100%; height: 100%; display: block; }
+
+    /* Toggle wrap — matches OverlayPreview.module.css .toggleWrap + .extraCol (hidden by default) */
+    .app-preview-toggle-wrap { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+    .app-preview-extra-col { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); max-height: 0; overflow: hidden; opacity: 0; transition: max-height 200ms ease, opacity 200ms ease; }
+    .app-preview-extra-col.expanded { max-height: 100px; opacity: 1; }
+
+    .app-preview-hint { position: absolute; top: var(--space-1); right: var(--space-2); font-size: var(--font-size-2xs); color: rgba(255,255,255,0.35); pointer-events: none; }
+
+    /* Flat underline tabs — no pill, no background on hover/active, transform only */
+    .app-tabs { display: flex; border-bottom: 1px solid var(--color-border-subtle); padding: 0 var(--space-4); background: transparent; }
+    .app-tab { flex: 1; min-height: 44px; padding: var(--space-2) var(--space-1); border: 0; border-bottom: 2px solid transparent; background: transparent; font-family: var(--font-family); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); cursor: pointer; transition: color var(--duration-fast, 150ms) var(--ease-out, ease-out), border-color var(--duration-fast, 150ms) var(--ease-out, ease-out), transform var(--duration-fast, 150ms) var(--ease-out, ease-out); text-align: center; }
+    .app-tab:hover { color: var(--color-text-primary); transform: translateY(-1px); }
+    .app-tab[aria-selected="true"] { color: var(--color-primary); border-bottom-color: var(--color-primary); transform: translateY(0); }
+    .app-tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--color-border-focus); }
+
+    /* Tab content — scrollable */
+    .app-tab-content { padding: var(--space-3) var(--space-4) var(--space-5); }
+    .app-tab-panel { display: none; }
+    .app-tab-panel[aria-hidden="false"] { display: block; }
+
+    /* Section label inside tab */
+    .app-section-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin: var(--space-3) 0 var(--space-2); }
+    .app-section-label:first-child { margin-top: 0; }
+
+    /* Reset row */
+    .app-reset-row { display: flex; justify-content: flex-end; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border-subtle); }
+    .app-reset-btn { padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: transparent; font-size: var(--font-size-sm); color: var(--color-text-secondary); cursor: pointer; }
+    .app-reset-btn:hover { color: var(--color-text-primary); border-color: var(--color-border-emphasized); }
+
+    /* Preset buttons */
+    .app-preset-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    .app-preset-btn { padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: transparent; font-size: var(--font-size-xs); color: var(--color-text-secondary); cursor: pointer; }
+    .app-preset-btn[aria-pressed="true"] { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
     .app-radio-label { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-sm); color: var(--color-text-secondary); cursor: pointer; }
     .app-radio-label input { accent-color: var(--color-primary); }
     .journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-top: var(--space-6); }
@@ -142,36 +200,90 @@
       <div class="footer"><button class="btn-ghost" type="button" id="customize-btn">Customize appearance</button><button class="btn-primary" type="button">Generate native</button></div>
     </div>
 
-    <!-- Appearance view frame -->
+    <!-- Appearance view frame — Phase 3 minimal -->
     <div class="frame" aria-label="Subtitle manager appearance view" style="margin-top: var(--space-6);">
       <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
 
       <button class="back-btn" type="button"><span class="arrow">←</span> Back to subtitles</button>
 
-      <!-- Block section -->
-      <section class="app-section">
-        <div class="app-section-head"><span class="app-section-title">Block</span></div>
-        <div class="app-section-body">
+      <!-- Preview — 160px, matches production OverlayPreview structure -->
+      <div class="app-preview-wrap">
+        <div class="app-preview" data-cell-id="overlay-preview">
+          <span class="app-preview-hint">Click text to edit</span>
+          <div class="app-preview-overlay" data-cell-id="overlay-preview-root">
+
+            <!-- NavCluster — matches NavCluster.tsx: main (prev, repeat, next) + secondary (rewind, play, forward) -->
+            <div class="app-preview-nav" data-cell-id="nav-cluster" aria-label="Subtitle navigation">
+              <div class="app-preview-nav-col" data-cell-id="nav-main">
+                <button class="app-preview-nav-btn" aria-label="Previous sentence" data-cell-id="nav-prev"><span class="icon-wrap" data-icon="navPrev"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Repeat current sentence" data-cell-id="nav-repeat"><span class="icon-wrap" data-icon="navRepeat"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Next sentence" data-cell-id="nav-next"><span class="icon-wrap" data-icon="navNext"></span></button>
+              </div>
+              <div class="app-preview-nav-col secondary" data-cell-id="nav-secondary">
+                <button class="app-preview-nav-btn" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind"><span class="icon-wrap" data-icon="navRewind"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Play video" data-cell-id="nav-play"><span class="icon-wrap" data-icon="navPlay"></span></button>
+                <button class="app-preview-nav-btn" aria-label="Forward 10 seconds" data-cell-id="nav-forward"><span class="icon-wrap" data-icon="navForward"></span></button>
+              </div>
+            </div>
+
+            <!-- SubtitleBlock — matches SubtitleBlock.tsx: target + native layers -->
+            <div class="app-preview-text" data-cell-id="subtitle-block">
+              <div class="app-preview-line">This is how the target subtitle will look.</div>
+              <div class="app-preview-line native">This is how the native subtitle will look.</div>
+            </div>
+
+            <!-- Toolbar (clusterRight) — matches OverlayPreview.tsx: primaryCol + secondaryCol -->
+            <div class="app-preview-toolbar" data-cell-id="overlay-preview-toolbar">
+              <div class="app-preview-toolbar-col">
+                <button class="app-preview-toolbar-btn" aria-label="Quick add card"><span class="icon-wrap" data-icon="zap"></span></button>
+                <button class="app-preview-toolbar-btn" aria-label="Edit card"><span class="icon-wrap" data-icon="pencil"></span></button>
+                <div class="app-preview-toggle-wrap">
+                  <div class="app-preview-extra-col" id="preview-extra-col">
+                    <button class="app-preview-toolbar-btn" aria-label="Open subtitle list"><span class="icon-wrap" data-icon="sidePanel"></span></button>
+                    <button class="app-preview-toolbar-btn" aria-label="Generate native subtitle"><span class="icon-wrap" data-icon="languages"></span></button>
+                  </div>
+                  <button class="app-preview-toolbar-btn" aria-label="Expand tools" id="preview-expand-btn"><span class="icon-wrap" data-icon="chevronLeft"></span></button>
+                </div>
+              </div>
+              <div class="app-preview-toolbar-col">
+                <button class="app-preview-toolbar-btn" aria-label="Update current card"><span class="icon-wrap" data-icon="rotateCcw"></span></button>
+                <button class="app-preview-toolbar-btn" aria-label="Open subtitle manager"><span class="icon-wrap" data-icon="subtitleManager"></span></button>
+                <button class="app-preview-toolbar-btn" aria-label="Enter player mode"><span class="icon-wrap" data-icon="maximize"></span></button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Flat underline tabs — no pill -->
+      <div class="app-tabs" role="tablist" aria-label="Appearance settings">
+        <button class="app-tab" role="tab" aria-selected="true" data-tab="block">Block</button>
+        <button class="app-tab" role="tab" aria-selected="false" data-tab="target">Target</button>
+        <button class="app-tab" role="tab" aria-selected="false" data-tab="native">Native</button>
+        <button class="app-tab" role="tab" aria-selected="false" data-tab="buttons">Buttons</button>
+      </div>
+
+      <div class="app-tab-content">
+        <!-- Block tab -->
+        <div class="app-tab-panel" role="tabpanel" aria-hidden="false" data-panel="block">
           <div class="app-field">
-            <div class="app-label"><span class="app-label-text">Position (Y)</span><span class="app-label-value">75%</span></div>
+            <div class="app-label"><span class="app-label-text">Vertical position</span><span class="app-label-value">75%</span></div>
             <input class="app-slider" type="range" min="0" max="95" step="1" value="75" aria-label="Block vertical position" />
           </div>
           <div class="app-field">
-            <div class="app-label"><span class="app-label-text">Global scale</span><span class="app-label-value">1.0x</span></div>
+            <div class="app-label"><span class="app-label-text">Scale</span><span class="app-label-value">1.0×</span></div>
             <input class="app-slider" type="range" min="0.5" max="2" step="0.1" value="1" aria-label="Global subtitle scale" />
           </div>
           <div class="app-field">
             <div class="app-label"><span class="app-label-text">Background opacity</span><span class="app-label-value">70%</span></div>
-            <input class="app-slider" type="range" min="0" max="1" step="0.1" value="0.7" aria-label="Block background opacity" />
+            <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Block background opacity" />
           </div>
         </div>
-      </section>
 
-      <!-- Target section -->
-      <section class="app-section">
-        <div class="app-section-head"><span class="app-section-title">Target</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Visible</button></div>
-        <div class="app-section-body">
-          <div class="app-preview"><span>This is how the target subtitle will look.</span></div>
+        <!-- Target tab -->
+        <div class="app-tab-panel" role="tabpanel" aria-hidden="true" data-panel="target">
+          <div class="app-section-label">Text</div>
           <div class="app-field">
             <div class="app-label"><span class="app-label-text">Font size</span><span class="app-label-value">24px</span></div>
             <input class="app-slider" type="range" min="12" max="72" step="1" value="24" aria-label="Target font size" />
@@ -190,41 +302,43 @@
               <input class="app-color" type="color" value="#000000" aria-label="Target background color" />
             </div>
           </div>
+          <div class="app-section-label">Opacity</div>
           <div class="app-pair">
             <div class="app-field">
-              <div class="app-label"><span class="app-label-text">Text opacity</span><span class="app-label-value">1.00</span></div>
+              <div class="app-label"><span class="app-label-text">Text</span><span class="app-label-value">100%</span></div>
               <input class="app-slider" type="range" min="0" max="1" step="0.05" value="1" aria-label="Target text opacity" />
             </div>
             <div class="app-field">
-              <div class="app-label"><span class="app-label-text">BG opacity</span><span class="app-label-value">0.70</span></div>
+              <div class="app-label"><span class="app-label-text">Background</span><span class="app-label-value">70%</span></div>
               <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Target background opacity" />
             </div>
           </div>
+          <div class="app-section-label">Layout</div>
           <div class="app-field">
-            <div class="app-label"><span class="app-label-text">Align</span></div>
+            <div class="app-label"><span class="app-label-text">Alignment</span></div>
             <div class="app-radio-row">
               <label class="app-radio-label"><input type="radio" name="target-align" value="left" /> Left</label>
               <label class="app-radio-label"><input type="radio" name="target-align" value="center" checked /> Center</label>
               <label class="app-radio-label"><input type="radio" name="target-align" value="right" /> Right</label>
             </div>
           </div>
+          <div class="app-section-label">Shadow</div>
           <div class="app-field">
-            <div class="app-label"><span class="app-label-text">Text shadow</span></div>
-            <div class="app-radio-row">
-              <label class="app-radio-label"><input type="radio" name="target-shadow" value="none" /> None</label>
-              <label class="app-radio-label"><input type="radio" name="target-shadow" value="soft" checked /> Soft</label>
-              <label class="app-radio-label"><input type="radio" name="target-shadow" value="cinema" /> Cinema</label>
-              <label class="app-radio-label"><input type="radio" name="target-shadow" value="custom" /> Custom</label>
+            <div class="app-preset-row">
+              <button class="app-preset-btn" type="button" aria-pressed="false">None</button>
+              <button class="app-preset-btn" type="button" aria-pressed="true">Soft</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Cinema</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Custom</button>
             </div>
           </div>
+          <div class="app-reset-row">
+            <button class="app-reset-btn" type="button">Reset target</button>
+          </div>
         </div>
-      </section>
 
-      <!-- Native section -->
-      <section class="app-section">
-        <div class="app-section-head"><span class="app-section-title">Native</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Visible</button></div>
-        <div class="app-section-body">
-          <div class="app-preview"><span style="font-size: 18px;">This is how the native subtitle will look.</span></div>
+        <!-- Native tab -->
+        <div class="app-tab-panel" role="tabpanel" aria-hidden="true" data-panel="native">
+          <div class="app-section-label">Text</div>
           <div class="app-field">
             <div class="app-label"><span class="app-label-text">Font size</span><span class="app-label-value">20px</span></div>
             <input class="app-slider" type="range" min="12" max="72" step="1" value="20" aria-label="Native font size" />
@@ -239,29 +353,65 @@
               <input class="app-color" type="color" value="#000000" aria-label="Native background color" />
             </div>
           </div>
-        </div>
-      </section>
-
-      <!-- Cluster section -->
-      <section class="app-section">
-        <div class="app-section-head"><span class="app-section-title">Navigation cluster</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Enabled</button></div>
-        <div class="app-section-body">
-          <div class="app-field">
-            <div class="app-label"><span class="app-label-text">Button size</span><span class="app-label-value">48px</span></div>
-            <input class="app-slider" type="range" min="32" max="64" step="4" value="48" aria-label="Cluster button size" />
-          </div>
+          <div class="app-section-label">Opacity</div>
           <div class="app-pair">
             <div class="app-field">
-              <div class="app-label"><span class="app-label-text">Text opacity</span><span class="app-label-value">0.90</span></div>
-              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.9" aria-label="Cluster text opacity" />
+              <div class="app-label"><span class="app-label-text">Text</span><span class="app-label-value">100%</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="1" aria-label="Native text opacity" />
             </div>
             <div class="app-field">
-              <div class="app-label"><span class="app-label-text">BG opacity</span><span class="app-label-value">0.50</span></div>
-              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.5" aria-label="Cluster background opacity" />
+              <div class="app-label"><span class="app-label-text">Background</span><span class="app-label-value">70%</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Native background opacity" />
+            </div>
+          </div>
+          <div class="app-section-label">Layout</div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Alignment</span></div>
+            <div class="app-radio-row">
+              <label class="app-radio-label"><input type="radio" name="native-align" value="left" /> Left</label>
+              <label class="app-radio-label"><input type="radio" name="native-align" value="center" checked /> Center</label>
+              <label class="app-radio-label"><input type="radio" name="native-align" value="right" /> Right</label>
+            </div>
+          </div>
+          <div class="app-section-label">Shadow</div>
+          <div class="app-field">
+            <div class="app-preset-row">
+              <button class="app-preset-btn" type="button" aria-pressed="false">None</button>
+              <button class="app-preset-btn" type="button" aria-pressed="true">Soft</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Cinema</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Custom</button>
+            </div>
+          </div>
+          <div class="app-reset-row">
+            <button class="app-reset-btn" type="button">Reset native</button>
+          </div>
+        </div>
+
+        <!-- Buttons tab -->
+        <div class="app-tab-panel" role="tabpanel" aria-hidden="true" data-panel="buttons">
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Button size</span><span class="app-label-value">34px</span></div>
+            <input class="app-slider" type="range" min="10" max="100" step="1" value="34" aria-label="Cluster button size" />
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Icon opacity</span><span class="app-label-value">100%</span></div>
+            <input class="app-slider" type="range" min="0" max="1" step="0.05" value="1" aria-label="Cluster icon opacity" />
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Button opacity</span><span class="app-label-value">20%</span></div>
+            <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.2" aria-label="Cluster button opacity" />
+          </div>
+          <div class="app-section-label">Presets</div>
+          <div class="app-field">
+            <div class="app-preset-row">
+              <button class="app-preset-btn" type="button" aria-pressed="true">Frosted</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Glass</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Muted</button>
+              <button class="app-preset-btn" type="button" aria-pressed="false">Solid</button>
             </div>
           </div>
         </div>
-      </section>
+      </div>
     </div>
 
     <div class="journey" aria-label="User journey">
@@ -306,6 +456,49 @@
       button.setAttribute('aria-pressed', 'true');
       root.style.setProperty('--mock-width', `${button.dataset.width}px`);
     }));
+    // Appearance tabs — flat underline toggle
+    document.querySelectorAll('.app-tab').forEach((tab) => tab.addEventListener('click', () => {
+      document.querySelectorAll('.app-tab').forEach((t) => t.setAttribute('aria-selected', 'false'));
+      document.querySelectorAll('.app-tab-panel').forEach((p) => p.setAttribute('aria-hidden', 'true'));
+      tab.setAttribute('aria-selected', 'true');
+      const panel = document.querySelector(`[data-panel="${tab.dataset.tab}"]`);
+      if (panel) panel.setAttribute('aria-hidden', 'false');
+    }));
+    // Preset buttons toggle (single-select within row)
+    document.querySelectorAll('.app-preset-row').forEach((row) => row.querySelectorAll('.app-preset-btn').forEach((btn) => btn.addEventListener('click', () => {
+      row.querySelectorAll('.app-preset-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+    })));
+
+    // Icon registry — SVG markup copied verbatim from src/shared/icons/svg/
+    // Convention: 24×24, stroke 1.5, currentColor, round caps/joins (per ICON_CATALOG)
+    const ICONS = {
+      navPrev: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M13.5 9L10.5 12L13.5 15"/></svg>',
+      navNext: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10.5 9L13.5 12L10.5 15"/></svg>',
+      navRepeat: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/></svg>',
+      navRewind: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10"/></svg>',
+      navForward: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209"/><path d="M7.5 10.5L10 8.5V15.5"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z"/></svg>',
+      navPlay: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none"/></svg>',
+      zap: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+      pencil: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>',
+      sidePanel: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg>',
+      languages: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>',
+      chevronLeft: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+      rotateCcw: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+      subtitleManager: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg>',
+      maximize: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>',
+    };
+    // Inject SVGs into icon-wrap spans — mirrors Icon.tsx (dangerouslySetInnerHTML)
+    document.querySelectorAll('[data-icon]').forEach((wrap) => {
+      const name = wrap.getAttribute('data-icon');
+      if (ICONS[name]) wrap.innerHTML = ICONS[name];
+    });
+    // Expand/collapse extraCol toggle — mirrors production toggle behavior
+    const expandBtn = document.getElementById('preview-expand-btn');
+    const extraCol = document.getElementById('preview-extra-col');
+    if (expandBtn && extraCol) {
+      expandBtn.addEventListener('click', () => extraCol.classList.toggle('expanded'));
+    }
   </script>
 </body>
 </html>

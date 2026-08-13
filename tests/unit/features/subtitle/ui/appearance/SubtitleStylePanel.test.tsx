@@ -15,9 +15,9 @@ describe('SubtitleStylePanel', () => {
     jest.clearAllMocks();
   });
 
-  it('renders preview with role label', () => {
+  it('renders panel with role data-cell-id', () => {
     render(<SubtitleStylePanel {...defaultProps} />);
-    expect(screen.getByTestId('subtitle-preview-target')).toBeTruthy();
+    expect(screen.getByTestId('subtitle-style-panel-target')).toBeTruthy();
   });
 
   it('renders font size slider with current value', () => {
