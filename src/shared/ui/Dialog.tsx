@@ -1,4 +1,5 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { HStack } from './Stack';
 import { Button } from './Button';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './Dialog.module.css';
@@ -84,7 +85,7 @@ export function Dialog({
         {(title || showCloseButton) && (
           <div className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}>
             {showCloseButton && centerTitle && (
-              <div className={styles.headerRightGroup}>
+              <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
                 <Button
                   variant="ghost"
@@ -94,19 +95,19 @@ export function Dialog({
                 >
                   ×
                 </Button>
-              </div>
+              </HStack>
             )}
             <div className={styles.headerText}>
               {title && <h2 id="dialog-title" className={styles.title}>{title}</h2>}
               {description && <p id="dialog-description" className={styles.description}>{description}</p>}
             </div>
             {showCloseButton && !centerTitle && (
-              <div className={styles.headerRightGroup}>
+              <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
                 <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
                   ×
                 </Button>
-              </div>
+              </HStack>
             )}
           </div>
         )}

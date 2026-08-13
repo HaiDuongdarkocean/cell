@@ -263,8 +263,32 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `f30fa39c`) ✅
 - **Status:** Complete. `Alert` is now SSOT for these inline messages. Toast (`SubtitleToast`), `CardCreatorDialog` notice, `SubtitleSearchPanel` error with retry, và `DownloadCard` error states remain as out-of-scope candidates.
 
+### Loop 12 — Dialog header + DownloadCard layout SSOT
+- **Discovery:** `Dialog.headerRightGroup` và `DownloadCard` header/titleRow/actions/phaseRow/progressLabel/queuedIndicator/detailRow tự định nghĩa `display: flex`; `HStack`/`VStack`/`Flex` đã có từ Loop 9.
+- **Plan:** Dùng `HStack` cho các layout row; `VStack` cho card body; `Flex` cho detailRow wrap; xóa CSS flex dư.
+- **AC:**
+  1. `Dialog.headerRightGroup` dùng `HStack`.
+  2. `DownloadCard` dùng `HStack` cho header, titleRow, actions, phaseRow, progressLabel, queuedIndicator, detailRow.
+  3. `DownloadCard` dùng `VStack` cho card body.
+  4. Không còn `display: flex` dư thừa trong các class trên.
+  5. Build + tests pass.
+- **Do:**
+  - Refactored `Dialog.tsx` to use `HStack` for both `headerRightGroup` instances.
+  - Removed flexbox properties from `.headerRightGroup` in `Dialog.module.css`.
+  - Refactored `DownloadCard.tsx` to use `HStack` for header, titleRow, actions, phaseRow, progressLabel, queuedIndicator; `Flex` for detailRow; `VStack` for card body.
+  - Removed `display: flex`/`align-items`/`gap`/`flex-wrap` from the corresponding CSS classes in `DownloadCard.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `Dialog.test.tsx` ✅
+  - `DownloadCard.test.tsx` ✅
+  - Subagent review (agent id `7516644f`) ✅
+  - Attempted MCP browser verification; localhost not reachable from sandboxed browser instance.
+- **Status:** Complete. `Dialog` `.header`/`.footer` and `VideoCard`/`SubtitleCard` media layouts remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 11
+- **Loops completed:** 12
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11)

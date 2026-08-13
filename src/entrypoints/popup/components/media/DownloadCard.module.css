@@ -2,9 +2,7 @@
 .card {
   --card-bg: var(--color-surface);
   --card-padding: var(--space-3);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  overflow: hidden;
   transition: background var(--transition);
 }
 
@@ -31,16 +29,10 @@
 
 /* === Header === */
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  /* layout handled by HStack */
 }
 
 .titleRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1-5);
   flex: 1;
   min-width: 0;
 }
@@ -76,9 +68,6 @@
 
 /* === Action buttons (migrated to IconButton atom — kept for layout) === */
 .actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   flex-shrink: 0;
 }
 
@@ -94,9 +83,6 @@
 
 /* === Two-phase progress === */
 .phaseRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   margin-top: var(--space-0-5);
@@ -157,9 +143,6 @@
 
 /* === Progress label (single-phase fallback) === */
 .progressLabel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   text-transform: capitalize;
@@ -173,9 +156,6 @@
 
 /* === Queued indicator === */
 .queuedIndicator {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1-5);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   padding: var(--space-1) 0;
@@ -183,10 +163,6 @@
 
 /* === Progress detail items === */
 .detailRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   margin-top: var(--space-0-5);

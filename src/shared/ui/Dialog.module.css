@@ -46,9 +46,6 @@
 }
 
 .headerRightGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   position: absolute;
   top: 0;
   right: 0;
