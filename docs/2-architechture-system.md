@@ -99,6 +99,7 @@ src/
 │   │   ├── Badge.tsx + .module.css         # Small status label with variants/sizes
 │   │   ├── Button.tsx + .module.css        # Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled
 │   │   ├── Card.tsx + .module.css          # Surface container: default/interactive/selected variants
+│   │   ├── CardAnimations.module.css       # Shared card keyframe animations (fade-in, slide-down) used by VideoCard/SubtitleCard
 │   │   ├── Checkbox.tsx + .module.css      # Checkbox with label, indeterminate, error, disabled states
 │   │   ├── CheckboxGroup.tsx + .module.css # Managed list of checkboxes
 │   │   ├── Dialog.tsx + .module.css        # Accessible modal overlay + panel (DeleteConfirmModal now uses this)

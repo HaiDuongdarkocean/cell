@@ -3,6 +3,7 @@ import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Spinner } from '@/shared/ui/Spinner';
+import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
 import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
@@ -100,7 +101,7 @@ export function VideoCard({
   return (
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
-      className={`${styles.card} ${downloading ? styles.downloading : ''}`}
+      className={`${styles.card} ${cardAnimations.fadeIn} ${downloading ? styles.downloading : ''}`}
       data-cell-id="video-card"
       data-id={video.id}
     >
@@ -210,7 +211,7 @@ export function VideoCard({
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <div className={styles.urlPanel} data-cell-id="url-row">
+        <div className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="url-row">
           <button
             type="button"
             className={styles.copyBtn}
@@ -221,7 +222,7 @@ export function VideoCard({
             <Icon name="copy" size={14} />
             <span className={styles.urlText}>{video.url}</span>
           </button>
-          {copied && <span className={styles.copiedBadge} data-cell-id="copied-toast">Copied</span>}
+          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">Copied</span>}
         </div>
       )}
     </Card>
