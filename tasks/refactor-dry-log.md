@@ -137,4 +137,4 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
 
 - **Loops completed:** 5
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 2 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4)
+- **Confirmation questions asked to user:** 3 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5)
