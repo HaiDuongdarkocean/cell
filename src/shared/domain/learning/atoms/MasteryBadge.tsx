@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react';
+import { Spinner } from '@/shared/ui/Spinner';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './MasteryBadge.module.css';
 
@@ -53,7 +54,11 @@ export function MasteryBadge({
       {...rest}
     >
       <span className={styles.icon} aria-hidden="true">
-        <Icon name={iconName === 'spinner' ? 'loader' : iconName} size={14} />
+        {iconName === 'spinner' ? (
+          <Spinner size="sm" color="current" aria-hidden="true" />
+        ) : (
+          <Icon name={iconName} size={14} />
+        )}
       </span>
       {showProgress && <span className={styles.progress}>{clamped}%</span>}
       {children && <span className={styles.label}>{children}</span>}

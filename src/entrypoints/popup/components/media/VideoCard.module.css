@@ -244,16 +244,6 @@
   color: var(--color-text-secondary);
 }
 
-.downloadingIndicator svg {
-  width: var(--space-4);
-  height: var(--space-4);
-  animation: spin var(--duration-1000) linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* === URL panel — expands below main row === */
 .urlPanel {
   display: flex;

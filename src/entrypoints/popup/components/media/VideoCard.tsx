@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Spinner } from '@/shared/ui/Spinner';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
 import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
@@ -190,7 +191,7 @@ export function VideoCard({
           <div className={styles.action}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <Icon name="loader" size={16} />
+                <Spinner size="md" color="secondary" aria-hidden="true" />
               </span>
             ) : (
               <IconButton

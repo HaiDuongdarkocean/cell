@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
@@ -66,11 +66,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading && (
-        <span className={styles.spinner} aria-hidden="true">
-          <Icon name="loader" size={16} />
-        </span>
-      )}
+      {loading && <Spinner size="md" color="current" aria-hidden="true" />}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}
       {children && <span className={styles.label}>{children}</span>}
       {trailingIcon && <span className={styles.trailingIcon}>{trailingIcon}</span>}

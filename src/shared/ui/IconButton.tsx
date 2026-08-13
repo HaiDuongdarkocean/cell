@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Spinner } from './Spinner';
 import styles from './IconButton.module.css';
 
 type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
@@ -58,7 +58,7 @@ export function IconButton({
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading ? <Icon name="loader" size={20} className={styles.spinner} /> : children}
+      {loading ? <Spinner size="xl" color="current" aria-hidden="true" /> : children}
     </button>
   );
 }
