@@ -2,6 +2,7 @@
 
 import { type ReactElement } from 'react';
 import { Button } from '@/shared/ui';
+import { Alert } from '@/shared/ui/Alert';
 import styles from './ImportProgress.module.css';
 
 interface ImportProgressProps {
@@ -26,7 +27,14 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
           Hủy
         </Button>
       )}
-      {error && <div className={styles.error} role="alert">{error}</div>}
+      {error && (
+        <Alert
+          variant="error"
+          description={error}
+          role="alert"
+          style={{ marginTop: 'var(--space-2)' }}
+        />
+      )}
     </div>
   );
 }

@@ -32,17 +32,6 @@
   letter-spacing: var(--tracking-normal);
 }
 
-.error {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-error-subtle);
-  color: var(--color-error);
-  border: var(--border-width-hairline) solid var(--color-error);
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  margin-top: var(--space-2);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .fill {
     transition: none;

@@ -237,8 +237,34 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `a047025f`) ✅
 - **Status:** Complete. Các pill error/success trong `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` còn lại là ứng cử viên Loop 11.
 
+### Loop 11 — Error/success pill SSOT
+- **Discovery:** `ResourcesPanel`, `ImportProgress`, `TtsVoiceManagerPanel` có `.error`/`.success`/`.status` pill trùng lặp; `Alert` đã được mở rộng `icon` ở Loop 10.
+- **Plan:** Thay các thông báo lỗi/thành công/trạng thái thủ công bằng `Alert`; xóa CSS dư; thêm `width: 100%` cho `Alert` root để nó fill trong flex container.
+- **AC:**
+  1. `ResourcesPanel` dùng `Alert` cho error/success.
+  2. `ImportProgress` dùng `Alert` cho error.
+  3. `TtsVoiceManagerPanel` dùng `Alert` cho error/status.
+  4. Không còn `.error`/`.success`/`.status` alert blocks trong các CSS module.
+  5. `Alert.module.css` root có `width: 100%`.
+  6. Build + tests pass.
+- **Do:**
+  - Refactored `ResourcesPanel.tsx` to use `Alert` for dictionary/frequency import errors and successes.
+  - Refactored `ImportProgress.tsx` to use `Alert` for import errors (with `marginTop` inline style).
+  - Refactored `TtsVoiceManagerPanel.tsx` to use `Alert` for load errors and status messages.
+  - Removed `.error`/`.success`/`.status` CSS blocks from the three module CSS files.
+  - Added `width: 100%` to `.alert` in `Alert.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `ResourcesPanel.test.tsx` ✅
+  - `ImportProgress.test.tsx` ✅
+  - `Alert.test.tsx` ✅
+  - Subagent review (agent id `f30fa39c`) ✅
+- **Status:** Complete. `Alert` is now SSOT for these inline messages. Toast (`SubtitleToast`), `CardCreatorDialog` notice, `SubtitleSearchPanel` error with retry, và `DownloadCard` error states remain as out-of-scope candidates.
+
 ## Loop count / goal check
 
-- **Loops completed:** 10
+- **Loops completed:** 11
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10)

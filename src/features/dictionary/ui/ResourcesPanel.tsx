@@ -4,6 +4,7 @@
 // so dictionary + frequency can import in parallel without blocking each other.
 
 import { useState, useCallback, useEffect, type ReactElement } from 'react';
+import { Alert } from '@/shared/ui/Alert';
 import { Dropzone } from './Dropzone';
 import { ResourceCard } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
@@ -131,14 +132,10 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Từ điển</h2>
         {dictState.error && (
-          <div className={styles.error} role="alert" data-cell-id="import-error-dictionary">
-            {dictState.error}
-          </div>
+          <Alert variant="error" description={dictState.error} data-cell-id="import-error-dictionary" />
         )}
         {dictState.success && (
-          <div className={styles.success} role="status" data-cell-id="import-success-dictionary">
-            {dictState.success}
-          </div>
+          <Alert variant="success" description={dictState.success} role="status" data-cell-id="import-success-dictionary" />
         )}
         {dictState.importing && (
           <ImportProgress processed={dictState.progress} total={dictState.progressTotal} error={null} />
@@ -168,14 +165,10 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Danh sách tần suất</h2>
         {freqState.error && (
-          <div className={styles.error} role="alert" data-cell-id="import-error-frequency">
-            {freqState.error}
-          </div>
+          <Alert variant="error" description={freqState.error} data-cell-id="import-error-frequency" />
         )}
         {freqState.success && (
-          <div className={styles.success} role="status" data-cell-id="import-success-frequency">
-            {freqState.success}
-          </div>
+          <Alert variant="success" description={freqState.success} role="status" data-cell-id="import-success-frequency" />
         )}
         {freqState.importing && (
           <ImportProgress processed={freqState.progress} total={freqState.progressTotal} error={null} />
