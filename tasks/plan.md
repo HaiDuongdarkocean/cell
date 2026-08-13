@@ -176,9 +176,23 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Không còn `display: flex` dư thừa trong các class trên.
   - [x] Build + tests pass.
 
-## Loop 13+ (future loops)
+## Loop 13 — Dialog header/footer + VideoCard/SubtitleCard layout SSOT
+- **Why:** `Dialog` `.header`/`.footer` và `VideoCard`/`SubtitleCard` `mainRow`/`tagRow`/`icon`/`.body` còn tự định nghĩa flex trong khi `HStack`/`VStack` đã có.
+- **What:** Dùng `HStack`/`VStack` cho `Dialog` header/footer và media card layouts; xóa CSS flex dư.
+- **Files:**
+  - `src/shared/ui/Dialog.{tsx,module.css}`
+  - `src/entrypoints/popup/components/media/VideoCard.{tsx,module.css}`
+  - `src/entrypoints/popup/components/media/SubtitleCard.{tsx,module.css}`
+- **AC:**
+  - [x] `Dialog.header` dùng `HStack`.
+  - [x] `Dialog.footer` dùng `HStack` (hoặc `Flex`).
+  - [x] `VideoCard`/`SubtitleCard` dùng `HStack` cho `mainRow`, `tagRow`; `VStack` cho card body.
+  - [x] Không còn `display: flex` dư thừa trong các class trên.
+  - [x] Build + tests pass.
+
+## Loop 14+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header/actions layout patterns còn lại (`VideoCard`, `SubtitleCard` media card layouts).
+- Header/actions layout patterns còn lại (media card actions, `BottomSheet` header).
 - Design-system-showcase `index.html` inline scrollbar.
 
 ## Verification pattern

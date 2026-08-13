@@ -287,8 +287,32 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Attempted MCP browser verification; localhost not reachable from sandboxed browser instance.
 - **Status:** Complete. `Dialog` `.header`/`.footer` and `VideoCard`/`SubtitleCard` media layouts remain out of scope.
 
+### Loop 13 — Dialog header/footer + VideoCard/SubtitleCard layout SSOT
+- **Discovery:** `Dialog` `.header`/`.footer` và `VideoCard`/`SubtitleCard` `mainRow`/`tagRow`/`icon`/`.actions`/`urlPanel`/`qualityMenu` còn tự định nghĩa flex.
+- **Plan:** Dùng `HStack` cho `Dialog` header/footer; `HStack`/`VStack`/`Flex`/`Center` cho media cards; xóa CSS flex dư.
+- **AC:**
+  1. `Dialog.header` dùng `HStack`.
+  2. `Dialog.footer` dùng `HStack`.
+  3. `VideoCard`/`SubtitleCard` dùng `HStack` cho `mainRow`, `tagRow`; `VStack` cho card body.
+  4. Không còn `display: flex` dư thừa trong các class trên.
+  5. Build + tests pass.
+- **Do:**
+  - Refactored `Dialog.tsx` header and footer to use `HStack`.
+  - Refactored `Dialog.module.css` to remove `display: flex` from `.header` and `.footer`; kept `position: relative` on `.header`.
+  - Refactored `VideoCard.tsx` to use `HStack` for `mainRow`, `tagRow` (`Flex` for wrap), `actions`, `qualityOption`, `urlPanel`; `VStack` for card body and `qualityMenu`; `Center` for `icon` and `downloadingIndicator`.
+  - Refactored `SubtitleCard.tsx` similarly.
+  - Removed `display: flex` from the corresponding CSS classes in `VideoCard.module.css` and `SubtitleCard.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `Dialog.test.tsx` ✅
+  - `VideoCard`/`SubtitleCard` tests ✅
+  - Subagent review (agent id `a93c8616`) ✅
+- **Status:** Complete. `.copyBtn`, `.qualityWrapper`, `.qualityTrigger` (button/inline-flex children) and media card `.body` `flex: 1` remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 12
+- **Loops completed:** 13
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12)

@@ -27,17 +27,13 @@
 }
 
 .header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
+  position: relative;
   margin-bottom: var(--space-3);
 }
 
 /* Centered title variant — close button positioned absolutely so the
  * title can center in the full header width. */
 .headerCenterTitle {
-  position: relative;
   justify-content: center;
 }
 
@@ -76,9 +72,6 @@
 }
 
 .footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
   margin-top: var(--space-6);
 }
 
