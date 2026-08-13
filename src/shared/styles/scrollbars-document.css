@@ -1,0 +1,25 @@
+/* Document-level themed scrollbar.
+   Import after tokens.css. Override --scrollbar-track if you need a
+   transparent track (e.g. sidepanel: :root { --scrollbar-track: transparent; }). */
+*::-webkit-scrollbar {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, var(--color-scrollbar-track));
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--scrollbar-track, var(--color-scrollbar-track));
+}

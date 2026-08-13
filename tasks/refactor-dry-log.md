@@ -145,14 +145,37 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `5eceb00c`) ✅
 - **Status:** Complete. Các global CSS files (`popup/global.css`, `sidepanel/global.css`, `components.css`) vẫn còn scrollbar riêng vì chúng phục vụ page/shadow DOM, nằm ngoài scope CSS modules.
 
-### Loop 7 — (pending candidates)
-- Global scrollbar CSS trong `popup/global.css`, `sidepanel/global.css`, `components.css`, và inline HTML.
+### Loop 7 — Global / shadow scrollbar SSOT
+- **Discovery:** `popup/styles/global.css`, `sidepanel/styles/global.css`, và `shared/styles/components.css` (injected vào shadow DOM) chứa cùng một block themed scrollbar, khác nhau ở track color và selector (`*` vs `:where(:host *)`).
+- **Plan:** Tách thành 2 file: `scrollbars-document.css` dùng selector toàn cục (`*`) cho popup/sidepanel, và `scrollbars-shadow.css` dùng `:where(:host *)` cho shadow DOM. Dùng `@import` và `injectShadowCss.ts` để inject.
+- **AC:**
+  1. `scrollbars-document.css` và `scrollbars-shadow.css` là SSOT.
+  2. `popup/global.css` và `sidepanel/global.css` chỉ còn `@import`.
+  3. `components.css` không còn block scrollbar.
+  4. `sidepanel/index.html` bỏ inline scrollbar.
+  5. Build + tests pass.
+- **Do:**
+  - Created `src/shared/styles/scrollbars-document.css` and `src/shared/styles/scrollbars-shadow.css`.
+  - Updated `popup/styles/global.css`, `sidepanel/styles/global.css` (set `:root { --scrollbar-track: transparent; }`).
+  - Removed scrollbar block from `components.css`; `injectShadowCss.ts` now appends `scrollbarsShadowCss`.
+  - Removed inline scrollbar from `sidepanel/index.html`; normalized design-system inline to use `--scrollbar-track` fallback.
+  - Updated `ShadowButtonPoC.tsx` to include `scrollbarsShadowCss`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - `mountReactShadow` targeted unit test ✅
+  - Subagent review (agent id `11496acc`) ✅
+- **Status:** Complete. `design-system-showcase/index.html` vẫn còn inline scrollbar vì là standalone page không load `global.css`; đánh dấu out-of-scope cho loop này.
+
+### Loop 8 — (pending candidates)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header / actions layout pattern consolidation.
+- Header / actions layout patterns trong popup/subtitle/universal panel.
 - Finish remaining empty states (`ImagePanel`, `CandidateView`).
+- Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Loop count / goal check
 
-- **Loops completed:** 6
+- **Loops completed:** 7
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 4 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7)

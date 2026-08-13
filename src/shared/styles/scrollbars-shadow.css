@@ -1,0 +1,24 @@
+/* Shadow DOM themed scrollbar.
+   Injected alongside components.css into content-script shadow roots. */
+:where(:host *) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
+
+:where(:host *::-webkit-scrollbar) {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+}
+
+:where(:host *::-webkit-scrollbar-track) {
+  background: var(--color-scrollbar-track);
+}
+
+:where(:host *::-webkit-scrollbar-thumb) {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+:where(:host *::-webkit-scrollbar-thumb:hover) {
+  background: var(--color-scrollbar-thumb-hover);
+}

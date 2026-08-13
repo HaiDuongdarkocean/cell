@@ -69,11 +69,11 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - `src/features/settings/ui/SettingsDialog.module.css`
   - `src/entrypoints/popup/App.redesigned.module.css`
 - **AC:**
-  - [ ] `Scrollable.module.css` chứa `.hide` với đúng 2 rule.
-  - [ ] Không còn `scrollbar-width: none` và `::-webkit-scrollbar { display: none; }` trong các `.module.css` khác.
-  - [ ] Build pass.
+  - [x] `Scrollable.module.css` chứa `.hide` với đúng 2 rule.
+  - [x] Không còn `scrollbar-width: none` và `::-webkit-scrollbar { display: none; }` trong các `.module.css` khác.
+  - [x] Build pass.
 
-## Loop 6 — Themed scrollbar SSOT
+## Loop 6 — Themed scrollbar (module) SSOT
 - **Why:** Các `.module.css` lặp lại pattern themed scrollbar (`scrollbar-width: thin` + `scrollbar-color` + `::-webkit-scrollbar` track/thumb/hover).
 - **What:** Mở rộng `Scrollable.module.css` thêm `.themed` (width 1.5) và `.themedWide` (width 2); dùng `composes` thay thế.
 - **Files:**
@@ -85,15 +85,33 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - `src/features/cardCreator/ui/QueueSidebar.module.css`
   - `src/features/settings/ui/SettingsDialog.module.css`
 - **AC:**
-  - [ ] `Scrollable.module.css` chứa `.themed` và `.themedWide`.
-  - [ ] Không còn `scrollbar-width: thin`, `scrollbar-color`, `::-webkit-scrollbar` track/thumb/hover trong các `.module.css` khác.
-  - [ ] Build + tests pass.
+  - [x] `Scrollable.module.css` chứa `.themed` và `.themedWide`.
+  - [x] Không còn `scrollbar-width: thin`, `scrollbar-color`, `::-webkit-scrollbar` track/thumb/hover trong các `.module.css` khác.
+  - [x] Build + tests pass.
 
-## Loop 7+ (future loops)
-- Global scrollbar CSS trong `global.css` (popup/sidepanel) và `components.css` (shadow DOM).
+## Loop 7 — Global / shadow scrollbar SSOT
+- **Why:** `popup/styles/global.css`, `sidepanel/styles/global.css`, và `shared/styles/components.css` (shadow DOM) cùng chứa một block themed scrollbar gần như giống nhau.
+- **What:** Tách thành `scrollbars-document.css` (dùng `*`) và `scrollbars-shadow.css` (dùng `:where(:host *)`); inject qua `@import` / `injectShadowCss.ts`.
+- **Files:**
+  - `src/shared/styles/scrollbars-document.css` (new)
+  - `src/shared/styles/scrollbars-shadow.css` (new)
+  - `src/entrypoints/popup/styles/global.css`
+  - `src/entrypoints/sidepanel/styles/global.css`
+  - `src/entrypoints/sidepanel/index.html`
+  - `src/shared/styles/components.css`
+  - `src/shared/lib/shadowRoot/injectShadowCss.ts`
+  - `src/entrypoints/design-system-showcase/ShadowButtonPoC.tsx`
+- **AC:**
+  - [x] `scrollbars-document.css` và `scrollbars-shadow.css` là SSOT.
+  - [x] `popup/global.css` và `sidepanel/global.css` chỉ còn `@import`.
+  - [x] `components.css` không còn block scrollbar.
+  - [x] Build + tests pass.
+
+## Loop 8+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header/actions layout patterns trong popup/subtitle/universal panel.
 - Finish remaining empty states (`ImagePanel`, `CandidateView`).
+- Design-system-showcase `index.html` inline scrollbar (nếu cần tách thành global CSS riêng).
 
 ## Verification pattern
 Sau mỗi loop:

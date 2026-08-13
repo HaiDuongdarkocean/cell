@@ -4,6 +4,7 @@ import { createElement } from 'react';
 import { Button } from '@/shared/ui';
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
+import scrollbarsShadowCss from '@/shared/styles/scrollbars-shadow.css?raw';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
 
 const HOST_ID = 'cell-shadow-button-poc-host';
@@ -11,9 +12,9 @@ const HOST_ID = 'cell-shadow-button-poc-host';
 function mountShadowButton(host: HTMLElement): () => void {
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Inject tokens + component global classes + Button.module.css
+  // Inject tokens + component global classes + scrollbars + Button.module.css
   const style = document.createElement('style');
-  style.textContent = `${tokensCss.replace(/:root\b/g, ':host')}\n${componentsCss}\n${buttonCss}`;
+  style.textContent = `${tokensCss.replace(/:root\b/g, ':host')}\n${componentsCss}\n${scrollbarsShadowCss}\n${buttonCss}`;
   shadow.appendChild(style);
 
   const rootEl = document.createElement('div');

@@ -127,25 +127,6 @@
 /* 20. Root stacking context — isolate from host page z-index wars */
 :where(:host) { isolation: isolate; }
 
-/* 21. Scrollbar — themed, cross-browser (Chrome/Edge/Brave/Safari + Firefox)
-   Uses design-system tokens so light/dark themes stay consistent.
-   Firefox: scrollbar-width + scrollbar-color (spec).
-   WebKit/Blink: ::-webkit-scrollbar pseudo-elements. */
-:where(:host *) {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
-}
-:where(:host *::-webkit-scrollbar) { width: var(--space-1-5); height: var(--space-1-5); }
-:where(:host *::-webkit-scrollbar-track) { background: var(--color-scrollbar-track); }
-:where(:host *::-webkit-scrollbar-thumb) {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-:where(:host *::-webkit-scrollbar-thumb:hover) {
-  background: var(--color-scrollbar-thumb-hover);
-}
-
-
 /* === Base button reset — center a lone Icon/SVG inside any <button> ===
    Low specificity (:where) so component/module styles can override.
    Targets icon-only buttons where the only child is an Icon wrapper span or a raw svg. */
