@@ -1,6 +1,6 @@
 ---
 name: frontend-ui-engineering
-description: Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, or when the output needs to look and feel production-quality rather than AI-generated.
+description: Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, redesigning existing UI through mockup-first user-journey-driven workflow, or when the output needs to look and feel production-quality rather than AI-generated.
 ---
 
 # Frontend UI Engineering
@@ -16,6 +16,54 @@ Build production-quality user interfaces that are accessible, performant, and vi
 - Implementing responsive layouts
 - Adding interactivity or state management
 - Fixing visual or UX issues
+- Redesigning existing UI (follow Redesign Workflow below)
+
+## Redesign Workflow
+
+Khi redesign UI đang có (không phải build mới), làm theo 4 bước trước khi viết code production.
+
+### Step 1 — Survey 3 sources song song
+
+| Source | Tìm gì | Output |
+|---|---|---|
+| Internet | Nguyên tắc thiết kế (NNK, Material, Apple HIG, Chrome Design) | Nguyên tắc → áp dụng vào UI nào |
+| Skills | Convention (frontend-ui-engineering, testing-extension-browser, TDD) | Convention nào áp dụng |
+| Codebase | Design system tokens, shared components, icon catalog, portal/shadow DOM architecture | Token/component/pattern nào reuse |
+
+**Guard:** 3 nguồn đều có evidence cụ thể (file/URL + dòng áp dụng).
+**Loop back:** Thiếu nguồn → quay lại khảo sát trước khi tiếp tục.
+
+### Step 2 — Map user journey
+
+Liệt kê tính năng đang có → phân tích hành trình người dùng thực tế → sắp xếp theo thứ tự chronological top-to-bottom. UI không chỉ "sắp xếp element cho đẹp" mà là **câu chuyện hành trình** dẫn user qua các tính năng một cách tự nhiên.
+
+Template:
+```
+Step 1 · <tên>: <tính năng> → <vị trí trong UI>
+Step 2 · <tên>: <tính năng> → <vị trí trong UI>
+Step 3 · <tên>: <tính năng> → <vị trí trong UI>
+Edge cases: <trường hợp> → <cách UI xử lý>
+```
+
+**Guard:** Journey có begin → middle → end rõ ràng, mỗi bước tự nhiên dẫn đến bước tiếp theo.
+**Loop back:** Không thấy câu chuyện → hỏi user về hành trình thực tế.
+
+### Step 3 — Mockup-first
+
+Tạo mockup HTML tĩnh dùng design system tokens, iterate với user qua nhiều vòng. Mỗi vòng ghi log:
+```
+Phase N: <thay đổi> → <lý do> → <nguyên tắc áp dụng>
+```
+
+**Guard:** Mockup dùng token, không hardcode. Responsive 320/360/420px. Dark + light mode. Mọi recommendation có guard hoặc "why not" trong anti-patterns.
+**Loop back:** User chưa duyệt → tiếp tục iterate, không viết code production.
+
+### Step 4 — Browser verify
+
+Code production xong → launch Chrome + extension (theo `testing-extension-browser` skill) → navigate → trigger UI → screenshot → vision reader xác nhận match mockup.
+
+**Guard:** Vision reader xác nhận visual match mockup.
+**Loop back:** Mismatch → fix code, không fix mockup (mockup là source of truth đã duyệt).
 
 ## Convention
 
@@ -45,32 +93,10 @@ src/components/
 
 ### Component Patterns
 
-**Prefer composition over configuration:**
+**Prefer composition over configuration.** Wrap children instead of passing content as props. Keep components focused on one thing. Separate data fetching (container) from presentation.
 
 ```tsx
-// Good: Composable
-<Card>
-  <CardHeader>
-    <CardTitle>Tasks</CardTitle>
-  </CardHeader>
-  <CardBody>
-    <TaskList tasks={tasks} />
-  </CardBody>
-</Card>
-
-// Avoid: Over-configured
-<Card
-  title="Tasks"
-  headerVariant="large"
-  bodyPadding="md"
-  content={<TaskList tasks={tasks} />}
-/>
-```
-
-**Keep components focused:**
-
-```tsx
-// Good: Does one thing
+// Good: Composable, does one thing
 export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
   return (
     <li className="flex items-center gap-3 p-3">
@@ -82,29 +108,14 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
     </li>
   );
 }
-```
 
-**Separate data fetching from presentation:**
-
-```tsx
-// Container: handles data
+// Container handles data, presentation handles rendering
 export function TaskListContainer() {
   const { tasks, isLoading, error } = useTasks();
-
   if (isLoading) return <TaskListSkeleton />;
   if (error) return <ErrorState message="Failed to load tasks" retry={refetch} />;
   if (tasks.length === 0) return <EmptyState message="No tasks yet" />;
-
   return <TaskList tasks={tasks} />;
-}
-
-// Presentation: handles rendering
-export function TaskList({ tasks }: { tasks: Task[] }) {
-  return (
-    <ul role="list" className="divide-y">
-      {tasks.map(task => <TaskItem key={task.id} task={task} />)}
-    </ul>
-  );
 }
 ```
 
@@ -121,7 +132,7 @@ Server state (React Query, SWR)  → Remote data with caching
 Global store (Zustand, Redux)    → Complex client state shared app-wide
 ```
 
-**Avoid prop drilling deeper than 3 levels.** If you're passing props through components that don't use them, introduce context or restructure the component tree.
+**Avoid prop drilling deeper than 3 levels.** Introduce context or restructure the component tree.
 
 ## Design System Adherence
 
@@ -139,6 +150,18 @@ AI-generated UI has recognizable patterns. Avoid all of them:
 | Oversized padding everywhere | Equal generous padding destroys visual hierarchy and wastes screen space | Consistent spacing scale |
 | Stock card grids | Uniform grids are a layout shortcut that ignores information priority and scanning patterns | Purpose-driven layouts |
 | Shadow-heavy design | Layered shadows add depth that competes with content and slows rendering on low-end devices | Subtle or no shadows unless the design system specifies |
+
+### Design Principles → Application
+
+Khi redesign, áp dụng các nguyên tắc sau vào quyết định layout:
+
+| Nguyên tắc | Áp dụng | Ví dụ |
+|---|---|---|
+| Proximity | Action gần object nó tác động | Import button trong section header, gần track list |
+| Progressive disclosure | Giấu chi tiết phụ, giữ chính | Offset stepper nhỏ gọn, không cạnh tranh với track selection |
+| Visual hierarchy by spacing | Khoảng trống = nhóm quan trọng | Section > track > offset, padding lớn tách section |
+| Primary action last | Nút cuối = kết thúc journey | Generate native full-width primary, cuối panel |
+| No excessive dividers | Spacing + grouping thay border | Track list dùng flex gap + radius thay border-bottom |
 
 ### Spacing and Layout
 
@@ -391,6 +414,9 @@ For detailed accessibility requirements and testing tools, see `references/acces
 - No keyboard navigation testing
 - Color as the sole indicator of state (red/green without text or icons)
 - Generic "AI look" (purple gradients, oversized cards, stock layouts)
+- Mockup không verify trên browser thật (code khác mockup)
+- Shared component (Button, IconButton) dùng trong shadow DOM khi CSS module không load được — dùng native element + CSS module của panel
+- Divider mọi nơi thay vì spacing + grouping
 
 ## Verification
 

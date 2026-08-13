@@ -8,7 +8,7 @@ const targetItems: SubtitlePanelItem[] = [
 ];
 
 const nativeItems: SubtitlePanelItem[] = [
-  { id: 'vi-1', name: 'Vietnamese #1', format: 'srt', source: 'imported', role: 'native', index: 0 },
+  { id: 'vi-1', name: 'vietnamese (translated)', format: 'vtt', source: 'translated', role: 'native', index: 0 },
 ];
 
 describe('SubtitleManagerPanel', () => {
@@ -48,7 +48,7 @@ describe('SubtitleManagerPanel', () => {
     expect(onSelect).toHaveBeenCalledWith('target', 1);
   });
 
-  it('toggles section expansion', () => {
+  it('keeps target and native sections expanded without collapse controls', () => {
     render(
       <SubtitleManagerPanel
         targetItems={targetItems}
@@ -60,11 +60,9 @@ describe('SubtitleManagerPanel', () => {
       />,
     );
 
-    const header = screen.getAllByTestId('manager-section-header')[0];
-    fireEvent.click(header);
-    expect(screen.queryByTestId('manager-item-target-0')).not.toBeInTheDocument();
-    fireEvent.click(header);
     expect(screen.getByTestId('manager-item-target-0')).toBeInTheDocument();
+    expect(screen.getByTestId('manager-item-native-0')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Target · English/ })).not.toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', () => {
@@ -84,7 +82,24 @@ describe('SubtitleManagerPanel', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onOffsetChange when apply offset is clicked', () => {
+  it('calls onClose when Escape key is pressed', () => {
+    const onClose = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('calls onOffsetChange when offset input loses focus', () => {
     const onOffsetChange = jest.fn();
     render(
       <SubtitleManagerPanel
@@ -100,8 +115,44 @@ describe('SubtitleManagerPanel', () => {
 
     const input = screen.getByTestId('manager-offset-input-target');
     fireEvent.change(input, { target: { value: '1.5' } });
-    fireEvent.click(screen.getAllByText('Apply offset')[0]);
+    fireEvent.blur(input);
     expect(onOffsetChange).toHaveBeenCalledWith('target', 1500);
+  });
+
+  it('calls onOffsetChange when stepper + button is clicked', () => {
+    const onOffsetChange = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        onOffsetChange={onOffsetChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-offset-inc-target'));
+    expect(onOffsetChange).toHaveBeenCalledWith('target', 500);
+  });
+
+  it('calls onOffsetChange when stepper − button is clicked', () => {
+    const onOffsetChange = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        onOffsetChange={onOffsetChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-offset-dec-target'));
+    expect(onOffsetChange).toHaveBeenCalledWith('target', -500);
   });
 
   it('calls onImport when import is clicked', () => {

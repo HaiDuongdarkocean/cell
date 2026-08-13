@@ -27,7 +27,9 @@ export function formatBytes(bytes: number): string {
 }
 
 export function extractLanguageName(name: string): string {
-  // "English #2" → "English"; "my-subtitle" → ""
-  const match = name.match(/^([A-Za-z\s]+)\s*#/);
-  return match ? match[1].trim() : '';
+  // "English #2" → "English"; "vietnamese (translated)" → "Vietnamese".
+  const match = name.match(/^([A-Za-z\s]+?)(?:\s*#|\s*\()/);
+  if (!match) return '';
+  const language = match[1].trim();
+  return language ? language.charAt(0).toUpperCase() + language.slice(1) : '';
 }

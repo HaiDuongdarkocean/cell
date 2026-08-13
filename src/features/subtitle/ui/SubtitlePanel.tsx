@@ -37,7 +37,7 @@ function SubtitlePanelImpl({
       {onClose && (
         <div className={styles.header}>
           <span className={styles.title}>Subtitles</span>
-          <IconButton
+          <IconButton variant="transparent"
             aria-label="Close subtitle list"
             title="Close (T)"
             data-cell-id="subtitle-panel-close"

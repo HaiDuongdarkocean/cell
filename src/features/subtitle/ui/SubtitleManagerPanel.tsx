@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { Button, Input } from '@/shared/ui';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitlePanelModel';
@@ -20,12 +19,15 @@ export interface SubtitleManagerPanelProps {
   generateNativeDisabled?: boolean;
 }
 
+type SaveState = 'idle' | 'saving' | 'saved';
+
 interface SectionState {
-  expanded: boolean;
   offset: string;
+  saveState: SaveState;
 }
 
 const defaultOffsets = { target: '0', native: '0' };
+const OFFSET_STEP = 0.5;
 
 function getSourceLabel(source: SubtitlePanelItem['source']): string {
   switch (source) {
@@ -36,6 +38,11 @@ function getSourceLabel(source: SubtitlePanelItem['source']): string {
     default:
       return '';
   }
+}
+
+function clampStep(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.round(value * 1000) / 1000;
 }
 
 function ItemRow({
@@ -57,7 +64,7 @@ function ItemRow({
       data-cell-id={`manager-item-${role}-${index}`}
       role="option"
       aria-selected={active}
-      className={[styles.item, active && styles.itemActive].filter(Boolean).join(' ')}
+      className={[styles.track, active && styles.trackActive].filter(Boolean).join(' ')}
       onClick={() => onSelect(role, index)}
     >
       <span
@@ -66,18 +73,103 @@ function ItemRow({
       >
         {active && <span className={styles.radioDot} />}
       </span>
-      <span className={styles.itemText}>
-        <span className={styles.itemName}>{item.name}</span>
-        <span className={styles.itemMeta}>
-          <span className={styles.badge}>{item.format.toUpperCase()}</span>
-          {item.isAsr && <span className={[styles.badge, styles.asrBadge].join(' ')}>AUTO</span>}
-          {item.size !== undefined && <span className={styles.metaText}>{formatBytes(item.size)}</span>}
+      <span className={styles.trackCopy}>
+        <span className={styles.trackName}>{item.name}</span>
+        <span className={styles.trackMeta}>
+          <span className={styles.tag}>{item.format.toUpperCase()}</span>
+          {item.isAsr && <span className={[styles.tag, styles.tagInfo].join(' ')}>AUTO</span>}
+          {item.size !== undefined && <span className={styles.tag}>{formatBytes(item.size)}</span>}
           {getSourceLabel(item.source) && (
-            <span className={[styles.badge, styles.sourceBadge].join(' ')}>{getSourceLabel(item.source)}</span>
+            <span className={[styles.tag, styles.tagSuccess].join(' ')}>{getSourceLabel(item.source)}</span>
           )}
         </span>
       </span>
     </button>
+  );
+}
+
+function OffsetStepper({
+  role,
+  label,
+  state,
+  setState,
+  onOffsetChange,
+}: {
+  role: 'target' | 'native';
+  label: string;
+  state: SectionState;
+  setState: (s: SectionState) => void;
+  onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
+}): React.JSX.Element {
+  const commitOffset = useCallback(
+    (offsetStr: string) => {
+      const ms = parseFloat(offsetStr) * 1000;
+      if (!Number.isNaN(ms)) {
+        onOffsetChange?.(role, ms);
+      }
+      setState({ ...state, offset: offsetStr, saveState: 'saved' });
+    },
+    [role, state, setState, onOffsetChange],
+  );
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setState({ ...state, offset: e.target.value, saveState: 'saving' });
+  };
+
+  const handleBlur = (): void => {
+    commitOffset(state.offset);
+  };
+
+  const bump = (delta: number): void => {
+    const next = clampStep(Number(state.offset || 0) + delta);
+    const nextStr = String(next);
+    commitOffset(nextStr);
+  };
+
+  const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
+
+  return (
+    <div className={styles.timing}>
+      <span className={styles.timingLabel}>Sync</span>
+      <div className={styles.timingControl}>
+        <div className={styles.stepper}>
+          <button
+            type="button"
+            className={styles.stepperBtn}
+            aria-label={`Decrease ${label} offset by ${OFFSET_STEP} seconds`}
+            data-cell-id={`manager-offset-dec-${role}`}
+            onClick={() => bump(-OFFSET_STEP)}
+          >
+            −
+          </button>
+          <label className={styles.stepperField}>
+            <input
+              type="number"
+              step={OFFSET_STEP}
+              className={styles.stepperInput}
+              value={state.offset}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              aria-label={`${label} offset in seconds`}
+              data-cell-id={`manager-offset-input-${role}`}
+            />
+            <span className={styles.unit} aria-hidden="true">sec</span>
+          </label>
+          <button
+            type="button"
+            className={styles.stepperBtn}
+            aria-label={`Increase ${label} offset by ${OFFSET_STEP} seconds`}
+            data-cell-id={`manager-offset-inc-${role}`}
+            onClick={() => bump(OFFSET_STEP)}
+          >
+            +
+          </button>
+        </div>
+        <span className={styles.saveState} role="status" data-cell-id={`manager-offset-save-${role}`}>
+          {saveLabel}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -107,41 +199,35 @@ function SectionPanel({
     return active ? extractLanguageName(active.name) : '';
   }, [items, activeIndex]);
 
-  const handleOffset = (): void => {
-    const ms = parseFloat(state.offset) * 1000;
-    if (!Number.isNaN(ms)) onOffsetChange?.(role, ms);
-  };
-
   return (
     <section className={styles.section} data-role={role} data-cell-id="manager-section">
-      <button
-        type="button"
-        className={styles.sectionHeader}
-        onClick={() => setState({ ...state, expanded: !state.expanded })}
-        aria-expanded={state.expanded}
-        data-cell-id="manager-section-header"
-        data-role={role}
-      >
-        <span
-          className={[styles.chevron, !state.expanded && styles.chevronCollapsed].filter(Boolean).join(' ')}
-          aria-hidden="true"
-        >
-          <Icon name="chevronDown" size={16} />
-        </span>
-        <span className={styles.sectionLabel}>
-          {lang ? `${label} · ${lang}` : label}
-        </span>
-        <span className={styles.sectionCount}>
-          {items.length} subtitle{items.length === 1 ? '' : 's'}
-        </span>
-      </button>
+      <div className={styles.sectionHead} data-cell-id="manager-section-header" data-role={role}>
+        <div className={styles.sectionHeading}>
+          <span className={styles.sectionName}>
+            {lang ? `${label} · ${lang}` : label}
+          </span>
+          <span className={styles.sectionCount}>
+            {items.length} subtitle{items.length === 1 ? '' : 's'}
+          </span>
+        </div>
+        {onImport && (
+          <button
+            type="button"
+            className={styles.sectionImport}
+            onClick={() => onImport(role)}
+            data-cell-id={`manager-import-${role}`}
+          >
+            Import
+          </button>
+        )}
+      </div>
 
-      {state.expanded && (
-        <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
-          {items.length === 0 ? (
-            <div className={styles.empty}>No subtitles available.</div>
-          ) : (
-            items.map((item, index) => (
+      <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
+        {items.length === 0 ? (
+          <div className={styles.empty}>No subtitles available.</div>
+        ) : (
+          <div className={styles.trackList}>
+            {items.map((item, index) => (
               <ItemRow
                 key={item.id}
                 item={item}
@@ -150,38 +236,17 @@ function SectionPanel({
                 active={index === activeIndex}
                 onSelect={onSelect}
               />
-            ))
-          )}
-          <div className={styles.sectionActions}>
-            <div className={styles.offsetRow}>
-              <Input
-                type="number"
-                step={0.5}
-                size="sm"
-                className={styles.offsetInput}
-                value={state.offset}
-                onChange={(e) => setState({ ...state, offset: e.target.value })}
-                onBlur={handleOffset}
-                aria-label={`${label} offset in seconds`}
-                data-cell-id={`manager-offset-input-${role}`}
-              />
-              <Button size="sm" variant="outline" onClick={handleOffset}>
-                Apply offset
-              </Button>
-            </div>
-            {onImport && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onImport(role)}
-                data-cell-id={`manager-import-${role}`}
-              >
-                Import
-              </Button>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        )}
+        <OffsetStepper
+          role={role}
+          label={label}
+          state={state}
+          setState={setState}
+          onOffsetChange={onOffsetChange}
+        />
+      </div>
     </section>
   );
 }
@@ -201,13 +266,21 @@ export function SubtitleManagerPanel({
   generateNativeDisabled,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
-    expanded: true,
     offset: defaultOffsets.target,
+    saveState: 'saved',
   });
   const [nativeState, setNativeState] = useState<SectionState>({
-    expanded: true,
     offset: defaultOffsets.native,
+    saveState: 'saved',
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   return (
     <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
@@ -247,15 +320,15 @@ export function SubtitleManagerPanel({
 
       {onGenerateNative && (
         <div className={styles.footer}>
-          <Button
-            size="sm"
-            variant="secondary"
+          <button
+            type="button"
+            className={styles.generateBtn}
             onClick={onGenerateNative}
             data-cell-id="manager-generate-native"
             disabled={generateNativeDisabled}
           >
             Generate native
-          </Button>
+          </button>
         </div>
       )}
     </div>

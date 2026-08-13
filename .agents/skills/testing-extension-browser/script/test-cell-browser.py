@@ -110,14 +110,32 @@ def cleanup_clone(clone_dir: Path) -> None:
 
 async def load_extension(browser: uc.Browser, ext_path: str, name: str) -> str:
     """Load unpacked extension via CDP Extensions.loadUnpacked.
-    Copies to a per-run temp dir to avoid _metadata race condition in parallel runs."""
+    Copies to a per-run temp dir to avoid _metadata race condition in parallel runs.
+    Uses robocopy with /XF to skip filter-list .js files that Windows Defender
+    may block with error 225 (false positive on easylist.js)."""
     src = Path(ext_path)
     # uBlock creates _metadata on load — Chrome rejects it. Copy to temp, strip _metadata.
     if (src / "_metadata").exists() or name == "uBlock":
         tmp = Path(os.environ.get("TEMP", "/tmp")) / f"cell-ext-{uuid.uuid4().hex[:8]}"
         if tmp.exists():
             shutil.rmtree(tmp, ignore_errors=True)
-        shutil.copytree(src, tmp, dirs_exist_ok=True)
+        # robocopy with /R:1 /W:1 (retry once, wait 1s) and /XF to skip blocked files.
+        # Windows Defender false-positives on easylist.js cause error 225 / Errno 22.
+        # uBlock still works without the scripting filter lists — they're optional.
+        result = subprocess.run(
+            [
+                "robocopy", str(src), str(tmp),
+                "/E", "/NFL", "/NDL", "/NP", "/NS", "/NC",
+                "/R:1", "/W:1",
+                "/XF", "easylist.js",
+            ],
+            shell=False,
+            capture_output=True,
+            timeout=30,
+        )
+        # robocopy exit code 0-7 is success, 8+ is failure
+        if result.returncode >= 8:
+            raise RuntimeError(f"robocopy failed (exit {result.returncode}): {result.stderr.decode(errors='replace')}")
         meta = tmp / "_metadata"
         if meta.exists():
             shutil.rmtree(meta, ignore_errors=True)

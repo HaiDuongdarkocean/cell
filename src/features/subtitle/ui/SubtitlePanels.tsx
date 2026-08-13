@@ -11,7 +11,7 @@ import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToas
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
-import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
+import { resolveSplitViewWrapperHeight, togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
@@ -464,23 +464,33 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (!originalParent) return;
       const originalNextSibling = playerShell.nextSibling;
 
-      // Capture the player's original height — the parent may not have a fixed
-      // height, so `height:100%` on the wrapper would expand to fit CueList
-      // content (19885px for a full movie). Pin the wrapper to the player's
-      // original pixel height instead. Clamp to viewport height: on sites where
-      // the video overflows its container (e.g. vidrock.ru with intrinsic 1906×1430
-      // in a 986px viewport), using the full player height would make the wrapper
-      // + panel overflow the viewport and cover the video.
       const playerRect = playerShell.getBoundingClientRect();
-      const wrapperH = Math.min(Math.round(playerRect.height), window.innerHeight);
+      const playerComputedStyle = getComputedStyle(playerShell);
+      const viewportBound = playerComputedStyle.position === 'fixed'
+        && Math.abs(playerRect.width - window.innerWidth) <= 1
+        && Math.abs(playerRect.height - window.innerHeight) <= 1;
+      const wrapperHeight = resolveSplitViewWrapperHeight(
+        playerRect.height,
+        window.innerHeight,
+        viewportBound,
+      );
+      const playerShellStyleProperties = [
+        'position', 'inset', 'top', 'right', 'bottom', 'left', 'width', 'height',
+        'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio',
+        'flex', 'margin', 'box-sizing',
+      ];
+      const savedPlayerShellStyles: Record<string, string> = {};
+      for (const property of playerShellStyleProperties) {
+        savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
+      }
 
       const wrapper = document.createElement('div');
       wrapper.setAttribute('data-cell-split-view', 'wrapper');
-      wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperH}px;overflow:hidden;position:relative;`;
+      wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeight};overflow:hidden;position:relative;`;
 
       const stageCell = document.createElement('div');
       stageCell.setAttribute('data-cell-split-view', 'stage');
-      stageCell.style.cssText = 'flex:1 1 0;min-width:0;height:100%;position:relative;overflow:hidden;';
+      stageCell.style.cssText = 'flex:1 1 0;min-width:0;min-height:0;height:100%;position:relative;overflow:hidden;';
 
       const panel = document.createElement('div');
       panel.setAttribute('data-cell-split-view', 'panel');
@@ -504,17 +514,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       handle.setAttribute('data-cell-split-view', 'handle');
       handle.style.cssText = 'flex:0 0 6px;height:100%;background:var(--color-border,#333);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
 
-      const fillStyle = document.createElement('style');
-      fillStyle.setAttribute('data-cell-split-view', 'fill');
-      fillStyle.textContent = [
-        '[data-cell-split-view="stage"] video,',
-        '[data-cell-split-view="stage"] > * {',
-        '  width:100%!important;height:100%!important;',
-        '  max-width:none!important;max-height:none!important;',
-        '  object-fit:contain!important;',
-        '}',
-      ].join('');
-      document.head.appendChild(fillStyle);
+      if (playerComputedStyle.position === 'fixed') {
+        playerShell.style.setProperty('position', 'absolute', 'important');
+        playerShell.style.setProperty('inset', '0', 'important');
+      }
+      playerShell.style.setProperty('width', '100%', 'important');
+      playerShell.style.setProperty('height', '100%', 'important');
+      playerShell.style.setProperty('max-width', 'none', 'important');
+      playerShell.style.setProperty('max-height', 'none', 'important');
+      playerShell.style.setProperty('min-width', '0', 'important');
+      playerShell.style.setProperty('min-height', '0', 'important');
+      playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
+      playerShell.style.setProperty('margin', '0', 'important');
+      playerShell.style.setProperty('box-sizing', 'border-box', 'important');
 
       stageCell.appendChild(playerShell);
       wrapper.appendChild(stageCell);
@@ -526,45 +538,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       } else {
         originalParent.appendChild(wrapper);
       }
-
-      // Resize the shell and its primary descendant chain together. Player
-      // controls and Cell's overlay host often live several wrappers below the
-      // shell; resizing only the direct child leaves the overlay wider than the
-      // video stage and it paints over the CueList panel.
-      const savedPlayerStyles: Array<{ el: HTMLElement; props: Record<string, string> }> = [];
-      let sized: HTMLElement | null = playerShell;
-      while (sized) {
-        const props: Record<string, string> = {};
-        for (const property of ['width', 'height', 'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio', 'flex', 'margin', 'box-sizing']) {
-          props[property] = sized.style.getPropertyValue(property);
-        }
-        savedPlayerStyles.push({ el: sized, props });
-        sized = sized.firstElementChild as HTMLElement | null;
-      }
-
-      const resizePlayerChain = (): void => {
-        const stageRect = stageCell.getBoundingClientRect();
-        const stageW = Math.max(Math.round(stageRect.width), 0);
-        const stageH = Math.max(Math.round(stageRect.height), 0);
-
-        for (const { el } of savedPlayerStyles) {
-          el.style.setProperty('width', `${stageW}px`, 'important');
-          el.style.setProperty('height', `${stageH}px`, 'important');
-          el.style.setProperty('max-width', 'none', 'important');
-          el.style.setProperty('max-height', 'none', 'important');
-          el.style.setProperty('min-width', '0', 'important');
-          el.style.setProperty('min-height', '0', 'important');
-          el.style.setProperty('aspect-ratio', 'auto', 'important');
-          el.style.setProperty('flex', '1 1 0', 'important');
-          el.style.setProperty('margin', '0', 'important');
-          el.style.setProperty('box-sizing', 'border-box', 'important');
-        }
-        window.dispatchEvent(new Event('resize'));
-      };
-      resizePlayerChain();
-
-      const stageResizeObserver = new ResizeObserver(resizePlayerChain);
-      stageResizeObserver.observe(stageCell);
 
       setSplitViewPortalTarget(panelInner);
 
@@ -579,7 +552,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const deltaPct = -((e.clientX - dragStart.x) / dragStart.wrapperW) * 100;
         const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
         panel.style.flexBasis = `${next}%`;
-        resizePlayerChain();
         setSplitViewPct(next);
       };
       const onPointerUp = (e: PointerEvent): void => {
@@ -601,13 +573,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointermove', onPointerMove);
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
-        stageResizeObserver.disconnect();
-        fillStyle.remove();
-        for (const { el, props } of savedPlayerStyles) {
-          for (const [property, value] of Object.entries(props)) {
-            el.style.removeProperty(property);
-            if (value) el.style.setProperty(property, value);
-          }
+        for (const property of playerShellStyleProperties) {
+          playerShell.style.removeProperty(property);
+          const value = savedPlayerShellStyles[property];
+          if (value) playerShell.style.setProperty(property, value);
         }
         if (originalParent && playerShell.parentElement === stageCell) {
           if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
@@ -617,7 +586,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           }
         }
         wrapper.remove();
-        window.dispatchEvent(new Event('resize'));
       };
     }, [splitViewOpen, playerMode]);
 
@@ -789,7 +757,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           <div className={styles.clusterRight} style={clusterRightStyle} data-cell-id="nav-cluster-right">
             <div className={styles.primaryCol}>
               {onQuickAdd && (
-                <IconButton
+                <IconButton variant="transparent"
                   aria-label="Quick add card"
                   title="Quick add (Q)"
                   data-cell-id="quick-add-btn"
@@ -800,7 +768,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 </IconButton>
               )}
               {onEditCard && (
-                <IconButton
+                <IconButton variant="transparent"
                   aria-label="Edit card"
                   title="Edit card (E)"
                   data-cell-id="edit-card-btn"
@@ -816,7 +784,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   data-cell-id="subtitle-tools-extra"
                 >
                   {onToggleSidePanel && (
-                    <IconButton
+                    <IconButton variant="transparent"
                       aria-label={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
                       title="Toggle subtitle list (T)"
                       data-cell-id="panel-toggle-btn"
@@ -827,7 +795,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                     </IconButton>
                   )}
                   {onGenerateNative && (
-                    <IconButton
+                    <IconButton variant="transparent"
                       aria-label="Generate native subtitle"
                       title="Generate native (H)"
                       data-cell-id="generate-native-btn"
@@ -839,7 +807,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                     </IconButton>
                   )}
                 </div>
-                <IconButton
+                <IconButton variant="transparent"
                   aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
                   title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
                   data-cell-id="tools-toggle-btn"
@@ -852,7 +820,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             </div>
             <div className={styles.secondaryCol}>
               {onUpdateCurrentCard && (
-                <IconButton
+                <IconButton variant="transparent"
                   aria-label="Update current card"
                   title="Update current card (U)"
                   data-cell-id="update-current-card-btn"
@@ -863,7 +831,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 </IconButton>
               )}
               {onToggleManager && (
-                <IconButton
+                <IconButton variant="transparent"
                   aria-label="Open subtitle manager"
                   title="Open subtitle manager"
                   data-cell-id="manager-toggle-btn"
@@ -873,7 +841,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   <Icon name="subtitleManager" size={18} />
                 </IconButton>
               )}
-              <IconButton
+              <IconButton variant="transparent"
                 aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
                 title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
                 data-cell-id="player-mode-btn"
@@ -888,7 +856,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         )}
 
         {managerOpen && manager && portalTarget && createPortal(
-          <div className={styles.panelLayer} data-cell-id="subtitle-manager-layer">
+          <div
+            className={styles.panelLayer}
+            data-cell-id="subtitle-manager-layer"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setManagerOpen(false);
+            }}
+          >
             <SubtitleManagerPanel
               targetItems={manager.targetItems}
               nativeItems={manager.nativeItems}

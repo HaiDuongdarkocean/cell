@@ -24,6 +24,18 @@ export function resolveVideoAspectRatio(
   return Number.isFinite(fallback) && fallback > 0 ? fallback : 16 / 9;
 }
 
+export function resolveSplitViewWrapperHeight(
+  initialPlayerHeight: number,
+  viewportHeight: number,
+  viewportBound: boolean,
+): string {
+  if (viewportBound) return '100dvh';
+  if (!Number.isFinite(initialPlayerHeight) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) {
+    return '0px';
+  }
+  return `${Math.min(Math.max(Math.round(initialPlayerHeight), 0), Math.round(viewportHeight))}px`;
+}
+
 /** Inline styles applied temporarily to the host player container.
  *  No-op — canvas capture approach: video stays in host, overlay covers host. */
 export function resolvePlayerModeHostStyles(_videoStageHeight: number): Readonly<Record<string, string>> {

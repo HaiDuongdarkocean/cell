@@ -6,6 +6,7 @@ import {
   resolveVideoAspectRatio,
   resolvePlayerModeHostStyles,
   resolvePlayerModeVideoStyles,
+  resolveSplitViewWrapperHeight,
   DOCK_MIN_HEIGHT_PX,
   SHEET_MIN_HEIGHT_PX,
 } from './playerModeGeometry';
@@ -80,6 +81,17 @@ describe('playerModeGeometry', () => {
     it('uses fallback for invalid dimensions', () => {
       expect(resolveVideoAspectRatio(0, 0)).toBeCloseTo(16 / 9);
       expect(resolveVideoAspectRatio(1920, 0, 4 / 3)).toBeCloseTo(4 / 3);
+    });
+  });
+
+  describe('resolveSplitViewWrapperHeight', () => {
+    it('uses the viewport as the responsive boundary for viewport-bound players', () => {
+      expect(resolveSplitViewWrapperHeight(506, 506, true)).toBe('100dvh');
+    });
+
+    it('keeps embedded players at their initial height, clamped to the viewport', () => {
+      expect(resolveSplitViewWrapperHeight(450, 800, false)).toBe('450px');
+      expect(resolveSplitViewWrapperHeight(700, 500, false)).toBe('500px');
     });
   });
 

@@ -1,4 +1,20 @@
-# Cue item redesign — mockup
+# Subtitle UI mockups
+
+## Subtitle Manager redesign
+
+Mở `subtitle-manager-redesign.html` để xem concept **Sync journey** — bản tiến hóa từ Quiet List:
+
+- Câu chuyện: chọn track → import nếu thiếu → chỉnh cho hai dòng gặp nhau → tự lưu.
+- Bỏ `Apply`: offset tự áp dụng khi input mất focus, có trạng thái `Saving…`/`Saved`.
+- Đưa `Import` lên section header của đúng Target/Native group, gần object mà action tác động.
+- Tách section toggle và Import thành hai button sibling, không lồng button trong button.
+- Bỏ card lồng trong card; subtitle trở thành continuous list với divider.
+- Active track dùng `primary-subtle` + accent rail trái, không dùng border/nền xanh nặng.
+- Timing offset là một control chung vì codebase áp dụng cùng một offset cho cả Target và Native.
+
+Mockup dùng token thật từ `src/shared/styles/tokens.css`, có dark/light và frame width 320/360/420px. Đây là phase design trước khi sửa TSX/CSS.
+
+## Cue item redesign
 
 > 3 biến thể cue item mới cho `CueList` (sidepanel + Player Mode).
 > Xem trực tiếp: mở `cue-item-redesign.html` trong browser (dùng token thật từ `tokens.css`).
