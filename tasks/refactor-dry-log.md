@@ -109,14 +109,32 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `aee8e9f1`) ✅
 - **Status:** Complete.
 
-### Loop 5 — (pending candidates)
-- Finish remaining empty states (`ImagePanel`, `CandidateView`)
-- Scrollbar CSS consolidation
-- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`)
-- Header / actions layout pattern consolidation
+### Loop 5 — Hidden scrollbar SSOT
+- **Discovery:** `*.module.css` files repeated the same two declarations (`scrollbar-width: none` + `::-webkit-scrollbar { display: none; }`) in 12 places.
+- **Plan:** Create `shared/ui/Scrollable.module.css` with a single `.hide` class and replace every duplicate block with CSS Modules `composes: hide from ...`.
+- **AC:**
+  1. `Scrollable.module.css` contains only the two hidden-scrollbar rules.
+  2. No `scrollbar-width: none` or `::-webkit-scrollbar { display: none; }` remains in other `.module.css` files.
+  3. Build and affected tests pass.
+- **Do:**
+  - Created `src/shared/ui/Scrollable.module.css`.
+  - Replaced 12 duplicate blocks across `DictionaryPanelView`, `PopupDictionary`, `SettingsDialog`, and `App.redesigned` module CSS.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `npx vite build --mode development` ✅
+  - Targeted unit tests (`DictionaryPanelView`, `PopupDictionary`, `SettingsDialog`) ✅
+  - Subagent review (agent id `87c5eab8`) ✅
+- **Status:** Complete.
+
+### Loop 6 — (pending candidates)
+- Themed scrollbar CSS in `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`, `SettingsDialog`.
+- Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
+- Header / actions layout pattern consolidation.
+- Finish remaining empty states (`ImagePanel`, `CandidateView`).
 
 ## Loop count / goal check
 
-- **Loops completed:** 4
+- **Loops completed:** 5
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 1 ("continue Loop 3?" on 2026-08-13)
+- **Confirmation questions asked to user:** 2 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4)
