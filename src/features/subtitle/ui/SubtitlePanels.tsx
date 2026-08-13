@@ -5,7 +5,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
-import { SubtitleManagerPanel } from './SubtitleManagerPanel';
+import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
 import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
@@ -39,6 +39,8 @@ export interface ManagerState {
   onImport?: (role: 'target' | 'native') => void;
   onGenerateNative?: () => void;
   onOffsetChange?: (role: 'target' | 'native', ms: number) => void;
+  /** Appearance view props — when provided, "Customize appearance" button shows in footer. */
+  appearance?: AppearanceState;
 }
 
 export interface OffsetState {
@@ -874,6 +876,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               onGenerateNative={manager.onGenerateNative}
               onOffsetChange={manager.onOffsetChange}
               generateNativeDisabled={!generateNativeEnabled}
+              appearance={manager.appearance}
             />
           </div>,
           portalTarget,

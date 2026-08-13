@@ -53,6 +53,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
+**2026-08-13**: Thêm spec `subtitle-appearance-in-manager.md` + ADR `subtitle-appearance-in-manager.md`: di chuyển subtitle appearance customization (Target/Native style, Block position/scale/opacity, NavCluster) từ Settings Dialog sang Subtitle Manager Panel. 4 components moved từ `settings/ui/` sang `subtitle/ui/appearance/`. `appearanceShadowCss.ts` manifest tạo SSOT cho shadow CSS.
 **2026-08-11**: Khôi phục `docs/adr/` với ADR mới `native-fullscreen-iframe-player-mode.md`: child-iframe Player Mode dùng native Fullscreen API, project player vào Cell `videoStage` slot trong cùng child document, xóa `iframePlayerModeBridge.ts`, thêm `iframeContext.ts`.
 **2026-08-05**: Thêm skill `testing-extension-browser` — 1 workflow duy nhất: nodriver spawn (anti-bot) + CDP `Extensions.loadUnpacked` (Chrome 137+ blocks `--load-extension`) + load 2 ext (Cell + uBlock) + navigate + reload. Script Python `script/test-cell-browser.py` chạy qua `uv run --python 3.11 --with nodriver`.
 **2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.

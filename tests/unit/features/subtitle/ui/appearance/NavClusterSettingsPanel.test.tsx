@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { NavClusterSettingsPanel } from '@/features/settings/ui/NavClusterSettingsPanel';
+import { NavClusterSettingsPanel } from '@/features/subtitle/ui/appearance/NavClusterSettingsPanel';
 import { DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import type { NavClusterSettings } from '@/entities/settings';
 

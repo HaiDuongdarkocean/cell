@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Latency Control — Sync Offset Redesign</title>
+  <link rel="stylesheet" href="../../src/shared/styles/tokens.css" />
+  <style>
+    :root { --mock-width: 360px; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--color-background); color: var(--color-text-primary); font-family: var(--font-family); -webkit-font-smoothing: antialiased; }
+    body { padding: var(--space-6); }
+    button, input { font: inherit; }
+    .page { max-width: 780px; margin: 0 auto; }
+    .intro { margin-bottom: var(--space-5); }
+    h1 { margin: 0 0 var(--space-1); font-size: var(--font-size-2xl); line-height: var(--leading-tight); }
+    .intro p, .note { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--leading-normal); }
+
+    /* Toolbar */
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-6); }
+    .toolbar button { min-height: var(--touch-target-desktop, 40px); padding: var(--space-1-5) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text-primary); cursor: pointer; }
+    .toolbar button:hover { background: var(--color-surface-hover); }
+    .toolbar button[aria-pressed="true"] { border-color: transparent; background: var(--color-primary-subtle); color: var(--color-primary); }
+    .widths { display: flex; gap: var(--space-1); margin-left: auto; }
+    .widths button { min-height: 32px; padding: var(--space-1) var(--space-2); font-size: var(--font-size-xs); }
+
+    /* Frame — mimic SubtitleManagerPanel section body */
+    .frame { width: var(--mock-width); max-width: 100%; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-dialog); background: var(--color-surface-popover); box-shadow: var(--shadow-popover); }
+    .frame-label { padding: var(--space-3) var(--space-4); color: var(--color-text-secondary); font-size: var(--font-size-xs); border-bottom: 1px solid var(--color-border); }
+
+    /* ─── Latency block (the redesign) ─── */
+    .latency {
+      padding: var(--space-3) var(--space-4) var(--space-4);
+    }
+    .latencyHead {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+    .latencyLabel {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+    .latencySave {
+      font-size: var(--font-size-xs);
+      color: var(--color-success);
+    }
+    .latencySave.saving { color: var(--color-text-secondary); }
+
+    /* Row: [-0.5s] [ value ] [+0.5s] */
+    .latencyRow {
+      display: flex;
+      align-items: stretch;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+    .stepBtn {
+      flex: 0 0 auto;
+      min-width: 64px;
+      min-height: var(--touch-target-desktop, 40px);
+      padding: var(--space-1) var(--space-2-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-element);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      transition: background var(--transition-fast, 150ms), border-color var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
+    }
+    .stepBtn:hover { background: var(--color-surface-hover); }
+    .stepBtn:active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+    .stepBtn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .stepBtn:disabled { color: var(--color-text-disabled); cursor: not-allowed; background: var(--color-surface); }
+    .stepBtn:disabled:hover { background: var(--color-surface); }
+
+    /* Central value — editable input, no spinner */
+    .valueField {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-element);
+      background: var(--color-surface);
+    }
+    .valueField:focus-within { border-color: transparent; box-shadow: 0 0 0 2px var(--color-primary-subtle); }
+    .valueInput {
+      width: 100%;
+      min-height: var(--touch-target-desktop, 40px);
+      padding: var(--space-1) var(--space-2);
+      border: 0;
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+    .valueInput:focus { outline: none; }
+    .valueInput::-webkit-outer-spin-button,
+    .valueInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* Reset — full width */
+    .resetBtn {
+      width: 100%;
+      min-height: var(--touch-target-desktop, 40px);
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-element);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
+    }
+    .resetBtn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .resetBtn:active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+    .resetBtn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .resetBtn:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+
+    /* Two sections inside frame to show per-section layout */
+    .section + .section { border-top: 1px solid var(--color-border); }
+
+    /* Journey notes */
+    .journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-top: var(--space-6); }
+    .journeyStep { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .journeyStep strong { display: block; margin-bottom: var(--space-1); font-size: var(--font-size-sm); }
+    .journeyStep span { color: var(--color-text-secondary); font-size: var(--font-size-xs); line-height: var(--leading-normal); }
+
+    @media (max-width: 479px) {
+      body { padding: var(--space-2); }
+      .latency { padding: var(--space-3); }
+      .stepBtn { min-width: 56px; min-height: var(--touch-target-mobile, 44px); padding: var(--space-1) var(--space-2); }
+      .valueInput { min-height: var(--touch-target-mobile, 44px); }
+      .resetBtn { min-height: var(--touch-target-mobile, 44px); }
+      .widths { margin-left: 0; width: 100%; }
+      .widths button { flex: 1; }
+      .journey { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="intro">
+      <h1>Latency Control · Sync Offset Redesign</h1>
+      <p>Redesign <code>OffsetStepper</code> trong SubtitleManagerPanel theo bố cục: label <strong>Latency</strong> + hàng <code>[-0.5s]</code> <code>[value]</code> <code>[+0.5s]</code> + nút <strong>Reset</strong> full-width. Per-section (Target + Native).</p>
+    </header>
+
+    <div class="toolbar" role="toolbar" aria-label="Mockup controls">
+      <button id="theme" type="button" aria-pressed="true">Light mode</button>
+      <div class="widths" role="group" aria-label="Panel width">
+        <button type="button" data-width="320">320px</button>
+        <button type="button" data-width="360" aria-pressed="true">360px</button>
+        <button type="button" data-width="420">420px</button>
+      </div>
+    </div>
+
+    <div class="frame" aria-label="Latency control — per section">
+      <div class="frame-label">Subtitle Manager · section body (per Target / Native)</div>
+
+      <!-- Section 1: Target -->
+      <section class="section">
+        <div class="latency" data-cell-id="latency-target">
+          <div class="latencyHead">
+            <span class="latencyLabel">Latency</span>
+            <span class="latencySave" role="status" data-cell-id="latency-save-target">Saved</span>
+          </div>
+          <div class="latencyRow">
+            <button class="stepBtn" type="button" data-cell-id="latency-dec-target" aria-label="Decrease target latency by 0.5 seconds">-0.5s</button>
+            <label class="valueField">
+              <input class="valueInput" type="text" inputmode="decimal" value="0" aria-label="Target subtitle latency in seconds" data-cell-id="latency-input-target" />
+            </label>
+            <button class="stepBtn" type="button" data-cell-id="latency-inc-target" aria-label="Increase target latency by 0.5 seconds">+0.5s</button>
+          </div>
+          <button class="resetBtn" type="button" data-cell-id="latency-reset-target">Reset</button>
+        </div>
+      </section>
+
+      <!-- Section 2: Native (with non-zero value to show format) -->
+      <section class="section">
+        <div class="latency" data-cell-id="latency-native">
+          <div class="latencyHead">
+            <span class="latencyLabel">Latency</span>
+            <span class="latencySave saving" role="status" data-cell-id="latency-save-native">Saving…</span>
+          </div>
+          <div class="latencyRow">
+            <button class="stepBtn" type="button" data-cell-id="latency-dec-native" aria-label="Decrease native latency by 0.5 seconds">-0.5s</button>
+            <label class="valueField">
+              <input class="valueInput" type="text" inputmode="decimal" value="+1.5" aria-label="Native subtitle latency in seconds" data-cell-id="latency-input-native" />
+            </label>
+            <button class="stepBtn" type="button" data-cell-id="latency-inc-native" aria-label="Increase native latency by 0.5 seconds">+0.5s</button>
+          </div>
+          <button class="resetBtn" type="button" data-cell-id="latency-reset-native">Reset</button>
+        </div>
+      </section>
+
+      <!-- Section 3: disabled state at clamp boundary -->
+      <section class="section">
+        <div class="latency" data-cell-id="latency-clamp">
+          <div class="latencyHead">
+            <span class="latencyLabel">Latency · clamp demo</span>
+            <span class="latencySave" role="status">Saved</span>
+          </div>
+          <div class="latencyRow">
+            <button class="stepBtn" type="button" disabled aria-label="Decrease latency by 0.5 seconds — disabled at minimum">-0.5s</button>
+            <label class="valueField">
+              <input class="valueInput" type="text" inputmode="decimal" value="-60" aria-label="Subtitle latency in seconds" />
+            </label>
+            <button class="stepBtn" type="button" aria-label="Increase latency by 0.5 seconds">+0.5s</button>
+          </div>
+          <button class="resetBtn" type="button">Reset</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="journey" aria-label="User journey">
+      <div class="journeyStep"><strong>1 · Nhận biết</strong><span>Mở Subtitle Manager → cuối mỗi section (Target/Native) thấy block Latency với offset hiện tại (0 nếu chưa chỉnh).</span></div>
+      <div class="journeyStep"><strong>2 · Điều chỉnh nhanh</strong><span>Nhấn -0.5s / +0.5s → giá trị trung tâm cập nhật ngay, saveState "Saving…" → "Saved", sub preview cập nhật.</span></div>
+      <div class="journeyStep"><strong>3 · Chính xác</strong><span>Click ô trung tâm → nhập "1.2" / "-0.25" → Enter/blur commit + clamp ±60s. Invalid → khôi phục giá trị cuối.</span></div>
+    </section>
+  </main>
+
+  <script>
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('theme');
+    themeBtn.addEventListener('click', () => {
+      const isDark = root.getAttribute('data-theme') === 'dark';
+      root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      themeBtn.textContent = isDark ? 'Dark mode' : 'Light mode';
+      themeBtn.setAttribute('aria-pressed', String(!isDark));
+    });
+    document.querySelectorAll('.widths button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.documentElement.style.setProperty('--mock-width', btn.dataset.width + 'px');
+        document.querySelectorAll('.widths button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+  </script>
+</body>
+</html>

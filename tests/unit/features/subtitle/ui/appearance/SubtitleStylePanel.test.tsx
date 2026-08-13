@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SubtitleStylePanel } from '@/features/settings/ui/SubtitleStylePanel';
+import { SubtitleStylePanel } from '@/features/subtitle/ui/appearance/SubtitleStylePanel';
 import { DEFAULT_OVERLAY_STYLE_TARGET } from '@/shared/config/config';
 
 describe('SubtitleStylePanel', () => {

@@ -42,6 +42,8 @@
     .track { display: flex; align-items: flex-start; gap: var(--space-3); width: 100%; min-height: 52px; padding: var(--space-2-5) var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; text-align: left; cursor: pointer; }
     .track:hover { background: var(--color-surface-hover); }
     .track[aria-selected="true"] { box-shadow: inset 3px 0 0 var(--color-primary); background: var(--color-primary-subtle); }
+    .track.off { min-height: 44px; color: var(--color-text-secondary); }
+    .track.off .track-name { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
     .radio { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; border: 2px solid var(--color-border-emphasized); border-radius: var(--radius-full); }
     .track[aria-selected="true"] .radio { border-color: var(--color-primary); box-shadow: inset 0 0 0 3px var(--color-surface-popover); background: var(--color-primary); }
     .track-copy { min-width: 0; flex: 1; }
@@ -67,9 +69,39 @@
     .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .stepper .unit { position: absolute; right: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-xs); pointer-events: none; }
     .save-state { min-width: 42px; color: var(--color-success); font-size: var(--font-size-xs); text-align: right; }
-    .footer { padding: var(--space-4) var(--space-4) var(--space-5); }
-    .footer button { width: 100%; min-height: 40px; padding: var(--space-1-5) var(--space-3); border: 0; border-radius: var(--radius-element); background: var(--color-primary); color: var(--color-primary-foreground); font-weight: var(--font-weight-semibold); cursor: pointer; }
-    .footer button:hover { background: var(--color-primary-hover); }
+    .footer { display: flex; gap: var(--space-2); padding: var(--space-4) var(--space-4) var(--space-5); }
+    .footer .btn-primary { flex: 1 1 auto; min-height: 40px; padding: var(--space-1-5) var(--space-3); border: 0; border-radius: var(--radius-element); background: var(--color-primary); color: var(--color-primary-foreground); font-weight: var(--font-weight-semibold); cursor: pointer; }
+    .footer .btn-primary:hover { background: var(--color-primary-hover); }
+    .footer .btn-ghost { flex: 0 0 auto; min-height: 40px; padding: var(--space-1-5) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: transparent; color: var(--color-text-primary); font-weight: var(--font-weight-medium); cursor: pointer; }
+    .footer .btn-ghost:hover { background: var(--color-surface-hover); }
+
+    /* Appearance view */
+    .back-btn { display: flex; align-items: center; gap: var(--space-1-5); width: 100%; min-height: 44px; padding: var(--space-2) var(--space-4); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-align: left; cursor: pointer; }
+    .back-btn:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .back-btn .arrow { flex: 0 0 16px; font-size: 16px; line-height: 1; }
+    .app-section { padding-block: var(--space-2) var(--space-4); }
+    .app-section + .app-section { padding-top: var(--space-4); }
+    .app-section-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); min-height: 44px; padding: var(--space-1) var(--space-4); }
+    .app-section-title { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); }
+    .app-section-body { padding: 0 var(--space-4); }
+    .app-field { margin-bottom: var(--space-3); }
+    .app-field:last-child { margin-bottom: 0; }
+    .app-label { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-1); }
+    .app-label-text { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
+    .app-label-value { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+    .app-slider { width: 100%; min-height: 40px; accent-color: var(--color-primary); cursor: pointer; }
+    .app-pair { display: flex; gap: var(--space-3); }
+    .app-pair .app-field { flex: 1 1 0; }
+    .app-color { width: 100%; min-height: 44px; padding: var(--space-1); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: var(--color-surface); cursor: pointer; }
+    .app-toggle { display: inline-flex; align-items: center; min-height: 28px; padding: var(--space-1) var(--space-3); border: 0; border-radius: var(--radius-pill); background: var(--color-surface-hover); color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); cursor: pointer; }
+    .app-toggle[aria-pressed="true"] { background: var(--color-primary); color: var(--color-primary-foreground); }
+    .app-toggle .dot { width: 8px; height: 8px; margin-right: var(--space-1-5); border-radius: 50%; background: currentColor; opacity: 0.5; }
+    .app-toggle[aria-pressed="true"] .dot { opacity: 1; }
+    .app-preview { padding: var(--space-3) var(--space-2); margin-bottom: var(--space-3); border-radius: var(--radius-element); background: #000; text-align: center; }
+    .app-preview span { display: inline-block; font-size: 20px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 2px; }
+    .app-radio-row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    .app-radio-label { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-sm); color: var(--color-text-secondary); cursor: pointer; }
+    .app-radio-label input { accent-color: var(--color-primary); }
     .journey { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-top: var(--space-6); }
     .journey-step { padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
     .journey-step strong { display: block; margin-bottom: var(--space-1); font-size: var(--font-size-sm); }
@@ -99,15 +131,137 @@
 
       <section class="section">
         <div class="section-head"><button class="section-toggle" type="button" aria-expanded="true"><span class="caret">⌄</span><span class="section-name">Target · English</span><span class="section-count">2 subtitles</span></button><button class="section-import" type="button">Import</button></div>
-        <div class="section-body"><div class="track-list"><button class="track" type="button" role="option" aria-selected="true"><span class="radio"></span><span class="track-copy"><span class="track-name">English #1</span><span class="track-meta"><span class="tag">SRT</span><span class="tag">1.2 MB</span></span></span></button><button class="track" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">English #2</span><span class="track-meta"><span class="tag">VTT</span><span class="tag info">AUTO</span></span></span></button></div><div class="timing"><span class="timing-label">Sync</span><div class="timing-control"><div class="stepper"><button id="target-dec" type="button" aria-label="Decrease target offset by 0.5 seconds">−</button><label class="stepper-field"><input id="target-offset" type="number" value="0" step="0.5" aria-label="Target subtitle timing offset in seconds" /><span class="unit" aria-hidden="true">sec</span></label><button id="target-inc" type="button" aria-label="Increase target offset by 0.5 seconds">+</button></div><span id="target-save" class="save-state" role="status">Saved</span></div></div></div>
+        <div class="section-body"><div class="track-list"><button class="track" type="button" role="option" aria-selected="true"><span class="radio"></span><span class="track-copy"><span class="track-name">English #1</span><span class="track-meta"><span class="tag">SRT</span><span class="tag">1.2 MB</span></span></span></button><button class="track" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">English #2</span><span class="track-meta"><span class="tag">VTT</span><span class="tag info">AUTO</span></span></span></button><button class="track off" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">Off</span></span></button></div><div class="timing"><span class="timing-label">Sync</span><div class="timing-control"><div class="stepper"><button id="target-dec" type="button" aria-label="Decrease target offset by 0.5 seconds">−</button><label class="stepper-field"><input id="target-offset" type="number" value="0" step="0.5" aria-label="Target subtitle timing offset in seconds" /><span class="unit" aria-hidden="true">sec</span></label><button id="target-inc" type="button" aria-label="Increase target offset by 0.5 seconds">+</button></div><span id="target-save" class="save-state" role="status">Saved</span></div></div></div>
       </section>
 
       <section class="section">
         <div class="section-head"><button class="section-toggle" type="button" aria-expanded="true"><span class="caret">⌄</span><span class="section-name">Native · Vietnamese</span><span class="section-count">1 subtitle</span></button><button class="section-import" type="button">Import</button></div>
-        <div class="section-body"><div class="track-list"><button class="track" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">vietnamese (translated)</span><span class="track-meta"><span class="tag">VTT</span><span class="tag success">Translated</span></span></span></button></div><div class="timing"><span class="timing-label">Sync</span><div class="timing-control"><div class="stepper"><button id="native-dec" type="button" aria-label="Decrease native offset by 0.5 seconds">−</button><label class="stepper-field"><input id="native-offset" type="number" value="0" step="0.5" aria-label="Native subtitle timing offset in seconds" /><span class="unit" aria-hidden="true">sec</span></label><button id="native-inc" type="button" aria-label="Increase native offset by 0.5 seconds">+</button></div><span id="native-save" class="save-state" role="status">Saved</span></div></div></div>
+        <div class="section-body"><div class="track-list"><button class="track" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">vietnamese (translated)</span><span class="track-meta"><span class="tag">VTT</span><span class="tag success">Translated</span></span></span></button><button class="track off" type="button" role="option" aria-selected="false"><span class="radio"></span><span class="track-copy"><span class="track-name">Off</span></span></button></div><div class="timing"><span class="timing-label">Sync</span><div class="timing-control"><div class="stepper"><button id="native-dec" type="button" aria-label="Decrease native offset by 0.5 seconds">−</button><label class="stepper-field"><input id="native-offset" type="number" value="0" step="0.5" aria-label="Native subtitle timing offset in seconds" /><span class="unit" aria-hidden="true">sec</span></label><button id="native-inc" type="button" aria-label="Increase native offset by 0.5 seconds">+</button></div><span id="native-save" class="save-state" role="status">Saved</span></div></div></div>
       </section>
 
-      <div class="footer"><button type="button">Generate native</button></div>
+      <div class="footer"><button class="btn-ghost" type="button" id="customize-btn">Customize appearance</button><button class="btn-primary" type="button">Generate native</button></div>
+    </div>
+
+    <!-- Appearance view frame -->
+    <div class="frame" aria-label="Subtitle manager appearance view" style="margin-top: var(--space-6);">
+      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
+
+      <button class="back-btn" type="button"><span class="arrow">←</span> Back to subtitles</button>
+
+      <!-- Block section -->
+      <section class="app-section">
+        <div class="app-section-head"><span class="app-section-title">Block</span></div>
+        <div class="app-section-body">
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Position (Y)</span><span class="app-label-value">75%</span></div>
+            <input class="app-slider" type="range" min="0" max="95" step="1" value="75" aria-label="Block vertical position" />
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Global scale</span><span class="app-label-value">1.0x</span></div>
+            <input class="app-slider" type="range" min="0.5" max="2" step="0.1" value="1" aria-label="Global subtitle scale" />
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Background opacity</span><span class="app-label-value">70%</span></div>
+            <input class="app-slider" type="range" min="0" max="1" step="0.1" value="0.7" aria-label="Block background opacity" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Target section -->
+      <section class="app-section">
+        <div class="app-section-head"><span class="app-section-title">Target</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Visible</button></div>
+        <div class="app-section-body">
+          <div class="app-preview"><span>This is how the target subtitle will look.</span></div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Font size</span><span class="app-label-value">24px</span></div>
+            <input class="app-slider" type="range" min="12" max="72" step="1" value="24" aria-label="Target font size" />
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Font weight</span><span class="app-label-value">600</span></div>
+            <input class="app-slider" type="range" min="100" max="900" step="100" value="600" aria-label="Target font weight" />
+          </div>
+          <div class="app-pair">
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Text color</span></div>
+              <input class="app-color" type="color" value="#ffffff" aria-label="Target text color" />
+            </div>
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Background</span></div>
+              <input class="app-color" type="color" value="#000000" aria-label="Target background color" />
+            </div>
+          </div>
+          <div class="app-pair">
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Text opacity</span><span class="app-label-value">1.00</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="1" aria-label="Target text opacity" />
+            </div>
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">BG opacity</span><span class="app-label-value">0.70</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.7" aria-label="Target background opacity" />
+            </div>
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Align</span></div>
+            <div class="app-radio-row">
+              <label class="app-radio-label"><input type="radio" name="target-align" value="left" /> Left</label>
+              <label class="app-radio-label"><input type="radio" name="target-align" value="center" checked /> Center</label>
+              <label class="app-radio-label"><input type="radio" name="target-align" value="right" /> Right</label>
+            </div>
+          </div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Text shadow</span></div>
+            <div class="app-radio-row">
+              <label class="app-radio-label"><input type="radio" name="target-shadow" value="none" /> None</label>
+              <label class="app-radio-label"><input type="radio" name="target-shadow" value="soft" checked /> Soft</label>
+              <label class="app-radio-label"><input type="radio" name="target-shadow" value="cinema" /> Cinema</label>
+              <label class="app-radio-label"><input type="radio" name="target-shadow" value="custom" /> Custom</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Native section -->
+      <section class="app-section">
+        <div class="app-section-head"><span class="app-section-title">Native</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Visible</button></div>
+        <div class="app-section-body">
+          <div class="app-preview"><span style="font-size: 18px;">This is how the native subtitle will look.</span></div>
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Font size</span><span class="app-label-value">20px</span></div>
+            <input class="app-slider" type="range" min="12" max="72" step="1" value="20" aria-label="Native font size" />
+          </div>
+          <div class="app-pair">
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Text color</span></div>
+              <input class="app-color" type="color" value="#fffacc" aria-label="Native text color" />
+            </div>
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Background</span></div>
+              <input class="app-color" type="color" value="#000000" aria-label="Native background color" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cluster section -->
+      <section class="app-section">
+        <div class="app-section-head"><span class="app-section-title">Navigation cluster</span><button class="app-toggle" type="button" aria-pressed="true"><span class="dot"></span>Enabled</button></div>
+        <div class="app-section-body">
+          <div class="app-field">
+            <div class="app-label"><span class="app-label-text">Button size</span><span class="app-label-value">48px</span></div>
+            <input class="app-slider" type="range" min="32" max="64" step="4" value="48" aria-label="Cluster button size" />
+          </div>
+          <div class="app-pair">
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">Text opacity</span><span class="app-label-value">0.90</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.9" aria-label="Cluster text opacity" />
+            </div>
+            <div class="app-field">
+              <div class="app-label"><span class="app-label-text">BG opacity</span><span class="app-label-value">0.50</span></div>
+              <input class="app-slider" type="range" min="0" max="1" step="0.05" value="0.5" aria-label="Cluster background opacity" />
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div class="journey" aria-label="User journey">

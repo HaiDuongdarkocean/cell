@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
-import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
 import type { CardCreatorSettings } from '@/entities/settings';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,
   MAX_CONVERT_BYTES,
-  DEFAULT_OVERLAY_STYLE_TARGET,
-  DEFAULT_OVERLAY_STYLE_NATIVE,
-  DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
 } from '@/shared/config/config';
 // ADR-029: language dropdown lists now come from the single-source-of-truth
@@ -19,9 +15,6 @@ import {
   OVERLAY_LANGUAGE_OPTIONS,
 } from '@/shared/config/languageRegistry';
 import { MultiSelect } from './MultiSelect';
-import { SubtitleStylePanel } from './SubtitleStylePanel';
-import { SubtitleBlockSettingsPanel } from './SubtitleBlockSettingsPanel';
-import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
@@ -165,40 +158,10 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
     onChange({ ...settings, [key]: value });
   };
 
-  // ADR-025: partial update cho subtitle block settings
-  const updateBlock = (partial: Partial<SubtitleBlockSettings>): void => {
-    const current = settings.subtitleBlockSettings ?? DEFAULT_SUBTITLE_BLOCK_SETTINGS;
-    onChange({ ...settings, subtitleBlockSettings: { ...current, ...partial } });
-  };
-
-  // ADR-018, ADR-025: partial update cho nav cluster settings (flat keys)
-  const updateNavCluster = (partial: Partial<NavClusterSettings>): void => {
-    const flat: Record<string, unknown> = {};
-    if (partial.enabled !== undefined) flat.navClusterEnabled = partial.enabled;
-    if (partial.buttonSize !== undefined) flat.navClusterButtonSize = partial.buttonSize;
-    if (partial.textOpacity !== undefined) flat.navClusterTextOpacity = partial.textOpacity;
-    if (partial.bgOpacity !== undefined) flat.navClusterButtonBgOpacity = partial.bgOpacity;
-    onChange({ ...settings, ...flat } as Settings);
-  };
-
   // schema v10: partial update cho Card Creator settings
   const updateCardCreator = (partial: Partial<CardCreatorSettings>): void => {
     const current = settings.cardCreator;
     onChange({ ...settings, cardCreator: { ...current, ...partial } });
-  };
-
-  // ADR-013, ADR-025: partial update cho overlay style (target or native)
-  const updateOverlayStyle = (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void => {
-    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    const defaultStyle = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
-    const current = settings[key] ?? defaultStyle;
-    onChange({ ...settings, [key]: { ...defaultStyle, ...current, ...partial } });
-  };
-
-  const resetOverlayStyle = (role: 'target' | 'native'): void => {
-    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
-    onChange({ ...settings, [key]: defaults });
   };
 
   const handleSidebarClick = (sectionId: string): void => {
@@ -213,9 +176,6 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
   const sidebarItems: { id: string; label: string }[] = [
     { id: 'media', label: 'Media' },
     { id: 'block', label: 'Block' },
-    { id: 'target', label: 'Target' },
-    { id: 'native', label: 'Native' },
-    { id: 'cluster', label: 'Cluster' },
     { id: 'shortcuts', label: 'Shortcuts' },
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
@@ -394,64 +354,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 {/* Divider: languages → block position */}
                 <div className={styles.divider} />
 
-                <SubtitleBlockSettingsPanel
-                  settings={settings.subtitleBlockSettings ?? DEFAULT_SUBTITLE_BLOCK_SETTINGS}
-                  onChange={updateBlock}
-                />
-              </div>
-            </section>
-
-            {/* === Card 3: Target === */}
-            <section
-              ref={(el) => { sectionRefs.current.target = el; }}
-              className={styles.section}
-              data-section="target"
-            >
-              <div className={styles.sectionHeader}>
-                <h4 className={styles.sectionTitle}>Target</h4>
-                <Toggle
-                  checked={(settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET).visible}
-                  onChange={(next) => updateOverlayStyle('target', { visible: next })}
-                  ariaLabel="Toggle target subtitle visibility"
-                  title={`Target visible: ${(settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET).visible ? 'ON' : 'OFF'}`}
-                />
-              </div>
-              <p className={styles.sectionDescription}>Appearance for the target subtitle layer.</p>
-              <div className={styles.sectionBody}>
-                <SubtitleStylePanel
-                  role="target"
-                  style={settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET}
-                  onChange={(partial) => updateOverlayStyle('target', partial)}
-                  onReset={() => resetOverlayStyle('target')}
-                  defaultStyle={DEFAULT_OVERLAY_STYLE_TARGET}
-                />
-              </div>
-            </section>
-
-            {/* === Card 4: Native === */}
-            <section
-              ref={(el) => { sectionRefs.current.native = el; }}
-              className={styles.section}
-              data-section="native"
-            >
-              <div className={styles.sectionHeader}>
-                <h4 className={styles.sectionTitle}>Native</h4>
-                <Toggle
-                  checked={(settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE).visible}
-                  onChange={(next) => updateOverlayStyle('native', { visible: next })}
-                  ariaLabel="Toggle native subtitle visibility"
-                  title={`Native visible: ${(settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE).visible ? 'ON' : 'OFF'}`}
-                />
-              </div>
-              <p className={styles.sectionDescription}>Appearance for the native subtitle layer.</p>
-              <div className={styles.sectionBody}>
-                <SubtitleStylePanel
-                  role="native"
-                  style={settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE}
-                  onChange={(partial) => updateOverlayStyle('native', partial)}
-                  onReset={() => resetOverlayStyle('native')}
-                  defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
-                />
+                {/* ADR-025: Block position/scale/opacity moved to Subtitle Manager appearance view */}
               </div>
             </section>
 
@@ -497,36 +400,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               </div>
             </section>
 
-            {/* === Card 6: Cluster === */}
-            <section
-              ref={(el) => { sectionRefs.current.cluster = el; }}
-              className={styles.section}
-              data-section="cluster"
-            >
-              <div className={styles.sectionHeader}>
-                <h4 className={styles.sectionTitle}>Cluster</h4>
-                <Toggle
-                  checked={settings.navClusterEnabled}
-                  onChange={(next) => updateNavCluster({ enabled: next })}
-                  ariaLabel="Toggle navigation cluster"
-                  title={`Navigation cluster: ${settings.navClusterEnabled ? 'ON' : 'OFF'}`}
-                />
-              </div>
-              <p className={styles.sectionDescription}>Navigation buttons inside the subtitle block.</p>
-              <div className={styles.sectionBody}>
-                <NavClusterSettingsPanel
-                  settings={{
-                    enabled: settings.navClusterEnabled,
-                    buttonSize: settings.navClusterButtonSize,
-                    textOpacity: settings.navClusterTextOpacity,
-                    bgOpacity: settings.navClusterButtonBgOpacity,
-                  }}
-                  onChange={updateNavCluster}
-                />
-              </div>
-            </section>
-
-            {/* === Card 7: Download === */}
+            {/* === Card 6: Download === */}
             <section
               ref={(el) => { sectionRefs.current.download = el; }}
               className={styles.section}
