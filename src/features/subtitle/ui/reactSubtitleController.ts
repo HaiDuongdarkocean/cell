@@ -7,6 +7,7 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
+import type { AppearanceState } from './SubtitleManagerPanel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
@@ -52,6 +53,9 @@ export class ReactSubtitleController {
   private managerTargetActiveIndex = 0;
   private managerNativeActiveIndex = 0;
   private generateNativeEnabled = true;
+  private stylePersistTimer: ReturnType<typeof setTimeout> | null = null;
+  private blockPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  private clusterPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
   private playerModeResizeHandler: (() => void) | null = null;
 
@@ -200,7 +204,79 @@ export class ReactSubtitleController {
       onImport: this.onImportFiles ? (role) => this.openImportFileInput(role) : undefined,
       onGenerateNative: () => this.onGenerateNative(),
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
+      appearance: this.buildAppearanceState(),
     };
+  }
+
+  private buildAppearanceState(): AppearanceState {
+    return {
+      targetStyle: this.engine.getTargetStyle(),
+      nativeStyle: this.engine.getNativeStyle(),
+      blockSettings: this.engine.getBlockSettings(),
+      clusterSettings: this.engine.getClusterSettings(),
+      defaultTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+      defaultNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+      onStyleChange: (role, partial) => this.handleStyleChange(role, partial),
+      onBlockSettingsChange: (partial) => this.handleBlockSettingsChange(partial),
+      onClusterSettingsChange: (partial) => this.handleClusterSettingsChange(partial),
+      onResetStyle: (role) => this.handleResetStyle(role),
+    };
+  }
+
+  /** Merge partial style with current engine style, apply to engine, debounced persist. */
+  private handleStyleChange(role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void {
+    const current = role === 'target' ? this.engine.getTargetStyle() : this.engine.getNativeStyle();
+    const merged = { ...current, ...partial };
+    if (role === 'target') this.engine.updateSettings({ targetStyle: merged });
+    else this.engine.updateSettings({ nativeStyle: merged });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+
+    if (this.stylePersistTimer) clearTimeout(this.stylePersistTimer);
+    this.stylePersistTimer = setTimeout(() => {
+      const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
+      saveSettings({ [key]: merged } as Partial<Settings>).catch(() => undefined);
+      this.stylePersistTimer = null;
+    }, OFFSET_PERSIST_DEBOUNCE_MS);
+  }
+
+  private handleBlockSettingsChange(partial: Partial<SubtitleBlockSettings>): void {
+    const current = this.engine.getBlockSettings();
+    const merged = { ...current, ...partial };
+    this.engine.updateSettings({ blockSettings: merged });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+
+    if (this.blockPersistTimer) clearTimeout(this.blockPersistTimer);
+    this.blockPersistTimer = setTimeout(() => {
+      saveSettings({ subtitleBlockSettings: merged } as Partial<Settings>).catch(() => undefined);
+      this.blockPersistTimer = null;
+    }, OFFSET_PERSIST_DEBOUNCE_MS);
+  }
+
+  private handleClusterSettingsChange(partial: Partial<NavClusterSettings>): void {
+    const current = this.engine.getClusterSettings();
+    const merged = { ...current, ...partial };
+    this.engine.updateSettings({ clusterSettings: merged });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+
+    if (this.clusterPersistTimer) clearTimeout(this.clusterPersistTimer);
+    this.clusterPersistTimer = setTimeout(() => {
+      saveSettings({ navClusterSettings: merged } as Partial<Settings>).catch(() => undefined);
+      this.clusterPersistTimer = null;
+    }, OFFSET_PERSIST_DEBOUNCE_MS);
+  }
+
+  private handleResetStyle(role: 'target' | 'native'): void {
+    const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
+    if (role === 'target') this.engine.updateSettings({ targetStyle: defaults });
+    else this.engine.updateSettings({ nativeStyle: defaults });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+
+    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
+    saveSettings({ [key]: defaults } as Partial<Settings>).catch(() => undefined);
   }
 
   private buildOffsetState(): OffsetState {

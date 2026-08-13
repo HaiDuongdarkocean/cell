@@ -1,8 +1,27 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitlePanelModel';
+import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
+import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
+import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
+import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
+import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
 import styles from './SubtitleManagerPanel.module.css';
+
+export interface AppearanceState {
+  targetStyle: OverlayStyleConfig;
+  nativeStyle: OverlayStyleConfig;
+  blockSettings: SubtitleBlockSettings;
+  clusterSettings: NavClusterSettings;
+  defaultTargetStyle: OverlayStyleConfig;
+  defaultNativeStyle: OverlayStyleConfig;
+  onStyleChange: (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>) => void;
+  onBlockSettingsChange: (partial: Partial<SubtitleBlockSettings>) => void;
+  onClusterSettingsChange: (partial: Partial<NavClusterSettings>) => void;
+  onResetStyle: (role: 'target' | 'native') => void;
+}
 
 export interface SubtitleManagerPanelProps {
   targetItems: SubtitlePanelItem[];
@@ -17,6 +36,7 @@ export interface SubtitleManagerPanelProps {
   onGenerateNative?: () => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
   generateNativeDisabled?: boolean;
+  appearance?: AppearanceState;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -24,10 +44,12 @@ type SaveState = 'idle' | 'saving' | 'saved';
 interface SectionState {
   offset: string;
   saveState: SaveState;
+  lastValid: number;
 }
 
-const defaultOffsets = { target: '0', native: '0' };
+const defaultOffsets = { target: 0, native: 0 };
 const OFFSET_STEP = 0.5;
+const MAX_OFFSET_SECONDS = 60;
 
 function getSourceLabel(source: SubtitlePanelItem['source']): string {
   switch (source) {
@@ -40,9 +62,14 @@ function getSourceLabel(source: SubtitlePanelItem['source']): string {
   }
 }
 
-function clampStep(value: number): number {
-  if (Number.isNaN(value)) return 0;
-  return Math.round(value * 1000) / 1000;
+function clampSeconds(seconds: number): number {
+  return clampOffsetMs(Math.round(seconds * 1000)) / 1000;
+}
+
+function formatSigned(seconds: number): string {
+  if (seconds === 0) return '0';
+  const sign = seconds > 0 ? '+' : '-';
+  return `${sign}${Math.abs(seconds)}`;
 }
 
 function ItemRow({
@@ -101,74 +128,98 @@ function OffsetStepper({
   setState: (s: SectionState) => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
 }): React.JSX.Element {
+  const currentSeconds = state.lastValid;
+  const atMin = currentSeconds <= -MAX_OFFSET_SECONDS;
+  const atMax = currentSeconds >= MAX_OFFSET_SECONDS;
+
   const commitOffset = useCallback(
     (offsetStr: string) => {
-      const ms = parseFloat(offsetStr) * 1000;
-      if (!Number.isNaN(ms)) {
-        onOffsetChange?.(role, ms);
+      const seconds = parseFloat(offsetStr);
+      if (Number.isNaN(seconds)) {
+        setState({ offset: formatSigned(state.lastValid), saveState: 'saved', lastValid: state.lastValid });
+        return;
       }
-      setState({ ...state, offset: offsetStr, saveState: 'saved' });
+      const clamped = clampSeconds(seconds);
+      onOffsetChange?.(role, Math.round(clamped * 1000));
+      setState({ offset: formatSigned(clamped), saveState: 'saved', lastValid: clamped });
     },
-    [role, state, setState, onOffsetChange],
+    [role, state.lastValid, setState, onOffsetChange],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setState({ ...state, offset: e.target.value, saveState: 'saving' });
+    setState({ offset: e.target.value, saveState: 'saving', lastValid: state.lastValid });
   };
 
   const handleBlur = (): void => {
     commitOffset(state.offset);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter') e.currentTarget.blur();
+  };
+
   const bump = (delta: number): void => {
-    const next = clampStep(Number(state.offset || 0) + delta);
-    const nextStr = String(next);
-    commitOffset(nextStr);
+    const next = clampSeconds(state.lastValid + delta);
+    commitOffset(formatSigned(next));
+  };
+
+  const handleReset = (): void => {
+    commitOffset('0');
   };
 
   const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
 
   return (
-    <div className={styles.timing}>
-      <span className={styles.timingLabel}>Sync</span>
-      <div className={styles.timingControl}>
-        <div className={styles.stepper}>
-          <button
-            type="button"
-            className={styles.stepperBtn}
-            aria-label={`Decrease ${label} offset by ${OFFSET_STEP} seconds`}
-            data-cell-id={`manager-offset-dec-${role}`}
-            onClick={() => bump(-OFFSET_STEP)}
-          >
-            −
-          </button>
-          <label className={styles.stepperField}>
-            <input
-              type="number"
-              step={OFFSET_STEP}
-              className={styles.stepperInput}
-              value={state.offset}
-              onChange={handleInputChange}
-              onBlur={handleBlur}
-              aria-label={`${label} offset in seconds`}
-              data-cell-id={`manager-offset-input-${role}`}
-            />
-            <span className={styles.unit} aria-hidden="true">sec</span>
-          </label>
-          <button
-            type="button"
-            className={styles.stepperBtn}
-            aria-label={`Increase ${label} offset by ${OFFSET_STEP} seconds`}
-            data-cell-id={`manager-offset-inc-${role}`}
-            onClick={() => bump(OFFSET_STEP)}
-          >
-            +
-          </button>
-        </div>
-        <span className={styles.saveState} role="status" data-cell-id={`manager-offset-save-${role}`}>
+    <div className={styles.latency}>
+      <div className={styles.latencyHead}>
+        <span className={styles.latencyLabel}>Latency</span>
+        <span className={styles.latencySave} role="status" data-cell-id={`manager-offset-save-${role}`}>
           {saveLabel}
         </span>
       </div>
+      <div className={styles.latencyRow}>
+        <button
+          type="button"
+          className={styles.stepBtn}
+          aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
+          data-cell-id={`manager-offset-dec-${role}`}
+          onClick={() => bump(-OFFSET_STEP)}
+          disabled={atMin}
+        >
+          -0.5s
+        </button>
+        <label className={styles.valueField}>
+          <input
+            type="text"
+            inputMode="decimal"
+            className={styles.valueInput}
+            value={state.offset}
+            onChange={handleInputChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            aria-label={`${label} latency in seconds`}
+            data-cell-id={`manager-offset-input-${role}`}
+          />
+        </label>
+        <button
+          type="button"
+          className={styles.stepBtn}
+          aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
+          data-cell-id={`manager-offset-inc-${role}`}
+          onClick={() => bump(OFFSET_STEP)}
+          disabled={atMax}
+        >
+          +0.5s
+        </button>
+      </div>
+      <button
+        type="button"
+        className={styles.resetBtn}
+        onClick={handleReset}
+        data-cell-id={`manager-offset-reset-${role}`}
+      >
+        Reset
+      </button>
     </div>
   );
 }
@@ -239,6 +290,24 @@ function SectionPanel({
             ))}
           </div>
         )}
+        <button
+          type="button"
+          role="option"
+          aria-selected={activeIndex === -1}
+          className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
+          onClick={() => onSelect(role, -1)}
+          data-cell-id={`manager-off-${role}`}
+        >
+          <span
+            aria-hidden="true"
+            className={[styles.radio, activeIndex === -1 && styles.radioActive].filter(Boolean).join(' ')}
+          >
+            {activeIndex === -1 && <span className={styles.radioDot} />}
+          </span>
+          <span className={styles.trackCopy}>
+            <span className={styles.offLabel}>Off</span>
+          </span>
+        </button>
         <OffsetStepper
           role={role}
           label={label}
@@ -264,15 +333,21 @@ export function SubtitleManagerPanel({
   onGenerateNative,
   onOffsetChange,
   generateNativeDisabled,
+  appearance,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
-    offset: defaultOffsets.target,
+    offset: formatSigned(defaultOffsets.target),
     saveState: 'saved',
+    lastValid: defaultOffsets.target,
   });
   const [nativeState, setNativeState] = useState<SectionState>({
-    offset: defaultOffsets.native,
+    offset: formatSigned(defaultOffsets.native),
     saveState: 'saved',
+    lastValid: defaultOffsets.native,
   });
+  const [view, setView] = useState<'tracks' | 'appearance'>('tracks');
+  const customizeBtnRef = useRef<HTMLButtonElement>(null);
+  const backBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -281,6 +356,101 @@ export function SubtitleManagerPanel({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  const handleCustomizeClick = useCallback((): void => {
+    setView('appearance');
+    // Focus moves to Back button after render
+    requestAnimationFrame(() => backBtnRef.current?.focus());
+  }, []);
+
+  const handleBackClick = useCallback((): void => {
+    setView('tracks');
+    // Focus returns to Customize button
+    requestAnimationFrame(() => customizeBtnRef.current?.focus());
+  }, []);
+
+  if (view === 'appearance' && appearance) {
+    return (
+      <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
+        <div className={styles.header}>
+          <span className={styles.title}>Subtitle Manager</span>
+          <IconButton
+            aria-label="Close subtitle manager"
+            onClick={onClose}
+            data-cell-id="subtitle-manager-close"
+          >
+            <Icon name="x" size={16} />
+          </IconButton>
+        </div>
+
+        <div className={styles.appearanceBody}>
+          <button
+            type="button"
+            ref={backBtnRef}
+            className={styles.backBtn}
+            onClick={handleBackClick}
+            data-cell-id="manager-back-to-subtitles"
+          >
+            <span aria-hidden="true">←</span> Back to subtitles
+          </button>
+
+          <section className={styles.appearanceSection} aria-labelledby="appearance-block-heading">
+            <div className={styles.appearanceSectionHead}>
+              <span id="appearance-block-heading" className={styles.appearanceSectionTitle}>Block</span>
+            </div>
+            <div className={styles.appearanceSectionBody}>
+              <SubtitleBlockSettingsPanel
+                settings={appearance.blockSettings}
+                onChange={appearance.onBlockSettingsChange}
+              />
+            </div>
+          </section>
+
+          <section className={styles.appearanceSection} aria-labelledby="appearance-target-heading">
+            <div className={styles.appearanceSectionHead}>
+              <span id="appearance-target-heading" className={styles.appearanceSectionTitle}>Target</span>
+            </div>
+            <div className={styles.appearanceSectionBody}>
+              <SubtitleStylePanel
+                role="target"
+                style={appearance.targetStyle}
+                onChange={(partial) => appearance.onStyleChange('target', partial)}
+                onReset={() => appearance.onResetStyle('target')}
+                defaultStyle={appearance.defaultTargetStyle}
+              />
+            </div>
+          </section>
+
+          <section className={styles.appearanceSection} aria-labelledby="appearance-native-heading">
+            <div className={styles.appearanceSectionHead}>
+              <span id="appearance-native-heading" className={styles.appearanceSectionTitle}>Native</span>
+            </div>
+            <div className={styles.appearanceSectionBody}>
+              <SubtitleStylePanel
+                role="native"
+                style={appearance.nativeStyle}
+                onChange={(partial) => appearance.onStyleChange('native', partial)}
+                onReset={() => appearance.onResetStyle('native')}
+                defaultStyle={appearance.defaultNativeStyle}
+              />
+            </div>
+          </section>
+
+          <section className={styles.appearanceSection} aria-labelledby="appearance-cluster-heading">
+            <div className={styles.appearanceSectionHead}>
+              <span id="appearance-cluster-heading" className={styles.appearanceSectionTitle}>Navigation cluster</span>
+            </div>
+            <div className={styles.appearanceSectionBody}>
+              <NavClusterSettingsPanel
+                settings={appearance.clusterSettings}
+                onChange={appearance.onClusterSettingsChange}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
@@ -295,40 +465,55 @@ export function SubtitleManagerPanel({
         </IconButton>
       </div>
 
-      <SectionPanel
-        role="target"
-        label={targetLabel}
-        items={targetItems}
-        activeIndex={targetActiveIndex}
-        state={targetState}
-        setState={setTargetState}
-        onSelect={onSelect}
-        onImport={onImport}
-        onOffsetChange={onOffsetChange}
-      />
-      <SectionPanel
-        role="native"
-        label={nativeLabel}
-        items={nativeItems}
-        activeIndex={nativeActiveIndex}
-        state={nativeState}
-        setState={setNativeState}
-        onSelect={onSelect}
-        onImport={onImport}
-        onOffsetChange={onOffsetChange}
-      />
+      <div className={styles.tracksBody}>
+        <SectionPanel
+          role="target"
+          label={targetLabel}
+          items={targetItems}
+          activeIndex={targetActiveIndex}
+          state={targetState}
+          setState={setTargetState}
+          onSelect={onSelect}
+          onImport={onImport}
+          onOffsetChange={onOffsetChange}
+        />
+        <SectionPanel
+          role="native"
+          label={nativeLabel}
+          items={nativeItems}
+          activeIndex={nativeActiveIndex}
+          state={nativeState}
+          setState={setNativeState}
+          onSelect={onSelect}
+          onImport={onImport}
+          onOffsetChange={onOffsetChange}
+        />
+      </div>
 
-      {onGenerateNative && (
+      {(onGenerateNative || appearance) && (
         <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.generateBtn}
-            onClick={onGenerateNative}
-            data-cell-id="manager-generate-native"
-            disabled={generateNativeDisabled}
-          >
-            Generate native
-          </button>
+          {appearance && (
+            <button
+              type="button"
+              ref={customizeBtnRef}
+              className={styles.customizeBtn}
+              onClick={handleCustomizeClick}
+              data-cell-id="manager-customize-appearance"
+            >
+              Customize appearance
+            </button>
+          )}
+          {onGenerateNative && (
+            <button
+              type="button"
+              className={styles.generateBtn}
+              onClick={onGenerateNative}
+              data-cell-id="manager-generate-native"
+              disabled={generateNativeDisabled}
+            >
+              Generate native
+            </button>
+          )}
         </div>
       )}
     </div>

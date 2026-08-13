@@ -18,6 +18,7 @@ import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?in
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
+import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 import { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
@@ -188,6 +189,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         iconCss,
         iconButtonCss,
         buildTokenSpanCssForShadow(),
+        ...appearanceShadowCss,
       ],
     },
   );

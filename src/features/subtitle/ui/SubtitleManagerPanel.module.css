@@ -1,8 +1,9 @@
 .panel {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 680px;
-  max-height: 680px;
-  overflow: auto;
+  max-height: min(680px, 100dvh - 2 * var(--space-4));
   background-color: var(--color-surface-popover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-dialog);
@@ -12,6 +13,7 @@
 }
 
 .header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,6 +127,17 @@
   background: var(--color-primary-subtle);
 }
 
+/* Off option — compact, muted, always at bottom of track list */
+.offRow {
+  min-height: 44px;
+  color: var(--color-text-secondary);
+}
+
+.offLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
 .radio {
   flex: 0 0 16px;
   width: 16px;
@@ -196,129 +209,178 @@
   color: var(--color-success);
 }
 
-/* Timing — no border-top, separated by margin */
-.timing {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-height: 48px;
+/* Latency — sync offset control (redesigned per latency-control mockup) */
+.latency {
   margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-2);
+  padding: var(--space-3) var(--space-2);
 }
 
-.timingLabel {
-  flex: 0 0 auto;
+.latencyHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.latencyLabel {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 
-.timingControl {
+.latencySave {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+}
+
+.latencyRow {
   display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  align-items: center;
-  gap: var(--space-1);
+  align-items: stretch;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
-/* Stepper */
-.stepper {
-  display: inline-flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 220px;
-  align-items: stretch;
+.stepBtn {
+  flex: 0 0 auto;
+  min-width: 64px;
+  min-height: var(--touch-target-desktop, 40px);
+  padding: var(--space-1) var(--space-2-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-element);
-  overflow: hidden;
   background: var(--color-surface);
-}
-
-.stepperBtn {
-  display: grid;
-  place-items: center;
-  flex: 0 0 40px;
-  width: 40px;
-  min-height: 40px;
-  border: 0;
-  background: transparent;
   color: var(--color-text-primary);
-  font-size: 20px;
-  line-height: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
+  transition: background var(--transition-fast, 150ms), border-color var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
 }
 
-.stepperBtn:hover {
+.stepBtn:hover {
   background: var(--color-surface-hover);
 }
 
-.stepperBtn:active {
+.stepBtn:active {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
+  border-color: transparent;
 }
 
-.stepperBtn:disabled {
+.stepBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.stepBtn:disabled {
   color: var(--color-text-disabled);
   cursor: not-allowed;
 }
 
-.stepperField {
-  position: relative;
-  display: inline-flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  align-items: center;
-  border-inline: 1px solid var(--color-border);
+.stepBtn:disabled:hover {
+  background: var(--color-surface);
 }
 
-.stepperInput {
+.valueField {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-surface);
+}
+
+.valueField:focus-within {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+}
+
+.valueInput {
   width: 100%;
-  min-height: 40px;
-  padding: var(--space-2) 34px var(--space-2) var(--space-2);
+  min-height: var(--touch-target-desktop, 40px);
+  padding: var(--space-1) var(--space-2);
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
-.stepperInput:focus {
+.valueInput:focus {
   outline: none;
-  box-shadow: inset 0 0 0 2px var(--color-primary-subtle);
 }
 
-.stepperInput::-webkit-outer-spin-button,
-.stepperInput::-webkit-inner-spin-button {
+.valueInput::-webkit-outer-spin-button,
+.valueInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.unit {
-  position: absolute;
-  right: var(--space-2);
+.resetBtn {
+  width: 100%;
+  min-height: var(--touch-target-desktop, 40px);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  pointer-events: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
 }
 
-.saveState {
-  min-width: 42px;
-  color: var(--color-success);
-  font-size: var(--font-size-xs);
-  text-align: right;
+.resetBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 
-/* Footer — no border-top, separated by padding */
+.resetBtn:active {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+.resetBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Footer — sticky bottom, flex row */
 .footer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--space-2);
   padding: var(--space-4) var(--space-4) var(--space-5);
 }
 
+.customizeBtn {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: var(--space-1-5) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast, 150ms);
+}
+
+.customizeBtn:hover {
+  background: var(--color-surface-hover);
+}
+
 .generateBtn {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
   min-height: 40px;
   padding: var(--space-1-5) var(--space-3);
   border: 0;
@@ -349,11 +411,13 @@
 @media (max-width: 479px) {
   .header,
   .footer,
-  .sectionHead {
+  .sectionHead,
+  .appearanceSectionHead {
     padding-inline: var(--space-3);
   }
 
-  .sectionBody {
+  .sectionBody,
+  .appearanceSectionBody {
     padding-inline: var(--space-3);
   }
 
@@ -361,26 +425,79 @@
     display: none;
   }
 
-  .timing {
-    align-items: stretch;
-    flex-direction: column;
-    gap: var(--space-2);
+  .stepBtn {
+    min-width: 56px;
+    min-height: var(--touch-target-mobile, 44px);
+    padding: var(--space-1) var(--space-2);
   }
 
-  .timingControl {
-    width: 100%;
-    max-width: none;
+  .valueInput {
+    min-height: var(--touch-target-mobile, 44px);
   }
 
-  .stepper {
-    width: 100%;
-    max-width: none;
+  .resetBtn {
+    min-height: var(--touch-target-mobile, 44px);
   }
+}
 
-  .stepperBtn {
-    flex: 0 0 48px;
-    width: 48px;
-    min-height: 44px;
-  }
+/* ─── Tracks view body (scrollable) ─── */
+.tracksBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* ─── Appearance view ─── */
+.appearanceBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast, 150ms);
+}
+
+.backBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.appearanceSection {
+  padding-block: var(--space-2) var(--space-4);
+}
+
+.appearanceSection + .appearanceSection {
+  padding-top: var(--space-4);
+}
+
+.appearanceSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-1) var(--space-4);
+}
+
+.appearanceSectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.appearanceSectionBody {
+  padding: 0 var(--space-4);
 }
 

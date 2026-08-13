@@ -18,11 +18,8 @@ import type { Settings } from '@/entities/media';
 import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
 import dictionaryPopupSettingsPanelCss from '@/features/settings/ui/DictionaryPopupSettingsPanel.module.css?inline';
 import multiSelectCss from '@/features/settings/ui/MultiSelect.module.css?inline';
-import navClusterSettingsPanelCss from '@/features/settings/ui/NavClusterSettingsPanel.module.css?inline';
 import settingsDialogCss from '@/features/settings/ui/SettingsDialog.module.css?inline';
-import subtitleBlockSettingsPanelCss from '@/features/settings/ui/SubtitleBlockSettingsPanel.module.css?inline';
-import subtitlePreviewCss from '@/features/settings/ui/SubtitlePreview.module.css?inline';
-import subtitleStylePanelCss from '@/features/settings/ui/SubtitleStylePanel.module.css?inline';
+import { appearanceShadowCss } from '@/features/subtitle/ui/appearance/appearanceShadowCss';
 
 import colorCustomizationCss from '@/features/theme/ui/ColorCustomization.module.css?inline';
 import contrastBadgesCss from '@/features/theme/ui/ContrastBadges.module.css?inline';
@@ -93,11 +90,8 @@ const SHADOW_CSS = [
   cardCreatorSettingsPanelCss,
   dictionaryPopupSettingsPanelCss,
   multiSelectCss,
-  navClusterSettingsPanelCss,
   settingsDialogCss,
-  subtitleBlockSettingsPanelCss,
-  subtitlePreviewCss,
-  subtitleStylePanelCss,
+  ...appearanceShadowCss,
 
   colorCustomizationCss,
   contrastBadgesCss,
