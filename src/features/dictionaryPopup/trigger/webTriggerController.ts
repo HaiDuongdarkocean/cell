@@ -35,14 +35,15 @@ const MAX_SELECTION_LENGTH = 100;
  *  Kept in sync with EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts. */
 const UI_HOST_SELECTORS =
   '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
-  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host';
+  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host, ' +
+  '#cell-subtitle-root';
 
 /** Only hosts whose pointer-events should be disabled when resolving a caret.
  *  The universal panel is excluded because it contains allowed lookup text
  *  (dictionary definitions and card creator preview). */
 const POINTER_EVENT_HOST_SELECTORS =
   '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
-  '#cell-settings-dialog-host, #cell-card-creator-host';
+  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-subtitle-root';
 
 const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
 

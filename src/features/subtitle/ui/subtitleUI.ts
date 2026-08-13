@@ -1,4 +1,6 @@
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
+import type { NavClusterSettings } from '@/entities/media';
+import type { CSSProperties } from 'react';
 import { ICON_CATALOG } from '@/shared/icons';
 import { mountToWatchVideo } from './netflixPlayback';
 
@@ -15,6 +17,26 @@ export function buildTextShadow(config: TextShadowConfig): string {
   if (config.preset === 'soft') return `var(--shadow-text-soft) ${config.color}`;
   if (config.preset === 'cinema') return `var(--shadow-text-cinema) ${config.color}`;
   return `${config.offsetX}px ${config.offsetY}px ${config.blur}px ${config.color}`;
+}
+
+/**
+ * Build CSS custom properties for cluster button sizing/opacity from NavClusterSettings.
+ * Single source of truth — used by NavCluster (navLayer), SubtitlePanels (clusterRight),
+ * PlayerModeOverlay (clusterRight), and OverlayPreview (toolbar).
+ *
+ * buttonSize uses clamp for auto-responsive scaling (65%→100% based on container width via cqw).
+ * Pure — no DOM access.
+ */
+export function buildClusterCssVars(settings?: NavClusterSettings): CSSProperties {
+  const buttonSize = settings?.buttonSize ?? 34;
+  const textOpacity = settings?.textOpacity ?? 1;
+  const bgOpacity = settings?.bgOpacity ?? 0.2;
+  return {
+    '--cluster-btn-size': `clamp(${Math.round(buttonSize * 0.65)}px, ${Math.round(buttonSize * 0.15)}cqw, ${buttonSize}px)`,
+    '--cluster-icon-size': `clamp(${Math.round(buttonSize * 0.35)}px, ${Math.round(buttonSize * 0.082)}cqw, 20px)`,
+    '--cluster-text-opacity': String(textOpacity),
+    '--cluster-bg-opacity': String(bgOpacity),
+  } as CSSProperties;
 }
 
 /**

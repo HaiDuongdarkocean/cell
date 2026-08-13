@@ -16,6 +16,7 @@ import {
   mergeCuesForPanel,
   handleShortcutKey,
   isEditableTarget,
+  isInsideCellUi,
   formatSubtitleName,
   seekVideo,
   playVideo,
@@ -941,6 +942,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const source = role === 'target' ? activeTargetSource : activeNativeSource;
     const baseItems = [...autoItems, ...importedItems];
 
+    // No subtitles → default to Off (index -1)
+    if (baseItems.length === 0 && !(role === 'native' && translatedNativeSlot)) {
+      return { items: [], activeIndex: -1 };
+    }
+
     // Generate-native: always include the translated virtual entry in the panel
     // so the user can switch back to it; highlight it when activeNativeSource
     // is 'translated'.
@@ -1017,6 +1023,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // play/pause) and can block them via stopImmediatePropagation when the key
   // matches a configured action. See ADR-034 (listener on window, not document).
   const onKeydown = (e: KeyboardEvent) => {
+    // Rule: when focus is inside Cell UI (shadow DOM), block ALL host shortcuts
+    // so the host page doesn't react to keys the user intends for Cell UI.
+    // Cell's own shortcuts are processed below before this guard returns.
+    // Escape is always allowed through so panels can close.
+    const insideCellUi = isInsideCellUi(e);
+
     // Chrome hides the side panel when a tab enters fullscreen (Chromium
     // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
     // fails (no user gesture). But the 'f' keydown that triggers fullscreen
@@ -1034,7 +1046,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // ADR-019: fixed parallel offset shortcuts `[` `]` `{` `}` `\` (ponytail: not in
     // ShortcutAction union — avoid config UI bloat, like NavCluster fixed shortcuts).
     // Guard: skip when focus in editable (input/textarea/contenteditable) — avoid YouTube search conflict.
-    if (!isEditableTarget(e.target)) {
+    // Guard: skip when focus inside Cell UI — user is interacting with panel, not video.
+    if (!isEditableTarget(e.target) && !insideCellUi) {
       const key = e.key.toLowerCase();
       if (key === '[' || key === ']' || key === '{' || key === '}' || key === '\\') {
         if (offsetController) {
@@ -1060,7 +1073,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
     }
 
-    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+    // Skip configured shortcuts when focus is inside Cell UI — user is
+    // interacting with a panel (manager, settings, etc.), not the video.
+    const action = insideCellUi ? null : handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
       alt: e.altKey,
@@ -1070,6 +1085,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       // backdrop, no host interaction should work). Let Escape through so the
       // overlay's window listener can exit Player Mode / close CueList.
       if (blockController.isPlayerModeActive && e.key !== 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      // Cell UI: block ALL host shortcuts when focus is inside Cell UI panels
+      // (manager, settings, card creator, etc.). Let Escape through so panels
+      // can close via their own React keydown handlers.
+      if (insideCellUi && e.key !== 'Escape') {
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -1197,6 +1220,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // Same guard as keydown: skip editable targets, only block configured keys.
   const onKeyup = (e: KeyboardEvent) => {
     if (isEditableTarget(e.target)) return;
+    // Block host keyup when focus is inside Cell UI (mirrors keydown guard).
+    if (isInsideCellUi(e)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
     const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
@@ -1709,6 +1738,26 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * imported items → onPanelSelect (load parsed cues by imported index).
    */
   async function onManagerSelect(role: 'target' | 'native', index: number): Promise<void> {
+    // Off option (index -1): clear cues for this role, mark as Off
+    if (index === -1) {
+      if (role === 'target') {
+        activeTargetSource = 'auto';
+        activeTargetIndex = -1;
+        latestTargetCues = [];
+        clearTranslatedNativeState();
+      } else {
+        activeNativeSource = 'auto';
+        activeNativeIndex = -1;
+      }
+      blockController?.loadBilingualCues(
+        role === 'target' ? [] : (blockController.getTargetCues() as SrtCue[]),
+        role === 'native' ? [] : (blockController.getNativeCues() as SrtCue[]),
+      );
+      refreshPanel(role);
+      if (role === 'target') { refreshPanel('native'); updateGenerateNativeEnabled(); }
+      syncSidePanelFromBlock();
+      return;
+    }
     const { items } = mergedPanelItems(role);
     const item = items[index];
     if (!item) return;

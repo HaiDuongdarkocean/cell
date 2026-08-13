@@ -1,10 +1,13 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
-import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitlePanelModel';
+import { Button } from '@/shared/ui/Button';
+import { Tabs } from '@/shared/ui/Tabs';
+import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
+import { OverlayPreview } from './appearance/OverlayPreview';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
 import styles from './SubtitleManagerPanel.module.css';
@@ -16,10 +19,13 @@ export interface AppearanceState {
   clusterSettings: NavClusterSettings;
   defaultTargetStyle: OverlayStyleConfig;
   defaultNativeStyle: OverlayStyleConfig;
+  previewTargetText: string;
+  previewNativeText: string;
   onStyleChange: (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>) => void;
   onBlockSettingsChange: (partial: Partial<SubtitleBlockSettings>) => void;
   onClusterSettingsChange: (partial: Partial<NavClusterSettings>) => void;
   onResetStyle: (role: 'target' | 'native') => void;
+  onPreviewTextChange: (role: 'target' | 'native', text: string) => void;
 }
 
 export interface SubtitleManagerPanelProps {
@@ -237,18 +243,11 @@ function SectionPanel({
   onImport?: (role: 'target' | 'native') => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
 }): React.JSX.Element {
-  const lang = useMemo(() => {
-    const active = items[activeIndex];
-    return active ? extractLanguageName(active.name) : '';
-  }, [items, activeIndex]);
-
   return (
     <section className={styles.section} data-role={role} data-cell-id="manager-section">
       <div className={styles.sectionHead} data-cell-id="manager-section-header" data-role={role}>
         <div className={styles.sectionHeading}>
-          <span className={styles.sectionName}>
-            {lang ? `${label} · ${lang}` : label}
-          </span>
+          <span className={styles.sectionName}>{label}</span>
           <span className={styles.sectionCount}>
             {items.length} subtitle{items.length === 1 ? '' : 's'}
           </span>
@@ -266,40 +265,36 @@ function SectionPanel({
       </div>
 
       <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
-        {items.length === 0 ? (
-          <div className={styles.empty}>No subtitles available.</div>
-        ) : (
-          <div className={styles.trackList}>
-            {items.map((item, index) => (
-              <ItemRow
-                key={item.id}
-                item={item}
-                role={role}
-                index={index}
-                active={index === activeIndex}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          role="option"
-          aria-selected={activeIndex === -1}
-          className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
-          onClick={() => onSelect(role, -1)}
-          data-cell-id={`manager-off-${role}`}
-        >
-          <span
-            aria-hidden="true"
-            className={[styles.radio, activeIndex === -1 && styles.radioActive].filter(Boolean).join(' ')}
+        <div className={styles.trackList}>
+          <button
+            type="button"
+            role="option"
+            aria-selected={activeIndex === -1}
+            className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
+            onClick={() => onSelect(role, -1)}
+            data-cell-id={`manager-off-${role}`}
           >
-            {activeIndex === -1 && <span className={styles.radioDot} />}
-          </span>
-          <span className={styles.trackCopy}>
-            <span className={styles.offLabel}>Off</span>
-          </span>
-        </button>
+            <span
+              aria-hidden="true"
+              className={[styles.radio, activeIndex === -1 && styles.radioActive].filter(Boolean).join(' ')}
+            >
+              {activeIndex === -1 && <span className={styles.radioDot} />}
+            </span>
+            <span className={styles.trackCopy}>
+              <span className={styles.offLabel}>Off</span>
+            </span>
+          </button>
+          {items.map((item, index) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              role={role}
+              index={index}
+              active={index === activeIndex}
+              onSelect={onSelect}
+            />
+          ))}
+        </div>
         <OffsetStepper
           role={role}
           label={label}
@@ -383,62 +378,65 @@ export function SubtitleManagerPanel({
             onClick={handleBackClick}
             data-cell-id="manager-back-to-subtitles"
           >
-            <span aria-hidden="true">←</span> Back to subtitles
+            <span aria-hidden="true">←</span> Subtitles
           </button>
 
-          <section className={styles.appearanceSection} aria-labelledby="appearance-block-heading">
-            <div className={styles.appearanceSectionHead}>
-              <span id="appearance-block-heading" className={styles.appearanceSectionTitle}>Block</span>
-            </div>
-            <div className={styles.appearanceSectionBody}>
-              <SubtitleBlockSettingsPanel
-                settings={appearance.blockSettings}
-                onChange={appearance.onBlockSettingsChange}
-              />
-            </div>
-          </section>
+          <div className={styles.previewWrap}>
+            <OverlayPreview
+              targetStyle={appearance.targetStyle}
+              nativeStyle={appearance.nativeStyle}
+              blockSettings={appearance.blockSettings}
+              clusterSettings={appearance.clusterSettings}
+              targetText={appearance.previewTargetText}
+              nativeText={appearance.previewNativeText}
+              onTextChange={appearance.onPreviewTextChange}
+            />
+          </div>
 
-          <section className={styles.appearanceSection} aria-labelledby="appearance-target-heading">
-            <div className={styles.appearanceSectionHead}>
-              <span id="appearance-target-heading" className={styles.appearanceSectionTitle}>Target</span>
-            </div>
-            <div className={styles.appearanceSectionBody}>
-              <SubtitleStylePanel
-                role="target"
-                style={appearance.targetStyle}
-                onChange={(partial) => appearance.onStyleChange('target', partial)}
-                onReset={() => appearance.onResetStyle('target')}
-                defaultStyle={appearance.defaultTargetStyle}
-              />
-            </div>
-          </section>
+          <div className={styles.tabsRoot}>
+            <Tabs defaultValue="block">
+              <Tabs.List className={styles.tabsList}>
+                <Tabs.Trigger value="block">Block</Tabs.Trigger>
+                <Tabs.Trigger value="target">Target</Tabs.Trigger>
+                <Tabs.Trigger value="native">Native</Tabs.Trigger>
+                <Tabs.Trigger value="buttons">Buttons</Tabs.Trigger>
+              </Tabs.List>
 
-          <section className={styles.appearanceSection} aria-labelledby="appearance-native-heading">
-            <div className={styles.appearanceSectionHead}>
-              <span id="appearance-native-heading" className={styles.appearanceSectionTitle}>Native</span>
-            </div>
-            <div className={styles.appearanceSectionBody}>
-              <SubtitleStylePanel
-                role="native"
-                style={appearance.nativeStyle}
-                onChange={(partial) => appearance.onStyleChange('native', partial)}
-                onReset={() => appearance.onResetStyle('native')}
-                defaultStyle={appearance.defaultNativeStyle}
-              />
-            </div>
-          </section>
+              <Tabs.Content value="block" className={styles.tabContent}>
+                <SubtitleBlockSettingsPanel
+                  settings={appearance.blockSettings}
+                  onChange={appearance.onBlockSettingsChange}
+                />
+              </Tabs.Content>
 
-          <section className={styles.appearanceSection} aria-labelledby="appearance-cluster-heading">
-            <div className={styles.appearanceSectionHead}>
-              <span id="appearance-cluster-heading" className={styles.appearanceSectionTitle}>Navigation cluster</span>
-            </div>
-            <div className={styles.appearanceSectionBody}>
-              <NavClusterSettingsPanel
-                settings={appearance.clusterSettings}
-                onChange={appearance.onClusterSettingsChange}
-              />
-            </div>
-          </section>
+              <Tabs.Content value="target" className={styles.tabContent}>
+                <SubtitleStylePanel
+                  role="target"
+                  style={appearance.targetStyle}
+                  onChange={(partial) => appearance.onStyleChange('target', partial)}
+                  onReset={() => appearance.onResetStyle('target')}
+                  defaultStyle={appearance.defaultTargetStyle}
+                />
+              </Tabs.Content>
+
+              <Tabs.Content value="native" className={styles.tabContent}>
+                <SubtitleStylePanel
+                  role="native"
+                  style={appearance.nativeStyle}
+                  onChange={(partial) => appearance.onStyleChange('native', partial)}
+                  onReset={() => appearance.onResetStyle('native')}
+                  defaultStyle={appearance.defaultNativeStyle}
+                />
+              </Tabs.Content>
+
+              <Tabs.Content value="buttons" className={styles.tabContent}>
+                <NavClusterSettingsPanel
+                  settings={appearance.clusterSettings}
+                  onChange={appearance.onClusterSettingsChange}
+                />
+              </Tabs.Content>
+            </Tabs>
+          </div>
         </div>
       </div>
     );
@@ -485,26 +483,28 @@ export function SubtitleManagerPanel({
       {(onGenerateNative || appearance) && (
         <div className={styles.footer}>
           {appearance && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="md"
+              className={styles.footerCustomize}
               ref={customizeBtnRef}
-              className={styles.customizeBtn}
               onClick={handleCustomizeClick}
               data-cell-id="manager-customize-appearance"
             >
               Customize appearance
-            </button>
+            </Button>
           )}
           {onGenerateNative && (
-            <button
-              type="button"
-              className={styles.generateBtn}
+            <Button
+              variant="primary"
+              size="md"
+              className={styles.footerGenerate}
               onClick={onGenerateNative}
               data-cell-id="manager-generate-native"
               disabled={generateNativeDisabled}
             >
               Generate native
-            </button>
+            </Button>
           )}
         </div>
       )}

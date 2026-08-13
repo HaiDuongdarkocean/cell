@@ -263,6 +263,10 @@ export interface Settings {
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013, ADR-025). Independent from target. */
   readonly subtitleOverlayNativeStyle?: OverlayStyleConfig;
+  /** User-editable preview text for target line in OverlayPreview (appearance view). Default: sample text. */
+  readonly subtitlePreviewTargetText?: string;
+  /** User-editable preview text for native line in OverlayPreview (appearance view). Default: sample text. */
+  readonly subtitlePreviewNativeText?: string;
   /**
    * Per-site subtitle preference (ADR-014 D5). Key = origin (e.g. 'themoviebox.org'),
    * value = { [lang]: subIndex } where subIndex is 0-based index into filtered

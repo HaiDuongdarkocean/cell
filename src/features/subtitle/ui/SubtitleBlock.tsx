@@ -18,6 +18,9 @@ interface SubtitleBlockProps {
   nativeStyle: OverlayStyleConfig;
   cues?: SubtitleBlockCues;
   blockSettings?: SubtitleBlockSettings;
+  /** Optional appearance-preview editing; production overlay leaves this disabled. */
+  editable?: boolean;
+  onTextChange?: (role: 'target' | 'native', text: string) => void;
 }
 
 const selectTargetCues = (state: { targetCues: SrtCue[] }): SrtCue[] => state.targetCues;
@@ -41,7 +44,14 @@ function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
   };
 }
 
-function SubtitleBlockInner({ targetStyle, nativeStyle, cues, blockSettings }: SubtitleBlockProps): React.JSX.Element | null {
+function SubtitleBlockInner({
+  targetStyle,
+  nativeStyle,
+  cues,
+  blockSettings,
+  editable = false,
+  onTextChange,
+}: SubtitleBlockProps): React.JSX.Element | null {
   const storeTargetCues = useCuesStore(selectTargetCues);
   const storeNativeCues = useCuesStore(selectNativeCues);
   const storeTargetActiveIndex = useCuesStore(selectTargetActiveIndex);
@@ -67,15 +77,34 @@ function SubtitleBlockInner({ targetStyle, nativeStyle, cues, blockSettings }: S
   // Layer background chỉ hiện khi có cue → không có subtitle = không có background.
   const hasTargetCue = targetStyle.visible && targetCue;
   const hasNativeCue = nativeStyle.visible && nativeCue;
+  const handleTextBlur = (role: 'target' | 'native', event: React.FocusEvent<HTMLSpanElement>): void => {
+    onTextChange?.(role, event.currentTarget.textContent ?? '');
+  };
 
   return (
     <div className={styles.block} style={blockStyle} data-cell-id="subtitle-block">
       <div className={styles.layer} data-role="target" style={{ ...buildLayerStyle(targetStyle), backgroundColor: hasTargetCue ? hexToRgba(targetStyle.backgroundColor, targetStyle.backgroundOpacity * blockBgOpacity) : 'transparent' }}>
-        <span className={styles.text}>{targetCue?.text ?? ''}</span>
+        <span
+          className={styles.text}
+          data-cell-id={editable ? 'overlay-preview-target-line' : undefined}
+          contentEditable={editable}
+          suppressContentEditableWarning={editable}
+          onBlur={editable ? (event) => handleTextBlur('target', event) : undefined}
+        >
+          {targetCue?.text ?? ''}
+        </span>
       </div>
       {hasNativeCue && (
         <div className={styles.layer} data-role="native" style={{ ...buildLayerStyle(nativeStyle), backgroundColor: hexToRgba(nativeStyle.backgroundColor, nativeStyle.backgroundOpacity * blockBgOpacity) }}>
-          <span className={styles.text}>{nativeCue.text}</span>
+          <span
+            className={styles.text}
+            data-cell-id={editable ? 'overlay-preview-native-line' : undefined}
+            contentEditable={editable}
+            suppressContentEditableWarning={editable}
+            onBlur={editable ? (event) => handleTextBlur('native', event) : undefined}
+          >
+            {nativeCue.text}
+          </span>
         </div>
       )}
     </div>

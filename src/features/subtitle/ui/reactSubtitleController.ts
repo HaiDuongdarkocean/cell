@@ -56,6 +56,9 @@ export class ReactSubtitleController {
   private stylePersistTimer: ReturnType<typeof setTimeout> | null = null;
   private blockPersistTimer: ReturnType<typeof setTimeout> | null = null;
   private clusterPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  private previewTextPersistTimer: ReturnType<typeof setTimeout> | null = null;
+  private previewTargetText = 'This is how the target subtitle will look.';
+  private previewNativeText = 'This is how the native subtitle will look.';
 
   private playerModeResizeHandler: (() => void) | null = null;
 
@@ -168,6 +171,12 @@ export class ReactSubtitleController {
         if (typeof persisted === 'number' && !Number.isNaN(persisted)) {
           this.offsetMs = clampOffsetMs(persisted);
         }
+        if (typeof settings.subtitlePreviewTargetText === 'string' && settings.subtitlePreviewTargetText) {
+          this.previewTargetText = settings.subtitlePreviewTargetText;
+        }
+        if (typeof settings.subtitlePreviewNativeText === 'string' && settings.subtitlePreviewNativeText) {
+          this.previewNativeText = settings.subtitlePreviewNativeText;
+        }
       });
     } catch {
       // ignore
@@ -216,10 +225,13 @@ export class ReactSubtitleController {
       clusterSettings: this.engine.getClusterSettings(),
       defaultTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
       defaultNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+      previewTargetText: this.previewTargetText,
+      previewNativeText: this.previewNativeText,
       onStyleChange: (role, partial) => this.handleStyleChange(role, partial),
       onBlockSettingsChange: (partial) => this.handleBlockSettingsChange(partial),
       onClusterSettingsChange: (partial) => this.handleClusterSettingsChange(partial),
       onResetStyle: (role) => this.handleResetStyle(role),
+      onPreviewTextChange: (role, text) => this.handlePreviewTextChange(role, text),
     };
   }
 
@@ -279,6 +291,19 @@ export class ReactSubtitleController {
     saveSettings({ [key]: defaults } as Partial<Settings>).catch(() => undefined);
   }
 
+  private handlePreviewTextChange(role: 'target' | 'native', text: string): void {
+    if (role === 'target') this.previewTargetText = text;
+    else this.previewNativeText = text;
+    this.mount.setManager(this.buildManagerState());
+
+    if (this.previewTextPersistTimer) clearTimeout(this.previewTextPersistTimer);
+    this.previewTextPersistTimer = setTimeout(() => {
+      const key = role === 'target' ? 'subtitlePreviewTargetText' : 'subtitlePreviewNativeText';
+      saveSettings({ [key]: text } as Partial<Settings>).catch(() => undefined);
+      this.previewTextPersistTimer = null;
+    }, OFFSET_PERSIST_DEBOUNCE_MS);
+  }
+
   private buildOffsetState(): OffsetState {
     return {
       targetMs: this.offsetMs,
@@ -292,7 +317,8 @@ export class ReactSubtitleController {
     if (!this.onImportFiles) return;
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.srt,.vtt';
+    input.accept = '.srt,.vtt,.ass,.ssa';
+    input.multiple = true;
     input.style.display = 'none';
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files;

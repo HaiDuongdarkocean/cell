@@ -67,15 +67,15 @@ export function NavClusterSettingsPanel({
           max={BUTTON_SIZE_MAX}
           step={1}
           onChange={handleButtonSizeChange}
-          aria-label="Nav cluster button size"
+          aria-label="Button size"
           data-cell-id="nav-cluster-button-size"
         />
       </div>
 
-      {/* Text opacity */}
+      {/* Icon opacity */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-text-opacity">Text opacity</label>
+          <label className={styles.label} htmlFor="nav-cluster-text-opacity">Icon opacity</label>
           <span className={styles.value}>{Math.round(settings.textOpacity * 100)}%</span>
         </div>
         <Slider
@@ -85,15 +85,15 @@ export function NavClusterSettingsPanel({
           max={1}
           step={0.05}
           onChange={handleTextOpacityChange}
-          aria-label="Nav cluster text opacity"
+          aria-label="Icon opacity"
           data-cell-id="nav-cluster-text-opacity"
         />
       </div>
 
-      {/* Background opacity */}
+      {/* Button opacity */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Background opacity</label>
+          <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Button opacity</label>
           <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
         </div>
         <Slider
@@ -103,7 +103,7 @@ export function NavClusterSettingsPanel({
           max={1}
           step={0.05}
           onChange={handleBgOpacityChange}
-          aria-label="Nav cluster background opacity"
+          aria-label="Button opacity"
           data-cell-id="nav-cluster-bg-opacity"
         />
       </div>

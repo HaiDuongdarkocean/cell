@@ -20,10 +20,13 @@ const appearanceProps = {
     clusterSettings: DEFAULT_NAV_CLUSTER_SETTINGS,
     defaultTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
     defaultNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+    previewTargetText: 'Target preview text',
+    previewNativeText: 'Native preview text',
     onStyleChange: jest.fn(),
     onBlockSettingsChange: jest.fn(),
     onClusterSettingsChange: jest.fn(),
     onResetStyle: jest.fn(),
+    onPreviewTextChange: jest.fn(),
   },
 };
 
@@ -41,9 +44,9 @@ describe('SubtitleManagerPanel', () => {
     );
 
     expect(screen.getByText('Subtitle Manager')).toBeInTheDocument();
-    expect(screen.getByText('Target · English')).toBeInTheDocument();
+    expect(screen.getByText('Target')).toBeInTheDocument();
     expect(screen.getByText('2 subtitles')).toBeInTheDocument();
-    expect(screen.getByText('Native · Vietnamese')).toBeInTheDocument();
+    expect(screen.getByText('Native')).toBeInTheDocument();
     expect(screen.getByText('1 subtitle')).toBeInTheDocument();
   });
 
@@ -259,7 +262,7 @@ describe('SubtitleManagerPanel', () => {
     expect(onGenerateNative).toHaveBeenCalled();
   });
 
-  it('renders Off option at the end of each track list', () => {
+  it('renders Off option at the top of each track list', () => {
     render(
       <SubtitleManagerPanel
         targetItems={targetItems}
@@ -361,7 +364,12 @@ describe('SubtitleManagerPanel', () => {
 
     fireEvent.click(screen.getByTestId('manager-customize-appearance'));
     expect(screen.getByTestId('manager-back-to-subtitles')).toBeInTheDocument();
+    // Block tab is active by default
     expect(screen.getByTestId('subtitle-block-settings-panel')).toBeInTheDocument();
+    // Nav cluster panel is in Buttons tab — not visible by default
+    expect(screen.queryByTestId('nav-cluster-settings-panel')).not.toBeInTheDocument();
+    // Click Buttons tab → nav cluster panel appears
+    fireEvent.click(screen.getByRole('tab', { name: 'Buttons' }));
     expect(screen.getByTestId('nav-cluster-settings-panel')).toBeInTheDocument();
   });
 
@@ -424,7 +432,7 @@ describe('SubtitleManagerPanel', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('renders Target and Native style sections in appearance view', () => {
+  it('renders appearance view with tabs (Block active by default, Target/Native/Buttons on click)', () => {
     render(
       <SubtitleManagerPanel
         targetItems={targetItems}
@@ -439,8 +447,21 @@ describe('SubtitleManagerPanel', () => {
     );
 
     fireEvent.click(screen.getByTestId('manager-customize-appearance'));
-    // SubtitleStylePanel renders with role-based data-cell-id
+    // Block tab is active by default — block settings panel visible
+    expect(screen.getByTestId('subtitle-block-settings-panel')).toBeInTheDocument();
+    // Target/Native panels not rendered (Tabs only renders active content)
+    expect(screen.queryByTestId('subtitle-style-panel-target')).not.toBeInTheDocument();
+
+    // Click Target tab → target style panel appears
+    fireEvent.click(screen.getByRole('tab', { name: 'Target' }));
     expect(screen.getByTestId('subtitle-style-panel-target')).toBeInTheDocument();
+
+    // Click Native tab → native style panel appears
+    fireEvent.click(screen.getByRole('tab', { name: 'Native' }));
     expect(screen.getByTestId('subtitle-style-panel-native')).toBeInTheDocument();
+
+    // Click Buttons tab → nav cluster panel appears
+    fireEvent.click(screen.getByRole('tab', { name: 'Buttons' }));
+    expect(screen.getByTestId('nav-cluster-settings-panel')).toBeInTheDocument();
   });
 });

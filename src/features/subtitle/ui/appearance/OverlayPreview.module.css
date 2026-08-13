@@ -1,0 +1,127 @@
+/* Layout matches SubtitlePanels.module.css production patterns.
+   Reuses SubtitleBlock + NavCluster + IconButton components — only the
+   16:9 frame wrapper and 3-zone layout CSS live here. */
+
+.frame {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  border-radius: var(--radius-element);
+  background: var(--overlay-background);
+  padding: var(--space-2);
+  container-type: inline-size;
+}
+
+/* 3-zone horizontal layout — matches .root in SubtitlePanels.module.css */
+.overlayRoot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--sb-y, 75) * 1%);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(var(--space-1), 1.5cqw, var(--space-3));
+  padding: var(--space-1) clamp(var(--space-1), 2cqw, var(--space-4));
+  container-type: inline-size;
+}
+
+.navLayer {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.navLayer > * {
+  pointer-events: none;
+}
+
+.blockLayer {
+  flex: 1 1 0;
+  min-width: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(var(--space-1), 0.8cqw, var(--space-2));
+}
+
+.blockLayer > * {
+  pointer-events: auto;
+}
+
+.blockLayer [contenteditable="true"] {
+  cursor: text;
+  user-select: text;
+}
+
+.blockLayer [contenteditable="true"]:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.clusterRight {
+  pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.clusterRight > * {
+  pointer-events: none;
+}
+
+.clusterRight button {
+  pointer-events: none;
+  width: var(--cluster-btn-size);
+  height: var(--cluster-btn-size);
+  min-width: var(--cluster-btn-size);
+  min-height: var(--cluster-btn-size);
+  opacity: var(--cluster-text-opacity);
+  color: var(--color-overlay-text);
+  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
+  border: none;
+  border-radius: var(--radius-full);
+}
+
+.primaryCol,
+.secondaryCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.toggleWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.extraCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 200ms ease;
+}
+
+.hint {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-2);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: var(--font-size-xs);
+  pointer-events: none;
+}

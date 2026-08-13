@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import { SubtitlePreview } from './SubtitlePreview';
 import { Button } from '@/shared/ui/Button';
+import { Slider } from '@/shared/ui/Slider';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -76,23 +76,21 @@ export function SubtitleStylePanel({
 
   return (
     <div className={styles.container} data-cell-id={`subtitle-style-panel-${role}`}>
-      {/* Live preview */}
-      <SubtitlePreview style={style} role={role} />
+      <span className={styles.sectionLabel}>Text</span>
 
-      {/* Font size — moved to top row (full-width slider) */}
+      {/* Font size */}
       <div className={styles.field}>
         <label className={styles.label} htmlFor={`style-${role}-font-size`}>
           Font size
           <span className={styles.valueBadge}>{style.fontSize}px</span>
         </label>
-        <input
+        <Slider
           id={`style-${role}-font-size`}
-          type="range"
           min={12}
           max={72}
           step={1}
           value={style.fontSize}
-          onChange={(e) => onChange({ fontSize: Number(e.target.value) })}
+          onChange={(value) => onChange({ fontSize: value })}
           className={styles.slider}
           aria-label={`Font size ${style.fontSize} pixels`}
         />
@@ -104,14 +102,13 @@ export function SubtitleStylePanel({
           Font weight
           <span className={styles.valueBadge}>{style.fontWeight ?? defaultStyle.fontWeight}</span>
         </label>
-        <input
+        <Slider
           id={`style-${role}-font-weight`}
-          type="range"
           min={100}
           max={900}
           step={100}
           value={style.fontWeight ?? defaultStyle.fontWeight}
-          onChange={(e) => onChange({ fontWeight: Number(e.target.value) })}
+          onChange={(value) => onChange({ fontWeight: value })}
           className={styles.slider}
           aria-label={`Font weight ${style.fontWeight ?? defaultStyle.fontWeight}`}
         />
@@ -119,7 +116,7 @@ export function SubtitleStylePanel({
 
       {/* Font family */}
       <div className={styles.field}>
-        <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
+        <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font</label>
         <select
           id={`style-${role}-font-family`}
           value={isCustomFont ? '__custom__' : style.fontFamily}
@@ -169,7 +166,7 @@ export function SubtitleStylePanel({
         </div>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`style-${role}-bg-color`}>
-            Background color
+            BG color
           </label>
           <input
             id={`style-${role}-bg-color`}
@@ -182,49 +179,51 @@ export function SubtitleStylePanel({
         </div>
       </div>
 
+      <span className={styles.sectionLabel}>Opacity</span>
+
       {/* PAIR: Text opacity + BG opacity */}
       <div className={styles.pairRow}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
-            Text opacity
+            Text
             <span className={styles.valueBadge}>{style.textOpacity.toFixed(2)}</span>
           </label>
-          <input
+          <Slider
             id={`style-${role}-text-opacity`}
-            type="range"
             min={0}
             max={1}
             step={0.05}
             value={style.textOpacity}
-            onChange={(e) => onChange({ textOpacity: Number(e.target.value) })}
+            onChange={(value) => onChange({ textOpacity: value })}
             className={styles.slider}
             aria-label={`Text opacity ${style.textOpacity}`}
           />
         </div>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`style-${role}-bg-opacity`}>
-            BG opacity
+            Background
             <span className={styles.valueBadge}>{style.backgroundOpacity.toFixed(2)}</span>
           </label>
-          <input
+          <Slider
             id={`style-${role}-bg-opacity`}
-            type="range"
             min={0}
             max={1}
             step={0.05}
             value={style.backgroundOpacity}
-            onChange={(e) => onChange({ backgroundOpacity: Number(e.target.value) })}
+            onChange={(value) => onChange({ backgroundOpacity: value })}
             className={styles.slider}
             aria-label={`Background opacity ${style.backgroundOpacity}`}
           />
         </div>
       </div>
 
+      <span className={styles.sectionLabel}>Layout</span>
+
       {/* Horizontal align + Text shadow preset (existing fieldRow) */}
       <div className={styles.fieldRow}>
         <div className={styles.field}>
-          <label className={styles.label}>Horizontal align</label>
-          <div className={styles.radioRow} role="radiogroup" aria-label="Horizontal align">
+          <label className={styles.label}>Alignment</label>
+          <div className={styles.radioRow} role="radiogroup" aria-label="Alignment">
             {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
               <label key={align} className={styles.radioLabel}>
                 <input
@@ -241,8 +240,8 @@ export function SubtitleStylePanel({
           </div>
         </div>
         <div className={styles.field}>
-          <label className={styles.label}>Text shadow</label>
-          <div className={styles.radioRow} role="radiogroup" aria-label="Text shadow preset">
+          <label className={styles.label}>Shadow</label>
+          <div className={styles.radioRow} role="radiogroup" aria-label="Shadow style">
             {TEXT_SHADOW_PRESETS.map((preset) => (
               <label key={preset} className={styles.radioLabel}>
                 <input
@@ -342,7 +341,7 @@ export function SubtitleStylePanel({
             aria-label={`Reset ${role} style to defaults`}
             data-cell-id={`style-${role}-reset`}
           >
-            Reset to defaults
+            Reset {role}
           </Button>
         ) : (
           <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>

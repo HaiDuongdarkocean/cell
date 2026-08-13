@@ -58,6 +58,22 @@ Phase N: <thay đổi> → <lý do> → <nguyên tắc áp dụng>
 **Guard:** Mockup dùng token, không hardcode. Responsive 320/360/420px. Dark + light mode. Mọi recommendation có guard hoặc "why not" trong anti-patterns.
 **Loop back:** User chưa duyệt → tiếp tục iterate, không viết code production.
 
+#### Mockup fidelity rules (bắt buộc)
+
+Mockup phải phản ánh đúng production — không phải "gợi ý hình ảnh". Sai ở mockup = sai ở production.
+
+| Rule | Anti-pattern | Correct |
+|---|---|---|
+| **Icon phải là SVG thật** | Dùng text symbols (`◀`, `▶`, `🔁`), emoji, hoặc dot trống thay icon | Inline SVG markup verbatim từ `src/shared/icons/svg/` — đúng viewBox, stroke-width, currentColor |
+| **Icon phải đúng catalog entry** | Đoán icon name hoặc dùng icon khác production | Đọc `ICON_CATALOG` trong `src/shared/icons/index.ts` → dùng đúng key (navPrev, navNext, navRepeat, zap, pencil, ...) |
+| **Component structure phải match production** | Tự chế layout khác production component tree | Đọc component `.tsx` thật → replicate đúng hierarchy (parent → child → props → CSS class names) |
+| **CSS phải match production module** | Tự chế CSS không theo production module | Đọc `.module.css` thật → copy đúng values (button size, gap, opacity, border-radius, background) |
+| **Preview height phải tính từ production** | Fixed height nhỏ hơn content thật → clipping | Đo production: NavCluster height + SubtitleBlock height + toolbar height → MAX + padding = min-height |
+| **CSS variables phải đúng production** | Hardcode giá trị thay vì dùng `var(--token)` | Dùng đúng `--cluster-btn-size`, `--cluster-icon-size`, `--cluster-bg-opacity` từ production CSS |
+
+**Guard:** Mỗi icon trong mockup có thể trace về 1 file SVG trong `src/shared/icons/svg/`. Mỗi CSS value có thể trace về 1 token hoặc 1 production module.
+**Loop back:** Không tìm thấy SVG thật hoặc CSS thật → đọc production code trước, không đoán.
+
 ### Step 4 — Browser verify
 
 Code production xong → launch Chrome + extension (theo `testing-extension-browser` skill) → navigate → trigger UI → screenshot → vision reader xác nhận match mockup.
@@ -355,7 +371,22 @@ Body text minimum 16px (1rem). Dùng `rem` (không `px`). Type scale ratio 1.25 
 
 Button text: 14px (0.875rem) trên mobile/tablet, 15px trên desktop. Caption/small: 14px minimum — không nhỏ hơn.
 
-## Loading and Transitions
+## Interaction Patterns — No-Background Hover/Active
+
+Cho navigation elements (tabs, back buttons, section toggles), **không dùng background fill cho hover/active**. Dùng color change + transform thay thế.
+
+| Element | Hover | Active/Selected | Anti-pattern |
+|---|---|---|---|
+| **Tab** | `color: text-primary` + `transform: translateY(-1px)` | `color: primary` + `border-bottom: 2px solid primary` + `transform: translateY(0)` | `background: surface-hover` cho hover |
+| **Back button** | `color: primary` (chỉ đổi chữ) | — (no active state) | `background: surface-hover` cho hover |
+| **Section toggle** | `color: primary` trên label | — | `background: surface-hover` cho hover |
+
+**Nguyên tắc:** Background fill tạo khối nặng → cạnh tranh thị giác với content. Color change + transform nhẹ đủ phản hồi, không thêm noise.
+
+**Exception:** Buttons có semantic action (save, delete, import) vẫn dùng background hover theo design system (`--color-surface-hover`, `--color-primary-subtle`). Rule này chỉ áp dụng cho **navigation/discovery elements** không có semantic action.
+
+**Guard:** Navigation element hover/active không có `background` property. Transition bao gồm `transform`, không bao gồm `background`.
+**Loop back:** Nếu hover trông "nhạt" → tăng transform delta hoặc thêm `font-weight` change, không thêm background.
 
 ```tsx
 // Skeleton loading (not spinners for content)
@@ -417,6 +448,10 @@ For detailed accessibility requirements and testing tools, see `references/acces
 - Mockup không verify trên browser thật (code khác mockup)
 - Shared component (Button, IconButton) dùng trong shadow DOM khi CSS module không load được — dùng native element + CSS module của panel
 - Divider mọi nơi thay vì spacing + grouping
+- **Mockup dùng text symbols/emoji thay SVG thật từ `src/shared/icons/svg/`**
+- **Preview/overlay mockup dùng fixed height nhỏ hơn content thật → clipping**
+- **Navigation element (tab, back button) dùng `background` cho hover/active thay vì color + transform**
+- **Mockup structure không match production component tree (sai hierarchy, sai CSS class, sai icon)**
 
 ## Verification
 
@@ -429,6 +464,10 @@ After building UI:
 - [ ] Loading, error, and empty states all handled
 - [ ] Follows the project's design system (spacing, colors, typography)
 - [ ] No accessibility warnings in dev tools or axe-core
+- [ ] Mockup icons là SVG thật từ `src/shared/icons/svg/` (không text symbols/emoji)
+- [ ] Mockup preview height ≥ content thật (đo từ production, không fixed nhỏ hơn)
+- [ ] Navigation hover/active dùng color + transform, không dùng background
+- [ ] Mockup component structure match production `.tsx` hierarchy
 
 
 ---
