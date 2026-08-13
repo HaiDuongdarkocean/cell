@@ -83,7 +83,12 @@ export function Dialog({
         aria-describedby={description ? 'dialog-description' : undefined}
       >
         {(title || showCloseButton) && (
-          <div className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}>
+          <HStack
+            align="start"
+            justify={centerTitle ? 'center' : 'between'}
+            gap="3"
+            className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}
+          >
             {showCloseButton && centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
@@ -109,10 +114,10 @@ export function Dialog({
                 </Button>
               </HStack>
             )}
-          </div>
+          </HStack>
         )}
         {children && <div className={styles.content}>{children}</div>}
-        {footer && <div className={styles.footer}>{footer}</div>}
+        {footer && <HStack justify="end" gap="3" className={styles.footer}>{footer}</HStack>}
       </div>
     </div>
   );

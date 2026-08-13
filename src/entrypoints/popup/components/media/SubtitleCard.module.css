@@ -2,8 +2,6 @@
 .card {
   --card-bg: var(--color-surface);
   --card-padding: 0;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
 }
 
@@ -28,9 +26,6 @@
 
 /* === Main row — horizontal: icon | body | actions === */
 .mainRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   padding: var(--space-3);
   cursor: pointer;
 }
@@ -43,9 +38,6 @@
 .icon {
   width: var(--space-8);
   height: var(--space-8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--radius-full);
   flex-shrink: 0;
 }
@@ -77,11 +69,7 @@
 }
 
 .tagRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   min-width: 0;
-  flex-wrap: wrap;
 }
 
 .languageTag {
@@ -102,9 +90,6 @@
 
 /* === Actions — expand chevron + download button === */
 .actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   flex-shrink: 0;
 }
 
@@ -124,9 +109,6 @@
 
 /* Downloading spinner */
 .downloadingIndicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: var(--space-8);
   height: var(--space-8);
   color: var(--color-text-secondary);
@@ -134,9 +116,6 @@
 
 /* === URL panel — expands below main row === */
 .urlPanel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-top: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-background);

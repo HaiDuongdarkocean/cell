@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
+import { Center } from '@/shared/ui/Center';
+import { Flex, HStack, VStack } from '@/shared/ui';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
@@ -105,24 +107,27 @@ export function VideoCard({
       data-cell-id="video-card"
       data-id={video.id}
     >
-      {/* === Main row — icon | body | actions === */}
-      <div
-        className={styles.mainRow}
-        onClick={handleCardClick}
-        onKeyDown={handleCardKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-label={`Select ${displayTitle ?? video.title}`}
-      >
-        {/* Icon */}
-        <div className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-          <Icon name="play" size={16} />
-        </div>
+      <VStack>
+        {/* === Main row — icon | body | actions === */}
+        <HStack
+          align="center"
+          gap="3"
+          className={styles.mainRow}
+          onClick={handleCardClick}
+          onKeyDown={handleCardKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-label={`Select ${displayTitle ?? video.title}`}
+        >
+          {/* Icon */}
+          <Center className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
+            <Icon name="play" size={16} />
+          </Center>
 
         {/* Body */}
         <div className={styles.body}>
           <div className={styles.title} data-cell-id="video-title">{displayTitle ?? video.title}</div>
-          <div className={styles.tagRow}>
+          <Flex align="center" gap="1" wrap="wrap" className={styles.tagRow}>
             <span className={styles.formatTag} data-cell-id="video-format">{video.format}</span>
             {selectedVariant?.quality && selectedVariant.quality !== 'auto' && (
               <span className={styles.qualityTag} data-cell-id="video-quality">{selectedVariant.quality}</span>
@@ -151,10 +156,13 @@ export function VideoCard({
                     </button>
 
                     {qualityOpen && (
-                      <div className={styles.qualityMenu} role="listbox">
+                      <VStack gap="0-5" className={styles.qualityMenu} role="listbox">
                         {video.variants.map((variant) => (
-                          <div
+                          <HStack
                             key={variant.url}
+                            align="center"
+                            justify="between"
+                            gap="3"
                             className={`${styles.qualityOption} ${variant.quality === selectedVariant?.quality ? styles.qualitySelected : ''}`}
                             role="option"
                             aria-selected={variant.quality === selectedVariant?.quality}
@@ -164,19 +172,19 @@ export function VideoCard({
                             {variant.size && (
                               <span className={styles.qualitySize}>{formatFileSizeOrUnknown(variant.size)}</span>
                             )}
-                          </div>
+                          </HStack>
                         ))}
-                      </div>
+                      </VStack>
                     )}
                   </div>
                 )}
               </>
             )}
-          </div>
+          </Flex>
         </div>
 
         {/* Actions — expand chevron + download button */}
-        <div className={styles.actions}>
+        <HStack align="center" gap="1" className={styles.actions}>
           <IconButton
             size="sm"
             onClick={handleExpandClick}
@@ -191,9 +199,9 @@ export function VideoCard({
           </IconButton>
           <div className={styles.action}>
             {downloading ? (
-              <span className={styles.downloadingIndicator} aria-label="Downloading">
+              <Center as="span" className={styles.downloadingIndicator} aria-label="Downloading">
                 <Spinner size="md" color="secondary" aria-hidden="true" />
-              </span>
+              </Center>
             ) : (
               <IconButton
                 size="sm"
@@ -206,12 +214,12 @@ export function VideoCard({
               </IconButton>
             )}
           </div>
-        </div>
-      </div>
+        </HStack>
+      </HStack>
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <div className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="url-row">
+        <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="url-row">
           <button
             type="button"
             className={styles.copyBtn}
@@ -223,8 +231,9 @@ export function VideoCard({
             <span className={styles.urlText}>{video.url}</span>
           </button>
           {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">Copied</span>}
-        </div>
+        </HStack>
       )}
+      </VStack>
     </Card>
   );
 }

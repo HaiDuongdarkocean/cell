@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DetectedSubtitle } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
+import { Center } from '@/shared/ui/Center';
+import { HStack, VStack } from '@/shared/ui';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
@@ -79,81 +81,85 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
       data-cell-id="subtitle-item"
       data-id={subtitle.id}
     >
-      {/* === Main row — icon | body | actions === */}
-      <div
-        className={styles.mainRow}
-        onClick={handleCardClick}
-        onKeyDown={handleCardKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-label={`Select ${displayTitle ?? displayLanguage}`}
-      >
-        {/* Icon — subtitle (amber) */}
-        <div className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-          <Icon name="flag" size={16} />
-        </div>
+      <VStack>
+        {/* === Main row — icon | body | actions === */}
+        <HStack
+          align="center"
+          gap="3"
+          className={styles.mainRow}
+          onClick={handleCardClick}
+          onKeyDown={handleCardKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-label={`Select ${displayTitle ?? displayLanguage}`}
+        >
+          {/* Icon — subtitle (amber) */}
+          <Center className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
+            <Icon name="flag" size={16} />
+          </Center>
 
-        {/* Body */}
-        <div className={styles.body}>
-          <div className={styles.title} data-cell-id="subtitle-title">{displayTitle ?? displayLanguage}</div>
-          <div className={styles.tagRow}>
-            <span className={styles.languageTag} data-cell-id="subtitle-language">{displayLanguage}</span>
-            <span className={styles.meta}>
-              {downloading ? 'Downloading…' : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
-            </span>
-          </div>
-        </div>
-
-        {/* Actions — expand chevron + download button */}
-        <div className={styles.actions}>
-          <IconButton
-            size="sm"
-            onClick={handleExpandClick}
-            aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
-            aria-expanded={urlExpanded}
-            data-cell-id="subtitle-expand-url-btn"
-          >
-            <Icon
-              name="chevronDown"
-              className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
-            />
-          </IconButton>
-          <div className={styles.action}>
-            {downloading ? (
-              <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <Spinner size="md" color="secondary" aria-hidden="true" />
+          {/* Body */}
+          <div className={styles.body}>
+            <div className={styles.title} data-cell-id="subtitle-title">{displayTitle ?? displayLanguage}</div>
+            <HStack align="center" gap="1" className={styles.tagRow}>
+              <span className={styles.languageTag} data-cell-id="subtitle-language">{displayLanguage}</span>
+              <span className={styles.meta}>
+                {downloading ? 'Downloading…' : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
               </span>
-            ) : (
-              <IconButton
-                size="sm"
-                variant="ghost"
-                onClick={handleActionClick}
-                aria-label="Download"
-                data-cell-id="subtitle-download"
-              >
-                <Icon name="download" size={16} />
-              </IconButton>
-            )}
+            </HStack>
           </div>
-        </div>
-      </div>
 
-      {/* === URL panel — only when expanded === */}
-      {urlExpanded && (
-        <div className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="subtitle-url-row">
-          <button
-            type="button"
-            className={styles.copyBtn}
-            onClick={handleUrlClick}
-            data-cell-id="subtitle-url"
-            title="Click to copy URL"
-          >
-            <Icon name="copy" size={14} />
-            <span className={styles.urlText}>{subtitle.url}</span>
-          </button>
-          {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}
-        </div>
-      )}
+          {/* Actions — expand chevron + download button */}
+          <HStack align="center" gap="1" className={styles.actions}>
+            <IconButton
+              size="sm"
+              onClick={handleExpandClick}
+              aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
+              aria-expanded={urlExpanded}
+              data-cell-id="subtitle-expand-url-btn"
+            >
+              <Icon
+                name="chevronDown"
+                className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
+              />
+            </IconButton>
+            <div className={styles.action}>
+              {downloading ? (
+                <Center as="span" className={styles.downloadingIndicator} aria-label="Downloading">
+                  <Spinner size="md" color="secondary" aria-hidden="true" />
+                </Center>
+              ) : (
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleActionClick}
+                  aria-label="Download"
+                  data-cell-id="subtitle-download"
+                >
+                  <Icon name="download" size={16} />
+                </IconButton>
+              )}
+            </div>
+          </HStack>
+        </HStack>
+
+        {/* === URL panel — only when expanded === */}
+        {urlExpanded && (
+          <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="subtitle-url-row">
+            <button
+              type="button"
+              className={styles.copyBtn}
+              onClick={handleUrlClick}
+              data-cell-id="subtitle-url"
+              title="Click to copy URL"
+            >
+              <Icon name="copy" size={14} />
+              <span className={styles.urlText}>{subtitle.url}</span>
+            </button>
+            {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}
+          </HStack>
+        )}
+      </VStack>
     </Card>
   );
 }
