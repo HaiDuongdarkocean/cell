@@ -1,9 +1,17 @@
 import type { ButtonHTMLAttributes } from 'react';
-import styles from './WordChip.module.css';
+import { Chip } from '@/shared/ui/Chip';
+import type { ChipColor } from '@/shared/ui/Chip';
 
 export type WordStatus = 'new' | 'learning' | 'mastered' | 'unknown';
 
-export interface WordChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+const statusToColor: Record<WordStatus, ChipColor> = {
+  new: 'primary',
+  learning: 'warning',
+  mastered: 'success',
+  unknown: 'muted',
+};
+
+export interface WordChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'size' | 'color'> {
   /** The word to display and look up. */
   word: string;
   /** Learning status of the word. Default: unknown. */
@@ -18,6 +26,8 @@ export interface WordChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * WordChip — interactive pill button that triggers a dictionary lookup for a
  * word. Tint color reflects the learner's current status with the word.
  *
+ * Implemented as a thin wrapper over the shared `Chip` atom.
+ *
  * Touch target: 40px (adapts to 44px on coarse pointers via --touch-target).
  */
 export function WordChip({
@@ -29,22 +39,20 @@ export function WordChip({
   onClick,
   ...rest
 }: WordChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[size], styles[status], className ?? '']
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <button
-      type="button"
-      className={cls}
+    <Chip
+      as="button"
+      size={size}
+      color={statusToColor[status]}
+      className={className}
       aria-label={`Look up ${word}, status: ${status}`}
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(e);
         if (!e.defaultPrevented) onLookup?.(word);
       }}
       {...rest}
     >
       {word}
-    </button>
+    </Chip>
   );
 }

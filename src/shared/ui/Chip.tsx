@@ -1,11 +1,13 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import styles from './Chip.module.css';
 
+export type ChipColor = 'success' | 'error' | 'primary' | 'warning' | 'muted';
+
 interface ChipBaseProps {
   /** Visual style. Default: default. */
   variant?: 'default' | 'outline';
   /** Color accent. Default: none. */
-  color?: 'success' | 'error';
+  color?: ChipColor;
   /** Selected (active) state — only meaningful when `as="button"`. */
   selected?: boolean;
   /** Size. Default: md. */
