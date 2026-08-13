@@ -10,6 +10,7 @@
 }
 
 .panel {
+  composes: themedWide from '@/shared/ui/Scrollable.module.css';
   width: 100%;
   max-width: var(--dialog-max-width);
   min-width: 0;
@@ -23,28 +24,6 @@
   box-shadow: var(--dialog-shadow);
   animation: dialog-in var(--duration-normal) var(--ease-out);
   box-sizing: border-box;
-  /* Design-system scrollbar (themeTokens §scrollbar) — replaces the browser
-   * default scrollbar with a thin themed one matching the dialog's surface. */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
-}
-
-.panel::-webkit-scrollbar {
-  width: var(--space-2);
-  height: var(--space-2);
-}
-
-.panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.panel::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-
-.panel::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
 }
 
 .header {

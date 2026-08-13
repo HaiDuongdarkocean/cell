@@ -93,30 +93,12 @@
 
 /* === Options list === */
 .list {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
   max-height: min(var(--list-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow-y: auto;
   list-style: none;
   margin: 0;
   padding: var(--space-1-5);
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb) transparent;
-}
-
-.list::-webkit-scrollbar {
-  width: var(--space-1-5);
-}
-
-.list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.list::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full);
-}
-
-.list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover);
 }
 
 /* === Section header === */
