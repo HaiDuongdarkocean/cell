@@ -202,10 +202,22 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Xóa `WordChip.module.css` hoặc chỉ còn CSS cần thiết (nếu có).
   - [x] Tests + build pass.
 
-## Loop 15+ (future loops)
+## Loop 15 — Design-system-showcase scrollbar SSOT
+- **Why:** `src/entrypoints/design-system-showcase/index.html` nhúng CSS `::-webkit-scrollbar` trực tiếp, trùng với `src/shared/styles/scrollbars-document.css`.
+- **What:** Bỏ scrollbar CSS inline; import `scrollbars-document.css` trong `main.tsx` (hoặc `global.css`) để dùng SSOT.
+- **Files:**
+  - `src/entrypoints/design-system-showcase/index.html`
+  - `src/entrypoints/design-system-showcase/main.tsx`
+- **AC:**
+  - [x] Xóa `::-webkit-scrollbar` và `scrollbar-*` inline trong `index.html`.
+  - [x] `main.tsx` import `scrollbars-document.css`.
+  - [x] Showcase vẫn hiển thị đúng, scrollbar theming hoạt động.
+  - [x] Build pass.
+
+## Loop 16+ (future loops)
 - Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) consolidate với `Badge`/`Chip`.
 - Header/actions layout patterns còn lại (`BottomSheet` header).
-- Design-system-showcase `index.html` inline scrollbar.
+- Toast / notice patterns (`SubtitleToast`, `CardCreatorDialog` notice, `SubtitleSearchPanel` error, `DownloadCard` error).
 
 ## Verification pattern
 Sau mỗi loop:

@@ -311,8 +311,29 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `a93c8616`) ✅
 - **Status:** Complete. `.copyBtn`, `.qualityWrapper`, `.qualityTrigger` (button/inline-flex children) and media card `.body` `flex: 1` remain out of scope.
 
+### Loop 14 — WordChip → Chip SSOT
+- **Discovery:** `WordChip` tự định nghĩa toàn bộ chip CSS trong khi `Chip` đã có.
+- **Plan:** Mở rộng `Chip` color variants; chuyển `WordChip` thành wrapper của `Chip`; xóa `WordChip.module.css`.
+- **AC:**
+  1. `Chip` hỗ trợ `color: 'primary' | 'warning' | 'muted'`.
+  2. `WordChip` dùng `Chip as="button"` với `color` mapping từ `status`.
+  3. Xóa `WordChip.module.css`.
+  4. Tests + build pass.
+- **Do:**
+  - Extended `ChipColor` type and exported it.
+  - Added `.primary`, `.warning`, `.muted` CSS to `Chip.module.css` with button hover and focus-visible states.
+  - Rewrote `WordChip.tsx` as a wrapper over `Chip` with `statusToColor` mapping.
+  - Deleted `WordChip.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `Chip` / `WordChip` / `SynonymChip` / `AntonymChip` unit tests ✅
+  - Subagent review (agent id `705dc72f`) ✅
+  - Attempted browser preview; static server setup hit a transient environment issue with `dist/` being removed between build and request. Unit/build checks pass.
+- **Status:** Complete. Domain badges (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`, `SourceBadge`) remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 13
+- **Loops completed:** 14
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13)
