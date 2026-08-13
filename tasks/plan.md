@@ -163,9 +163,22 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] `Alert.module.css` root có `width: 100%`.
   - [x] Build + tests pass.
 
-## Loop 12+ (future loops)
+## Loop 12 — Dialog header + DownloadCard layout SSOT
+- **Why:** `Dialog.headerRightGroup` và `DownloadCard` header/titleRow/actions/phaseRow/progressLabel/queuedIndicator/detailRow tự định nghĩa `display: flex` trong khi `HStack`/`VStack` đã có.
+- **What:** Dùng `HStack` cho các layout row trong `Dialog` và `DownloadCard`; dùng `VStack` cho body `DownloadCard`; xóa CSS flex dư thừa.
+- **Files:**
+  - `src/shared/ui/Dialog.{tsx,module.css}`
+  - `src/entrypoints/popup/components/media/DownloadCard.{tsx,module.css}`
+- **AC:**
+  - [x] `Dialog.headerRightGroup` dùng `HStack`.
+  - [x] `DownloadCard` dùng `HStack` cho header, titleRow, actions, phaseRow, progressLabel, queuedIndicator, detailRow.
+  - [x] `DownloadCard` dùng `VStack` cho card body.
+  - [x] Không còn `display: flex` dư thừa trong các class trên.
+  - [x] Build + tests pass.
+
+## Loop 13+ (future loops)
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
-- Header/actions layout patterns còn lại (`Dialog` header right group, media card layouts).
+- Header/actions layout patterns còn lại (`VideoCard`, `SubtitleCard` media card layouts).
 - Design-system-showcase `index.html` inline scrollbar.
 
 ## Verification pattern

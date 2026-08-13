@@ -1,6 +1,8 @@
 import type { DownloadItem } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
 import { Card } from '@/shared/ui/Card';
+import { Flex } from '@/shared/ui/Flex';
+import { HStack, VStack } from '@/shared/ui/Stack';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './DownloadCard.module.css';
@@ -167,28 +169,28 @@ export function DownloadCard({
   let progressHtml: React.JSX.Element;
   if (isQueued) {
     progressHtml = (
-      <div className={styles.queuedIndicator}>
+      <HStack align="center" gap="1-5" className={styles.queuedIndicator}>
         <Icon name="clock" size={14} />
         <span>Waiting…</span>
-      </div>
+      </HStack>
     );
   } else if (showTwoPhase) {
     // Two-phase: Download (done) + Converting (in progress)
     progressHtml = (
       <>
-        <div className={styles.phaseRow}>
+        <HStack align="center" justify="between" gap="0" className={styles.phaseRow}>
           <span className={`${styles.phaseLabel} ${styles.done}`}>Download</span>
           <span className={`${styles.phasePercent} ${styles.done}`}>100%</span>
-        </div>
+        </HStack>
         <div className={styles.progressBar}>
           <div className={`${styles.progressFill} ${styles.done}`} style={{ width: '100%' }} />
         </div>
-        <div className={styles.phaseRow}>
+        <HStack align="center" justify="between" gap="0" className={styles.phaseRow}>
           <span className={`${styles.phaseLabel} ${styles.active}`}>
             Converting{phaseText}
           </span>
           <span className={`${styles.phasePercent} ${styles.active}`}>{download.convertProgress ?? 0}%</span>
-        </div>
+        </HStack>
         <div className={styles.progressBar}>
           <div className={`${styles.progressFill} ${styles.converting}`} style={{ width: `${download.convertProgress ?? 0}%` }} />
         </div>
@@ -200,10 +202,10 @@ export function DownloadCard({
         <div className={styles.progressBar}>
           <div className={`${styles.progressFill} ${styles.done}`} style={{ width: '100%' }} role="progressbar" aria-valuenow={100} aria-valuemin={0} aria-valuemax={100} />
         </div>
-        <div className={styles.progressLabel}>
+        <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span>Done</span>
           <span className={styles.progressPercent}>100%</span>
-        </div>
+        </HStack>
       </>
     );
   } else if (isError) {
@@ -212,10 +214,10 @@ export function DownloadCard({
         <div className={styles.progressBar}>
           <div className={`${styles.progressFill} ${styles.error}`} style={{ width: `${download.progress}%` }} />
         </div>
-        <div className={styles.progressLabel}>
+        <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span className={styles.errorText}>Failed at {download.progress}%</span>
           <span className={styles.progressPercent}>{download.progress}%</span>
-        </div>
+        </HStack>
       </>
     );
   } else {
@@ -232,10 +234,10 @@ export function DownloadCard({
             aria-valuemax={100}
           />
         </div>
-        <div className={styles.progressLabel}>
+        <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span>{statusText}</span>
           <span className={styles.progressPercent}>{download.progress}%</span>
-        </div>
+        </HStack>
       </>
     );
   }
@@ -246,34 +248,40 @@ export function DownloadCard({
       className={`${styles.card} ${isError ? styles.error : ''} ${isQueued ? styles.queued : ''}`}
       data-cell-id="download-item"
     >
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.titleRow}>
-          <span className={styles.title}>{download.title}</span>
-          {download.quality && (
-            <span className={styles.qualityBadge}>{download.quality}</span>
-          )}
-          {download.usedWorkers && (
-            <span className={styles.parallelBadge} title="Parallel conversion">
-              <Icon name="zap" size={12} />
-            </span>
-          )}
-        </div>
-        <div className={styles.actions}>{actions}</div>
-      </div>
+      <VStack gap="2">
+        {/* Header */}
+        <HStack align="center" justify="between" gap="2" className={styles.header}>
+          <HStack align="center" gap="1-5" className={styles.titleRow}>
+            <span className={styles.title}>{download.title}</span>
+            {download.quality && (
+              <span className={styles.qualityBadge}>{download.quality}</span>
+            )}
+            {download.usedWorkers && (
+              <span className={styles.parallelBadge} title="Parallel conversion">
+                <Icon name="zap" size={12} />
+              </span>
+            )}
+          </HStack>
+          <HStack align="center" gap="1" className={styles.actions}>
+            {actions}
+          </HStack>
+        </HStack>
 
-      {/* Error message */}
-      {isError && download.error && (
-        <div className={styles.errorText}>{download.error}</div>
-      )}
+        {/* Error message */}
+        {isError && download.error && (
+          <div className={styles.errorText}>{download.error}</div>
+        )}
 
-      {/* Progress section */}
-      {progressHtml}
+        {/* Progress section */}
+        {progressHtml}
 
-      {/* Detail items */}
-      {detailItems.length > 0 && (
-        <div className={styles.detailRow}>{detailItems}</div>
-      )}
+        {/* Detail items */}
+        {detailItems.length > 0 && (
+          <Flex align="center" gap="2" wrap="wrap" className={styles.detailRow}>
+            {detailItems}
+          </Flex>
+        )}
+      </VStack>
     </Card>
   );
 }
