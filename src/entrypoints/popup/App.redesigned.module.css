@@ -13,17 +13,13 @@
 
 /* === Content — scrollable but scrollbar hidden === */
 .content {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
-  scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.content::-webkit-scrollbar {
-  display: none;
 }
 
 /* === Tabs — full-width, flush to header, no rounded container ===
@@ -87,18 +83,14 @@
 
 /* === Tab content — padding, scrollable but scrollbar hidden === */
 .tabContent {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   padding: var(--space-3) var(--space-4) var(--space-4);
   flex: 1;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.tabContent::-webkit-scrollbar {
-  display: none;
 }
 
 /* === Actions row — Select All / Download, right-aligned === */

@@ -13,22 +13,18 @@
 
 /* === Sidebar — mobile: horizontal scrollable tab bar === */
 .sidebar {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
-  scrollbar-width: none;
   padding: var(--space-1) var(--space-2);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   background: var(--color-surface);
   gap: var(--space-0-5);
   flex-shrink: 0;
-}
-
-.sidebar::-webkit-scrollbar {
-  display: none;
 }
 
 .sidebarLabel {

@@ -12,16 +12,12 @@
   gap: var(--space-1);
   padding: var(--space-0-5);
   overflow-y: auto;
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   overscroll-behavior: contain;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   color: var(--color-text);
   user-select: text;
-  scrollbar-width: none;
-}
-
-.dictionaryPanel::-webkit-scrollbar {
-  display: none;
 }
 
 /* Popup mode: remove outer padding — the popup container (.popup) already
@@ -86,17 +82,13 @@
 
 .searchHistoryList {
   display: flex;
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   gap: var(--space-1);
   margin: 0;
   padding: 0;
   overflow-x: auto;
   list-style: none;
-  scrollbar-width: none;
   min-width: 0;
-}
-
-.searchHistoryList::-webkit-scrollbar {
-  display: none;
 }
 
 .searchHistoryItem {
@@ -270,15 +262,11 @@
 
 .cellHeaderSecond {
   display: flex;
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   align-items: center;
   gap: var(--space-1);
   overflow-x: auto;
-  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-}
-
-.cellHeaderSecond::-webkit-scrollbar {
-  display: none;
 }
 
 .cellHeaderActions {
@@ -406,16 +394,12 @@
 }
 
 .cellDef {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   padding: 0 var(--space-2);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: none;
-}
-
-.cellDef::-webkit-scrollbar {
-  display: none;
 }
 
 .cellDefEmpty {
@@ -774,16 +758,12 @@
 }
 
 .cellCandidatesChipsScroll {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1 1 auto;
   display: flex;
   gap: var(--space-0-5);
   overflow-x: auto;
-  scrollbar-width: none;
   min-width: 0;
-}
-
-.cellCandidatesChipsScroll::-webkit-scrollbar {
-  display: none;
 }
 
 .cellChip {
@@ -805,6 +785,7 @@
 }
 
 .candidateList {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
   min-height: 0;
   display: flex;
@@ -814,11 +795,6 @@
   scroll-behavior: smooth;
   gap: 0;
   padding: 0;
-  scrollbar-width: none;
-}
-
-.candidateList::-webkit-scrollbar {
-  display: none;
 }
 
 .candidate {
@@ -930,17 +906,13 @@
 /* Audio panel: uses unified cellDefCheckBox — no panel-specific overrides needed */
 
 .cellImageSkeleton {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
   gap: var(--space-1);
   padding: var(--space-2);
   overflow-x: auto;
-  scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.cellImageSkeleton::-webkit-scrollbar {
-  display: none;
 }
 
 .cellImageSkeletonCard {
@@ -948,17 +920,13 @@
 }
 
 .cellImageStrip {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
   gap: var(--space-1);
   padding: var(--space-2);
   overflow-x: auto;
-  scrollbar-width: none;
   -ms-overflow-style: none;
-}
-
-.cellImageStrip::-webkit-scrollbar {
-  display: none;
 }
 
 .cellImageCard {

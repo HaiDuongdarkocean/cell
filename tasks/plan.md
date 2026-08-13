@@ -59,8 +59,22 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [ ] `SynonymChip` và `AntonymChip` render `Chip` với màu tương ứng, không còn CSS module riêng.
   - [ ] Tests + build pass.
 
-## Loop 5+ (future loops)
-- Scrollbar CSS dư thừa trong `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `SettingsDialog`, `QueueSidebar`.
+## Loop 5 — Hidden scrollbar SSOT
+- **Why:** Hàng chục `.module.css` có cùng pattern `scrollbar-width: none` + `::-webkit-scrollbar { display: none; }`.
+- **What:** Tạo `src/shared/ui/Scrollable.module.css` với class `.hide`; dùng `composes: hide from ...` để thay thế các block trùng.
+- **Files:**
+  - `src/shared/ui/Scrollable.module.css`
+  - `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css`
+  - `src/features/dictionaryPopup/ui/PopupDictionary.module.css`
+  - `src/features/settings/ui/SettingsDialog.module.css`
+  - `src/entrypoints/popup/App.redesigned.module.css`
+- **AC:**
+  - [ ] `Scrollable.module.css` chứa `.hide` với đúng 2 rule.
+  - [ ] Không còn `scrollbar-width: none` và `::-webkit-scrollbar { display: none; }` trong các `.module.css` khác.
+  - [ ] Build pass.
+
+## Loop 6+ (future loops)
+- Themed scrollbar CSS dư thừa trong `Dialog`, `Select`, `SearchableSelect`, `MultiSelect`, `QueueSidebar`.
 - Domain chip/badge còn lại (`WordChip`, `SourceBadge`, `FrequencyBadge`, `MasteryBadge`, `StatusBadge`).
 - Header/actions layout patterns trong popup/subtitle/universal panel.
 
