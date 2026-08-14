@@ -102,42 +102,44 @@ describe('findPlayerContainer', () => {
       expect(result).toBe(player);
     });
 
-    it('reaches a wider ancestor when it owns player controls', () => {
-      const video = createVideo(640, 360);
-      const videoWrapper = document.createElement('div');
-      const shell = document.createElement('div');
-      const controls = document.createElement('button');
+    it('rejects a container with same height but different width (themoviebox)', () => {
+      // themoviebox: video 1226×690, .player-container 1635×690 (same height,
+      // wider width) must NOT be accepted — both dimensions must match.
+      const video = createVideo(1226, 690);
+      const sameSize = document.createElement('div');
+      sameSize.id = 'same-size';
+      const wider = document.createElement('div');
+      wider.id = 'wider';
 
-      document.body.appendChild(shell);
-      shell.appendChild(videoWrapper);
-      videoWrapper.appendChild(video);
-      shell.appendChild(controls);
+      document.body.appendChild(wider);
+      wider.appendChild(sameSize);
+      sameSize.appendChild(video);
 
-      setBoundingClientRect(videoWrapper, 640, 360);
-      setBoundingClientRect(shell, 800, 400); // area ratio 1.39, within shell bounds
+      setBoundingClientRect(video, 1226, 690);
+      setBoundingClientRect(sameSize, 1226, 690);
+      setBoundingClientRect(wider, 1635, 690); // same height, wider
 
-      expect(findFarthestSameSizeContainer(video)).toBe(shell);
+      const result = findFarthestSameSizeContainer(video);
+      expect(result).toBe(sameSize);
     });
 
-    it('respects the tolerance parameter', () => {
+    it('rejects a container with same width but different height', () => {
       const video = createVideo(640, 360);
-      const player = document.createElement('div');
-      player.id = 'player';
-      const wrapper = document.createElement('div');
-      wrapper.id = 'wrapper';
+      const sameSize = document.createElement('div');
+      sameSize.id = 'same-size';
+      const taller = document.createElement('div');
+      taller.id = 'taller';
 
-      document.body.appendChild(wrapper);
-      wrapper.appendChild(player);
-      player.appendChild(video);
+      document.body.appendChild(taller);
+      taller.appendChild(sameSize);
+      sameSize.appendChild(video);
 
-      setBoundingClientRect(video, 640, 360); // area 230400
-      setBoundingClientRect(player, 640, 360); // same
-      setBoundingClientRect(wrapper, 680, 370); // area 251600, ~9% larger
+      setBoundingClientRect(video, 640, 360);
+      setBoundingClientRect(sameSize, 640, 360);
+      setBoundingClientRect(taller, 640, 480); // same width, taller
 
-      // With strict tolerance (5%) should stop at player
-      expect(findFarthestSameSizeContainer(video, 0.05)).toBe(player);
-      // With default tolerance (15%) should include wrapper
-      expect(findFarthestSameSizeContainer(video, 0.15)).toBe(wrapper);
+      const result = findFarthestSameSizeContainer(video);
+      expect(result).toBe(sameSize);
     });
   });
 
