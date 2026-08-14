@@ -16,15 +16,18 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { LANGUAGES } from '@/shared/config/languageRegistry';
+import { ApiKeyManager } from '@/features/settings/ui/ApiKeyManager';
 import { parseSubtitle } from '../logic/subtitleParser';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitleSearchResult, SearchQuery, SearchError } from '../logic/subtitleSearchTypes';
 import type { ResolveSubtitleDownloadResult } from '@/entities/message';
+import type { SubtitleApiKey } from '@/entities/settings';
 import styles from './SubtitleSearchPanel.module.css';
 
 export interface SubtitleSearchPanelProps {
   readonly hasSearchKeys: boolean;
-  readonly onOpenSettings: () => void;
+  readonly apiKeys: readonly SubtitleApiKey[];
+  readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
 
@@ -160,7 +163,7 @@ function SearchResultRow({ result, index, isSelected, previewCues, previewLoadin
   );
 }
 
-export function SubtitleSearchPanel({ hasSearchKeys, onOpenSettings, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
+export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [language, setLanguage] = useState<string>(ALL_LANGUAGES_VALUE);
   const [season, setSeason] = useState('');
@@ -356,14 +359,12 @@ export function SubtitleSearchPanel({ hasSearchKeys, onOpenSettings, onSearchRes
     [query, language, season, episode, doSearch],
   );
 
-  // No keys → collapsed with hint + Settings button.
+  // No keys → inline ApiKeyManager so user can add keys without leaving search view.
   if (!hasSearchKeys) {
     return (
       <section className={styles.noKeySection} data-cell-id="search-no-keys">
-        <p className={styles.noKeyHint}>Add API key in Settings to search subtitles</p>
-        <Button variant="outline" size="sm" onClick={onOpenSettings} data-cell-id="search-open-settings">
-          Open Settings
-        </Button>
+        <p className={styles.noKeyHint}>Add an API key to search subtitles from SubDL or OpenSubtitles.</p>
+        <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
       </section>
     );
   }

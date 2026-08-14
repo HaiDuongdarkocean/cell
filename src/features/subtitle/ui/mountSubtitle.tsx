@@ -10,6 +10,7 @@ import subtitleBlockCss from './SubtitleBlock.module.css?inline';
 import navClusterCss from './NavCluster.module.css?inline';
 import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
 import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
+import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
 import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
 import inputCss from '@/shared/ui/Input.module.css?inline';
@@ -187,6 +188,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         navClusterCss,
         subtitleManagerCss,
         subtitleSearchCss,
+        apiKeyManagerCss,
         subtitleOffsetCss,
         buttonCss,
         inputCss,

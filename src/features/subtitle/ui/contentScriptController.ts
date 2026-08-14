@@ -1,5 +1,6 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import type { SubtitleApiKey } from '@/entities/settings';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -762,9 +763,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     blockController.onToggleSidePanel = toggleSidePanel;
     blockController.onSearchResultSelect = (result, role, cues) => { void handleSearchResultSelect(result, role, cues); };
     blockController.setHasSearchKeys(hasSearchKeys());
-    // Force re-render with the new onSearchResultSelect callback.
+    blockController.setSearchApiKeys(currentSettings?.subtitleApiKeys ?? []);
+    blockController.onApiKeysChange((keys) => { void handleApiKeysChange(keys); });
+    // Force re-render with the new callbacks.
     blockController.refreshManagerState();
-    blockController.onOpenSettings(() => { void sendMessage({ type: MESSAGE_TYPES.OPEN_SIDE_PANEL, payload: { tabId: undefined } }); });
     // ADR-025: offset provider already wired in ReactSubtitleController constructor.
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
@@ -773,6 +775,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       const newSettings = changes.settings?.newValue as Settings | undefined;
       if (newSettings) {
         currentSettings = newSettings;
+        // Live-update search keys state when settings change externally.
+        const keys = newSettings.subtitleApiKeys ?? [];
+        blockController?.setHasSearchKeys(keys.length > 0);
+        blockController?.setSearchApiKeys(keys);
       }
       if (newSettings?.subtitleOverlayTargetStyle) {
         targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: overlayVisible };
@@ -1984,6 +1990,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   /** Check if the user has configured any subtitle search API keys. */
   function hasSearchKeys(): boolean {
     return (currentSettings?.subtitleApiKeys?.length ?? 0) > 0;
+  }
+
+  /** Persist API key changes to settings storage + update controller state. */
+  async function handleApiKeysChange(keys: SubtitleApiKey[]): Promise<void> {
+    await saveSettings({ subtitleApiKeys: keys });
+    currentSettings = { ...currentSettings, subtitleApiKeys: keys } as typeof currentSettings;
+    blockController?.setHasSearchKeys(keys.length > 0);
+    blockController?.setSearchApiKeys(keys);
   }
 
   // Re-send SUBTITLE_CUES_LOADED when tab becomes visible again.
