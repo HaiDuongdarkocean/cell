@@ -776,6 +776,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const videoRect = videoEl?.getBoundingClientRect();
         const isBroadShell = videoRect
           && playerRect.width > videoRect.width * 1.2;
+        // Wrapper flex: preserve playerShell's original footprint when the
+        // parent is a flex row with siblings (e.g. kisskh .row contains
+        // video col + drama info col). Using flex:1 1 100% would take the
+        // entire row, collapsing siblings to 0 width — the episode selector
+        // disappears. Instead, use the playerShell's original pixel width as
+        // flex-basis so the wrapper takes only the video column's space.
+        // Ponytail ceiling: fixed px width won't resize on browser resize;
+        // upgrade path = parse computed flex-basis percentage (e.g. 58.3333%)
+        // for responsive sizing. On re-open the width recalculates.
+        const parentCs = getComputedStyle(originalParent);
+        const parentIsFlexRow = parentCs.display === 'flex'
+          && (parentCs.flexDirection === 'row'
+            || parentCs.flexDirection === 'row-reverse');
+        const hasFlexSiblings = parentIsFlexRow
+          && Array.from(originalParent.children)
+            .filter((c) => c !== playerShell
+              && !(c as HTMLElement).hasAttribute?.('data-cell-split-view')
+              && c.getBoundingClientRect().width > 0)
+            .length > 0;
+        const wrapperFlex = hasFlexSiblings
+          ? `0 0 ${Math.round(playerRect.width)}px`
+          : '1 1 100%';
         // YouTube: use height:100% so the wrapper follows #container's
         // computed height automatically on window resize — no hardcoded px,
         // no resize listener needed. #container's height is set by YouTube's
@@ -793,6 +815,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           viewportBound,
           isYoutube: isYoutubePage(),
           isBroadShell,
+          hasFlexSiblings,
+          wrapperFlex,
           parentPixelHeight: Math.round(parentPixelHeight),
           videoRect: rectLog(videoEl),
           playerRect: { w: Math.round(playerRect.width), h: Math.round(playerRect.height) },
@@ -805,7 +829,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const isYoutube = isYoutubePage();
         wrapper.style.cssText = isYoutube
           ? `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;position:relative;`
-          : `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;`;
+          : hasFlexSiblings
+            ? `display:flex;flex-direction:row;flex:${wrapperFlex};height:${wrapperHeightStyle};align-self:stretch;overflow:hidden;position:relative;`
+            : `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:${wrapperFlex};align-self:stretch;overflow:hidden;position:relative;`;
 
         if (playerComputedStyle.position === 'fixed') {
           playerShell.style.setProperty('position', 'absolute', 'important');

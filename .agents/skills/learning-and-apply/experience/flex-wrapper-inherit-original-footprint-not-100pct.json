@@ -1,0 +1,26 @@
+{
+  "id": "flex-wrapper-inherit-original-footprint-not-100pct",
+  "title": "Split View wrapper must inherit playerShell's original flex footprint, not flex:1 1 100%",
+  "category": ["css", "ux"],
+  "tags": ["flexbox", "flex-basis", "wrapper", "split-view", "sibling-collapse", "bootstrap-cols", "kisskh", "themoviebox", "flex-row", "episode-selector", "dom-move"],
+  "trigger": "A wrapper element replaces a flex item in a flex row that has siblings, and the wrapper uses flex:1 1 100% (or width:100%) — this takes the entire row, collapsing siblings to 0 width",
+  "principle": "When a wrapper replaces a flex item in a flex row with siblings, the wrapper must inherit the original item's flex footprint (flex-grow, flex-shrink, flex-basis). Using flex:1 1 100% + width:100% makes the wrapper take 100% of the row. If a sibling has flex-basis:0 + flex-grow:1 (e.g. Bootstrap .col-xl without a number), it competes for growing space but loses because the wrapper's basis is 100% — the sibling collapses to 0 width and its content (episode selector, drama info) disappears. If a sibling has a fixed width (flex:0 0 auto), the wrapper shrinks to fill the remaining space — this works by accident but is still wrong. Fix: detect flex-row parents with siblings and use flex:0 0 {originalWidth}px for the wrapper, or better, parse the computed flex-basis percentage for responsive sizing.",
+  "cases": [
+    {
+      "context": "kisskh: .row (flex row) contains .col-xl-7 (video, flex:0 0 58.33%) + .col-xl (drama info, flex:1 0 0px). Split View wrapper replaces .col-xl-7 with flex:1 1 100% + width:100%. Total flex-basis: 100% + 0 = 100%. Both grow:1, no remaining space. Wrapper = 100% = 1891px, drama col = 0px. Episode selector disappears.",
+      "bad": "// wrapper takes 100% of the flex row, collapsing siblings\nwrapper.style.cssText = 'display:flex;flex-direction:row;width:100%;flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;';\n// → wrapper 1891px, drama col 0px — episode selector gone",
+      "good": "// detect flex-row parent with siblings, preserve original footprint\nconst parentCs = getComputedStyle(originalParent);\nconst hasFlexSiblings = parentCs.display === 'flex'\n  && /row/.test(parentCs.flexDirection)\n  && Array.from(originalParent.children).filter(c => c !== playerShell && c.getBoundingClientRect().width > 0).length > 0;\nconst wrapperFlex = hasFlexSiblings ? `0 0 ${Math.round(playerRect.width)}px` : '1 1 100%';\nwrapper.style.cssText = `display:flex;flex-direction:row;flex:${wrapperFlex};height:${h};align-self:stretch;overflow:hidden;position:relative;`;\n// → wrapper 1103px (video col), drama col 788px — episode selector visible"
+    },
+    {
+      "context": "themoviebox: .player-container (flex row) contains .w-full h-[203px] (video, 1226px) + resources panel (409px, flex:0 1 auto). The old flex:1 1 100% worked by accident because the resources panel has a fixed width and flex-shrink:0, so the wrapper shrinks to 1226px. But the fix (flex:0 0 1226px) is explicit and correct.",
+      "bad": "// works by accident — sibling has fixed width, wrapper shrinks\nwrapper.style.cssText = '...flex:1 1 100%;width:100%...';\n// → wrapper 1226px (shrunk from 100%), resources 409px — works but fragile",
+      "good": "// explicit — wrapper takes exactly the video column's width\nconst wrapperFlex = `0 0 ${Math.round(playerRect.width)}px`;\nwrapper.style.cssText = `...flex:${wrapperFlex}...`;\n// → wrapper 1226px, resources 409px — correct and robust"
+    }
+  ],
+  "applyFor": [
+    "Split View / Player Mode wrappers that replace a flex item in a flex row with siblings",
+    "Any DOM reparenting where a wrapper replaces a flex item and must preserve the original layout footprint",
+    "Bootstrap/Angular/Tailwind layouts with flex-row containers where one column is wrapped and siblings must remain visible",
+    "Wrapper flex-basis selection: use original width when siblings exist, use 1 1 100% when the wrapper should fill the parent"
+  ]
+}
