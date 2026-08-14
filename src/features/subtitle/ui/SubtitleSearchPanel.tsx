@@ -1,15 +1,16 @@
 /**
  * SubtitleSearchPanel — search UI for SubDL / OpenSubtitles.
  *
- * Renders inside SubtitleManagerPanel above the Target/Native sections.
- * Debounced input (300ms) + AbortController cancel in-flight requests.
+ * Renders as a dedicated view inside SubtitleManagerPanel (with back button).
+ * Search triggers only on Enter or Search button click — no auto-search.
+ * Language is read-only from settings (target → native), no language select.
+ * API status chip (green=OK, red=missing) replaces manage-keys toggle.
  * Background owns all network calls (SEARCH_SUBTITLES message).
  *
  * Spec: docs/specs/subtitle-search.md — UI Design section.
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Icon } from '@/shared/ui/Icon';
@@ -32,8 +33,6 @@ export interface SubtitleSearchPanelProps {
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
 
-const DEBOUNCE_MS = 300;
-const ALL_LANGUAGES_VALUE = 'all';
 const SKELETON_COUNT = 4;
 const PREVIEW_CUE_COUNT = 8;
 
@@ -68,16 +67,21 @@ function languageLabel(iso: string): string {
   return entry.native === entry.english ? entry.english : `${entry.native} (${entry.english})`;
 }
 
+function languageShortLabel(iso: string): string {
+  const entry = LANGUAGES.find((l) => l.iso1 === iso);
+  return entry ? (entry.native === entry.english ? entry.english : entry.native) : iso;
+}
+
 function describeError(err: SearchError): string {
   switch (err.type) {
     case 'no-key':
-      return `No API key for ${err.provider}. Add one below.`;
+      return `No API key for ${err.provider}. Add one in API keys.`;
     case 'quota-exhausted':
-      return `All ${err.provider} keys exhausted. Add more in Settings.`;
+      return `All ${err.provider} keys exhausted. Add more in API keys.`;
     case 'rate-limited':
       return `${err.provider} rate-limited. Try again in ${Math.ceil(err.retryAfterMs / 1000)}s.`;
     case 'auth-invalid':
-      return `${err.provider} key invalid. Check Settings.`;
+      return `${err.provider} key invalid. Check API keys.`;
     case 'network':
       return `Network error: ${err.message}`;
     case 'parse':
@@ -166,7 +170,8 @@ function SearchResultRow({ result, index, isSelected, previewCues, previewLoadin
 
 export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
   const [query, setQuery] = useState('');
-  const [language, setLanguage] = useState<string>(ALL_LANGUAGES_VALUE);
+  const [targetLang, setTargetLang] = useState('');
+  const [nativeLang, setNativeLang] = useState('');
   const [season, setSeason] = useState('');
   const [episode, setEpisode] = useState('');
   const [results, setResults] = useState<readonly SubtitleSearchResult[]>([]);
@@ -179,31 +184,26 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [manageKeysOpen, setManageKeysOpen] = useState(false);
   const previewCacheRef = useRef<Map<string, SrtCue[]>>(new Map());
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const lastQueryRef = useRef('');
 
-  // Load default languages from settings on mount.
+  // Load target + native languages from settings on mount.
   useEffect(() => {
     void (async (): Promise<void> => {
       try {
         const settings = await loadSettings();
-        const target = settings.subtitleOverlayTargetLanguage ?? '';
-        const native = settings.subtitleOverlayNativeLanguage ?? '';
-        const langs = [target, native].filter(Boolean);
-        // If both target+native exist and differ, default to "all" (search broadly).
-        // Otherwise default to the single configured language.
-        if (langs.length > 0 && langs.length < 2) {
-          setLanguage(langs[0]!);
-        }
+        setTargetLang(settings.subtitleOverlayTargetLanguage ?? '');
+        setNativeLang(settings.subtitleOverlayNativeLanguage ?? '');
       } catch {
-        // Settings load failure — keep "all" default.
+        // Settings load failure — empty langs = search all.
       }
     })();
   }, []);
 
-  const doSearch = useCallback(async (q: string, lang: string, s: string, e: string): Promise<void> => {
+  const searchLanguages = useCallback((): readonly string[] => {
+    return [targetLang, nativeLang].filter(Boolean);
+  }, [targetLang, nativeLang]);
+
+  const doSearch = useCallback(async (q: string, langs: readonly string[], s: string, e: string): Promise<void> => {
     if (!q.trim()) {
       setResults([]);
       setError(null);
@@ -220,12 +220,11 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     setError(null);
     setHasSearched(true);
 
-    const languages = lang === ALL_LANGUAGES_VALUE ? [] : [lang];
     const seasonNum = s.trim() ? Number(s) : undefined;
     const episodeNum = e.trim() ? Number(e) : undefined;
     const searchQuery: SearchQuery = {
       query: q.trim(),
-      languages,
+      languages: [...langs],
       season: seasonNum !== undefined && !Number.isNaN(seasonNum) ? seasonNum : undefined,
       episode: episodeNum !== undefined && !Number.isNaN(episodeNum) ? episodeNum : undefined,
     };
@@ -259,23 +258,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     }
   }, []);
 
-  // Debounced search on query/language/season/episode change.
-  useEffect(() => {
-    const trimmed = query.trim();
-    // Only auto-search if query changed (not on lang/S/E change alone).
-    if (trimmed === lastQueryRef.current && lastQueryRef.current !== '') return;
-    lastQueryRef.current = trimmed;
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      void doSearch(query, language, season, episode);
-    }, DEBOUNCE_MS);
-
-    return (): void => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, language, season, episode, doSearch]);
-
   // Cleanup abort controller on unmount.
   useEffect(() => {
     return (): void => {
@@ -284,9 +266,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   }, []);
 
   const handleSearchClick = useCallback((): void => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    void doSearch(query, language, season, episode);
-  }, [query, language, season, episode, doSearch]);
+    void doSearch(query, searchLanguages(), season, episode);
+  }, [query, season, episode, doSearch, searchLanguages]);
 
   const handleResultClick = useCallback(async (index: number): Promise<void> => {
     // Toggle off if same result clicked again.
@@ -347,37 +328,26 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   );
 
   const handleRetry = useCallback((): void => {
-    void doSearch(query, language, season, episode);
-  }, [query, language, season, episode, doSearch]);
+    void doSearch(query, searchLanguages(), season, episode);
+  }, [query, season, episode, doSearch, searchLanguages]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        void doSearch(query, language, season, episode);
+        void doSearch(query, searchLanguages(), season, episode);
       }
     },
-    [query, language, season, episode, doSearch],
+    [query, season, episode, doSearch, searchLanguages],
   );
 
-  // No keys → inline ApiKeyManager so user can add keys without leaving search view.
-  if (!hasSearchKeys) {
-    return (
-      <section className={styles.noKeySection} data-cell-id="search-no-keys">
-        <p className={styles.noKeyHint}>Add an API key to search subtitles from SubDL or OpenSubtitles.</p>
-        <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
-      </section>
-    );
-  }
+  const formDisabled = !hasSearchKeys;
+  const keyCount = apiKeys.length;
 
-  const languageOptions = [
-    { value: ALL_LANGUAGES_VALUE, label: 'All languages' },
-    ...LANGUAGES.map((l) => ({
-      value: l.iso1,
-      label: l.native === l.english ? l.english : `${l.native} (${l.english})`,
-    })),
-  ];
+  // Build language hint label from settings.
+  const langHintParts: string[] = [];
+  if (targetLang) langHintParts.push(languageShortLabel(targetLang));
+  if (nativeLang && nativeLang !== targetLang) langHintParts.push(languageShortLabel(nativeLang));
 
   return (
     <section className={styles.section} data-cell-id="search-section">
@@ -385,14 +355,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         <span className={styles.sectionTitle}>Search subtitles</span>
         <button
           type="button"
-          className={styles.manageKeysToggle}
+          className={`${styles.apiChip} ${hasSearchKeys ? styles.apiChipOk : styles.apiChipError}`}
           onClick={() => setManageKeysOpen((v) => !v)}
           aria-expanded={manageKeysOpen}
           aria-controls="search-manage-keys"
-          data-cell-id="search-manage-keys-toggle"
+          data-cell-id="search-api-chip"
         >
           <Icon name="settings" size="xs" />
-          <span>API keys</span>
+          <span>{hasSearchKeys ? `${keyCount} ${keyCount === 1 ? 'key' : 'keys'}` : 'No API key'}</span>
           <Icon
             name="chevronDown"
             size="xs"
@@ -408,26 +378,31 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       )}
 
       <div className={styles.searchForm} data-cell-id="search-form">
-        <div className={styles.inputRow}>
-          <Input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Movie or series title…"
-            aria-label="Search subtitles by title"
-            className={styles.queryInput}
-            data-cell-id="search-query-input"
-          />
-          <Select
-            value={language}
-            options={languageOptions}
-            onChange={setLanguage}
-            aria-label="Search language"
-            className={styles.langSelect}
-            data-cell-id="search-language-select"
-          />
-        </div>
+        {langHintParts.length > 0 && (
+          <div className={styles.langHint} data-cell-id="search-lang-hint">
+            <Icon name="flag" size="xs" />
+            <span className={styles.langHintText}>Searching for</span>
+            <span className={styles.langHintPair}>{langHintParts[0]}</span>
+            {langHintParts[1] && (
+              <>
+                <span className={styles.langHintArrow}>→</span>
+                <span className={styles.langHintPair}>{langHintParts[1]}</span>
+              </>
+            )}
+          </div>
+        )}
+
+        <Input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Movie or series title…"
+          aria-label="Search subtitles by title"
+          className={styles.queryInput}
+          disabled={formDisabled}
+          data-cell-id="search-query-input"
+        />
 
         <div className={styles.seasonRow}>
           <label className={styles.numberField}>
@@ -439,6 +414,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               onChange={(e) => setSeason(e.target.value)}
               aria-label="Season number"
               className={styles.numberInput}
+              disabled={formDisabled}
               data-cell-id="search-season-input"
             />
           </label>
@@ -451,6 +427,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               onChange={(e) => setEpisode(e.target.value)}
               aria-label="Episode number"
               className={styles.numberInput}
+              disabled={formDisabled}
               data-cell-id="search-episode-input"
             />
           </label>
@@ -459,7 +436,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             size="md"
             loading={loading}
             onClick={handleSearchClick}
-            disabled={!query.trim()}
+            disabled={formDisabled || !query.trim()}
             className={styles.searchButton}
             data-cell-id="search-button"
           >
@@ -492,6 +469,12 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {!loading && !error && hasSearched && results.length === 0 && (
           <div className={styles.emptyState} data-cell-id="search-empty">
             No results found
+          </div>
+        )}
+
+        {!loading && !error && !hasSearched && !hasSearchKeys && (
+          <div className={styles.emptyState} data-cell-id="search-no-keys-hint">
+            Add an API key to start searching subtitles.
           </div>
         )}
 
