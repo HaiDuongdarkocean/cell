@@ -7,9 +7,12 @@
  * API status chip (green=OK, red=missing) replaces manage-keys toggle.
  * Background owns all network calls (SEARCH_SUBTITLES message).
  *
+ * Two tabs (Target / Native) filter results by the tab's language.
+ * Clicking a result loads it directly into the overlay — no preview step.
+ *
  * Spec: docs/specs/subtitle-search.md — UI Design section.
  */
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
@@ -19,10 +22,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { LANGUAGES } from '@/shared/config/languageRegistry';
 import { ApiKeyManager } from '@/features/settings/ui/ApiKeyManager';
-import { parseSubtitle } from '../logic/subtitleParser';
-import type { SrtCue } from '@/entities/media';
 import type { SubtitleSearchResult, SearchQuery, SearchError } from '../logic/subtitleSearchTypes';
-import type { ResolveSubtitleDownloadResult } from '@/entities/message';
 import type { SubtitleApiKey } from '@/entities/settings';
 import styles from './SubtitleSearchPanel.module.css';
 
@@ -30,35 +30,16 @@ export interface SubtitleSearchPanelProps {
   readonly hasSearchKeys: boolean;
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
-  readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
+  readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
 }
 
+type SubtitleRole = 'target' | 'native';
+
 const SKELETON_COUNT = 4;
-const PREVIEW_CUE_COUNT = 8;
 
 interface SearchResponse {
   readonly results?: SubtitleSearchResult[];
   readonly error?: SearchError;
-}
-
-interface SearchResultRowProps {
-  readonly result: SubtitleSearchResult;
-  readonly index: number;
-  readonly isSelected: boolean;
-  readonly previewCues: readonly SrtCue[] | null;
-  readonly previewLoading: boolean;
-  readonly previewError: string | null;
-  readonly onSelect: () => void;
-  readonly onRolePick: (role: 'target' | 'native') => void;
-}
-
-function formatPreviewTime(ms: number): string {
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
 function languageLabel(iso: string): string {
@@ -89,13 +70,17 @@ function describeError(err: SearchError): string {
   }
 }
 
-function SearchResultRow({ result, index, isSelected, previewCues, previewLoading, previewError, onSelect, onRolePick }: SearchResultRowProps): React.JSX.Element {
+function SearchResultRow({ result, index, onClick }: {
+  readonly result: SubtitleSearchResult;
+  readonly index: number;
+  readonly onClick: () => void;
+}): React.JSX.Element {
   return (
-    <li className={styles.resultItem} role="option" aria-selected={isSelected} data-cell-id={`search-result-${index}`}>
+    <li className={styles.resultItem} role="option" data-cell-id={`search-result-${index}`}>
       <button
         type="button"
         className={styles.resultButton}
-        onClick={onSelect}
+        onClick={onClick}
         data-cell-id={`search-result-button-${index}`}
       >
         <span className={styles.resultName}>{result.name}</span>
@@ -107,63 +92,6 @@ function SearchResultRow({ result, index, isSelected, previewCues, previewLoadin
           {result.forced && <span className={styles.resultBadge}>Forced</span>}
         </span>
       </button>
-      {isSelected && (
-        <div className={styles.previewPanel} data-cell-id={`search-preview-${index}`}>
-          <div className={styles.previewHead}>
-            <div className={styles.previewHeadInfo}>
-              <span className={styles.previewHeadName}>{result.name}</span>
-              {previewCues && <span className={styles.previewHeadMeta}>{previewCues.length} cues</span>}
-            </div>
-          </div>
-          <div className={styles.previewList}>
-            {previewLoading && (
-              <div className={styles.previewLoading}>
-                <Skeleton width="90%" height={14} />
-                <Skeleton width="70%" height={14} />
-                <Skeleton width="80%" height={14} />
-              </div>
-            )}
-            {!previewLoading && previewError && (
-              <div className={styles.previewError}>{previewError}</div>
-            )}
-            {!previewLoading && !previewError && previewCues && (
-              <>
-                {previewCues.slice(0, PREVIEW_CUE_COUNT).map((cue) => (
-                  <div key={cue.index} className={styles.previewCue}>
-                    <span className={styles.previewCueTime}>{formatPreviewTime(cue.start)}</span>
-                    <div className={styles.previewCueText}>{cue.text}</div>
-                  </div>
-                ))}
-                {previewCues.length > PREVIEW_CUE_COUNT && (
-                  <div className={styles.previewMore}>
-                    +{previewCues.length - PREVIEW_CUE_COUNT} more cues
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          <div className={styles.previewFooter} data-cell-id={`search-role-picker-${index}`}>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => onRolePick('target')}
-              disabled={previewLoading || !!previewError}
-              data-cell-id={`search-load-target-${index}`}
-            >
-              Load as Target
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onRolePick('native')}
-              disabled={previewLoading || !!previewError}
-              data-cell-id={`search-load-native-${index}`}
-            >
-              Load as Native
-            </Button>
-          </div>
-        </div>
-      )}
     </li>
   );
 }
@@ -178,12 +106,9 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [selectedResult, setSelectedResult] = useState<number | null>(null);
-  const [previewCues, setPreviewCues] = useState<readonly SrtCue[] | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
   const [manageKeysOpen, setManageKeysOpen] = useState(false);
-  const previewCacheRef = useRef<Map<string, SrtCue[]>>(new Map());
+  const [activeTab, setActiveTab] = useState<SubtitleRole>('target');
+  const [loadingResultId, setLoadingResultId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Load target + native languages from settings on mount.
@@ -269,63 +194,13 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     void doSearch(query, searchLanguages(), season, episode);
   }, [query, season, episode, doSearch, searchLanguages]);
 
-  const handleResultClick = useCallback(async (index: number): Promise<void> => {
-    // Toggle off if same result clicked again.
-    if (selectedResult === index) {
-      setSelectedResult(null);
-      setPreviewCues(null);
-      setPreviewError(null);
-      return;
-    }
-    setSelectedResult(index);
-    setPreviewCues(null);
-    setPreviewError(null);
-
-    const result = results[index];
-    if (!result) return;
-
-    // Cache hit — show cached cues immediately.
-    const cached = previewCacheRef.current.get(result.id);
-    if (cached) {
-      setPreviewCues(cached);
-      return;
-    }
-
-    // Fetch + parse subtitle for preview.
-    setPreviewLoading(true);
-    try {
-      const response = await sendMessage<{ success?: boolean; data?: ResolveSubtitleDownloadResult; error?: string }>({
-        type: MESSAGE_TYPES.RESOLVE_SUBTITLE_DOWNLOAD,
-        payload: { result, role: 'target' },
-      });
-      if (!response?.success || !response.data?.content) {
-        const msg = response?.error ?? response?.data?.error?.type ?? 'download failed';
-        setPreviewError(msg);
-        return;
-      }
-      const parsed = parseSubtitle(response.data.content, response.data.format ?? result.format);
-      if (!parsed.success || parsed.cues.length === 0) {
-        setPreviewError(parsed.error ?? 'no cues');
-        return;
-      }
-      previewCacheRef.current.set(result.id, parsed.cues);
-      setPreviewCues(parsed.cues);
-    } catch (err) {
-      setPreviewError(err instanceof Error ? err.message : 'Preview failed');
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, [selectedResult, results]);
-
-  const handleRolePick = useCallback(
-    (result: SubtitleSearchResult, role: 'target' | 'native'): void => {
-      const cachedCues = previewCacheRef.current.get(result.id);
-      onSearchResultSelect(result, role, cachedCues);
-      setSelectedResult(null);
-      setPreviewCues(null);
-    },
-    [onSearchResultSelect],
-  );
+  const handleResultClick = useCallback((result: SubtitleSearchResult): void => {
+    setLoadingResultId(result.id);
+    onSearchResultSelect(result, activeTab);
+    // Clear loading state after a short delay — controller handles the actual
+    // load + toast. This gives visual feedback that the click was registered.
+    setTimeout(() => setLoadingResultId(null), 1500);
+  }, [activeTab, onSearchResultSelect]);
 
   const handleRetry = useCallback((): void => {
     void doSearch(query, searchLanguages(), season, episode);
@@ -344,10 +219,16 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const formDisabled = !hasSearchKeys;
   const keyCount = apiKeys.length;
 
-  // Build language hint label from settings.
-  const langHintParts: string[] = [];
-  if (targetLang) langHintParts.push(languageShortLabel(targetLang));
-  if (nativeLang && nativeLang !== targetLang) langHintParts.push(languageShortLabel(nativeLang));
+  // Filter results by active tab's language.
+  const tabLang = activeTab === 'target' ? targetLang : nativeLang;
+  const filteredResults = useMemo(() => {
+    if (!tabLang) return results;
+    return results.filter((r) => r.isoLanguage === tabLang);
+  }, [results, tabLang]);
+
+  // Tab labels with language names.
+  const targetLabel = targetLang ? languageShortLabel(targetLang) : 'Target';
+  const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : 'Native';
 
   return (
     <section className={styles.section} data-cell-id="search-section">
@@ -378,20 +259,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       )}
 
       <div className={styles.searchForm} data-cell-id="search-form">
-        {langHintParts.length > 0 && (
-          <div className={styles.langHint} data-cell-id="search-lang-hint">
-            <Icon name="flag" size="xs" />
-            <span className={styles.langHintText}>Searching for</span>
-            <span className={styles.langHintPair}>{langHintParts[0]}</span>
-            {langHintParts[1] && (
-              <>
-                <span className={styles.langHintArrow}>→</span>
-                <span className={styles.langHintPair}>{langHintParts[1]}</span>
-              </>
-            )}
-          </div>
-        )}
-
         <Input
           type="text"
           value={query}
@@ -445,6 +312,40 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         </div>
       </div>
 
+      {/* Target / Native tabs — filter results by language */}
+      {hasSearched && !loading && !error && (
+        <div className={styles.tabBar} role="tablist" data-cell-id="search-tabs">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'target'}
+            className={`${styles.tab} ${activeTab === 'target' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('target')}
+            data-cell-id="search-tab-target"
+          >
+            <Icon name="flag" size="xs" />
+            <span>{targetLabel}</span>
+            {activeTab === 'target' && filteredResults.length > 0 && (
+              <span className={styles.tabCount}>{filteredResults.length}</span>
+            )}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'native'}
+            className={`${styles.tab} ${activeTab === 'native' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('native')}
+            data-cell-id="search-tab-native"
+          >
+            <Icon name="flag" size="xs" />
+            <span>{nativeLabel}</span>
+            {activeTab === 'native' && filteredResults.length > 0 && (
+              <span className={styles.tabCount}>{filteredResults.length}</span>
+            )}
+          </button>
+        </div>
+      )}
+
       <div className={styles.resultsArea} data-cell-id="search-results-area">
         {loading && (
           <ul className={styles.skeletonList} aria-hidden="true">
@@ -466,9 +367,11 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           </div>
         )}
 
-        {!loading && !error && hasSearched && results.length === 0 && (
+        {!loading && !error && hasSearched && filteredResults.length === 0 && (
           <div className={styles.emptyState} data-cell-id="search-empty">
-            No results found
+            {results.length > 0
+              ? `No ${languageLabel(tabLang)} subtitles found. Try the other tab.`
+              : 'No results found'}
           </div>
         )}
 
@@ -478,19 +381,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           </div>
         )}
 
-        {!loading && !error && results.length > 0 && (
+        {!loading && !error && filteredResults.length > 0 && (
           <ul className={styles.resultsList} role="listbox" data-cell-id="search-results-list">
-            {results.map((result, index) => (
+            {filteredResults.map((result, index) => (
               <SearchResultRow
                 key={result.id}
                 result={result}
                 index={index}
-                isSelected={selectedResult === index}
-                previewCues={selectedResult === index ? previewCues : null}
-                previewLoading={selectedResult === index ? previewLoading : false}
-                previewError={selectedResult === index ? previewError : null}
-                onSelect={() => void handleResultClick(index)}
-                onRolePick={(role) => handleRolePick(result, role)}
+                onClick={() => handleResultClick(result)}
               />
             ))}
           </ul>

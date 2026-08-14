@@ -762,7 +762,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
     blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     blockController.onToggleSidePanel = toggleSidePanel;
-    blockController.onSearchResultSelect = (result, role, cues) => { void handleSearchResultSelect(result, role, cues); };
+    blockController.onSearchResultSelect = (result, role) => { void handleSearchResultSelect(result, role); };
     blockController.setHasSearchKeys(hasSearchKeys());
     blockController.setSearchApiKeys(currentSettings?.subtitleApiKeys ?? []);
     blockController.onApiKeysChange((keys) => { void handleApiKeysChange(keys); });
@@ -1889,16 +1889,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * cues by result.id → creates a 'searched' panel item → loads bilingual cues.
    * Re-selecting the same result uses the parsedSearchCache (no re-fetch).
    */
-  async function handleSearchResultSelect(result: SubtitleSearchResult, role: 'target' | 'native', preloadedCues?: SrtCue[]): Promise<void> {
+  async function handleSearchResultSelect(result: SubtitleSearchResult, role: 'target' | 'native'): Promise<void> {
     // Cache hit: reuse parsed cues (user re-selected a previously loaded result).
-    const cachedCues = preloadedCues ?? parsedSearchCache.get(result.id);
+    const cachedCues = parsedSearchCache.get(result.id);
     let cues: SrtCue[];
     if (cachedCues) {
       cues = cachedCues;
-      // Ensure cache is populated when preloaded cues are passed from preview.
-      if (preloadedCues && !parsedSearchCache.has(result.id)) {
-        parsedSearchCache.set(result.id, cues);
-      }
     } else {
       // Ask background to resolve the download (fetch + decode archive).
       const response = await sendMessage<{ success?: boolean; data?: ResolveSubtitleDownloadResult; error?: string }>({
