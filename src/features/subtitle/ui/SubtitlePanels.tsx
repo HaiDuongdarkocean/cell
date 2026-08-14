@@ -599,7 +599,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // NORMAL: wrap playerShell in a flex row wrapper.
         wrapper = document.createElement('div');
         wrapper.setAttribute('data-cell-split-view', 'wrapper');
-        wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeight};overflow:hidden;position:relative;`;
+        // height:100% fills the parent when it has a definite height.
+        // flex:1 1 100% + align-self:stretch handles flex-row parents with
+        // align-items:normal (stretch doesn't apply with flex-wrap:wrap).
+        // The fallback wrapperHeight (px) is only used for fixed-position
+        // players that are viewport-bound.
+        // For non-viewport-bound players, use the parent's pixel height
+        // directly — height:100% doesn't work in flex-wrap:wrap containers
+        // because flex items are sized by the flex algorithm, not percentage.
+        const parentPixelHeight = originalParent.getBoundingClientRect().height;
+        const wrapperHeightStyle = viewportBound
+          ? wrapperHeight
+          : `${Math.round(parentPixelHeight)}px`;
+        wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;`;
 
         if (playerComputedStyle.position === 'fixed') {
           playerShell.style.setProperty('position', 'absolute', 'important');
