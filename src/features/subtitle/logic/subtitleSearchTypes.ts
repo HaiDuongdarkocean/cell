@@ -72,7 +72,7 @@ export interface SubtitleSearchProvider {
   normalizeSearch(raw: unknown, query: SearchQuery): SubtitleSearchResult[];
   buildSearchRequest(query: SearchQuery, apiKey: string): FetchPlan;
   buildDownloadRequest(result: SubtitleSearchResult, apiKey: string): FetchPlan;
-  decodeDownload(bytes: ArrayBuffer, result: SubtitleSearchResult): { content: string; format: 'srt' | 'vtt' | 'ass' };
+  decodeDownload(bytes: ArrayBuffer, result: SubtitleSearchResult): Promise<{ content: string; format: 'srt' | 'vtt' | 'ass' }>;
 }
 
 // === Download result (background → content-script) ===

@@ -31,6 +31,11 @@ import {
   decodeDownload,
 } from '@/features/subtitle/logic/subtitleSearch';
 import {
+  extractImdbId,
+  hasSubtitles,
+  buildSubtitleListRequest,
+} from '@/features/subtitle/logic/providers/subdlAdapter';
+import {
   pickSearchKey,
   pickDownloadKey,
   markKeyStatus,
@@ -90,7 +95,39 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
               errors.push({ type: 'network', message: `HTTP ${res.status}` });
               break;
             }
-            const results = normalizeSearch(providerId, JSON.parse(res.content), searchQuery);
+            const raw = JSON.parse(res.content);
+
+            // SubDL v2: film_name search returns movie matches, not subtitles.
+            // If no subtitles in response, do step 2: search by imdb_id.
+            if (providerId === 'subdl' && !hasSubtitles(raw)) {
+              const imdbId = extractImdbId(raw);
+              if (!imdbId) {
+                // No movie match → 0 results
+                if (key.status === 'unverified') {
+                  await updateKeyStatus(keys, key.id, 'active');
+                }
+                break;
+              }
+              const step2Plan = buildSubtitleListRequest(imdbId, searchQuery, key.key);
+              const step2Res = await offscreenFetch(ctx.offscreenManager, step2Plan.url, {
+                method: step2Plan.method,
+                headers: step2Plan.headers,
+              });
+              if (!step2Res.ok) {
+                errors.push({ type: 'network', message: `HTTP ${step2Res.status}` });
+                break;
+              }
+              const step2Results = normalizeSearch(providerId, JSON.parse(step2Res.content), searchQuery);
+              if (step2Results.length > 0) {
+                if (key.status === 'unverified') {
+                  await updateKeyStatus(keys, key.id, 'active');
+                }
+                return { success: true, data: { results: step2Results } };
+              }
+              break;
+            }
+
+            const results = normalizeSearch(providerId, raw, searchQuery);
             if (results.length > 0) {
               // Key proved itself — mark active if was unverified.
               if (key.status === 'unverified') {
@@ -181,7 +218,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
             };
           }
           const bytes = new TextEncoder().encode(fileRes.content).buffer as ArrayBuffer;
-          const decoded = decodeDownload(provider, bytes, result);
+          const decoded = await decodeDownload(provider, bytes, result);
           // Key proved itself — mark active if was unverified.
           if (key.status === 'unverified') {
             await updateKeyStatus(keys, key.id, 'active');
@@ -202,7 +239,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
         }
         await decrementDownload(key.id);
         const bytes = new TextEncoder().encode(res.content).buffer as ArrayBuffer;
-        const decoded = decodeDownload(provider, bytes, result);
+        const decoded = await decodeDownload(provider, bytes, result);
         // Key proved itself — mark active if was unverified.
         if (key.status === 'unverified') {
           await updateKeyStatus(keys, key.id, 'active');

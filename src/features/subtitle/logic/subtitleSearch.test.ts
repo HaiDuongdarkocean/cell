@@ -12,7 +12,7 @@
  * @see docs/specs/subtitle-search.md § API Reference (verified 2026-08-13)
  */
 
-import { subdlAdapter } from './providers/subdlAdapter';
+import { subdlAdapter, extractImdbId, hasSubtitles } from './providers/subdlAdapter';
 import { openSubtitlesAdapter } from './providers/openSubtitlesAdapter';
 import {
   pickSearchKey,
@@ -44,53 +44,53 @@ const SUBDL_RESPONSE = {
       name: 'Inception',
       imdb_id: 'tt1375666',
       tmdb_id: 27205,
-      slug: 'inception',
+      year: 2010,
     },
   ],
   subtitles: [
     {
-      release_name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng',
-      name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng.zip',
+      release_name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng SDH',
+      name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng SDH.zip',
       lang: 'English',
       author: 'YTSDD',
       url: '/subtitle/3467330-8390389.zip?api_key=xxx',
       season: 0,
       episode: null,
       language: 'EN',
+      hi: true,
+      full_season: false,
+      framerate: 0,
+      fps: null,
+    },
+    {
+      release_name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng',
+      name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng.zip',
+      lang: 'English',
+      url: '/subtitle/3467329-8390388.zip?api_key=xxx',
+      season: 0,
+      episode: null,
+      language: 'EN',
       hi: false,
       full_season: false,
-      unpack_files: [
-        {
-          file_n_id: '9Z7h1Yr0CI',
-          name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng SDH.srt',
-          release_name: 'Inception.2010.1080p.BluRay.x265-YAWNTiC_eng SDH',
-          season: 0,
-          episode: 0,
-          language: 'EN',
-          hi: true,
-          format: 'srt',
-          size: 135733,
-          md5: '723b23daba3b9453307d304ab2dbbd3b',
-          url: '/subtitle/aUEepyPYhXB/9Z7h1Yr0CI?api_key=xxx',
-        },
-        {
-          // empty file_n_id → must be skipped
-          file_n_id: '',
-          name: 'broken.srt',
-          release_name: 'broken',
-          season: 0,
-          episode: 0,
-          language: 'EN',
-          hi: false,
-          format: 'srt',
-          size: 0,
-          url: '/subtitle/broken/empty?api_key=xxx',
-        },
-      ],
+      framerate: 0,
+      fps: null,
     },
   ],
-  totalPages: 15,
-  currentPage: 1,
+} as const;
+
+// Step 1 response (film_name search) — no subtitles, just movie matches
+const SUBDL_STEP1_RESPONSE = {
+  status: true,
+  results: [
+    {
+      sd_id: 2922,
+      type: 'movie',
+      name: 'Inception',
+      imdb_id: 'tt1375666',
+      tmdb_id: 27205,
+      year: 2010,
+    },
+  ],
 } as const;
 
 const OS_RESPONSE = {
@@ -154,22 +154,14 @@ const BASE_QUERY: SearchQuery = {
 // === SubDL normalizeSearch ===
 
 describe('subdlAdapter.normalizeSearch', () => {
-  it('parses verified SubDL response shape', () => {
+  it('parses verified SubDL v2 response shape', () => {
     const results = subdlAdapter.normalizeSearch(SUBDL_RESPONSE, BASE_QUERY);
-    expect(results).toHaveLength(1);
+    expect(results).toHaveLength(2);
     const r = results[0] as SubtitleSearchResult;
-    expect(r.id).toBe('subdl:9Z7h1Yr0CI');
     expect(r.source).toBe('subdl');
     expect(r.format).toBe('srt');
     expect(r.sdh).toBe(true);
     expect(r.download.kind).toBe('direct');
-  });
-
-  it('skips entries with empty file_n_id', () => {
-    const results = subdlAdapter.normalizeSearch(SUBDL_RESPONSE, BASE_QUERY);
-    // only the valid file_n_id entry survives
-    expect(results.every((r) => r.id !== 'subdl:')).toBe(true);
-    expect(results.find((r) => r.name.includes('broken'))).toBeUndefined();
   });
 
   it('prepends https://api.subdl.com to relative URLs', () => {
@@ -177,7 +169,7 @@ describe('subdlAdapter.normalizeSearch', () => {
     const r = results[0] as SubtitleSearchResult;
     expect(r.download).toEqual({
       kind: 'direct',
-      url: 'https://api.subdl.com/subtitle/aUEepyPYhXB/9Z7h1Yr0CI?api_key=xxx',
+      url: 'https://api.subdl.com/subtitle/3467330-8390389.zip?api_key=xxx',
     });
   });
 
@@ -198,6 +190,23 @@ describe('subdlAdapter.normalizeSearch', () => {
     expect(subdlAdapter.normalizeSearch(null, BASE_QUERY)).toEqual([]);
     expect(subdlAdapter.normalizeSearch({ status: true }, BASE_QUERY)).toEqual([]);
     expect(subdlAdapter.normalizeSearch('not-an-object', BASE_QUERY)).toEqual([]);
+  });
+});
+
+// === SubDL 2-step helpers ===
+
+describe('subdlAdapter 2-step helpers', () => {
+  it('extractImdbId returns imdb_id from first result', () => {
+    expect(extractImdbId(SUBDL_STEP1_RESPONSE)).toBe('tt1375666');
+  });
+
+  it('extractImdbId returns null when no results', () => {
+    expect(extractImdbId({ status: true, results: [] })).toBeNull();
+  });
+
+  it('hasSubtitles detects subtitles in response', () => {
+    expect(hasSubtitles(SUBDL_RESPONSE)).toBe(true);
+    expect(hasSubtitles(SUBDL_STEP1_RESPONSE)).toBe(false);
   });
 });
 
@@ -422,21 +431,21 @@ describe('markKeyStatus', () => {
 // === buildSearchRequest ===
 
 describe('buildSearchRequest', () => {
-  it('SubDL: correct URL + headers', () => {
+  it('SubDL: correct URL + headers (step 1: film_name only, no unpack/season)', () => {
     const plan = buildSearchRequest('subdl', BASE_QUERY, 'KEY123');
     expect(plan.method).toBe('GET');
     expect(plan.url).toContain('https://api.subdl.com/api/v2/subtitles/search');
     expect(plan.url).toContain('film_name=Inception');
     expect(plan.url).toContain('languages=en');
-    expect(plan.url).toContain('unpack=1');
+    expect(plan.url).not.toContain('unpack=1'); // v2: no unpack param
     expect(plan.headers?.Authorization).toBe('Bearer KEY123');
   });
 
-  it('SubDL: includes season/episode when provided', () => {
+  it('SubDL: step 1 does not include season/episode (those go to step 2 via imdb_id)', () => {
     const tvQuery: SearchQuery = { query: 'Game of Thrones', languages: ['en'], season: 1, episode: 1 };
     const plan = buildSearchRequest('subdl', tvQuery, 'KEY');
-    expect(plan.url).toContain('season=1');
-    expect(plan.url).toContain('episode=1');
+    expect(plan.url).not.toContain('season=1');
+    expect(plan.url).not.toContain('episode=1');
   });
 
   it('OpenSubtitles: correct URL + headers', () => {
