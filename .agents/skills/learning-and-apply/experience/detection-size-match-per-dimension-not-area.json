@@ -1,0 +1,26 @@
+{
+  "id": "detection-size-match-per-dimension-not-area",
+  "title": "Size match for container walk: compare per-dimension, not area",
+  "category": ["detection", "ux"],
+  "tags": ["container-walk", "player-shell", "bounding-rect", "per-dimension", "area-ratio", "width-height", "themoviebox", "video-player", "fullscreen-target"],
+  "trigger": "Walking up the DOM to find the farthest same-size container — an ancestor with the same height but a different width (or vice versa) is wrongly accepted because area-based comparison hides the dimensional mismatch",
+  "principle": "When the contract is 'same height AND width', compare each dimension independently (Math.round(w)===vw && Math.round(h)===vh). Area-based tolerance (|area-ref|/ref <= t) and area-ratio bounds ([0.5,1.5]) accept containers that match one axis but diverge on the other — a wider controls shell with the same height as the video has an area ratio still inside the band, so it gets picked as the player shell and Split View/Player Mode moves the wrong element.",
+  "cases": [
+    {
+      "context": "themoviebox: video 1226×690, .player-container 1635×690 (same height, +33% width). Area ratio 1.33 is inside the [0.5,1.5] control-shell band, so the isControlShell branch accepts it as the player shell — Split View moves the wider container and the video stage layout breaks.",
+      "bad": "// area-based: same-height-different-width slips through\nconst area = rect.width * rect.height;\nconst diff = Math.abs(area - referenceArea) / referenceArea;\nconst ratioToVideo = area / baseArea;\nconst isControlShell = hasControls && ratioToVideo >= 0.5 && ratioToVideo <= 1.5;\nif (diff <= tolerance || isControlShell) farthest = el; // 1635×690 accepted",
+      "good": "// per-dimension exact match (rounded) — both axes must equal the video\nconst vw = Math.round(baseRect.width);\nconst vh = Math.round(baseRect.height);\nif (Math.round(rect.width) === vw && Math.round(rect.height) === vh) {\n  farthest = el; // 1635×690 rejected, 1226×690 ancestors kept\n}"
+    },
+    {
+      "context": "iframePlayerModeBridge.ts already used per-dimension exact match for the iframe variant — the video variant diverged to area-based tolerance, creating an inconsistency where the same algorithm gave different answers depending on whether the player was an iframe or a same-origin <video>.",
+      "bad": "// video variant: area tolerance + control-shell band (accepts wider shells)\nconst diff = Math.abs(area - referenceArea) / referenceArea;\nif (diff <= tolerance || isControlShell) farthest = el;",
+      "good": "// mirror the iframe variant: per-dimension exact match, single shared rule\nif (Math.round(r.width) === iw && Math.round(r.height) === ih) farthest = el;"
+    }
+  ],
+  "applyFor": [
+    "Player container / player-shell discovery walking up from a <video> or <iframe>",
+    "Fullscreen target selection where the target must visually match the media element on both axes",
+    "Any 'find the farthest same-size ancestor' walk where 'same size' means both dimensions, not the product",
+    "Split View / Player Mode container resolution on sites with a wider controls shell beside the video"
+  ]
+}

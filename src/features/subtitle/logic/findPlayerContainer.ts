@@ -4,41 +4,33 @@
 // video stage. Runs in any document (main page or iframe) because the
 // extension content script is declared with all_frames=true. The algorithm
 // starts at the largest playable <video> and walks up to the farthest
-// ancestor whose bounding area is within tolerance of the video.
+// ancestor whose bounding width AND height match the video (rounded to px).
+// A container with the same height but a different width (e.g. themoviebox
+// .player-container 1635×690 vs video 1226×690) is rejected — both
+// dimensions must match, not just the area.
 //
 // Algorithmic complexity: O(d) where d = DOM depth from video to body.
-
-const DEFAULT_SIZE_TOLERANCE = 0.15;
 
 /**
  * Find the best player container to move into Player Mode's video stage.
  *
- * @param tolerance - Relative area tolerance for the same-size walk-up
- *   (default 0.15 = 15%).
  * @returns The player container element, or null if no playable video found.
  */
-export function findPlayerContainer(
-  tolerance: number = DEFAULT_SIZE_TOLERANCE,
-): HTMLElement | null {
+export function findPlayerContainer(): HTMLElement | null {
   const video = findLargestPlayableVideo();
   if (!video) return null;
-  return findFarthestSameSizeContainer(video, tolerance);
+  return findFarthestSameSizeContainer(video);
 }
 
 /**
- * Walk up from a <video> element to the farthest player ancestor.
- *
- * Normal ancestors must stay within `tolerance` of the previous stable
- * container. Some players put the video in an aspect-ratio wrapper while the
- * controls live on a wider shell; that shell is accepted when its area remains
- * within a safe 0.5–1.5 ratio of the video and it owns interactive controls.
- * The walk continues after rejected wrappers so the farthest valid player shell
- * can still be found. This is the shared container algorithm for Player Mode
- * and Split View.
+ * Walk up from a <video> element to the farthest ancestor whose bounding
+ * width AND height match the video (rounded to px). Mirrors the iframe
+ * variant in iframePlayerModeBridge.ts: same per-dimension exact match, not
+ * area-based tolerance. This is the shared container algorithm for Player
+ * Mode and Split View.
  */
 export function findFarthestSameSizeContainer(
   video: HTMLVideoElement,
-  tolerance: number = DEFAULT_SIZE_TOLERANCE,
 ): HTMLElement {
   // YouTube: #movie_player is the player shell owning native controls + the
   // video. The same-size walk overshoots to #player (outer layout wrapper with
@@ -52,13 +44,11 @@ export function findFarthestSameSizeContainer(
   }
 
   const baseRect = video.getBoundingClientRect();
-  const baseArea = baseRect.width * baseRect.height;
+  const vw = Math.round(baseRect.width);
+  const vh = Math.round(baseRect.height);
 
   let farthest: HTMLElement = video;
-  let referenceArea = baseArea;
   let el: HTMLElement | null = video.parentElement;
-  const MIN_PLAYER_AREA_RATIO = 0.5;
-  const MAX_PLAYER_AREA_RATIO = 1.5;
 
   while (el && el !== document.body) {
     // Skip Cell's own Split View elements (wrapper/stage/handle/panel) —
@@ -71,25 +61,13 @@ export function findFarthestSameSizeContainer(
     }
 
     const rect = el.getBoundingClientRect();
-    const area = rect.width * rect.height;
-
-    if (area === 0) {
+    if (rect.width === 0 || rect.height === 0) {
       el = el.parentElement;
       continue;
     }
 
-    const diff = Math.abs(area - referenceArea) / referenceArea;
-    const ratioToVideo = area / baseArea;
-    const hasControls = Boolean(el.querySelector(
-      'button, [role="button"], input[type="range"], video[controls]',
-    ));
-    const isControlShell = hasControls
-      && ratioToVideo >= MIN_PLAYER_AREA_RATIO
-      && ratioToVideo <= MAX_PLAYER_AREA_RATIO;
-
-    if (diff <= tolerance || isControlShell) {
+    if (Math.round(rect.width) === vw && Math.round(rect.height) === vh) {
       farthest = el;
-      referenceArea = area;
     }
 
     // Do not stop on a rejected intermediate wrapper. A wider ancestor can be
