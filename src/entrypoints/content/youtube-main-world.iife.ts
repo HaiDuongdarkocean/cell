@@ -173,11 +173,12 @@
 
   document.addEventListener('__YT_RESTORE_SIZE', () => {
     const player = getYoutubePlayer();
-    if (!player || typeof player.setSize !== 'function') {
-      storedSize = null;
-      return;
-    }
+    if (!player || typeof player.setSize !== 'function') return;
     if (storedSize) player.setSize(storedSize.width, storedSize.height);
+  });
+
+  // Clear stored size only when Split View fully closes (not fullscreen transitions).
+  document.addEventListener('__YT_SPLIT_CLOSE', () => {
     storedSize = null;
   });
 
