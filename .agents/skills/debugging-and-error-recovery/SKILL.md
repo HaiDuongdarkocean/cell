@@ -55,11 +55,11 @@ When: <exact user or system action — the REAL flow, not an API call>
 Then: <exact visible or measurable outcome>
 ```
 
-**Guard:** Contract names a concrete DOM element, text, class, or call AND lists every precondition. "It works" is not a contract. "Video plays and cue changes" is not enough if the bug requires the page to be scrolled.
+**Guard:** Contract names a concrete DOM element, text, class, or call AND lists every precondition. "It works" is not a contract. A contract that omits a precondition the user mentioned is incomplete — the bug may not reproduce without it.
 
 **Loop back:** Request is vague. Invoke `/interview-me` on yourself. Only ask the user if `/interview-me` fails.
 
-**Critical:** The Given must capture EVERY condition the user described. If the user says "when video runs to the last 3 cues" — the contract must include "video is playing, currentTime advances through the last 3 cues." If you drop a condition, you will reproduce a different bug or no bug at all.
+**Critical:** The Given must capture EVERY condition the user described. If the user names a timing condition ("when X runs to the end"), a layout condition ("when the page is scrolled"), or a mode condition ("in mode A, not mode B"), the contract must include it. Dropping a precondition means you will reproduce a different bug or no bug at all.
 
 ## Step 1: Preserve
 
@@ -86,18 +86,18 @@ Then: <exact visible or measurable outcome>
 
 **Actions:**
 - Run the REAL flow from the contract — not a simulated API call, not a manual trigger, not a stripped-down version.
-- If the contract says "video plays and cue changes over time" — you MUST let the video play and cues change over time. Manually calling `scrollIntoView` once is NOT reproduction.
-- If the contract says "page is scrolled down" — you MUST scroll the page down before triggering. A bug that only appears when the panel is partially out of viewport will not reproduce if the panel is fully visible.
+- If the contract says a continuous process runs over time, you MUST let it run over time. Manually invoking one function once is NOT reproduction.
+- If the contract includes a layout or scroll precondition, you MUST set it up before triggering. A bug that only appears when an element is partially out of viewport will not reproduce if it is fully visible.
 - Record the minimum setup that triggers the bug, including every precondition from the Given.
 - Log state over time (interval polling) for bugs that involve continuous state changes — a single snapshot misses the transition.
 
 **Guard:** You can trigger the bug at least twice with the same steps, AND the steps match every condition in the contract's Given/When.
 
-**Loop back:** The bug does not reproduce. Check: did you skip a precondition from the contract? Is the video actually playing? Is the page actually scrolled? Did you test in fullscreen when the contract says normal mode? Re-read the contract and verify each condition is met before retrying.
+**Loop back:** The bug does not reproduce. Check: did you skip a precondition from the contract? Is the continuous process actually running? Is the layout precondition actually set? Did you test in the wrong mode? Re-read the contract and verify each condition is met before retrying.
 
-**Common mistake — THE most frequent failure:** Replacing the real flow with an isolated API test. "I called `scrollIntoView` manually and measured `docDeltaY`" is NOT reproducing "video plays to the last 3 cues and the page jumps." The real flow involves React effects, state updates, timing, and ancestor state that an isolated API call does not capture. If the snippet does not match the contract's When, the verification is invalid.
+**Common mistake — THE most frequent failure:** Replacing the real flow with an isolated API test. "I called the function manually and measured the output" is NOT reproducing a bug that the contract describes as a continuous process with side effects. The real flow involves framework lifecycle hooks, state updates, timing, and ancestor/container state that an isolated API call does not capture. If the reproduction does not match the contract's When, the verification is invalid.
 
-**Common mistake:** Testing in the wrong mode. User says "normal mode" but you test in fullscreen. The DOM structure, scrollable ancestors, and CSS are different. Always confirm the mode matches the contract.
+**Common mistake:** Testing in the wrong mode or context. The user specifies one mode (e.g. mode A, not mode B; mobile, not desktop); you test in another. DOM structure, scrollable ancestors, and CSS differ between modes. Always confirm the mode matches the contract.
 
 ## Step 3: Localize
 
@@ -130,7 +130,7 @@ Then: <exact visible or measurable outcome>
 - Change one variable: delay, disable feature, mock dependency.
 - Use different data: first, middle, last item.
 - Different context: fresh reload, hot reload, incognito, different host.
-- Different precondition: page scrolled vs not scrolled, fullscreen vs normal, video playing vs paused.
+- Different precondition: layout set vs unset, mode A vs mode B, process running vs paused.
 
 ## Step 5: Snippet Verify
 
@@ -141,9 +141,9 @@ Then: <exact visible or measurable outcome>
 **Actions:**
 1. Translate the hypothesis into a minimal runtime patch.
 2. Inject it into the live system without rebuilding or reloading.
-3. **Re-run the contract's When → Then against the patched system — the REAL flow, not an isolated API call.** If the contract says "video plays to the last 3 cues," you MUST let the video play and observe the cues changing. Log state over time (interval polling) to capture the transition, not just a single before/after snapshot.
+3. **Re-run the contract's When → Then against the patched system — the REAL flow, not an isolated API call.** If the contract describes a continuous process, you MUST let it run and observe the state changing. Log state over time (interval polling) to capture the transition, not just a single before/after snapshot.
 4. Repeat the trigger 2-3 times to confirm the fix is stable, not a fluke.
-5. Compare before/after: log the SAME metrics under the SAME conditions both with and without the patch. A single `docDeltaY` measurement from an isolated API call is NOT comparison.
+5. Compare before/after: log the SAME metrics under the SAME conditions both with and without the patch. A single measurement from an isolated API call is NOT comparison.
 
 **Patch methods by bug type:**
 
@@ -159,9 +159,9 @@ Then: <exact visible or measurable outcome>
 
 **Loop back:** Snippet does not fix the symptom → hypothesis is incomplete or wrong → return to Step 4. Do not advance to Step 6.
 
-**Common mistake — THE most frequent failure:** Snippet tests an isolated API call instead of the contract's real flow. "I called `scrollIntoView` manually, measured `docDeltaY`, it was 0" is NOT snippet verification if the contract says "video plays to the last 3 cues and the page jumps." The real flow involves React effects firing on `currentTime` changes, `highlightedRef` guards, and ancestor scroll state. An isolated API call bypasses all of that. The snippet MUST re-trigger the real flow (video playing, cues changing, page scrolled) and log the symptom metric over time.
+**Common mistake — THE most frequent failure:** Snippet tests an isolated API call instead of the contract's real flow. "I called the function manually, measured the output, it looked fine" is NOT snippet verification if the contract describes a continuous process with side effects. The real flow involves framework lifecycle hooks firing on state changes, guard variables, and ancestor/container state. An isolated API call bypasses all of that. The snippet MUST re-trigger the real flow (process running, state changing, preconditions set) and log the symptom metric over time.
 
-**Common mistake:** Single before/after snapshot instead of interval logging. Bugs that involve continuous state changes (video playing, cues advancing) need polling — log the metric every 500ms across the full transition. A single `docDeltaY` before and after misses the moment the page jumps.
+**Common mistake:** Single before/after snapshot instead of interval logging. Bugs that involve continuous state changes need polling — log the metric at a fixed interval across the full transition. A single before and after misses the moment the symptom appears.
 
 **Common mistake:** Editing source code before the snippet proves the hypothesis. A rebuild cycle costs minutes; a snippet costs seconds. If the hypothesis is wrong, you have already wasted a rebuild.
 
@@ -200,7 +200,7 @@ Then: <exact visible or measurable outcome>
 **Variant matrix:**
 - Position: first, middle, last item.
 - Context: empty, cached, after reload, after error.
-- UI state: popup open/closed, selection active/inactive, page scrolled/not scrolled, fullscreen/normal.
+- UI state: popup open/closed, selection active/inactive, layout precondition set/unset, mode A/mode B.
 - Data shape: phrase vs. word, lemma vs. surface, known vs. unknown.
 
 **Guard:** All variants pass, existing tests pass, and the fix is visible in the build output.
@@ -304,7 +304,7 @@ If any answer is no, you do not understand it yet.
 | Works first time, fails the second | State leak or cache reuse | Repeat the same action without reloading |
 | Source correct, runtime wrong | Builder/minifier silently strips code | Grep build output for the fix |
 | Snippet fixes symptom, source fix does not | Snippet targeted a different code path | Re-localize: trace which path the snippet patched |
-| Bug only appears near boundaries (last items, edges) | API scrolls/positions ALL ancestors, not just target container | Test with page scrolled + target at boundary; log ancestor scroll over time |
+| Bug only appears near boundaries (last items, edges) | API affects ALL ancestors/containers, not just the target | Test with layout precondition set + target at boundary; log ancestor state over time |
 | Hypothesis feels right but snippet does nothing | Second root cause hidden | Return to Step 4, look for a second failure layer |
 
 ## Browser Extension Traps
@@ -337,11 +337,11 @@ Forbidden unless justified with evidence:
 - Editing source code before the snippet proves the hypothesis on the live system.
 - Declaring pass after the snippet works but before confirming the source fix produces the same effect in the real build.
 - Trusting the source file over the build output when the runtime behaves differently.
-- **Replacing the contract's real flow with an isolated API call during reproduction or snippet verification.** "I called the function manually" is NOT reproduction if the contract says "video plays and cues change over time."
-- **Testing in the wrong mode (fullscreen vs normal) when the contract specifies one.** DOM structure, scrollable ancestors, and CSS differ between modes.
-- **Taking a single before/after snapshot for bugs that involve continuous state changes.** Log the metric every 500ms across the full transition; a single snapshot misses the jump.
-- **Skipping a precondition from the contract's Given.** If the user says "page scrolled down," you MUST scroll the page before triggering. A bug that only appears when the panel is partially out of viewport will not reproduce if the panel is fully visible.
-- **Declaring root cause after one measurement.** "docDeltaY was 197 once" is not root cause. Verify the pattern repeats and that the fix prevents it under the real flow.
+- **Replacing the contract's real flow with an isolated API call during reproduction or snippet verification.** "I called the function manually" is NOT reproduction if the contract describes a continuous process with side effects.
+- **Testing in the wrong mode or context when the contract specifies one.** DOM structure, scrollable ancestors, and CSS differ between modes.
+- **Taking a single before/after snapshot for bugs that involve continuous state changes.** Log the metric at a fixed interval across the full transition; a single snapshot misses the moment the symptom appears.
+- **Skipping a precondition from the contract's Given.** If the user names a layout, timing, or mode condition, you MUST set it up before triggering. A bug that only appears under that condition will not reproduce without it.
+- **Declaring root cause after one measurement.** A single data point is not a pattern. Verify the symptom repeats and that the fix prevents it under the real flow.
 
 ## Testing & Validation
 
