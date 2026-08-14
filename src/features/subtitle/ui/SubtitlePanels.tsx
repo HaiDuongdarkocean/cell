@@ -19,9 +19,11 @@ import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import {
+  applyYoutubeSplitViewCss,
   applyYoutubeSplitViewLayout,
   closeYoutubeSplitView,
   isYoutubePage,
+  removeYoutubeSplitViewCss,
   requestYoutubePlayerSize,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
@@ -739,34 +741,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           panelRect: rectLog(panel),
           childrenMoved: childrenToMove.length,
         });
-        // setSize() is a no-op in fullscreen. Override video/container/chrome
-        // to fill stageCell so the video sits beside the panel, not under it.
-        const fsStyle = document.createElement('style');
-        fsStyle.setAttribute('data-cell-split-view', 'fs-style');
-        fsStyle.textContent = [
-          '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
-          '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
-          // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100%
-          // would overflow the stage by 12px (left+width > stage width). Use
-          // calc(100% - 24px) to preserve 12px padding on both sides.
-          '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
-          // YouTube JS sizes these to movie_player width (full viewport), not
-          // stageCell width. Force 100% so they fit inside chromeBottom.
-          '[data-cell-split-view="stage"] .ytp-progress-bar-container,',
-          '[data-cell-split-view="stage"] .ytp-progress-bar,',
-          '[data-cell-split-view="stage"] .ytp-heat-map-container,',
-          '[data-cell-split-view="stage"] .ytp-chapters-container,',
-          '[data-cell-split-view="stage"] .ytp-timed-markers-container,',
-          '[data-cell-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
-          // Progress bar internals get explicit pixel widths from YouTube JS
-          // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
-          '[data-cell-split-view="stage"] .ytp-progress-bar-padding,',
-          '[data-cell-split-view="stage"] .ytp-progress-list,',
-          '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer,',
-          '[data-cell-split-view="stage"] .ytp-heat-map-chapter,',
-          '[data-cell-split-view="stage"] .ytp-chapter-hover-container{width:100%!important}',
-        ].join('');
-        playerShell.appendChild(fsStyle);
+        // YouTube-specific CSS (object-fit, .ytp-chrome-bottom width, progress
+        // bar widths) is injected by the MAIN-world adapter via event bridge —
+        // see applyYoutubeSplitViewCss. This keeps YouTube selectors out of
+        // generic React UI code. No-op off YouTube.
+        applyYoutubeSplitViewCss();
       } else {
         // NORMAL: wrap playerShell in a flex row wrapper.
         wrapper = document.createElement('div');
@@ -966,9 +945,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
         if (isPlayerFullscreen) {
-          // Remove fullscreen CSS overrides so YouTube's .ytp-fullscreen CSS
-          // controls the player again on exit.
-          playerShell.querySelector('[data-cell-split-view="fs-style"]')?.remove();
+          // Remove YouTube-specific CSS overrides via MAIN-world adapter.
+          removeYoutubeSplitViewCss();
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
           // If playerShell was detached by the site's React re-render (common

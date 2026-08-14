@@ -182,6 +182,50 @@
     storedSize = null;
   });
 
+  // Split View CSS bridge: isolated world tells MAIN world to inject/remove
+  // YouTube-specific CSS overrides for split view layout. These selectors
+  // (.ytp-*, .html5-video-container) are YouTube-internal — they belong in
+  // the YouTube adapter, not in generic React UI code (SubtitlePanels.tsx).
+  // The stage element ([data-cell-split-view="stage"]) is created by the
+  // isolated world React component but lives in the light DOM, so MAIN world
+  // CSS can target it.
+  const YT_SPLIT_STYLE_ID = '__yt_cell_split_view_css';
+  const YT_SPLIT_CSS = [
+    '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
+    '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
+    // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100% would
+    // overflow the stage by 12px. calc(100% - 24px) preserves 12px padding
+    // on both sides.
+    '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
+    // YouTube JS sizes these to movie_player width (full viewport), not
+    // stageCell width. Force 100% so they fit inside chromeBottom.
+    '[data-cell-split-view="stage"] .ytp-progress-bar-container,',
+    '[data-cell-split-view="stage"] .ytp-progress-bar,',
+    '[data-cell-split-view="stage"] .ytp-heat-map-container,',
+    '[data-cell-split-view="stage"] .ytp-chapters-container,',
+    '[data-cell-split-view="stage"] .ytp-timed-markers-container,',
+    '[data-cell-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
+    // Progress bar internals get explicit pixel widths from YouTube JS
+    // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
+    '[data-cell-split-view="stage"] .ytp-progress-bar-padding,',
+    '[data-cell-split-view="stage"] .ytp-progress-list,',
+    '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer,',
+    '[data-cell-split-view="stage"] .ytp-heat-map-chapter,',
+    '[data-cell-split-view="stage"] .ytp-chapter-hover-container{width:100%!important}',
+  ].join('');
+
+  document.addEventListener('__YT_SPLIT_VIEW_APPLY_CSS', () => {
+    if (document.getElementById(YT_SPLIT_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = YT_SPLIT_STYLE_ID;
+    style.textContent = YT_SPLIT_CSS;
+    document.head.appendChild(style);
+  });
+
+  document.addEventListener('__YT_SPLIT_VIEW_REMOVE_CSS', () => {
+    document.getElementById(YT_SPLIT_STYLE_ID)?.remove();
+  });
+
   function postDetectedSubtitles(tracks: unknown[], videoId: string): void {
     const postTime = performance.now();
     debug.postTime = postTime;
