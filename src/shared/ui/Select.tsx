@@ -95,15 +95,17 @@ export function Select({
   );
 
   // Close on click outside.
+  // ponytail: use `composedPath()` instead of `e.target` — inside shadow DOM,
+  // `e.target` is retargeted to the shadow host, so `menuRef.contains(e.target)`
+  // returns false even when clicking an option inside the menu, causing the
+  // menu to close before the option's onClick fires. `composedPath()` crosses
+  // shadow boundaries and includes the real clicked element.
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: Event): void => {
-      if (
-        menuRef.current &&
-        triggerRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
-        !triggerRef.current.contains(e.target as Node)
-      ) {
+      if (!menuRef.current || !triggerRef.current) return;
+      const path = e.composedPath();
+      if (!path.includes(menuRef.current) && !path.includes(triggerRef.current)) {
         closeMenu();
       }
     };
