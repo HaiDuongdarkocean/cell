@@ -12,6 +12,48 @@
   padding: var(--space-1) var(--space-4);
 }
 
+/* Manage-keys toggle — ghost button in section header, right-aligned */
+.manageKeysToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.manageKeysToggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.manageKeysToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chevronClosed {
+  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+/* Manage-keys panel — collapsible container for ApiKeyManager */
+.manageKeysPanel {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
 .sectionTitle {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
@@ -366,7 +408,8 @@
   .resultsList,
   .skeletonList,
   .emptyState,
-  .noKeySection {
+  .noKeySection,
+  .manageKeysPanel {
     padding-inline: var(--space-3);
   }
 
