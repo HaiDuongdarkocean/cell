@@ -19,11 +19,9 @@ import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import {
-  applyYoutubeSplitViewCss,
   applyYoutubeSplitViewLayout,
   closeYoutubeSplitView,
   isYoutubePage,
-  removeYoutubeSplitViewCss,
   requestYoutubePlayerSize,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
@@ -741,11 +739,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           panelRect: rectLog(panel),
           childrenMoved: childrenToMove.length,
         });
-        // YouTube-specific CSS (object-fit, .ytp-chrome-bottom width, progress
-        // bar widths) is injected by the MAIN-world adapter via event bridge —
-        // see applyYoutubeSplitViewCss. This keeps YouTube selectors out of
-        // generic React UI code. No-op off YouTube.
-        applyYoutubeSplitViewCss();
+        // YouTube CSS (object-fit, .ytp-chrome-bottom width, progress bar
+        // widths) is injected by the MAIN-world adapter. Dispatch the event
+        // directly — MAIN world listener only registers on YouTube (manifest
+        // matches), so off-YouTube this is a no-op (event into void).
+        document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
       } else {
         // NORMAL: wrap playerShell in a flex row wrapper.
         wrapper = document.createElement('div');
@@ -945,8 +943,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
         if (isPlayerFullscreen) {
-          // Remove YouTube-specific CSS overrides via MAIN-world adapter.
-          removeYoutubeSplitViewCss();
+          // Remove YouTube CSS overrides via MAIN-world adapter event.
+          document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
           // If playerShell was detached by the site's React re-render (common
