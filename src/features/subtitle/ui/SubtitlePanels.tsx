@@ -26,6 +26,7 @@ import {
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
 import subtitlePanelCss from './SubtitlePanel.module.css?inline';
@@ -38,6 +39,39 @@ import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitlePanels.module.css';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
+
+// --- Split View diagnostic logging (temporary — remove after fix) ---
+// Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
+// Also relays to the background service worker (chrome://extensions → service
+// worker) because sites with anti-debug reload the page when DevTools opens.
+// The SW console is stable and not affected by the host page's anti-debug.
+function svLog(event: string, data?: Record<string, unknown>): void {
+  const ts = new Date().toISOString().slice(11, 23);
+  const line = `[Cell:SplitView ${ts}] ${event}`;
+  // eslint-disable-next-line no-console
+  console.log(line, data ?? '');
+  const payload = {
+    type: '__CELL_SPLIT_VIEW_LOG',
+    line,
+    data: data ?? null,
+    url: typeof location !== 'undefined' ? location.href : null,
+    isChildFrame: (() => { try { return window.self !== window.top; } catch { return true; } })(),
+  };
+  // Relay 1: background SW console (chrome://extensions → service worker).
+  void sendMessage(payload).catch(() => undefined);
+  // Relay 2: postMessage to parent (top frame) so the top-frame content
+  // script can store it in documentElement.dataset — readable via MCP
+  // execute_script on the top frame (cross-origin iframes can't be inspected
+  // directly). Anti-debug sites reload on F12, but stealth MCP bypasses that.
+  try {
+    if (window.self !== window.top) window.parent.postMessage(payload, '*');
+  } catch { /* cross-origin — best effort */ }
+}
+function rectLog(el: Element | null | undefined): Record<string, number> | null {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
+}
 
 export interface ManagerState {
   targetItems: SubtitlePanelItem[];
@@ -226,6 +260,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
+    // Reflow tick — incremented after a 2-rAF delay when the effect detects
+    // it just ran right after a fullscreen exit (stale rect). Re-runs the
+    // effect so it measures the post-reflow dimensions instead of the
+    // fullscreen-leftover size. See stale-fullscreen-iframe-rect atom.
+    const [svReflowTick, setSvReflowTick] = useState(0);
+    const lastFullscreenRef = useRef(false);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
     // Track the normal-branch wrapper so we can clean it up when transitioning
@@ -331,9 +371,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [addToast, playerMode]);
 
     const handleToggleSplitView = useCallback((): void => {
-      if (playerMode) return;
+      if (playerMode) { svLog('toggle BLOCKED by playerMode'); return; }
+      const childFrame = isChildFrame();
+      svLog('toggle', { from: splitViewOpen, to: !splitViewOpen, playerMode, isFullscreen, childFrame, url: location.href });
       setSplitViewOpen((v) => !v);
-    }, [playerMode]);
+    }, [playerMode, splitViewOpen, isFullscreen]);
 
     useImperativeHandle(
       ref,
@@ -492,9 +534,22 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // playerShell into a flex container and move its children into stageCell.
     // playerShell stays as the top-layer fullscreen element — no exit.
     useEffect(() => {
-      if (!splitViewOpen || playerMode) return;
+      if (!splitViewOpen || playerMode) {
+        svLog('effect SKIP', { splitViewOpen, playerMode });
+        return;
+      }
+      const childFrame = isChildFrame();
+      svLog('effect ENTER', { splitViewOpen, playerMode, isFullscreen, childFrame, splitViewPct, url: location.href });
       let playerShell = findPlayerContainer();
-      if (!playerShell) return;
+      if (!playerShell) { svLog('effect EXIT — no playerShell'); return; }
+      svLog('playerShell found', {
+        tag: playerShell.tagName,
+        id: playerShell.id || null,
+        cls: playerShell.className?.toString().slice(0, 80) || null,
+        rect: rectLog(playerShell),
+        parentTag: playerShell.parentElement?.tagName ?? null,
+        parentRect: rectLog(playerShell.parentElement),
+      });
 
       // playerShell or any descendant (e.g. <video> itself) may be the
       // fullscreen element. On some browsers YouTube requests fullscreen on
@@ -505,6 +560,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         && (fsEl === playerShell
           || playerShell.contains(fsEl)
           || (fsEl instanceof HTMLElement && fsEl.contains(playerShell)));
+      svLog('fullscreen detect', {
+        fsEl: fsEl ? { tag: fsEl.tagName, id: fsEl.id || null, rect: rectLog(fsEl) } : null,
+        isPlayerFullscreen,
+        playerShellTag: playerShell.tagName,
+        playerShellContainsFs: fsEl ? playerShell.contains(fsEl) : null,
+        fsContainsPlayerShell: fsEl instanceof HTMLElement ? fsEl.contains(playerShell) : null,
+      });
 
       // If playerShell is an ANCESTOR of the fullscreen element (not the
       // fullscreen element itself), the fullscreen branch would move the
@@ -518,8 +580,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (isPlayerFullscreen && fsEl !== playerShell && playerShell.contains(fsEl) && fsEl instanceof HTMLElement) {
         const video = playerShell.querySelector('video');
         if (video && fsEl.contains(video)) {
+          svLog('fullscreen branch: playerShell = fsEl (descendant)', { fsTag: fsEl.tagName, fsId: fsEl.id });
           playerShell = fsEl;
         } else {
+          svLog('fullscreen branch: isPlayerFullscreen → false (video not in fsEl)');
           isPlayerFullscreen = false;
         }
       }
@@ -531,6 +595,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // dep), at which point findPlayerContainer returns the parent container.
       if (isPlayerFullscreen && playerShell.tagName === 'VIDEO') {
         const parent = playerShell.parentElement;
+        svLog('fullscreen branch: playerShell is <video>, re-requesting on parent', { parentTag: parent?.tagName, parentRect: rectLog(parent) });
         if (parent && parent !== document.body) {
           void document.exitFullscreen().then(() => {
             void parent.requestFullscreen().catch(() => undefined);
@@ -543,6 +608,39 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (!originalParent) return;
       const originalNextSibling = playerShell.nextSibling;
 
+      // Stale fullscreen rect fix (iframe players: jwplayer/megaplay, etc.):
+      // After fullscreen exit, the iframe element (in the top frame) keeps
+      // inline width/height = fullscreen pixel size until the host's JS clears
+      // them. The iframe's `window.innerWidth` mirrors the iframe element's
+      // width, so BOTH playerRect AND viewport are stale (e.g. 2560×1440 when
+      // the real viewport is 831×465). Comparing rect > viewport can't detect
+      // this — both are equally stale. Instead, when the effect runs right
+      // after a fullscreen exit (isFullscreen flipped true→false), defer the
+      // measurement by 2 rAFs so the browser reflows the iframe element back
+      // to its CSS size first. The reflow tick re-runs the effect with fresh
+      // dimensions. ponytail ceiling: 2 rAFs assume the host clears fullscreen
+      // styles within 2 frames; a slower host may need more. Upgrade: per-host
+      // adapter that waits for the player's fullscreen-cleanup signal.
+      const justExitedFullscreen = lastFullscreenRef.current && !isFullscreen;
+      lastFullscreenRef.current = isFullscreen;
+      if (justExitedFullscreen && !isPlayerFullscreen) {
+        svLog('just exited fullscreen — deferring measurement 2 rAFs', {
+          preRect: rectLog(playerShell),
+          viewport: { w: window.innerWidth, h: window.innerHeight },
+          svReflowTick,
+        });
+        let cancelled = false;
+        const rafId = requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (!cancelled && splitViewOpen) setSvReflowTick((t) => t + 1);
+          });
+        });
+        return () => {
+          cancelled = true;
+          cancelAnimationFrame(rafId);
+        };
+      }
+
       const playerRect = playerShell.getBoundingClientRect();
       const playerComputedStyle = getComputedStyle(playerShell);
       const viewportBound = playerComputedStyle.position === 'fixed'
@@ -553,6 +651,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         window.innerHeight,
         viewportBound,
       );
+      svLog('geometry', {
+        playerRect: rectLog(playerShell),
+        viewport: { w: window.innerWidth, h: window.innerHeight },
+        playerPosition: playerComputedStyle.position,
+        viewportBound,
+        wrapperHeight,
+        isPlayerFullscreen,
+        branch: isPlayerFullscreen ? 'FULLSCREEN' : 'NORMAL',
+      });
       const playerShellStyleProperties = [
         'position', 'inset', 'top', 'right', 'bottom', 'left', 'width', 'height',
         'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio',
@@ -601,6 +708,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // previous normal run constrains its height (overflow:hidden + fixed
         // height). Unwrap playerShell so YouTube's .ytp-fullscreen CSS can
         // size it to fill the viewport.
+        svLog('FULLSCREEN branch enter', { playerShellRect: rectLog(playerShell), oldWrapper: !!splitViewWrapperRef.current });
         const oldWrapper = splitViewWrapperRef.current;
         if (oldWrapper && oldWrapper.contains(playerShell)) {
           const wrapperParent = oldWrapper.parentElement;
@@ -608,6 +716,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             wrapperParent.insertBefore(playerShell, oldWrapper);
             oldWrapper.remove();
             splitViewWrapperRef.current = null;
+            svLog('FULLSCREEN: unwrapped old wrapper');
           }
         }
         // Move ALL children (including #cell-subtitle-root) into stageCell.
@@ -623,14 +732,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.appendChild(stageCell);
         playerShell.appendChild(handle);
         playerShell.appendChild(panel);
-        // YouTube's .ytp-fullscreen CSS forces #movie_player to 100vw/100vh and
+        svLog('FULLSCREEN branch done', {
+          playerShellRect: rectLog(playerShell),
+          stageCellRect: rectLog(stageCell),
+          panelRect: rectLog(panel),
+          childrenMoved: childrenToMove.length,
+        });
         // setSize() is a no-op in fullscreen. Override video/container/chrome
         // to fill stageCell so the video sits beside the panel, not under it.
         const fsStyle = document.createElement('style');
         fsStyle.setAttribute('data-cell-split-view', 'fs-style');
         fsStyle.textContent = [
           '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
-          '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain}',
+          '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
           '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:100%!important}',
         ].join('');
         playerShell.appendChild(fsStyle);
@@ -674,6 +788,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
             : `${Math.round(parentPixelHeight)}px`;
+        svLog('NORMAL wrapper height', {
+          viewportBound,
+          isYoutube: isYoutubePage(),
+          isBroadShell,
+          parentPixelHeight: Math.round(parentPixelHeight),
+          videoRect: rectLog(videoEl),
+          playerRect: { w: Math.round(playerRect.width), h: Math.round(playerRect.height) },
+          wrapperHeightStyle,
+        });
         // YouTube: height must be !important to override flex stretch
         // (align-self:stretch in a flex parent would otherwise expand the
         // wrapper to the parent's full height, making the panel tower above
@@ -740,6 +863,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           oldWrapper.remove();
         }
         splitViewWrapperRef.current = wrapper;
+        svLog('NORMAL wrapper inserted', {
+          wrapperRect: rectLog(wrapper),
+          stageCellRect: rectLog(stageCell),
+          panelRect: rectLog(panel),
+          playerShellRect: rectLog(playerShell),
+          oldWrapperPresent: !!oldWrapper,
+          originalParentInOldWrapper,
+          insertParentTag: insertParent?.tagName,
+        });
         // YouTube: right after fullscreen exit, the parent container may
         // have an intermediate height (e.g. 643px instead of 746px) because
         // YouTube's layout hasn't settled. Double-rAF to re-measure the
@@ -802,6 +934,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       handle.addEventListener('pointercancel', onPointerUp);
 
       return () => {
+        svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
         handle.removeEventListener('pointerdown', onPointerDown);
         setSplitViewPortalTarget(null);
         handle.removeEventListener('pointermove', onPointerMove);
@@ -827,6 +960,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           stageCell.remove();
           handle.remove();
           panel.remove();
+          svLog('cleanup FULLSCREEN done', { playerShellRect: rectLog(playerShell), playerShellInDom: document.body.contains(playerShell) });
         } else {
           // Check if playerShell BECAME the fullscreen element since this
           // effect ran (AC4: user entered fullscreen while Split View was
@@ -856,6 +990,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             }
             wrapper?.remove();
             splitViewWrapperRef.current = null;
+            svLog('cleanup NORMAL done', { playerShellRect: rectLog(playerShell), originalParentTag: originalParent?.tagName });
           }
         }
         // Restore all saved styles (display+flex-direction in fullscreen, all in normal).
@@ -879,8 +1014,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         } else {
           closeYoutubeSplitView();
         }
+        svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
       };
-    }, [splitViewOpen, playerMode, isFullscreen]);
+    }, [splitViewOpen, playerMode, isFullscreen, svReflowTick]);
 
     // Load persisted splitViewPct on mount.
     useEffect(() => {

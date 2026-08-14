@@ -84,6 +84,24 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 // The listener only depends on `sendMessage` + `MESSAGE_TYPES` (imported at
 // top). If later code throws, this listener still catches MAIN-world posts.
 window.addEventListener('message', (event) => {
+  const dataEarly = event.data as { type?: string } | null;
+  // === Split View diagnostic log relay (from child iframe) ===
+  // MUST run before the `event.source !== window` guard below — iframe
+  // posts have event.source === iframe.contentWindow, not the top window.
+  // Store entries in documentElement.dataset so MCP execute_script (top
+  // frame) can read them. Anti-debug sites reload on F12, but stealth MCP
+  // bypasses that. Temporary — remove after split view iframe bug is fixed.
+  if (dataEarly?.type === '__CELL_SPLIT_VIEW_LOG') {
+    try {
+      const raw = document.documentElement.getAttribute('data-cell-sv-log');
+      const arr: unknown[] = raw ? JSON.parse(raw) : [];
+      const d = event.data as { line?: string; data?: unknown };
+      arr.push({ line: d.line, data: d.data, t: Date.now() });
+      if (arr.length > 200) arr.splice(0, arr.length - 200);
+      document.documentElement.setAttribute('data-cell-sv-log', JSON.stringify(arr));
+    } catch { /* best effort */ }
+    return;
+  }
   if (event.source !== window) return;
   const data = event.data as { type?: string; url?: string; postTime?: number } | null;
   if (data?.type === '__DETECTED_SUBTITLE_FETCH' && data.url) {
