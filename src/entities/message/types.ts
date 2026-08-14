@@ -370,6 +370,8 @@ export interface FetchRequestPayload {
     readonly method?: string;
     readonly headers?: Record<string, string>;
     readonly credentials?: RequestCredentials;
+    /** If 'arraybuffer', offscreen returns content as base64-encoded string. */
+    readonly responseType?: 'text' | 'arraybuffer';
   };
 }
 
