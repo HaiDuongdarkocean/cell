@@ -334,20 +334,20 @@ describe('pickSearchKey', () => {
 });
 
 describe('pickDownloadKey', () => {
-  it('only picks active (not unverified)', () => {
+  it('picks oldest among active + unverified (unverified proves itself on download)', () => {
     const keys: readonly SubtitleApiKey[] = [
       makeKey({ id: 'a', provider: 'subdl', addedAt: 1000, status: 'unverified' }),
       makeKey({ id: 'b', provider: 'subdl', addedAt: 2000, status: 'active' }),
     ];
-    // 'a' unverified → skip for download, pick 'b'
-    expect(pickDownloadKey(keys, 'subdl')?.id).toBe('b');
+    // 'a' unverified + older → pick 'a' (proves itself on first download)
+    expect(pickDownloadKey(keys, 'subdl')?.id).toBe('a');
   });
 
-  it('returns undefined when only unverified available', () => {
+  it('picks unverified when only unverified available', () => {
     const keys: readonly SubtitleApiKey[] = [
       makeKey({ id: 'a', provider: 'subdl', addedAt: 1000, status: 'unverified' }),
     ];
-    expect(pickDownloadKey(keys, 'subdl')).toBeUndefined();
+    expect(pickDownloadKey(keys, 'subdl')?.id).toBe('a');
   });
 
   it('treats expired rate-limited as active', () => {
@@ -356,6 +356,14 @@ describe('pickDownloadKey', () => {
       makeKey({ id: 'a', provider: 'subdl', addedAt: 1000, status: 'rate-limited', rateLimitedUntil: past }),
     ];
     expect(pickDownloadKey(keys, 'subdl')?.id).toBe('a');
+  });
+
+  it('skips invalid', () => {
+    const keys: readonly SubtitleApiKey[] = [
+      makeKey({ id: 'a', provider: 'subdl', addedAt: 1000, status: 'invalid' }),
+      makeKey({ id: 'b', provider: 'subdl', addedAt: 2000, status: 'active' }),
+    ];
+    expect(pickDownloadKey(keys, 'subdl')?.id).toBe('b');
   });
 });
 
