@@ -1,5 +1,6 @@
 import {
   applyYoutubeSplitViewLayout,
+  closeYoutubeSplitView,
   isYoutubePage,
   requestYoutubePlayerSize,
   resolveYoutubeSplitViewWrapperHeight,
@@ -51,9 +52,26 @@ describe('youtubeSplitView', () => {
       const restoreEvent = spy.mock.calls[1]?.[0] as CustomEvent;
       expect(restoreEvent.type).toBe('__YT_RESTORE_SIZE');
     });
+
+    it('closeYoutubeSplitView dispatches RESTORE before CLOSE', () => {
+      const spy = jest.spyOn(document, 'dispatchEvent');
+      closeYoutubeSplitView('www.youtube.com');
+      const types = spy.mock.calls.map((c) => (c[0] as CustomEvent).type);
+      expect(types).toEqual(['__YT_RESTORE_SIZE', '__YT_SPLIT_CLOSE']);
+    });
   });
 
   describe('applyYoutubeSplitViewLayout', () => {
+    beforeEach(() => {
+      // Double-rAF: flush both frames synchronously.
+      let rafCount = 0;
+      jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+        rafCount++;
+        cb(rafCount);
+        return rafCount;
+      });
+    });
+
     it('measures the stage and dispatches setSize on YouTube', () => {
       const stage = document.createElement('div');
       document.body.appendChild(stage);

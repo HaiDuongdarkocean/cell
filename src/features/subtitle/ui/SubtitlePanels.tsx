@@ -20,6 +20,7 @@ import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import {
   applyYoutubeSplitViewLayout,
+  closeYoutubeSplitView,
   isYoutubePage,
   requestYoutubePlayerSize,
   resolveYoutubeSplitViewWrapperHeight,
@@ -497,16 +498,25 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (!playerShell) return;
 
       // playerShell or any descendant (e.g. <video> itself) may be the
-      // fullscreen element. Moving playerShell in either case exits fullscreen.
+      // fullscreen element. On some browsers YouTube requests fullscreen on
+      // document.documentElement (an ANCESTOR of #movie_player) — detect that
+      // too so the fullscreen branch runs instead of the normal wrapper branch.
       let fsEl = document.fullscreenElement;
-      let isPlayerFullscreen = !!fsEl && (fsEl === playerShell || playerShell.contains(fsEl));
+      let isPlayerFullscreen = !!fsEl
+        && (fsEl === playerShell
+          || playerShell.contains(fsEl)
+          || (fsEl instanceof HTMLElement && fsEl.contains(playerShell)));
 
       // If playerShell is an ANCESTOR of the fullscreen element (not the
       // fullscreen element itself), the fullscreen branch would move the
       // fullscreen element among playerShell's children → exits fullscreen.
       // Use the fullscreen element as playerShell instead — it's the
       // top-layer element and can be transformed in place.
-      if (isPlayerFullscreen && fsEl !== playerShell && fsEl instanceof HTMLElement) {
+      // Only do this when fsEl is a DESCENDANT of playerShell — NOT when fsEl
+      // is an ancestor (e.g. document.documentElement). In the ancestor case,
+      // keep playerShell = #movie_player (YouTube's CSS already sizes it to
+      // fill the viewport via .ytp-fullscreen).
+      if (isPlayerFullscreen && fsEl !== playerShell && playerShell.contains(fsEl) && fsEl instanceof HTMLElement) {
         const video = playerShell.querySelector('video');
         if (video && fsEl.contains(video)) {
           playerShell = fsEl;
@@ -584,17 +594,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
       if (isPlayerFullscreen) {
         // FULLSCREEN: playerShell is the top-layer fullscreen element. Moving
-        // it exits fullscreen. Instead, move playerShell's children into
-        // stageCell and transform playerShell into a flex row container.
-        // #cell-subtitle-root stays as a direct child (position:fixed overlay
-        // relative to the fullscreen element — covers full viewport).
-        // If playerShell is still inside an old wrapper from a previous normal
-        // run, leave it — the wrapper is an ancestor of the fullscreen element
-        // and won't be visible in top-layer. It gets cleaned up on the next
-        // normal run (via splitViewWrapperRef).
-        const childrenToMove = Array.from(playerShell.children).filter(
-          (child) => child.id !== 'cell-subtitle-root',
-        );
+        // it exits fullscreen. Instead, move playerShell's children (including
+        // #cell-subtitle-root) into stageCell and transform playerShell into a
+        // flex row. The overlay fills stageCell via position:absolute+inset:0.
+        // When fsEl is an ANCESTOR of playerShell (e.g. document.documentElement),
+        // playerShell is NOT the top-layer element. The old wrapper from a
+        // previous normal run constrains its height (overflow:hidden + fixed
+        // height). Unwrap playerShell so YouTube's .ytp-fullscreen CSS can
+        // size it to fill the viewport.
+        const oldWrapper = splitViewWrapperRef.current;
+        if (oldWrapper && oldWrapper.contains(playerShell)) {
+          const wrapperParent = oldWrapper.parentElement;
+          if (wrapperParent) {
+            wrapperParent.insertBefore(playerShell, oldWrapper);
+            oldWrapper.remove();
+            splitViewWrapperRef.current = null;
+          }
+        }
+        // Move ALL children (including #cell-subtitle-root) into stageCell.
+        // stageCell is position:relative, so #cell-subtitle-root's existing
+        // position:absolute + inset:0 fills exactly the video stage — no
+        // inline left/right/width overrides needed.
+        const childrenToMove = Array.from(playerShell.children);
         for (const child of childrenToMove) {
           stageCell.appendChild(child);
         }
@@ -603,6 +624,17 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.appendChild(stageCell);
         playerShell.appendChild(handle);
         playerShell.appendChild(panel);
+        // YouTube's .ytp-fullscreen CSS forces #movie_player to 100vw/100vh and
+        // setSize() is a no-op in fullscreen. Override video/container/chrome
+        // to fill stageCell so the video sits beside the panel, not under it.
+        const fsStyle = document.createElement('style');
+        fsStyle.setAttribute('data-cell-split-view', 'fs-style');
+        fsStyle.textContent = [
+          '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
+          '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain}',
+          '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:100%!important}',
+        ].join('');
+        playerShell.appendChild(fsStyle);
       } else {
         // NORMAL: wrap playerShell in a flex row wrapper.
         wrapper = document.createElement('div');
@@ -637,7 +669,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
             : `${Math.round(parentPixelHeight)}px`;
-        wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;`;
+        // YouTube: height must be !important to override flex stretch
+        // (align-self:stretch in a flex parent would otherwise expand the
+        // wrapper to the parent's full height, making the panel tower above
+        // the video). Non-YouTube: keep flex stretch so tight shells fill.
+        const isYoutube = isYoutubePage();
+        wrapper.style.cssText = isYoutube
+          ? `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle}!important;flex:0 0 auto;overflow:hidden;position:relative;`
+          : `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;`;
 
         if (playerComputedStyle.position === 'fixed') {
           playerShell.style.setProperty('position', 'absolute', 'important');
@@ -673,6 +712,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // Move playerShell into new stageCell FIRST (detaches from old
         // wrapper's stageCell if transitioning from a previous normal run).
         stageCell.appendChild(playerShell);
+        // Move #cell-subtitle-root into stageCell so its position:absolute +
+        // inset:0 fills the video stage (stageCell is position:relative),
+        // not the subtitle panel. No inline overrides needed.
+        const cellRootNormal = document.getElementById('cell-subtitle-root');
+        if (cellRootNormal) stageCell.appendChild(cellRootNormal);
         wrapper.appendChild(stageCell);
         wrapper.appendChild(handle);
         wrapper.appendChild(panel);
@@ -694,7 +738,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       }
 
       setSplitViewPortalTarget(panelInner);
-      const restoreYoutubeSplitView = applyYoutubeSplitViewLayout(stageCell);
+      // Fullscreen: CSS overrides handle layout; setSize is a no-op in
+      // YouTube fullscreen and would capture the wrong storedSize (2560×1440
+      // instead of normal size). Skip the MAIN-world bridge entirely.
+      const restoreYoutubeSplitView = isPlayerFullscreen
+        ? (): void => undefined
+        : applyYoutubeSplitViewLayout(stageCell);
       window.dispatchEvent(new Event('resize'));
 
       // Drag resize: measure the flex container (wrapper or playerShell).
@@ -711,8 +760,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
         panel.style.flexBasis = `${next}%`;
         setSplitViewPct(next);
-        const stageRect = stageCell.getBoundingClientRect();
-        requestYoutubePlayerSize(stageRect.width, stageRect.height);
+        // Fullscreen: CSS handles video sizing, skip setSize (no-op + would
+        // corrupt storedSize).
+        if (!isPlayerFullscreen) {
+          const stageRect = stageCell.getBoundingClientRect();
+          requestYoutubePlayerSize(stageRect.width, stageRect.height);
+        }
       };
       const onPointerUp = (e: PointerEvent): void => {
         dragStart = null;
@@ -734,6 +787,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
         if (isPlayerFullscreen) {
+          // Remove fullscreen CSS overrides so YouTube's .ytp-fullscreen CSS
+          // controls the player again on exit.
+          playerShell.querySelector('[data-cell-split-view="fs-style"]')?.remove();
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
           // If playerShell was detached by the site's React re-render (common
@@ -745,13 +801,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           if (playerShellInDom) {
             for (const child of childrenToRestore) {
               playerShell.appendChild(child);
-            }
-            // #cell-subtitle-root was filtered out when moving to stageCell.
-            // attachFullscreenReparenting placed it as the last child — move it
-            // back to the end so z-index stacking matches the pre-split state.
-            const cellRoot = playerShell.querySelector('#cell-subtitle-root');
-            if (cellRoot && cellRoot.parentElement === playerShell) {
-              playerShell.appendChild(cellRoot);
             }
           }
           stageCell.remove();
@@ -794,7 +843,21 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           const value = savedPlayerShellStyles[property];
           if (value) playerShell.style.setProperty(property, value);
         }
-        restoreYoutubeSplitView();
+        // Move #cell-subtitle-root back into playerShell (mountSubtitle's
+        // default parent). attachFullscreenReparenting will reposition it
+        // on the next fullscreenchange if needed.
+        const cellRootCleanup = document.getElementById('cell-subtitle-root');
+        if (cellRootCleanup && cellRootCleanup.parentElement !== playerShell) {
+          playerShell.appendChild(cellRootCleanup);
+        }
+        // Fullscreen transition: just restore size (effect re-runs immediately
+        // with new SET_SIZE). Full close: also clear stored size so the next
+        // Split View captures a fresh baseline.
+        if (splitViewOpen) {
+          restoreYoutubeSplitView();
+        } else {
+          closeYoutubeSplitView();
+        }
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
 

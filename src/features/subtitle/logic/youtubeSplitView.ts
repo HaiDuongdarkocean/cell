@@ -42,9 +42,18 @@ export function restoreYoutubePlayerSize(hostname: string = location.hostname): 
   document.dispatchEvent(new CustomEvent('__YT_RESTORE_SIZE'));
 }
 
+/** Tell MAIN-world YouTube player Split View fully closed — clear stored size. */
+export function closeYoutubeSplitView(hostname: string = location.hostname): void {
+  if (!isYoutubePage(hostname)) return;
+  restoreYoutubePlayerSize(hostname);
+  document.dispatchEvent(new CustomEvent('__YT_SPLIT_CLOSE'));
+}
+
 /**
  * After Split View layout is in the DOM, measure `stage` and tell YouTube
  * to setSize to that box. Returns a restore that asks YouTube to undo it.
+ * Uses double-rAF so flex layout settles before measuring (fullscreen
+ * stageCell is 0px until flex resolves).
  */
 export function applyYoutubeSplitViewLayout(
   stage: HTMLElement,
@@ -53,10 +62,13 @@ export function applyYoutubeSplitViewLayout(
   if (!isYoutubePage(hostname)) return () => undefined;
   const sync = (): void => {
     const rect = stage.getBoundingClientRect();
-    requestYoutubePlayerSize(rect.width, rect.height, hostname);
+    if (rect.width > 0 && rect.height > 0) {
+      requestYoutubePlayerSize(rect.width, rect.height, hostname);
+    }
   };
-  sync();
-  requestAnimationFrame(sync);
+  // Double-rAF: first frame lays out flex children, second frame gives
+  // stable getBoundingClientRect (single rAF can still read pre-layout).
+  requestAnimationFrame(() => requestAnimationFrame(sync));
   return () => {
     restoreYoutubePlayerSize(hostname);
   };
