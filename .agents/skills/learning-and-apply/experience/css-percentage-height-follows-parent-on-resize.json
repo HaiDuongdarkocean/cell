@@ -1,0 +1,21 @@
+{
+  "id": "css-percentage-height-follows-parent-on-resize",
+  "title": "Hardcoded px height with !important freezes on resize — use percentage that follows parent",
+  "category": ["css", "rendering"],
+  "tags": ["height", "percentage", "resize", "hardcoded-px", "flex-layout", "split-view", "video-player"],
+  "trigger": "Container height set via inline px + !important — element doesn't update when browser window resizes",
+  "principle": "Inline px height with !important is a snapshot — it never updates on resize. Use height:100% so the element follows its parent's computed height automatically. The parent's height is set by the host page's CSS based on content/aspect-ratio and updates on resize without any JS listener.",
+  "cases": [
+    {
+      "context": "Split view wrapper inserted into host page DOM. Wrapper height set to parentPixelHeight px at insertion time. After browser resize, parent's computed height changes but wrapper stays at old px → empty space below video.",
+      "bad": "const parentPixelHeight = originalParent.getBoundingClientRect().height;\nwrapper.style.cssText = `display:flex;height:${Math.round(parentPixelHeight)}px!important;`;\n// + double-rAF to re-measure + resize listener (overengineered)",
+      "good": "wrapper.style.cssText = `display:flex;height:100%!important;`;\n// wrapper follows #container's computed height automatically on resize"
+    },
+    {
+      "context": "Video element sized via JS setSize(w, h) API — pixels set once, frozen on resize.",
+      "bad": "player.setSize(stageWidth, stageHeight); // frozen px, needs resize listener to update",
+      "good": "// CSS: [data-cell-split-view=\"stage\"] video{width:100%!important;height:100%!important;object-fit:contain!important}\n// Video fills stage via CSS, adapts to resize automatically"
+    }
+  ],
+  "applyFor": ["Split view layouts", "Video player containers in host pages", "Any injected container that must match host element height", "Resize-responsive layouts without JS listeners"]
+}

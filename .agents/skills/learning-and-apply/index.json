@@ -1134,6 +1134,14 @@
       "category": ["css", "rendering"],
       "tags": ["specificity", "important", "object-fit", "host-css", "cascade", "youtube", "split-view", "video-player", "cover-vs-contain"],
       "trigger": "Content-script injects <style> để override host page CSS trên element host owns (video, player shell) — host CSS có specificity cao hơn hoặc bằng selector mình inject"
+    },
+    {
+      "type": "experience",
+      "id": "css-percentage-height-follows-parent-on-resize",
+      "title": "Hardcoded px height with !important freezes on resize — use percentage that follows parent",
+      "category": ["css", "rendering"],
+      "tags": ["height", "percentage", "resize", "hardcoded-px", "flex-layout", "split-view", "video-player"],
+      "trigger": "Container height set via inline px + !important — element doesn't update when browser window resizes"
     }
   ]
 }
