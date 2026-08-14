@@ -2,7 +2,7 @@ import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffe
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue, SrtCue } from '@/entities/media';
+import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
@@ -23,7 +23,6 @@ import {
   closeYoutubeSplitView,
   isYoutubePage,
   requestYoutubePlayerSize,
-  resolveYoutubeSplitViewWrapperHeight,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -58,7 +57,7 @@ export interface ManagerState {
   /** Persist API key changes to settings storage. */
   onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   /** User selected a search result to download + load (delegated to contentScriptController). */
-  onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
+  onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
 }
 
 export interface OffsetState {
@@ -662,10 +661,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const videoRect = videoEl?.getBoundingClientRect();
         const isBroadShell = videoRect
           && playerRect.width > videoRect.width * 1.2;
+        // YouTube: use the PARENT container height (#container), not the
+        // video/player height. After fullscreen exit, the player height is
+        // an intermediate value (e.g. 643px instead of 746px) and the video
+        // height may be 0 — both produce a too-short wrapper, leaving empty
+        // space below. The parent height is stable across fullscreen
+        // transitions.
         const wrapperHeightStyle = viewportBound
           ? wrapperHeight
           : isYoutubePage()
-            ? resolveYoutubeSplitViewWrapperHeight(videoRect?.height ?? 0, playerRect.height)
+            ? `${Math.round(parentPixelHeight)}px`
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
             : `${Math.round(parentPixelHeight)}px`;
@@ -735,6 +740,22 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           oldWrapper.remove();
         }
         splitViewWrapperRef.current = wrapper;
+        // YouTube: right after fullscreen exit, the parent container may
+        // have an intermediate height (e.g. 643px instead of 746px) because
+        // YouTube's layout hasn't settled. Double-rAF to re-measure the
+        // parent and correct the wrapper height once layout is stable.
+        if (isYoutube) {
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const settled = originalParent.getBoundingClientRect().height;
+            if (settled > 0) {
+              wrapper.style.setProperty('height', `${Math.round(settled)}px`, 'important');
+              const stageR = stageCell.getBoundingClientRect();
+              if (stageR.width > 0 && stageR.height > 0) {
+                requestYoutubePlayerSize(stageR.width, stageR.height);
+              }
+            }
+          }));
+        }
       }
 
       setSplitViewPortalTarget(panelInner);
