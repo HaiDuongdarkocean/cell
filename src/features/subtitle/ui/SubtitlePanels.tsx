@@ -19,10 +19,8 @@ import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import {
-  applyYoutubeSplitViewLayout,
   closeYoutubeSplitView,
   isYoutubePage,
-  requestYoutubePlayerSize,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -771,16 +769,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const videoRect = videoEl?.getBoundingClientRect();
         const isBroadShell = videoRect
           && playerRect.width > videoRect.width * 1.2;
-        // YouTube: use the PARENT container height (#container), not the
-        // video/player height. After fullscreen exit, the player height is
-        // an intermediate value (e.g. 643px instead of 746px) and the video
-        // height may be 0 — both produce a too-short wrapper, leaving empty
-        // space below. The parent height is stable across fullscreen
-        // transitions.
+        // YouTube: use height:100% so the wrapper follows #container's
+        // computed height automatically on window resize — no hardcoded px,
+        // no resize listener needed. #container's height is set by YouTube's
+        // CSS based on video aspect ratio + available width, and updates on
+        // resize. The old approach (parentPixelHeight px) froze the wrapper
+        // at the initial size → empty space below after browser resize.
         const wrapperHeightStyle = viewportBound
           ? wrapperHeight
           : isYoutubePage()
-            ? `${Math.round(parentPixelHeight)}px`
+            ? '100%'
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
             : `${Math.round(parentPixelHeight)}px`;
@@ -874,31 +872,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           originalParentInOldWrapper,
           insertParentTag: insertParent?.tagName,
         });
-        // YouTube: right after fullscreen exit, the parent container may
-        // have an intermediate height (e.g. 643px instead of 746px) because
-        // YouTube's layout hasn't settled. Double-rAF to re-measure the
-        // parent and correct the wrapper height once layout is stable.
+        // YouTube: inject CSS overrides so video + controls fill the stage
+        // via CSS (height:100%!important, object-fit:contain). The MAIN-world
+        // listener handles injection/removal. This replaces the old setSize
+        // approach which set hardcoded pixel sizes that froze on resize.
         if (isYoutube) {
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            const settled = originalParent.getBoundingClientRect().height;
-            if (settled > 0) {
-              wrapper.style.setProperty('height', `${Math.round(settled)}px`, 'important');
-              const stageR = stageCell.getBoundingClientRect();
-              if (stageR.width > 0 && stageR.height > 0) {
-                requestYoutubePlayerSize(stageR.width, stageR.height);
-              }
-            }
-          }));
+          document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
         }
       }
 
       setSplitViewPortalTarget(panelInner);
-      // Fullscreen: CSS overrides handle layout; setSize is a no-op in
-      // YouTube fullscreen and would capture the wrong storedSize (2560×1440
-      // instead of normal size). Skip the MAIN-world bridge entirely.
-      const restoreYoutubeSplitView = isPlayerFullscreen
-        ? (): void => undefined
-        : applyYoutubeSplitViewLayout(stageCell);
+      // CSS handles all YouTube player sizing now (height:100%!important,
+      // object-fit:contain). No setSize bridge needed — it set hardcoded
+      // pixel sizes that froze on resize.
+      const restoreYoutubeSplitView = (): void => undefined;
       window.dispatchEvent(new Event('resize'));
 
       // Drag resize: measure the flex container (wrapper or playerShell).
@@ -915,12 +902,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
         panel.style.flexBasis = `${next}%`;
         setSplitViewPct(next);
-        // Fullscreen: CSS handles video sizing, skip setSize (no-op + would
-        // corrupt storedSize).
-        if (!isPlayerFullscreen) {
-          const stageRect = stageCell.getBoundingClientRect();
-          requestYoutubePlayerSize(stageRect.width, stageRect.height);
-        }
+        // CSS handles video sizing (height:100%!important, object-fit:contain).
+        // No setSize needed — the video fills the stage via CSS automatically.
       };
       const onPointerUp = (e: PointerEvent): void => {
         dragStart = null;
@@ -943,8 +926,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
         if (isPlayerFullscreen) {
-          // Remove YouTube CSS overrides via MAIN-world adapter event.
-          document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
           // If playerShell was detached by the site's React re-render (common
@@ -1011,12 +992,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         if (cellRootCleanup && cellRootCleanup.parentElement !== playerShell) {
           playerShell.appendChild(cellRootCleanup);
         }
-        // Fullscreen transition: just restore size (effect re-runs immediately
-        // with new SET_SIZE). Full close: also clear stored size so the next
-        // Split View captures a fresh baseline.
-        if (splitViewOpen) {
-          restoreYoutubeSplitView();
-        } else {
+        // Remove YouTube CSS overrides in both branches (normal + fullscreen).
+        // The MAIN-world listener removes the <style> tag.
+        document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
+        // setSize bridge is no longer used — CSS handles all player sizing.
+        // restoreYoutubeSplitView is a no-op; closeYoutubeSplitView cleared
+        // the storedSize which is never set now. Keep it for safety in case
+        // a stale MAIN-world listener still has a storedSize from a previous
+        // session.
+        if (!splitViewOpen) {
           closeYoutubeSplitView();
         }
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
