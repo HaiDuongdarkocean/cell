@@ -640,6 +640,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (!originalParent) return;
       const originalNextSibling = playerShell.nextSibling;
 
+      // Save #cell-subtitle-root's current parent BEFORE Split View moves it
+      // into stageCell. On cleanup, cellRoot must return to THIS parent (e.g.
+      // .art-video-player with position:relative), NOT to playerShell —
+      // playerShell can be position:static (e.g. themoviebox .w-full h-[203px]),
+      // which lets cellRoot's position:absolute+inset:0 escape to the viewport.
+      const cellRootOriginalParent = document.getElementById('cell-subtitle-root')?.parentElement ?? null;
+
       const playerRect = playerShell.getBoundingClientRect();
       const playerComputedStyle = getComputedStyle(playerShell);
       const viewportBound = playerComputedStyle.position === 'fixed'
@@ -985,12 +992,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           const value = savedPlayerShellStyles[property];
           if (value) playerShell.style.setProperty(property, value);
         }
-        // Move #cell-subtitle-root back into playerShell (mountSubtitle's
-        // default parent). attachFullscreenReparenting will reposition it
-        // on the next fullscreenchange if needed.
+        // Move #cell-subtitle-root back to its pre-Split-View parent (e.g.
+        // .art-video-player with position:relative), NOT to playerShell.
+        // playerShell can be position:static (themoviebox .w-full h-[203px]),
+        // which lets cellRoot's position:absolute+inset:0 escape to the
+        // viewport → subtitle overlay covers the whole page instead of the
+        // video. Fall back to playerShell only when the original parent is
+        // unavailable (cellRoot didn't exist when Split View opened).
+        // attachFullscreenReparenting will reposition it on the next
+        // fullscreenchange if needed.
         const cellRootCleanup = document.getElementById('cell-subtitle-root');
-        if (cellRootCleanup && cellRootCleanup.parentElement !== playerShell) {
-          playerShell.appendChild(cellRootCleanup);
+        const cellRootTarget = cellRootOriginalParent ?? playerShell;
+        if (cellRootCleanup && cellRootCleanup.parentElement !== cellRootTarget) {
+          cellRootTarget.appendChild(cellRootCleanup);
         }
         // Remove YouTube CSS overrides in both branches (normal + fullscreen).
         // The MAIN-world listener removes the <style> tag.
