@@ -11,6 +11,7 @@ import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToas
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SubtitleApiKey } from '@/entities/settings';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { resolveSplitViewWrapperHeight, togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
@@ -45,8 +46,10 @@ export interface ManagerState {
   appearance?: AppearanceState;
   /** Whether subtitle search API keys are configured (controls search UI availability). */
   hasSearchKeys: boolean;
-  /** Open extension settings (e.g. to configure search API keys). */
-  onOpenSettings: () => void;
+  /** API keys for subtitle search (for inline ApiKeyManager in search view). */
+  apiKeys: readonly SubtitleApiKey[];
+  /** Persist API key changes to settings storage. */
+  onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   /** User selected a search result to download + load (delegated to contentScriptController). */
   onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
@@ -551,6 +554,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // it overflows the stage and gets covered by the panel. Save and
       // override the video's sizing styles so it fills playerShell.
       const splitViewVideo = playerShell.querySelector('video');
+      const splitViewVideoContainer = splitViewVideo?.parentElement ?? null;
       const videoStyleProperties = [
         'width', 'height', 'max-width', 'max-height',
         'min-width', 'min-height', 'left', 'top', 'inset',
@@ -559,6 +563,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (splitViewVideo) {
         for (const property of videoStyleProperties) {
           savedVideoStyles[property] = splitViewVideo.style.getPropertyValue(property);
+        }
+      }
+      // YouTube's .html5-video-container has height:0 — save/restore it too.
+      const savedVideoContainerStyles: Record<string, string> = {};
+      if (splitViewVideoContainer && splitViewVideoContainer !== playerShell) {
+        for (const property of ['width', 'height']) {
+          savedVideoContainerStyles[property] = splitViewVideoContainer.style.getPropertyValue(property);
         }
       }
 
@@ -664,13 +675,35 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // width/height + position:absolute on <video> — without this
         // override the video overflows the narrowed stage and gets
         // covered by the subtitle panel.
+        //
+        // height:100% alone doesn't work: YouTube's .html5-video-container
+        // (the positioned ancestor) has height:0, so 100% of 0 = 0.
+        // Set the container's height too, and use the video's aspect ratio
+        // to compute the correct pixel height for the stage width.
         if (splitViewVideo) {
           splitViewVideo.style.setProperty('width', '100%', 'important');
-          splitViewVideo.style.setProperty('height', '100%', 'important');
           splitViewVideo.style.setProperty('max-width', 'none', 'important');
           splitViewVideo.style.setProperty('max-height', 'none', 'important');
           splitViewVideo.style.setProperty('left', '0', 'important');
           splitViewVideo.style.setProperty('top', '0', 'important');
+          // Use pixel height from the video's aspect ratio — height:100%
+          // fails when the positioned ancestor (.html5-video-container)
+          // has height:0 (YouTube CSS).
+          const videoAspect = splitViewVideo.videoWidth / splitViewVideo.videoHeight;
+          if (videoAspect > 0 && Number.isFinite(videoAspect)) {
+            const stageWidth = playerRect.width;
+            const videoPixelHeight = stageWidth / videoAspect;
+            splitViewVideo.style.setProperty('height', `${Math.round(videoPixelHeight)}px`, 'important');
+          } else {
+            splitViewVideo.style.setProperty('height', '100%', 'important');
+          }
+          // Also fix the positioned ancestor so height:100% would work
+          // as a fallback for sites where the container isn't height:0.
+          const videoContainer = splitViewVideo.parentElement;
+          if (videoContainer && videoContainer !== playerShell) {
+            videoContainer.style.setProperty('height', '100%', 'important');
+            videoContainer.style.setProperty('width', '100%', 'important');
+          }
         }
 
         // When transitioning from fullscreen back to normal, playerShell
@@ -816,6 +849,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             splitViewVideo.style.removeProperty(property);
             const value = savedVideoStyles[property];
             if (value) splitViewVideo.style.setProperty(property, value);
+          }
+        }
+        // Restore video container styles (.html5-video-container height).
+        if (splitViewVideoContainer && splitViewVideoContainer !== playerShell) {
+          for (const property of ['width', 'height']) {
+            splitViewVideoContainer.style.removeProperty(property);
+            const value = savedVideoContainerStyles[property];
+            if (value) splitViewVideoContainer.style.setProperty(property, value);
           }
         }
       };
@@ -1100,7 +1141,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               generateNativeDisabled={!generateNativeEnabled}
               appearance={manager.appearance}
               hasSearchKeys={manager.hasSearchKeys}
-              onOpenSettings={manager.onOpenSettings}
+              apiKeys={manager.apiKeys}
+              onApiKeysChange={manager.onApiKeysChange}
               onSearchResultSelect={manager.onSearchResultSelect}
             />
           </div>,
