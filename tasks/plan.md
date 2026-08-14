@@ -241,8 +241,20 @@ Mỗi loop tập trung một nhóm trùng lặp liên quan, có acceptance crite
   - [x] Xóa `SourceBadge.module.css`.
   - [x] Build + `SourceBadge` / `Badge` tests pass.
 
-## Loop 18+ (future loops)
-- Domain badge còn lại (`StatusBadge`, `FrequencyBadge`, `MasteryBadge`) consolidate với `Badge`/`Chip`.
+## Loop 18 — MasteryBadge → Chip SSOT
+- **Why:** `MasteryBadge` tự định nghĩa CSS pill trùng với `Chip` (subtle bg + foreground color, leading icon, label).
+- **What:** Chuyển `MasteryBadge` thành wrapper của `Chip` với `color` mapping từ level; xóa `MasteryBadge.module.css`.
+- **Files:**
+  - `src/shared/domain/learning/atoms/MasteryBadge.tsx`
+  - `src/shared/domain/learning/atoms/MasteryBadge.module.css` (delete)
+- **AC:**
+  - [x] `MasteryBadge` dùng `Chip as="span" size="sm"` với `color` từ `progress`.
+  - [x] `leadingIcon` là `Icon`/`Spinner` tùy icon prop.
+  - [x] Xóa `MasteryBadge.module.css`.
+  - [x] Build + `MasteryBadge` tests pass.
+
+## Loop 19+ (future loops)
+- Domain badge còn lại (`StatusBadge`, `FrequencyBadge`) consolidate với `Badge`/`Chip`.
 - Toast / notice patterns (`SubtitleToast`, `CardCreatorDialog` notice, `SubtitleSearchPanel` error, `DownloadCard` error, `QueueSidebar` status, `SubtitleManagerPanel` error).
 
 ## Verification pattern
