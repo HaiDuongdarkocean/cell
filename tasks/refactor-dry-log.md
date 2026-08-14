@@ -411,8 +411,25 @@ Major features identified from `docs/2-architechture-system.md` and the codebase
   - Subagent review (agent id `84a9c47c`) ✅
 - **Status:** Complete. `StatusBadge`, `FrequencyBadge` and toast/notice patterns remain out of scope.
 
+### Loop 19 — StatusBadge → Chip SSOT
+- **Discovery:** `StatusBadge` tự định nghĩa CSS button/tint trong khi `Chip` đã hỗ trợ `as="button"` và color variants.
+- **Plan:** Chuyển `StatusBadge` thành wrapper của `Chip` với `color` mapping từ `status`; xóa `StatusBadge.module.css`.
+- **AC:**
+  1. `StatusBadge` dùng `Chip as="button"` với `color` từ `status`.
+  2. Xóa `StatusBadge.module.css`.
+  3. Build + `StatusBadge` tests pass.
+- **Do:**
+  - Rewrote `StatusBadge.tsx` as a wrapper over `Chip` with `statusToColor` mapping.
+  - Deleted `StatusBadge.module.css`.
+- **Verify:**
+  - `npm run typecheck` ✅
+  - `npm run build` ✅
+  - `StatusBadge` / `Chip` unit tests ✅
+  - Subagent review (agent id `85aeb3eb`) ✅
+- **Status:** Complete. `FrequencyBadge` and toast/notice patterns remain out of scope.
+
 ## Loop count / goal check
 
-- **Loops completed:** 18
+- **Loops completed:** 19
 - **Goal reached?** No — additional duplicate UI patterns remain.
-- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13; "continue Loop 15?" after Loop 14; "continue Loop 16?" after Loop 15; "continue Loop 17?" after Loop 16; "continue Loop 18?" after Loop 17)
+- **Confirmation questions asked to user:** 5 ("continue Loop 3?" on 2026-08-13; "choose Loop 5 candidate?" after Loop 4; "continue Loop 6?" after Loop 5; "continue Loop 7?" after Loop 6; "continue Loop 8?" after Loop 7; "continue Loop 9?" after Loop 8; "continue Loop 10?" after Loop 9; "continue Loop 11?" after Loop 10; "continue Loop 12?" after Loop 11; "continue Loop 13?" after Loop 12; "continue Loop 14?" after Loop 13; "continue Loop 15?" after Loop 14; "continue Loop 16?" after Loop 15; "continue Loop 17?" after Loop 16; "continue Loop 18?" after Loop 17; "continue Loop 19?" after Loop 18)
