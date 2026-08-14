@@ -2,9 +2,19 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import type { BilingualCue } from '@/types/media';
 
-// jsdom does not implement scrollIntoView — mock it
+// jsdom does not implement scrollIntoView or layout (offsetTop/scrollHeight) —
+// mock scrollIntoView (legacy) and stub layout props for the manual scrollTop
+// centering logic.
 beforeAll(() => {
   Element.prototype.scrollIntoView = jest.fn();
+  // jsdom returns 0 for offsetTop/offsetHeight/scrollHeight/clientHeight.
+  // The centering logic reads these to compute targetScroll. Stub them so the
+  // effect runs without throwing; the exact values don't matter for this test
+  // (we assert scrollTop is set, not a specific pixel value).
+  Object.defineProperty(Element.prototype, 'offsetTop', { configurable: true, get() { return 0; } });
+  Object.defineProperty(Element.prototype, 'offsetHeight', { configurable: true, get() { return 50; } });
+  Object.defineProperty(Element.prototype, 'scrollHeight', { configurable: true, get() { return 500; } });
+  Object.defineProperty(Element.prototype, 'clientHeight', { configurable: true, get() { return 200; } });
 });
 
 describe('CueList', () => {
@@ -167,10 +177,15 @@ describe('CueList', () => {
     });
   });
 
-  // Regression: scrollIntoView must use behavior 'auto' (instant), not 'smooth'.
-  // Smooth scroll across a long cue list (full movie) causes motion sickness.
+  // Regression: auto-scroll must use manual scrollTop on the list container,
+  // NOT scrollIntoView. scrollIntoView({ block: 'center' }) scrolls ALL
+  // scrollable ancestors — in split view (normal mode), the panel is inserted
+  // into the host page DOM (YouTube watch page is scrollable). When the cue is
+  // near the end of the list, the list can't center it → scrollIntoView scrolls
+  // the YouTube document to center the panel → page jumps ("giật màn hình").
+  // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   describe('scroll behavior', () => {
-    it('uses instant scroll (behavior: auto) when cue changes', () => {
+    it('does NOT call scrollIntoView when cue changes', () => {
       const cues: BilingualCue[] = [
         { index: 1, start: 1000, end: 3000, targetText: 'A', nativeText: '' },
         { index: 2, start: 3000, end: 5000, targetText: 'B', nativeText: '' },
@@ -178,12 +193,10 @@ describe('CueList', () => {
       const { rerender } = render(<CueList cues={cues} currentTimeMs={1500} onSeek={jest.fn()} />);
       (Element.prototype.scrollIntoView as jest.Mock).mockClear();
 
-      // Move to next cue → should trigger instant scroll
+      // Move to next cue → should NOT call scrollIntoView (uses manual scrollTop)
       rerender(<CueList cues={cues} currentTimeMs={3500} onSeek={jest.fn()} />);
 
-      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
-        expect.objectContaining({ behavior: 'auto', block: 'center' }),
-      );
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     });
   });
 });
