@@ -599,18 +599,34 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // NORMAL: wrap playerShell in a flex row wrapper.
         wrapper = document.createElement('div');
         wrapper.setAttribute('data-cell-split-view', 'wrapper');
-        // height:100% fills the parent when it has a definite height.
-        // flex:1 1 100% + align-self:stretch handles flex-row parents with
-        // align-items:normal (stretch doesn't apply with flex-wrap:wrap).
-        // The fallback wrapperHeight (px) is only used for fixed-position
-        // players that are viewport-bound.
-        // For non-viewport-bound players, use the parent's pixel height
-        // directly — height:100% doesn't work in flex-wrap:wrap containers
-        // because flex items are sized by the flex algorithm, not percentage.
+        // Wrapper height: the goal is to match the video's display height
+        // so the subtitle panel doesn't tower above/below the video.
+        //
+        // Two cases:
+        // 1. Tight shell (playerShell ≈ video width, e.g. kisskh.co):
+        //    The shell is just the video + controls. Fill the parent's
+        //    height — the video stretches via height:100% and the panel
+        //    matches. This avoids empty space below the Split View area
+        //    when the parent is taller than the video (hidden siblings).
+        //
+        // 2. Broad shell (playerShell >> video width, e.g. themoviebox):
+        //    The shell includes side-by-side content (resources panel,
+        //    episode list). Moving it into a narrower stage causes content
+        //    to reflow vertically → shell height explodes (690→2053px).
+        //    Use the video's height instead so the panel matches the video.
+        //
+        // height:100% alone doesn't work in flex-wrap:wrap containers
+        // because flex items are sized by the flex algorithm, not %.
         const parentPixelHeight = originalParent.getBoundingClientRect().height;
+        const videoEl = playerShell.querySelector('video');
+        const videoRect = videoEl?.getBoundingClientRect();
+        const isBroadShell = videoRect
+          && playerRect.width > videoRect.width * 1.2;
         const wrapperHeightStyle = viewportBound
           ? wrapperHeight
-          : `${Math.round(parentPixelHeight)}px`;
+          : isBroadShell
+            ? `${Math.round(videoRect!.height)}px`
+            : `${Math.round(parentPixelHeight)}px`;
         wrapper.style.cssText = `display:flex;flex-direction:row;width:100%;height:${wrapperHeightStyle};flex:1 1 100%;align-self:stretch;overflow:hidden;position:relative;`;
 
         if (playerComputedStyle.position === 'fixed') {
