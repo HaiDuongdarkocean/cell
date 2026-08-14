@@ -50,24 +50,6 @@ export function closeYoutubeSplitView(hostname: string = location.hostname): voi
 }
 
 /**
- * Ask MAIN-world YouTube adapter to inject YouTube-specific CSS overrides for
- * split view (object-fit, .ytp-chrome-bottom width, progress bar widths).
- * The CSS targets [data-cell-split-view="stage"] descendants — the stage
- * element is created by isolated-world React but lives in light DOM, so MAIN
- * world CSS can target it. No-op off YouTube.
- */
-export function applyYoutubeSplitViewCss(hostname: string = location.hostname): void {
-  if (!isYoutubePage(hostname)) return;
-  document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_APPLY_CSS'));
-}
-
-/** Ask MAIN-world YouTube adapter to remove split view CSS overrides. */
-export function removeYoutubeSplitViewCss(hostname: string = location.hostname): void {
-  if (!isYoutubePage(hostname)) return;
-  document.dispatchEvent(new CustomEvent('__YT_SPLIT_VIEW_REMOVE_CSS'));
-}
-
-/**
  * After Split View layout is in the DOM, measure `stage` and tell YouTube
  * to setSize to that box. Returns a restore that asks YouTube to undo it.
  * Uses double-rAF so flex layout settles before measuring (fullscreen
