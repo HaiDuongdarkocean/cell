@@ -46,6 +46,18 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 /**
+ * Check if a keyboard event originated from an editable element, crossing
+ * shadow DOM boundaries. `e.target` is retargeted to the shadow host when
+ * focus is inside a shadow root, so `isEditableTarget(e.target)` returns
+ * false even when the real focus is an `<input>`. Use `composedPath()[0]`
+ * to see the actual element that has focus.
+ */
+export function isEditableEvent(e: KeyboardEvent): boolean {
+  const realTarget = e.composedPath()[0];
+  return realTarget instanceof HTMLElement && isEditableTarget(realTarget);
+}
+
+/**
  * Map a pressed key to a shortcut action, guarding against editable targets.
  *
  * ADR-021 D7: supports combo matching (ctrl/shift/alt modifiers). Shortcuts

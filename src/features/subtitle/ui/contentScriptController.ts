@@ -17,6 +17,7 @@ import {
   mergeCuesForPanel,
   handleShortcutKey,
   isEditableTarget,
+  isEditableEvent,
   isInsideCellUi,
   formatSubtitleName,
   seekVideo,
@@ -1121,7 +1122,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       // Cell UI: block ALL host shortcuts when focus is inside Cell UI panels
       // (manager, settings, card creator, etc.). Let Escape through so panels
       // can close via their own React keydown handlers.
-      if (insideCellUi && e.key !== 'Escape') {
+      // Exception: when focus is in an editable element (input/textarea/select/
+      // contenteditable) inside the shadow DOM, don't preventDefault — that
+      // blocks character insertion. `e.target` is retargeted to the shadow host,
+      // so use `isEditableEvent` which checks `composedPath()[0]`.
+      if (insideCellUi && e.key !== 'Escape' && !isEditableEvent(e)) {
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -1250,7 +1255,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   const onKeyup = (e: KeyboardEvent) => {
     if (isEditableTarget(e.target)) return;
     // Block host keyup when focus is inside Cell UI (mirrors keydown guard).
-    if (isInsideCellUi(e)) {
+    // Skip editable elements inside shadow DOM (composedPath check) so typing
+    // in inputs/textareas isn't blocked.
+    if (isInsideCellUi(e) && !isEditableEvent(e)) {
       e.preventDefault();
       e.stopImmediatePropagation();
       return;
