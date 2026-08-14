@@ -1,0 +1,21 @@
+{
+  "id": "css-specificity-important-on-every-property",
+  "title": "Inject CSS override host rule → !important on EVERY property, not just some",
+  "category": ["css", "rendering"],
+  "tags": ["specificity", "important", "object-fit", "host-css", "cascade", "youtube", "split-view", "video-player", "cover-vs-contain"],
+  "trigger": "Content-script injects <style> để override host page CSS trên element host owns (video, player shell) — host CSS có specificity cao hơn hoặc bằng selector mình inject.",
+  "principle": "Khi inject CSS override host rule, !important phải trên MỖI property, không chỉ vài cái. Quên !important trên 1 property (vd object-fit:contain) → host rule cùng property với specificity cao hơn (vd .ytp-fit-cover-video .html5-main-video = 0,2,0) thắng silently. Symptom: property KHÁC (width/height/top) override OK vì có !important, nhưng 1 property bị crop/letterbox sai → dễ tưởng fix work cho đến khi compare visual. Defense: audit mỗi property trong injected CSS — nếu host có rule cho property đó, !important là bắt buộc. Verify bằng getComputedStyle + vision compare, không tin DOM measurements alone.",
+  "cases": [
+    {
+      "context": "YouTube fullscreen split view: inject CSS để video letterbox (contain) thay vì crop (cover) trong stageCell hẹp hơn. YouTube CSS .ytp-fit-cover-video .html5-main-video { object-fit: cover } (specificity 0,2,0). Injected [data-cell-split-view=\"stage\"] video { object-fit: contain; width:100%!important; height:100%!important; top:0!important; left:0!important } (specificity 0,1,1). width/height/top/left override OK vì !important, nhưng object-fit:contain KHÔNG có !important → host cover wins → video crop 2 bên, nhạc công mất.",
+      "bad": "[data-cell-split-view=\"stage\"] video{width:100%!important;height:100%!important;object-fit:contain;top:0!important;left:0!important}\n// object-fit:contain không !important → .ytp-fit-cover-video .html5-main-video{object-fit:cover} (0,2,0) wins → video CROPPED, content mất 2 bên",
+      "good": "[data-cell-split-view=\"stage\"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}\n// !important trên object-fit → override host cover → video LETTERBOX, tất cả content visible"
+    }
+  ],
+  "applyFor": [
+    "Content-script inject <style> override host video player CSS (YouTube, Netflix, Vimeo)",
+    "Override host CSS trên element host owns (không phải element mình inject)",
+    "Bất kỳ CSS override mà host có rule cùng property với specificity >= selector mình inject",
+    "Split view / docked panel resize video — object-fit phải contain không cover"
+  ]
+}

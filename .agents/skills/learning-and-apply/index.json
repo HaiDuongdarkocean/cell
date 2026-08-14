@@ -1126,6 +1126,14 @@
       "category": ["ux", "state"],
       "tags": ["hover", "debounce", "caretRangeFromPoint", "false-negative", "re-lookup-loop", "geometry-gate"],
       "trigger": "Detection system has false negatives (overlay covers target, nearest-match snapping) and resetting state on those false negatives causes re-trigger loops"
+    },
+    {
+      "type": "experience",
+      "id": "css-specificity-important-on-every-property",
+      "title": "Inject CSS override host rule → !important on EVERY property, not just some",
+      "category": ["css", "rendering"],
+      "tags": ["specificity", "important", "object-fit", "host-css", "cascade", "youtube", "split-view", "video-player", "cover-vs-contain"],
+      "trigger": "Content-script injects <style> để override host page CSS trên element host owns (video, player shell) — host CSS có specificity cao hơn hoặc bằng selector mình inject"
     }
   ]
 }
