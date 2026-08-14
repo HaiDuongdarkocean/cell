@@ -714,9 +714,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // previous normal run constrains its height (overflow:hidden + fixed
         // height). Unwrap playerShell so YouTube's .ytp-fullscreen CSS can
         // size it to fill the viewport.
-        svLog('FULLSCREEN branch enter', { playerShellRect: rectLog(playerShell), oldWrapper: !!splitViewWrapperRef.current });
+        // When playerShell WAS REASSIGNED to fsEl (a descendant of the original
+        // playerShell, e.g. kisskh .videoplayer inside .col-12), playerShell IS
+        // the fullscreen element — moving it exits fullscreen. Skip the unwrap;
+        // the old wrapper is an invisible ancestor (the fullscreen element is in
+        // the top layer). The old wrapper is cleaned up on the next NORMAL
+        // branch run (via splitViewWrapperRef).
+        svLog('FULLSCREEN branch enter', { playerShellRect: rectLog(playerShell), oldWrapper: !!splitViewWrapperRef.current, playerIsFs: playerShell === document.fullscreenElement });
         const oldWrapper = splitViewWrapperRef.current;
-        if (oldWrapper && oldWrapper.contains(playerShell)) {
+        if (oldWrapper && oldWrapper.contains(playerShell) && playerShell !== document.fullscreenElement) {
           const wrapperParent = oldWrapper.parentElement;
           if (wrapperParent) {
             wrapperParent.insertBefore(playerShell, oldWrapper);
@@ -776,27 +782,50 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const videoRect = videoEl?.getBoundingClientRect();
         const isBroadShell = videoRect
           && playerRect.width > videoRect.width * 1.2;
+
+        // When transitioning from fullscreen back to normal, playerShell
+        // is still inside the old wrapper's stageCell. originalParent is
+        // that stageCell — which is inside the old wrapper. Removing the
+        // old wrapper before inserting the new one would detach the new
+        // wrapper too. Resolve the real insertion point: if originalParent
+        // is inside the old wrapper, use the old wrapper's parent instead.
+        const oldWrapper = splitViewWrapperRef.current;
+        const originalParentInOldWrapper = oldWrapper
+          && oldWrapper !== wrapper
+          && oldWrapper.contains(originalParent);
+        const insertParent = originalParentInOldWrapper
+          ? oldWrapper!.parentElement!
+          : originalParent;
+        const insertBefore = originalParentInOldWrapper
+          ? oldWrapper!.nextSibling
+          : originalNextSibling;
+
         // Wrapper flex: preserve playerShell's original footprint when the
-        // parent is a flex row with siblings (e.g. kisskh .row contains
-        // video col + drama info col). Using flex:1 1 100% would take the
-        // entire row, collapsing siblings to 0 width — the episode selector
-        // disappears. Instead, use the playerShell's original pixel width as
-        // flex-basis so the wrapper takes only the video column's space.
+        // INSERTION parent is a flex row with siblings (e.g. kisskh .row
+        // contains video col + drama info col). Using flex:1 1 100% would
+        // take the entire row, collapsing siblings to 0 width — the episode
+        // selector disappears. Instead, use the playerShell's original pixel
+        // width as flex-basis so the wrapper takes only the video column's
+        // space. Must check insertParent (the actual flex row), NOT
+        // originalParent (which may be an old stageCell inside the old
+        // wrapper — not a flex row, causing hasFlexSiblings=false after
+        // fullscreen exit).
         // Ponytail ceiling: fixed px width won't resize on browser resize;
         // upgrade path = parse computed flex-basis percentage (e.g. 58.3333%)
         // for responsive sizing. On re-open the width recalculates.
-        const parentCs = getComputedStyle(originalParent);
-        const parentIsFlexRow = parentCs.display === 'flex'
-          && (parentCs.flexDirection === 'row'
-            || parentCs.flexDirection === 'row-reverse');
-        const hasFlexSiblings = parentIsFlexRow
-          && Array.from(originalParent.children)
+        const insertParentCs = getComputedStyle(insertParent);
+        const insertParentIsFlexRow = insertParentCs.display === 'flex'
+          && (insertParentCs.flexDirection === 'row'
+            || insertParentCs.flexDirection === 'row-reverse');
+        const hasFlexSiblings = insertParentIsFlexRow
+          && Array.from(insertParent.children)
             .filter((c) => c !== playerShell
+              && c !== oldWrapper
               && !(c as HTMLElement).hasAttribute?.('data-cell-split-view')
               && c.getBoundingClientRect().width > 0)
             .length > 0;
         const wrapperFlex = hasFlexSiblings
-          ? `0 0 ${Math.round(playerRect.width)}px`
+          ? `0 0 ${Math.round(originalParentInOldWrapper ? oldWrapper!.getBoundingClientRect().width : playerRect.width)}px`
           : '1 1 100%';
         // YouTube: use height:100% so the wrapper follows #container's
         // computed height automatically on window resize — no hardcoded px,
@@ -852,23 +881,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // controls render outside the player's content box. stageCell still
         // has overflow:hidden, so the video itself is clipped to the stage.
         playerShell.style.setProperty('overflow', 'visible', 'important');
-
-        // When transitioning from fullscreen back to normal, playerShell
-        // is still inside the old wrapper's stageCell. originalParent is
-        // that stageCell — which is inside the old wrapper. Removing the
-        // old wrapper before inserting the new one would detach the new
-        // wrapper too. Resolve the real insertion point: if originalParent
-        // is inside the old wrapper, use the old wrapper's parent instead.
-        const oldWrapper = splitViewWrapperRef.current;
-        const originalParentInOldWrapper = oldWrapper
-          && oldWrapper !== wrapper
-          && oldWrapper.contains(originalParent);
-        const insertParent = originalParentInOldWrapper
-          ? oldWrapper!.parentElement!
-          : originalParent;
-        const insertBefore = originalParentInOldWrapper
-          ? oldWrapper!.nextSibling
-          : originalNextSibling;
 
         // Move playerShell into new stageCell FIRST (detaches from old
         // wrapper's stageCell if transitioning from a previous normal run).
