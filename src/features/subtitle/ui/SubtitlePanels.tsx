@@ -615,6 +615,23 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.style.setProperty('margin', '0', 'important');
         playerShell.style.setProperty('box-sizing', 'border-box', 'important');
 
+        // When transitioning from fullscreen back to normal, playerShell
+        // is still inside the old wrapper's stageCell. originalParent is
+        // that stageCell — which is inside the old wrapper. Removing the
+        // old wrapper before inserting the new one would detach the new
+        // wrapper too. Resolve the real insertion point: if originalParent
+        // is inside the old wrapper, use the old wrapper's parent instead.
+        const oldWrapper = splitViewWrapperRef.current;
+        const originalParentInOldWrapper = oldWrapper
+          && oldWrapper !== wrapper
+          && oldWrapper.contains(originalParent);
+        const insertParent = originalParentInOldWrapper
+          ? oldWrapper!.parentElement!
+          : originalParent;
+        const insertBefore = originalParentInOldWrapper
+          ? oldWrapper!.nextSibling
+          : originalNextSibling;
+
         // Move playerShell into new stageCell FIRST (detaches from old
         // wrapper's stageCell if transitioning from a previous normal run).
         stageCell.appendChild(playerShell);
@@ -622,17 +639,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         wrapper.appendChild(handle);
         wrapper.appendChild(panel);
 
-        // Now safe to remove old wrapper — playerShell already moved out.
-        if (splitViewWrapperRef.current && splitViewWrapperRef.current !== wrapper) {
-          splitViewWrapperRef.current.remove();
+        // Insert new wrapper at the resolved position BEFORE removing the
+        // old wrapper — otherwise originalParent (inside old wrapper) gets
+        // detached and the new wrapper goes into a detached subtree.
+        if (insertBefore && insertBefore.parentElement === insertParent) {
+          insertParent.insertBefore(wrapper, insertBefore);
+        } else {
+          insertParent.appendChild(wrapper);
+        }
+
+        // Now safe to remove old wrapper — new wrapper already in DOM.
+        if (oldWrapper && oldWrapper !== wrapper) {
+          oldWrapper.remove();
         }
         splitViewWrapperRef.current = wrapper;
-
-        if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
-          originalParent.insertBefore(wrapper, originalNextSibling);
-        } else {
-          originalParent.appendChild(wrapper);
-        }
       }
 
       setSplitViewPortalTarget(panelInner);
