@@ -136,10 +136,36 @@ describe('findPlayerContainer', () => {
 
       setBoundingClientRect(video, 640, 360);
       setBoundingClientRect(sameSize, 640, 360);
-      setBoundingClientRect(taller, 640, 480); // same width, taller
+      setBoundingClientRect(taller, 640, 480); // same width, +33% height
 
       const result = findFarthestSameSizeContainer(video);
       expect(result).toBe(sameSize);
+    });
+
+    it('accepts a container slightly taller because it owns the control bar (kisskh)', () => {
+      // kisskh: video 1103×913, .videoplayer 1103×922 (same width, +1% height
+      // for the control bar). Per-dimension tolerance accepts this so Split
+      // View wraps the player WITH controls, not just the bare video.
+      const video = createVideo(1103, 913);
+      const player = document.createElement('div');
+      player.id = 'videoplayer';
+      const col = document.createElement('div');
+      col.id = 'col';
+      const row = document.createElement('div');
+      row.id = 'row';
+
+      document.body.appendChild(row);
+      row.appendChild(col);
+      col.appendChild(player);
+      player.appendChild(video);
+
+      setBoundingClientRect(video, 1103, 913);
+      setBoundingClientRect(player, 1103, 922); // +9px control bar
+      setBoundingClientRect(col, 1103, 922);
+      setBoundingClientRect(row, 1891, 922); // much wider — layout container
+
+      const result = findFarthestSameSizeContainer(video);
+      expect(result).toBe(col); // farthest within tolerance, stops before row
     });
   });
 

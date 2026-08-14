@@ -1,26 +1,26 @@
 {
   "id": "detection-size-match-per-dimension-not-area",
-  "title": "Size match for container walk: compare per-dimension, not area",
+  "title": "Size match for container walk: per-dimension tolerance, not area and not exact",
   "category": ["detection", "ux"],
-  "tags": ["container-walk", "player-shell", "bounding-rect", "per-dimension", "area-ratio", "width-height", "themoviebox", "video-player", "fullscreen-target"],
-  "trigger": "Walking up the DOM to find the farthest same-size container — an ancestor with the same height but a different width (or vice versa) is wrongly accepted because area-based comparison hides the dimensional mismatch",
-  "principle": "When the contract is 'same height AND width', compare each dimension independently (Math.round(w)===vw && Math.round(h)===vh). Area-based tolerance (|area-ref|/ref <= t) and area-ratio bounds ([0.5,1.5]) accept containers that match one axis but diverge on the other — a wider controls shell with the same height as the video has an area ratio still inside the band, so it gets picked as the player shell and Split View/Player Mode moves the wrong element.",
+  "tags": ["container-walk", "player-shell", "bounding-rect", "per-dimension", "area-ratio", "width-height", "tolerance", "control-bar", "themoviebox", "kisskh", "video-player", "fullscreen-target", "split-view"],
+  "trigger": "Walking up the DOM to find the farthest same-size container — area-based comparison accepts a same-height-different-width shell, while exact per-dimension match rejects a shell that is slightly taller because it owns the control bar",
+  "principle": "Compare each dimension independently with a small relative tolerance (e.g. 10%). Area-based tolerance (|area-ref|/ref <= t) and area-ratio bounds ([0.5,1.5]) accept containers that match one axis but diverge on the other — a wider shell with the same height has an area ratio inside the band. Exact per-dimension match (Math.round(w)===vw) is too strict — a player container that includes the control bar is a few px taller than the video, so exact match rejects it and Split View wraps just the bare video, leaving controls outside the stage. Per-dimension tolerance (wDiff <= tol && hDiff <= tol) accepts the control-bar overhead (typically 1–10% of video height) while rejecting layout containers that are significantly wider/taller (33%+).",
   "cases": [
     {
-      "context": "themoviebox: video 1226×690, .player-container 1635×690 (same height, +33% width). Area ratio 1.33 is inside the [0.5,1.5] control-shell band, so the isControlShell branch accepts it as the player shell — Split View moves the wider container and the video stage layout breaks.",
+      "context": "themoviebox: video 1226×690, .player-container 1635×690 (same height, +33% width). Area ratio 1.33 is inside the [0.5,1.5] control-shell band, so the isControlShell branch accepts it — Split View moves the wider container and the video stage layout breaks.",
       "bad": "// area-based: same-height-different-width slips through\nconst area = rect.width * rect.height;\nconst diff = Math.abs(area - referenceArea) / referenceArea;\nconst ratioToVideo = area / baseArea;\nconst isControlShell = hasControls && ratioToVideo >= 0.5 && ratioToVideo <= 1.5;\nif (diff <= tolerance || isControlShell) farthest = el; // 1635×690 accepted",
-      "good": "// per-dimension exact match (rounded) — both axes must equal the video\nconst vw = Math.round(baseRect.width);\nconst vh = Math.round(baseRect.height);\nif (Math.round(rect.width) === vw && Math.round(rect.height) === vh) {\n  farthest = el; // 1635×690 rejected, 1226×690 ancestors kept\n}"
+      "good": "// per-dimension tolerance — each axis independently within 10%\nconst wDiff = Math.abs(Math.round(rect.width) - vw) / vw;\nconst hDiff = Math.abs(Math.round(rect.height) - vh) / vh;\nif (wDiff <= 0.10 && hDiff <= 0.10) farthest = el; // 1635×690 rejected (wDiff 33%)"
     },
     {
-      "context": "iframePlayerModeBridge.ts already used per-dimension exact match for the iframe variant — the video variant diverged to area-based tolerance, creating an inconsistency where the same algorithm gave different answers depending on whether the player was an iframe or a same-origin <video>.",
-      "bad": "// video variant: area tolerance + control-shell band (accepts wider shells)\nconst diff = Math.abs(area - referenceArea) / referenceArea;\nif (diff <= tolerance || isControlShell) farthest = el;",
-      "good": "// mirror the iframe variant: per-dimension exact match, single shared rule\nif (Math.round(r.width) === iw && Math.round(r.height) === ih) farthest = el;"
+      "context": "kisskh: video 1103×913, .videoplayer 1103×922 (same width, +9px height for control bar). Exact per-dimension match (Math.round(h)===vh) rejects .videoplayer because 922 !== 913 — Split View wraps just the video, controls are outside the stage and span the full viewport width.",
+      "bad": "// exact per-dimension match — control bar overhead rejected\nif (Math.round(rect.width) === vw && Math.round(rect.height) === vh) {\n  farthest = el; // 1103×922 rejected (h 922 !== 913), controls left outside\n}",
+      "good": "// per-dimension tolerance — control bar overhead accepted\nconst wDiff = Math.abs(Math.round(rect.width) - vw) / vw;\nconst hDiff = Math.abs(Math.round(rect.height) - vh) / vh;\nif (wDiff <= 0.10 && hDiff <= 0.10) farthest = el; // 1103×922 accepted (hDiff 1%), controls inside stage"
     }
   ],
   "applyFor": [
     "Player container / player-shell discovery walking up from a <video> or <iframe>",
-    "Fullscreen target selection where the target must visually match the media element on both axes",
-    "Any 'find the farthest same-size ancestor' walk where 'same size' means both dimensions, not the product",
-    "Split View / Player Mode container resolution on sites with a wider controls shell beside the video"
+    "Fullscreen target selection where the target must visually match the media element on both axes but include control bars",
+    "Any 'find the farthest same-size ancestor' walk where 'same size' means both dimensions within tolerance, not the product (area)",
+    "Split View / Player Mode container resolution on sites where the player shell is slightly larger than the video because of control bars"
   ]
 }
