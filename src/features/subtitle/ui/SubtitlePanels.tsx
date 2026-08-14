@@ -1003,6 +1003,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         if (!splitViewOpen) {
           closeYoutubeSplitView();
         }
+        // YouTube JS sets inline px on <video> based on #movie_player size.
+        // During split view, playerShell was narrower → YouTube set smaller
+        // px. After restoring playerShell to its original parent + removing
+        // inline overrides, YouTube doesn't know the player size changed.
+        // Dispatch resize so YouTube re-measures and updates <video> px.
+        window.dispatchEvent(new Event('resize'));
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
