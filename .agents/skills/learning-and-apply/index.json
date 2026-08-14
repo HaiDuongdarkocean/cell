@@ -421,7 +421,7 @@
     {
       "type": "experience",
       "id": "detection-size-match-per-dimension-not-area",
-      "title": "Size match for container walk: compare per-dimension, not area",
+      "title": "Size match for container walk: per-dimension tolerance, not area and not exact",
       "category": [
         "detection",
         "ux"
@@ -433,11 +433,15 @@
         "per-dimension",
         "area-ratio",
         "width-height",
+        "tolerance",
+        "control-bar",
         "themoviebox",
+        "kisskh",
         "video-player",
-        "fullscreen-target"
+        "fullscreen-target",
+        "split-view"
       ],
-      "trigger": "Walking up the DOM to find the farthest same-size container — an ancestor with the same height but a different width (or vice versa) is wrongly accepted because area-based comparison hides the dimensional mismatch"
+      "trigger": "Walking up the DOM to find the farthest same-size container — area-based comparison accepts a same-height-different-width shell, while exact per-dimension match rejects a shell that is slightly taller because it owns the control bar"
     },
     {
       "type": "experience",

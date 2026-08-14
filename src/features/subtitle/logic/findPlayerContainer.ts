@@ -4,12 +4,20 @@
 // video stage. Runs in any document (main page or iframe) because the
 // extension content script is declared with all_frames=true. The algorithm
 // starts at the largest playable <video> and walks up to the farthest
-// ancestor whose bounding width AND height match the video (rounded to px).
-// A container with the same height but a different width (e.g. themoviebox
-// .player-container 1635×690 vs video 1226×690) is rejected — both
-// dimensions must match, not just the area.
+// ancestor whose bounding width AND height are each within a per-dimension
+// tolerance of the video. Per-dimension (not area) comparison rejects a
+// container with the same height but a much wider width (e.g. themoviebox
+// .player-container 1635×690 vs video 1226×690, width +33%) while still
+// accepting a container that is slightly taller because it owns the control
+// bar (e.g. kisskh .videoplayer 1103×922 vs video 1103×913, height +1%).
 //
 // Algorithmic complexity: O(d) where d = DOM depth from video to body.
+
+/** Per-dimension relative tolerance. Each dimension (width, height) must
+ * independently stay within this fraction of the video's dimension.
+ * 10% accepts control-bar height overhead (typically 1–10% of video height)
+ * while rejecting layout containers that are significantly wider/taller. */
+const DEFAULT_DIMENSION_TOLERANCE = 0.10;
 
 /**
  * Find the best player container to move into Player Mode's video stage.
@@ -24,13 +32,14 @@ export function findPlayerContainer(): HTMLElement | null {
 
 /**
  * Walk up from a <video> element to the farthest ancestor whose bounding
- * width AND height match the video (rounded to px). Mirrors the iframe
- * variant in iframePlayerModeBridge.ts: same per-dimension exact match, not
- * area-based tolerance. This is the shared container algorithm for Player
- * Mode and Split View.
+ * width AND height are each within `tolerance` of the video's corresponding
+ * dimension. Per-dimension comparison (not area) so a container matching one
+ * axis but diverging on the other is rejected. This is the shared container
+ * algorithm for Player Mode and Split View.
  */
 export function findFarthestSameSizeContainer(
   video: HTMLVideoElement,
+  tolerance: number = DEFAULT_DIMENSION_TOLERANCE,
 ): HTMLElement {
   // YouTube: #movie_player is the player shell owning native controls + the
   // video. The same-size walk overshoots to #player (outer layout wrapper with
@@ -66,7 +75,9 @@ export function findFarthestSameSizeContainer(
       continue;
     }
 
-    if (Math.round(rect.width) === vw && Math.round(rect.height) === vh) {
+    const wDiff = Math.abs(Math.round(rect.width) - vw) / vw;
+    const hDiff = Math.abs(Math.round(rect.height) - vh) / vh;
+    if (wDiff <= tolerance && hDiff <= tolerance) {
       farthest = el;
     }
 
