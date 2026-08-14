@@ -70,7 +70,7 @@ function languageLabel(iso: string): string {
 function describeError(err: SearchError): string {
   switch (err.type) {
     case 'no-key':
-      return `No API key for ${err.provider}. Add one in Settings.`;
+      return `No API key for ${err.provider}. Add one below.`;
     case 'quota-exhausted':
       return `All ${err.provider} keys exhausted. Add more in Settings.`;
     case 'rate-limited':
