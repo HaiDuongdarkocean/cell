@@ -15,6 +15,7 @@ import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import type { SubtitleApiKey } from '@/entities/settings';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 
 import { ICON_CATALOG } from '@/shared/icons';
@@ -61,7 +62,8 @@ export class ReactSubtitleController {
   private previewTargetText = 'This is how the target subtitle will look.';
   private previewNativeText = 'This is how the native subtitle will look.';
   private hasSearchKeys = false;
-  private onOpenSettingsCallback: (() => void) | null = null;
+  private searchApiKeys: readonly SubtitleApiKey[] = [];
+  private onApiKeysChangeCallback: ((keys: SubtitleApiKey[]) => void) | null = null;
 
   private playerModeResizeHandler: (() => void) | null = null;
 
@@ -221,7 +223,8 @@ export class ReactSubtitleController {
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
       appearance: this.buildAppearanceState(),
       hasSearchKeys: this.hasSearchKeys,
-      onOpenSettings: this.onOpenSettingsCallback ?? (() => undefined),
+      apiKeys: this.searchApiKeys,
+      onApiKeysChange: (keys) => this.onApiKeysChangeCallback?.(keys),
       onSearchResultSelect: (result, role, cues) => this.onSearchResultSelect?.(result, role, cues),
     };
   }
@@ -503,10 +506,18 @@ export class ReactSubtitleController {
     this.mount.setManager(this.buildManagerState());
   }
 
-  /** Store the callback that opens extension settings (e.g. to configure search
-   *  API keys). Called by contentScriptController during wiring. */
-  onOpenSettings(callback: () => void): void {
-    this.onOpenSettingsCallback = callback;
+  /** Update the list of subtitle search API keys (for inline ApiKeyManager
+   *  in the search view). Triggers re-render so the panel reflects the new
+   *  keys immediately. */
+  setSearchApiKeys(keys: readonly SubtitleApiKey[]): void {
+    this.searchApiKeys = keys;
+    this.mount.setManager(this.buildManagerState());
+  }
+
+  /** Store the callback that persists API key changes to settings storage.
+   *  Called by contentScriptController during wiring. */
+  onApiKeysChange(callback: (keys: SubtitleApiKey[]) => void): void {
+    this.onApiKeysChangeCallback = callback;
     this.mount.setManager(this.buildManagerState());
   }
 

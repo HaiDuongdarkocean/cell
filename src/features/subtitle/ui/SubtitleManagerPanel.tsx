@@ -10,7 +10,7 @@ import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPa
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
+import type { SubtitleBlockSettings, NavClusterSettings, SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
 import type { SrtCue } from '@/entities/media';
 import styles from './SubtitleManagerPanel.module.css';
@@ -46,7 +46,8 @@ export interface SubtitleManagerPanelProps {
   generateNativeDisabled?: boolean;
   appearance?: AppearanceState;
   readonly hasSearchKeys: boolean;
-  readonly onOpenSettings: () => void;
+  readonly apiKeys: readonly SubtitleApiKey[];
+  readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
 }
 
@@ -330,7 +331,8 @@ export function SubtitleManagerPanel({
   generateNativeDisabled,
   appearance,
   hasSearchKeys,
-  onOpenSettings,
+  apiKeys,
+  onApiKeysChange,
   onSearchResultSelect,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
@@ -343,9 +345,10 @@ export function SubtitleManagerPanel({
     saveState: 'saved',
     lastValid: defaultOffsets.native,
   });
-  const [view, setView] = useState<'tracks' | 'appearance'>('tracks');
+  const [view, setView] = useState<'tracks' | 'appearance' | 'search'>('tracks');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
+  const searchBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -357,15 +360,59 @@ export function SubtitleManagerPanel({
 
   const handleCustomizeClick = useCallback((): void => {
     setView('appearance');
-    // Focus moves to Back button after render
     requestAnimationFrame(() => backBtnRef.current?.focus());
   }, []);
 
   const handleBackClick = useCallback((): void => {
     setView('tracks');
-    // Focus returns to Customize button
     requestAnimationFrame(() => customizeBtnRef.current?.focus());
   }, []);
+
+  const handleSearchClick = useCallback((): void => {
+    setView('search');
+    requestAnimationFrame(() => backBtnRef.current?.focus());
+  }, []);
+
+  const handleSearchBack = useCallback((): void => {
+    setView('tracks');
+    requestAnimationFrame(() => searchBtnRef.current?.focus());
+  }, []);
+
+  if (view === 'search') {
+    return (
+      <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
+        <div className={styles.header}>
+          <span className={styles.title}>Subtitle Manager</span>
+          <IconButton
+            aria-label="Close subtitle manager"
+            onClick={onClose}
+            data-cell-id="subtitle-manager-close"
+          >
+            <Icon name="x" size={16} />
+          </IconButton>
+        </div>
+
+        <div className={styles.appearanceBody}>
+          <button
+            type="button"
+            ref={backBtnRef}
+            className={styles.backBtn}
+            onClick={handleSearchBack}
+            data-cell-id="manager-back-to-subtitles"
+          >
+            <span aria-hidden="true">←</span> Subtitles
+          </button>
+
+          <SubtitleSearchPanel
+            hasSearchKeys={hasSearchKeys}
+            apiKeys={apiKeys}
+            onApiKeysChange={onApiKeysChange}
+            onSearchResultSelect={onSearchResultSelect}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'appearance' && appearance) {
     return (
@@ -467,13 +514,6 @@ export function SubtitleManagerPanel({
       </div>
 
       <div className={styles.tracksBody}>
-        <div data-cell-id="manager-search-section">
-          <SubtitleSearchPanel
-            hasSearchKeys={hasSearchKeys}
-            onOpenSettings={onOpenSettings}
-            onSearchResultSelect={onSearchResultSelect}
-          />
-        </div>
         <SectionPanel
           role="target"
           label={targetLabel}
@@ -498,34 +538,42 @@ export function SubtitleManagerPanel({
         />
       </div>
 
-      {(onGenerateNative || appearance) && (
-        <div className={styles.footer}>
-          {appearance && (
-            <Button
-              variant="outline"
-              size="md"
-              className={styles.footerCustomize}
-              ref={customizeBtnRef}
-              onClick={handleCustomizeClick}
-              data-cell-id="manager-customize-appearance"
-            >
-              Customize appearance
-            </Button>
-          )}
-          {onGenerateNative && (
-            <Button
-              variant="primary"
-              size="md"
-              className={styles.footerGenerate}
-              onClick={onGenerateNative}
-              data-cell-id="manager-generate-native"
-              disabled={generateNativeDisabled}
-            >
-              Generate native
-            </Button>
-          )}
-        </div>
-      )}
+      <div className={styles.footer}>
+        <Button
+          variant="outline"
+          size="md"
+          className={styles.footerCustomize}
+          ref={searchBtnRef}
+          onClick={handleSearchClick}
+          data-cell-id="manager-search-subtitles"
+        >
+          Search subtitles
+        </Button>
+        {appearance && (
+          <Button
+            variant="outline"
+            size="md"
+            className={styles.footerCustomize}
+            ref={customizeBtnRef}
+            onClick={handleCustomizeClick}
+            data-cell-id="manager-customize-appearance"
+          >
+            Customize appearance
+          </Button>
+        )}
+        {onGenerateNative && (
+          <Button
+            variant="primary"
+            size="md"
+            className={styles.footerGenerate}
+            onClick={onGenerateNative}
+            data-cell-id="manager-generate-native"
+            disabled={generateNativeDisabled}
+          >
+            Generate native
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

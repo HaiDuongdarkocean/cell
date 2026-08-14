@@ -17,7 +17,7 @@ import {
 import { MultiSelect } from './MultiSelect';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
-import { ApiKeyManager } from './ApiKeyManager';
+
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
 import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
@@ -181,7 +181,6 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
     { id: 'dictionaryPopup', label: 'Dictionary Popup' },
-    { id: 'subtitle-search-keys', label: 'Subtitle search keys' },
     { id: 'theme', label: 'Theme' },
     { id: 'tts', label: 'TTS Voices' },
     { id: 'resources', label: 'Resources' },
@@ -537,26 +536,6 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <DictionaryPopupSettingsPanel
                   settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
-                />
-              </div>
-            </section>
-
-            {/* Subtitle search keys — schema v21 */}
-            <section
-              ref={(el) => { sectionRefs.current['subtitle-search-keys'] = el; }}
-              className={styles.section}
-              data-section="subtitle-search-keys"
-            >
-              <div className={styles.sectionHeader}>
-                <h4 className={styles.sectionTitle}>Subtitle search keys</h4>
-              </div>
-              <p className={styles.sectionDescription}>
-                Manage API keys for subtitle search providers (SubDL, OpenSubtitles).
-              </p>
-              <div className={styles.sectionBody}>
-                <ApiKeyManager
-                  keys={settings.subtitleApiKeys ?? []}
-                  onChange={(keys) => update('subtitleApiKeys', keys)}
                 />
               </div>
             </section>

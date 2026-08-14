@@ -61,7 +61,8 @@ export function Showcase(): ReactElement {
               onGenerateNative: () => {},
               onOffsetChange: () => {},
               hasSearchKeys: false,
-              onOpenSettings: () => {},
+              apiKeys: [],
+              onApiKeysChange: () => {},
               onSearchResultSelect: () => {},
             }}
             offset={{
