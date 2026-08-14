@@ -260,12 +260,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
-    // Reflow tick — incremented after a 2-rAF delay when the effect detects
-    // it just ran right after a fullscreen exit (stale rect). Re-runs the
-    // effect so it measures the post-reflow dimensions instead of the
-    // fullscreen-leftover size. See stale-fullscreen-iframe-rect atom.
-    const [svReflowTick, setSvReflowTick] = useState(0);
-    const lastFullscreenRef = useRef(false);
+    const cleanupRef = useRef<(() => void) | null>(null);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
     // Track the normal-branch wrapper so we can clean it up when transitioning
@@ -273,11 +268,50 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // fullscreen element — is inside it; we remove it on the next normal run).
     const splitViewWrapperRef = useRef<HTMLDivElement | null>(null);
 
-    // Track fullscreen state so split view re-runs when fullscreen changes.
+    // "Ông trung gian": when fullscreen state changes while split view is
+    // open, toggle split view off (full restore via effect cleanup) then
+    // back on (rebuild from scratch with the new mode). This avoids stale
+    // player state (jwplayer controlbar layout, cached container size, iframe
+    // dimensions) that causes controls to be clipped after a mode transition.
+    // The two branches (NORMAL/FULLSCREEN) are now fully independent — the
+    // effect never has to patch a transition; it always starts from a clean
+    // player. ponytail ceiling: 2 rAFs + 150ms assumes the player settles
+    // within that window; a slower host may need more. Upgrade: per-host
+    // adapter that waits for the player's settle signal.
     useEffect(() => {
-      const onChange = (): void => setIsFullscreen(Boolean(document.fullscreenElement));
+      const onChange = (): void => {
+        const nowFullscreen = Boolean(document.fullscreenElement);
+        setIsFullscreen(nowFullscreen);
+        setSplitViewOpen((open) => {
+          if (!open) return false; // split view closed — nothing to do
+          // Mode transition: toggle off, wait for player to settle, toggle on.
+          svLog('fullscreenchange — split view open, toggling off→on', {
+            nowFullscreen,
+          });
+          // Toggle off immediately (effect cleanup runs full restore).
+          // Then after settle, toggle back on (effect rebuilds with new mode).
+          let cancelled = false;
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (cancelled) return;
+              const timerId = setTimeout(() => {
+                if (!cancelled) {
+                  svLog('fullscreenchange — re-enabling split view after settle', { nowFullscreen });
+                  setSplitViewOpen(true);
+                }
+              }, 150);
+              cleanupRef.current = () => clearTimeout(timerId);
+            });
+          });
+          return false; // toggle off now
+        });
+      };
       document.addEventListener('fullscreenchange', onChange);
-      return () => document.removeEventListener('fullscreenchange', onChange);
+      return () => {
+        document.removeEventListener('fullscreenchange', onChange);
+        cleanupRef.current?.();
+        cleanupRef.current = null;
+      };
     }, []);
 
     // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
@@ -608,39 +642,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (!originalParent) return;
       const originalNextSibling = playerShell.nextSibling;
 
-      // Stale fullscreen rect fix (iframe players: jwplayer/megaplay, etc.):
-      // After fullscreen exit, the iframe element (in the top frame) keeps
-      // inline width/height = fullscreen pixel size until the host's JS clears
-      // them. The iframe's `window.innerWidth` mirrors the iframe element's
-      // width, so BOTH playerRect AND viewport are stale (e.g. 2560×1440 when
-      // the real viewport is 831×465). Comparing rect > viewport can't detect
-      // this — both are equally stale. Instead, when the effect runs right
-      // after a fullscreen exit (isFullscreen flipped true→false), defer the
-      // measurement by 2 rAFs so the browser reflows the iframe element back
-      // to its CSS size first. The reflow tick re-runs the effect with fresh
-      // dimensions. ponytail ceiling: 2 rAFs assume the host clears fullscreen
-      // styles within 2 frames; a slower host may need more. Upgrade: per-host
-      // adapter that waits for the player's fullscreen-cleanup signal.
-      const justExitedFullscreen = lastFullscreenRef.current && !isFullscreen;
-      lastFullscreenRef.current = isFullscreen;
-      if (justExitedFullscreen && !isPlayerFullscreen) {
-        svLog('just exited fullscreen — deferring measurement 2 rAFs', {
-          preRect: rectLog(playerShell),
-          viewport: { w: window.innerWidth, h: window.innerHeight },
-          svReflowTick,
-        });
-        let cancelled = false;
-        const rafId = requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (!cancelled && splitViewOpen) setSvReflowTick((t) => t + 1);
-          });
-        });
-        return () => {
-          cancelled = true;
-          cancelAnimationFrame(rafId);
-        };
-      }
-
       const playerRect = playerShell.getBoundingClientRect();
       const playerComputedStyle = getComputedStyle(playerShell);
       const viewportBound = playerComputedStyle.position === 'fixed'
@@ -663,7 +664,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       const playerShellStyleProperties = [
         'position', 'inset', 'top', 'right', 'bottom', 'left', 'width', 'height',
         'max-width', 'max-height', 'min-width', 'min-height', 'aspect-ratio',
-        'flex', 'margin', 'box-sizing', 'display', 'flex-direction',
+        'flex', 'margin', 'box-sizing', 'display', 'flex-direction', 'overflow',
       ];
       const savedPlayerShellStyles: Record<string, string> = {};
       for (const property of playerShellStyleProperties) {
@@ -745,7 +746,25 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         fsStyle.textContent = [
           '[data-cell-split-view="stage"] .html5-video-container{height:100%!important;width:100%!important}',
           '[data-cell-split-view="stage"] video{width:100%!important;height:100%!important;object-fit:contain!important;top:0!important;left:0!important}',
-          '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:100%!important}',
+          // YouTube sets left:12px inline on .ytp-chrome-bottom; width:100%
+          // would overflow the stage by 12px (left+width > stage width). Use
+          // calc(100% - 24px) to preserve 12px padding on both sides.
+          '[data-cell-split-view="stage"] .ytp-chrome-bottom{width:calc(100% - 24px)!important}',
+          // YouTube JS sizes these to movie_player width (full viewport), not
+          // stageCell width. Force 100% so they fit inside chromeBottom.
+          '[data-cell-split-view="stage"] .ytp-progress-bar-container,',
+          '[data-cell-split-view="stage"] .ytp-progress-bar,',
+          '[data-cell-split-view="stage"] .ytp-heat-map-container,',
+          '[data-cell-split-view="stage"] .ytp-chapters-container,',
+          '[data-cell-split-view="stage"] .ytp-timed-markers-container,',
+          '[data-cell-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
+          // Progress bar internals get explicit pixel widths from YouTube JS
+          // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
+          '[data-cell-split-view="stage"] .ytp-progress-bar-padding,',
+          '[data-cell-split-view="stage"] .ytp-progress-list,',
+          '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer,',
+          '[data-cell-split-view="stage"] .ytp-heat-map-chapter,',
+          '[data-cell-split-view="stage"] .ytp-chapter-hover-container{width:100%!important}',
         ].join('');
         playerShell.appendChild(fsStyle);
       } else {
@@ -819,6 +838,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
         playerShell.style.setProperty('margin', '0', 'important');
         playerShell.style.setProperty('box-sizing', 'border-box', 'important');
+        // jwplayer/megaplay sets overflow:hidden on #megaplay-player, which
+        // clips the control bar (especially right-side controls like the
+        // fullscreen button) at the player bounds. Override to visible so
+        // controls render outside the player's content box. stageCell still
+        // has overflow:hidden, so the video itself is clipped to the stage.
+        playerShell.style.setProperty('overflow', 'visible', 'important');
 
         // When transitioning from fullscreen back to normal, playerShell
         // is still inside the old wrapper's stageCell. originalParent is
@@ -962,24 +987,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           panel.remove();
           svLog('cleanup FULLSCREEN done', { playerShellRect: rectLog(playerShell), playerShellInDom: document.body.contains(playerShell) });
         } else {
-          // Check if playerShell BECAME the fullscreen element since this
-          // effect ran (AC4: user entered fullscreen while Split View was
-          // open in normal mode). Moving playerShell would exit fullscreen —
-          // skip the move and leave wrapper/stageCell in place. The new
-          // effect run (fullscreen branch) will transform playerShell in
-          // place. The old wrapper gets cleaned up on the next normal run.
+          // Mode transition (normal→fullscreen): moving playerShell out of
+          // the wrapper would exit fullscreen (browser exits fullscreen when
+          // the fullscreen element's ancestor is re-parented). Check if
+          // playerShell now contains the fullscreen element — if so, leave
+          // it in place (inside the wrapper/stageCell) and only remove
+          // handle/panel. The FULLSCREEN branch (after defer+settle) will
+          // transform playerShell in place. On close (no fullscreen), do
+          // full restore: move playerShell back to originalParent + remove
+          // wrapper.
           const currentFs = document.fullscreenElement;
           const playerNowFullscreen = !!currentFs
             && (currentFs === playerShell || playerShell.contains(currentFs));
           if (playerNowFullscreen) {
-            // Don't move playerShell (would exit fullscreen). Leave wrapper
-            // and stageCell (they contain playerShell). Remove handle and
-            // panel (siblings of stageCell, don't contain playerShell).
-            // The fullscreen branch will create new ones inside playerShell.
-            // splitViewWrapperRef still points to this wrapper — the next
-            // normal run (after fullscreen exit) will remove it.
+            // Don't move playerShell (would exit fullscreen). Remove
+            // handle/panel but keep wrapper+stageCell — FULLSCREEN branch
+            // will unwrap playerShell from old wrapper and rebuild.
             handle.remove();
             panel.remove();
+            svLog('cleanup NORMAL (fullscreen guard) — playerShell left in place', {
+              playerShellRect: rectLog(playerShell),
+              fsEl: { tag: currentFs.tagName, id: currentFs.id || null },
+            });
           } else {
             if (originalParent && playerShell.parentElement === stageCell) {
               if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
@@ -1016,7 +1045,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         }
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
       };
-    }, [splitViewOpen, playerMode, isFullscreen, svReflowTick]);
+    }, [splitViewOpen, playerMode, isFullscreen]);
 
     // Load persisted splitViewPct on mount.
     useEffect(() => {
