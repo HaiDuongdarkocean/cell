@@ -46,18 +46,23 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
     (c) => c.start <= effectiveMs && c.end > effectiveMs,
   );
 
-  // Auto-scroll current cue into view
+  // Auto-scroll current cue into view. Manual scrollTop on the list container
+  // instead of scrollIntoView — scrollIntoView({ block: 'center' }) scrolls ALL
+  // scrollable ancestors, not just the list. In split view (normal mode), the
+  // panel is inserted into the host page DOM (YouTube watch page is scrollable).
+  // When the cue is near the end of the list, the list can't center it (not
+  // enough content below) → scrollIntoView scrolls the YouTube document to
+  // center the panel in the viewport → page jumps ("giật màn hình").
+  // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   useEffect(() => {
     if (currentIndex < 0) return;
     if (highlightedRef.current === currentIndex) return;
     highlightedRef.current = currentIndex;
     const el = itemRefs.current[currentIndex];
-    if (el) {
-      // ponytail: 'auto' (instant) instead of 'smooth' — smooth scroll across
-      // a long cue list (full movie) causes motion sickness. Upgrade path:
-      // distance-aware behavior (smooth for small jumps, auto for large).
-      el.scrollIntoView({ behavior: 'auto', block: 'center' });
-    }
+    const list = listRef.current;
+    if (!el || !list) return;
+    const targetScroll = el.offsetTop - (list.clientHeight - el.offsetHeight) / 2;
+    list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
   }, [currentIndex, effectiveMs]);
 
   return (
