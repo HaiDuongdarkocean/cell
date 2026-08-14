@@ -77,7 +77,7 @@ export class ReactSubtitleController {
   public onCuesUpdated?: () => void;
   /** Called when the user selects a search result to download + load. Delegates
    *  to contentScriptController which handles the actual fetch + loadBilingualCues. */
-  public onSearchResultSelect?: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
+  public onSearchResultSelect?: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
 
   /** Whether Player Mode overlay is currently active. */
   public isPlayerModeActive = false;
@@ -225,7 +225,7 @@ export class ReactSubtitleController {
       hasSearchKeys: this.hasSearchKeys,
       apiKeys: this.searchApiKeys,
       onApiKeysChange: (keys) => this.onApiKeysChangeCallback?.(keys),
-      onSearchResultSelect: (result, role, cues) => this.onSearchResultSelect?.(result, role, cues),
+      onSearchResultSelect: (result, role) => this.onSearchResultSelect?.(result, role),
     };
   }
 

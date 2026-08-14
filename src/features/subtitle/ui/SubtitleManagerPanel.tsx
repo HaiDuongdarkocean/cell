@@ -12,7 +12,6 @@ import { OverlayPreview } from './appearance/OverlayPreview';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings, SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
-import type { SrtCue } from '@/entities/media';
 import styles from './SubtitleManagerPanel.module.css';
 
 export interface AppearanceState {
@@ -48,7 +47,7 @@ export interface SubtitleManagerPanelProps {
   readonly hasSearchKeys: boolean;
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
-  readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native', cues?: SrtCue[]) => void;
+  readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved';
