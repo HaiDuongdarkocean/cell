@@ -153,10 +153,10 @@ function buildDownloadRequest(result: SubtitleSearchResult, apiKey: string): Fet
   };
 }
 
-function decodeDownload(bytes: ArrayBuffer, result: SubtitleSearchResult): {
+async function decodeDownload(bytes: ArrayBuffer, result: SubtitleSearchResult): Promise<{
   content: string;
   format: SubtitleFormat;
-} {
+}> {
   const content = new TextDecoder('utf-8').decode(new Uint8Array(bytes));
   return { content, format: result.format };
 }
