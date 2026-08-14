@@ -169,7 +169,7 @@
     .search-section { padding-block: var(--space-2) var(--space-4); border-bottom: 1px solid var(--color-border); }
     .search-head { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: var(--space-1) var(--space-4); }
     .search-title { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-tight); }
-    .search-form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: 0 var(--space-4); }
+    .search-form { display: flex; flex-direction: column; gap: var(--space-2); padding: 0 var(--space-4); }
     .search-input { flex: 1 1 auto; min-width: 0; height: 40px; padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: var(--color-surface); color: var(--color-text-primary); font-size: var(--font-size-sm); transition: border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out); }
     .search-input::placeholder { color: var(--color-text-secondary); }
     .search-input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; border-color: var(--color-primary); }
@@ -220,6 +220,47 @@
     .no-keys { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
     .no-keys-link { border: 0; background: transparent; color: var(--color-primary); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-decoration: underline; cursor: pointer; }
 
+    /* API keys status chip — green=ok, red=missing/exhausted, pulsing=attention */
+    .api-chip { display: inline-flex; align-items: center; gap: var(--space-1-5); margin-left: auto; padding: var(--space-1) var(--space-2-5); border: 1px solid transparent; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); cursor: pointer; transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out); }
+    .api-chip:hover { background: var(--color-surface-hover); }
+    .api-chip:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .api-chip.ok { background: var(--color-success-subtle, rgba(159,229,155,0.15)); color: var(--color-success); border-color: rgba(159,229,155,0.2); }
+    .api-chip.error { background: var(--color-error-subtle, rgba(255,198,193,0.15)); color: var(--color-error); border-color: rgba(255,198,193,0.25); animation: pulse-red 2s ease-in-out infinite; }
+    .api-chip .chip-icon { flex: 0 0 14px; width: 14px; height: 14px; }
+    .api-chip .chip-icon svg { width: 100%; height: 100%; display: block; }
+    .api-chip .chip-caret { flex: 0 0 12px; width: 12px; height: 12px; transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out); }
+    .api-chip .chip-caret svg { width: 100%; height: 100%; display: block; }
+    .api-chip[aria-expanded="true"] .chip-caret { transform: rotate(180deg); }
+    @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,198,193,0.3); } 50% { box-shadow: 0 0 0 3px rgba(255,198,193,0); } }
+
+    /* Language hint — read-only, shows target+native from settings (replaces lang-select) */
+    .lang-hint { display: flex; align-items: center; gap: var(--space-1-5); flex: 1 1 auto; min-width: 0; min-height: 40px; padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: var(--color-primary-subtle); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+    .lang-hint .lang-flag { flex: 0 0 14px; width: 14px; height: 14px; color: var(--color-text-secondary); }
+    .lang-hint .lang-flag svg { width: 100%; height: 100%; display: block; }
+    .lang-hint .lang-pair { color: var(--color-text-primary); font-weight: var(--font-weight-medium); }
+    .lang-hint .lang-arrow { color: var(--color-text-secondary); }
+
+    /* Manage keys panel — inline expandable below search-head */
+    .manage-keys { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); background: var(--color-background); }
+    .manage-keys-head { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-2); }
+    .key-card { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); margin-bottom: var(--space-2); flex-wrap: wrap; }
+    .key-label { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .key-masked { font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: ui-monospace, monospace; letter-spacing: 0.04em; }
+    .key-status { font-size: var(--font-size-xs); padding: var(--space-0-5) var(--space-2); border-radius: var(--radius-pill); font-weight: var(--font-weight-medium); }
+    .key-status.active { background: var(--color-success-subtle, rgba(159,229,155,0.15)); color: var(--color-success); }
+    .key-status.warning { background: var(--color-warning-subtle, rgba(253,207,79,0.15)); color: var(--color-warning); }
+    .key-actions { display: inline-flex; gap: var(--space-1); margin-left: auto; }
+    .key-actions button { min-height: 28px; padding: var(--space-0-5) var(--space-2); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); cursor: pointer; }
+    .key-actions button:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .key-add-form { margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); background: var(--color-surface); }
+    .key-add-row { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); }
+    .key-add-row:last-child { margin-bottom: 0; }
+    .key-add-label { flex: 0 0 60px; font-size: var(--font-size-xs); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+    .key-add-input { flex: 1 1 auto; min-width: 0; height: 32px; padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-element); background: var(--color-background); color: var(--color-text-primary); font-size: var(--font-size-xs); }
+    .key-add-input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+    .key-add-submit { display: flex; justify-content: flex-end; margin-top: var(--space-2); }
+    .key-add-submit button { min-height: 32px; padding: var(--space-1) var(--space-3); border: 0; border-radius: var(--radius-element); background: var(--color-primary); color: var(--color-primary-foreground); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); cursor: pointer; }
+
     /* State toggle toolbar */
     .state-toggle { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-bottom: var(--space-3); }
     .state-toggle button { min-height: 32px; padding: var(--space-1) var(--space-2-5); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text-secondary); font-size: var(--font-size-xs); cursor: pointer; }
@@ -250,7 +291,7 @@
     .preview-footer .role-btn { flex: 1; }
 
     /* Mobile search */
-    @media (max-width: 479px) { .search-head, .search-form, .results-list, .role-picker, .no-keys, .skeleton-list, .search-empty, .search-error { padding-inline: var(--space-3); } .search-form { flex-direction: column; align-items: stretch; } .search-input, .lang-select { width: 100%; } .season-row { flex-direction: column; align-items: stretch; } .num-input { width: 100%; } .search-btn { width: 100%; } .role-btn { min-height: 44px; } }
+    @media (max-width: 479px) { .search-head, .search-form, .results-list, .role-picker, .no-keys, .skeleton-list, .search-empty, .search-error { padding-inline: var(--space-3); } .search-form { flex-direction: column; align-items: stretch; } .search-input { width: 100%; } .season-row { flex-direction: column; align-items: stretch; } .num-input { width: 100%; } .search-btn { width: 100%; } .role-btn { min-height: 44px; } }
     @media (max-width: 479px) { body { padding: var(--space-2); } .panel-header, .footer, .section-head { padding-inline: var(--space-3); } .section-body { padding-inline: var(--space-3); } .section-count { display: none; } .timing { align-items: stretch; flex-direction: column; gap: var(--space-2); } .timing-control { width: 100%; max-width: none; } .stepper { width: 100%; max-width: none; } .stepper button { flex: 0 0 48px; width: 48px; min-height: 44px; } .save-state { min-width: 42px; } .widths { margin-left: 0; width: 100%; } .widths button { flex: 1; } .journey { grid-template-columns: 1fr; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
   </style>
@@ -510,7 +551,7 @@
     <!-- === Search section mockup === -->
     <header class="intro" style="margin-top: var(--space-8);">
       <h1>Subtitle Search · Redesign preview</h1>
-      <p>Search section ngồi trên cùng của Manager panel. Gõ tên → chọn ngôn ngữ → nhận results → click → chọn role → subtitle load.</p>
+      <p>Search form luôn hiển thị. API status bằng chip (xanh=OK, đỏ=missing/expired). Language tự động từ settings (target→native). Không auto-search — chỉ search khi Enter hoặc click Search.</p>
     </header>
 
     <div class="state-toggle" role="toolbar" aria-label="Search state">
@@ -521,32 +562,125 @@
       <button type="button" data-search-state="preview" aria-pressed="false">Preview cues</button>
       <button type="button" data-search-state="error" aria-pressed="false">Error</button>
       <button type="button" data-search-state="empty" aria-pressed="false">Empty</button>
-      <button type="button" data-search-state="no-keys" aria-pressed="false">No keys</button>
+      <button type="button" data-search-state="no-keys" aria-pressed="false">No keys (disabled)</button>
+      <button type="button" data-search-state="manage-keys" aria-pressed="false">Manage keys</button>
     </div>
 
-    <div class="frame" aria-label="Subtitle manager with search">
+    <div class="frame" aria-label="Subtitle search view">
+      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
 
-      <!-- No keys state -->
+      <button class="back-btn" type="button"><span class="arrow">←</span> Back to subtitles</button>
+
+      <!-- No keys state — search form disabled, red API chip pulsing -->
       <div class="search-section" data-search-view="no-keys" hidden>
-        <div class="no-keys">
-          <span>Add API key in Settings to search subtitles</span>
-          <button class="no-keys-link" type="button">Open Settings →</button>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip error" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>No API key</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
+        <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
+          <input class="search-input" type="text" placeholder="Movie or series title…" aria-label="Search subtitles by title" disabled />
+        </div>
+        <div class="season-row">
+          <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" aria-label="Season number" disabled /></label>
+          <label class="num-field"><span class="num-label">Episode</span><input class="num-input" type="number" min="1" placeholder="—" aria-label="Episode number" disabled /></label>
+          <button class="search-btn" type="button" disabled>Search</button>
+        </div>
+        <div class="results-area">
+          <div class="search-empty">Add an API key to start searching subtitles.</div>
+        </div>
+      </div>
+
+      <!-- Manage keys state — API chip expanded, key cards + add form inline -->
+      <div class="search-section" data-search-view="manage-keys" hidden>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="true" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
+        <div class="manage-keys" id="manage-keys-panel" data-cell-id="search-manage-keys">
+          <div class="manage-keys-head">SubDL</div>
+          <div class="key-card">
+            <span class="key-label">SubDL Free</span>
+            <span class="key-masked">••••N68Q</span>
+            <span class="key-status active">Active</span>
+            <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">· 28 left</span>
+            <span class="key-actions">
+              <button type="button">Edit</button>
+              <button type="button">Delete</button>
+            </span>
+          </div>
+          <div class="manage-keys-head" style="margin-top:var(--space-3);">OpenSubtitles</div>
+          <div class="key-card">
+            <span class="key-label">OpenSubtitles Test</span>
+            <span class="key-masked">••••N04X</span>
+            <span class="key-status warning">Rate-limited</span>
+            <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">until 14:32</span>
+            <span class="key-actions">
+              <button type="button">Edit</button>
+              <button type="button">Delete</button>
+            </span>
+          </div>
+          <div class="key-add-form">
+            <div class="key-add-row">
+              <span class="key-add-label">Provider</span>
+              <select class="key-add-input"><option>SubDL</option><option>OpenSubtitles</option></select>
+            </div>
+            <div class="key-add-row">
+              <span class="key-add-label">API key</span>
+              <input class="key-add-input" type="password" placeholder="Paste your API key" />
+            </div>
+            <div class="key-add-row">
+              <span class="key-add-label">Label</span>
+              <input class="key-add-input" type="text" placeholder="e.g. Free #2" />
+            </div>
+            <div class="key-add-submit"><button type="button">Add key</button></div>
+          </div>
+        </div>
+        <div class="search-form" style="opacity:0.4; pointer-events:none;">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
+          <input class="search-input" type="text" placeholder="Movie or series title…" value="Perfect Crown" />
         </div>
       </div>
 
       <!-- Idle / form state -->
       <div class="search-section" data-search-view="idle">
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" aria-controls="manage-keys-panel" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" placeholder="Movie or series title…" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language">
-            <option value="all">All languages</option>
-            <option value="en">English</option>
-            <option value="vi">Tiếng Việt</option>
-            <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
-            <option value="zh">中文</option>
-          </select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" aria-label="Season number" /></label>
@@ -557,10 +691,23 @@
 
       <!-- Loading state -->
       <div class="search-section" data-search-view="loading" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="Inception" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -579,10 +726,23 @@
 
       <!-- Results state -->
       <div class="search-section" data-search-view="results" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="Inception" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -625,10 +785,23 @@
 
       <!-- Selected state (role picker expanded) -->
       <div class="search-section" data-search-view="selected" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="Inception" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -659,10 +832,23 @@
 
       <!-- Preview cues state — shows subtitle content before loading -->
       <div class="search-section" data-search-view="preview" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="Inception" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -748,10 +934,23 @@
 
       <!-- Error state -->
       <div class="search-section" data-search-view="error" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip error" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>Exhausted</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="Inception" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -768,10 +967,23 @@
 
       <!-- Empty state -->
       <div class="search-section" data-search-view="empty" hidden>
-        <div class="search-head"><span class="search-title">Search subtitles</span></div>
+        <div class="search-head">
+          <span class="search-title">Search subtitles</span>
+          <button class="api-chip ok" type="button" aria-expanded="false" data-cell-id="search-api-chip">
+            <span class="chip-icon" data-icon="settings"></span>
+            <span>2 keys</span>
+            <span class="chip-caret" data-icon="chevronDown"></span>
+          </button>
+        </div>
         <div class="search-form">
+          <div class="lang-hint">
+            <span class="lang-flag" data-icon="flag"></span>
+            <span>Searching for</span>
+            <span class="lang-pair">English</span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-pair">Tiếng Việt</span>
+          </div>
           <input class="search-input" type="text" value="xyz nonexistent movie" aria-label="Search subtitles by title" />
-          <select class="lang-select" aria-label="Search language"><option value="all">All languages</option></select>
         </div>
         <div class="season-row">
           <label class="num-field"><span class="num-label">Season</span><input class="num-input" type="number" min="1" placeholder="—" /></label>
@@ -782,6 +994,17 @@
           <div class="search-empty" data-cell-id="search-empty">No results found</div>
         </div>
       </div>
+
+    </div>
+
+    <!-- === Main manager view (after search loaded) === -->
+    <header class="intro" style="margin-top: var(--space-8);">
+      <h1>Subtitle Manager · After search loaded</h1>
+      <p>Sau khi chọn subtitle từ search view, user quay lại manager chính. Subtitle load vào Target hoặc Native, hiển thị với tag "Searched".</p>
+    </header>
+
+    <div class="frame" aria-label="Subtitle manager with searched subtitle loaded" style="margin-top: var(--space-6);">
+      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
 
       <!-- Target section showing a searched item loaded -->
       <section class="section">
@@ -864,8 +1087,8 @@
     </div>
 
     <div class="journey" aria-label="Search user journey">
-      <div class="journey-step"><strong>1 · Search</strong><span>Gõ tên phim + chọn ngôn ngữ. Search button enable khi có query.</span></div>
-      <div class="journey-step"><strong>2 · Pick</strong><span>Click result → role picker expand. Chọn Target hoặc Native.</span></div>
+      <div class="journey-step"><strong>1 · Search</strong><span>Gõ tên phim + Season/Episode. Language tự động từ settings (target→native). Search khi Enter hoặc click.</span></div>
+      <div class="journey-step"><strong>2 · Pick</strong><span>Click result → preview cues. Chọn Load as Target hoặc Load as Native.</span></div>
       <div class="journey-step"><strong>3 · Loaded</strong><span>Subtitle load vào role, xuất hiện trong track list với tag "Searched".</span></div>
     </div>
   </main>
@@ -936,6 +1159,9 @@
       rotateCcw: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
       subtitleManager: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg>',
       maximize: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>',
+      settings: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>',
+      chevronDown: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+      flag: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
     };
     // Inject SVGs into icon-wrap spans — mirrors Icon.tsx (dangerouslySetInnerHTML)
     document.querySelectorAll('[data-icon]').forEach((wrap) => {

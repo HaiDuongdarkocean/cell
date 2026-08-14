@@ -1,4 +1,4 @@
-/* Search section — sits above Target/Native sections, separated by border-bottom */
+/* Search section — dedicated view inside SubtitleManagerPanel */
 .section {
   padding-block: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--color-border);
@@ -12,15 +12,21 @@
   padding: var(--space-1) var(--space-4);
 }
 
-/* Manage-keys toggle — ghost button in section header, right-aligned */
-.manageKeysToggle {
+.sectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* === API status chip — green=OK, red=missing/expired (pulsing) === */
+.apiChip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   margin-left: auto;
-  padding: var(--space-1) var(--space-2);
-  border: 0;
-  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2-5);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
@@ -29,14 +35,31 @@
   transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-.manageKeysToggle:hover {
+.apiChip:hover {
   background: var(--color-surface-hover);
-  color: var(--color-text-primary);
 }
 
-.manageKeysToggle:focus-visible {
+.apiChip:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.apiChipOk {
+  background: var(--color-success-subtle, rgba(159, 229, 155, 0.15));
+  color: var(--color-success);
+  border-color: rgba(159, 229, 155, 0.2);
+}
+
+.apiChipError {
+  background: var(--color-error-subtle, rgba(255, 198, 193, 0.15));
+  color: var(--color-error);
+  border-color: rgba(255, 198, 193, 0.25);
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 198, 193, 0.3); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 198, 193, 0); }
 }
 
 .chevronClosed {
@@ -54,13 +77,34 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.sectionTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-tight);
+/* === Language hint — read-only chip showing target → native from settings === */
+.langHint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  min-height: 36px;
+  padding: var(--space-1) var(--space-2-5);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-primary-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
 }
 
-/* Form — two rows: input+lang on first, season/episode+button on second */
+.langHintText {
+  color: var(--color-text-secondary);
+}
+
+.langHintPair {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.langHintArrow {
+  color: var(--color-text-secondary);
+}
+
+/* Form — stacked: lang-hint + query input on top, season/episode + button below */
 .searchForm {
   display: flex;
   flex-direction: column;
@@ -68,22 +112,10 @@
   padding: 0 var(--space-4);
 }
 
-.inputRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* Layout-only overrides for shared Input/Select/Button components */
+/* Layout-only override for shared Input component */
 .queryInput {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.langSelect {
-  flex: 0 0 auto;
-  min-width: 96px;
 }
 
 .seasonRow {
@@ -385,22 +417,6 @@
   font-size: var(--font-size-sm);
 }
 
-/* No keys — collapsed state, hint text + link */
-.noKeySection {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.noKeyHint {
-  flex: 1;
-  min-width: 0;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
 /* Mobile (≤479px) — form wraps to column, full-width controls */
 @media (max-width: 479px) {
   .sectionHead,
@@ -408,23 +424,13 @@
   .resultsList,
   .skeletonList,
   .emptyState,
-  .noKeySection,
   .manageKeysPanel {
     padding-inline: var(--space-3);
-  }
-
-  .inputRow {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .queryInput {
     width: 100%;
     flex-basis: 100%;
-  }
-
-  .langSelect {
-    width: 100%;
   }
 
   .seasonRow {
