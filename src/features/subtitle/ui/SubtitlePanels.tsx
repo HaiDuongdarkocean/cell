@@ -18,6 +18,12 @@ import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import {
+  applyYoutubeSplitViewLayout,
+  isYoutubePage,
+  requestYoutubePlayerSize,
+  resolveYoutubeSplitViewWrapperHeight,
+} from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -547,32 +553,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       for (const property of playerShellStyleProperties) {
         savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
       }
-
-      // YouTube's <video> has position:absolute + inline width/height set
-      // by YouTube's JS player. When #movie_player is resized to fit the
-      // Split View stage, the absolute-positioned video doesn't follow —
-      // it overflows the stage and gets covered by the panel. Save and
-      // override the video's sizing styles so it fills playerShell.
-      const splitViewVideo = playerShell.querySelector('video');
-      const splitViewVideoContainer = splitViewVideo?.parentElement ?? null;
-      const videoStyleProperties = [
-        'width', 'height', 'max-width', 'max-height',
-        'min-width', 'min-height', 'left', 'top', 'inset',
-      ];
-      const savedVideoStyles: Record<string, string> = {};
-      if (splitViewVideo) {
-        for (const property of videoStyleProperties) {
-          savedVideoStyles[property] = splitViewVideo.style.getPropertyValue(property);
-        }
-      }
-      // YouTube's .html5-video-container has height:0 — save/restore it too.
-      const savedVideoContainerStyles: Record<string, string> = {};
-      if (splitViewVideoContainer && splitViewVideoContainer !== playerShell) {
-        for (const property of ['width', 'height']) {
-          savedVideoContainerStyles[property] = splitViewVideoContainer.style.getPropertyValue(property);
-        }
-      }
-
       const stageCell = document.createElement('div');
       stageCell.setAttribute('data-cell-split-view', 'stage');
       stageCell.style.cssText = 'flex:1 1 0;min-width:0;min-height:0;height:100%;position:relative;overflow:hidden;';
@@ -652,6 +632,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           && playerRect.width > videoRect.width * 1.2;
         const wrapperHeightStyle = viewportBound
           ? wrapperHeight
+          : isYoutubePage()
+            ? resolveYoutubeSplitViewWrapperHeight(videoRect?.height ?? 0, playerRect.height)
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
             : `${Math.round(parentPixelHeight)}px`;
@@ -670,41 +652,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
         playerShell.style.setProperty('margin', '0', 'important');
         playerShell.style.setProperty('box-sizing', 'border-box', 'important');
-
-        // Force the video to fill playerShell. YouTube sets inline
-        // width/height + position:absolute on <video> — without this
-        // override the video overflows the narrowed stage and gets
-        // covered by the subtitle panel.
-        //
-        // height:100% alone doesn't work: YouTube's .html5-video-container
-        // (the positioned ancestor) has height:0, so 100% of 0 = 0.
-        // Set the container's height too, and use the video's aspect ratio
-        // to compute the correct pixel height for the stage width.
-        if (splitViewVideo) {
-          splitViewVideo.style.setProperty('width', '100%', 'important');
-          splitViewVideo.style.setProperty('max-width', 'none', 'important');
-          splitViewVideo.style.setProperty('max-height', 'none', 'important');
-          splitViewVideo.style.setProperty('left', '0', 'important');
-          splitViewVideo.style.setProperty('top', '0', 'important');
-          // Use pixel height from the video's aspect ratio — height:100%
-          // fails when the positioned ancestor (.html5-video-container)
-          // has height:0 (YouTube CSS).
-          const videoAspect = splitViewVideo.videoWidth / splitViewVideo.videoHeight;
-          if (videoAspect > 0 && Number.isFinite(videoAspect)) {
-            const stageWidth = playerRect.width;
-            const videoPixelHeight = stageWidth / videoAspect;
-            splitViewVideo.style.setProperty('height', `${Math.round(videoPixelHeight)}px`, 'important');
-          } else {
-            splitViewVideo.style.setProperty('height', '100%', 'important');
-          }
-          // Also fix the positioned ancestor so height:100% would work
-          // as a fallback for sites where the container isn't height:0.
-          const videoContainer = splitViewVideo.parentElement;
-          if (videoContainer && videoContainer !== playerShell) {
-            videoContainer.style.setProperty('height', '100%', 'important');
-            videoContainer.style.setProperty('width', '100%', 'important');
-          }
-        }
 
         // When transitioning from fullscreen back to normal, playerShell
         // is still inside the old wrapper's stageCell. originalParent is
@@ -747,6 +694,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       }
 
       setSplitViewPortalTarget(panelInner);
+      const restoreYoutubeSplitView = applyYoutubeSplitViewLayout(stageCell);
+      window.dispatchEvent(new Event('resize'));
 
       // Drag resize: measure the flex container (wrapper or playerShell).
       const flexContainer = wrapper ?? playerShell;
@@ -762,6 +711,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
         panel.style.flexBasis = `${next}%`;
         setSplitViewPct(next);
+        const stageRect = stageCell.getBoundingClientRect();
+        requestYoutubePlayerSize(stageRect.width, stageRect.height);
       };
       const onPointerUp = (e: PointerEvent): void => {
         dragStart = null;
@@ -843,22 +794,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           const value = savedPlayerShellStyles[property];
           if (value) playerShell.style.setProperty(property, value);
         }
-        // Restore video styles (YouTube override).
-        if (splitViewVideo) {
-          for (const property of videoStyleProperties) {
-            splitViewVideo.style.removeProperty(property);
-            const value = savedVideoStyles[property];
-            if (value) splitViewVideo.style.setProperty(property, value);
-          }
-        }
-        // Restore video container styles (.html5-video-container height).
-        if (splitViewVideoContainer && splitViewVideoContainer !== playerShell) {
-          for (const property of ['width', 'height']) {
-            splitViewVideoContainer.style.removeProperty(property);
-            const value = savedVideoContainerStyles[property];
-            if (value) splitViewVideoContainer.style.setProperty(property, value);
-          }
-        }
+        restoreYoutubeSplitView();
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
 

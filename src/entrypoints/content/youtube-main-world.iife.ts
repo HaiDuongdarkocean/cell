@@ -127,6 +127,60 @@
   };
   (window as unknown as Record<string, unknown>).__YT_DEBUG = debug;
 
+  // Split View size bridge (mirrors Netflix __NF_SEEK / __NF_PLAY).
+  // Isolated world cannot call #movie_player.setSize — YouTube player lives
+  // in MAIN world. Isolated world dispatches CustomEvents; we call setSize
+  // so video + .ytp-chrome-bottom reflow together.
+  // ponytail: storedSize restores on close. Ceiling: if YouTube removes
+  // setSize, the event no-ops and Split View falls back to CSS layout.
+  type YoutubePlayerApi = {
+    setSize?: (w: number, h: number) => void;
+    getPlayerSize?: () => { width?: number; height?: number } | [number, number];
+  };
+  let storedSize: { width: number; height: number } | null = null;
+
+  function getYoutubePlayer(): YoutubePlayerApi | null {
+    const el = document.getElementById('movie_player');
+    if (!el) return null;
+    return el as unknown as YoutubePlayerApi;
+  }
+
+  function readPlayerSize(player: YoutubePlayerApi): { width: number; height: number } | null {
+    const getter = player.getPlayerSize;
+    if (typeof getter !== 'function') return null;
+    try {
+      const size = getter.call(player);
+      if (Array.isArray(size) && typeof size[0] === 'number' && typeof size[1] === 'number') {
+        return { width: size[0], height: size[1] };
+      }
+      if (size && typeof size === 'object' && typeof size.width === 'number' && typeof size.height === 'number') {
+        return { width: size.width, height: size.height };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  document.addEventListener('__YT_SET_SIZE', (e: Event) => {
+    const detail = (e as CustomEvent).detail as { width?: number; height?: number } | undefined;
+    if (typeof detail?.width !== 'number' || typeof detail.height !== 'number') return;
+    const player = getYoutubePlayer();
+    if (!player || typeof player.setSize !== 'function') return;
+    if (!storedSize) storedSize = readPlayerSize(player);
+    player.setSize(detail.width, detail.height);
+  });
+
+  document.addEventListener('__YT_RESTORE_SIZE', () => {
+    const player = getYoutubePlayer();
+    if (!player || typeof player.setSize !== 'function') {
+      storedSize = null;
+      return;
+    }
+    if (storedSize) player.setSize(storedSize.width, storedSize.height);
+    storedSize = null;
+  });
+
   function postDetectedSubtitles(tracks: unknown[], videoId: string): void {
     const postTime = performance.now();
     debug.postTime = postTime;
