@@ -24,6 +24,8 @@ export interface OffscreenFetchOptions {
   readonly method?: string;
   readonly headers?: Record<string, string>;
   readonly credentials?: RequestCredentials;
+  /** If 'arraybuffer', content is base64-encoded (binary-safe). */
+  readonly responseType?: 'text' | 'arraybuffer';
 }
 
 export interface OffscreenFetchResult {

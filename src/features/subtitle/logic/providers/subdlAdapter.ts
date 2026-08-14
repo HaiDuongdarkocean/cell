@@ -281,11 +281,26 @@ async function unzipFirstEntry(bytes: ArrayBuffer): Promise<string> {
     // Not a ZIP — return as text
     return new TextDecoder().decode(bytes);
   }
-  const compressionMethod = view.getUint16(10, true);
-  const compressedSize = view.getUint32(20, true);
-  const filenameLen = view.getUint16(28, true);
-  const extraLen = view.getUint16(30, true);
-  const dataOffset = 34 + filenameLen + extraLen;
+  // ZIP local file header layout:
+  // 0-3: signature, 4-5: version, 6-7: flags, 8-9: compression method,
+  // 10-11: mod time, 12-13: mod date, 14-17: CRC-32,
+  // 18-21: compressed size, 22-25: uncompressed size,
+  // 26-27: filename length, 28-29: extra field length, 30+: filename + extra + data
+  const flags = view.getUint16(6, true);
+  const compressionMethod = view.getUint16(8, true);
+  let compressedSize = view.getUint32(18, true);
+  const filenameLen = view.getUint16(26, true);
+  const extraLen = view.getUint16(28, true);
+  const dataOffset = 30 + filenameLen + extraLen;
+
+  // If data descriptor flag (bit 3) is set, compressed size in local header is 0.
+  // The actual size is in a data descriptor after the compressed data, or we can
+  // read the central directory. For simplicity, use the rest of the buffer.
+  const hasDataDescriptor = (flags & 0x08) !== 0;
+  if (hasDataDescriptor || compressedSize === 0) {
+    compressedSize = bytes.byteLength - dataOffset;
+  }
+
   const compressedData = bytes.slice(dataOffset, dataOffset + compressedSize);
 
   if (compressionMethod === 0) {

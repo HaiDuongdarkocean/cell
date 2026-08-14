@@ -21,6 +21,7 @@ import {
 } from '@/shared/lib/storage/opfsStorage';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
+import { encodeBase64 } from '@/shared/lib/base64';
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -416,7 +417,12 @@ export async function startMessageListener(): Promise<void> {
             headers: payload.options?.headers,
             credentials: payload.options?.credentials ?? 'same-origin',
           });
-          const content = await response.text();
+          let content: string;
+          if (payload.options?.responseType === 'arraybuffer') {
+            content = encodeBase64(await response.arrayBuffer());
+          } else {
+            content = await response.text();
+          }
           const result: FetchResponsePayload = {
             ok: response.ok,
             status: response.status,

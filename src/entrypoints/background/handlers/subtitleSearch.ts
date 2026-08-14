@@ -46,6 +46,7 @@ import {
   getQuotaInfo,
 } from '../helpers/subtitleKeyLedger';
 import { saveSettings } from '@/shared/lib/storage/settingsStore';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import type { SubtitleApiKey, SubtitleApiKeyProvider } from '@/entities/settings/types';
 import type { SubtitleSearchResult, SearchError } from '@/features/subtitle/logic/subtitleSearchTypes';
 
@@ -207,9 +208,10 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           const resetAt = Date.parse(handshake.reset_time_utc) || Date.now() + 86_400_000;
           await updateQuotaAfterDownload(key.id, handshake.remaining, resetAt);
 
-          // Step 2: GET the temporary link → subtitle content
+          // Step 2: GET the temporary link → subtitle content (binary-safe)
           const fileRes = await offscreenFetch(ctx.offscreenManager, handshake.link, {
             method: 'GET',
+            responseType: 'arraybuffer',
           });
           if (!fileRes.ok) {
             return {
@@ -217,8 +219,8 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
               data: { error: { type: 'network', message: `Download HTTP ${fileRes.status}` } },
             };
           }
-          const bytes = new TextEncoder().encode(fileRes.content).buffer as ArrayBuffer;
-          const decoded = await decodeDownload(provider, bytes, result);
+          const osBytes = decodeBase64ToArrayBuffer(fileRes.content);
+          const decoded = await decodeDownload(provider, osBytes, result);
           // Key proved itself — mark active if was unverified.
           if (key.status === 'unverified') {
             await updateKeyStatus(keys, key.id, 'active');
@@ -226,10 +228,11 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           return { success: true, data: { content: decoded.content, format: decoded.format } };
         }
 
-        // SubDL direct: GET → subtitle content
+        // SubDL direct: GET → subtitle content (binary ZIP — use arraybuffer)
         const res = await offscreenFetch(ctx.offscreenManager, plan.url, {
           method: plan.method,
           headers: plan.headers,
+          responseType: 'arraybuffer',
         });
         if (!res.ok) {
           return {
@@ -238,7 +241,7 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           };
         }
         await decrementDownload(key.id);
-        const bytes = new TextEncoder().encode(res.content).buffer as ArrayBuffer;
+        const bytes = decodeBase64ToArrayBuffer(res.content);
         const decoded = await decodeDownload(provider, bytes, result);
         // Key proved itself — mark active if was unverified.
         if (key.status === 'unverified') {
