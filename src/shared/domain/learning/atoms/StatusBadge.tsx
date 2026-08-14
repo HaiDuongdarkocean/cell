@@ -1,17 +1,25 @@
-import type { ButtonHTMLAttributes } from 'react';
-import styles from './StatusBadge.module.css';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Chip } from '@/shared/ui/Chip';
+import type { ChipColor } from '@/shared/ui/Chip';
 
 export type WordStatus = 'unknown' | 'tracking' | 'known' | 'ignore';
 
-export interface StatusBadgeProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface StatusBadgeProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'color'> {
   /** Word knowledge status. Default: unknown. */
   status?: WordStatus;
+  children?: ReactNode;
 }
+
+const statusToColor: Record<WordStatus, ChipColor> = {
+  unknown: 'muted',
+  tracking: 'warning',
+  known: 'success',
+  ignore: 'error',
+};
 
 /**
  * StatusBadge — clickable pill that shows word knowledge status.
- * Tint background + solid foreground (variant A). Click cycles status
- * (caller handles cycling logic via onClick).
+ * Uses the shared Chip atom with color mapped from status.
  */
 export function StatusBadge({
   status = 'unknown',
@@ -19,11 +27,17 @@ export function StatusBadge({
   children,
   ...rest
 }: StatusBadgeProps): React.JSX.Element {
-  const cls = [styles.badge, styles[status], className ?? ''].filter(Boolean).join(' ');
+  const color = statusToColor[status];
 
   return (
-    <button type="button" className={cls} {...rest}>
+    <Chip
+      as="button"
+      size="sm"
+      color={color}
+      className={className}
+      {...rest}
+    >
       {children ?? status}
-    </button>
+    </Chip>
   );
 }
