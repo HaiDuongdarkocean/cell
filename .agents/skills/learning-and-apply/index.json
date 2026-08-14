@@ -445,6 +445,29 @@
     },
     {
       "type": "experience",
+      "id": "flex-wrapper-inherit-original-footprint-not-100pct",
+      "title": "Split View wrapper must inherit playerShell's original flex footprint, not flex:1 1 100%",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "flexbox",
+        "flex-basis",
+        "wrapper",
+        "split-view",
+        "sibling-collapse",
+        "bootstrap-cols",
+        "kisskh",
+        "themoviebox",
+        "flex-row",
+        "episode-selector",
+        "dom-move"
+      ],
+      "trigger": "A wrapper element replaces a flex item in a flex row that has siblings, and the wrapper uses flex:1 1 100% (or width:100%) — this takes the entire row, collapsing siblings to 0 width"
+    },
+    {
+      "type": "experience",
       "id": "css-absolute-escape-static-parent-on-reparent",
       "title": "position:absolute+inset:0 escapes to viewport when reparented into a position:static container",
       "category": [
