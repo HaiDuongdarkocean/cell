@@ -441,6 +441,31 @@
     },
     {
       "type": "experience",
+      "id": "css-absolute-escape-static-parent-on-reparent",
+      "title": "position:absolute+inset:0 escapes to viewport when reparented into a position:static container",
+      "category": [
+        "css",
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "position-absolute",
+        "inset",
+        "position-static",
+        "position-relative",
+        "reparent",
+        "split-view",
+        "cleanup",
+        "containing-block",
+        "subtitle-overlay",
+        "themoviebox",
+        "video-player",
+        "dom-move"
+      ],
+      "trigger": "A position:absolute+inset:0 overlay is reparented (appendChild) into a new container on cleanup/transition, and the new container is position:static — the overlay escapes to the initial containing block (viewport) instead of filling the container"
+    },
+    {
+      "type": "experience",
       "id": "detection-hybrid-fast-then-disambiguate",
       "title": "Hybrid detection: fast single-candidate first, disambiguation second",
       "category": [

@@ -1,0 +1,26 @@
+{
+  "id": "css-absolute-escape-static-parent-on-reparent",
+  "title": "position:absolute+inset:0 escapes to viewport when reparented into a position:static container",
+  "category": ["css", "state", "ux"],
+  "tags": ["position-absolute", "inset", "position-static", "position-relative", "reparent", "split-view", "cleanup", "containing-block", "subtitle-overlay", "themoviebox", "video-player", "dom-move"],
+  "trigger": "A position:absolute+inset:0 overlay is reparented (appendChild) into a new container on cleanup/transition, and the new container is position:static — the overlay escapes to the initial containing block (viewport) instead of filling the container",
+  "principle": "position:absolute is constrained by the nearest positioned ancestor (position !== static), NOT by the direct parent. When reparenting an absolute-positioned overlay, the new parent MUST be position:relative (or positioned). If the parent is position:static, inset:0 resolves against the initial containing block (viewport/document) — the overlay covers the whole page instead of the intended container. Always save the overlay's original parent before moving it and restore that exact parent on cleanup, OR set position:relative on the new parent before the move. Never assume the cleanup target has the same CSS positioning as the original mount point.",
+  "cases": [
+    {
+      "context": "Split View cleanup moves #cell-subtitle-root (position:absolute, inset:0) back into playerShell. On themoviebox, playerShell = .w-full h-[203px] (position:static), while the original mount parent was .art-video-player (position:relative). The overlay escapes to 1891×986 at (0,0) covering the whole page instead of the 1226×690 video.",
+      "bad": "// cleanup: move cellRoot into playerShell regardless of its CSS position\nconst cellRootCleanup = document.getElementById('cell-subtitle-root');\nif (cellRootCleanup && cellRootCleanup.parentElement !== playerShell) {\n  playerShell.appendChild(cellRootCleanup); // playerShell is position:static → overlay escapes\n}",
+      "good": "// save original parent BEFORE Split View moves cellRoot into stageCell\nconst cellRootOriginalParent = document.getElementById('cell-subtitle-root')?.parentElement ?? null;\n// ... Split View moves cellRoot into stageCell ...\n// cleanup: restore cellRoot to its pre-Split-View parent (position:relative)\nconst cellRootCleanup = document.getElementById('cell-subtitle-root');\nconst cellRootTarget = cellRootOriginalParent ?? playerShell;\nif (cellRootCleanup && cellRootCleanup.parentElement !== cellRootTarget) {\n  cellRootTarget.appendChild(cellRootCleanup); // .art-video-player (position:relative) → overlay fills video\n}"
+    },
+    {
+      "context": "Two container-finding algorithms return different elements: findVideoContainer (first ancestor with height >= video*0.5, used for initial overlay mount) returns .art-video-player (position:relative), while findPlayerContainer (farthest same-size ancestor, used for Split View playerShell) returns .w-full h-[203px] (position:static). Split View cleanup used playerShell as the restore target, assuming it matches the original mount parent — it doesn't.",
+      "bad": "// assume playerShell == overlay's original parent\nplayerShell.appendChild(cellRootCleanup); // wrong: playerShell != findVideoContainer result",
+      "good": "// don't assume — capture the actual parent at effect start, before any DOM move\nconst cellRootOriginalParent = document.getElementById('cell-subtitle-root')?.parentElement ?? null;\n// ... later in cleanup ...\n(cellRootOriginalParent ?? playerShell).appendChild(cellRootCleanup);"
+    }
+  ],
+  "applyFor": [
+    "Reparenting position:absolute overlays on Split View / Player Mode / fullscreen cleanup",
+    "Any DOM move where the source and target parents may have different CSS position values",
+    "Overlay containers that use inset:0 to fill a parent — verify the parent is positioned before reparenting",
+    "Cleanup/restore logic that assumes the restore target matches the original mount point"
+  ]
+}
