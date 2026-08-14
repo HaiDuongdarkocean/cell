@@ -545,6 +545,23 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         savedPlayerShellStyles[property] = playerShell.style.getPropertyValue(property);
       }
 
+      // YouTube's <video> has position:absolute + inline width/height set
+      // by YouTube's JS player. When #movie_player is resized to fit the
+      // Split View stage, the absolute-positioned video doesn't follow —
+      // it overflows the stage and gets covered by the panel. Save and
+      // override the video's sizing styles so it fills playerShell.
+      const splitViewVideo = playerShell.querySelector('video');
+      const videoStyleProperties = [
+        'width', 'height', 'max-width', 'max-height',
+        'min-width', 'min-height', 'left', 'top', 'inset',
+      ];
+      const savedVideoStyles: Record<string, string> = {};
+      if (splitViewVideo) {
+        for (const property of videoStyleProperties) {
+          savedVideoStyles[property] = splitViewVideo.style.getPropertyValue(property);
+        }
+      }
+
       const stageCell = document.createElement('div');
       stageCell.setAttribute('data-cell-split-view', 'stage');
       stageCell.style.cssText = 'flex:1 1 0;min-width:0;min-height:0;height:100%;position:relative;overflow:hidden;';
@@ -642,6 +659,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         playerShell.style.setProperty('aspect-ratio', 'auto', 'important');
         playerShell.style.setProperty('margin', '0', 'important');
         playerShell.style.setProperty('box-sizing', 'border-box', 'important');
+
+        // Force the video to fill playerShell. YouTube sets inline
+        // width/height + position:absolute on <video> — without this
+        // override the video overflows the narrowed stage and gets
+        // covered by the subtitle panel.
+        if (splitViewVideo) {
+          splitViewVideo.style.setProperty('width', '100%', 'important');
+          splitViewVideo.style.setProperty('height', '100%', 'important');
+          splitViewVideo.style.setProperty('max-width', 'none', 'important');
+          splitViewVideo.style.setProperty('max-height', 'none', 'important');
+          splitViewVideo.style.setProperty('left', '0', 'important');
+          splitViewVideo.style.setProperty('top', '0', 'important');
+        }
 
         // When transitioning from fullscreen back to normal, playerShell
         // is still inside the old wrapper's stageCell. originalParent is
@@ -779,6 +809,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           playerShell.style.removeProperty(property);
           const value = savedPlayerShellStyles[property];
           if (value) playerShell.style.setProperty(property, value);
+        }
+        // Restore video styles (YouTube override).
+        if (splitViewVideo) {
+          for (const property of videoStyleProperties) {
+            splitViewVideo.style.removeProperty(property);
+            const value = savedVideoStyles[property];
+            if (value) splitViewVideo.style.setProperty(property, value);
+          }
         }
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
