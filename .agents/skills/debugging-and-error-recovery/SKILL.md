@@ -9,48 +9,32 @@ description: Guides systematic root-cause debugging using Socratic questioning w
 
 **Debug by evidence, Socratic questioning, and falsification before fix.**
 
-This skill runs on three principles:
+Three principles:
 
-1. **Ocean = evidence first.** Do not form a root-cause theory before you preserve evidence. A hunch is not a diagnosis.
+1. **Evidence first.** Do not form a root-cause theory before you preserve evidence. A hunch is not a diagnosis.
 2. **Socratic questioning.** Interrogate your own assumptions until the weakest one is exposed.
 3. **Falsification before fix.** Actively try to disprove your leading hypothesis. Only code when the hypothesis survives.
 
 The goal is not to make the symptom disappear. It is to understand the failure well enough that the fix is obvious and stays fixed. A fix that only works on one path is a delayed bug.
 
-Use `caveman` mode when the user asks for terse output and `ponytail` rules to avoid unnecessary code.
-
 ## What This Skill Stores
 
-This skill stores **methodology** and **diagnostic patterns**, not code techniques or opinions.
+Methodology and diagnostic patterns, not code techniques or opinions.
 
-| Term | Meaning | Good example | Bad example |
-|---|---|---|---|
-| **Methodology** | Reusable way to reason about a class of problems. | Trace six desync points: write, wrong-key, read-before-write, read-wrong-key, render-wrong-source, cache-hid-update. | "Use `getTokenStatus` as fallback." |
-| **Diagnostic pattern** | Signature you recognize after applying the methodology. | "Status mismatch often means `setWordStatus` and `getWordStatus` use different keys or a DB race." | "The code is messy and should be refactored." |
-| **Technique** | Concrete coding move. | — | "Use `getTokenStatus` as fallback in `webTextController`." |
-| **Opinion** | Unverified preference. | — | "React renders too many times." |
-| **Symptom** | Visible failure. | — | "The popup shows unknown." |
+| Term | Good example | Bad example |
+|---|---|---|
+| Methodology | Trace six desync points: write, wrong-key, read-before-write, read-wrong-key, render-wrong-source, cache-hid-update. | "Use `getTokenStatus` as fallback." |
+| Diagnostic pattern | "Status mismatch often means `setWordStatus` and `getWordStatus` use different keys or a DB race." | "The code is messy." |
+| Technique | — | "Use `getTokenStatus` as fallback in `webTextController`." |
+| Opinion | — | "React renders too many times." |
 
-Code fixes belong in `learning-and-apply` atoms. Symptoms belong in the evidence board. This skill only stores methodology and the patterns that emerge from it.
+Code fixes belong in `learning-and-apply` atoms. This skill stores only methodology and patterns.
 
-## When to Use
+## When to Use / NOT to Use
 
-- Tests fail after a code change.
-- The build breaks.
-- Runtime behavior does not match expectations.
-- A bug report arrives.
-- An error appears in logs or console.
-- Something worked before and stopped working.
-- A feature works on one path but fails on a variant.
-- You feel confident about a cause before gathering enough evidence.
-- A browser extension breaks a host page.
-- A feature works on first load but breaks on reload / restore / navigation.
+**Use:** Tests fail, build breaks, runtime mismatch, bug report, error in logs, worked before stopped, works on one path fails on variant, you feel confident before evidence, extension breaks host page, works first load breaks on reload.
 
-**When NOT to use:**
-
-- The request is a feature design or product decision, not a failure.
-- No reproducible symptom or error output exists.
-- The fix is already known and only implementation is needed.
+**NOT:** Feature design, no reproducible symptom, fix already known.
 
 ## The Debug Loop
 
@@ -66,21 +50,16 @@ Each arrow has a **guard**. If the guard fails, go back. Do not advance until th
 
 **Template:**
 ```
-Given: <exact starting state>
-When: <exact user or system action>
+Given: <exact starting state — including ALL preconditions>
+When: <exact user or system action — the REAL flow, not an API call>
 Then: <exact visible or measurable outcome>
 ```
 
-**Example:**
-```
-Given: token "learning" is unknown
-When: hover it → press 2 → click it
-Then: popup status button shows "tracking"
-```
-
-**Guard:** Contract names a concrete DOM element, text, class, or call. "It works" is not a contract.
+**Guard:** Contract names a concrete DOM element, text, class, or call AND lists every precondition. "It works" is not a contract. "Video plays and cue changes" is not enough if the bug requires the page to be scrolled.
 
 **Loop back:** Request is vague. Invoke `/interview-me` on yourself. Only ask the user if `/interview-me` fails.
+
+**Critical:** The Given must capture EVERY condition the user described. If the user says "when video runs to the last 3 cues" — the contract must include "video is playing, currentTime advances through the last 3 cues." If you drop a condition, you will reproduce a different bug or no bug at all.
 
 ## Step 1: Preserve
 
@@ -103,28 +82,29 @@ Then: popup status button shows "tracking"
 
 ## Step 2: Reproduce
 
-**Purpose:** Confirm the bug is real and repeatable.
+**Purpose:** Confirm the bug is real and repeatable under the EXACT contract conditions.
 
 **Actions:**
-- Run the exact steps from the contract.
-- Run the same steps on a clean profile / fresh reload.
-- Strip unrelated parts until the bug still appears.
-- Record the minimum setup that triggers the bug.
+- Run the REAL flow from the contract — not a simulated API call, not a manual trigger, not a stripped-down version.
+- If the contract says "video plays and cue changes over time" — you MUST let the video play and cues change over time. Manually calling `scrollIntoView` once is NOT reproduction.
+- If the contract says "page is scrolled down" — you MUST scroll the page down before triggering. A bug that only appears when the panel is partially out of viewport will not reproduce if the panel is fully visible.
+- Record the minimum setup that triggers the bug, including every precondition from the Given.
+- Log state over time (interval polling) for bugs that involve continuous state changes — a single snapshot misses the transition.
 
-**Guard:** You can trigger the bug at least twice with the same steps.
+**Guard:** You can trigger the bug at least twice with the same steps, AND the steps match every condition in the contract's Given/When.
 
-**Loop back:** The bug is flaky. Capture environment noise and try again.
+**Loop back:** The bug does not reproduce. Check: did you skip a precondition from the contract? Is the video actually playing? Is the page actually scrolled? Did you test in fullscreen when the contract says normal mode? Re-read the contract and verify each condition is met before retrying.
+
+**Common mistake — THE most frequent failure:** Replacing the real flow with an isolated API test. "I called `scrollIntoView` manually and measured `docDeltaY`" is NOT reproducing "video plays to the last 3 cues and the page jumps." The real flow involves React effects, state updates, timing, and ancestor state that an isolated API call does not capture. If the snippet does not match the contract's When, the verification is invalid.
+
+**Common mistake:** Testing in the wrong mode. User says "normal mode" but you test in fullscreen. The DOM structure, scrollable ancestors, and CSS are different. Always confirm the mode matches the contract.
 
 ## Step 3: Localize
 
 **Purpose:** Narrow the bug to one surface.
 
 **Binary search:**
-- Which file?
-- Which function?
-- Which line?
-- Which variable changed from expected?
-- Which state transition produced the bad output?
+- Which file? Which function? Which line? Which variable changed from expected?
 
 **Tools:** logs, breakpoints, `evaluate_script` in DevTools, `grep` for callers.
 
@@ -150,32 +130,38 @@ Then: popup status button shows "tracking"
 - Change one variable: delay, disable feature, mock dependency.
 - Use different data: first, middle, last item.
 - Different context: fresh reload, hot reload, incognito, different host.
+- Different precondition: page scrolled vs not scrolled, fullscreen vs normal, video playing vs paused.
 
 ## Step 5: Snippet Verify
 
-**Purpose:** Prove the hypothesis on the real system before touching source code. Inject the fix directly into the runtime and confirm the symptom disappears.
+**Purpose:** Prove the hypothesis on the real system before touching source code. Inject the fix directly into the runtime and confirm the symptom disappears UNDER THE CONTRACT'S REAL FLOW.
 
 **Why this step exists:** A hypothesis that survives Step 4 falsification is still theory. A snippet that removes the symptom on the live system is the strongest possible falsification — it tests the hypothesis against real state, real DOM, real network, real config. If the snippet fails, the hypothesis is wrong and no amount of code editing will help.
 
 **Actions:**
 1. Translate the hypothesis into a minimal runtime patch.
 2. Inject it into the live system without rebuilding or reloading.
-3. Re-run the contract's "When" → "Then" against the patched system.
+3. **Re-run the contract's When → Then against the patched system — the REAL flow, not an isolated API call.** If the contract says "video plays to the last 3 cues," you MUST let the video play and observe the cues changing. Log state over time (interval polling) to capture the transition, not just a single before/after snapshot.
 4. Repeat the trigger 2-3 times to confirm the fix is stable, not a fluke.
+5. Compare before/after: log the SAME metrics under the SAME conditions both with and without the patch. A single `docDeltaY` measurement from an isolated API call is NOT comparison.
 
 **Patch methods by bug type:**
 
 | Bug type | Snippet method | Verify by |
 |---|---|---|
-| CSS / layout | Inject `<style>` with `!important` override into the target root (document or shadow DOM) | `getComputedStyle`, `clientHeight`/`scrollHeight`, `getBoundingClientRect`, ... |
-| JS logic | Override the suspected function or variable in the live runtime | Re-run the failing action and inspect output |
+| CSS / layout | Inject `<style>` with `!important` override into the target root | `getComputedStyle`, `getBoundingClientRect`, interval log over time |
+| JS logic | Override the suspected function or variable in the live runtime | Re-run the REAL failing flow and inspect output over time |
 | Config / env | Override the config value or env var in the live process | Re-trigger the code path that reads it |
-| Data / state | Mutate the suspected state directly (storage, in-memory store, DOM attribute) | Re-render or re-read and check output |
-| Network / API | Mock the response via `fetch` override or DevTools network intercept | Re-trigger the request and inspect handling |
+| Data / state | Mutate the suspected state directly | Re-render or re-read and check output |
+| Network / API | Mock the response via `fetch` override | Re-trigger the request and inspect handling |
 
-**Guard:** Symptom disappears after snippet injection, reproduces without it. Repeat 2-3 times.
+**Guard:** Symptom disappears after snippet injection under the REAL contract flow, reproduces without it. Repeat 2-3 times. Log state over time — a single snapshot is not proof.
 
-**Loop back:** Snippet does not fix the symptom → hypothesis is incomplete or wrong → return to Step 4 with a new hypothesis. Do not advance to Step 6.
+**Loop back:** Snippet does not fix the symptom → hypothesis is incomplete or wrong → return to Step 4. Do not advance to Step 6.
+
+**Common mistake — THE most frequent failure:** Snippet tests an isolated API call instead of the contract's real flow. "I called `scrollIntoView` manually, measured `docDeltaY`, it was 0" is NOT snippet verification if the contract says "video plays to the last 3 cues and the page jumps." The real flow involves React effects firing on `currentTime` changes, `highlightedRef` guards, and ancestor scroll state. An isolated API call bypasses all of that. The snippet MUST re-trigger the real flow (video playing, cues changing, page scrolled) and log the symptom metric over time.
+
+**Common mistake:** Single before/after snapshot instead of interval logging. Bugs that involve continuous state changes (video playing, cues advancing) need polling — log the metric every 500ms across the full transition. A single `docDeltaY` before and after misses the moment the page jumps.
 
 **Common mistake:** Editing source code before the snippet proves the hypothesis. A rebuild cycle costs minutes; a snippet costs seconds. If the hypothesis is wrong, you have already wasted a rebuild.
 
@@ -192,7 +178,7 @@ Then: popup status button shows "tracking"
 - No empty `.catch` unless proven safe.
 - One fix per commit.
 - Prefer changing data flow over adding flags.
-- The source fix must produce the same effect as the snippet. If it does not, the snippet targeted a different code path than the source edit — return to Step 3.
+- The source fix must produce the same effect as the snippet. If it does not, the snippet targeted a different code path — return to Step 3.
 
 **Guard:** You can explain the fix in plain language without jargon, and the fix matches what the snippet proved.
 
@@ -203,23 +189,23 @@ Then: popup status button shows "tracking"
 **Purpose:** Prove the source fix fixed the root cause in the real build.
 
 **Run:**
-- The original reproduction.
+- The original reproduction — the REAL flow from the contract, not an isolated test.
 - The variant matrix.
 - Existing tests.
 - Build.
-- Build output inspection: verify the fix is present in the built artifact, not just the source. Builders and minifiers can silently strip or transform code — grep the bundle for the fix.
-- Visual / rendered state for UI: `getComputedStyle`, `getBoundingClientRect`, screenshot. DOM text alone is not proof.
+- Build output inspection: grep the bundle for the fix.
+- Visual / rendered state for UI: `getComputedStyle`, `getBoundingClientRect`, screenshot, interval log over time.
 - Repeat the reproduction 2-3 times before declaring pass.
 
 **Variant matrix:**
 - Position: first, middle, last item.
 - Context: empty, cached, after reload, after error.
-- UI state: popup open/closed, selection active/inactive.
+- UI state: popup open/closed, selection active/inactive, page scrolled/not scrolled, fullscreen/normal.
 - Data shape: phrase vs. word, lemma vs. surface, known vs. unknown.
 
 **Guard:** All variants pass, existing tests pass, and the fix is visible in the build output.
 
-**Loop back:** A variant fails. Go back to Step 4. Or the build output is missing the fix — the builder stripped or transformed it; fix the build config before declaring pass.
+**Loop back:** A variant fails. Go back to Step 4. Or the build output is missing the fix — fix the build config before declaring pass.
 
 ## Step 8: Guard
 
@@ -230,7 +216,6 @@ Then: popup status button shows "tracking"
 - Update docs / ADR if architecture changed.
 - Remove temporary instrumentation unless permanent.
 - Add an invariant if the bug came from a broken assumption.
-- If the bug was a builder silently stripping code, add a build-output assertion test.
 
 **Guard:** The regression test exists and passes.
 
@@ -240,14 +225,14 @@ Then: popup status button shows "tracking"
 
 | Step | Input | Output | Done when |
 |---|---|---|---|
-| 0. Contract | User request | Given/When/Then | Names concrete DOM/text/call |
+| 0. Contract | User request | Given/When/Then | Names concrete DOM/text/call + ALL preconditions |
 | 1. Preserve | Bug observed | Evidence board | ≥3 facts, more facts than guesses |
-| 2. Reproduce | Evidence board | Minimum steps | Bug triggers twice |
+| 2. Reproduce | Evidence board | Minimum steps matching contract | Bug triggers twice under EXACT contract conditions |
 | 3. Localize | Reproduction | Single surface | One code path identified |
 | 4. Falsify | Localized surface | Root cause | Hypothesis survived a test |
-| 5. Snippet Verify | Root cause hypothesis | Symptom gone on live system | Snippet removes symptom 2-3 times |
+| 5. Snippet Verify | Root cause hypothesis | Symptom gone under REAL flow | Snippet removes symptom 2-3 times under contract flow, logged over time |
 | 6. Fix | Confirmed hypothesis | Minimal code change | Fix matches snippet effect, explained in plain language |
-| 7. Verify | Source fix applied | All variants pass | Original + matrix + tests + build green + fix present in build output |
+| 7. Verify | Source fix applied | All variants pass | Original + matrix + tests + build green + fix in build output |
 | 8. Guard | Verified fix | Regression test + docs | Test fails without fix, passes with it |
 
 ## Evidence by Bug Category
@@ -270,6 +255,7 @@ Ask before any hypothesis:
 - Counter-evidence: What would disprove my theory?
 - Consequence: If X is true, what follows?
 - Viewpoint challenge: Could there be another cause?
+- **Contract match: Does my reproduction match EVERY condition in the contract's Given/When?** If not, re-read the contract.
 
 ## Evidence Board Template
 
@@ -282,9 +268,13 @@ Known facts:
 Guesses / theories:
 -  ← test this
 -  ← test this
+
+Contract conditions checklist:
+- [ ] Condition 1 from Given: met / not met
+- [ ] Condition 2 from Given: met / not met
 ```
 
-Do not start Step 5 until the evidence board has more facts than guesses.
+Do not start Step 5 until the evidence board has more facts than guesses AND every contract condition is met.
 
 ## Pause at Certainty
 
@@ -293,9 +283,11 @@ When you feel 90% confident, answer:
 - What is the weakest link in my reasoning?
 - If I am wrong, what will I have wasted?
 - Can I explain the bug without jargon?
-- Have I repeated the action at least twice?
+- Have I repeated the action at least twice under the REAL flow?
+- **Did I log state over time, or did I take a single snapshot?**
+- **Does my snippet re-trigger the contract's When, or did I call an API in isolation?**
 
-If the last answer is no, you do not understand it yet.
+If any answer is no, you do not understand it yet.
 
 ## Common Root-Cause Patterns
 
@@ -310,22 +302,10 @@ If the last answer is no, you do not understand it yet.
 | Popup wrong but token right | Different term keys between set and get | Log both keys |
 | UI data exists but user does not see it | DOM queried but not rendered/visible | `getComputedStyle` + `getBoundingClientRect` vs `innerText` |
 | Works first time, fails the second | State leak or cache reuse | Repeat the same action without reloading |
-| Source correct, runtime wrong | Builder/minifier silently strips or transforms code | Grep build output for the fix; compare source vs bundle |
-| Snippet fixes symptom, source fix does not | Snippet targeted a different code path than the source edit | Re-localize: trace which path the snippet actually patched |
-| Hypothesis feels right but snippet does nothing | Hypothesis is incomplete — second root cause hidden | Return to Step 4, look for a second failure layer |
-
-## Data Flow Desync Patterns
-
-When UI state looks wrong, one of these is broken:
-
-1. Write did not happen.
-2. Write happened in the wrong place.
-3. Read happened before write.
-4. Read returned the wrong key.
-5. Render used the wrong source.
-6. Cache hid the update.
-
-Map the symptom to one of these six before writing a fix.
+| Source correct, runtime wrong | Builder/minifier silently strips code | Grep build output for the fix |
+| Snippet fixes symptom, source fix does not | Snippet targeted a different code path | Re-localize: trace which path the snippet patched |
+| Bug only appears near boundaries (last items, edges) | API scrolls/positions ALL ancestors, not just target container | Test with page scrolled + target at boundary; log ancestor scroll over time |
+| Hypothesis feels right but snippet does nothing | Second root cause hidden | Return to Step 4, look for a second failure layer |
 
 ## Browser Extension Traps
 
@@ -357,38 +337,38 @@ Forbidden unless justified with evidence:
 - Editing source code before the snippet proves the hypothesis on the live system.
 - Declaring pass after the snippet works but before confirming the source fix produces the same effect in the real build.
 - Trusting the source file over the build output when the runtime behaves differently.
+- **Replacing the contract's real flow with an isolated API call during reproduction or snippet verification.** "I called the function manually" is NOT reproduction if the contract says "video plays and cues change over time."
+- **Testing in the wrong mode (fullscreen vs normal) when the contract specifies one.** DOM structure, scrollable ancestors, and CSS differ between modes.
+- **Taking a single before/after snapshot for bugs that involve continuous state changes.** Log the metric every 500ms across the full transition; a single snapshot misses the jump.
+- **Skipping a precondition from the contract's Given.** If the user says "page scrolled down," you MUST scroll the page before triggering. A bug that only appears when the panel is partially out of viewport will not reproduce if the panel is fully visible.
+- **Declaring root cause after one measurement.** "docDeltaY was 197 once" is not root cause. Verify the pattern repeats and that the fix prevents it under the real flow.
 
 ## Testing & Validation
 
-Before declaring this skill complete on a debugging task, run this matrix:
-
 ### Triggering tests
-
 - [ ] Skill activates on a direct request: "Debug this failing test."
 - [ ] Skill activates on a natural request: "Why is the popup not showing?"
 - [ ] Skill stays dormant for feature requests: "Add a new button to the popup."
 - [ ] Skill stays dormant for pure implementation: "Refactor this function."
 
 ### Functional tests
-
 - [ ] Run the debug loop end-to-end on a real failing test.
 - [ ] Run the debug loop on a real UI bug and verify visual checks.
 - [ ] Run the debug loop on a real browser extension bug.
 - [ ] The final fix is smaller than the symptom description.
 
 ### Edge cases
-
 - [ ] User provides no reproduction steps — skill invokes `/interview-me` or asks one focused question.
 - [ ] User claims certainty before evidence — skill pauses and requests the evidence board.
 - [ ] Bug is flaky — skill captures environment state before retrying.
 - [ ] Regression test fails without the fix and passes with it.
+- [ ] **Bug only appears under specific preconditions — skill checks every contract condition before declaring "cannot reproduce."**
 
 ## Verification Checklist
 
 After any fix:
-
 - [ ] Root cause identified and documented.
-- [ ] Snippet injected on live system confirmed the hypothesis before source edit.
+- [ ] Snippet injected on live system confirmed the hypothesis before source edit — under the REAL contract flow, not an isolated API call.
 - [ ] Fix addresses the root cause, not symptoms.
 - [ ] At least one alternative hypothesis falsified.
 - [ ] Evidence board updated before the fix.
@@ -396,18 +376,19 @@ After any fix:
 - [ ] All existing tests pass.
 - [ ] Build succeeds.
 - [ ] Fix is present in the build output, not just the source file.
-- [ ] Original scenario verified end-to-end.
+- [ ] Original scenario verified end-to-end under the REAL flow.
 - [ ] UI is visually verified (rendered rect, opacity, display), not just queried from DOM.
+- [ ] State logged over time (interval polling) for continuous-change bugs — not a single snapshot.
 - [ ] Boundary guards in place (frame, lifecycle, state).
 - [ ] Temporary instrumentation removed unless permanent.
 - [ ] Fix explained without jargon.
+- [ ] **Every precondition from the contract's Given was met during reproduction and verification.**
 
 ## Self-Evolution
 
 **Purpose:** Improve the skill from real debugging outcomes.
 
 **Actions:**
-
 - `self-evolution/README.md` is a human-readable design report; the agent does not load it.
 - After every run, append one line to `self-evolution/RUNBOOK.md`.
 - If the user asks for self-improvement or if `self-evolution/workflow.md` trigger conditions are met, run the self-correction loop.
@@ -420,40 +401,13 @@ After any fix:
 
 ## Skill Maintenance Rules
 
-This skill has a **hard line budget of 500 lines** and grows by replacing, not appending:
-
-1. **Line budget is absolute.** Before adding anything, remove old content if the total would exceed 500.
-2. **Replace, do not append.** New methodology replaces outdated methodology; new diagnostic patterns replace weaker ones.
+1. **Line budget: 500 lines absolute.** Before adding, remove old content if total would exceed 500.
+2. **Replace, do not append.** New methodology replaces outdated methodology.
 3. **Only add verified patterns.** A pattern must have solved a real bug.
 4. **Prefer tables over prose.** If a new insight cannot be a table row or checklist item, it is not ready.
 5. **Prune annually.** Remove sections unused for six months.
 6. **Code fixes go to `learning-and-apply`.** This skill stores only methodology and diagnostic patterns.
-7. **Update `self-evolution/RUNBOOK.md`** for every verified replacement.
-
-## Timeboxing
-
-If stuck in a loop for more than 20 minutes, escalate:
-- Summarize the evidence board.
-- List falsified hypotheses.
-- State the next experiment.
-- Ask one focused question.
-
-Do not spin. A stuck loop means the contract or evidence is incomplete.
-
-## Edge Cases
-
-- One-time production bugs: use telemetry, not reproduction.
-- Third-party host page bugs: document and guard, do not fix the host.
-- Flaky tests: suspect shared state or order dependence.
-- Heisenbugs: add logging without changing timing.
-- Cross-browser issues: verify in Chrome, Edge, Brave.
-- Memory pressure: suspect quota or eviction.
-- Cached data: clear storage and reload when state seems inconsistent.
-
-## Final Note
-
-A debugger who reasons well beats a debugger who codes fast. The loop is the discipline. The contract is the contract. If you cannot write it, you cannot verify it. If you cannot verify it, you cannot ship it.
 
 ## Router boomerang
 
-Task changes or unsure which skill fits? Invoke `/using-agent-skills` to re-route. Router protocol is in AGENTS.md (always-on).
+When this skill's scope ends, return to `using-agent-skills` to re-route if the task continues.
