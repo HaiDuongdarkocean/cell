@@ -12,6 +12,7 @@ import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { Icon } from '@/shared/ui/Icon';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -176,6 +177,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const [previewCues, setPreviewCues] = useState<readonly SrtCue[] | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [manageKeysOpen, setManageKeysOpen] = useState(false);
   const previewCacheRef = useRef<Map<string, SrtCue[]>>(new Map());
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,7 +383,29 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     <section className={styles.section} data-cell-id="search-section">
       <div className={styles.sectionHead} data-cell-id="search-section-header">
         <span className={styles.sectionTitle}>Search subtitles</span>
+        <button
+          type="button"
+          className={styles.manageKeysToggle}
+          onClick={() => setManageKeysOpen((v) => !v)}
+          aria-expanded={manageKeysOpen}
+          aria-controls="search-manage-keys"
+          data-cell-id="search-manage-keys-toggle"
+        >
+          <Icon name="settings" size="xs" />
+          <span>API keys</span>
+          <Icon
+            name="chevronDown"
+            size="xs"
+            className={manageKeysOpen ? styles.chevronOpen : styles.chevronClosed}
+          />
+        </button>
       </div>
+
+      {manageKeysOpen && (
+        <div className={styles.manageKeysPanel} data-cell-id="search-manage-keys">
+          <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
+        </div>
+      )}
 
       <div className={styles.searchForm} data-cell-id="search-form">
         <div className={styles.inputRow}>
