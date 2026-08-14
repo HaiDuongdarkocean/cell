@@ -58,10 +58,13 @@ export function pickSearchKey(
 }
 
 /**
- * Pick a key for DOWNLOAD. Stricter than search: status must be 'active'
- * (download needs a verified key — 'unverified' is not trusted for the
- * quota-burning download step). A rate-limited key whose cooldown expired
- * is treated as active. Oldest `addedAt` wins. Returns undefined if none.
+ * Pick a key for DOWNLOAD. Allows 'active', 'unverified', or rate-limited
+ * whose cooldown expired. An unverified key proves itself on first download:
+ * if the download succeeds, the handler marks it 'active' via markKeyStatus;
+ * if it fails (auth-invalid), the handler marks it 'invalid'. This is the
+ * natural verification path — blocking unverified keys here causes "no-key"
+ * even when the user just added a key and search worked.
+ * Oldest `addedAt` wins (round-robin by age). Returns undefined if none.
  */
 export function pickDownloadKey(
   keys: readonly SubtitleApiKey[],
@@ -72,6 +75,7 @@ export function pickDownloadKey(
     if (key.provider !== provider) continue;
     const eligible =
       key.status === 'active' ||
+      key.status === 'unverified' ||
       (key.status === 'rate-limited' &&
         key.rateLimitedUntil !== undefined &&
         key.rateLimitedUntil < Date.now());

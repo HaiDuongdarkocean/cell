@@ -92,6 +92,10 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
             }
             const results = normalizeSearch(providerId, JSON.parse(res.content), searchQuery);
             if (results.length > 0) {
+              // Key proved itself — mark active if was unverified.
+              if (key.status === 'unverified') {
+                await updateKeyStatus(keys, key.id, 'active');
+              }
               return { success: true, data: { results } };
             }
             break; // 0 results → try next provider
@@ -178,6 +182,10 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           }
           const bytes = new TextEncoder().encode(fileRes.content).buffer as ArrayBuffer;
           const decoded = decodeDownload(provider, bytes, result);
+          // Key proved itself — mark active if was unverified.
+          if (key.status === 'unverified') {
+            await updateKeyStatus(keys, key.id, 'active');
+          }
           return { success: true, data: { content: decoded.content, format: decoded.format } };
         }
 
@@ -195,6 +203,10 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
         await decrementDownload(key.id);
         const bytes = new TextEncoder().encode(res.content).buffer as ArrayBuffer;
         const decoded = decodeDownload(provider, bytes, result);
+        // Key proved itself — mark active if was unverified.
+        if (key.status === 'unverified') {
+          await updateKeyStatus(keys, key.id, 'active');
+        }
         return { success: true, data: { content: decoded.content, format: decoded.format } };
       } catch (err) {
         return {
