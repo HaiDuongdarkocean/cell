@@ -183,6 +183,39 @@
   letter-spacing: var(--tracking-wide);
 }
 
+/* Status dot — Apple-style subtle indicator, same size as meta text */
+.statusDot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+}
+
+.statusDot_active {
+  background: var(--color-success);
+}
+
+.statusDot_rate-limited {
+  background: var(--color-warning);
+}
+
+.statusDot_invalid {
+  background: var(--color-error);
+}
+
+.statusDot_unverified {
+  background: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.5;
+}
+
+.statusText {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+}
+
 .keyQuota {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

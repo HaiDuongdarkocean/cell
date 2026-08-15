@@ -8,13 +8,11 @@
  * `unverified` → `active` on first 200 response (background marks them — no
  * validate-on-add, spec §Settings). Delete uses a focus-trapped confirm Dialog.
  *
- * Pure helpers (`maskKey`, `groupKeysByProvider`, `statusBadgeVariant`) are
+ * Pure helpers (`maskKey`, `groupKeysByProvider`) are
  * exported for unit testing.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { BadgeProps } from '@/shared/ui/Badge';
-import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Input } from '@/shared/ui/Input';
@@ -88,22 +86,15 @@ export function groupKeysByProvider(
   return groups;
 }
 
-/** Map a key status to the Badge variant (active=green, rate-limited=amber,
- *  invalid=red, unverified=gray). */
-export function statusBadgeVariant(
-  status: SubtitleApiKeyStatus,
-): NonNullable<BadgeProps['variant']> {
-  switch (status) {
-    case 'active':
-      return 'success';
-    case 'rate-limited':
-      return 'warning';
-    case 'invalid':
-      return 'destructive';
-    case 'unverified':
-    default:
-      return 'default';
-  }
+const STATUS_DOT_CLASSES: Record<SubtitleApiKeyStatus, string> = {
+  active: styles.statusDot_active,
+  'rate-limited': styles['statusDot_rate-limited'],
+  invalid: styles.statusDot_invalid,
+  unverified: styles.statusDot_unverified,
+};
+
+function statusDotClass(status: SubtitleApiKeyStatus): string {
+  return STATUS_DOT_CLASSES[status] ?? '';
 }
 
 // === Component ===
@@ -328,13 +319,12 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                         <span className={styles.keyLabel}>{k.label ?? PROVIDER_LABELS[k.provider]}</span>
                         <div className={styles.keyCardMeta}>
                           <span className={styles.keyMasked}>{maskKey(k.key)}</span>
-                          <Badge
-                            variant={statusBadgeVariant(k.status)}
-                            size="sm"
+                          <span
+                            className={`${styles.statusDot} ${statusDotClass(k.status)}`}
                             data-cell-id={`key-status-${k.id}`}
-                          >
-                            {STATUS_LABELS[k.status]}
-                          </Badge>
+                            aria-label={STATUS_LABELS[k.status]}
+                          />
+                          <span className={styles.statusText}>{STATUS_LABELS[k.status]}</span>
                         </div>
                         {q && (
                           <span className={styles.keyQuota} data-cell-id={`key-quota-${k.id}`}>
