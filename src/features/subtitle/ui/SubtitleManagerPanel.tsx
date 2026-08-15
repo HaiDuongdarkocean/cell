@@ -415,6 +415,9 @@ export function SubtitleManagerPanel({
             <Icon name="chevronLeft" size={18} />
           </button>
         )}
+        {view === 'tracks' && (
+          <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
+        )}
         <span className={styles.title}>{headerTitle}</span>
         <IconButton
           aria-label="Close subtitle manager"
