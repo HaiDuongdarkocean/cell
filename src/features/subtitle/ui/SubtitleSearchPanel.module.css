@@ -7,12 +7,37 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ─── Search row — input (icon inside right) + Advanced round button (outside right) ─── */
+/* ─── Search row — back button (left, no bg) + input + Advanced round (right) ─── */
 .searchInputWrap {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
   width: 100%;
+}
+
+/* Back button — transparent, no background, icon only */
+.backBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.backBtn:hover {
+  color: var(--color-text-primary);
+}
+
+.backBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Input wrapper — relative for absolute-positioned icons inside */
