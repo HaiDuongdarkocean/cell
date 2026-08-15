@@ -122,6 +122,9 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0 var(--space-1);
 }
 
 @media (min-width: 480px) {
