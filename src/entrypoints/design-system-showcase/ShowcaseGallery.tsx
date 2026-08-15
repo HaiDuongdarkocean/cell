@@ -90,6 +90,18 @@ export function ShowcaseGallery(): ReactElement | null {
 
   const totalCount = allShowcases.length;
 
+  // Auto-open fullscreen from URL param: ?showcase=Title or /showcase/Title
+  useEffect(() => {
+    if (fullscreenShowcase) return;
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery = params.get('showcase');
+    const fromPath = window.location.pathname.match(/\/showcase\/(.+)$/);
+    const target = fromPath ? decodeURIComponent(fromPath[1]) : fromQuery;
+    if (!target) return;
+    const match = allShowcases.find((s) => s.meta.title === target);
+    if (match) setFullscreenShowcase(match);
+  }, [allShowcases, fullscreenShowcase]);
+
   const filteredGrouped = useMemo(() => {
     if (!filter.trim()) return grouped;
     const q = filter.toLowerCase();
