@@ -507,6 +507,11 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  scrollbar-width: none;
+}
+
+.appearanceBody::-webkit-scrollbar {
+  display: none;
 }
 
 .backBtn {
@@ -514,7 +519,7 @@
   align-items: center;
   gap: var(--space-1-5);
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
   padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: 0;
@@ -534,8 +539,9 @@
 .previewWrap {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-popover);
 }
 
 .tabsRoot {
@@ -543,6 +549,29 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Appearance view tabs — compact, override shared Tabs defaults + tracks view flex */
+.tabsRoot .tabsList {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.tabsRoot .tabTrigger {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.tabsRoot .tabContent {
+  padding: var(--space-2) var(--space-3);
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.tabsRoot .tabContent::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 480px) {
