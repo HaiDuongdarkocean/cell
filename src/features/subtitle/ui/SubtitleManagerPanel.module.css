@@ -1,74 +1,135 @@
+/* ─── Panel — mobile-first: bottom sheet by default, floating panel ≥480px ─── */
 .panel {
   display: flex;
   flex-direction: column;
+  position: relative;
   width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
+  max-height: 75vh;
   background-color: var(--color-surface-popover);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-dialog);
+  border-bottom: 0;
+  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
   box-shadow: var(--shadow-popover);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+  overflow: hidden;
 }
 
+/* Drag handle — mobile bottom sheet only */
+.panel::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin: var(--space-1) auto 0;
+  background: var(--color-border-emphasized);
+  border-radius: var(--radius-full);
+  opacity: 0.5;
+  flex: 0 0 auto;
+}
+
+/* Desktop ≥480px: floating panel top-right */
+@media (min-width: 480px) {
+  .panel {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 320px;
+    max-width: calc(100vw - var(--space-4));
+    max-height: 70vh;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--radius-dialog);
+  }
+
+  .panel::before {
+    display: none;
+  }
+}
+
+/* ─── Header — compact 44px mobile, 48px desktop ─── */
 .header {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 56px;
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 
 .title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);
 }
 
-/* Section — no border, separated by spacing */
-.section {
-  padding-block: var(--space-2) var(--space-4);
+@media (min-width: 480px) {
+  .header {
+    min-height: 48px;
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
 }
 
-.section + .section {
-  padding-top: var(--space-4);
+/* ─── Tracks body — scrollable ─── */
+.tracksBody {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 
-.sectionHead {
+/* ─── Section bar — sticky tab list + action buttons ─── */
+.sectionBar {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 44px;
-  padding: var(--space-1) var(--space-4);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-popover);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
-.sectionHeading {
+@media (min-width: 480px) {
+  .sectionBar {
+    padding: 0 var(--space-4);
+  }
+}
+
+/* Tab list — override shared Tabs.List */
+.tabsList {
+  flex: 1 1 auto;
+  padding: 0;
+  border-bottom: 0;
+}
+
+/* Tab trigger — override shared Tabs.Trigger */
+.tabTrigger {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  min-width: 0;
-  flex: 1;
+  align-items: center;
+  gap: var(--space-1-5);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
 }
 
-.sectionName {
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sectionCount {
-  flex: 0 0 auto;
-  color: var(--color-text-secondary);
+.tabCount {
   font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Section header icon buttons (import + hide) */
+@media (min-width: 480px) {
+  .tabTrigger {
+    min-height: 44px;
+  }
+}
+
+/* Section actions — import + hide */
 .sectionActions {
   flex: 0 0 auto;
   display: flex;
@@ -76,38 +137,32 @@
   gap: var(--space-1);
 }
 
-/* Section body — no border-top */
-.sectionBody {
-  padding: 0 var(--space-4);
+/* ─── Tab content ─── */
+.tabContent {
+  padding: var(--space-2) var(--space-3);
 }
 
-/* Search section wrapper — separates the search panel from Target/Native
-   sections below. Internal search styles live in SubtitleSearchPanel (S8). */
-.searchSectionWrapper {
-  margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border-subtle);
+@media (min-width: 480px) {
+  .tabContent {
+    padding: var(--space-3) var(--space-4);
+  }
 }
 
-.empty {
-  padding: var(--space-3) var(--space-2);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-/* Track list — flex column + gap, no borders between items */
+/* ─── Track list ─── */
 .trackList {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
+/* Track item — 44px touch target */
 .track {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-2-5);
   width: 100%;
-  min-height: 52px;
-  padding: var(--space-2-5) var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -125,9 +180,9 @@
   background: var(--color-primary-subtle);
 }
 
-/* Off option — compact, muted, first item in track list */
+/* Off row — compact */
 .offRow {
-  min-height: 44px;
+  min-height: 40px;
   color: var(--color-text-secondary);
 }
 
@@ -136,6 +191,7 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* Radio indicator */
 .radio {
   flex: 0 0 16px;
   width: 16px;
@@ -159,6 +215,7 @@
   background-color: var(--color-primary);
 }
 
+/* Track copy */
 .trackCopy {
   min-width: 0;
   flex: 1;
@@ -168,7 +225,7 @@
   display: block;
   overflow: hidden;
   color: var(--color-text-primary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--leading-tight);
   text-overflow: ellipsis;
@@ -182,9 +239,9 @@
 .trackMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
   align-items: center;
-  margin-top: var(--space-1);
+  margin-top: var(--space-0-5);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
@@ -195,7 +252,7 @@
 
 .tag + .tag::before {
   content: '·';
-  margin-right: var(--space-2);
+  margin-right: var(--space-1-5);
   color: var(--color-border-emphasized);
 }
 
@@ -207,7 +264,6 @@
   color: var(--color-success);
 }
 
-/* Trailing download icon — vertically centered, on all subtitle items */
 .trackActions {
   flex: 0 0 auto;
   display: flex;
@@ -216,10 +272,16 @@
   gap: var(--space-1);
 }
 
-/* Latency — sync offset control (redesigned per latency-control mockup) */
+@media (min-width: 480px) {
+  .trackName {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* ─── Latency — compact 2-row: label+status, then controls inline ─── */
 .latency {
   margin-top: var(--space-2);
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-2);
 }
 
 .latencyHead {
@@ -227,37 +289,36 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-1-5);
 }
 
 .latencyLabel {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
 .latencySave {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-2xs);
   color: var(--color-success);
 }
 
 .latencyRow {
   display: flex;
   align-items: stretch;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-1-5);
 }
 
 .stepBtn {
   flex: 0 0 auto;
-  min-width: 64px;
-  min-height: var(--touch-target-desktop, 40px);
-  padding: var(--space-1) var(--space-2-5);
+  min-width: 52px;
+  min-height: var(--touch-target-mobile, 44px);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-element);
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -279,15 +340,6 @@
   outline-offset: 2px;
 }
 
-.stepBtn:disabled {
-  color: var(--color-text-disabled);
-  cursor: not-allowed;
-}
-
-.stepBtn:disabled:hover {
-  background: var(--color-surface);
-}
-
 .valueField {
   position: relative;
   flex: 1 1 auto;
@@ -306,12 +358,12 @@
 
 .valueInput {
   width: 100%;
-  min-height: var(--touch-target-desktop, 40px);
+  min-height: var(--touch-target-mobile, 44px);
   padding: var(--space-1) var(--space-2);
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -327,15 +379,16 @@
   margin: 0;
 }
 
+/* Reset — inline, compact */
 .resetBtn {
-  width: 100%;
-  min-height: var(--touch-target-desktop, 40px);
+  flex: 0 0 auto;
+  min-height: var(--touch-target-mobile, 44px);
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-element);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: background var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
@@ -357,80 +410,63 @@
   outline-offset: 2px;
 }
 
-/* Footer — sticky bottom, flex row. Both buttons share equal flex basis so
-   they line up evenly when there is room, and wrap when there isn't. */
+@media (min-width: 480px) {
+  .stepBtn {
+    min-width: 56px;
+    min-height: var(--touch-target-desktop, 40px);
+    font-size: var(--font-size-sm);
+  }
+
+  .valueInput {
+    min-height: var(--touch-target-desktop, 40px);
+    font-size: var(--font-size-base);
+  }
+
+  .resetBtn {
+    min-height: var(--touch-target-desktop, 40px);
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ─── Footer — compact, icon-only mobile / icon+label desktop ─── */
 .footer {
   flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  padding: var(--space-4) var(--space-4) var(--space-5);
+  padding: var(--space-2) var(--space-3) var(--space-3);
 }
 
-/* Layout-only overrides for shared Button in footer (styling from Button.module.css).
-   basis:0 + grow:1 → both buttons share the row evenly when there is room.
-   min-width:max-content → buttons never shrink below their label width (no truncation);
-   when both can't fit, flex-wrap pushes the second button (Generate native) to a new line. */
 .footerCustomize,
 .footerGenerate {
   flex: 1 1 0;
-  min-width: max-content;
+  min-width: 0;
+  justify-content: center;
 }
 
-/* Active state for footer toggle buttons (e.g. Hide both when both hidden) */
+.footerLabel {
+  display: none;
+}
+
 .footerBtnActive {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
   border-color: transparent;
 }
 
-/* Mobile */
-@media (max-width: 479px) {
-  .header,
-  .footer,
-  .sectionHead {
-    padding-inline: var(--space-3);
+@media (min-width: 480px) {
+  .footer {
+    padding: var(--space-3) var(--space-4) var(--space-4);
   }
 
-  .sectionBody {
-    padding-inline: var(--space-3);
+  .footerLabel {
+    display: inline;
   }
 
-  .previewWrap {
-    padding-inline: var(--space-3);
+  .footerCustomize,
+  .footerGenerate {
+    min-width: max-content;
   }
-
-  .tabsList {
-    margin-inline: var(--space-3);
-  }
-
-  .tabContent {
-    padding-inline: var(--space-3);
-  }
-
-  .sectionCount {
-    display: none;
-  }
-
-  .stepBtn {
-    min-width: 56px;
-    min-height: var(--touch-target-mobile, 44px);
-    padding: var(--space-1) var(--space-2);
-  }
-
-  .valueInput {
-    min-height: var(--touch-target-mobile, 44px);
-  }
-
-  .resetBtn {
-    min-height: var(--touch-target-mobile, 44px);
-  }
-}
-
-/* ─── Tracks view body (scrollable) ─── */
-.tracksBody {
-  flex: 1 1 auto;
-  overflow-y: auto;
 }
 
 /* ─── Appearance view ─── */
@@ -447,7 +483,7 @@
   gap: var(--space-1-5);
   width: 100%;
   min-height: 44px;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -463,15 +499,13 @@
   color: var(--color-primary);
 }
 
-/* Sticky compact preview */
 .previewWrap {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-2) var(--space-3);
 }
 
-/* Tabs */
 .tabsRoot {
   display: flex;
   flex-direction: column;
@@ -479,19 +513,24 @@
   min-height: 0;
 }
 
-.tabsList {
-  display: flex;
-  gap: 0;
-  padding: 0 var(--space-4);
-  margin: 0;
-  background: transparent;
+@media (min-width: 480px) {
+  .backBtn {
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .previewWrap {
+    padding: var(--space-2) var(--space-4);
+  }
+}
+
+/* ─── Search section wrapper ─── */
+.searchSectionWrapper {
+  margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border-subtle);
-  border-radius: 0;
 }
 
-.tabContent {
-  padding: var(--space-3) var(--space-4) var(--space-5);
-  overflow-y: auto;
-  flex: 1 1 auto;
+.empty {
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
-
