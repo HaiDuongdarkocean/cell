@@ -253,123 +253,64 @@ function OffsetStepper({
         >
           +0.5s
         </button>
+        <button
+          type="button"
+          className={styles.resetBtn}
+          onClick={handleReset}
+          data-cell-id={`manager-offset-reset-${role}`}
+        >
+          Reset
+        </button>
       </div>
-      <button
-        type="button"
-        className={styles.resetBtn}
-        onClick={handleReset}
-        data-cell-id={`manager-offset-reset-${role}`}
-      >
-        Reset
-      </button>
     </div>
   );
 }
 
-function SectionPanel({
+function TrackList({
   role,
-  label,
   items,
   activeIndex,
-  state,
-  setState,
   onSelect,
-  onImport,
-  onOffsetChange,
   onDownload,
-  onHideSection,
-  hidden,
 }: {
   role: 'target' | 'native';
-  label: string;
   items: SubtitlePanelItem[];
   activeIndex: number;
-  state: SectionState;
-  setState: (s: SectionState) => void;
   onSelect: (role: 'target' | 'native', index: number) => void;
-  onImport?: (role: 'target' | 'native') => void;
-  onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
   onDownload?: (role: 'target' | 'native', index: number) => void;
-  onHideSection?: (role: 'target' | 'native') => void;
-  hidden?: boolean;
 }): React.JSX.Element {
   return (
-    <section className={styles.section} data-role={role} data-cell-id="manager-section">
-      <div className={styles.sectionHead} data-cell-id="manager-section-header" data-role={role}>
-        <div className={styles.sectionHeading}>
-          <span className={styles.sectionName}>{label}</span>
-          <span className={styles.sectionCount}>
-            {items.length} subtitle{items.length === 1 ? '' : 's'}
-          </span>
-        </div>
-        <div className={styles.sectionActions}>
-          {onImport && (
-            <IconButton
-              size="sm"
-              variant="ghost"
-              aria-label={`Import ${label} subtitle`}
-              data-cell-id={`manager-import-${role}`}
-              onClick={() => onImport(role)}
-            >
-              <Icon name="plus" size={16} />
-            </IconButton>
-          )}
-          {onHideSection && (
-            <IconButton
-              size="sm"
-              variant="ghost"
-              active={hidden}
-              aria-label={hidden ? `Show ${label} subtitle in overlay` : `Hide ${label} subtitle from overlay`}
-              data-cell-id={`manager-hide-section-${role}`}
-              onClick={() => onHideSection(role)}
-            >
-              <Icon name="eyeOff" size={16} />
-            </IconButton>
-          )}
-        </div>
-      </div>
-
-      <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
-        <div className={styles.trackList}>
-          <button
-            type="button"
-            role="option"
-            aria-selected={activeIndex === -1}
-            className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
-            onClick={() => onSelect(role, -1)}
-            data-cell-id={`manager-off-${role}`}
-          >
-            <span
-              aria-hidden="true"
-              className={[styles.radio, activeIndex === -1 && styles.radioActive].filter(Boolean).join(' ')}
-            >
-              {activeIndex === -1 && <span className={styles.radioDot} />}
-            </span>
-            <span className={styles.trackCopy}>
-              <span className={styles.offLabel}>Off</span>
-            </span>
-          </button>
-          {items.map((item, index) => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              role={role}
-              index={index}
-              active={index === activeIndex}
-              onSelect={onSelect}
-              onDownload={onDownload}
-            />
-          ))}
-        </div>
-        <OffsetStepper
+    <div className={styles.trackList} data-cell-id="manager-section-body" data-role={role}>
+      <button
+        type="button"
+        role="option"
+        aria-selected={activeIndex === -1}
+        className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
+        onClick={() => onSelect(role, -1)}
+        data-cell-id={`manager-off-${role}`}
+      >
+        <span
+          aria-hidden="true"
+          className={[styles.radio, activeIndex === -1 && styles.radioActive].filter(Boolean).join(' ')}
+        >
+          {activeIndex === -1 && <span className={styles.radioDot} />}
+        </span>
+        <span className={styles.trackCopy}>
+          <span className={styles.offLabel}>Off</span>
+        </span>
+      </button>
+      {items.map((item, index) => (
+        <ItemRow
+          key={item.id}
+          item={item}
           role={role}
-          label={label}
-          state={state}
-          setState={setState}
-          onOffsetChange={onOffsetChange}
+          index={index}
+          active={index === activeIndex}
+          onSelect={onSelect}
+          onDownload={onDownload}
         />
-      </div>
-    </section>
+      ))}
+    </div>
   );
 }
 
@@ -409,6 +350,7 @@ export function SubtitleManagerPanel({
     lastValid: defaultOffsets.native,
   });
   const [view, setView] = useState<'tracks' | 'appearance' | 'search'>('tracks');
+  const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
@@ -563,6 +505,9 @@ export function SubtitleManagerPanel({
     );
   }
 
+  const activeLabel = activeTab === 'target' ? targetLabel : nativeLabel;
+  const activeHidden = activeTab === 'target' ? targetHidden : nativeHidden;
+
   return (
     <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
       <div className={styles.header}>
@@ -577,34 +522,79 @@ export function SubtitleManagerPanel({
       </div>
 
       <div className={styles.tracksBody}>
-        <SectionPanel
-          role="target"
-          label={targetLabel}
-          items={targetItems}
-          activeIndex={targetActiveIndex}
-          state={targetState}
-          setState={setTargetState}
-          onSelect={onSelect}
-          onImport={onImport}
-          onOffsetChange={onOffsetChange}
-          onDownload={onDownload}
-          onHideSection={onHideSection}
-          hidden={targetHidden}
-        />
-        <SectionPanel
-          role="native"
-          label={nativeLabel}
-          items={nativeItems}
-          activeIndex={nativeActiveIndex}
-          state={nativeState}
-          setState={setNativeState}
-          onSelect={onSelect}
-          onImport={onImport}
-          onOffsetChange={onOffsetChange}
-          onDownload={onDownload}
-          onHideSection={onHideSection}
-          hidden={nativeHidden}
-        />
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'target' | 'native')}>
+          <div className={styles.sectionBar} data-cell-id="manager-section-header">
+            <Tabs.List className={styles.tabsList}>
+              <Tabs.Trigger value="target" className={styles.tabTrigger}>
+                {targetLabel}
+                <span className={styles.tabCount}>{targetItems.length}</span>
+              </Tabs.Trigger>
+              <Tabs.Trigger value="native" className={styles.tabTrigger}>
+                {nativeLabel}
+                <span className={styles.tabCount}>{nativeItems.length}</span>
+              </Tabs.Trigger>
+            </Tabs.List>
+            <div className={styles.sectionActions}>
+              {onImport && (
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Import ${activeLabel} subtitle`}
+                  data-cell-id={`manager-import-${activeTab}`}
+                  onClick={() => onImport(activeTab)}
+                >
+                  <Icon name="plus" size={16} />
+                </IconButton>
+              )}
+              {onHideSection && (
+                <IconButton
+                  size="sm"
+                  variant="ghost"
+                  active={activeHidden}
+                  aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
+                  data-cell-id={`manager-hide-section-${activeTab}`}
+                  onClick={() => onHideSection(activeTab)}
+                >
+                  <Icon name="eyeOff" size={16} />
+                </IconButton>
+              )}
+            </div>
+          </div>
+
+          <Tabs.Content value="target" className={styles.tabContent} data-role="target">
+            <TrackList
+              role="target"
+              items={targetItems}
+              activeIndex={targetActiveIndex}
+              onSelect={onSelect}
+              onDownload={onDownload}
+            />
+            <OffsetStepper
+              role="target"
+              label={targetLabel}
+              state={targetState}
+              setState={setTargetState}
+              onOffsetChange={onOffsetChange}
+            />
+          </Tabs.Content>
+
+          <Tabs.Content value="native" className={styles.tabContent} data-role="native">
+            <TrackList
+              role="native"
+              items={nativeItems}
+              activeIndex={nativeActiveIndex}
+              onSelect={onSelect}
+              onDownload={onDownload}
+            />
+            <OffsetStepper
+              role="native"
+              label={nativeLabel}
+              state={nativeState}
+              setState={setNativeState}
+              onOffsetChange={onOffsetChange}
+            />
+          </Tabs.Content>
+        </Tabs>
       </div>
 
       <div className={styles.footer}>
@@ -615,8 +605,10 @@ export function SubtitleManagerPanel({
           ref={searchBtnRef}
           onClick={handleSearchClick}
           data-cell-id="manager-search-subtitles"
+          leadingIcon={<Icon name="search" size={16} />}
+          title="Search subtitles"
         >
-          Search subtitles
+          <span className={styles.footerLabel}>Search</span>
         </Button>
         {appearance && (
           <Button
@@ -626,8 +618,10 @@ export function SubtitleManagerPanel({
             ref={customizeBtnRef}
             onClick={handleCustomizeClick}
             data-cell-id="manager-customize-appearance"
+            leadingIcon={<Icon name="slidersHorizontal" size={16} />}
+            title="Customize appearance"
           >
-            Customize appearance
+            <span className={styles.footerLabel}>Customize</span>
           </Button>
         )}
         {onHideBoth && (
@@ -638,8 +632,10 @@ export function SubtitleManagerPanel({
             aria-pressed={bothHidden}
             onClick={onHideBoth}
             data-cell-id="manager-hide-both"
+            leadingIcon={<Icon name="eyeOff" size={16} />}
+            title={bothHidden ? 'Show both' : 'Hide both'}
           >
-            {bothHidden ? 'Show both' : 'Hide both'}
+            <span className={styles.footerLabel}>{bothHidden ? 'Show' : 'Hide'}</span>
           </Button>
         )}
         {onGenerateNative && (
@@ -650,8 +646,10 @@ export function SubtitleManagerPanel({
             onClick={onGenerateNative}
             data-cell-id="manager-generate-native"
             disabled={generateNativeDisabled}
+            leadingIcon={<Icon name="generateNative" size={16} />}
+            title="Generate native"
           >
-            Generate native
+            <span className={styles.footerLabel}>Generate</span>
           </Button>
         )}
       </div>
