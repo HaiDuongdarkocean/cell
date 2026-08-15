@@ -398,21 +398,12 @@ export function SubtitleManagerPanel({
         </div>
 
         <div className={styles.appearanceBody}>
-          <button
-            type="button"
-            ref={backBtnRef}
-            className={styles.backBtn}
-            onClick={handleSearchBack}
-            data-cell-id="manager-back-to-subtitles"
-          >
-            <span aria-hidden="true">←</span> Subtitles
-          </button>
-
           <SubtitleSearchPanel
             hasSearchKeys={hasSearchKeys}
             apiKeys={apiKeys}
             onApiKeysChange={onApiKeysChange}
             onSearchResultSelect={onSearchResultSelect}
+            onBack={handleSearchBack}
           />
         </div>
       </div>

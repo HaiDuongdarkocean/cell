@@ -34,6 +34,7 @@ export interface SubtitleSearchPanelProps {
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  readonly onBack: () => void;
 }
 
 type SubtitleRole = 'target' | 'native';
@@ -99,7 +100,7 @@ function SearchResultRow({ result, index, onClick }: {
   );
 }
 
-export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
+export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect, onBack }: SubtitleSearchPanelProps): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [targetLang, setTargetLang] = useState('');
   const [nativeLang, setNativeLang] = useState('');
@@ -239,8 +240,17 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search row — input (with search icon inside right) + Advanced round button (outside right) */}
+      {/* Search row — back button (left, no bg) + input (icon inside right) + Advanced round button (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
+        <button
+          type="button"
+          className={styles.backBtn}
+          onClick={onBack}
+          aria-label="Back to subtitles"
+          data-cell-id="manager-back-to-subtitles"
+        >
+          <Icon name="chevronLeft" size={16} />
+        </button>
         <div className={styles.inputInner}>
           <Input
             type="text"
