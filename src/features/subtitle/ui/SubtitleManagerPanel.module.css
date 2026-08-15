@@ -68,10 +68,6 @@
     min-height: 48px;
     padding: var(--space-2) var(--space-4);
   }
-
-  .title {
-    font-size: var(--font-size-lg);
-  }
 }
 
 /* ─── Tracks body — scrollable, no visible scrollbar ─── */
@@ -281,12 +277,6 @@
   gap: var(--space-1);
 }
 
-@media (min-width: 480px) {
-  .trackName {
-    font-size: var(--font-size-base);
-  }
-}
-
 /* ─── Latency — compact 2-row: label+status, then controls inline ─── */
 .latency {
   margin-top: var(--space-2);
@@ -308,7 +298,7 @@
 }
 
 .latencySave {
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   color: var(--color-success);
 }
 
@@ -424,15 +414,6 @@
 @media (min-width: 480px) {
   .stepBtn {
     min-width: 56px;
-    font-size: var(--font-size-sm);
-  }
-
-  .valueInput {
-    font-size: var(--font-size-base);
-  }
-
-  .resetBtn {
-    font-size: var(--font-size-sm);
   }
 }
 
@@ -560,7 +541,7 @@
 .tabsRoot .tabTrigger {
   min-height: 36px;
   padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
 }
 
 .tabsRoot .tabContent {
