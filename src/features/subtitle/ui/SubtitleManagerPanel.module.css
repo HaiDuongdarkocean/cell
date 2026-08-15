@@ -66,13 +66,16 @@
   overflow: hidden;
 }
 
-/* Slide — each view's header content, absolutely positioned for overlap */
+/* Slide — each view's header content, width fits content, absolutely positioned for overlap */
 .headerSlide {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  width: max-content;
+  max-width: 100%;
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -85,20 +88,20 @@
 
 /* Forward: new enters from right, old exits to left */
 .headerSlide[data-state='entering'][data-direction='forward'] {
-  animation: slideInRight 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: slideInRight 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .headerSlide[data-state='exiting'][data-direction='forward'] {
-  animation: slideOutLeft 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: slideOutLeft 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 /* Backward: new enters from left, old exits to right */
 .headerSlide[data-state='entering'][data-direction='backward'] {
-  animation: slideInLeft 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: slideInLeft 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .headerSlide[data-state='exiting'][data-direction='backward'] {
-  animation: slideOutRight 220ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: slideOutRight 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 @keyframes slideInRight {
