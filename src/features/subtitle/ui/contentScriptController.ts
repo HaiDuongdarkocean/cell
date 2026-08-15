@@ -1661,29 +1661,35 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     const assignment = assignImportRole(parsed, targetLang, nativeLang);
 
-    // Build panel items
-    importedTargetItems = assignment.target.map((f, i) => ({
-      id: `imported-target-${i}`,
-      name: formatSubtitleName('imported', '', i, f.file.name),
+    // Build panel items — APPEND to existing imported items (not overwrite).
+    // Previously: import replaced all imported items. Now: each import adds
+    // to the list so user can switch between multiple imported subtitles.
+    const existingTargetCount = importedParsedTarget.length;
+    const existingNativeCount = importedParsedNative.length;
+    const newTargetItems = assignment.target.map((f, i) => ({
+      id: `imported-target-${existingTargetCount + i}`,
+      name: formatSubtitleName('imported', '', existingTargetCount + i, f.file.name),
       format: f.format,
       size: f.file.size,
       source: 'imported' as const,
       role: 'target' as const,
-      index: i,
+      index: existingTargetCount + i,
     }));
-    importedNativeItems = assignment.native.map((f, i) => ({
-      id: `imported-native-${i}`,
-      name: formatSubtitleName('imported', '', i, f.file.name),
+    const newNativeItems = assignment.native.map((f, i) => ({
+      id: `imported-native-${existingNativeCount + i}`,
+      name: formatSubtitleName('imported', '', existingNativeCount + i, f.file.name),
       format: f.format,
       size: f.file.size,
       source: 'imported' as const,
       role: 'native' as const,
-      index: i,
+      index: existingNativeCount + i,
     }));
-    importedParsedTarget = assignment.target;
-    importedParsedNative = assignment.native;
-    activeImportTargetIndex = 0;
-    activeImportNativeIndex = 0;
+    importedTargetItems = [...importedTargetItems, ...newTargetItems];
+    importedNativeItems = [...importedNativeItems, ...newNativeItems];
+    importedParsedTarget = [...importedParsedTarget, ...assignment.target];
+    importedParsedNative = [...importedParsedNative, ...assignment.native];
+    activeImportTargetIndex = existingTargetCount;
+    activeImportNativeIndex = existingNativeCount;
     // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
     // Mark active source as imported for roles that got imported files.
     if (assignment.target.length > 0) activeTargetSource = 'imported';
