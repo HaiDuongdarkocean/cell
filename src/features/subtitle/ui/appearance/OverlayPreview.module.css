@@ -5,7 +5,7 @@
 .frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 120px;
   overflow: hidden;
   border-radius: var(--radius-element);
   background: var(--overlay-background);
