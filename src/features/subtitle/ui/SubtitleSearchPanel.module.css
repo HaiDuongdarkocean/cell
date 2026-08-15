@@ -7,13 +7,12 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ─── Search row — Manage keys (left) + input + Advanced + Search ─── */
+/* ─── Search row — Manage keys (left) + input + Search + Advanced ─── */
 .searchInputWrap {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
   width: 100%;
-  flex-wrap: wrap;
 }
 
 /* Input wrapper — relative for absolute-positioned icons inside */
@@ -27,7 +26,7 @@
 
 .queryInput {
   width: 100%;
-  padding-right: calc(var(--space-2) * 2 + 16px + 28px);
+  padding-right: calc(var(--space-2) * 2 + 16px + var(--space-1));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -35,51 +34,53 @@
 
 .clearBtn {
   position: absolute;
-  right: calc(var(--space-2) + 16px + var(--space-1));
+  right: var(--space-1);
   z-index: 1;
 }
 
-.searchIcon {
-  position: absolute;
-  right: var(--space-2);
-  color: var(--color-text-secondary);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Advanced round button — subtle background, circular, outside input */
-.advancedBtn {
+/* ─── Round icon button — 40px, unified for manage/search/advanced ─── */
+.iconBtn {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
   border: 0;
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out),
-              color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+              color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-.advancedBtn:hover {
+.iconBtn:hover {
   background: var(--color-surface-active, var(--color-border));
   color: var(--color-text-primary);
 }
 
-.advancedBtn:focus-visible {
+.iconBtn:active {
+  transform: scale(0.95);
+}
+
+.iconBtn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.advancedBtnActive {
+.iconBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.iconBtnActive {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
-.advancedBtnHasValue {
+.iconBtnHasValue {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
@@ -115,13 +116,6 @@
 .numberInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
-}
-
-/* ─── Search button — full-width mobile (wraps below), inline desktop ─── */
-.searchButton {
-  width: 100%;
-  flex: 1 0 100%;
-  order: 10;
 }
 
 /* ─── API key hint — replaces status chip ─── */
@@ -418,14 +412,5 @@
 @media (min-width: 480px) {
   .section {
     padding: var(--space-3) var(--space-4);
-  }
-}
-
-/* ─── Desktop ≥768px: search button inline in search row ─── */
-@media (min-width: 768px) {
-  .searchButton {
-    width: auto;
-    flex: 0 0 auto;
-    order: 0;
   }
 }

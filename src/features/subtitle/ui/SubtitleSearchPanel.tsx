@@ -239,18 +239,19 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search row — Manage keys (left) + input (icon inside right) + Advanced (right) */}
+      {/* Search row — Manage keys (left) + input + Search + Advanced (right)
+          All round icon buttons 40px (var(--iconbutton-size-md)). */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
           <button
             type="button"
-            className={`${styles.advancedBtn} ${manageKeysOpen ? styles.advancedBtnActive : ''}`}
+            className={`${styles.iconBtn} ${manageKeysOpen ? styles.iconBtnActive : ''}`}
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
             aria-label="Manage API keys"
             data-cell-id="search-manage-keys-toggle"
           >
-            <Icon name="wrench" size={16} />
+            <Icon name="wrench" size={18} />
           </button>
         )}
         <div className={styles.inputInner}>
@@ -277,29 +278,27 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               <Icon name="x" size={16} />
             </IconButton>
           )}
-          <Icon name="search" size={16} className={styles.searchIcon} />
         </div>
         <button
           type="button"
-          className={`${styles.advancedBtn} ${advancedOpen ? styles.advancedBtnActive : ''} ${hasAdvancedValues ? styles.advancedBtnHasValue : ''}`}
+          className={styles.iconBtn}
+          onClick={handleSearchClick}
+          disabled={formDisabled || !query.trim() || loading}
+          aria-label="Search subtitles"
+          data-cell-id="search-button"
+        >
+          <Icon name="search" size={18} />
+        </button>
+        <button
+          type="button"
+          className={`${styles.iconBtn} ${advancedOpen ? styles.iconBtnActive : ''} ${hasAdvancedValues ? styles.iconBtnHasValue : ''}`}
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
           aria-label="Advanced search options (season, episode)"
           data-cell-id="search-advanced-toggle"
         >
-          <Icon name="slidersHorizontal" size={16} />
+          <Icon name="slidersHorizontal" size={18} />
         </button>
-        <Button
-          variant="primary"
-          size="md"
-          loading={loading}
-          onClick={handleSearchClick}
-          disabled={formDisabled || !query.trim()}
-          className={styles.searchButton}
-          data-cell-id="search-button"
-        >
-          Search
-        </Button>
       </div>
 
       {advancedOpen && (
