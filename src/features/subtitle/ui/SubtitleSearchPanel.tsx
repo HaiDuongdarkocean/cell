@@ -239,9 +239,18 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search input — full-width with leading icon + clear button */}
+      {/* Search row — Advanced round button (left) + input + search icon (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
-        <Icon name="search" size={16} className={styles.searchIcon} />
+        <button
+          type="button"
+          className={`${styles.advancedBtn} ${advancedOpen ? styles.advancedBtnActive : ''} ${hasAdvancedValues ? styles.advancedBtnHasValue : ''}`}
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          aria-label="Advanced search options (season, episode)"
+          data-cell-id="search-advanced-toggle"
+        >
+          <Icon name="slidersHorizontal" size={16} />
+        </button>
         <Input
           type="text"
           value={query}
@@ -265,20 +274,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             <Icon name="x" size={16} />
           </IconButton>
         )}
+        <Icon name="search" size={16} className={styles.searchIcon} />
       </div>
-
-      {/* Advanced toggle — collapsible Season/Episode (progressive disclosure) */}
-      <button
-        type="button"
-        className={styles.advancedToggle}
-        onClick={() => setAdvancedOpen((v) => !v)}
-        aria-expanded={advancedOpen}
-        data-cell-id="search-advanced-toggle"
-      >
-        <Icon name="chevronRight" size={14} className={advancedOpen ? styles.chevronOpen : styles.chevronClosed} />
-        <span>Advanced</span>
-        {hasAdvancedValues && <span className={styles.advancedDot} />}
-      </button>
 
       {advancedOpen && (
         <div className={styles.advancedBody} data-cell-id="search-advanced-body">
