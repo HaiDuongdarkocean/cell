@@ -1,19 +1,45 @@
-/* === NavClusterSettingsPanel — navigation cluster controls (ADR-018) === */
+/* === NavClusterSettingsPanel — iOS Settings card style === */
 
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
 }
 
-.field {
+/* ─── Section header ─── */
+.sectionHeader {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  padding: 0 var(--space-4);
+  margin: 0;
+  text-transform: none;
+}
+
+/* ─── Card ─── */
+.card {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+/* ─── Row ─── */
+.row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
+  padding: var(--space-3) var(--space-4);
   min-width: 0;
 }
 
+.row + .row {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* ─── Slider header ─── */
 .sliderHeader {
   display: flex;
   align-items: center;
@@ -23,7 +49,7 @@
 .label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   letter-spacing: var(--tracking-normal);
   user-select: none;
 }
@@ -31,13 +57,54 @@
 .value {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-/* === Preset buttons — overlay appearance quick-select === */
+/* ─── Preset pills ─── */
 .presetRow {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   flex-wrap: wrap;
+}
+
+.presetBtn {
+  flex: 1 1 0;
+  min-width: min-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              border-color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.presetBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.presetBtn:active {
+  transform: scale(0.97);
+}
+
+.presetBtnActive {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.presetBtnActive:hover {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
 }
