@@ -5,12 +5,14 @@
 .frame {
   position: relative;
   width: 100%;
+  max-width: 480px;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--radius-element);
   background: var(--overlay-background);
   padding: var(--space-2);
   container-type: inline-size;
+  margin-inline: auto;
 }
 
 /* 3-zone horizontal layout — matches .root in SubtitlePanels.module.css */
