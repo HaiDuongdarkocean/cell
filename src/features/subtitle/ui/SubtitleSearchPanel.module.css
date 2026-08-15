@@ -7,73 +7,66 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ─── Search input — full-width with leading icon + clear button ─── */
+/* ─── Search row — Advanced round button (left) + input + search icon (right) ─── */
 .searchInputWrap {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-}
-
-.searchIcon {
-  position: absolute;
-  left: var(--space-2-5);
-  color: var(--color-text-secondary);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.queryInput {
-  width: 100%;
-  padding-left: calc(var(--space-2-5) * 2 + 16px);
-}
-
-.clearBtn {
-  position: absolute;
-  right: var(--space-1);
-  z-index: 1;
-}
-
-/* ─── Advanced toggle — collapsible Season/Episode ─── */
-.advancedToggle {
-  display: flex;
-  align-items: center;
   gap: var(--space-1-5);
-  width: fit-content;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  width: 100%;
 }
 
-.advancedToggle:hover {
+/* Advanced round button — subtle background, circular */
+.advancedBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.advancedBtn:hover {
+  background: var(--color-surface-active, var(--color-border));
   color: var(--color-text-primary);
 }
 
-.advancedToggle:focus-visible {
+.advancedBtn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  border-radius: var(--radius-xs);
 }
 
-.chevronClosed {
-  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+.advancedBtnActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
-.chevronOpen {
-  transform: rotate(90deg);
-  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+.advancedBtnHasValue {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
-.advancedDot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
+.queryInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.clearBtn {
+  flex: 0 0 auto;
+}
+
+.searchIcon {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  pointer-events: none;
 }
 
 /* Advanced body — inline row, Season + Episode side-by-side */
