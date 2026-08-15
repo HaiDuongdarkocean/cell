@@ -68,21 +68,12 @@
   font-size: var(--font-size-xs);
 }
 
-.sectionImport {
+/* Section header icon buttons (import + hide) */
+.sectionActions {
   flex: 0 0 auto;
-  min-height: 36px;
-  padding: var(--space-1) var(--space-2);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.sectionImport:hover {
-  background: var(--color-primary-subtle);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 /* Section body — no border-top */
@@ -214,6 +205,15 @@
 
 .tagSuccess {
   color: var(--color-success);
+}
+
+/* Trailing download icon — vertically centered, on all subtitle items */
+.trackActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: var(--space-1);
 }
 
 /* Latency — sync offset control (redesigned per latency-control mockup) */
@@ -375,6 +375,13 @@
 .footerGenerate {
   flex: 1 1 0;
   min-width: max-content;
+}
+
+/* Active state for footer toggle buttons (e.g. Hide both when both hidden) */
+.footerBtnActive {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: transparent;
 }
 
 /* Mobile */
