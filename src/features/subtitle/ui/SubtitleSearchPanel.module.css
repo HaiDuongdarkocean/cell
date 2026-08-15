@@ -324,21 +324,14 @@
   max-width: 240px;
 }
 
-/* Results list — scrollable */
+/* Results list — parent (.appearanceBody) handles scroll */
 .resultsList {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: 40vh;
-  overflow-y: auto;
   list-style: none;
   margin: 0;
   padding: 0;
-  scrollbar-width: none;
-}
-
-.resultsList::-webkit-scrollbar {
-  display: none;
 }
 
 /* Result row — 44px touch target */
