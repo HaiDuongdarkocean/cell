@@ -19,6 +19,7 @@ import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
+import { Icon } from '@/shared/icons/Icon';
 import type {
   SubtitleApiKey,
   SubtitleApiKeyProvider,
@@ -51,6 +52,11 @@ const PROVIDERS: readonly SubtitleApiKeyProvider[] = ['subdl', 'opensubtitles'];
 const PROVIDER_LABELS: Record<SubtitleApiKeyProvider, string> = {
   subdl: 'SubDL',
   opensubtitles: 'OpenSubtitles',
+};
+
+const PROVIDER_URLS: Record<SubtitleApiKeyProvider, string> = {
+  subdl: 'https://subdl.com/api',
+  opensubtitles: 'https://www.opensubtitles.com/consumers',
 };
 
 const PROVIDER_OPTIONS = PROVIDERS.map((p) => ({ value: p, label: PROVIDER_LABELS[p] }));
@@ -124,6 +130,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
   }, []);
 
   // --- Add-key form state ---
+  const [addOpen, setAddOpen] = useState(false);
   const [addProvider, setAddProvider] = useState<SubtitleApiKeyProvider>('subdl');
   const [addKey, setAddKey] = useState('');
   const [addLabel, setAddLabel] = useState('');
@@ -144,6 +151,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
     onChange([...keys, newKey]);
     setAddKey('');
     setAddLabel('');
+    setAddOpen(false);
   }, [addKey, addLabel, addProvider, keys, onChange]);
 
   // --- Edit state (inline, single key at a time) ---
@@ -167,7 +175,6 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
     (id: string): void => {
       const trimmedLabel = editLabel.trim();
       const trimmedKey = editKey.trim();
-      // Nothing changed — just close.
       if (trimmedKey.length === 0) {
         const target = keys.find((k) => k.id === id);
         if (target && (target.label ?? '') === trimmedLabel) {
@@ -181,8 +188,6 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             ? {
                 ...k,
                 label: trimmedLabel || undefined,
-                // Replacing the key value resets status to unverified (spec:
-                // no validate-on-add; first 200 → active is background's job).
                 ...(trimmedKey.length > 0
                   ? { key: trimmedKey, status: 'unverified' as SubtitleApiKeyStatus }
                   : {}),
@@ -207,17 +212,100 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
 
   // --- Derived: grouped keys ---
   const grouped = useMemo(() => groupKeysByProvider(keys), [keys]);
+  const totalKeys = keys.length;
 
   return (
     <div className={styles.root} data-cell-id="api-key-manager">
+      {/* Header row — count + add toggle */}
+      <div className={styles.headerRow}>
+        <span className={styles.headerCount}>
+          {totalKeys === 0 ? 'No API keys' : `${totalKeys} key${totalKeys > 1 ? 's' : ''}`}
+        </span>
+        <button
+          type="button"
+          className={styles.addToggle}
+          onClick={() => setAddOpen((v) => !v)}
+          aria-expanded={addOpen}
+          aria-label={addOpen ? 'Close add key form' : 'Add new API key'}
+          data-cell-id="akm-add-toggle"
+        >
+          <Icon name={addOpen ? 'x' : 'plus'} size={16} />
+          <span>{addOpen ? 'Cancel' : 'Add key'}</span>
+        </button>
+      </div>
+
+      {/* Add-key form — collapsible, slides down */}
+      {addOpen && (
+        <div className={styles.addForm} data-cell-id="add-key-form">
+          <div className={styles.addFormRow}>
+            <Select
+              data-cell-id="akm-provider-select"
+              aria-label="Select key provider"
+              value={addProvider}
+              options={PROVIDER_OPTIONS}
+              onChange={(v) => setAddProvider(v as SubtitleApiKeyProvider)}
+            />
+          </div>
+          <Input
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            value={addKey}
+            onChange={(e) => setAddKey(e.target.value)}
+            placeholder="Paste your API key"
+            aria-label="API key"
+            data-cell-id="akm-key-input"
+          />
+          <Input
+            type="text"
+            autoComplete="off"
+            value={addLabel}
+            onChange={(e) => setAddLabel(e.target.value)}
+            placeholder="Label (e.g. Free account)"
+            aria-label="Optional label for this key"
+            data-cell-id="akm-label-input"
+          />
+          <a
+            className={styles.helpLink}
+            href={PROVIDER_URLS[addProvider]}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-cell-id="akm-get-key-link"
+          >
+            <Icon name="externalLink" size={14} />
+            <span>Get {PROVIDER_LABELS[addProvider]} API key</span>
+          </a>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleAdd}
+            disabled={!canAdd}
+            className={styles.addBtn}
+            data-cell-id="akm-add-btn"
+          >
+            Add key
+          </Button>
+        </div>
+      )}
+
+      {/* Provider groups */}
       {PROVIDERS.map((provider) => {
         const groupKeys = grouped[provider];
+        if (groupKeys.length === 0 && totalKeys > 0) return null;
         return (
           <div key={provider} className={styles.providerGroup} data-cell-id={`provider-${provider}`}>
-            <div className={styles.providerHeader}>{PROVIDER_LABELS[provider]}</div>
+            <div className={styles.providerHeader}>
+              <span>{PROVIDER_LABELS[provider]}</span>
+              {groupKeys.length > 0 && (
+                <span className={styles.providerCount}>{groupKeys.length}</span>
+              )}
+            </div>
 
             {groupKeys.length === 0 && (
-              <p className={styles.emptyHint}>No {PROVIDER_LABELS[provider]} keys yet.</p>
+              <div className={styles.emptyState}>
+                <Icon name="wrench" size={20} className={styles.emptyIcon} />
+                <span className={styles.emptyText}>No {PROVIDER_LABELS[provider]} keys yet</span>
+              </div>
             )}
 
             {groupKeys.map((k) => {
@@ -236,46 +324,48 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                     />
                   ) : (
                     <>
-                      <div className={styles.keyCardRow}>
+                      <div className={styles.keyCardInfo}>
                         <span className={styles.keyLabel}>{k.label ?? PROVIDER_LABELS[k.provider]}</span>
-                        <span className={styles.keyMasked}>{maskKey(k.key)}</span>
-                        <Badge
-                          variant={statusBadgeVariant(k.status)}
-                          size="sm"
-                          data-cell-id={`key-status-${k.id}`}
-                        >
-                          {STATUS_LABELS[k.status]}
-                        </Badge>
+                        <div className={styles.keyCardMeta}>
+                          <span className={styles.keyMasked}>{maskKey(k.key)}</span>
+                          <Badge
+                            variant={statusBadgeVariant(k.status)}
+                            size="sm"
+                            data-cell-id={`key-status-${k.id}`}
+                          >
+                            {STATUS_LABELS[k.status]}
+                          </Badge>
+                        </div>
                         {q && (
-                          <span className={styles.keyMeta} data-cell-id={`key-quota-${k.id}`}>
-                            · {q.remainingDownloads} left
+                          <span className={styles.keyQuota} data-cell-id={`key-quota-${k.id}`}>
+                            {q.remainingDownloads} downloads left
                           </span>
                         )}
                         {k.status === 'rate-limited' && k.rateLimitedUntil && (
-                          <span className={styles.keyMeta}>
-                            until {new Date(k.rateLimitedUntil).toLocaleTimeString()}
+                          <span className={styles.keyQuota}>
+                            Resets at {new Date(k.rateLimitedUntil).toLocaleTimeString()}
                           </span>
                         )}
-                        <span className={styles.keyActions}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEdit(k)}
-                            aria-label={`Edit key ${k.label ?? k.id}`}
-                            data-cell-id={`key-edit-${k.id}`}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteTarget(k)}
-                            aria-label={`Delete key ${k.label ?? k.id}`}
-                            data-cell-id={`key-delete-${k.id}`}
-                          >
-                            Delete
-                          </Button>
-                        </span>
+                      </div>
+                      <div className={styles.keyActions}>
+                        <button
+                          type="button"
+                          className={styles.iconAction}
+                          onClick={() => startEdit(k)}
+                          aria-label={`Edit key ${k.label ?? k.id}`}
+                          data-cell-id={`key-edit-${k.id}`}
+                        >
+                          <Icon name="pencil" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.iconAction} ${styles.iconActionDanger}`}
+                          onClick={() => setDeleteTarget(k)}
+                          aria-label={`Delete key ${k.label ?? k.id}`}
+                          data-cell-id={`key-delete-${k.id}`}
+                        >
+                          <Icon name="trash" size={16} />
+                        </button>
                       </div>
                     </>
                   )}
@@ -286,19 +376,22 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         );
       })}
 
-      {/* Single add-key form with provider select (task: provider select lets
-          user choose target group). Rendered once at the bottom to avoid
-          duplicate HTML ids / shared-state double-mount. */}
-      <AddKeyForm
-        provider={addProvider}
-        keyValue={addKey}
-        labelValue={addLabel}
-        onProviderChange={setAddProvider}
-        onKeyChange={setAddKey}
-        onLabelChange={setAddLabel}
-        onAdd={handleAdd}
-        canAdd={canAdd}
-      />
+      {/* Empty state — no keys at all */}
+      {totalKeys === 0 && !addOpen && (
+        <div className={styles.fullEmpty} data-cell-id="akm-empty">
+          <Icon name="wrench" size={32} className={styles.fullEmptyIcon} />
+          <span className={styles.fullEmptyTitle}>No API keys yet</span>
+          <span className={styles.fullEmptyHint}>Add a key to start searching for subtitles</span>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setAddOpen(true)}
+            data-cell-id="akm-empty-add"
+          >
+            Add your first key
+          </Button>
+        </div>
+      )}
 
       {/* Delete confirm dialog (focus trap via Dialog) */}
       <Dialog
@@ -328,84 +421,6 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
   );
 }
 
-// === Add-key form (internal) ===
-
-interface AddKeyFormProps {
-  readonly provider: SubtitleApiKeyProvider;
-  readonly keyValue: string;
-  readonly labelValue: string;
-  readonly onProviderChange: (p: SubtitleApiKeyProvider) => void;
-  readonly onKeyChange: (v: string) => void;
-  readonly onLabelChange: (v: string) => void;
-  readonly onAdd: () => void;
-  readonly canAdd: boolean;
-  readonly 'data-cell-id'?: string;
-}
-
-function AddKeyForm({
-  provider,
-  keyValue,
-  labelValue,
-  onProviderChange,
-  onKeyChange,
-  onLabelChange,
-  onAdd,
-  canAdd,
-  'data-cell-id': dataCellId,
-}: AddKeyFormProps): React.JSX.Element {
-  return (
-    <div className={styles.addForm} data-cell-id={dataCellId ?? 'add-key-form'}>
-      <div className={styles.addFormRow}>
-        <label className={styles.addFormLabel} htmlFor="akm-provider">Provider</label>
-        <Select
-          id="akm-provider"
-          data-cell-id="akm-provider-select"
-          aria-label="Select key provider"
-          value={provider}
-          options={PROVIDER_OPTIONS}
-          onChange={(v) => onProviderChange(v as SubtitleApiKeyProvider)}
-        />
-      </div>
-      <div className={styles.addFormRow}>
-        <label className={styles.addFormLabel} htmlFor="akm-key">API key</label>
-        <Input
-          id="akm-key"
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          value={keyValue}
-          onChange={(e) => onKeyChange(e.target.value)}
-          placeholder="Paste your API key"
-          data-cell-id="akm-key-input"
-        />
-      </div>
-      <div className={styles.addFormRow}>
-        <label className={styles.addFormLabel} htmlFor="akm-label">Label (optional)</label>
-        <Input
-          id="akm-label"
-          type="text"
-          autoComplete="off"
-          value={labelValue}
-          onChange={(e) => onLabelChange(e.target.value)}
-          placeholder="e.g. Free #1"
-          data-cell-id="akm-label-input"
-        />
-      </div>
-      <div className={styles.addFormActions}>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={onAdd}
-          disabled={!canAdd}
-          data-cell-id="akm-add-btn"
-        >
-          Add
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 // === Inline edit (internal) ===
 
 interface InlineEditProps {
@@ -427,29 +442,24 @@ function InlineEdit({
 }: InlineEditProps): React.JSX.Element {
   return (
     <div className={styles.editRow} data-cell-id="inline-edit">
-      <div className={styles.addFormRow}>
-        <label className={styles.addFormLabel} htmlFor="akm-edit-label">Label</label>
-        <Input
-          id="akm-edit-label"
-          type="text"
-          value={label}
-          onChange={(e) => onLabelChange(e.target.value)}
-          data-cell-id="akm-edit-label-input"
-        />
-      </div>
-      <div className={styles.addFormRow}>
-        <label className={styles.addFormLabel} htmlFor="akm-edit-key">New key (leave blank to keep)</label>
-        <Input
-          id="akm-edit-key"
-          type="password"
-          autoComplete="off"
-          spellCheck={false}
-          value={keyInput}
-          onChange={(e) => onKeyChange(e.target.value)}
-          placeholder="•••• (unchanged)"
-          data-cell-id="akm-edit-key-input"
-        />
-      </div>
+      <Input
+        type="text"
+        value={label}
+        onChange={(e) => onLabelChange(e.target.value)}
+        placeholder="Label (e.g. Free account)"
+        aria-label="Key label"
+        data-cell-id="akm-edit-label-input"
+      />
+      <Input
+        type="password"
+        autoComplete="off"
+        spellCheck={false}
+        value={keyInput}
+        onChange={(e) => onKeyChange(e.target.value)}
+        placeholder="New key (leave blank to keep)"
+        aria-label="New API key value"
+        data-cell-id="akm-edit-key-input"
+      />
       <div className={styles.editActions}>
         <Button variant="ghost" size="sm" onClick={onCancel} data-cell-id="akm-edit-cancel">
           Cancel
