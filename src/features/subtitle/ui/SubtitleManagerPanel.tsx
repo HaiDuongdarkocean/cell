@@ -350,6 +350,7 @@ export function SubtitleManagerPanel({
     lastValid: defaultOffsets.native,
   });
   const [view, setView] = useState<'tracks' | 'appearance' | 'search'>('tracks');
+  const [viewDirection, setViewDirection] = useState<'forward' | 'backward'>('forward');
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
@@ -364,145 +365,57 @@ export function SubtitleManagerPanel({
   }, [onClose]);
 
   const handleCustomizeClick = useCallback((): void => {
+    setViewDirection('forward');
     setView('appearance');
-    requestAnimationFrame(() => backBtnRef.current?.focus());
   }, []);
 
   const handleBackClick = useCallback((): void => {
+    setViewDirection('backward');
     setView('tracks');
     requestAnimationFrame(() => customizeBtnRef.current?.focus());
   }, []);
 
   const handleSearchClick = useCallback((): void => {
+    setViewDirection('forward');
     setView('search');
-    requestAnimationFrame(() => backBtnRef.current?.focus());
   }, []);
 
   const handleSearchBack = useCallback((): void => {
+    setViewDirection('backward');
     setView('tracks');
     requestAnimationFrame(() => searchBtnRef.current?.focus());
   }, []);
 
-  if (view === 'search') {
-    return (
-      <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
-        <div className={styles.header}>
-          <span className={styles.title}>Subtitle Manager</span>
-          <IconButton
-            aria-label="Close subtitle manager"
-            onClick={onClose}
-            data-cell-id="subtitle-manager-close"
-          >
-            <Icon name="x" size={16} />
-          </IconButton>
-        </div>
-
-        <div className={styles.appearanceBody}>
-          <SubtitleSearchPanel
-            hasSearchKeys={hasSearchKeys}
-            apiKeys={apiKeys}
-            onApiKeysChange={onApiKeysChange}
-            onSearchResultSelect={onSearchResultSelect}
-            onBack={handleSearchBack}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'appearance' && appearance) {
-    return (
-      <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
-        <div className={styles.header}>
-          <span className={styles.title}>Subtitle Manager</span>
-          <IconButton
-            aria-label="Close subtitle manager"
-            onClick={onClose}
-            data-cell-id="subtitle-manager-close"
-          >
-            <Icon name="x" size={16} />
-          </IconButton>
-        </div>
-
-        <div className={styles.appearanceBody}>
-          <button
-            type="button"
-            ref={backBtnRef}
-            className={styles.backBtn}
-            onClick={handleBackClick}
-            data-cell-id="manager-back-to-subtitles"
-          >
-            <span aria-hidden="true">←</span> Subtitles
-          </button>
-
-          <div className={styles.previewWrap}>
-            <OverlayPreview
-              targetStyle={appearance.targetStyle}
-              nativeStyle={appearance.nativeStyle}
-              blockSettings={appearance.blockSettings}
-              clusterSettings={appearance.clusterSettings}
-              targetText={appearance.previewTargetText}
-              nativeText={appearance.previewNativeText}
-              onTextChange={appearance.onPreviewTextChange}
-            />
-          </div>
-
-          <div className={styles.tabsRoot}>
-            <Tabs defaultValue="block">
-              <Tabs.List className={styles.tabsList}>
-                <Tabs.Trigger value="block" className={styles.tabTrigger}>Block</Tabs.Trigger>
-                <Tabs.Trigger value="target" className={styles.tabTrigger}>Target</Tabs.Trigger>
-                <Tabs.Trigger value="native" className={styles.tabTrigger}>Native</Tabs.Trigger>
-                <Tabs.Trigger value="buttons" className={styles.tabTrigger}>Buttons</Tabs.Trigger>
-              </Tabs.List>
-
-              <Tabs.Content value="block" className={styles.tabContent}>
-                <SubtitleBlockSettingsPanel
-                  settings={appearance.blockSettings}
-                  onChange={appearance.onBlockSettingsChange}
-                />
-              </Tabs.Content>
-
-              <Tabs.Content value="target" className={styles.tabContent}>
-                <SubtitleStylePanel
-                  role="target"
-                  style={appearance.targetStyle}
-                  onChange={(partial) => appearance.onStyleChange('target', partial)}
-                  onReset={() => appearance.onResetStyle('target')}
-                  defaultStyle={appearance.defaultTargetStyle}
-                />
-              </Tabs.Content>
-
-              <Tabs.Content value="native" className={styles.tabContent}>
-                <SubtitleStylePanel
-                  role="native"
-                  style={appearance.nativeStyle}
-                  onChange={(partial) => appearance.onStyleChange('native', partial)}
-                  onReset={() => appearance.onResetStyle('native')}
-                  defaultStyle={appearance.defaultNativeStyle}
-                />
-              </Tabs.Content>
-
-              <Tabs.Content value="buttons" className={styles.tabContent}>
-                <NavClusterSettingsPanel
-                  settings={appearance.clusterSettings}
-                  onChange={appearance.onClusterSettingsChange}
-                />
-              </Tabs.Content>
-            </Tabs>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const activeLabel = activeTab === 'target' ? targetLabel : nativeLabel;
   const activeHidden = activeTab === 'target' ? targetHidden : nativeHidden;
 
+  const headerTitle = view === 'search' ? 'Search' : view === 'appearance' ? 'Customize' : 'Subtitle Manager';
+  const handleHeaderBack = view === 'search' ? handleSearchBack : handleBackClick;
+
   return (
-    <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
-      <div className={styles.header}>
-        <span className={styles.title}>Subtitle Manager</span>
+    <div
+      className={styles.panel}
+      role="dialog"
+      aria-label="Subtitle manager"
+      data-cell-id="subtitle-manager-panel"
+      data-view={view}
+      data-direction={viewDirection}
+    >
+      {/* Dynamic header — changes title + back button based on view */}
+      <div className={styles.header} key={view}>
+        {view !== 'tracks' && (
+          <button
+            type="button"
+            ref={backBtnRef}
+            className={styles.headerBack}
+            onClick={handleHeaderBack}
+            aria-label="Back to subtitles"
+            data-cell-id="manager-back-to-subtitles"
+          >
+            <Icon name="chevronLeft" size={18} />
+          </button>
+        )}
+        <span className={styles.title}>{headerTitle}</span>
         <IconButton
           aria-label="Close subtitle manager"
           onClick={onClose}
@@ -512,138 +425,219 @@ export function SubtitleManagerPanel({
         </IconButton>
       </div>
 
-      <div className={styles.tracksBody}>
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'target' | 'native')}>
-          <div className={styles.sectionBar} data-cell-id="manager-section-header">
-            <Tabs.List className={styles.tabsList}>
-              <Tabs.Trigger value="target" className={styles.tabTrigger}>
-                {targetLabel}
-                <span className={styles.tabCount}>{targetItems.length}</span>
-              </Tabs.Trigger>
-              <Tabs.Trigger value="native" className={styles.tabTrigger}>
-                {nativeLabel}
-                <span className={styles.tabCount}>{nativeItems.length}</span>
-              </Tabs.Trigger>
-            </Tabs.List>
-            <div className={styles.sectionActions}>
-              {onImport && (
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  aria-label={`Import ${activeLabel} subtitle`}
-                  data-cell-id={`manager-import-${activeTab}`}
-                  onClick={() => onImport(activeTab)}
-                >
-                  <Icon name="plus" size={16} />
-                </IconButton>
-              )}
-              {onHideSection && (
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  active={activeHidden}
-                  aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
-                  data-cell-id={`manager-hide-section-${activeTab}`}
-                  onClick={() => onHideSection(activeTab)}
-                >
-                  <Icon name="eyeOff" size={16} />
-                </IconButton>
-              )}
-            </div>
+      {/* View content — key triggers remount → CSS enter animation */}
+      {view === 'tracks' && (
+        <div key="tracks" className={styles.viewContent}>
+          <div className={styles.tracksBody}>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'target' | 'native')}>
+              <div className={styles.sectionBar} data-cell-id="manager-section-header">
+                <Tabs.List className={styles.tabsList}>
+                  <Tabs.Trigger value="target" className={styles.tabTrigger}>
+                    {targetLabel}
+                    <span className={styles.tabCount}>{targetItems.length}</span>
+                  </Tabs.Trigger>
+                  <Tabs.Trigger value="native" className={styles.tabTrigger}>
+                    {nativeLabel}
+                    <span className={styles.tabCount}>{nativeItems.length}</span>
+                  </Tabs.Trigger>
+                </Tabs.List>
+                <div className={styles.sectionActions}>
+                  {onImport && (
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      aria-label={`Import ${activeLabel} subtitle`}
+                      data-cell-id={`manager-import-${activeTab}`}
+                      onClick={() => onImport(activeTab)}
+                    >
+                      <Icon name="plus" size={16} />
+                    </IconButton>
+                  )}
+                  {onHideSection && (
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      active={activeHidden}
+                      aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
+                      data-cell-id={`manager-hide-section-${activeTab}`}
+                      onClick={() => onHideSection(activeTab)}
+                    >
+                      <Icon name="eyeOff" size={16} />
+                    </IconButton>
+                  )}
+                </div>
+              </div>
+
+              <Tabs.Content value="target" className={styles.tabContent} data-role="target">
+                <TrackList
+                  role="target"
+                  items={targetItems}
+                  activeIndex={targetActiveIndex}
+                  onSelect={onSelect}
+                  onDownload={onDownload}
+                />
+                <OffsetStepper
+                  role="target"
+                  label={targetLabel}
+                  state={targetState}
+                  setState={setTargetState}
+                  onOffsetChange={onOffsetChange}
+                />
+              </Tabs.Content>
+
+              <Tabs.Content value="native" className={styles.tabContent} data-role="native">
+                <TrackList
+                  role="native"
+                  items={nativeItems}
+                  activeIndex={nativeActiveIndex}
+                  onSelect={onSelect}
+                  onDownload={onDownload}
+                />
+                <OffsetStepper
+                  role="native"
+                  label={nativeLabel}
+                  state={nativeState}
+                  setState={setNativeState}
+                  onOffsetChange={onOffsetChange}
+                />
+              </Tabs.Content>
+            </Tabs>
           </div>
 
-          <Tabs.Content value="target" className={styles.tabContent} data-role="target">
-            <TrackList
-              role="target"
-              items={targetItems}
-              activeIndex={targetActiveIndex}
-              onSelect={onSelect}
-              onDownload={onDownload}
-            />
-            <OffsetStepper
-              role="target"
-              label={targetLabel}
-              state={targetState}
-              setState={setTargetState}
-              onOffsetChange={onOffsetChange}
-            />
-          </Tabs.Content>
+          <div className={styles.footer}>
+            <Button
+              variant="outline"
+              size="md"
+              className={styles.footerCustomize}
+              ref={searchBtnRef}
+              onClick={handleSearchClick}
+              data-cell-id="manager-search-subtitles"
+              leadingIcon={<Icon name="search" size={16} />}
+              title="Search subtitles"
+            >
+              <span className={styles.footerLabel}>Search</span>
+            </Button>
+            {appearance && (
+              <Button
+                variant="outline"
+                size="md"
+                className={styles.footerCustomize}
+                ref={customizeBtnRef}
+                onClick={handleCustomizeClick}
+                data-cell-id="manager-customize-appearance"
+                leadingIcon={<Icon name="slidersHorizontal" size={16} />}
+                title="Customize appearance"
+              >
+                <span className={styles.footerLabel}>Customize</span>
+              </Button>
+            )}
+            {onHideBoth && (
+              <Button
+                variant="outline"
+                size="md"
+                className={[styles.footerCustomize, bothHidden && styles.footerBtnActive].filter(Boolean).join(' ')}
+                aria-pressed={bothHidden}
+                onClick={onHideBoth}
+                data-cell-id="manager-hide-both"
+                leadingIcon={<Icon name="eyeOff" size={16} />}
+                title={bothHidden ? 'Show both' : 'Hide both'}
+              >
+                <span className={styles.footerLabel}>{bothHidden ? 'Show' : 'Hide'}</span>
+              </Button>
+            )}
+            {onGenerateNative && (
+              <Button
+                variant="primary"
+                size="md"
+                className={styles.footerGenerate}
+                onClick={onGenerateNative}
+                data-cell-id="manager-generate-native"
+                disabled={generateNativeDisabled}
+                leadingIcon={<Icon name="generateNative" size={16} />}
+                title="Generate native"
+              >
+                <span className={styles.footerLabel}>Generate</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
-          <Tabs.Content value="native" className={styles.tabContent} data-role="native">
-            <TrackList
-              role="native"
-              items={nativeItems}
-              activeIndex={nativeActiveIndex}
-              onSelect={onSelect}
-              onDownload={onDownload}
+      {view === 'search' && (
+        <div key="search" className={styles.viewContent}>
+          <div className={styles.appearanceBody}>
+            <SubtitleSearchPanel
+              hasSearchKeys={hasSearchKeys}
+              apiKeys={apiKeys}
+              onApiKeysChange={onApiKeysChange}
+              onSearchResultSelect={onSearchResultSelect}
             />
-            <OffsetStepper
-              role="native"
-              label={nativeLabel}
-              state={nativeState}
-              setState={setNativeState}
-              onOffsetChange={onOffsetChange}
-            />
-          </Tabs.Content>
-        </Tabs>
-      </div>
+          </div>
+        </div>
+      )}
 
-      <div className={styles.footer}>
-        <Button
-          variant="outline"
-          size="md"
-          className={styles.footerCustomize}
-          ref={searchBtnRef}
-          onClick={handleSearchClick}
-          data-cell-id="manager-search-subtitles"
-          leadingIcon={<Icon name="search" size={16} />}
-          title="Search subtitles"
-        >
-          <span className={styles.footerLabel}>Search</span>
-        </Button>
-        {appearance && (
-          <Button
-            variant="outline"
-            size="md"
-            className={styles.footerCustomize}
-            ref={customizeBtnRef}
-            onClick={handleCustomizeClick}
-            data-cell-id="manager-customize-appearance"
-            leadingIcon={<Icon name="slidersHorizontal" size={16} />}
-            title="Customize appearance"
-          >
-            <span className={styles.footerLabel}>Customize</span>
-          </Button>
-        )}
-        {onHideBoth && (
-          <Button
-            variant="outline"
-            size="md"
-            className={[styles.footerCustomize, bothHidden && styles.footerBtnActive].filter(Boolean).join(' ')}
-            aria-pressed={bothHidden}
-            onClick={onHideBoth}
-            data-cell-id="manager-hide-both"
-            leadingIcon={<Icon name="eyeOff" size={16} />}
-            title={bothHidden ? 'Show both' : 'Hide both'}
-          >
-            <span className={styles.footerLabel}>{bothHidden ? 'Show' : 'Hide'}</span>
-          </Button>
-        )}
-        {onGenerateNative && (
-          <Button
-            variant="primary"
-            size="md"
-            className={styles.footerGenerate}
-            onClick={onGenerateNative}
-            data-cell-id="manager-generate-native"
-            disabled={generateNativeDisabled}
-            leadingIcon={<Icon name="generateNative" size={16} />}
-            title="Generate native"
-          >
-            <span className={styles.footerLabel}>Generate</span>
-          </Button>
-        )}
-      </div>
+      {view === 'appearance' && appearance && (
+        <div key="appearance" className={styles.viewContent}>
+          <div className={styles.appearanceBody}>
+            <div className={styles.previewWrap}>
+              <OverlayPreview
+                targetStyle={appearance.targetStyle}
+                nativeStyle={appearance.nativeStyle}
+                blockSettings={appearance.blockSettings}
+                clusterSettings={appearance.clusterSettings}
+                targetText={appearance.previewTargetText}
+                nativeText={appearance.previewNativeText}
+                onTextChange={appearance.onPreviewTextChange}
+              />
+            </div>
+
+            <div className={styles.tabsRoot}>
+              <Tabs defaultValue="block">
+                <Tabs.List className={styles.tabsList}>
+                  <Tabs.Trigger value="block" className={styles.tabTrigger}>Block</Tabs.Trigger>
+                  <Tabs.Trigger value="target" className={styles.tabTrigger}>Target</Tabs.Trigger>
+                  <Tabs.Trigger value="native" className={styles.tabTrigger}>Native</Tabs.Trigger>
+                  <Tabs.Trigger value="buttons" className={styles.tabTrigger}>Buttons</Tabs.Trigger>
+                </Tabs.List>
+
+                <Tabs.Content value="block" className={styles.tabContent}>
+                  <SubtitleBlockSettingsPanel
+                    settings={appearance.blockSettings}
+                    onChange={appearance.onBlockSettingsChange}
+                  />
+                </Tabs.Content>
+
+                <Tabs.Content value="target" className={styles.tabContent}>
+                  <SubtitleStylePanel
+                    role="target"
+                    style={appearance.targetStyle}
+                    onChange={(partial) => appearance.onStyleChange('target', partial)}
+                    onReset={() => appearance.onResetStyle('target')}
+                    defaultStyle={appearance.defaultTargetStyle}
+                  />
+                </Tabs.Content>
+
+                <Tabs.Content value="native" className={styles.tabContent}>
+                  <SubtitleStylePanel
+                    role="native"
+                    style={appearance.nativeStyle}
+                    onChange={(partial) => appearance.onStyleChange('native', partial)}
+                    onReset={() => appearance.onResetStyle('native')}
+                    defaultStyle={appearance.defaultNativeStyle}
+                  />
+                </Tabs.Content>
+
+                <Tabs.Content value="buttons" className={styles.tabContent}>
+                  <NavClusterSettingsPanel
+                    settings={appearance.clusterSettings}
+                    onChange={appearance.onClusterSettingsChange}
+                  />
+                </Tabs.Content>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
