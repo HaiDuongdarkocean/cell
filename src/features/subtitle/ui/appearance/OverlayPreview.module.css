@@ -5,7 +5,6 @@
 .frame {
   position: relative;
   width: 100%;
-  max-width: 480px;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: var(--radius-element);
