@@ -33,6 +33,8 @@ export interface SubtitleSearchPanelProps {
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Showcase-only: bypasses sendMessage with mock results for testing. */
+  readonly mockResults?: readonly SubtitleSearchResult[];
 }
 
 type SubtitleRole = 'target' | 'native';
@@ -98,7 +100,7 @@ function SearchResultRow({ result, index, onClick }: {
   );
 }
 
-export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
+export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect, mockResults }: SubtitleSearchPanelProps): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [targetLang, setTargetLang] = useState('');
   const [nativeLang, setNativeLang] = useState('');
@@ -157,6 +159,13 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     };
 
     try {
+      if (mockResults) {
+        await new Promise((r) => setTimeout(r, 600));
+        if (controller.signal.aborted) return;
+        setResults(mockResults);
+        setError(null);
+        return;
+      }
       const response = await sendMessage<{ success?: boolean; data?: SearchResponse; error?: string }>({
         type: MESSAGE_TYPES.SEARCH_SUBTITLES,
         payload: searchQuery,

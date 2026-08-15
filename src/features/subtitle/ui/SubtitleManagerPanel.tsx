@@ -48,6 +48,8 @@ export interface SubtitleManagerPanelProps {
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Showcase-only: bypasses sendMessage with mock results for testing. */
+  readonly mockSearchResults?: readonly SubtitleSearchResult[];
   /** Download a specific subtitle item to the user's machine. */
   readonly onDownload?: (role: 'target' | 'native', index: number) => void;
   /** Toggle hide/show for a section's subtitle in the overlay. */
@@ -332,6 +334,7 @@ export function SubtitleManagerPanel({
   apiKeys,
   onApiKeysChange,
   onSearchResultSelect,
+  mockSearchResults,
   onDownload,
   onHideSection,
   onHideBoth,
@@ -610,6 +613,7 @@ export function SubtitleManagerPanel({
               apiKeys={apiKeys}
               onApiKeysChange={onApiKeysChange}
               onSearchResultSelect={onSearchResultSelect}
+              mockResults={mockSearchResults}
             />
           </div>
         </div>
