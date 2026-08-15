@@ -74,11 +74,16 @@
   }
 }
 
-/* ─── Tracks body — scrollable ─── */
+/* ─── Tracks body — scrollable, no visible scrollbar ─── */
 .tracksBody {
   flex: 1 1 auto;
   overflow-y: auto;
   min-height: 0;
+  scrollbar-width: none;
+}
+
+.tracksBody::-webkit-scrollbar {
+  display: none;
 }
 
 /* ─── Section bar — sticky tab list + action buttons ─── */
