@@ -15,13 +15,16 @@
   margin-inline: auto;
 }
 
-/* 3-zone horizontal layout — matches .root in SubtitlePanels.module.css */
+/* 3-zone horizontal layout — matches .root in SubtitlePanels.module.css.
+   --sb-y maps 0% = top edge, 100% = bottom edge of the frame.
+   translateY scales proportionally so the subtitle block stays fully
+   visible at both extremes instead of being half-clipped. */
 .overlayRoot {
   position: absolute;
   left: 0;
   right: 0;
   top: calc(var(--sb-y, 75) * 1%);
-  transform: translateY(-50%);
+  transform: translateY(calc(var(--sb-y, 75) * -1%));
   display: flex;
   flex-direction: row;
   align-items: center;

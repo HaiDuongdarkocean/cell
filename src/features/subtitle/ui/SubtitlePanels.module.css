@@ -3,7 +3,7 @@
   left: 0;
   right: 0;
   top: calc(var(--sb-y, 75) * 1%);
-  transform: translateY(-50%);
+  transform: translateY(calc(var(--sb-y, 75) * -1%));
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -143,16 +143,28 @@
   pointer-events: auto;
 }
 
+/* Manager panel layer — responsive positioning
+   Desktop ≥480px: floating panel top-right, transparent overlay (click outside closes)
+   Mobile <480px: bottom sheet from bottom, dimmed overlay
+   Portaled to document.body via a separate shadow host (#cell-manager-portal)
+   to escape the video container's stacking context (YouTube #movie_player). */
 .panelLayer {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  box-sizing: border-box;
   pointer-events: auto;
   z-index: 2147483647;
+  /* Desktop default: transparent overlay, panel positioned by .panel */
+  background: transparent;
+}
+
+/* Mobile: dimmed overlay + bottom-anchored layout */
+@media (max-width: 479px) {
+  .panelLayer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: stretch;
+    background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.5));
+  }
 }
 
 .offsetRow {
