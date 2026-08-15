@@ -371,7 +371,7 @@ export function SubtitleManagerPanel({
     setViewDirection(direction);
     setPrevView(viewRef.current);
     setView(newView);
-    window.setTimeout(() => setPrevView(null), 280);
+    window.setTimeout(() => setPrevView(null), 380);
   }, []);
 
   const handleCustomizeClick = useCallback((): void => {
