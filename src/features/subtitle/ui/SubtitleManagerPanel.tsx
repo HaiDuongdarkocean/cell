@@ -459,10 +459,10 @@ export function SubtitleManagerPanel({
           <div className={styles.tabsRoot}>
             <Tabs defaultValue="block">
               <Tabs.List className={styles.tabsList}>
-                <Tabs.Trigger value="block">Block</Tabs.Trigger>
-                <Tabs.Trigger value="target">Target</Tabs.Trigger>
-                <Tabs.Trigger value="native">Native</Tabs.Trigger>
-                <Tabs.Trigger value="buttons">Buttons</Tabs.Trigger>
+                <Tabs.Trigger value="block" className={styles.tabTrigger}>Block</Tabs.Trigger>
+                <Tabs.Trigger value="target" className={styles.tabTrigger}>Target</Tabs.Trigger>
+                <Tabs.Trigger value="native" className={styles.tabTrigger}>Native</Tabs.Trigger>
+                <Tabs.Trigger value="buttons" className={styles.tabTrigger}>Buttons</Tabs.Trigger>
               </Tabs.List>
 
               <Tabs.Content value="block" className={styles.tabContent}>
