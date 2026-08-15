@@ -340,15 +340,16 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         </div>
       )}
 
-      {hasSearchKeys && manageKeysOpen && (
+      {hasSearchKeys && (
         <button
           type="button"
           className={styles.manageKeysLink}
           onClick={() => setManageKeysOpen((v) => !v)}
-          data-cell-id="search-manage-keys-close"
+          aria-expanded={manageKeysOpen}
+          data-cell-id={manageKeysOpen ? 'search-manage-keys-close' : 'search-manage-keys-open'}
         >
           <Icon name="wrench" size={14} />
-          <span>Manage API keys</span>
+          <span>{manageKeysOpen ? 'Hide API keys' : 'Manage API keys'}</span>
         </button>
       )}
 
