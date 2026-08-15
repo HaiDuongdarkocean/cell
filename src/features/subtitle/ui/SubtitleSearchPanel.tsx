@@ -239,8 +239,20 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search row — input (icon inside right) + Advanced round button (right) */}
+      {/* Search row — Manage keys (left) + input (icon inside right) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
+        {hasSearchKeys && (
+          <button
+            type="button"
+            className={`${styles.advancedBtn} ${manageKeysOpen ? styles.advancedBtnActive : ''}`}
+            onClick={() => setManageKeysOpen((v) => !v)}
+            aria-expanded={manageKeysOpen}
+            aria-label="Manage API keys"
+            data-cell-id="search-manage-keys-toggle"
+          >
+            <Icon name="wrench" size={16} />
+          </button>
+        )}
         <div className={styles.inputInner}>
           <Input
             type="text"
@@ -338,19 +350,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             {manageKeysOpen ? 'Hide' : 'Add key'}
           </button>
         </div>
-      )}
-
-      {hasSearchKeys && (
-        <button
-          type="button"
-          className={styles.manageKeysLink}
-          onClick={() => setManageKeysOpen((v) => !v)}
-          aria-expanded={manageKeysOpen}
-          data-cell-id={manageKeysOpen ? 'search-manage-keys-close' : 'search-manage-keys-open'}
-        >
-          <Icon name="wrench" size={14} />
-          <span>{manageKeysOpen ? 'Hide API keys' : 'Manage API keys'}</span>
-        </button>
       )}
 
       {manageKeysOpen && (
