@@ -401,24 +401,27 @@ export function SubtitleManagerPanel({
       data-view={view}
       data-direction={viewDirection}
     >
-      {/* Dynamic header — changes title + back button based on view */}
-      <div className={styles.header} key={view}>
-        {view !== 'tracks' && (
-          <button
-            type="button"
-            ref={backBtnRef}
-            className={styles.headerBack}
-            onClick={handleHeaderBack}
-            aria-label="Back to subtitles"
-            data-cell-id="manager-back-to-subtitles"
-          >
-            <Icon name="chevronLeft" size={18} />
-          </button>
-        )}
-        {view === 'tracks' && (
-          <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
-        )}
-        <span className={styles.title}>{headerTitle}</span>
+      {/* Dynamic header — changes title + back button based on view.
+          Inner content keyed by view to replay enter animation on view change. */}
+      <div className={styles.header}>
+        <div key={view} className={styles.headerLeft}>
+          {view !== 'tracks' && (
+            <button
+              type="button"
+              ref={backBtnRef}
+              className={styles.headerBack}
+              onClick={handleHeaderBack}
+              aria-label="Back to subtitles"
+              data-cell-id="manager-back-to-subtitles"
+            >
+              <Icon name="chevronLeft" size={18} />
+            </button>
+          )}
+          {view === 'tracks' && (
+            <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
+          )}
+          <span className={styles.title}>{headerTitle}</span>
+        </div>
         <IconButton
           aria-label="Close subtitle manager"
           onClick={onClose}
