@@ -48,6 +48,18 @@ export interface SubtitleManagerPanelProps {
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Download a specific subtitle item to the user's machine. */
+  readonly onDownload?: (role: 'target' | 'native', index: number) => void;
+  /** Toggle hide/show for a section's subtitle in the overlay. */
+  readonly onHideSection?: (role: 'target' | 'native') => void;
+  /** Toggle hide/show for both target + native subtitles in the overlay. */
+  readonly onHideBoth?: () => void;
+  /** Whether target subtitle is currently hidden in the overlay. */
+  readonly targetHidden?: boolean;
+  /** Whether native subtitle is currently hidden in the overlay. */
+  readonly nativeHidden?: boolean;
+  /** Whether both subtitles are currently hidden in the overlay. */
+  readonly bothHidden?: boolean;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -90,21 +102,29 @@ function ItemRow({
   index,
   active,
   onSelect,
+  onDownload,
 }: {
   item: SubtitlePanelItem;
   role: 'target' | 'native';
   index: number;
   active: boolean;
   onSelect: (role: 'target' | 'native', index: number) => void;
+  onDownload?: (role: 'target' | 'native', index: number) => void;
 }): React.JSX.Element {
   return (
-    <button
-      type="button"
+    <div
       data-cell-id={`manager-item-${role}-${index}`}
       role="option"
       aria-selected={active}
+      tabIndex={0}
       className={[styles.track, active && styles.trackActive].filter(Boolean).join(' ')}
       onClick={() => onSelect(role, index)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(role, index);
+        }
+      }}
     >
       <span
         aria-hidden="true"
@@ -123,7 +143,23 @@ function ItemRow({
           )}
         </span>
       </span>
-    </button>
+      {onDownload && (
+        <span className={styles.trackActions}>
+          <IconButton
+            size="sm"
+            variant="ghost"
+            aria-label={`Download ${item.name}`}
+            data-cell-id={`manager-download-${role}-${index}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload(role, index);
+            }}
+          >
+            <Icon name="download" size={16} />
+          </IconButton>
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -240,6 +276,9 @@ function SectionPanel({
   onSelect,
   onImport,
   onOffsetChange,
+  onDownload,
+  onHideSection,
+  hidden,
 }: {
   role: 'target' | 'native';
   label: string;
@@ -250,6 +289,9 @@ function SectionPanel({
   onSelect: (role: 'target' | 'native', index: number) => void;
   onImport?: (role: 'target' | 'native') => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
+  onDownload?: (role: 'target' | 'native', index: number) => void;
+  onHideSection?: (role: 'target' | 'native') => void;
+  hidden?: boolean;
 }): React.JSX.Element {
   return (
     <section className={styles.section} data-role={role} data-cell-id="manager-section">
@@ -260,16 +302,31 @@ function SectionPanel({
             {items.length} subtitle{items.length === 1 ? '' : 's'}
           </span>
         </div>
-        {onImport && (
-          <button
-            type="button"
-            className={styles.sectionImport}
-            onClick={() => onImport(role)}
-            data-cell-id={`manager-import-${role}`}
-          >
-            Import
-          </button>
-        )}
+        <div className={styles.sectionActions}>
+          {onImport && (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              aria-label={`Import ${label} subtitle`}
+              data-cell-id={`manager-import-${role}`}
+              onClick={() => onImport(role)}
+            >
+              <Icon name="plus" size={16} />
+            </IconButton>
+          )}
+          {onHideSection && (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              active={hidden}
+              aria-label={hidden ? `Show ${label} subtitle in overlay` : `Hide ${label} subtitle from overlay`}
+              data-cell-id={`manager-hide-section-${role}`}
+              onClick={() => onHideSection(role)}
+            >
+              <Icon name="eyeOff" size={16} />
+            </IconButton>
+          )}
+        </div>
       </div>
 
       <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
@@ -300,6 +357,7 @@ function SectionPanel({
               index={index}
               active={index === activeIndex}
               onSelect={onSelect}
+              onDownload={onDownload}
             />
           ))}
         </div>
@@ -333,6 +391,12 @@ export function SubtitleManagerPanel({
   apiKeys,
   onApiKeysChange,
   onSearchResultSelect,
+  onDownload,
+  onHideSection,
+  onHideBoth,
+  targetHidden,
+  nativeHidden,
+  bothHidden,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
     offset: formatSigned(defaultOffsets.target),
@@ -523,6 +587,9 @@ export function SubtitleManagerPanel({
           onSelect={onSelect}
           onImport={onImport}
           onOffsetChange={onOffsetChange}
+          onDownload={onDownload}
+          onHideSection={onHideSection}
+          hidden={targetHidden}
         />
         <SectionPanel
           role="native"
@@ -534,6 +601,9 @@ export function SubtitleManagerPanel({
           onSelect={onSelect}
           onImport={onImport}
           onOffsetChange={onOffsetChange}
+          onDownload={onDownload}
+          onHideSection={onHideSection}
+          hidden={nativeHidden}
         />
       </div>
 
@@ -558,6 +628,18 @@ export function SubtitleManagerPanel({
             data-cell-id="manager-customize-appearance"
           >
             Customize appearance
+          </Button>
+        )}
+        {onHideBoth && (
+          <Button
+            variant="outline"
+            size="md"
+            className={[styles.footerCustomize, bothHidden && styles.footerBtnActive].filter(Boolean).join(' ')}
+            aria-pressed={bothHidden}
+            onClick={onHideBoth}
+            data-cell-id="manager-hide-both"
+          >
+            {bothHidden ? 'Show both' : 'Hide both'}
           </Button>
         )}
         {onGenerateNative && (

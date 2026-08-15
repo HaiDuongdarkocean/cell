@@ -12,6 +12,7 @@ import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
+import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -78,6 +79,17 @@ export class ReactSubtitleController {
   /** Called when the user selects a search result to download + load. Delegates
    *  to contentScriptController which handles the actual fetch + loadBilingualCues. */
   public onSearchResultSelect?: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Called when the user clicks the download icon on a track item. */
+  public onDownloadItem?: (role: 'target' | 'native', index: number) => void;
+  /** Called when the user toggles hide/show for a section's subtitle in the overlay. */
+  public onHideSection?: (role: 'target' | 'native') => void;
+  /** Called when the user toggles hide/show for both subtitles in the overlay. */
+  public onHideBoth?: () => void;
+
+  /** Whether target subtitle is currently hidden from the overlay. */
+  private targetHidden = false;
+  /** Whether native subtitle is currently hidden from the overlay. */
+  private nativeHidden = false;
 
   /** Whether Player Mode overlay is currently active. */
   public isPlayerModeActive = false;
@@ -226,6 +238,12 @@ export class ReactSubtitleController {
       apiKeys: this.searchApiKeys,
       onApiKeysChange: (keys) => this.onApiKeysChangeCallback?.(keys),
       onSearchResultSelect: (result, role) => this.onSearchResultSelect?.(result, role),
+      onDownload: (role, index) => this.handleDownloadItem(role, index),
+      onHideSection: (role) => this.handleHideSection(role),
+      onHideBoth: () => this.handleHideBoth(),
+      targetHidden: this.targetHidden,
+      nativeHidden: this.nativeHidden,
+      bothHidden: this.targetHidden && this.nativeHidden,
     };
   }
 
@@ -245,6 +263,60 @@ export class ReactSubtitleController {
       onResetStyle: (role) => this.handleResetStyle(role),
       onPreviewTextChange: (role, text) => this.handlePreviewTextChange(role, text),
     };
+  }
+
+  /** Download a subtitle track item as SRT file. Gets cues for the role,
+   *  serializes to SRT, and triggers a browser download. */
+  private handleDownloadItem(role: 'target' | 'native', _index: number): void {
+    const cues = role === 'target' ? this.engine.getTargetCues() : this.engine.getNativeCues();
+    if (cues.length === 0) return;
+    const srt = cuesToSrt(cues);
+    const blob = new Blob([srt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${role}-subtitle.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /** Toggle hide/show for a section's subtitle in the overlay. */
+  private handleHideSection(role: 'target' | 'native'): void {
+    if (role === 'target') {
+      this.targetHidden = !this.targetHidden;
+      const style = this.engine.getTargetStyle();
+      this.engine.updateSettings({ targetStyle: { ...style, visible: !this.targetHidden } });
+    } else {
+      this.nativeHidden = !this.nativeHidden;
+      const style = this.engine.getNativeStyle();
+      this.engine.updateSettings({ nativeStyle: { ...style, visible: !this.nativeHidden } });
+    }
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+  }
+
+  /** Toggle hide/show for both target + native subtitles in the overlay. */
+  private handleHideBoth(): void {
+    const bothHidden = this.targetHidden && this.nativeHidden;
+    if (bothHidden) {
+      // Show both
+      this.targetHidden = false;
+      this.nativeHidden = false;
+    } else {
+      // Hide both
+      this.targetHidden = true;
+      this.nativeHidden = true;
+    }
+    const targetStyle = this.engine.getTargetStyle();
+    const nativeStyle = this.engine.getNativeStyle();
+    this.engine.updateSettings({
+      targetStyle: { ...targetStyle, visible: !this.targetHidden },
+      nativeStyle: { ...nativeStyle, visible: !this.nativeHidden },
+    });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
   }
 
   /** Merge partial style with current engine style, apply to engine, debounced persist. */
@@ -474,6 +546,15 @@ export class ReactSubtitleController {
   /** Force re-render of the manager panel with current state (e.g. after
    *  setting callbacks that were undefined at construction time). */
   refreshManagerState(): void {
+    this.mount.setManager(this.buildManagerState());
+  }
+
+  /** Sync hidden state from engine style.visible — called by contentScriptController
+   *  when overlay visibility is toggled externally (shortcut, showOverlay, etc.).
+   *  Keeps the manager panel's hide buttons in sync with the actual overlay state. */
+  syncHiddenState(): void {
+    this.targetHidden = !this.engine.getTargetStyle().visible;
+    this.nativeHidden = !this.engine.getNativeStyle().visible;
     this.mount.setManager(this.buildManagerState());
   }
 

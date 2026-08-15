@@ -266,7 +266,7 @@ describe('SubtitleManagerPanel', () => {
     expect(input).toHaveValue('+1.5');
   });
 
-  it('calls onImport when import is clicked', () => {
+  it('calls onImport when import icon button is clicked', () => {
     const onImport = jest.fn();
     render(
       <SubtitleManagerPanel
@@ -286,6 +286,117 @@ describe('SubtitleManagerPanel', () => {
 
     fireEvent.click(screen.getByTestId('manager-import-target'));
     expect(onImport).toHaveBeenCalledWith('target');
+  });
+
+  it('calls onDownload when download icon on a track item is clicked', () => {
+    const onDownload = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onDownload={onDownload}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-download-target-1'));
+    expect(onDownload).toHaveBeenCalledWith('target', 1);
+  });
+
+  it('does not call onSelect when download icon is clicked (stopPropagation)', () => {
+    const onSelect = jest.fn();
+    const onDownload = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={onSelect}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onDownload={onDownload}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-download-target-0'));
+    expect(onDownload).toHaveBeenCalledWith('target', 0);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('calls onHideSection when hide section icon button is clicked', () => {
+    const onHideSection = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onHideSection={onHideSection}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-hide-section-target'));
+    expect(onHideSection).toHaveBeenCalledWith('target');
+  });
+
+  it('calls onHideBoth when Hide both button is clicked', () => {
+    const onHideBoth = jest.fn();
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onHideBoth={onHideBoth}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manager-hide-both'));
+    expect(onHideBoth).toHaveBeenCalled();
+  });
+
+  it('shows Show both label when bothHidden is true', () => {
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onHideBoth={jest.fn()}
+        bothHidden={true}
+      />,
+    );
+
+    expect(screen.getByTestId('manager-hide-both')).toHaveTextContent('Show both');
   });
 
   it('calls onGenerateNative when generate button is clicked', () => {

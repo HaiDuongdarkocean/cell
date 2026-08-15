@@ -48,9 +48,7 @@ Dùng với mọi máy mobile, tablet, desktop
 
 ### Code style
 
-- Chỉ viết commmonmand khi liên quan tới business thực sự phức tạp.
-
-- Viết code dễ hiểu thay vì command
+- Code là tài liệu — viết code tự giải thích thay vì comment, chỉ comment khi business thực sự phức tạp.
 
 - MUST NOT hardcoded
 
