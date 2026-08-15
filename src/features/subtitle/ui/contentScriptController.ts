@@ -1661,12 +1661,29 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     const assignment = assignImportRole(parsed, targetLang, nativeLang);
 
+    // Dedup guard: skip files that match an existing imported item by
+    // name + format + size. Prevents duplicate imports and gives the user
+    // a clear toast listing which files were skipped.
+    const isDuplicate = (file: File, format: string, existing: ParsedFile[]): boolean =>
+      existing.some(p => p.file.name === file.name && p.format === format && p.file.size === file.size);
+
+    const dupTarget = assignment.target.filter(f => isDuplicate(f.file, f.format, importedParsedTarget));
+    const dupNative = assignment.native.filter(f => isDuplicate(f.file, f.format, importedParsedNative));
+    const newTarget = assignment.target.filter(f => !isDuplicate(f.file, f.format, importedParsedTarget));
+    const newNative = assignment.native.filter(f => !isDuplicate(f.file, f.format, importedParsedNative));
+    const totalDups = dupTarget.length + dupNative.length;
+
+    if (newTarget.length === 0 && newNative.length === 0) {
+      const names = [...dupTarget, ...dupNative].map(f => f.file.name);
+      const label = names.length === 1 ? names[0] : `${names.length} files`;
+      debouncedToast(`Already imported: ${label}`, _container, { variant: 'warning' });
+      return;
+    }
+
     // Build panel items — APPEND to existing imported items (not overwrite).
-    // Previously: import replaced all imported items. Now: each import adds
-    // to the list so user can switch between multiple imported subtitles.
     const existingTargetCount = importedParsedTarget.length;
     const existingNativeCount = importedParsedNative.length;
-    const newTargetItems = assignment.target.map((f, i) => ({
+    const newTargetItems = newTarget.map((f, i) => ({
       id: `imported-target-${existingTargetCount + i}`,
       name: formatSubtitleName('imported', '', existingTargetCount + i, f.file.name),
       format: f.format,
@@ -1675,7 +1692,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       role: 'target' as const,
       index: existingTargetCount + i,
     }));
-    const newNativeItems = assignment.native.map((f, i) => ({
+    const newNativeItems = newNative.map((f, i) => ({
       id: `imported-native-${existingNativeCount + i}`,
       name: formatSubtitleName('imported', '', existingNativeCount + i, f.file.name),
       format: f.format,
@@ -1686,56 +1703,50 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }));
     importedTargetItems = [...importedTargetItems, ...newTargetItems];
     importedNativeItems = [...importedNativeItems, ...newNativeItems];
-    importedParsedTarget = [...importedParsedTarget, ...assignment.target];
-    importedParsedNative = [...importedParsedNative, ...assignment.native];
+    importedParsedTarget = [...importedParsedTarget, ...newTarget];
+    importedParsedNative = [...importedParsedNative, ...newNative];
     activeImportTargetIndex = existingTargetCount;
     activeImportNativeIndex = existingNativeCount;
     // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
-    // Mark active source as imported for roles that got imported files.
-    if (assignment.target.length > 0) activeTargetSource = 'imported';
-    if (assignment.native.length > 0) activeNativeSource = 'imported';
+    // Mark active source as imported for roles that got new (non-duplicate) files.
+    if (newTarget.length > 0) activeTargetSource = 'imported';
+    if (newNative.length > 0) activeNativeSource = 'imported';
     // Import resets the translated native slot (new target/native sources).
     clearTranslatedNativeState();
     refreshPanel('target');
     refreshPanel('native');
 
-    // Load cues: first target + first native (D1 merge keeps other side)
-    const targetCues = assignment.target[0]?.cues ?? [];
-    const nativeCues = assignment.native[0]?.cues ?? [];
+    // Load cues: first new target + first new native (D1 merge keeps other side)
+    const targetCues = newTarget[0]?.cues ?? [];
+    const nativeCues = newNative[0]?.cues ?? [];
     if (targetCues.length > 0 || nativeCues.length > 0) {
       blockController?.loadBilingualCues(targetCues, nativeCues);
       showOverlay();
-      // ADR-018: update nav cluster cue source (4↔6 nút transition)
       latestTargetCues = targetCues;
-      // updateCues(targetCues, nativeCues);
-      // ADR-019: load sub mới → reset offset + cancel lazy (R5)
       offsetController?.loadCues(true);
-      // ADR-015 T10: merge for Side Panel + keyboard shortcuts
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
       broadcastCues(bilingualCues);
-    } else if (assignment.target.length === 0 && assignment.native.length === 0) {
+    } else if (newTarget.length === 0 && newNative.length === 0) {
       blockController?.loadCues(parsed[0].cues); // fallback: single mode
       showOverlay();
-      // ADR-018: update nav cluster with single-mode cues
       latestTargetCues = parsed[0].cues;
-      // updateCues(parsed[0].cues, []);
-      // ADR-019: load sub mới → reset offset + cancel lazy (R5)
       offsetController?.loadCues(true);
     }
     updateGenerateNativeEnabled();
 
-    // Active subtitle names are visible in the manager panel; chip removed.
-    // Toast
-    const total = assignment.target.length + assignment.native.length;
+    // Toast — include duplicate count if any were skipped
+    const total = newTarget.length + newNative.length;
     const ignoredCount = assignment.ignored.length;
+    const dupTxt = totalDups > 0 ? `, ${totalDups} duplicate${totalDups > 1 ? 's' : ''} skipped` : '';
     if (total === 1) {
-      debouncedToast(`Imported ${parsed[0].file.name}`, _container, { variant: 'success' });
+      const importedName = newTarget[0]?.file.name ?? newNative[0]?.file.name ?? '';
+      debouncedToast(`Imported ${importedName}${dupTxt}`, _container, { variant: 'success' });
     } else {
       const parts: string[] = [];
-      if (assignment.target.length > 0) parts.push(`target:${assignment.target.length}`);
-      if (assignment.native.length > 0) parts.push(`native:${assignment.native.length}`);
+      if (newTarget.length > 0) parts.push(`target:${newTarget.length}`);
+      if (newNative.length > 0) parts.push(`native:${newNative.length}`);
       const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
-      debouncedToast(`Imported ${total} subtitle files (${parts.join(', ')})${ignoredTxt}`, _container, { variant: 'success' });
+      debouncedToast(`Imported ${total} subtitle files (${parts.join(', ')})${ignoredTxt}${dupTxt}`, _container, { variant: 'success' });
     }
   }
 
