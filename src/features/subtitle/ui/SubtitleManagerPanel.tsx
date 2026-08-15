@@ -351,6 +351,9 @@ export function SubtitleManagerPanel({
   });
   const [view, setView] = useState<'tracks' | 'appearance' | 'search'>('tracks');
   const [viewDirection, setViewDirection] = useState<'forward' | 'backward'>('forward');
+  const [prevView, setPrevView] = useState<'tracks' | 'appearance' | 'search' | null>(null);
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
@@ -364,33 +367,58 @@ export function SubtitleManagerPanel({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const handleCustomizeClick = useCallback((): void => {
-    setViewDirection('forward');
-    setView('appearance');
+  const transitionTo = useCallback((newView: 'tracks' | 'appearance' | 'search', direction: 'forward' | 'backward'): void => {
+    setViewDirection(direction);
+    setPrevView(viewRef.current);
+    setView(newView);
+    window.setTimeout(() => setPrevView(null), 280);
   }, []);
+
+  const handleCustomizeClick = useCallback((): void => {
+    transitionTo('appearance', 'forward');
+  }, [transitionTo]);
 
   const handleBackClick = useCallback((): void => {
-    setViewDirection('backward');
-    setView('tracks');
+    transitionTo('tracks', 'backward');
     requestAnimationFrame(() => customizeBtnRef.current?.focus());
-  }, []);
+  }, [transitionTo]);
 
   const handleSearchClick = useCallback((): void => {
-    setViewDirection('forward');
-    setView('search');
-  }, []);
+    transitionTo('search', 'forward');
+  }, [transitionTo]);
 
   const handleSearchBack = useCallback((): void => {
-    setViewDirection('backward');
-    setView('tracks');
+    transitionTo('tracks', 'backward');
     requestAnimationFrame(() => searchBtnRef.current?.focus());
-  }, []);
+  }, [transitionTo]);
 
   const activeLabel = activeTab === 'target' ? targetLabel : nativeLabel;
   const activeHidden = activeTab === 'target' ? targetHidden : nativeHidden;
 
-  const headerTitle = view === 'search' ? 'Search' : view === 'appearance' ? 'Customize' : 'Subtitle Manager';
-  const handleHeaderBack = view === 'search' ? handleSearchBack : handleBackClick;
+  const renderHeaderContent = (v: 'tracks' | 'appearance' | 'search'): React.JSX.Element => {
+    const title = v === 'search' ? 'Search' : v === 'appearance' ? 'Customize' : 'Subtitle Manager';
+    const handleBack = v === 'search' ? handleSearchBack : handleBackClick;
+    return (
+      <>
+        {v !== 'tracks' && (
+          <button
+            type="button"
+            ref={backBtnRef}
+            className={styles.headerBack}
+            onClick={handleBack}
+            aria-label="Back to subtitles"
+            data-cell-id="manager-back-to-subtitles"
+          >
+            <Icon name="chevronLeft" size={18} />
+          </button>
+        )}
+        {v === 'tracks' && (
+          <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
+        )}
+        <span className={styles.title}>{title}</span>
+      </>
+    );
+  };
 
   return (
     <div
@@ -401,26 +429,29 @@ export function SubtitleManagerPanel({
       data-view={view}
       data-direction={viewDirection}
     >
-      {/* Dynamic header — changes title + back button based on view.
-          Inner content keyed by view to replay enter animation on view change. */}
+      {/* Header — container stays fixed, inner content slides between views */}
       <div className={styles.header}>
-        <div key={view} className={styles.headerLeft}>
-          {view !== 'tracks' && (
-            <button
-              type="button"
-              ref={backBtnRef}
-              className={styles.headerBack}
-              onClick={handleHeaderBack}
-              aria-label="Back to subtitles"
-              data-cell-id="manager-back-to-subtitles"
+        <div className={styles.headerStack}>
+          {/* Exiting view — slides out */}
+          {prevView && (
+            <div
+              key={prevView}
+              className={styles.headerSlide}
+              data-state="exiting"
+              data-direction={viewDirection}
             >
-              <Icon name="chevronLeft" size={18} />
-            </button>
+              {renderHeaderContent(prevView)}
+            </div>
           )}
-          {view === 'tracks' && (
-            <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
-          )}
-          <span className={styles.title}>{headerTitle}</span>
+          {/* Entering view — slides in */}
+          <div
+            key={view}
+            className={styles.headerSlide}
+            data-state="entering"
+            data-direction={viewDirection}
+          >
+            {renderHeaderContent(view)}
+          </div>
         </div>
         <IconButton
           aria-label="Close subtitle manager"
