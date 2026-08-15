@@ -289,6 +289,17 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         >
           <Icon name="slidersHorizontal" size={16} />
         </button>
+        <Button
+          variant="primary"
+          size="md"
+          loading={loading}
+          onClick={handleSearchClick}
+          disabled={formDisabled || !query.trim()}
+          className={styles.searchButton}
+          data-cell-id="search-button"
+        >
+          Search
+        </Button>
       </div>
 
       {advancedOpen && (
@@ -321,19 +332,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           </label>
         </div>
       )}
-
-      {/* Search button — full-width mobile, auto-width desktop */}
-      <Button
-        variant="primary"
-        size="md"
-        loading={loading}
-        onClick={handleSearchClick}
-        disabled={formDisabled || !query.trim()}
-        className={styles.searchButton}
-        data-cell-id="search-button"
-      >
-        Search
-      </Button>
 
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
@@ -391,8 +389,8 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       )}
 
       <div className={styles.resultsArea} data-cell-id="search-results-area">
-        {/* Hint + icon — fills empty space before search */}
-        {!loading && !error && !hasSearched && hasSearchKeys && (
+        {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
+        {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
           <div className={styles.hintState} data-cell-id="search-hint">
             <Icon name="captions" size={24} className={styles.hintIcon} />
             <span className={styles.hintText}>Search for subtitles by movie or series title</span>

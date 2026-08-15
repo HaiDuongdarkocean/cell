@@ -7,12 +7,13 @@
   padding: var(--space-2) var(--space-3);
 }
 
-/* ─── Search row — input (icon inside right) + Advanced round (right) ─── */
+/* ─── Search row — Manage keys (left) + input + Advanced + Search ─── */
 .searchInputWrap {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
   width: 100%;
+  flex-wrap: wrap;
 }
 
 /* Input wrapper — relative for absolute-positioned icons inside */
@@ -116,9 +117,11 @@
   margin: 0;
 }
 
-/* ─── Search button — full-width mobile, auto desktop ─── */
+/* ─── Search button — full-width mobile (wraps below), inline desktop ─── */
 .searchButton {
   width: 100%;
+  flex: 1 0 100%;
+  order: 10;
 }
 
 /* ─── API key hint — replaces status chip ─── */
@@ -411,14 +414,18 @@
   text-align: center;
 }
 
-/* ─── Desktop ≥480px: inline season/episode, auto-width search ─── */
+/* ─── Desktop ≥480px: inline season/episode ─── */
 @media (min-width: 480px) {
   .section {
     padding: var(--space-3) var(--space-4);
   }
+}
 
+/* ─── Desktop ≥768px: search button inline in search row ─── */
+@media (min-width: 768px) {
   .searchButton {
     width: auto;
-    align-self: flex-start;
+    flex: 0 0 auto;
+    order: 0;
   }
 }
