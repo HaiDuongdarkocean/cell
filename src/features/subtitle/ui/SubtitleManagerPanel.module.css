@@ -130,8 +130,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-8);
-  height: var(--space-8);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
   border: 0;
   border-radius: var(--radius-full);
   background: transparent;
@@ -166,14 +166,14 @@
   white-space: nowrap;
 }
 
-/* Header icon — subtitle manager icon in tracks view, same box as back button */
+/* Header icon — subtitle manager icon in tracks view, same box as close button */
 .headerIcon {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-8);
-  height: var(--space-8);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
   color: var(--color-text-secondary);
 }
 
