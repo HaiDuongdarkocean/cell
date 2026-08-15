@@ -15,30 +15,88 @@
   width: 100%;
 }
 
-/* Input wrapper — relative for absolute-positioned icons inside */
-.inputInner {
-  position: relative;
+/* ─── Search bar — 40px height, rounded, input + inner buttons ─── */
+.searchBar {
   flex: 1 1 auto;
-  min-width: 0;
   display: flex;
   align-items: center;
+  min-width: 0;
+  height: var(--iconbutton-size-md);
+  padding: 0 var(--space-1);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--input-bg, var(--color-surface));
+  transition: border-color var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-.queryInput {
-  width: 100%;
-  padding-right: calc(var(--space-2) * 2 + 16px + var(--space-1));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.searchBar:focus-within {
+  border-color: var(--color-primary);
 }
 
-.clearBtn {
-  position: absolute;
-  right: var(--space-1);
-  z-index: 1;
+.searchInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--input-fg, var(--color-text));
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-1-5);
+  outline: none;
 }
 
-/* ─── Round icon button — 40px, unified for manage/search/advanced ─── */
+.searchInput::placeholder {
+  color: var(--input-placeholder, var(--color-text-secondary));
+}
+
+.searchInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+.searchInnerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.searchInnerBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.searchInnerBtn:active {
+  transform: scale(0.92);
+}
+
+.searchInnerBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.searchInnerBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Round icon button — 40px, unified for manage/advanced ─── */
 .iconBtn {
   flex: 0 0 auto;
   display: inline-flex;

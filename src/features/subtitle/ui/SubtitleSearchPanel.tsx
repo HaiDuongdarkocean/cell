@@ -19,7 +19,6 @@ import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -239,8 +238,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search row — Manage keys (left) + input + Search + Advanced (right)
-          All round icon buttons 40px (var(--iconbutton-size-md)). */}
+      {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
           <button
@@ -254,41 +252,42 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             <Icon name="wrench" size={18} />
           </button>
         )}
-        <div className={styles.inputInner}>
-          <Input
+        <div className={styles.searchBar} data-cell-id="search-bar">
+          <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Movie or series title…"
             aria-label="Search subtitles by title"
-            className={styles.queryInput}
+            className={styles.searchInput}
             disabled={formDisabled}
             data-cell-id="search-query-input"
           />
-          {query && (
-            <IconButton
-              variant="transparent"
-              aria-label="Clear search"
-              size="sm"
-              onClick={handleClearQuery}
-              className={styles.clearBtn}
-              data-cell-id="search-clear"
+          <div className={styles.searchActions}>
+            {query && (
+              <button
+                type="button"
+                className={styles.searchInnerBtn}
+                onClick={handleClearQuery}
+                aria-label="Clear search"
+                data-cell-id="search-clear"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.searchInnerBtn}
+              onClick={handleSearchClick}
+              disabled={formDisabled || !query.trim() || loading}
+              aria-label="Search subtitles"
+              data-cell-id="search-button"
             >
-              <Icon name="x" size={16} />
-            </IconButton>
-          )}
+              <Icon name="search" size={18} />
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className={styles.iconBtn}
-          onClick={handleSearchClick}
-          disabled={formDisabled || !query.trim() || loading}
-          aria-label="Search subtitles"
-          data-cell-id="search-button"
-        >
-          <Icon name="search" size={18} />
-        </button>
         <button
           type="button"
           className={`${styles.iconBtn} ${advancedOpen ? styles.iconBtnActive : ''} ${hasAdvancedValues ? styles.iconBtnHasValue : ''}`}
