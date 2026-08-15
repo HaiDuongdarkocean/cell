@@ -66,7 +66,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
   }, [currentIndex, effectiveMs]);
 
   return (
-    <div ref={listRef} className={styles.list}>
+    <div ref={listRef} className={styles.list} data-cell-id="cue-list-scroll">
       {cues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         return (
