@@ -413,7 +413,9 @@ export function SubtitleManagerPanel({
           </button>
         )}
         {v === 'tracks' && (
-          <Icon name="subtitleManager" size={18} className={styles.headerIcon} />
+          <span className={styles.headerIcon}>
+            <Icon name="subtitleManager" size={18} />
+          </span>
         )}
         <span className={styles.title}>{title}</span>
       </>
