@@ -90,6 +90,18 @@ export interface ManagerState {
   onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   /** User selected a search result to download + load (delegated to contentScriptController). */
   onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Download a specific subtitle item to the user's machine. */
+  onDownload?: (role: 'target' | 'native', index: number) => void;
+  /** Toggle hide/show for a section's subtitle in the overlay. */
+  onHideSection?: (role: 'target' | 'native') => void;
+  /** Toggle hide/show for both target + native subtitles in the overlay. */
+  onHideBoth?: () => void;
+  /** Whether target subtitle is currently hidden in the overlay. */
+  targetHidden?: boolean;
+  /** Whether native subtitle is currently hidden in the overlay. */
+  nativeHidden?: boolean;
+  /** Whether both subtitles are currently hidden in the overlay. */
+  bothHidden?: boolean;
 }
 
 export interface OffsetState {
@@ -1347,6 +1359,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               apiKeys={manager.apiKeys}
               onApiKeysChange={manager.onApiKeysChange}
               onSearchResultSelect={manager.onSearchResultSelect}
+              onDownload={manager.onDownload}
+              onHideSection={manager.onHideSection}
+              onHideBoth={manager.onHideBoth}
+              targetHidden={manager.targetHidden}
+              nativeHidden={manager.nativeHidden}
+              bothHidden={manager.bothHidden}
             />
           </div>,
           portalTarget,
