@@ -239,8 +239,34 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
   return (
     <section className={styles.section} data-cell-id="search-section">
-      {/* Search row — Advanced round button (left) + input + search icon (right) */}
+      {/* Search row — input (with search icon inside right) + Advanced round button (outside right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
+        <div className={styles.inputInner}>
+          <Input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Movie or series title…"
+            aria-label="Search subtitles by title"
+            className={styles.queryInput}
+            disabled={formDisabled}
+            data-cell-id="search-query-input"
+          />
+          {query && (
+            <IconButton
+              variant="transparent"
+              aria-label="Clear search"
+              size="sm"
+              onClick={handleClearQuery}
+              className={styles.clearBtn}
+              data-cell-id="search-clear"
+            >
+              <Icon name="x" size={16} />
+            </IconButton>
+          )}
+          <Icon name="search" size={16} className={styles.searchIcon} />
+        </div>
         <button
           type="button"
           className={`${styles.advancedBtn} ${advancedOpen ? styles.advancedBtnActive : ''} ${hasAdvancedValues ? styles.advancedBtnHasValue : ''}`}
@@ -251,30 +277,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         >
           <Icon name="slidersHorizontal" size={16} />
         </button>
-        <Input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Movie or series title…"
-          aria-label="Search subtitles by title"
-          className={styles.queryInput}
-          disabled={formDisabled}
-          data-cell-id="search-query-input"
-        />
-        {query && (
-          <IconButton
-            variant="transparent"
-            aria-label="Clear search"
-            size="sm"
-            onClick={handleClearQuery}
-            className={styles.clearBtn}
-            data-cell-id="search-clear"
-          >
-            <Icon name="x" size={16} />
-          </IconButton>
-        )}
-        <Icon name="search" size={16} className={styles.searchIcon} />
       </div>
 
       {advancedOpen && (
