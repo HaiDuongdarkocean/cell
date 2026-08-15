@@ -865,6 +865,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     targetStyle = { ...targetStyle, visible: true };
     nativeStyle = { ...nativeStyle, visible: true };
     blockController.updateSettings({ targetStyle, nativeStyle });
+    blockController.syncHiddenState();
   }
   let bilingualCues: BilingualCue[] = [];
   // Track side panel open state for toggle (☰ button).
@@ -1165,6 +1166,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         targetStyle = result.targetStyle;
         nativeStyle = result.nativeStyle;
         blockController.updateSettings({ targetStyle, nativeStyle });
+        blockController.syncHiddenState();
         break;
       }
       case 'toggle-panel': {
@@ -1374,6 +1376,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
             targetStyle = result.targetStyle;
             nativeStyle = result.nativeStyle;
             blockController.updateSettings({ targetStyle, nativeStyle });
+            blockController.syncHiddenState();
             break;
           }
           case 'play-pause': {
