@@ -1,16 +1,33 @@
+/* === SubtitleBlockSettingsPanel — iOS Settings card style === */
+
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
 }
 
-.field {
+/* ─── Card section — rounded, hairline border, grouped rows ─── */
+.card {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+/* ─── Row inside card — separator between rows ─── */
+.row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
+  gap: var(--space-1-5);
+  padding: var(--space-3) var(--space-4);
 }
 
+.row + .row {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* ─── Slider header — label left, value right ─── */
 .sliderHeader {
   display: flex;
   align-items: center;
@@ -22,16 +39,21 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
+  letter-spacing: var(--tracking-normal);
+  user-select: none;
 }
 
 .value {
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
+/* ─── Hint text ─── */
 .hint {
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary, var(--color-text-secondary));
   margin: 0;
+  line-height: var(--leading-normal);
 }
