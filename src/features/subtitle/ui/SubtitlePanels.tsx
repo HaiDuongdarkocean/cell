@@ -18,6 +18,8 @@ import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { waitForPlayerSettle } from '@/features/subtitle/logic/waitForPlayerSettle';
+import { saveScrollPosition, restoreScrollPosition } from '@/features/subtitle/logic/scrollPositionPreserve';
 import {
   closeYoutubeSplitView,
   isYoutubePage,
@@ -271,6 +273,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
     const cleanupRef = useRef<(() => void) | null>(null);
+    const savedScrollRef = useRef<number | null>(null);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
     // Track the normal-branch wrapper so we can clean it up when transitioning
@@ -278,42 +281,21 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // fullscreen element — is inside it; we remove it on the next normal run).
     const splitViewWrapperRef = useRef<HTMLDivElement | null>(null);
 
-    // "Ông trung gian": when fullscreen state changes while split view is
-    // open, toggle split view off (full restore via effect cleanup) then
-    // back on (rebuild from scratch with the new mode). This avoids stale
-    // player state (jwplayer controlbar layout, cached container size, iframe
-    // dimensions) that causes controls to be clipped after a mode transition.
-    // The two branches (NORMAL/FULLSCREEN) are now fully independent — the
-    // effect never has to patch a transition; it always starts from a clean
-    // player. ponytail ceiling: 2 rAFs + 150ms assumes the player settles
-    // within that window; a slower host may need more. Upgrade: per-host
-    // adapter that waits for the player's settle signal.
+    // Toggle split view off on fullscreenchange, wait for player dims to
+    // stabilize via rAF polling, then re-enable. Generic — no per-host adapter.
     useEffect(() => {
       const onChange = (): void => {
         const nowFullscreen = Boolean(document.fullscreenElement);
         setIsFullscreen(nowFullscreen);
         setSplitViewOpen((open) => {
-          if (!open) return false; // split view closed — nothing to do
-          // Mode transition: toggle off, wait for player to settle, toggle on.
-          svLog('fullscreenchange — split view open, toggling off→on', {
-            nowFullscreen,
+          if (!open) return false;
+          savedScrollRef.current = saveScrollPosition();
+          svLog('fullscreenchange — toggling off→on', { nowFullscreen });
+          cleanupRef.current = waitForPlayerSettle(() => {
+            svLog('player settled, re-enabling split view', { nowFullscreen });
+            setSplitViewOpen(true);
           });
-          // Toggle off immediately (effect cleanup runs full restore).
-          // Then after settle, toggle back on (effect rebuilds with new mode).
-          let cancelled = false;
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              if (cancelled) return;
-              const timerId = setTimeout(() => {
-                if (!cancelled) {
-                  svLog('fullscreenchange — re-enabling split view after settle', { nowFullscreen });
-                  setSplitViewOpen(true);
-                }
-              }, 150);
-              cleanupRef.current = () => clearTimeout(timerId);
-            });
-          });
-          return false; // toggle off now
+          return false;
         });
       };
       document.addEventListener('fullscreenchange', onChange);
@@ -323,6 +305,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         cleanupRef.current = null;
       };
     }, []);
+
+    useEffect(() => {
+      if (!splitViewPortalTarget || savedScrollRef.current == null) return;
+      const saved = savedScrollRef.current;
+      savedScrollRef.current = null;
+      requestAnimationFrame(() => {
+        restoreScrollPosition(splitViewPortalTarget, saved);
+      });
+    }, [splitViewPortalTarget]);
 
     // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
     // mounts/unmounts when the user presses `g` on the top document (not inside
