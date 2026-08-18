@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Spinner } from '@/shared/ui/Spinner';
 import { Tabs } from '@/shared/ui/Tabs';
 import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -213,56 +214,73 @@ function OffsetStepper({
     commitOffset('0');
   };
 
-  const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
+  useEffect(() => {
+    if (state.saveState !== 'saved') return;
+    const timer = setTimeout(() => {
+      setState({ ...state, saveState: 'idle' });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [state, setState]);
 
   return (
     <div className={styles.latency}>
       <div className={styles.latencyHead}>
         <span className={styles.latencyLabel}>Latency</span>
-        <span className={styles.latencySave} role="status" data-cell-id={`manager-offset-save-${role}`}>
-          {saveLabel}
-        </span>
       </div>
       <div className={styles.latencyRow}>
-        <button
-          type="button"
-          className={styles.stepBtn}
-          aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
-          data-cell-id={`manager-offset-dec-${role}`}
-          onClick={() => bump(-OFFSET_STEP)}
-        >
-          -0.5s
-        </button>
-        <label className={styles.valueField}>
-          <input
-            type="text"
-            inputMode="decimal"
-            className={styles.valueInput}
-            value={state.offset}
-            onChange={handleInputChange}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            aria-label={`${label} latency in seconds`}
-            data-cell-id={`manager-offset-input-${role}`}
-          />
-        </label>
-        <button
-          type="button"
-          className={styles.stepBtn}
-          aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
-          data-cell-id={`manager-offset-inc-${role}`}
-          onClick={() => bump(OFFSET_STEP)}
-        >
-          +0.5s
-        </button>
-        <button
-          type="button"
-          className={styles.resetBtn}
-          onClick={handleReset}
+        <div className={styles.pillGroup}>
+          <button
+            type="button"
+            className={styles.stepBtn}
+            aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
+            data-cell-id={`manager-offset-dec-${role}`}
+            onClick={() => bump(-OFFSET_STEP)}
+          >
+            <Icon name="minus" />
+            <span className={styles.stepLabel}>-0.5s</span>
+          </button>
+          <label className={styles.valueField}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.valueInput}
+              value={state.offset}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              aria-label={`${label} latency in seconds`}
+              data-cell-id={`manager-offset-input-${role}`}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.stepBtn}
+            aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
+            data-cell-id={`manager-offset-inc-${role}`}
+            onClick={() => bump(OFFSET_STEP)}
+          >
+            <Icon name="plus" />
+            <span className={styles.stepLabel}>+0.5s</span>
+          </button>
+        </div>
+        <IconButton
+          size="md"
+          variant="ghost"
+          aria-label="Reset latency"
           data-cell-id={`manager-offset-reset-${role}`}
+          onClick={handleReset}
+          className={styles.resetBtn}
         >
-          Reset
-        </button>
+          {state.saveState === 'saving' ? (
+            <Spinner size="sm" color="current" />
+          ) : state.saveState === 'saved' ? (
+            <span className={styles.resetSaved}>
+              <Icon name="check" />
+            </span>
+          ) : (
+            <Icon name="rotateCcw" />
+          )}
+        </IconButton>
       </div>
     </div>
   );

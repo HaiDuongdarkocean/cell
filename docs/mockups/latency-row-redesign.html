@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latency Row Redesign — Variant A (Footer Button Style)</title>
+<style>
+  :root {
+    --color-primary: #2563eb;
+    --color-primary-subtle: #dbeafe;
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-border-subtle: #f1f5f9;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --color-surface-popover: #ffffff;
+    --color-success: #16a34a;
+    --radius-pill: 9999px;
+    --radius-element: 8px;
+    --space-0-5: 2px;
+    --space-1: 4px;
+    --space-1-5: 6px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --font-size-2xs: 10px;
+    --font-size-xs: 11px;
+    --font-size-sm: 13px;
+    --font-size-base: 15px;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --iconbutton-size-sm: 32px;
+    --iconbutton-icon-sm: 20px;
+    --duration-fast: 150ms;
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --duration-1000: 1000ms;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8fafc;
+    padding: 40px 20px;
+    color: var(--color-text-primary);
+  }
+
+  .container { max-width: 420px; margin: 0 auto; }
+
+  .variant {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .variant-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--color-text-secondary);
+  }
+
+  .variant-desc {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+  }
+
+  /* ─── Latency head ─── */
+  .latencyHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1-5);
+  }
+
+  .latencyLabel {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+  }
+
+  /* ─── Save status — SVG animation replaces text ─── */
+  .saveStatus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Spinner — saving state */
+  .saveSpinner {
+    width: 16px;
+    height: 16px;
+    animation: spin var(--duration-1000) linear infinite;
+    color: var(--color-text-secondary);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Checkmark — saved state with draw animation */
+  .saveCheck {
+    width: 20px;
+    height: 20px;
+    color: var(--color-success);
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+    animation: drawCheck 600ms var(--ease-out) forwards;
+  }
+
+  @keyframes drawCheck {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* Fade in for saved state */
+  .saveStatus.saved {
+    animation: fadeIn 300ms var(--ease-out);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── Latency row ─── */
+  .latencyRow {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-1-5);
+  }
+
+  /* ─── Pill group: [-0.5s] [input] [+0.5s] — footer button style ─── */
+  .pillGroup {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .pillGroup:hover {
+    border-color: var(--color-primary);
+  }
+
+  /* Step button — footer button style: icon top, label bottom (vertical) */
+  .stepBtn {
+    flex: 0 0 auto;
+    min-width: 56px;
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-0-5);
+    min-height: 56px;
+  }
+
+  .stepBtn:first-child {
+    border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  }
+
+  .stepBtn:last-child {
+    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  }
+
+  .stepBtn:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  .stepBtn:active {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+
+  .stepBtn svg {
+    width: var(--iconbutton-icon-sm);
+    height: var(--iconbutton-icon-sm);
+  }
+
+  .stepLabel {
+    font-size: var(--font-size-2xs);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  /* ─── Input field ─── */
+  .valueField {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+
+  .valueInput {
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    outline: none;
+  }
+
+  /* ─── Reset button — IconButton ghost, same as manager-import ─── */
+  .resetBtn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--iconbutton-size-sm);
+    height: var(--iconbutton-size-sm);
+    align-self: center;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+  }
+
+  .resetBtn:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  .resetBtn:active {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+
+  .resetBtn svg {
+    width: var(--iconbutton-icon-sm);
+    height: var(--iconbutton-icon-sm);
+  }
+
+  /* ─── Demo controls ─── */
+  .demoControls {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .demoBtn {
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-element);
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    transition: background var(--duration-fast);
+  }
+
+  .demoBtn:hover { background: var(--color-surface-hover); }
+  .demoBtn.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2 style="font-size:18px;margin-bottom:8px;">Latency Row — Variant A (Footer Button Style)</h2>
+  <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:24px;">
+    Step buttons: icon top + label bottom (vertical, like footer).<br>
+    Save status: SVG animation (spinner → checkmark draw).<br>
+    Reset: ghost circle, hover like manager-import.
+  </p>
+
+  <!-- ─── State 1: Saved ─── -->
+  <div class="variant">
+    <div class="variant-title">State: Saved</div>
+    <div class="variant-desc">Checkmark draw animation when save completes</div>
+    <div class="latencyHead">
+      <span class="latencyLabel">Latency</span>
+      <span class="saveStatus saved" role="status">
+        <svg class="saveCheck" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+    </div>
+    <div class="latencyRow">
+      <div class="pillGroup">
+        <button class="stepBtn" type="button" aria-label="Decrease latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+          </svg>
+          <span class="stepLabel">-0.5s</span>
+        </button>
+        <label class="valueField">
+          <input class="valueInput" type="text" value="0.0" aria-label="Latency in seconds" />
+        </label>
+        <button class="stepBtn" type="button" aria-label="Increase latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span class="stepLabel">+0.5s</span>
+        </button>
+      </div>
+      <button class="resetBtn" type="button" aria-label="Reset latency to zero">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── State 2: Saving ─── -->
+  <div class="variant">
+    <div class="variant-title">State: Saving</div>
+    <div class="variant-desc">Spinner animation while saving</div>
+    <div class="latencyHead">
+      <span class="latencyLabel">Latency</span>
+      <span class="saveStatus" role="status">
+        <svg class="saveSpinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+      </span>
+    </div>
+    <div class="latencyRow">
+      <div class="pillGroup">
+        <button class="stepBtn" type="button" aria-label="Decrease latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+          </svg>
+          <span class="stepLabel">-0.5s</span>
+        </button>
+        <label class="valueField">
+          <input class="valueInput" type="text" value="-1.5" aria-label="Latency in seconds" />
+        </label>
+        <button class="stepBtn" type="button" aria-label="Increase latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span class="stepLabel">+0.5s</span>
+        </button>
+      </div>
+      <button class="resetBtn" type="button" aria-label="Reset latency to zero">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Interactive demo ─── -->
+  <div class="variant">
+    <div class="variant-title">Interactive Demo</div>
+    <div class="variant-desc">Click buttons to see state transitions</div>
+    <div class="latencyHead">
+      <span class="latencyLabel">Latency</span>
+      <span class="saveStatus" id="interactiveStatus" role="status">
+        <svg class="saveCheck" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+    </div>
+    <div class="latencyRow">
+      <div class="pillGroup">
+        <button class="stepBtn" type="button" id="decBtn" aria-label="Decrease latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+          </svg>
+          <span class="stepLabel">-0.5s</span>
+        </button>
+        <label class="valueField">
+          <input class="valueInput" id="interactiveInput" type="text" value="0.0" aria-label="Latency in seconds" />
+        </label>
+        <button class="stepBtn" type="button" id="incBtn" aria-label="Increase latency by 0.5 seconds">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span class="stepLabel">+0.5s</span>
+        </button>
+      </div>
+      <button class="resetBtn" type="button" id="resetBtn" aria-label="Reset latency to zero">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+      </button>
+    </div>
+    <div class="demoControls">
+      <button class="demoBtn" id="triggerSave">Trigger Save Cycle</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Interactive demo
+  const input = document.getElementById('interactiveInput');
+  const decBtn = document.getElementById('decBtn');
+  const incBtn = document.getElementById('incBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const status = document.getElementById('interactiveStatus');
+  const triggerSave = document.getElementById('triggerSave');
+
+  function showSpinner() {
+    status.className = 'saveStatus';
+    status.innerHTML = `<svg class="saveSpinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>`;
+  }
+
+  function showCheck() {
+    status.className = 'saveStatus saved';
+    status.innerHTML = `<svg class="saveCheck" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>`;
+  }
+
+  function doSaveCycle() {
+    showSpinner();
+    setTimeout(() => showCheck(), 1200);
+  }
+
+  function bump(delta) {
+    const val = parseFloat(input.value) || 0;
+    input.value = (val + delta).toFixed(1);
+    doSaveCycle();
+  }
+
+  decBtn.addEventListener('click', () => bump(-0.5));
+  incBtn.addEventListener('click', () => bump(0.5));
+  resetBtn.addEventListener('click', () => {
+    input.value = '0.0';
+    doSaveCycle();
+  });
+  triggerSave.addEventListener('click', doSaveCycle);
+  input.addEventListener('change', doSaveCycle);
+</script>
+</body>
+</html>
