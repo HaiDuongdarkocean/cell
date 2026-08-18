@@ -25,7 +25,7 @@ export function Header({
   return (
     <header className={styles.header}>
       <HStack align="center" gap="2" className={styles.headerLeft}>
-        <Icon name="play" size={24} className={styles.headerIcon} />
+        <Icon name="play" className={styles.headerIcon} />
         <h1 className={styles.headerTitle}>Cell</h1>
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
@@ -40,9 +40,9 @@ export function Header({
           aria-pressed={isActive}
         >
           {isActive ? (
-            <Icon name="power" size={24} className={styles.icon} />
+            <Icon name="power" className={styles.icon} />
           ) : (
-            <Icon name="power" size={24} className={styles.icon} />
+            <Icon name="power" className={styles.icon} />
           )}
         </IconButton>
 
@@ -55,7 +55,7 @@ export function Header({
           aria-pressed={isAutoDownloadActive}
           title={isAutoDownloadActive ? 'Auto download: ON — URL sẽ tự tải khi ghé lại' : 'Auto download: OFF — click để whitelist trang này'}
         >
-          <Icon name="download" size={24} className={styles.icon} />
+          <Icon name="download" className={styles.icon} />
         </IconButton>
 
         {/* Theme toggle */}
@@ -66,9 +66,9 @@ export function Header({
           title="Toggle theme"
         >
           {currentTheme === 'light' ? (
-            <Icon name="moon" size={24} className={styles.iconMoon} />
+            <Icon name="moon" className={styles.iconMoon} />
           ) : (
-            <Icon name="sun" size={24} className={styles.iconSun} />
+            <Icon name="sun" className={styles.iconSun} />
           )}
         </IconButton>
 
@@ -79,7 +79,7 @@ export function Header({
           aria-label="Settings"
           title="Settings"
         >
-          <Icon name="settings" size={24} className={styles.icon} />
+          <Icon name="settings" className={styles.icon} />
         </IconButton>
       </HStack>
     </header>

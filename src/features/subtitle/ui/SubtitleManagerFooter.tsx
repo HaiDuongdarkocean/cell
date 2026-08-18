@@ -26,7 +26,7 @@ export function SubtitleManagerFooter({
   const slots: FooterBarSlot[] = [
     {
       key: 'search',
-      icon: <Icon name="search" size={24} />,
+      icon: <Icon name="search"  />,
       label: 'Search',
       onClick: onSearch,
       ref: searchBtnRef,
@@ -35,7 +35,7 @@ export function SubtitleManagerFooter({
     ...(onCustomize
       ? [{
           key: 'customize',
-          icon: <Icon name="slidersHorizontal" size={24} />,
+          icon: <Icon name="slidersHorizontal"  />,
           label: 'Customize',
           onClick: onCustomize,
           ref: customizeBtnRef,
@@ -45,7 +45,7 @@ export function SubtitleManagerFooter({
     ...(onHideBoth
       ? [{
           key: 'hide',
-          icon: <Icon name="eyeOff" size={24} />,
+          icon: <Icon name="eyeOff"  />,
           label: bothHidden ? 'Show' : 'Hide',
           active: bothHidden,
           onClick: onHideBoth,
@@ -55,7 +55,7 @@ export function SubtitleManagerFooter({
     ...(onGenerateNative
       ? [{
           key: 'generate',
-          icon: <Icon name="languages" size={24} />,
+          icon: <Icon name="languages"  />,
           label: 'Generate',
           ripplePulse: true,
           disabled: generateNativeDisabled,

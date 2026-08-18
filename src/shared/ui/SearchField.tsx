@@ -72,7 +72,7 @@ export function SearchField({
           size="xs"
           onClick={handleClear}
         >
-          <Icon name="x" size={24} />
+          <Icon name="x"  />
         </IconButton>
       )}
     </div>

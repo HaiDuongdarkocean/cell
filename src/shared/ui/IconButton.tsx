@@ -27,8 +27,8 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * 11 call sites pass Rule of Three (Header, SettingsDialog, VideoCard, SubtitleCard,
  * SelectionBar, DownloadCard). Consumes tokens only — no raw hex/radius.
  *
- * Icon size is controlled by the SVG child (width/height attrs), not by this atom.
- * The atom only controls the button box + hover/focus/active states.
+ * Icon size is controlled by CSS tokens (--iconbutton-icon-sm/md), not by the Icon prop.
+ * The atom controls both the button box and the icon size — SSOT.
  */
 export function IconButton({
   size = 'md',

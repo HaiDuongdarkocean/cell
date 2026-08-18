@@ -204,8 +204,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--iconbutton-icon-xs);
-  height: var(--iconbutton-icon-xs);
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
 }
 
 .leadingIcon svg,

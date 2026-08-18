@@ -28,6 +28,19 @@
 .md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); }
 .lg { width: var(--space-12); height: var(--space-12); }
 
+/* Icon size — SSOT, controlled by button not by Icon prop */
+.iconBtn > svg,
+.iconBtn > * svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+}
+
+.xs > svg,
+.xs > * svg {
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
+}
+
 /* === Variants === */
 
 /* Solid — filled primary background (mirrors Button.primary) */

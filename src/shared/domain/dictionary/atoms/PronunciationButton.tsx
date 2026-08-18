@@ -63,7 +63,7 @@ export function PronunciationButton({
       {isLoading ? (
         <Spinner size="sm" />
       ) : (
-        <Icon name="volumeHigh" size={24} />
+        <Icon name="volumeHigh"  />
       )}
     </button>
   );

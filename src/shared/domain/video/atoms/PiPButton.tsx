@@ -38,7 +38,7 @@ export function PiPButton({
       className={[styles.pipBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >
-      <Icon name="pip" size={24} />
+      <Icon name="pip"  />
     </IconButton>
   );
 }

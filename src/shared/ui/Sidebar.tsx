@@ -55,7 +55,7 @@ export function Sidebar({
             size="xs"
             onClick={toggle}
           >
-            <Icon name="menu" size={24} />
+            <Icon name="menu"  />
           </IconButton>
         </div>
       )}

@@ -34,7 +34,7 @@ export function CaptionsButton({
       className={[styles.captionsBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >
-      <Icon name="captions" size={24} />
+      <Icon name="captions"  />
     </IconButton>
   );
 }

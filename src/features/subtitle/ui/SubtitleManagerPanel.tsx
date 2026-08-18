@@ -157,7 +157,7 @@ function ItemRow({
               onDownload(role, index);
             }}
           >
-            <Icon name="download" size={24} />
+            <Icon name="download"  />
           </IconButton>
         </span>
       )}
@@ -412,12 +412,12 @@ export function SubtitleManagerPanel({
             aria-label="Back to subtitles"
             data-cell-id="manager-back-to-subtitles"
           >
-            <Icon name="chevronLeft" size={24} />
+            <Icon name="chevronLeft"  />
           </button>
         )}
         {v === 'tracks' && (
           <span className={styles.headerIcon}>
-            <Icon name="subtitleManager" size={24} />
+            <Icon name="subtitleManager"  />
           </span>
         )}
         <span className={styles.title}>{title}</span>
@@ -463,7 +463,7 @@ export function SubtitleManagerPanel({
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
         >
-          <Icon name="x" size={24} />
+          <Icon name="x"  />
         </IconButton>
       </div>
 
@@ -492,7 +492,7 @@ export function SubtitleManagerPanel({
                       data-cell-id={`manager-import-${activeTab}`}
                       onClick={() => onImport(activeTab)}
                     >
-                      <Icon name="plus" size={24} />
+                      <Icon name="plus"  />
                     </IconButton>
                   )}
                   {onHideSection && (
@@ -504,7 +504,7 @@ export function SubtitleManagerPanel({
                       data-cell-id={`manager-hide-section-${activeTab}`}
                       onClick={() => onHideSection(activeTab)}
                     >
-                      <Icon name="eyeOff" size={24} />
+                      <Icon name="eyeOff"  />
                     </IconButton>
                   )}
                 </div>
