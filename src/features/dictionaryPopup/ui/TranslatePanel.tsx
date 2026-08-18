@@ -51,7 +51,7 @@ export function TranslatePanel({
         <div className={styles.cellTranslateError}>{error}</div>
         <EmptyState
           size="md"
-          icon={<Icon name="languages" size={24} />}
+          icon={<Icon name="languages"  />}
           title="No translation"
           action={
             <Button variant="outline" size="md" onClick={onTranslate}>
@@ -79,7 +79,7 @@ export function TranslatePanel({
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
           <span className={styles.cellDefCheckBox} aria-hidden="true">
-            {loading ? <Spinner size="md" /> : <Icon name="check" size={24} />}
+            {loading ? <Spinner size="md" /> : <Icon name="check"  />}
           </span>
         </div>
       </div>
@@ -90,7 +90,7 @@ export function TranslatePanel({
     <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
       <EmptyState
         size="md"
-        icon={<Icon name="languages" size={24} />}
+        icon={<Icon name="languages"  />}
         title="No translation"
         action={
           <Button variant="outline" size="md" loading={loading} onClick={onTranslate}>

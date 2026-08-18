@@ -1268,7 +1268,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   size="sm"
                   onClick={onQuickAdd}
                 >
-                  <Icon name="zap" size={24} />
+                  <Icon name="zap"  />
                 </IconButton>
               )}
               {onEditCard && (
@@ -1279,7 +1279,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   size="sm"
                   onClick={onEditCard}
                 >
-                  <Icon name="pencil" size={24} />
+                  <Icon name="pencil"  />
                 </IconButton>
               )}
               <div className={styles.toggleWrap}>
@@ -1295,7 +1295,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                       size="sm"
                       onClick={handleToggleSplitView}
                     >
-                      <Icon name="sidePanel" size={24} />
+                      <Icon name="sidePanel"  />
                     </IconButton>
                   )}
                   {onGenerateNative && (
@@ -1307,7 +1307,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                       onClick={onGenerateNative}
                       disabled={!generateNativeEnabled}
                     >
-                      <Icon name="languages" size={24} />
+                      <Icon name="languages"  />
                     </IconButton>
                   )}
                 </div>
@@ -1318,7 +1318,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   size="sm"
                   onClick={() => setToolsExpanded((v) => !v)}
                 >
-                  <Icon name="chevronLeft" size={24} />
+                  <Icon name="chevronLeft"  />
                 </IconButton>
               </div>
             </div>
@@ -1331,7 +1331,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   size="sm"
                   onClick={onUpdateCurrentCard}
                 >
-                  <Icon name="rotateCcw" size={24} />
+                  <Icon name="rotateCcw"  />
                 </IconButton>
               )}
               {onToggleManager && (
@@ -1342,7 +1342,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   size="sm"
                   onClick={onToggleManager}
                 >
-                  <Icon name="subtitleManager" size={24} />
+                  <Icon name="subtitleManager"  />
                 </IconButton>
               )}
               <IconButton variant="transparent"
@@ -1353,7 +1353,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 onClick={handleTogglePlayerMode}
                 active={playerMode}
               >
-                <Icon name={playerMode ? 'minimize' : 'maximize'} size={24} />
+                <Icon name={playerMode ? 'minimize' : 'maximize'}  />
               </IconButton>
             </div>
           </div>

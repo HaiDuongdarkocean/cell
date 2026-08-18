@@ -36,7 +36,7 @@ export function FullscreenButton({
       className={[styles.fullscreenBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >
-      <Icon name={fullscreen ? 'minimize' : 'maximize'} size={24} />
+      <Icon name={fullscreen ? 'minimize' : 'maximize'}  />
     </IconButton>
   );
 }

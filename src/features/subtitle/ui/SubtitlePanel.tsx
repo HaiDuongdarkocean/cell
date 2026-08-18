@@ -44,7 +44,7 @@ function SubtitlePanelImpl({
             size="sm"
             onClick={onClose}
           >
-            <Icon name="x" size={24} />
+            <Icon name="x"  />
           </IconButton>
         </div>
       )}

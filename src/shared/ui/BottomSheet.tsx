@@ -96,7 +96,7 @@ export function BottomSheet({
               onClick={() => onOpenChange?.(false)}
               className={centerTitle ? styles.closeButtonAbsolute : styles.closeIcon}
             >
-              <Icon name="x" size={24} />
+              <Icon name="x"  />
             </IconButton>
           </HStack>
         )}

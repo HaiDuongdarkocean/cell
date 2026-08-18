@@ -312,7 +312,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                         disabled={playing}
                         aria-label={`Phát giọng ${v.voiceName}`}
                       >
-                        <Icon name="play" size={24} />
+                        <Icon name="play"  />
                       </IconButton>
                       <div className={styles.voiceSelectionSlots}>
                         {[0, 1, 2].map((slot) => (
@@ -450,7 +450,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                       disabled={playing}
                       aria-label={`Phát giọng ${row.voiceName}`}
                     >
-                      <Icon name="play" size={24} />
+                      <Icon name="play"  />
                     </button>
                     <label className={styles.voiceCheckbox}>
                       <input

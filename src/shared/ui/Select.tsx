@@ -262,7 +262,7 @@ export function Select({
             >
               <span className={styles.optionLabel}>{opt.label}</span>
               {opt.value === value && (
-                <Icon name="check" size={24} className={styles.checkMark} />
+                <Icon name="check" className={styles.checkMark} />
               )}
             </div>
           ))}

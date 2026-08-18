@@ -121,7 +121,7 @@ export function VideoCard({
         >
           {/* Icon */}
           <Center className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-            <Icon name="play" size={24} />
+            <Icon name="play"  />
           </Center>
 
         {/* Body */}
@@ -152,7 +152,7 @@ export function VideoCard({
                       aria-expanded={qualityOpen}
                     >
                       {selectedVariant?.quality ?? 'Quality'}
-                      <Icon name="chevronDown" size={24} className={styles.chevron} />
+                      <Icon name="chevronDown" className={styles.chevron} />
                     </button>
 
                     {qualityOpen && (
@@ -210,7 +210,7 @@ export function VideoCard({
                 aria-label="Download"
                 data-cell-id="download-button"
               >
-                <Icon name="download" size={24} />
+                <Icon name="download"  />
               </IconButton>
             )}
           </div>
@@ -227,7 +227,7 @@ export function VideoCard({
             data-cell-id="video-url"
             title="Click to copy URL"
           >
-            <Icon name="copy" size={24} />
+            <Icon name="copy"  />
             <span className={styles.urlText}>{video.url}</span>
           </button>
           {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="copied-toast">Copied</span>}

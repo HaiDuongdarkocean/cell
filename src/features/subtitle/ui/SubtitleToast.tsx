@@ -45,7 +45,7 @@ function Toast({ item, onRemove }: { item: ToastItem; onRemove?: (id: string) =>
       aria-live="polite"
     >
       <span className={styles.icon} aria-hidden="true">
-        <Icon name={iconName} size={24} />
+        <Icon name={iconName}  />
       </span>
       <span className={styles.message}>{item.message}</span>
     </div>

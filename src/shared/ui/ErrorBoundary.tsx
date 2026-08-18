@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           </div>
           <div className={styles.action}>
             <Button type="button" variant="primary" size="sm" onClick={this.handleReload}>
-              <Icon name="rotateCcw" size={24} />
+              <Icon name="rotateCcw"  />
               Reload
             </Button>
           </div>

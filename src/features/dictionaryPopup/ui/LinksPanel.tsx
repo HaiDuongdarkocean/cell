@@ -14,7 +14,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
       {links.length === 0 ? (
         <EmptyState
           size="md"
-          icon={<Icon name="link" size={24} />}
+          icon={<Icon name="link"  />}
           title="No external links"
           action={
             <Button variant="outline" size="md" onClick={() => { /* open settings */ }}>
@@ -33,7 +33,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
             className={styles.cellLinksItem}
             data-cell-id={`dictionary-link-${link.id}`}
           >
-            <Icon name="link" size={24} />
+            <Icon name="link"  />
             <span>{link.name}</span>
           </a>
         ))

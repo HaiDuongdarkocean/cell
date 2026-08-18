@@ -258,7 +258,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             aria-label="Manage API keys"
             data-cell-id="search-manage-keys-toggle"
           >
-            <Icon name="wrench" size={24} />
+            <Icon name="wrench"  />
           </button>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
@@ -282,7 +282,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 aria-label="Clear search"
                 data-cell-id="search-clear"
               >
-                <Icon name="x" size={24} />
+                <Icon name="x"  />
               </button>
             )}
             <button
@@ -293,7 +293,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label="Search subtitles"
               data-cell-id="search-button"
             >
-              <Icon name="search" size={24} />
+              <Icon name="search"  />
             </button>
           </div>
         </div>
@@ -305,7 +305,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           aria-label="Advanced search options (season, episode)"
           data-cell-id="search-advanced-toggle"
         >
-          <Icon name="slidersHorizontal" size={24} />
+          <Icon name="slidersHorizontal"  />
         </button>
       </div>
 
@@ -343,7 +343,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
         <div className={styles.apiHint} data-cell-id="search-api-hint">
-          <Icon name="wrench" size={24} className={styles.apiHintIcon} />
+          <Icon name="wrench" className={styles.apiHintIcon} />
           <span className={styles.apiHintText}>Add an API key to start searching</span>
           <button
             type="button"
@@ -399,7 +399,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
         {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
           <div className={styles.hintState} data-cell-id="search-hint">
-            <Icon name="captions" size={24} className={styles.hintIcon} />
+            <Icon name="captions" className={styles.hintIcon} />
             <span className={styles.hintText}>Search for subtitles by movie or series title</span>
           </div>
         )}
