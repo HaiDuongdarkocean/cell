@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
-import { Spinner } from '@/shared/ui/Spinner';
 import { Tabs } from '@/shared/ui/Tabs';
 import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -214,18 +213,15 @@ function OffsetStepper({
     commitOffset('0');
   };
 
-  useEffect(() => {
-    if (state.saveState !== 'saved') return;
-    const timer = setTimeout(() => {
-      setState({ ...state, saveState: 'idle' });
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [state, setState]);
+  const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
 
   return (
     <div className={styles.latency}>
       <div className={styles.latencyHead}>
         <span className={styles.latencyLabel}>Latency</span>
+        <span className={styles.latencySave} role="status" data-cell-id={`manager-offset-save-${role}`}>
+          {saveLabel}
+        </span>
       </div>
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
@@ -271,15 +267,7 @@ function OffsetStepper({
           onClick={handleReset}
           className={styles.resetBtn}
         >
-          {state.saveState === 'saving' ? (
-            <Spinner size="sm" color="current" />
-          ) : state.saveState === 'saved' ? (
-            <span className={styles.resetSaved}>
-              <Icon name="check" />
-            </span>
-          ) : (
-            <Icon name="rotateCcw" />
-          )}
+          <Icon name="rotateCcw" />
         </IconButton>
       </div>
     </div>

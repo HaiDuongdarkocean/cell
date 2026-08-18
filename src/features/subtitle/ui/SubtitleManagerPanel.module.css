@@ -436,7 +436,8 @@
 
 .latencyHead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
@@ -445,6 +446,11 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+}
+
+.latencySave {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
 }
 
 .latencyRow {
@@ -558,50 +564,10 @@
   margin: 0;
 }
 
-/* ─── Reset button — 40px ghost, save state animations ─── */
+/* ─── Reset button — 40px ghost ─── */
 .resetBtn {
   flex: 0 0 auto;
   align-self: center;
-}
-
-/* Saved state — green checkmark draw + fade out */
-.resetSaved {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-success);
-  animation: saveCheckDraw var(--save-check-duration) var(--save-check-ease) forwards,
-             saveFade var(--save-fade-duration) var(--save-fade-ease) var(--save-check-duration) forwards;
-}
-
-.resetSaved svg {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
-  stroke-dasharray: 30;
-  stroke-dashoffset: 30;
-  animation: saveCheckStroke var(--save-check-duration) var(--save-check-ease) forwards;
-}
-
-@keyframes saveCheckStroke {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes saveCheckDraw {
-  0% { transform: scale(0.8); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@keyframes saveFade {
-  to { opacity: 0; transform: scale(0.9); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .resetSaved,
-  .resetSaved svg {
-    animation: none;
-    stroke-dashoffset: 0;
-  }
 }
 
 @media (min-width: 480px) {
