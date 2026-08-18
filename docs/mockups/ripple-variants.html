@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ripple Variants — Mockup</title>
+<style>
+:root {
+  --color-primary: #2563eb;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-background: #f1f1f1;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-text: #ebebeb;
+  --color-text-secondary: #94a3b8;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+  --color-background: #0f172a;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+body { padding: 24px 16px; }
+h1 { font-size: 18px; font-weight: 600; margin: 0 0 8px; }
+h2 { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.note { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 16px; line-height: 1.5; }
+.themeToggle {
+  position: fixed; top: 16px; right: 16px;
+  padding: 6px 12px;
+  background: var(--color-surface); color: var(--color-text);
+  border: 1px solid var(--color-surface-hover);
+  border-radius: 12px;
+  font-size: 12px; cursor: pointer; z-index: 10;
+}
+
+.footer {
+  display: flex;
+  gap: 0;
+  background: var(--color-surface);
+  box-shadow: 0 -4px 10px -9px rgb(0 0 0 / 22%);
+  overflow: visible;
+}
+.footerBtn {
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px 12px;
+  min-height: 56px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 175ms ease-out;
+}
+.footerBtn .icon { font-size: 22px; line-height: 1; }
+.footerBtn .label { font-size: 12px; }
+.footerBtn:hover { background: transparent; }
+
+/* === Variant A: Reduced diameter (1.2× min dimension) === */
+.variantA .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: rippleA 900ms ease-out;
+  pointer-events: none;
+  opacity: 0.18;
+}
+@keyframes rippleA {
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* === Variant B: Max radius cap (60% then fade) === */
+.variantB .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: rippleB 900ms ease-out;
+  pointer-events: none;
+  opacity: 0.18;
+}
+@keyframes rippleB {
+  60% { transform: scale(1); opacity: 0.18; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* === Variant C: Pulse + fade (small circle at click point) === */
+.variantC .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: rippleC 800ms ease-out;
+  pointer-events: none;
+  opacity: 0.2;
+}
+@keyframes rippleC {
+  0% { transform: scale(0); opacity: 0.2; }
+  40% { transform: scale(1); opacity: 0.15; }
+  100% { transform: scale(1.1); opacity: 0; }
+}
+
+.panel {
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.panelBody {
+  padding: 16px;
+  min-height: 80px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+</style>
+</head>
+<body>
+
+<button class="themeToggle" onclick="toggleTheme()">Toggle dark/light</button>
+
+<h1>Ripple Variants — Mockup</h1>
+<p class="note">Click vào bất kỳ button nào để thấy hiệu ứng. So sánh 3 phiên bản.</p>
+
+<!-- Variant A -->
+<h2>A — Giảm diameter (1.2× chiều nhỏ nhất)</h2>
+<p class="note">Ripple nhỏ, chỉ rung động trong vùng gần điểm click. Không tràn ra toàn button.</p>
+<div class="panel variantA">
+  <div class="panelBody">Body content</div>
+  <div class="footer">
+    <button class="footerBtn" onclick="createRippleA(event)"><span class="icon">⌕</span><span class="label">Search</span></button>
+    <button class="footerBtn" onclick="createRippleA(event)"><span class="icon">☷</span><span class="label">Customize</span></button>
+    <button class="footerBtn" onclick="createRippleA(event)"><span class="icon">⊘</span><span class="label">Hide</span></button>
+    <button class="footerBtn" onclick="createRippleA(event)"><span class="icon">↔</span><span class="label">Generate</span></button>
+  </div>
+</div>
+
+<!-- Variant B -->
+<h2>B — Max radius cap (lan tới 60% rồi tan)</h2>
+<p class="note">Sóng lan ra một đoạn rồi dừng, giữ nguyên độ trong rồi fade out. Giống viên gạch rơi — sóng lan rồi tan.</p>
+<div class="panel variantB">
+  <div class="panelBody">Body content</div>
+  <div class="footer">
+    <button class="footerBtn" onclick="createRippleB(event)"><span class="icon">⌕</span><span class="label">Search</span></button>
+    <button class="footerBtn" onclick="createRippleB(event)"><span class="icon">☷</span><span class="label">Customize</span></button>
+    <button class="footerBtn" onclick="createRippleB(event)"><span class="icon">⊘</span><span class="label">Hide</span></button>
+    <button class="footerBtn" onclick="createRippleB(event)"><span class="icon">↔</span><span class="label">Generate</span></button>
+  </div>
+</div>
+
+<!-- Variant C -->
+<h2>C — Pulse + fade (vòng tròn nhỏ tại điểm click)</h2>
+<p class="note">Không lan ra. Chỉ một vòng tròn nhỏ xuất hiện tại điểm click, pulse nhẹ rồi fade. Như giọt nước nhỏ.</p>
+<div class="panel variantC">
+  <div class="panelBody">Body content</div>
+  <div class="footer">
+    <button class="footerBtn" onclick="createRippleC(event)"><span class="icon">⌕</span><span class="label">Search</span></button>
+    <button class="footerBtn" onclick="createRippleC(event)"><span class="icon">☷</span><span class="label">Customize</span></button>
+    <button class="footerBtn" onclick="createRippleC(event)"><span class="icon">⊘</span><span class="label">Hide</span></button>
+    <button class="footerBtn" onclick="createRippleC(event)"><span class="icon">↔</span><span class="label">Generate</span></button>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+
+// Variant A: diameter = 1.2 × min(width, height)
+function createRippleA(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const minDim = Math.min(rect.width, rect.height);
+  const diameter = minDim * 1.2;
+  const radius = diameter / 2;
+  const x = e.clientX - rect.left - radius;
+  const y = e.clientY - rect.top - radius;
+  const span = document.createElement('span');
+  span.className = 'ripple';
+  span.style.width = span.style.height = diameter + 'px';
+  span.style.left = x + 'px';
+  span.style.top = y + 'px';
+  btn.appendChild(span);
+  span.addEventListener('animationend', () => span.remove(), { once: true });
+}
+
+// Variant B: diameter = min(width, height) × 1.5, but animation caps at 60% scale then fades
+function createRippleB(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const minDim = Math.min(rect.width, rect.height);
+  const diameter = minDim * 1.5;
+  const radius = diameter / 2;
+  const x = e.clientX - rect.left - radius;
+  const y = e.clientY - rect.top - radius;
+  const span = document.createElement('span');
+  span.className = 'ripple';
+  span.style.width = span.style.height = diameter + 'px';
+  span.style.left = x + 'px';
+  span.style.top = y + 'px';
+  btn.appendChild(span);
+  span.addEventListener('animationend', () => span.remove(), { once: true });
+}
+
+// Variant C: small fixed circle (40px) at click point, pulse + fade
+function createRippleC(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const diameter = 40;
+  const radius = diameter / 2;
+  const x = e.clientX - rect.left - radius;
+  const y = e.clientY - rect.top - radius;
+  const span = document.createElement('span');
+  span.className = 'ripple';
+  span.style.width = span.style.height = diameter + 'px';
+  span.style.left = x + 'px';
+  span.style.top = y + 'px';
+  btn.appendChild(span);
+  span.addEventListener('animationend', () => span.remove(), { once: true });
+}
+</script>
+</body>
+</html>

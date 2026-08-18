@@ -45,6 +45,7 @@ export function FooterBar({ slots, className }: FooterBarProps): React.JSX.Eleme
           orientation="vertical"
           active={slot.active}
           activeStyle="flat"
+          ripple
           disabled={slot.disabled}
           ref={slot.ref}
           onClick={slot.onClick}

@@ -219,6 +219,43 @@
     transition: none;
     animation: none;
   }
+  .ripple {
+    display: none;
+  }
+}
+
+/* === Ripple effect — water-like splash from pointer position === */
+.rippleHost {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Disable hover bg when ripple is enabled */
+.rippleHost:hover {
+  background: transparent;
+}
+
+.rippleHost.ghost:hover,
+.rippleHost.ghost:active {
+  background: transparent;
+  transform: none;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: ripple 900ms ease-out;
+  pointer-events: none;
+  opacity: 0.18;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
 }
 
 .label {
