@@ -148,7 +148,7 @@ function ItemRow({
       {onDownload && (
         <span className={styles.trackActions}>
           <IconButton
-            size="sm"
+            size="md"
             variant="ghost"
             aria-label={`Download ${item.name}`}
             data-cell-id={`manager-download-${role}-${index}`}
@@ -282,7 +282,7 @@ function OffsetStepper({
           </button>
         </div>
         <IconButton
-          size="sm"
+          size="md"
           variant="outline"
           aria-label="Reset latency"
           data-cell-id={`manager-offset-reset-${role}`}
@@ -600,7 +600,7 @@ export function SubtitleManagerPanel({
                 <div className={styles.sectionActions}>
                   {onImport && (
                     <IconButton
-                      size="sm"
+                      size="md"
                       variant="ghost"
                       aria-label={`Import ${activeLabel} subtitle`}
                       data-cell-id={`manager-import-${activeTab}`}
@@ -611,7 +611,7 @@ export function SubtitleManagerPanel({
                   )}
                   {onHideSection && (
                     <IconButton
-                      size="sm"
+                      size="md"
                       variant="ghost"
                       active={activeHidden}
                       aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
