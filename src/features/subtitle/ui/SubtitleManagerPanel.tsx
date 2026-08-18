@@ -400,6 +400,10 @@ export function SubtitleManagerPanel({
     const el = tracksBodyRef.current;
     if (!el) return;
 
+    // Reset state when entering tracks view
+    setScrolledDir(null);
+    lastScrollTopRef.current = 0;
+
     const onScroll = (): void => {
       const scrollTop = el.scrollTop;
       const delta = scrollTop - lastScrollTopRef.current;
