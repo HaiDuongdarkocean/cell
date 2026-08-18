@@ -152,7 +152,7 @@ export function VideoCard({
                       aria-expanded={qualityOpen}
                     >
                       {selectedVariant?.quality ?? 'Quality'}
-                      <Icon name="chevronDown" className={styles.chevron} />
+                      <Icon name="chevronDown" size={16} className={styles.chevron} />
                     </button>
 
                     {qualityOpen && (
