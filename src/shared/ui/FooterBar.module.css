@@ -21,25 +21,3 @@
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
-
-/* Only the icon animates on press — the button itself stays still. */
-.footer > button:active {
-  transform: none;
-}
-
-.footer > button:active .leadingIcon,
-.footer > button:active .trailingIcon {
-  transform: scale(0.88);
-}
-
-.footer > button .leadingIcon,
-.footer > button .trailingIcon {
-  transition: transform var(--duration-fast) ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .footer > button .leadingIcon,
-  .footer > button .trailingIcon {
-    transition: none;
-  }
-}
