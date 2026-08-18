@@ -15,9 +15,8 @@
   border-radius: var(--radius-none);
 }
 
-/* ZaloPay-style active: pale-blue fill + primary color, not just text color */
+/* Active: only icon + label change color, no background change */
 .footer > button.active,
 .footer > button.active:hover {
-  background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
