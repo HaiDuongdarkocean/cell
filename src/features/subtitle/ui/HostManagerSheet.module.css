@@ -1,0 +1,46 @@
+/* === HostManagerSheet — mobile bottom sheet for host-page subtitle manager ===
+   Mobile-first: fixed bottom sheet 75vh, slides up over host page content.
+   z-index uses max int (above all host-page content) — same convention as
+   SubtitlePanels.module.css panelLayer. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.4));
+  z-index: 2147483646;
+}
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 75vh;
+  max-height: 75vh;
+  background: var(--color-surface-popover, #1a1a1a);
+  border-radius: var(--radius-dialog, 16px) var(--radius-dialog, 16px) 0 0;
+  /* ponytail: no design-system shadow token matches an upward sheet shadow;
+     upgrade path — add `--shadow-sheet` to tokens.json if reused elsewhere. */
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+  z-index: 2147483647;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: slideUp 0.25s ease-out;
+}
+
+.handle {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-border-emphasized, #444);
+  margin: 8px auto;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
+}

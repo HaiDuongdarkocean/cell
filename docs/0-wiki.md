@@ -16,7 +16,8 @@ docs/           # Tài liệu dự án
 │   └── 079-subtitle-search.md                   # WHY: client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry
 ├── specs/
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
-│   └── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
+│   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
+│   └── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
@@ -50,7 +51,7 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 tasks/          # Active plan & task checklist (current sprint)
-├── plan.md                          # Implementation plan for current feature
+├── plan.md                          # Implementation plan for current feature — Plan: Manager Host Sheet Bridge
 └── todo.md                          # Ordered task checklist with acceptance criteria
 ```
 

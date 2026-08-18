@@ -1,49 +1,85 @@
-# Implementation Plan: Subtitle Manager — Video Overlay Positioning
+# Implementation Plan: Manager Host Sheet Bridge
 
 ## Overview
-Manager phủ toàn bộ video area (độ phủ = overlay subtitle), background xuyên thấu dark translucent (tham chiếu YouTube settings panel). Desktop: render trong iframe nếu đủ size, host page sheet nếu mobile. Trigger: nút trên overlay panel. Close: click outside / X. Animation: scale from button.
+Bridge protocol để render SubtitleManagerPanel trên host page khi user mở manager trong cross-origin iframe trên mobile. Child iframe gửi state, host page render sheet, actions gửi ngược qua postMessage.
 
 ## Architecture Decisions
-- **Reuse `findPlayerContainer()`** để lấy video rect — đã có algorithm tìm player shell
-- **Reuse body-level shadow host** (`#cell-manager-portal`) — escape stacking context, đã có
-- **Không reparent video** (khác PlayerMode) — manager overlay trên video, không di chuyển video
-- **Iframe bridge**: reuse `iframePlayerModeBridge` pattern — child iframe render manager nếu đủ size, host page sheet nếu không
-- **Translucent**: `backdrop-filter: blur(8px) + rgba(15,15,15,0.7)` — tham chiếu YouTube settings panel
+- **File split strategy**: Mỗi module là 1 file riêng → tối đa parallel subagent, 0 file conflict
+- **Types file first**: Tất cả types trong 1 file, mọi module import từ đó → wave 2 parallel
+- **Serializer tách riêng**: `ManagerState` (có callbacks) → `SerializedManagerState` (JSON-only) tách hàm thuần, dễ test
+- **Host sheet component tách riêng**: React component độc lập, không depend `SubtitlePanels.tsx`
+- **Action dispatcher pattern**: `MGR_ACTION` generic `{action, args}` → child-side map action→callback, dễ extend Phase 2
 
-## Task List
+## File Ownership Map (0 conflict guaranteed)
 
-### Phase 1: Geometry — position manager over video area
-- [ ] Task 1: Detect video player container rect + pass to manager
-- [ ] Task 2: CSS — manager full-cover video rect (desktop), translucent bg
+| File | Owner Task | Status |
+|------|-----------|--------|
+| `src/features/subtitle/logic/iframeManagerBridgeTypes.ts` | T1 | NEW |
+| `src/features/subtitle/logic/managerStateSerializer.ts` | T2 | NEW |
+| `src/features/subtitle/logic/iframeManagerBridgeChild.ts` | T3 | NEW |
+| `src/features/subtitle/logic/iframeManagerBridgeHost.ts` | T4 | NEW |
+| `src/features/subtitle/ui/HostManagerSheet.tsx` | T5 | NEW |
+| `src/features/subtitle/ui/HostManagerSheet.module.css` | T6 | NEW |
+| `src/features/subtitle/logic/iframeManagerBridgeTypes.test.ts` | T7 | NEW |
+| `src/features/subtitle/logic/managerStateSerializer.test.ts` | T8 | NEW |
+| `src/features/subtitle/logic/iframeManagerBridgeChild.test.ts` | T9 | NEW |
+| `src/features/subtitle/ui/HostManagerSheet.test.tsx` | T10 | NEW |
+| `src/features/subtitle/ui/SubtitlePanels.tsx` | T11 | EXISTING — sole editor |
+| `src/entrypoints/content/content-script.ts` | T12 | EXISTING — sole editor |
+| `src/features/subtitle/logic/iframePlayerModeBridge.ts` | T13 | EXISTING — sole editor (revert expand) |
+| `docs/2-architechture-system.md` | T14 | EXISTING — sole editor |
+| `docs/0-wiki.md` | T15 | EXISTING — sole editor |
 
-### Checkpoint: Geometry
-- [ ] Manager phủ đúng video area trên desktop
-- [ ] Background xuyên thấu thấy video
+## Dependency Graph + Waves
 
-### Phase 2: Responsive — mobile sheet + iframe
-- [ ] Task 3: Mobile sheet 75vh trên host page (bottom sheet, drag handle)
-- [ ] Task 4: Iframe size detection — render trong iframe vs host page
+```
+Wave 1 (4 parallel — no deps):
+  T1: types          T6: CSS
+  T13: revert expand  T14: arch doc (stub)
 
-### Checkpoint: Responsive
-- [ ] Mobile: bottom sheet 75vh
-- [ ] Iframe đủ size: manager trong iframe
-- [ ] Iframe nhỏ/mobile: manager host page sheet
+Wave 2 (5 parallel — depend on T1):
+  T2: serializer     T3: child bridge
+  T4: host bridge    T5: host sheet component
+  T15: wiki update
 
-### Phase 3: Interaction
-- [ ] Task 5: Click outside to close
-- [ ] Task 6: Scale-from-button animation
+Wave 3 (4 parallel — depend on wave 2):
+  T7: types test     T8: serializer test
+  T9: child bridge test  T10: host sheet test
 
-### Checkpoint: Complete
-- [ ] All acceptance criteria met
-- [ ] Ready for review
+Wave 4 (2 parallel — depend on wave 2+3):
+  T11: SubtitlePanels integration (needs T2+T3)
+  T12: contentScript install (needs T4+T5)
 
-## Risks and Mitigations
+Wave 5 (1 — final):
+  T16: build + verify all
+```
+
+Max parallel: **5** (wave 2). Total: **16 tasks**.
+
+## Checkpoints
+
+### Checkpoint A: After Wave 1+2 (types + modules)
+- [ ] `npm run build` pass (all new files compile)
+- [ ] Types export đúng, serializer round-trip OK
+- [ ] Bridge functions no-op when !isChildFrame
+
+### Checkpoint B: After Wave 3 (tests)
+- [ ] `npm run test:unit` pass
+- [ ] All new modules have co-located tests
+
+### Checkpoint C: After Wave 4 (integration)
+- [ ] `npm run build` pass
+- [ ] SubtitlePanels correctly skips portal when managerOpenOnHost
+- [ ] contentScript installs host bridge
+
+### Checkpoint D: After Wave 5 (verify)
+- [ ] animekai.be mobile: sheet trên host page, 25% top visible
+- [ ] animekai.be desktop: manager overlay video (unchanged)
+- [ ] Same-origin: manager render bình thường (unchanged)
+
+## Risks
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Video rect thay đổi khi resize/scroll | High | ResizeObserver + scroll listener update rect |
-| Iframe cross-origin không đo được rect | Med | Fallback host page sheet |
-| backdrop-filter không support trên một số browser | Low | Fallback rgba bg |
-| z-index conflict với video controls | Med | pointer-events:none trên overlay, auto trên panel |
-
-## Open Questions
-- None (spec confirmed via interview)
+| T11 (SubtitlePanels) là task lớn nhất | Med | AC rõ ràng, chia nhỏ trong task |
+| T5 (HostManagerSheet) cần reuse SubtitleManagerPanel props | Med | T5 import types từ T1, props match |
+| T13 revert expand có thể break build tạm thời | Low | T13 chạy wave 1, build lại ở checkpoint A |
