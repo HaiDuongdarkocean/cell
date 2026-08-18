@@ -1215,6 +1215,70 @@
       "category": ["css", "rendering"],
       "tags": ["height", "percentage", "resize", "hardcoded-px", "flex-layout", "split-view", "video-player"],
       "trigger": "Container height set via inline px + !important — element doesn't update when browser window resizes"
+    },
+    {
+      "type": "experience",
+      "id": "css-zero-value-use-token",
+      "title": "Giá trị 0 trong CSS phải dùng token (--space-0, --radius-none) thay vì hardcode 0",
+      "category": ["css", "ux"],
+      "tags": ["hardcoded-zero", "design-token", "css-module", "convention", "ssot", "zero", "gap", "padding", "border-radius"],
+      "trigger": "CSS file dùng giá trị 0 trực tiếp (gap: 0, padding: 0, border-radius: 0) thay vì token khi codebase có design-system tokens cho zero"
+    },
+    {
+      "type": "experience",
+      "id": "ux-footer-no-padding-height-equals-content",
+      "title": "Footer navigation height = content height — bỏ padding container, để button tự quyết định",
+      "category": ["ux", "css"],
+      "tags": ["footer", "navigation-bar", "padding", "mobile-first", "zalo-pay", "tab-bar", "compact", "content-height"],
+      "trigger": "Footer navigation bar có padding container thừa làm footer cao hơn cần thiết trên mobile"
+    },
+    {
+      "type": "experience",
+      "id": "ux-footer-button-no-border-radius-flat",
+      "title": "Footer navigation button không bo góc — flat (radius-none) ở mọi breakpoint",
+      "category": ["ux", "css"],
+      "tags": ["footer", "button", "border-radius", "flat", "zalo-pay", "navigation-bar", "edge-to-edge", "no-rounded"],
+      "trigger": "Footer navigation button có border-radius (pill/card) tạo cảm giác 'nút nổi' thay vì 'navigation slot'"
+    },
+    {
+      "type": "experience",
+      "id": "ux-footer-label-always-visible-no-hide",
+      "title": "Footer navigation label luôn hiển thị — không ẩn label ở màn hình nhỏ",
+      "category": ["ux", "css"],
+      "tags": ["footer", "label", "mobile-first", "accessibility", "navigation-bar", "always-visible", "no-hide", "media-query"],
+      "trigger": "Footer navigation button ẩn label ở màn hình nhỏ (max-width media query display:none) để 'tiết kiệm space'"
+    },
+    {
+      "type": "experience",
+      "id": "css-shadow-separator-soft-over-border-hard",
+      "title": "Separator giữa regions: shadow nhẹ thay border cứng — cảm giác mềm mại",
+      "category": ["css", "ux"],
+      "tags": ["shadow", "border", "separator", "soft", "divider", "footer", "region", "elevation", "visual-hierarchy"],
+      "trigger": "Separator giữa 2 region (footer/body, header/body) dùng border cứng — muốn cảm giác mềm mại hơn"
+    },
+    {
+      "type": "experience",
+      "id": "ux-button-label-regular-weight-default",
+      "title": "Button label dùng font-weight regular (400) mặc định — không in đậm trừ primary action",
+      "category": ["ux", "css"],
+      "tags": ["button", "label", "font-weight", "regular", "navigation", "footer", "typography", "hierarchy"],
+      "trigger": "Button label (navigation, footer, secondary) dùng font-weight medium/bold mặc định — tạo visual noise"
+    },
+    {
+      "type": "experience",
+      "id": "ux-mobile-padding-compact-hig-material3",
+      "title": "Mobile-first padding: áp dụng iOS HIG + Material 3 compact specs — không padding thừa",
+      "category": ["ux", "css"],
+      "tags": ["padding", "mobile-first", "ios-hig", "material-3", "compact", "navigation-bar", "tab-bar", "list-item", "touch-target", "responsive"],
+      "trigger": "Mobile UI panel có padding/dimension quá dày — không tuân theo iOS HIG hoặc Material 3 compact specs"
+    },
+    {
+      "type": "experience",
+      "id": "ux-button-variant-ghost-for-navigation-footer",
+      "title": "Navigation/footer button dùng ghost variant (transparent, no border) — không outline",
+      "category": ["ux", "css"],
+      "tags": ["button", "ghost", "outline", "navigation", "footer", "zalo-pay", "transparent", "no-border", "variant"],
+      "trigger": "Navigation/footer button dùng outline variant (border) tạo cảm giác 'nút action' thay vì 'navigation slot'"
     }
   ]
 }

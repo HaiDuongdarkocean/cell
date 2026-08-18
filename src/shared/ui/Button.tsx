@@ -2,8 +2,9 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
 type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,6 +12,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   /** Size. Default: md. */
   size?: ButtonSize;
+  /** Layout direction: horizontal (icon+label inline) or vertical (icon top, label bottom). Default: horizontal. */
+  orientation?: ButtonOrientation;
+  /** Persistent active/toggle state — pale-blue subtle bg + primary color. */
+  active?: boolean;
   /** Show loading spinner and disable interactions. */
   loading?: boolean;
   /** Stretch to fill the available width. */
@@ -35,6 +40,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
   size = 'md',
+  orientation = 'horizontal',
+  active = false,
   loading = false,
   fullWidth = false,
   elevation = 'none',
@@ -49,6 +56,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     styles.button,
     styles[variant],
     styles[size],
+    orientation === 'vertical' ? styles.vertical : '',
+    active ? styles.active : '',
     loading ? styles.loading : '',
     fullWidth ? styles.fullWidth : '',
     elevation !== 'none' ? styles[`elevation_${elevation}`] : '',

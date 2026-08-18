@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StreamFlix — Watch Solo Leveling Ep 1</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; width: 100%; min-height: 100%; }
+    </style>
+    <script>
+      // Minimal chrome.storage mock so content script can run outside extension context.
+      if (!window.chrome) window.chrome = {};
+      if (!window.chrome.runtime) {
+        window.chrome.runtime = {
+          id: 'mock-streaming-page',
+          getURL: (p) => `chrome-extension://mock/${p}`,
+          sendMessage: () => Promise.resolve(),
+          onMessage: { addListener: () => {}, removeListener: () => {} },
+        };
+      }
+      if (!window.chrome.storage) {
+        const makeArea = () => ({
+          get: () => Promise.resolve({}),
+          set: () => Promise.resolve(),
+          remove: () => Promise.resolve(),
+        });
+        window.chrome.storage = {
+          local: makeArea(),
+          session: makeArea(),
+          onChanged: { addListener: () => {}, removeListener: () => {} },
+        };
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

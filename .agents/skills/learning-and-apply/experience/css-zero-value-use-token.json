@@ -1,0 +1,26 @@
+{
+  "id": "css-zero-value-use-token",
+  "title": "Giá trị 0 trong CSS phải dùng token (--space-0, --radius-none) thay vì hardcode 0",
+  "category": ["css", "ux"],
+  "tags": ["hardcoded-zero", "design-token", "css-module", "convention", "ssot", "zero", "gap", "padding", "border-radius"],
+  "trigger": "CSS file dùng giá trị 0 trực tiếp (gap: 0, padding: 0, border-radius: 0) thay vì token khi codebase có design-system tokens cho zero (--space-0, --radius-none)",
+  "principle": "Khi codebase có design-system tokens, mọi giá trị trong CSS — kể cả 0 — phải dùng token. Hardcode `0` là convention violation vì: (1) phá SSOT — nếu zero semantic đổi (vd: --space-0 từ 0 → 0.5px cho hairline), phải sửa mọi nơi; (2) review audit bắt `gap: 0` cùng loại với `padding: 16px` hardcoded; (3) token tự document intent — `var(--space-0)` nói 'không spacing' rõ hơn số `0`. Token cho zero: --space-0 (spacing 0), --radius-none (radius 0). Dùng calc() cho negative: calc(-1 * var(--space-0-5)).",
+  "cases": [
+    {
+      "context": "Footer container cần gap: 0 giữa các button (edge-to-edge ZaloPay pattern)",
+      "bad": ".footer { gap: 0; padding: 0; }\n.footer > button { border-radius: 0; }",
+      "good": ".footer { gap: var(--space-0); padding: var(--space-0); }\n.footer > button { border-radius: var(--radius-none); }"
+    },
+    {
+      "context": "Mobile media query cần bỏ gap khi icon-only",
+      "bad": "@media (max-width: 359px) {\n  .vertical { gap: 0; }\n}",
+      "good": "@media (max-width: 359px) {\n  .vertical { gap: var(--space-0); }\n}"
+    }
+  ],
+  "applyFor": [
+    "CSS Modules trong project có design-system tokens cho zero (--space-0, --radius-none)",
+    "Audit convention compliance — grep 'gap: 0', 'padding: 0', 'border-radius: 0'",
+    "Refactor hardcoded zero → tokens",
+    "New component CSS — luôn dùng token từ đầu, kể cả zero"
+  ]
+}

@@ -1,0 +1,319 @@
+1
+00:00:19,440 --> 00:00:22,320
+- I just got here, and I think
+I'm loosing signal already.
+
+2
+00:00:22,320 --> 00:00:25,312
+Hello? Can you hear me now?
+
+3
+00:00:25,312 --> 00:00:28,461
+(wind buffeting)
+
+4
+00:00:28,461 --> 00:00:33,461
+Sorry, sorry, I'll call you later.
+
+5
+00:00:33,561 --> 00:00:35,871
+Yeah, yeah, sorry.
+
+6
+00:00:35,871 --> 00:00:40,871
+(wind buffeting)
+(phone clacking)
+
+7
+00:00:41,930 --> 00:00:46,930
+(lock clicking)
+(door creaking)
+
+8
+00:00:51,188 --> 00:00:54,579
+(footsteps echoing)
+
+9
+00:00:54,579 --> 00:00:57,412
+(fabric rustling)
+
+10
+00:01:11,766 --> 00:01:16,766
+(Adele inhaling)
+(soft piano music)
+
+11
+00:01:20,982 --> 00:01:25,982
+♪ Hello, it's me ♪
+
+12
+00:01:26,423 --> 00:01:30,616
+♪ I was wondering if
+after all these years ♪
+
+13
+00:01:30,616 --> 00:01:32,543
+♪ You'd like to meet ♪
+
+14
+00:01:32,543 --> 00:01:37,543
+♪ To go over everything ♪
+
+15
+00:01:38,179 --> 00:01:41,878
+♪ They say that time's
+supposed to heal ya ♪
+
+16
+00:01:41,878 --> 00:01:45,108
+♪ But I ain't done much healing ♪
+
+17
+00:01:45,108 --> 00:01:50,108
+♪ Hello, can you hear me ♪
+
+18
+00:01:50,671 --> 00:01:55,671
+♪ I'm in California dreaming
+about who we used to be ♪
+
+19
+00:01:56,613 --> 00:02:01,613
+♪ When we were younger and free ♪
+
+20
+00:02:02,839 --> 00:02:05,420
+♪ I've forgotten how it felt ♪
+
+21
+00:02:05,420 --> 00:02:08,612
+♪ Before the world fell at our feet ♪
+
+22
+00:02:08,612 --> 00:02:13,612
+♪ There's such a difference between us ♪
+
+23
+00:02:15,241 --> 00:02:20,241
+♪ And a million miles ♪
+
+24
+00:02:21,852 --> 00:02:26,852
+♪ Hello from the other side ♪
+
+25
+00:02:27,574 --> 00:02:32,574
+♪ I must've called a thousand times ♪
+
+26
+00:02:33,178 --> 00:02:38,178
+♪ To tell you I'm sorry for
+everything that I've done ♪
+
+27
+00:02:38,851 --> 00:02:43,851
+♪ But when I call, you
+never seem to be home ♪
+
+28
+00:02:46,136 --> 00:02:51,136
+♪ Hello from the outside ♪
+
+29
+00:02:51,708 --> 00:02:56,708
+♪ At least I can say that I've tried ♪
+
+30
+00:02:57,347 --> 00:03:02,347
+♪ To tell you I'm sorry
+for breaking your heart ♪
+
+31
+00:03:03,048 --> 00:03:04,922
+♪ But it don't matter ♪
+
+32
+00:03:04,922 --> 00:03:09,922
+♪ It clearly doesn't
+tear you apart anymore ♪
+
+33
+00:03:16,457 --> 00:03:21,457
+♪ Hello, how are you ♪
+
+34
+00:03:21,783 --> 00:03:26,783
+♪ It's so typical of me to
+talk about myself, I'm sorry ♪
+
+35
+00:03:28,122 --> 00:03:33,122
+♪ I hope that you're well ♪
+
+36
+00:03:34,016 --> 00:03:37,489
+♪ Did you ever make it out of that town ♪
+
+37
+00:03:37,489 --> 00:03:40,322
+♪ Where nothing ever happened ♪
+
+38
+00:03:40,322 --> 00:03:45,322
+♪ It's no secret that the both of us ♪
+
+39
+00:03:46,754 --> 00:03:51,754
+♪ Are running out of time ♪
+
+40
+00:03:52,645 --> 00:03:56,218
+♪ So hello from the other side ♪
+
+41
+00:03:56,218 --> 00:03:58,678
+♪ Other side ♪
+
+42
+00:03:58,678 --> 00:04:02,247
+♪ I must've called a thousand times ♪
+
+43
+00:04:02,247 --> 00:04:04,159
+♪ Thousand times ♪
+
+44
+00:04:04,159 --> 00:04:09,159
+♪ To tell you I'm sorry for
+everything that I've done ♪
+
+45
+00:04:09,938 --> 00:04:14,938
+♪ But when I call, you
+never seem to be home ♪
+
+46
+00:04:17,478 --> 00:04:20,517
+♪ Hello from the outside ♪
+
+47
+00:04:20,517 --> 00:04:23,078
+♪ Outside ♪
+
+48
+00:04:23,078 --> 00:04:26,518
+♪ At least I can say that I've tried ♪
+
+49
+00:04:26,518 --> 00:04:28,518
+♪ I've tried ♪
+
+50
+00:04:28,518 --> 00:04:33,518
+♪ To tell you I'm sorry
+for breaking your heart ♪
+
+51
+00:04:34,358 --> 00:04:36,057
+♪ But it don't matter ♪
+
+52
+00:04:36,057 --> 00:04:41,057
+♪ It clearly doesn't
+tear you apart anymore ♪
+
+53
+00:04:41,896 --> 00:04:44,395
+♪ Highs, highs, highs, highs ♪
+
+54
+00:04:44,395 --> 00:04:48,056
+♪ Ooh, anymore ♪
+♪ Lows, lows, lows, lows ♪
+
+55
+00:04:48,056 --> 00:04:50,574
+♪ Highs, highs, highs, highs ♪
+
+56
+00:04:50,574 --> 00:04:54,256
+♪ Ooh, anymore ♪
+♪ Lows, lows, lows, lows ♪
+
+57
+00:04:54,256 --> 00:04:56,714
+♪ Highs, highs, highs, highs ♪
+
+58
+00:04:56,714 --> 00:05:00,102
+♪ Ooh, anymore ♪
+♪ Lows, lows, lows, lows ♪
+
+59
+00:05:00,102 --> 00:05:02,639
+♪ Highs, highs, highs, highs ♪
+
+60
+00:05:02,639 --> 00:05:06,166
+♪ Anymore ♪
+♪ Lows, lows, lows, lows ♪
+
+61
+00:05:06,166 --> 00:05:09,038
+♪ Hello from the other side ♪
+
+62
+00:05:09,038 --> 00:05:11,749
+♪ Other side ♪
+
+63
+00:05:11,749 --> 00:05:15,063
+♪ I must've called a thousand times ♪
+
+64
+00:05:15,063 --> 00:05:17,237
+♪ Thousand times ♪
+
+65
+00:05:17,237 --> 00:05:22,237
+♪ To tell you I'm sorry for
+everything that I've done ♪
+
+66
+00:05:22,982 --> 00:05:27,982
+♪ But when I call, you
+never seem to be home ♪
+
+67
+00:05:30,349 --> 00:05:33,616
+♪ Hello from the outside ♪
+
+68
+00:05:33,616 --> 00:05:36,082
+♪ Outside ♪
+
+69
+00:05:36,082 --> 00:05:39,806
+♪ At least I can say that I've tried ♪
+
+70
+00:05:39,806 --> 00:05:41,521
+♪ I've tried ♪
+
+71
+00:05:41,521 --> 00:05:46,521
+♪ To tell you I'm sorry
+for breaking your heart ♪
+
+72
+00:05:47,330 --> 00:05:48,964
+♪ But it don't matter ♪
+
+73
+00:05:48,964 --> 00:05:53,964
+♪ It clearly doesn't
+tear you apart anymore ♪
+
+74
+00:05:56,503 --> 00:05:59,170
+(somber music)

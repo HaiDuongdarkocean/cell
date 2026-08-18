@@ -24,7 +24,11 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "check-icons": "node scripts/check-icons.js"
+    "check-icons": "node scripts/check-icons.js",
+    "mock": "node scripts/serve-mock-pages.mjs",
+    "mock:stream": "node scripts/serve-mock-pages.mjs --stream",
+    "mock:youtube": "node scripts/serve-mock-pages.mjs --youtube",
+    "mock:build": "node scripts/serve-mock-pages.mjs --build-only"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.7.0",

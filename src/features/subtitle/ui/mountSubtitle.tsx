@@ -13,6 +13,7 @@ import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
 import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
 import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
+import footerBarCss from '@/shared/ui/FooterBar.module.css?inline';
 import inputCss from '@/shared/ui/Input.module.css?inline';
 import selectCss from '@/shared/ui/Select.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
@@ -173,6 +174,23 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       currentTimeMs={currentTimeMs}
       offsetMs={offsetMs}
       onSeek={onSeek}
+      managerShadowCss={[
+        subtitleManagerCss,
+        subtitleSearchCss,
+        apiKeyManagerCss,
+        subtitleOffsetCss,
+        buttonCss,
+        footerBarCss,
+        inputCss,
+        selectCss,
+        skeletonCss,
+        tabsCss,
+        subtitlePanelsCss,
+        iconCss,
+        iconButtonCss,
+        buildTokenSpanCssForShadow(),
+        ...appearanceShadowCss,
+      ]}
     />
   );
 

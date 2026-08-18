@@ -98,7 +98,9 @@ export function ShowcaseGallery(): ReactElement | null {
     const fromPath = window.location.pathname.match(/\/showcase\/(.+)$/);
     const target = fromPath ? decodeURIComponent(fromPath[1]) : fromQuery;
     if (!target) return;
-    const match = allShowcases.find((s) => s.meta.title === target);
+    const match = allShowcases.find(
+      (s) => s.meta.title.toLowerCase() === target.toLowerCase(),
+    );
     if (match) setFullscreenShowcase(match);
   }, [allShowcases, fullscreenShowcase]);
 
@@ -416,6 +418,14 @@ export function ShowcaseGallery(): ReactElement | null {
               </div>
               <button
                 type="button"
+                className={styles.iconBtn}
+                onClick={toggleMode}
+                aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+              >
+                <Icon name={mode === 'light' ? 'moon' : 'sun'} size={18} />
+              </button>
+              <button
+                type="button"
                 className={styles.fullscreenClose}
                 onClick={closeFullscreen}
                 aria-label="Close fullscreen"
@@ -425,7 +435,7 @@ export function ShowcaseGallery(): ReactElement | null {
             </div>
           </div>
           <div className={styles.fullscreenBody}>
-            <ViewportFrame key={String(viewportWidth)} width={viewportWidth} height={VIEWPORT_PRESETS.find((p) => p.value === viewportWidth)?.height}>
+            <ViewportFrame key={String(viewportWidth)} width={viewportWidth} height={VIEWPORT_PRESETS.find((p) => p.value === viewportWidth)?.height} theme={mode}>
               <MockProviders>
                 <fullscreenShowcase.Component />
               </MockProviders>
@@ -456,7 +466,7 @@ export function ShowcaseGallery(): ReactElement | null {
       {pageViewport === 'full' ? (
         <div key="full" className={styles.fullWrapper}>{layoutContent}</div>
       ) : (
-        <ViewportFrame key={String(pageViewport)} width={pageViewport} height={VIEWPORT_PRESETS.find((p) => p.value === pageViewport)?.height}>
+        <ViewportFrame key={String(pageViewport)} width={pageViewport} height={VIEWPORT_PRESETS.find((p) => p.value === pageViewport)?.height} theme={mode}>
           {layoutContent}
         </ViewportFrame>
       )}

@@ -2,6 +2,7 @@ import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } fro
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
+import { useCuesStore } from '@/stores/cuesStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, USE_LEGACY_SUBTITLE } from '@/shared/config/config';
@@ -1510,6 +1511,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         offsetController?.loadCues(false);
         // updateCues([], []);
         latestTargetCues = [];
+        // Reset inline load status so stale messages from the previous video
+        // don't persist into the new one (auto-load will set 'loading' or 'none').
+        useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
+        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
       }
       lastAutoLoadUrl = currentUrl;
       if (!payload?.target && !payload?.native) {
@@ -1525,7 +1530,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         clearTranslatedNativeState();
         activeNativeSource = 'auto';
         updateGenerateNativeEnabled();
-        showToast('No subtitles detected', container, { variant: 'warning' });
+        useCuesStore.getState().setLoadStatus('target', { state: 'none' });
+        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
       }
       // ADR-021: clear translate prefill on SPA nav (URL changed)
       if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
@@ -1566,7 +1572,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           // Send cues to Side Panel
           broadcastCues(bilingualCues);
         },
-        onToast: (message, variant) => showToast(message, container, { variant }),
+        onLoadStatus: (role, status) => useCuesStore.getState().setLoadStatus(role, status),
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
         onStartTranslatePrefill: (targetCues: SrtCue[]) => {
           // ADR-021: start background prefill to translate target→native.
@@ -1577,6 +1583,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           // If a manual generate-native is already active, don't overwrite it with
           // auto-translate. Manual generate is the user's explicit choice.
           if (translatedNativeSlot && activeNativeSource === 'translated') return;
+          // Inline load status: native language label for the translating state.
+          const nativeLabel = isoCodeToLabel(tl);
+          const label = nativeLabel ? nativeLabel.charAt(0).toUpperCase() + nativeLabel.slice(1) : tl;
           // Clear any previous prefill (SPA nav or re-trigger)
           translatePrefill?.clear();
           translatePrefill = new BackgroundPrefillController({
@@ -1590,11 +1599,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
               latestTargetCues = targetCues;
               // updateCues(targetCues, translatedCues);
               broadcastCues(bilingualCues);
+              useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: translatePrefill?.cacheSize ?? 0, total: targetCues.length } });
             },
             onError: (msg: string) => {
-              showToast(msg, container, { variant: 'error' });
+              console.error('[onStartTranslatePrefill] translation error', msg);
+              useCuesStore.getState().setLoadStatus('native', { state: 'error', languageLabel: label, source: 'translated', errorType: 'unknown' });
+            },
+            onComplete: () => {
+              useCuesStore.getState().setLoadStatus('native', { state: 'loaded', languageLabel: label, source: 'translated' });
             },
           });
+          useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: 0, total: targetCues.length } });
           translatePrefill.start(targetCues, sl, tl);
         },
         onSubtitleMatches: (targetM, nativeM) => {
@@ -1709,8 +1724,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     activeImportNativeIndex = existingNativeCount;
     // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
     // Mark active source as imported for roles that got new (non-duplicate) files.
-    if (newTarget.length > 0) activeTargetSource = 'imported';
-    if (newNative.length > 0) activeNativeSource = 'imported';
+    if (newTarget.length > 0) { activeTargetSource = 'imported'; useCuesStore.getState().setLoadStatus('target', { state: 'loaded', source: 'imported' }); }
+    if (newNative.length > 0) { activeNativeSource = 'imported'; useCuesStore.getState().setLoadStatus('native', { state: 'loaded', source: 'imported' }); }
     // Import resets the translated native slot (new target/native sources).
     clearTranslatedNativeState();
     refreshPanel('target');
@@ -1782,6 +1797,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'imported' });
     debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
@@ -1881,6 +1897,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
       showOverlay();
       syncSidePanelFromBlock();
+      useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: formatSubtitleName('auto', sub.language, index, undefined, sub.displayName), source: 'auto' });
       showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1974,6 +1991,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    const searchLabel = (() => { const l = isoCodeToLabel(result.isoLanguage); return l ? l.charAt(0).toUpperCase() + l.slice(1) : result.isoLanguage; })();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: searchLabel, source: 'search' });
     debouncedToast(`Loaded ${result.name}`, container, { variant: 'success' });
   }
 
@@ -2007,6 +2026,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'search' });
     debouncedToast(`Switched to ${item.name}`, container, { variant: 'success' });
   }
 

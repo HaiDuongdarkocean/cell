@@ -126,6 +126,8 @@ export default defineConfig(({ mode }) => ({
         sidepanel: resolve(__dirname, 'src/entrypoints/sidepanel/index.html'),
         cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
         designSystemShowcase: resolve(__dirname, 'src/entrypoints/design-system-showcase/index.html'),
+        mockStreamingPage: resolve(__dirname, 'src/entrypoints/mock-streaming-page/index.html'),
+        mockYouTube: resolve(__dirname, 'src/entrypoints/mock-youtube/index.html'),
       },
       output: {
         manualChunks(id) {
