@@ -55,9 +55,8 @@ export function SubtitleManagerFooter({
     ...(onGenerateNative
       ? [{
           key: 'generate',
-          icon: <Icon name="generateNative" size={20} />,
+          icon: <Icon name="languages" size={20} />,
           label: 'Generate',
-          variant: 'primarySubtle' as const,
           disabled: generateNativeDisabled,
           onClick: onGenerateNative,
           buttonProps: { title: 'Generate native', 'data-cell-id': 'manager-generate-native' },
