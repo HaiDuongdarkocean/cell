@@ -253,7 +253,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {hasSearchKeys && (
           <IconButton
             variant="ghost"
-            size="sm"
+            size="md"
             active={manageKeysOpen}
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
@@ -279,7 +279,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             {query && (
               <IconButton
                 variant="ghost"
-                size="sm"
+                size="md"
                 onClick={handleClearQuery}
                 aria-label="Clear search"
                 data-cell-id="search-clear"
@@ -289,7 +289,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             )}
             <IconButton
               variant="ghost"
-              size="sm"
+              size="md"
               onClick={handleSearchClick}
               disabled={formDisabled || !query.trim() || loading}
               aria-label="Search subtitles"
@@ -301,7 +301,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         </div>
         <IconButton
           variant="ghost"
-          size="sm"
+          size="md"
           active={advancedOpen}
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
