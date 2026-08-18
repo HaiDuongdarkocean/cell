@@ -23,10 +23,10 @@
 }
 
 /* === Sizes — DS spec §2 Icon Button: default 40×40 (md) === */
-.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); }
-.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); }
-.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); }
-.lg { width: var(--space-12); height: var(--space-12); }
+.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); min-width: var(--iconbutton-size-xs); min-height: var(--iconbutton-size-xs); }
+.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); min-width: var(--iconbutton-size-sm); min-height: var(--iconbutton-size-sm); }
+.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); min-width: var(--iconbutton-size-md); min-height: var(--iconbutton-size-md); }
+.lg { width: var(--space-12); height: var(--space-12); min-width: var(--space-12); min-height: var(--space-12); }
 
 /* Icon size — SSOT, controlled by button not by Icon prop */
 .iconBtn > svg,
