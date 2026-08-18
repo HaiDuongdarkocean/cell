@@ -178,6 +178,9 @@ function OffsetStepper({
   setState: (s: SectionState) => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
 }): React.JSX.Element {
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const AUTOSAVE_DELAY = 800;
+
   const commitOffset = useCallback(
     (offsetStr: string) => {
       const seconds = parseFloat(offsetStr);
@@ -192,8 +195,19 @@ function OffsetStepper({
     [role, state.lastValid, setState, onOffsetChange],
   );
 
+  const scheduleSave = useCallback(
+    (offsetStr: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      setState({ offset: offsetStr, saveState: 'saving', lastValid: state.lastValid });
+      debounceRef.current = setTimeout(() => commitOffset(offsetStr), AUTOSAVE_DELAY);
+    },
+    [state.lastValid, setState, commitOffset],
+  );
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    setState({ offset: e.target.value, saveState: 'saving', lastValid: state.lastValid });
+    scheduleSave(e.target.value);
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>): void => {
@@ -201,6 +215,7 @@ function OffsetStepper({
   };
 
   const handleBlur = (): void => {
+    if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
     commitOffset(state.offset);
   };
 
@@ -210,10 +225,11 @@ function OffsetStepper({
 
   const bump = (delta: number): void => {
     const next = roundSeconds(state.lastValid + delta);
-    commitOffset(formatSigned(next));
+    scheduleSave(formatSigned(next));
   };
 
   const handleReset = (): void => {
+    if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
     commitOffset('0');
   };
 
