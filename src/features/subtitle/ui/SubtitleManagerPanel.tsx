@@ -406,20 +406,30 @@ export function SubtitleManagerPanel({
 
     const onScroll = (): void => {
       const scrollTop = el.scrollTop;
-      const delta = scrollTop - lastScrollTopRef.current;
       const now = performance.now();
-      if (now < cooldownUntilRef.current) {
-        // During cooldown: sync position without changing direction
-        lastScrollTopRef.current = scrollTop;
-        return;
-      }
-      // At top: always show header/footer (scrolledDir = up)
+
+      // At top: always show header/footer — check BEFORE cooldown
+      // because hide→expand→clamp→0 fires a scroll event that cooldown would swallow
       if (scrollTop <= 0) {
         setScrolledDir('up');
+        lastScrollTopRef.current = 0;
+        cooldownUntilRef.current = 0;
+        return;
+      }
+
+      const delta = scrollTop - lastScrollTopRef.current;
+      if (now < cooldownUntilRef.current) {
         lastScrollTopRef.current = scrollTop;
         return;
       }
-      if (delta > 1) {
+
+      // Only hide if content is tall enough that hiding header/footer
+      // still leaves scroll room. Otherwise hide→expand→clamp→stuck.
+      // ponytail: ~100px = header(50) + footer(45) approx
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      const canHideSafely = maxScroll > 100;
+
+      if (delta > 1 && canHideSafely) {
         setScrolledDir('down');
         cooldownUntilRef.current = now + 300;
       } else if (delta < -1) {
