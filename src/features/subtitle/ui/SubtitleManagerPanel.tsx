@@ -439,8 +439,38 @@ export function SubtitleManagerPanel({
       lastScrollTopRef.current = scrollTop;
     };
 
+    // Touch swipe: when content doesn't scroll (maxScroll≈0) but header/footer
+    // are hidden, user can still swipe up to show them again.
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent): void => {
+      touchStartY = e.touches[0].clientY;
+    };
+    const onTouchEnd = (e: TouchEvent): void => {
+      const deltaY = e.changedTouches[0].clientY - touchStartY;
+      const now = performance.now();
+      if (now < cooldownUntilRef.current) return;
+      if (deltaY < -20) {
+        // Swipe up → show
+        setScrolledDir('up');
+        cooldownUntilRef.current = now + 300;
+      } else if (deltaY > 20) {
+        // Swipe down → hide (only if safe)
+        const maxScroll = el.scrollHeight - el.clientHeight;
+        if (maxScroll > 100) {
+          setScrolledDir('down');
+          cooldownUntilRef.current = now + 300;
+        }
+      }
+    };
+
     el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
   }, [view]);
   const backBtnRef = useRef<HTMLButtonElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
