@@ -196,9 +196,10 @@ function OffsetStepper({
   );
 
   const scheduleSave = useCallback(
-    (offsetStr: string) => {
+    (offsetStr: string, newLastValid?: number) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      setState({ offset: offsetStr, saveState: 'saving', lastValid: state.lastValid });
+      const valid = newLastValid ?? state.lastValid;
+      setState({ offset: offsetStr, saveState: 'saving', lastValid: valid });
       debounceRef.current = setTimeout(() => commitOffset(offsetStr), AUTOSAVE_DELAY);
     },
     [state.lastValid, setState, commitOffset],
@@ -225,7 +226,7 @@ function OffsetStepper({
 
   const bump = (delta: number): void => {
     const next = roundSeconds(state.lastValid + delta);
-    scheduleSave(formatSigned(next));
+    scheduleSave(formatSigned(next), next);
   };
 
   const handleReset = (): void => {

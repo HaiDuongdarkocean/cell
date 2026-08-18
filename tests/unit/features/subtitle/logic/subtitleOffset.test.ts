@@ -38,9 +38,9 @@ describe('subtitleOffset — pure functions (V2 — no lazy/auto-commit)', () =>
       expect(parseOffsetInput('')).toBeNull();
     });
 
-    it('clamps out-of-range to null (±60s)', () => {
-      expect(parseOffsetInput('61')).toBeNull();
-      expect(parseOffsetInput('-61')).toBeNull();
+    it('accepts any range (no ±60s limit)', () => {
+      expect(parseOffsetInput('61')).toBe(61000);
+      expect(parseOffsetInput('-61')).toBe(-61000);
       expect(parseOffsetInput('60')).toBe(60000);
       expect(parseOffsetInput('-60')).toBe(-60000);
     });
@@ -61,14 +61,14 @@ describe('subtitleOffset — pure functions (V2 — no lazy/auto-commit)', () =>
       expect(clampOffsetMs(-60000)).toBe(-60000);
     });
 
-    it('clamps above max to max', () => {
-      expect(clampOffsetMs(61000)).toBe(60000);
-      expect(clampOffsetMs(999999)).toBe(60000);
+    it('passes through any value (no clamping)', () => {
+      expect(clampOffsetMs(61000)).toBe(61000);
+      expect(clampOffsetMs(999999)).toBe(999999);
     });
 
-    it('clamps below min to min', () => {
-      expect(clampOffsetMs(-61000)).toBe(-60000);
-      expect(clampOffsetMs(-999999)).toBe(-60000);
+    it('passes through negative values (no clamping)', () => {
+      expect(clampOffsetMs(-61000)).toBe(-61000);
+      expect(clampOffsetMs(-999999)).toBe(-999999);
     });
 
     it('rounds to integer ms', () => {
