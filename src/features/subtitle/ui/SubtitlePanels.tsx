@@ -14,7 +14,7 @@ import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSea
 import type { SubtitleApiKey } from '@/entities/settings';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { resolveSplitViewWrapperHeight, togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
-import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit, requestManagerExpand, requestManagerCollapse } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
@@ -405,6 +405,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         ro.disconnect();
         window.removeEventListener('scroll', updateRect);
         window.removeEventListener('resize', updateRect);
+      };
+    }, [managerOpen]);
+
+    // Mobile + child iframe: expand iframe to fill host viewport so the
+    // bottom sheet (75vh of iframe) covers 75vh of the host viewport.
+    useEffect(() => {
+      if (!isChildFrame() || window.innerWidth >= 768) return;
+      if (managerOpen) {
+        void requestManagerExpand();
+      } else {
+        requestManagerCollapse();
+      }
+      return () => {
+        if (!managerOpen) requestManagerCollapse();
       };
     }, [managerOpen]);
 

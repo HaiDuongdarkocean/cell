@@ -1,72 +1,35 @@
-# TODO: Subtitle Manager — Video Overlay Positioning
+# TODO: Subtitle Manager — Mobile Sheet trên Host Page
 
-## Phase 1: Geometry
-- [ ] **Task 1**: Detect video player container rect + pass to manager
-  - AC: Manager nhận videoRect {x, y, width, height} từ findPlayerContainer()
-  - AC: ResizeObserver + scroll listener update rect khi video thay đổi
-  - Verify: log rect, resize browser, rect update
-  - Dependencies: None
-  - Files: SubtitlePanels.tsx, SubtitleManagerPanel.tsx
-  - Scope: M
+## Vấn đề hiện tại
+Sheet render trong iframe (75vh của iframe = ~350px = 12% host viewport).
+Cần: sheet render trên host page (75vh của host viewport).
 
-- [ ] **Task 2**: CSS — manager full-cover video rect + translucent bg
-  - AC: Manager panel position = absolute, inset = videoRect
-  - AC: Background: rgba(15,15,15,0.7) + backdrop-filter blur(8px)
-  - AC: Video thấy được phía sau (dimmed)
-  - AC: pointer-events:none trên overlay, auto trên panel content
-  - Verify: screenshot, video visible behind manager
-  - Dependencies: Task 1
-  - Files: SubtitleManagerPanel.module.css, SubtitleManagerPanel.tsx
-  - Scope: M
+## AC phiên làm việc này
 
-## Checkpoint: Geometry
-- [ ] Manager phủ đúng video area
-- [ ] Background xuyên thấu
+### AC-1: Iframe bridge — child → host message
+- [ ] Khi manager mở trong iframe và viewport < 768px → child iframe gửi postMessage lên host page
+- [ ] Message chứa: `{ type: '__CELL_MANAGER_SHEET_OPEN', frameSrc, managerState }`
+- [ ] Host page nhận message, render sheet trên host viewport (top frame)
 
-## Phase 2: Responsive
-- [ ] **Task 3**: Mobile sheet 75vh trên host page
-  - AC: <768px → bottom sheet 75vh, drag handle, slide up animation
-  - AC: Sheet render trên host page (top frame), không trong iframe
-  - AC: Video vẫn thấy phía trên sheet
-  - Verify: 360px viewport, sheet từ bottom
-  - Dependencies: Task 2
-  - Files: SubtitleManagerPanel.module.css, SubtitlePanels.tsx
-  - Scope: M
+### AC-2: Host page sheet render
+- [ ] Host page content script nhận message → tạo portal trên host document.body
+- [ ] Sheet position: fixed, bottom: 0, width: 100vw, height: 75vh của HOST viewport
+- [ ] Sheet có drag handle, rounded top corners, slide-up animation
+- [ ] Sheet background: solid (không translucent — không cần thấy video phía sau trên mobile)
 
-- [ ] **Task 4**: Iframe size detection — render trong iframe vs host page
-  - AC: Iframe width >= 480px AND height >= 400px → manager render trong iframe
-  - AC: Iframe nhỏ hơn → manager render host page (sheet)
-  - AC: isChildFrame() check + iframe rect measurement
-  - Verify: test trên kisskh.co (iframe), themoviebox.xyz (no iframe)
-  - Dependencies: Task 3
-  - Files: SubtitlePanels.tsx, iframePlayerModeBridge.ts
-  - Scope: L
+### AC-3: Close flow
+- [ ] Click outside sheet (trên host page) → close
+- [ ] Nút X trong sheet → close
+- [ ] Close gửi postMessage ngược lại child iframe → child unmount manager state
 
-## Checkpoint: Responsive
-- [ ] Mobile: bottom sheet 75vh
-- [ ] Iframe đủ size: manager trong iframe
-- [ ] Iframe nhỏ: manager host page sheet
+### AC-4: Desktop iframe vẫn hoạt động
+- [ ] Iframe viewport >= 768px → manager render trong iframe (overlay video area) — không đổi
+- [ ] Host page không render sheet khi desktop
 
-## Phase 3: Interaction
-- [ ] **Task 5**: Click outside to close
-  - AC: Click trên overlay (không phải panel content) → close manager
-  - AC: Nút X vẫn hoạt động
-  - AC: Overlay chỉ catch click khi manager open
-  - Verify: click outside, manager closes
-  - Dependencies: Task 2
-  - Files: SubtitleManagerPanel.tsx, SubtitleManagerPanel.module.css
-  - Scope: S
+### AC-5: Same-origin (không iframe) vẫn hoạt động
+- [ ] YouTube, themoviebox (không iframe) → manager render bình thường — không bridge
 
-- [ ] **Task 6**: Scale-from-button animation
-  - AC: Manager scale từ 0.9 → 1.0 + fade in, origin = button position
-  - AC: transform-origin = button rect center
-  - AC: 220ms cubic-bezier(0.32, 0.72, 0, 1)
-  - Verify: visual smooth, origin từ button
-  - Dependencies: Task 5
-  - Files: SubtitleManagerPanel.module.css, SubtitleManagerPanel.tsx
-  - Scope: S
-
-## Checkpoint: Complete
-- [ ] All AC met
+### AC-6: Build + verify
 - [ ] Build pass
-- [ ] Verify trên showcase + real site
+- [ ] Test trên animekai.be mobile: sheet cover 75vh host viewport
+- [ ] Test trên animekai.be desktop: manager overlay video area (không đổi)
