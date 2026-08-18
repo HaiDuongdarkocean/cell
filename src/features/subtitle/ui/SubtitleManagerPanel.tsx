@@ -389,8 +389,10 @@ export function SubtitleManagerPanel({
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Auto-hide header/footer on scroll (mobile only, tracks view)
+  // Cooldown prevents feedback loop: hide → layout shift → clamp → fake scroll → show → loop
   const tracksBodyRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef(0);
+  const cooldownUntilRef = useRef(0);
   const [scrolledDir, setScrolledDir] = useState<'up' | 'down' | null>(null);
 
   useEffect(() => {
@@ -401,8 +403,19 @@ export function SubtitleManagerPanel({
     const onScroll = (): void => {
       const scrollTop = el.scrollTop;
       const delta = scrollTop - lastScrollTopRef.current;
-      if (delta > 1) setScrolledDir('down');
-      else if (delta < -1) setScrolledDir('up');
+      const now = performance.now();
+      if (now < cooldownUntilRef.current) {
+        // During cooldown: sync position without changing direction
+        lastScrollTopRef.current = scrollTop;
+        return;
+      }
+      if (delta > 1) {
+        setScrolledDir('down');
+        cooldownUntilRef.current = now + 300;
+      } else if (delta < -1) {
+        setScrolledDir('up');
+        cooldownUntilRef.current = now + 300;
+      }
       lastScrollTopRef.current = scrollTop;
     };
 
