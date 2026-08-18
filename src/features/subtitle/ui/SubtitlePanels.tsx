@@ -267,6 +267,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
+    const [videoRect, setVideoRect] = useState<DOMRect | null>(null);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -380,6 +381,31 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         managerPortalRef.current = null;
       };
     }, [managerShadowCss]);
+
+    // Track video player container rect for manager overlay positioning.
+    // Only active when manager is open to avoid unnecessary observers.
+    useEffect(() => {
+      if (!managerOpen) return;
+      const playerShell = findPlayerContainer();
+      if (!playerShell) return;
+
+      const updateRect = (): void => {
+        const r = playerShell.getBoundingClientRect();
+        setVideoRect({ x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, toJSON: r.toJSON });
+      };
+      updateRect();
+
+      const ro = new ResizeObserver(updateRect);
+      ro.observe(playerShell);
+      window.addEventListener('scroll', updateRect, { passive: true });
+      window.addEventListener('resize', updateRect);
+
+      return () => {
+        ro.disconnect();
+        window.removeEventListener('scroll', updateRect);
+        window.removeEventListener('resize', updateRect);
+      };
+    }, [managerOpen]);
 
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1364,6 +1390,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             <div
               className={styles.panelLayer}
               data-cell-id="subtitle-manager-layer"
+              style={videoRect ? {
+                '--video-x': `${videoRect.x}px`,
+                '--video-y': `${videoRect.y}px`,
+                '--video-w': `${videoRect.width}px`,
+                '--video-h': `${videoRect.height}px`,
+              } as React.CSSProperties : undefined}
               onClick={(e) => {
                 if (e.target === e.currentTarget) setManagerOpen(false);
               }}
