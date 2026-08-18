@@ -56,7 +56,7 @@
 /* Outline — hairline border, transparent background (mirrors Button.outline) */
 .outline {
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   border: var(--border-width-hairline) solid var(--color-border);
 }
 
