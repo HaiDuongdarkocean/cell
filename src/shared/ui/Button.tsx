@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
@@ -25,6 +25,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   /** Elevation shadow. Default: none. */
   elevation?: ButtonElevation;
+  /** Ripple effect on click from pointer position. Disables hover bg. Default: false. */
+  ripple?: boolean;
   /** Icon before the label. */
   leadingIcon?: ReactNode;
   /** Icon after the label. */
@@ -49,13 +51,33 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   loading = false,
   fullWidth = false,
   elevation = 'none',
+  ripple = false,
   leadingIcon,
   trailingIcon,
   children,
   disabled,
   className,
+  onPointerDown,
   ...rest
 }: ButtonProps, ref): React.JSX.Element {
+  const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
+    onPointerDown?.(e);
+    if (!ripple || e.defaultPrevented) return;
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const diameter = Math.min(rect.width, rect.height) * 1.2;
+    const radius = diameter / 2;
+    const x = e.clientX - rect.left - radius;
+    const y = e.clientY - rect.top - radius;
+    const span = btn.ownerDocument.createElement('span');
+    span.className = styles.ripple;
+    span.style.width = span.style.height = `${diameter}px`;
+    span.style.left = `${x}px`;
+    span.style.top = `${y}px`;
+    btn.appendChild(span);
+    span.addEventListener('animationend', () => span.remove(), { once: true });
+  };
+
   const cls = [
     styles.button,
     styles[variant],
@@ -65,6 +87,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     loading ? styles.loading : '',
     fullWidth ? styles.fullWidth : '',
     elevation !== 'none' ? styles[`elevation_${elevation}`] : '',
+    ripple ? styles.rippleHost : '',
     className ?? '',
   ]
     .filter(Boolean)
@@ -77,6 +100,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cls}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      onPointerDown={handlePointerDown}
       {...rest}
     >
       {loading && <Spinner size="md" color="current" aria-hidden="true" />}
