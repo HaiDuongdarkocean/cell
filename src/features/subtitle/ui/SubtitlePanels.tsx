@@ -14,7 +14,7 @@ import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSea
 import type { SubtitleApiKey } from '@/entities/settings';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { resolveSplitViewWrapperHeight, togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
-import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit, requestManagerExpand, requestManagerCollapse } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
 import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
@@ -38,6 +38,14 @@ import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitlePanels.module.css';
+import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
+import {
+  requestManagerOpenOnHost,
+  sendManagerStateUpdate,
+  confirmManagerClosed,
+  onManagerAction,
+  onManagerCloseFromHost,
+} from '@/features/subtitle/logic/iframeManagerBridgeChild';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
@@ -267,6 +275,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
+    const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
     const [videoRect, setVideoRect] = useState<DOMRect | null>(null);
     const [managerOrigin, setManagerOrigin] = useState<{ x: number; y: number } | null>(null);
     const [offsetOpen, setOffsetOpen] = useState(false);
@@ -408,19 +417,81 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, [managerOpen]);
 
-    // Mobile + child iframe: expand iframe to fill host viewport so the
-    // bottom sheet (75vh of iframe) covers 75vh of the host viewport.
+    // Child-iframe mobile: delegate manager panel rendering to the host frame.
+    // Serialize state + ask host to mount the panel; on success skip the
+    // in-iframe portal so we don't render two copies. On failure, fall back to
+    // rendering in-iframe as normal (managerOpenOnHost stays false).
     useEffect(() => {
-      if (!isChildFrame() || window.innerWidth >= 768) return;
-      if (managerOpen) {
-        void requestManagerExpand();
-      } else {
-        requestManagerCollapse();
+      if (!managerOpen || !isChildFrame() || window.innerWidth >= 768) return;
+      if (!manager) return;
+
+      let cancelled = false;
+      const serialized = serializeManagerState(manager, offset, !generateNativeEnabled);
+      requestManagerOpenOnHost(serialized).then((ok) => {
+        if (cancelled) return;
+        if (ok) setManagerOpenOnHost(true);
+        // If !ok, fallback: don't set managerOpenOnHost, render in-iframe as normal
+      });
+
+      return () => { cancelled = true; };
+    }, [managerOpen, manager, offset, generateNativeEnabled]);
+
+    // Map host-forwarded manager actions to the local manager callbacks.
+    // Guard: ignore actions after close (managerOpen false).
+    useEffect(() => {
+      if (!managerOpenOnHost || !manager) return;
+      const cleanup = onManagerAction((action, args) => {
+        if (!managerOpen) return;
+        const role = args.role as 'target' | 'native';
+        const index = args.index as number;
+        const ms = args.ms as number;
+        switch (action) {
+          case 'select': manager.onSelect(role, index); break;
+          case 'import': manager.onImport?.(role); break;
+          case 'generateNative': manager.onGenerateNative?.(); break;
+          case 'offsetChange': manager.onOffsetChange?.(role, ms); break;
+          case 'download': manager.onDownload?.(role, index); break;
+          case 'hideSection': manager.onHideSection?.(role); break;
+          case 'hideBoth': manager.onHideBoth?.(); break;
+          case 'apiKeysChange': manager.onApiKeysChange(args.keys as SubtitleApiKey[]); break;
+          case 'searchResultSelect': manager.onSearchResultSelect(args.result as SubtitleSearchResult, role); break;
+          case 'styleChange': manager.appearance?.onStyleChange(role, args.partial as Partial<OverlayStyleConfig>); break;
+          case 'blockSettingsChange': manager.appearance?.onBlockSettingsChange(args.partial as Partial<SubtitleBlockSettings>); break;
+          case 'clusterSettingsChange': manager.appearance?.onClusterSettingsChange(args.partial as Partial<NavClusterSettings>); break;
+          case 'resetStyle': manager.appearance?.onResetStyle(role); break;
+          case 'previewTextChange': manager.appearance?.onPreviewTextChange(role, args.text as string); break;
+        }
+      });
+      return cleanup;
+    }, [managerOpenOnHost, manager, managerOpen]);
+
+    // Host requested close (user pressed close button on the host-rendered panel).
+    useEffect(() => {
+      if (!managerOpenOnHost) return;
+      const cleanup = onManagerCloseFromHost(() => {
+        setManagerOpen(false);
+      });
+      return cleanup;
+    }, [managerOpenOnHost]);
+
+    // State sync: push serialized state to host on change (throttled 100ms).
+    const stateSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+      if (!managerOpenOnHost || !manager) return;
+      if (stateSyncRef.current) clearTimeout(stateSyncRef.current);
+      stateSyncRef.current = setTimeout(() => {
+        sendManagerStateUpdate(serializeManagerState(manager, offset, !generateNativeEnabled));
+      }, 100);
+      return () => { if (stateSyncRef.current) clearTimeout(stateSyncRef.current); };
+    }, [managerOpenOnHost, manager.targetItems, manager.nativeItems, manager.targetActiveIndex, manager.nativeActiveIndex, manager.targetHidden, manager.nativeHidden, manager.bothHidden, manager.appearance, offset?.targetMs, offset?.nativeMs]);
+
+    // Cleanup on close: notify host the child closed the manager + reset flag.
+    useEffect(() => {
+      if (!managerOpen && managerOpenOnHost) {
+        confirmManagerClosed();
+        setManagerOpenOnHost(false);
       }
-      return () => {
-        if (!managerOpen) requestManagerCollapse();
-      };
-    }, [managerOpen]);
+    }, [managerOpen, managerOpenOnHost]);
 
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1404,7 +1475,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {managerOpen && manager && managerPortalTarget && createPortal(
+        {managerOpen && manager && managerPortalTarget && !managerOpenOnHost && createPortal(
           <ShadowThemeProvider container={managerPortalTarget}>
             <div
               className={styles.panelLayer}
