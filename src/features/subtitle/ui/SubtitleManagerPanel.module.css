@@ -428,7 +428,7 @@
   gap: var(--space-1);
 }
 
-/* ─── Latency — compact 2-row: label+status, then controls inline ─── */
+/* ─── Latency — pill group + reset button ─── */
 .latency {
   margin-top: var(--space-1-5);
   padding: var(--space-1-5);
@@ -436,8 +436,7 @@
 
 .latencyHead {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
@@ -448,69 +447,101 @@
   color: var(--color-text-secondary);
 }
 
-.latencySave {
-  font-size: var(--font-size-xs);
-  color: var(--color-success);
-}
-
 .latencyRow {
   display: flex;
   align-items: stretch;
   gap: var(--space-1-5);
 }
 
+/* ─── Pill group: [-0.5s] [input] [+0.5s] — full pill, 40px height ─── */
+.pillGroup {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.pillGroup:hover {
+  border-color: var(--color-primary);
+}
+
+.pillGroup:focus-within {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+}
+
+/* Step button — footer style: icon top, label bottom, 40px height */
 .stepBtn {
   flex: 0 0 auto;
-  box-sizing: border-box;
-  min-width: 52px;
-  min-height: 38px;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-element);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: var(--font-size-xs);
+  min-width: 56px;
+  height: 40px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  transition: background var(--transition-fast, 150ms), border-color var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-0-5);
+}
+
+.stepBtn:first-child {
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+}
+
+.stepBtn:last-child {
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
 }
 
 .stepBtn:hover {
   background: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 
 .stepBtn:active {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
-  border-color: transparent;
 }
 
 .stepBtn:focus-visible {
   outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
+.stepLabel {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ─── Input field ─── */
 .valueField {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-element);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   background: var(--color-surface);
-}
-
-.valueField:focus-within {
-  border-color: transparent;
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .valueInput {
   width: 100%;
-  min-height: 40px;
-  padding: var(--space-1) var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-2);
   border: 0;
   background: transparent;
   color: var(--color-text-primary);
@@ -518,9 +549,6 @@
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   text-align: center;
-}
-
-.valueInput:focus {
   outline: none;
 }
 
@@ -530,36 +558,50 @@
   margin: 0;
 }
 
-/* Reset — inline, compact */
+/* ─── Reset button — 40px ghost, save state animations ─── */
 .resetBtn {
   flex: 0 0 auto;
-  box-sizing: border-box;
-  min-height: 38px;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-element);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--transition-fast, 150ms), color var(--transition-fast, 150ms);
+  align-self: center;
 }
 
-.resetBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text-primary);
+/* Saved state — green checkmark draw + fade out */
+.resetSaved {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-success);
+  animation: saveCheckDraw var(--save-check-duration) var(--save-check-ease) forwards,
+             saveFade var(--save-fade-duration) var(--save-fade-ease) var(--save-check-duration) forwards;
 }
 
-.resetBtn:active {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  border-color: transparent;
+.resetSaved svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: saveCheckStroke var(--save-check-duration) var(--save-check-ease) forwards;
 }
 
-.resetBtn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+@keyframes saveCheckStroke {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes saveCheckDraw {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes saveFade {
+  to { opacity: 0; transform: scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resetSaved,
+  .resetSaved svg {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 @media (min-width: 480px) {

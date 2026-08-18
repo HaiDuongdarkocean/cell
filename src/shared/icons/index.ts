@@ -42,6 +42,7 @@ import loaderSvg from './svg/loader.svg?raw';
 import playSvg from './svg/play.svg?raw';
 import pauseSvg from './svg/pause.svg?raw';
 import plusSvg from './svg/plus.svg?raw';
+import minusSvg from './svg/minus.svg?raw';
 import checkSvg from './svg/check.svg?raw';
 import infoSvg from './svg/info.svg?raw';
 import alertCircleSvg from './svg/alert-circle.svg?raw';
@@ -128,6 +129,7 @@ export { default as loaderIcon } from './svg/loader.svg?raw';
 export { default as playIcon } from './svg/play.svg?raw';
 export { default as pauseIcon } from './svg/pause.svg?raw';
 export { default as plusIcon } from './svg/plus.svg?raw';
+export { default as minusIcon } from './svg/minus.svg?raw';
 export { default as checkIcon } from './svg/check.svg?raw';
 export { default as infoIcon } from './svg/info.svg?raw';
 export { default as alertCircleIcon } from './svg/alert-circle.svg?raw';
@@ -233,6 +235,7 @@ export const ICON_CATALOG = {
   play:        { svg: playSvg,        source: 'lucide/play',        tags: ['play','start','media','video','resume'] } as IconEntry,
   pause:       { svg: pauseSvg,       source: 'lucide/pause',       tags: ['pause','hold','media'] } as IconEntry,
   plus:        { svg: plusSvg,        source: 'lucide/plus',        tags: ['add','plus','new','create'] } as IconEntry,
+  minus:       { svg: minusSvg,       source: 'lucide/minus',       tags: ['minus','subtract','decrease','remove'] } as IconEntry,
   check:       { svg: checkSvg,       source: 'lucide/check',       tags: ['check','confirm','selected','done','tick'] } as IconEntry,
   info:        { svg: infoSvg,        source: 'lucide/info',        tags: ['info','information','hint','help'] } as IconEntry,
   alertCircle: { svg: alertCircleSvg, source: 'lucide/alert-circle', tags: ['alert','error','warning','exclamation','circle'] } as IconEntry,
