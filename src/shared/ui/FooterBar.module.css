@@ -1,16 +1,23 @@
 /* FooterBar — generic bottom navigation bar (ZaloPay / iOS tab bar / Material 3 pattern).
-   Equal-width slots, flat (no border-radius), soft shadow separator, height = content. */
+   Equal-width slots, flat (no border-radius), hairline separator, height = content. */
 
 .footer {
   flex: 0 0 auto;
   display: flex;
   gap: var(--space-0);
   padding: var(--space-0);
-  box-shadow: 0 calc(-1 * var(--space-0-5)) var(--space-1) calc(-1 * var(--space-0-5)) var(--color-border-emphasized);
+  box-shadow: 0 -1px 0 0 var(--color-border);
 }
 
 .footer > button {
   flex: 1 1 0;
   min-width: 0;
   border-radius: var(--radius-none);
+}
+
+/* ZaloPay-style active: pale-blue fill + primary color, not just text color */
+.footer > button.active,
+.footer > button.active:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
