@@ -1,3 +1,9 @@
+/* Default icon size — SSOT token. Override via size prop or className. */
+.wrap {
+  width: var(--icon-default-size);
+  height: var(--icon-default-size);
+}
+
 /* Force the injected SVG to fill the wrapper span so CSS classes that set
    width/height on the span (previously applied to the <svg> directly) still
    control the rendered icon size. */
