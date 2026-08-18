@@ -13,11 +13,11 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
     <div className={styles.cellLinks} data-cell-id="dictionary-links-panel">
       {links.length === 0 ? (
         <EmptyState
-          size="sm"
+          size="md"
           icon={<Icon name="link" size={24} />}
           title="No external links"
           action={
-            <Button variant="outline" size="sm" onClick={() => { /* open settings */ }}>
+            <Button variant="outline" size="md" onClick={() => { /* open settings */ }}>
               Open settings
             </Button>
           }

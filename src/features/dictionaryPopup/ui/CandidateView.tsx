@@ -195,7 +195,7 @@ export function CandidateView({
         <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <EmptyState
-            size="sm"
+            size="md"
             icon={<Icon name="info" size={24} />}
             description="No definitions found. Import a dictionary in Settings → Resources."
             data-cell-id="dictionary-definitions-empty"
