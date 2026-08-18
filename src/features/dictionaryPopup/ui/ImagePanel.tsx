@@ -43,7 +43,7 @@ export function ImagePanel({
     return (
       <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
         <EmptyState
-          size="sm"
+          size="md"
           icon={<Icon name="image" size={24} />}
           title="No images"
           action={
