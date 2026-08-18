@@ -196,6 +196,10 @@ function OffsetStepper({
     setState({ offset: e.target.value, saveState: 'saving', lastValid: state.lastValid });
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>): void => {
+    e.currentTarget.select();
+  };
+
   const handleBlur = (): void => {
     commitOffset(state.offset);
   };
@@ -242,6 +246,7 @@ function OffsetStepper({
               className={styles.valueInput}
               value={state.offset}
               onChange={handleInputChange}
+              onFocus={handleFocus}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               aria-label={`${label} latency in seconds`}
