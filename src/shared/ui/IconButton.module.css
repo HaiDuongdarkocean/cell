@@ -15,7 +15,7 @@
   border-radius: var(--iconbutton-radius);
   cursor: pointer;
   color: var(--iconbutton-fg);
-  transition: background var(--transition), color var(--transition), transform var(--transition);
+  transition: background var(--transition), color var(--transition);
   padding: 0;
   flex-shrink: 0;
   width: var(--iconbutton-size-md);
@@ -99,7 +99,6 @@
 }
 
 /* === States — match components.css .icon-btn === */
-.iconBtn:active { transform: scale(0.96); }
 .iconBtn:disabled { opacity: 0.5; pointer-events: none; }
 
 /* === Loading (spec §5.1 — Spinner replaces icon + aria-busy) === */
