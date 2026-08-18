@@ -684,3 +684,28 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
+
+/* ─── Auto-hide header/footer on scroll (mobile only, <768px) ─── */
+@media (max-width: 767px) {
+  .panel[data-scrolled='down'] .header {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .panel[data-scrolled='down'] :global([class*='footer']) {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .header {
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 180ms ease-out;
+  }
+
+  :global([class*='footer']) {
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 180ms ease-out;
+  }
+}

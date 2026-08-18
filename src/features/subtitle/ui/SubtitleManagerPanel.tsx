@@ -387,6 +387,28 @@ export function SubtitleManagerPanel({
   viewRef.current = view;
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-hide header/footer on scroll (mobile only, tracks view)
+  const tracksBodyRef = useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = useRef(0);
+  const [scrolledDir, setScrolledDir] = useState<'up' | 'down' | null>(null);
+
+  useEffect(() => {
+    if (view !== 'tracks') return;
+    const el = tracksBodyRef.current;
+    if (!el) return;
+
+    const onScroll = (): void => {
+      const scrollTop = el.scrollTop;
+      const delta = scrollTop - lastScrollTopRef.current;
+      if (delta > 1) setScrolledDir('down');
+      else if (delta < -1) setScrolledDir('up');
+      lastScrollTopRef.current = scrollTop;
+    };
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [view]);
   const backBtnRef = useRef<HTMLButtonElement>(null);
   const searchBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -461,6 +483,7 @@ export function SubtitleManagerPanel({
       data-cell-id="subtitle-manager-panel"
       data-view={view}
       data-direction={viewDirection}
+      data-scrolled={scrolledDir}
     >
       {/* Header — container stays fixed, inner content slides between views */}
       <div className={styles.header}>
@@ -498,7 +521,7 @@ export function SubtitleManagerPanel({
       {/* View content — key triggers remount → CSS enter animation */}
       {view === 'tracks' && (
         <div key="tracks" className={styles.viewContent}>
-          <div className={styles.tracksBody}>
+          <div className={styles.tracksBody} ref={tracksBodyRef}>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'target' | 'native')}>
               <div className={styles.sectionBar} data-cell-id="manager-section-header">
                 <Tabs.List className={styles.tabsList}>
