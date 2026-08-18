@@ -389,7 +389,6 @@ export function SubtitleManagerPanel({
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Auto-hide header/footer on scroll (mobile only, tracks view)
-  // Cooldown prevents feedback loop: hide → layout shift → clamp → fake scroll → show → loop
   const tracksBodyRef = useRef<HTMLDivElement>(null);
   const lastScrollTopRef = useRef(0);
   const cooldownUntilRef = useRef(0);
@@ -400,16 +399,28 @@ export function SubtitleManagerPanel({
     const el = tracksBodyRef.current;
     if (!el) return;
 
-    // Reset state when entering tracks view
     setScrolledDir(null);
     lastScrollTopRef.current = 0;
 
+    // Hide is only safe if content stays scrollable after header/footer collapse.
+    // ~100px = header(50) + footer(45); less than that → clamp → stuck.
+    const HIDE_THRESHOLD_PX = 100;
+    const COOLDOWN_MS = 300;
+    const SWIPE_THRESHOLD_PX = 20;
+
+    const canHideSafely = (): boolean =>
+      el.scrollHeight - el.clientHeight > HIDE_THRESHOLD_PX;
+
+    const setDir = (dir: 'up' | 'down'): void => {
+      setScrolledDir(dir);
+      cooldownUntilRef.current = performance.now() + COOLDOWN_MS;
+    };
+
     const onScroll = (): void => {
       const scrollTop = el.scrollTop;
-      const now = performance.now();
 
-      // At top: always show header/footer — check BEFORE cooldown
-      // because hide→expand→clamp→0 fires a scroll event that cooldown would swallow
+      // At top: show immediately, bypass cooldown —
+      // hide→expand→clamp→0 fires a scroll event that cooldown would swallow.
       if (scrollTop <= 0) {
         setScrolledDir('up');
         lastScrollTopRef.current = 0;
@@ -418,49 +429,27 @@ export function SubtitleManagerPanel({
       }
 
       const delta = scrollTop - lastScrollTopRef.current;
-      if (now < cooldownUntilRef.current) {
+      if (performance.now() < cooldownUntilRef.current) {
         lastScrollTopRef.current = scrollTop;
         return;
       }
 
-      // Only hide if content is tall enough that hiding header/footer
-      // still leaves scroll room. Otherwise hide→expand→clamp→stuck.
-      // ponytail: ~100px = header(50) + footer(45) approx
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      const canHideSafely = maxScroll > 100;
+      if (delta > 1 && canHideSafely()) setDir('down');
+      else if (delta < -1) setDir('up');
 
-      if (delta > 1 && canHideSafely) {
-        setScrolledDir('down');
-        cooldownUntilRef.current = now + 300;
-      } else if (delta < -1) {
-        setScrolledDir('up');
-        cooldownUntilRef.current = now + 300;
-      }
       lastScrollTopRef.current = scrollTop;
     };
 
-    // Touch swipe: when content doesn't scroll (maxScroll≈0) but header/footer
-    // are hidden, user can still swipe up to show them again.
+    // Touch swipe: when content fits (no scroll), user can still swipe to toggle.
     let touchStartY = 0;
     const onTouchStart = (e: TouchEvent): void => {
       touchStartY = e.touches[0].clientY;
     };
     const onTouchEnd = (e: TouchEvent): void => {
+      if (performance.now() < cooldownUntilRef.current) return;
       const deltaY = e.changedTouches[0].clientY - touchStartY;
-      const now = performance.now();
-      if (now < cooldownUntilRef.current) return;
-      if (deltaY < -20) {
-        // Swipe up → show
-        setScrolledDir('up');
-        cooldownUntilRef.current = now + 300;
-      } else if (deltaY > 20) {
-        // Swipe down → hide (only if safe)
-        const maxScroll = el.scrollHeight - el.clientHeight;
-        if (maxScroll > 100) {
-          setScrolledDir('down');
-          cooldownUntilRef.current = now + 300;
-        }
-      }
+      if (deltaY < -SWIPE_THRESHOLD_PX) setDir('up');
+      else if (deltaY > SWIPE_THRESHOLD_PX && canHideSafely()) setDir('down');
     };
 
     el.addEventListener('scroll', onScroll, { passive: true });
