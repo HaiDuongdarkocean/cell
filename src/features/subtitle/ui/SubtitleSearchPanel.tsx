@@ -279,7 +279,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             {query && (
               <IconButton
                 variant="ghost"
-                size="xs"
+                size="sm"
                 onClick={handleClearQuery}
                 aria-label="Clear search"
                 data-cell-id="search-clear"
@@ -289,7 +289,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             )}
             <IconButton
               variant="ghost"
-              size="xs"
+              size="sm"
               onClick={handleSearchClick}
               disabled={formDisabled || !query.trim() || loading}
               aria-label="Search subtitles"
