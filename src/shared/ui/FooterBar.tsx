@@ -13,6 +13,8 @@ export interface FooterBarSlot {
   readonly variant?: 'ghost' | 'primarySubtle';
   /** Active toggle state — pale-blue subtle background + primary color. */
   readonly active?: boolean;
+  /** One-shot ripple pulse: icon+label flash to primary color while ripple spreads, then revert. */
+  readonly ripplePulse?: boolean;
   /** Disabled state. */
   readonly disabled?: boolean;
   /** Click handler. */
@@ -46,6 +48,7 @@ export function FooterBar({ slots, className }: FooterBarProps): React.JSX.Eleme
           active={slot.active}
           activeStyle="flat"
           ripple
+          ripplePulse={slot.ripplePulse}
           disabled={slot.disabled}
           ref={slot.ref}
           onClick={slot.onClick}

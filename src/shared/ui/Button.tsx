@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
+import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
@@ -27,6 +27,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   elevation?: ButtonElevation;
   /** Ripple effect on click from pointer position. Disables hover bg. Default: false. */
   ripple?: boolean;
+  /** One-shot ripple: icon+label flash to primary color while ripple spreads, then revert. Default: false. */
+  ripplePulse?: boolean;
   /** Icon before the label. */
   leadingIcon?: ReactNode;
   /** Icon after the label. */
@@ -52,6 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   fullWidth = false,
   elevation = 'none',
   ripple = false,
+  ripplePulse = false,
   leadingIcon,
   trailingIcon,
   children,
@@ -60,6 +63,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   onPointerDown,
   ...rest
 }: ButtonProps, ref): React.JSX.Element {
+  const [pulsing, setPulsing] = useState(false);
+  const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
     onPointerDown?.(e);
     if (!ripple || e.defaultPrevented) return;
@@ -76,6 +82,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     span.style.top = `${y}px`;
     btn.appendChild(span);
     span.addEventListener('animationend', () => span.remove(), { once: true });
+
+    if (ripplePulse) {
+      setPulsing(true);
+      if (pulseTimer.current) clearTimeout(pulseTimer.current);
+      pulseTimer.current = setTimeout(() => setPulsing(false), 2000);
+    }
   };
 
   const cls = [
@@ -88,6 +100,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     fullWidth ? styles.fullWidth : '',
     elevation !== 'none' ? styles[`elevation_${elevation}`] : '',
     ripple ? styles.rippleHost : '',
+    ripplePulse && pulsing ? styles.ripplePulsing : '',
     className ?? '',
   ]
     .filter(Boolean)

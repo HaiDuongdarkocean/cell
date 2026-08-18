@@ -259,6 +259,11 @@
   }
 }
 
+/* === Ripple pulse — one-shot color flash while ripple spreads === */
+.ripplePulsing {
+  color: var(--color-primary);
+}
+
 .label {
   display: inline-flex;
   align-items: center;
