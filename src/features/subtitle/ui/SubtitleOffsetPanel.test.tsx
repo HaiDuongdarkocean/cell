@@ -12,10 +12,10 @@ describe('SubtitleOffsetPanel', () => {
     expect(screen.getByTestId('offset-input')).toHaveValue('+1.5s');
   });
 
-  it('clamps offset to ±60s', () => {
+  it('displays large offset without clamping', () => {
     const onChange = jest.fn();
     render(<SubtitleOffsetPanel offsetMs={90_000} onOffsetChange={onChange} />);
-    expect(screen.getByTestId('offset-value')).toHaveTextContent('+60s');
+    expect(screen.getByTestId('offset-value')).toHaveTextContent('+90s');
   });
 
   it('applies input offset on apply button', () => {

@@ -12,16 +12,13 @@
  * @see docs/adr/019-subtitle-time-offset.md (Amendment V2)
  */
 
-/** Max offset ±60s (ms). Ngoài khoảng này = sub hỏng, không phải offset. */
-const MAX_OFFSET_MS = 60_000;
-
 /**
  * Parse user input (giây) → ms.
  * Accept: "0.7", "1.5", "-0.5", "0.7s", "  2  ".
- * Reject (return null): "abc", "", out-of-range ±60s, Infinity, NaN.
+ * Reject (return null): "abc", "", Infinity, NaN.
  *
  * @param input - User input string (giây, optional "s" suffix)
- * @returns offset in ms, or null if invalid/out-of-range
+ * @returns offset in ms, or null if invalid
  */
 export function parseOffsetInput(input: string): number | null {
   const trimmed = input.trim();
@@ -37,23 +34,19 @@ export function parseOffsetInput(input: string): number | null {
   if (!Number.isFinite(seconds)) return null;
 
   const ms = Math.round(seconds * 1000);
-  if (ms < -MAX_OFFSET_MS || ms > MAX_OFFSET_MS) return null;
 
   return ms;
 }
 
 /**
- * Clamp offset to ±60s. Always returns a number (never null).
- * Use for internal accumulate (button clicks). Rounds to integer ms.
+ * Clamp offset to reasonable range. Always returns a number (never null).
+ * Rounds to integer ms. No artificial ±60s limit — user can offset freely.
  *
  * @param ms - offset in ms (any range)
- * @returns clamped offset in ms [-60000, 60000]
+ * @returns rounded offset in ms
  */
 export function clampOffsetMs(ms: number): number {
-  const rounded = Math.round(ms);
-  if (rounded > MAX_OFFSET_MS) return MAX_OFFSET_MS;
-  if (rounded < -MAX_OFFSET_MS) return -MAX_OFFSET_MS;
-  return rounded;
+  return Math.round(ms);
 }
 
 /**
