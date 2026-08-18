@@ -13,7 +13,7 @@
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
 .button:focus-visible {
@@ -61,7 +61,6 @@
 
 .primary:active {
   background: var(--button-active-bg);
-  transform: scale(0.97);
 }
 
 /* Secondary */
@@ -76,7 +75,6 @@
 
 .secondary:active {
   background: var(--button-secondary-hover-bg);
-  transform: scale(0.97);
 }
 
 /* Outline */
@@ -93,7 +91,6 @@
 
 .outline:active {
   background: var(--color-surface-hover);
-  transform: scale(0.97);
 }
 
 /* Ghost */
@@ -108,7 +105,6 @@
 
 .ghost:active {
   background: var(--color-surface-hover);
-  transform: scale(0.97);
 }
 
 /* Destructive */
@@ -123,7 +119,6 @@
 
 .destructive:active {
   background: var(--button-destructive-hover-bg);
-  transform: scale(0.97);
 }
 
 /* Link */
@@ -155,7 +150,7 @@
 }
 
 .primarySubtle:active {
-  transform: scale(0.97);
+  background: var(--button-primary-subtle-hover-bg);
 }
 
 /* === Active state — persistent toggle (pale-blue subtle bg + primary color) === */
@@ -239,7 +234,6 @@
 .rippleHost.ghost:hover,
 .rippleHost.ghost:active {
   background: transparent;
-  transform: none;
 }
 
 .ripple {
