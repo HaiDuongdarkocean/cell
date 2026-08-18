@@ -228,7 +228,7 @@
 .rippleHost {
   position: relative;
   overflow: hidden;
-  transition: color var(--duration-slow) ease-out;
+  transition: color var(--ripple-color-duration) var(--ripple-ease);
 }
 
 /* Disable hover bg when ripple is enabled */
@@ -247,9 +247,9 @@
   border-radius: 50%;
   background: var(--color-primary);
   transform: scale(0);
-  animation: ripple 1400ms ease-out;
+  animation: ripple var(--ripple-duration) var(--ripple-ease);
   pointer-events: none;
-  opacity: 0.18;
+  opacity: var(--ripple-opacity);
 }
 
 @keyframes ripple {
