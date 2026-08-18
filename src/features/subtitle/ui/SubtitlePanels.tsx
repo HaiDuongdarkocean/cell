@@ -268,6 +268,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
     const [videoRect, setVideoRect] = useState<DOMRect | null>(null);
+    const [managerOrigin, setManagerOrigin] = useState<{ x: number; y: number } | null>(null);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -1366,7 +1367,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   title="Open subtitle manager"
                   data-cell-id="manager-toggle-btn"
                   size="sm"
-                  onClick={onToggleManager}
+                  onClick={(e) => {
+                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    setManagerOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                    onToggleManager();
+                  }}
                 >
                   <Icon name="subtitleManager"  />
                 </IconButton>
@@ -1390,12 +1395,18 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             <div
               className={styles.panelLayer}
               data-cell-id="subtitle-manager-layer"
-              style={videoRect ? {
-                '--video-x': `${videoRect.x}px`,
-                '--video-y': `${videoRect.y}px`,
-                '--video-w': `${videoRect.width}px`,
-                '--video-h': `${videoRect.height}px`,
-              } as React.CSSProperties : undefined}
+              style={{
+                ...(videoRect ? {
+                  '--video-x': `${videoRect.x}px`,
+                  '--video-y': `${videoRect.y}px`,
+                  '--video-w': `${videoRect.width}px`,
+                  '--video-h': `${videoRect.height}px`,
+                } : {}),
+                ...(managerOrigin ? {
+                  '--origin-x': `${managerOrigin.x}px`,
+                  '--origin-y': `${managerOrigin.y}px`,
+                } : {}),
+              } as React.CSSProperties}
               onClick={(e) => {
                 if (e.target === e.currentTarget) setManagerOpen(false);
               }}
