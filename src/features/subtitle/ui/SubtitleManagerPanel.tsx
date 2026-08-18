@@ -266,7 +266,7 @@ function OffsetStepper({
         </div>
         <IconButton
           size="md"
-          variant="ghost"
+          variant="outline"
           active={state.saveState === 'saving'}
           aria-label="Reset latency"
           data-cell-id={`manager-offset-reset-${role}`}
