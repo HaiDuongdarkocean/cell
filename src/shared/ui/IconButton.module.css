@@ -61,8 +61,7 @@
 }
 
 .outline:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 
 /* Ghost — transparent, surface-hover background on hover */
