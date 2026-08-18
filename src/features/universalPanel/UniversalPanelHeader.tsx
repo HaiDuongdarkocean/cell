@@ -79,7 +79,7 @@ export function UniversalPanelHeader({
         onClick={onClose}
         data-cell-id="universal-panel-close"
       >
-        <Icon name="x" size={20} />
+        <Icon name="x" size={24} />
       </IconButton>
     </header>
   );

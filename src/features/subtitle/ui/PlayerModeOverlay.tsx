@@ -462,12 +462,12 @@ function PlayerModeOverlayInner({
           <div className={panelStyles.primaryCol}>
             {onQuickAdd && (
               <IconButton aria-label="Quick add card" title="Quick add (Q)" data-cell-id="quick-add-btn" size="sm" onClick={onQuickAdd}>
-                <Icon name="zap" size={18} />
+                <Icon name="zap" size={24} />
               </IconButton>
             )}
             {onEditCard && (
               <IconButton aria-label="Edit card" title="Edit card (E)" data-cell-id="edit-card-btn" size="sm" onClick={onEditCard}>
-                <Icon name="pencil" size={18} />
+                <Icon name="pencil" size={24} />
               </IconButton>
             )}
             <div className={panelStyles.toggleWrap}>
@@ -477,33 +477,33 @@ function PlayerModeOverlayInner({
               >
                 {onToggleSidePanel && (
                   <IconButton aria-label="Toggle subtitle list" title="Toggle subtitle list (T)" data-cell-id="panel-toggle-btn" size="sm" onClick={() => setCueListOpen((v) => !v)}>
-                    <Icon name="sidePanel" size={18} />
+                    <Icon name="sidePanel" size={24} />
                   </IconButton>
                 )}
                 {onGenerateNative && (
                   <IconButton aria-label="Generate native subtitle" title="Generate native (H)" data-cell-id="generate-native-btn" size="sm" onClick={onGenerateNative} disabled={!generateNativeEnabled}>
-                    <Icon name="languages" size={18} />
+                    <Icon name="languages" size={24} />
                   </IconButton>
                 )}
               </div>
               <IconButton aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'} title={toolsExpanded ? 'Collapse tools' : 'Expand tools'} data-cell-id="tools-toggle-btn" size="sm" onClick={onToggleTools}>
-                <Icon name="chevronLeft" size={18} />
+                <Icon name="chevronLeft" size={24} />
               </IconButton>
             </div>
           </div>
           <div className={panelStyles.secondaryCol}>
             {onUpdateCurrentCard && (
               <IconButton aria-label="Update current card" title="Update current card (U)" data-cell-id="update-current-card-btn" size="sm" onClick={onUpdateCurrentCard}>
-                <Icon name="rotateCcw" size={18} />
+                <Icon name="rotateCcw" size={24} />
               </IconButton>
             )}
             {onToggleManager && (
               <IconButton aria-label="Open subtitle manager" title="Open subtitle manager" data-cell-id="manager-toggle-btn" size="sm" onClick={onToggleManager}>
-                <Icon name="subtitleManager" size={18} />
+                <Icon name="subtitleManager" size={24} />
               </IconButton>
             )}
             <IconButton aria-label="Exit player mode" title="Exit player mode (Esc)" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
-              <Icon name="minimize" size={18} />
+              <Icon name="minimize" size={24} />
             </IconButton>
           </div>
         </div>

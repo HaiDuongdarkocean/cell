@@ -100,7 +100,7 @@ export function VolumeControl({
         aria-pressed={muted}
         onClick={onMuteToggle}
       >
-        <Icon name={iconName} size={20} className={styles.icon} />
+        <Icon name={iconName} size={24} className={styles.icon} />
       </button>
       <div
         className={styles.slider}

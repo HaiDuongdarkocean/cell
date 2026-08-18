@@ -79,7 +79,7 @@ export function TranslatePanel({
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
           <span className={styles.cellDefCheckBox} aria-hidden="true">
-            {loading ? <Spinner size="sm" /> : <Icon name="check" size={16} />}
+            {loading ? <Spinner size="sm" /> : <Icon name="check" size={24} />}
           </span>
         </div>
       </div>

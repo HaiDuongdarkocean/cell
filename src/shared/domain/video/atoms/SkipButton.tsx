@@ -35,7 +35,7 @@ export function SkipButton({
       className={[styles.skipBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >
-      <Icon name={iconName} size={20} />
+      <Icon name={iconName} size={24} />
     </IconButton>
   );
 }

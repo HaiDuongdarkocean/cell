@@ -258,7 +258,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             aria-label="Manage API keys"
             data-cell-id="search-manage-keys-toggle"
           >
-            <Icon name="wrench" size={18} />
+            <Icon name="wrench" size={24} />
           </button>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
@@ -282,7 +282,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 aria-label="Clear search"
                 data-cell-id="search-clear"
               >
-                <Icon name="x" size={16} />
+                <Icon name="x" size={24} />
               </button>
             )}
             <button
@@ -293,7 +293,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label="Search subtitles"
               data-cell-id="search-button"
             >
-              <Icon name="search" size={18} />
+              <Icon name="search" size={24} />
             </button>
           </div>
         </div>
@@ -305,7 +305,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           aria-label="Advanced search options (season, episode)"
           data-cell-id="search-advanced-toggle"
         >
-          <Icon name="slidersHorizontal" size={18} />
+          <Icon name="slidersHorizontal" size={24} />
         </button>
       </div>
 
@@ -343,7 +343,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
         <div className={styles.apiHint} data-cell-id="search-api-hint">
-          <Icon name="wrench" size={16} className={styles.apiHintIcon} />
+          <Icon name="wrench" size={24} className={styles.apiHintIcon} />
           <span className={styles.apiHintText}>Add an API key to start searching</span>
           <button
             type="button"

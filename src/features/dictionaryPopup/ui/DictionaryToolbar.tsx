@@ -45,7 +45,7 @@ export function DictionaryToolbar({
             onClick={() => onSelect(tab.key)}
             data-cell-id={`dictionary-tab-${tab.key}`}
           >
-            <Icon name={tab.icon} size={20} />
+            <Icon name={tab.icon} size={24} />
             <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
             {count > 0 && tab.key !== 'links' && <span className={styles.cellToolbarBadge}>{count}</span>}
           </button>

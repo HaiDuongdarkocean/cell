@@ -52,7 +52,7 @@ export function PlayPauseButton({
       {loading ? (
         <Spinner size="sm" className={styles.spinner} />
       ) : (
-        <Icon name={playing ? 'pause' : 'play'} size={20} className={styles.icon} />
+        <Icon name={playing ? 'pause' : 'play'} size={24} className={styles.icon} />
       )}
     </button>
   );
