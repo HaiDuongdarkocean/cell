@@ -65,7 +65,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     if (!ripple || e.defaultPrevented) return;
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
-    const diameter = Math.min(rect.width, rect.height) * 1.2;
+    const diameter = Math.max(rect.width, rect.height) * 2;
     const radius = diameter / 2;
     const x = e.clientX - rect.left - radius;
     const y = e.clientY - rect.top - radius;
