@@ -179,7 +179,6 @@ function OffsetStepper({
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
 }): React.JSX.Element {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [resetting, setResetting] = useState(false);
   const AUTOSAVE_DELAY = 800;
 
   const commitOffset = useCallback(
@@ -232,9 +231,7 @@ function OffsetStepper({
 
   const handleReset = (): void => {
     if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null; }
-    setResetting(true);
     commitOffset('0');
-    setTimeout(() => setResetting(false), 600);
   };
 
   const saveLabel = state.saveState === 'saving' ? 'Saving…' : 'Saved';
@@ -287,7 +284,6 @@ function OffsetStepper({
         <IconButton
           size="md"
           variant="outline"
-          active={resetting}
           aria-label="Reset latency"
           data-cell-id={`manager-offset-reset-${role}`}
           onClick={handleReset}
