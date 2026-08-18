@@ -409,6 +409,12 @@ export function SubtitleManagerPanel({
         lastScrollTopRef.current = scrollTop;
         return;
       }
+      // At top: always show header/footer (scrolledDir = up)
+      if (scrollTop <= 0) {
+        setScrolledDir('up');
+        lastScrollTopRef.current = scrollTop;
+        return;
+      }
       if (delta > 1) {
         setScrolledDir('down');
         cooldownUntilRef.current = now + 300;
