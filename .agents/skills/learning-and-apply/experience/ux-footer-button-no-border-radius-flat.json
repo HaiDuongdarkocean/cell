@@ -1,0 +1,21 @@
+{
+  "id": "ux-footer-button-no-border-radius-flat",
+  "title": "Footer navigation button không bo góc — flat (radius-none) ở mọi breakpoint",
+  "category": ["ux", "css"],
+  "tags": ["footer", "button", "border-radius", "flat", "zalo-pay", "navigation-bar", "edge-to-edge", "no-rounded"],
+  "trigger": "Footer navigation button có border-radius (pill/card) tạo cảm giác 'nút nổi' thay vì 'navigation slot' dính vào footer",
+  "principle": "Footer navigation button (ZaloPay/iOS tab bar pattern) phải flat — border-radius: var(--radius-none) ở MỌI breakpoint, kể cả desktop. Lý do: (1) navigation slot không phải action button — không cần 'click affordance' của pill; (2) bo góc tạo khoảng trống视觉 giữa buttons, phá edge-to-edge continuity; (3) iOS UITabBar + Material 3 NavigationBar đều flat, không bo góc item; (4) hover/active state (bg color change) đã đủ affordance, không cần radius. KHÔNG dùng media query cho radius — flat ở mọi màn hình.",
+  "cases": [
+    {
+      "context": "Footer có 4 button vertical, desktop ≥480px bo pill 18px",
+      "bad": ".footer > button { border-radius: var(--radius-none); }\n@media (min-width: 480px) {\n  .footer > button { border-radius: var(--button-radius); }\n}",
+      "good": ".footer > button { border-radius: var(--radius-none); }\n/* Không media query — flat ở mọi breakpoint */"
+    }
+  ],
+  "applyFor": [
+    "Footer navigation bar (ZaloPay, iOS tab bar, Material 3 navigation bar pattern)",
+    "Bottom navigation slot — flat, không phải action button",
+    "Any nav item cần edge-to-edge continuity",
+    "Tab bar / segment control button"
+  ]
+}

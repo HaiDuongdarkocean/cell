@@ -19,6 +19,7 @@ export function Showcase(): ReactElement {
         borderRadius: 'var(--radius-card)',
         overflow: 'hidden',
         background: 'var(--color-surface)',
+        transform: 'translate(0)',
       }}
     >
       <OrbitalBadge

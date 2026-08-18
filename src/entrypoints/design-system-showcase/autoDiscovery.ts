@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { ICON_CATALOG } from '@/shared/icons';
 
 // ─── Library taxonomy ──────────────────────────────────────────────
 
@@ -11,15 +12,17 @@ export interface LibraryLevelInfo {
   label: string;
   supported: boolean;
   order: number;
+  /** Icon id from ICON_CATALOG — shown in collapsed rail. */
+  icon: keyof typeof ICON_CATALOG;
 }
 
 export const LIBRARY_LEVELS: readonly LibraryLevelInfo[] = [
-  { id: 'foundations', label: 'Foundations', supported: true, order: 0 },
-  { id: 'atoms', label: 'Atoms', supported: true, order: 1 },
-  { id: 'molecules', label: 'Molecules', supported: true, order: 2 },
-  { id: 'organisms', label: 'Organisms', supported: true, order: 3 },
-  { id: 'templates', label: 'Templates', supported: false, order: 4 },
-  { id: 'pages', label: 'Pages', supported: true, order: 5 },
+  { id: 'foundations', label: 'Foundations', supported: true, order: 0, icon: 'layers' },
+  { id: 'atoms', label: 'Atoms', supported: true, order: 1, icon: 'atom' },
+  { id: 'molecules', label: 'Molecules', supported: true, order: 2, icon: 'molecule' },
+  { id: 'organisms', label: 'Organisms', supported: true, order: 3, icon: 'organism' },
+  { id: 'templates', label: 'Templates', supported: false, order: 4, icon: 'wireframe' },
+  { id: 'pages', label: 'Pages', supported: true, order: 5, icon: 'windowPage' },
 ] as const;
 
 export type ShowcaseStatus = 'stable' | 'experimental' | 'deprecated';

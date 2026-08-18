@@ -25,6 +25,7 @@ import {
   isYoutubePage,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -206,6 +207,10 @@ export interface SubtitlePanelsProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue. */
   onSeek?: (timeMs: number) => void;
+  /** CSS strings to inject into the body-level shadow root for the manager panel.
+   *  Needed because the manager panel portals to document.body to escape the
+   *  video container's stacking context (e.g. YouTube #movie_player z-index:0). */
+  managerShadowCss?: string[];
 }
 
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
@@ -244,6 +249,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       currentTimeMs: initialCurrentTimeMs,
       offsetMs,
       onSeek,
+      managerShadowCss,
     },
     ref,
   ): React.JSX.Element {
@@ -267,6 +273,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+    // Body-level shadow host for the manager panel — escapes video container
+    // stacking context (e.g. YouTube #movie_player z-index:0 + position:relative)
+    const [managerPortalTarget, setManagerPortalTarget] = useState<HTMLElement | null>(null);
+    const managerPortalRef = useRef<{ host: HTMLElement; cleanup: () => void } | null>(null);
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
@@ -347,6 +357,29 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         el.remove();
       };
     }, []);
+
+    // Create a body-level shadow host for the manager panel so it escapes
+    // the video container's stacking context (YouTube #movie_player, etc.).
+    // The panel is portaled here instead of inside the video container's shadow root.
+    useEffect(() => {
+      if (!managerShadowCss || managerShadowCss.length === 0) return;
+      const host = document.createElement('div');
+      host.id = 'cell-manager-portal';
+      host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
+      document.body.appendChild(host);
+      const shadow = host.attachShadow({ mode: 'open' });
+      const cleanupCss = injectShadowCss(shadow, { css: managerShadowCss });
+      const inner = document.createElement('div');
+      inner.style.display = 'contents';
+      shadow.appendChild(inner);
+      setManagerPortalTarget(inner);
+      managerPortalRef.current = { host, cleanup: () => { cleanupCss(); host.remove(); } };
+      return () => {
+        setManagerPortalTarget(null);
+        managerPortalRef.current?.cleanup();
+        managerPortalRef.current = null;
+      };
+    }, [managerShadowCss]);
 
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1326,39 +1359,41 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {managerOpen && manager && portalTarget && createPortal(
-          <div
-            className={styles.panelLayer}
-            data-cell-id="subtitle-manager-layer"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setManagerOpen(false);
-            }}
-          >
-            <SubtitleManagerPanel
-              targetItems={manager.targetItems}
-              nativeItems={manager.nativeItems}
-              targetActiveIndex={manager.targetActiveIndex}
-              nativeActiveIndex={manager.nativeActiveIndex}
-              onSelect={manager.onSelect}
-              onClose={() => setManagerOpen(false)}
-              onImport={manager.onImport}
-              onGenerateNative={manager.onGenerateNative}
-              onOffsetChange={manager.onOffsetChange}
-              generateNativeDisabled={!generateNativeEnabled}
-              appearance={manager.appearance}
-              hasSearchKeys={manager.hasSearchKeys}
-              apiKeys={manager.apiKeys}
-              onApiKeysChange={manager.onApiKeysChange}
-              onSearchResultSelect={manager.onSearchResultSelect}
-              onDownload={manager.onDownload}
-              onHideSection={manager.onHideSection}
-              onHideBoth={manager.onHideBoth}
-              targetHidden={manager.targetHidden}
-              nativeHidden={manager.nativeHidden}
-              bothHidden={manager.bothHidden}
-            />
-          </div>,
-          portalTarget,
+        {managerOpen && manager && managerPortalTarget && createPortal(
+          <ShadowThemeProvider container={managerPortalTarget}>
+            <div
+              className={styles.panelLayer}
+              data-cell-id="subtitle-manager-layer"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setManagerOpen(false);
+              }}
+            >
+              <SubtitleManagerPanel
+                targetItems={manager.targetItems}
+                nativeItems={manager.nativeItems}
+                targetActiveIndex={manager.targetActiveIndex}
+                nativeActiveIndex={manager.nativeActiveIndex}
+                onSelect={manager.onSelect}
+                onClose={() => setManagerOpen(false)}
+                onImport={manager.onImport}
+                onGenerateNative={manager.onGenerateNative}
+                onOffsetChange={manager.onOffsetChange}
+                generateNativeDisabled={!generateNativeEnabled}
+                appearance={manager.appearance}
+                hasSearchKeys={manager.hasSearchKeys}
+                apiKeys={manager.apiKeys}
+                onApiKeysChange={manager.onApiKeysChange}
+                onSearchResultSelect={manager.onSearchResultSelect}
+                onDownload={manager.onDownload}
+                onHideSection={manager.onHideSection}
+                onHideBoth={manager.onHideBoth}
+                targetHidden={manager.targetHidden}
+                nativeHidden={manager.nativeHidden}
+                bothHidden={manager.bothHidden}
+              />
+            </div>
+          </ShadowThemeProvider>,
+          managerPortalTarget,
         )}
 
         {offsetOpen && offset && (

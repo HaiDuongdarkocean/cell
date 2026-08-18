@@ -3,6 +3,8 @@
 // Pure layout helpers and constants used by both the legacy `PopupShell`
 // and the React `usePopupPosition` / `mountPopupDictionary` paths.
 
+import { BREAKPOINTS } from '@/shared/lib/tokens';
+
 export const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
 
 /** Layout constants — extracted from hardcoded px values (Phase 1 SSOT). */
@@ -14,7 +16,7 @@ export const POPUP_MIN_WIDTH_PX = 320;
 export const POPUP_MIN_HEIGHT_PX = 200;
 export const POPUP_DEFAULT_HEIGHT_PX = 300;
 export const POPUP_MAX_HEIGHT_RATIO = 0.7;
-export const POPUP_SHEET_BREAKPOINT_PX = 480; // must stay in sync with CSS media queries (mobile < 480)
+export const POPUP_SHEET_BREAKPOINT_PX = BREAKPOINTS.mobileLg; // sync with CSS @media (max-width: 479px)
 
 /** Player Mode active — used for Player Mode-specific bounds, NOT for forcing sheet mode. */
 export function isPlayerModeActive(): boolean {

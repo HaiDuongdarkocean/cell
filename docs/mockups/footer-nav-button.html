@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FooterNavButton — Mockup (ZaloPay pattern)</title>
+<style>
+/* === Tokens (copy từ tokens.css — generated, không sửa ở mockup) === */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-rgb: 37, 99, 235;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary-foreground: #ffffff;
+  --color-background: #f1f1f1;
+  --color-surface: #ffffff;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-surface-hover: #f1f5f9;
+  --color-border-subtle: #f1f5f9;
+  --color-border-focus: #2563eb;
+  --border-width-hairline: 1px;
+  --radius-pill: 12px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --font-size-xs: 12px;
+  --font-size-base: 16px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --duration-fast: 175ms;
+  --transition: var(--duration-fast) ease-out;
+  --touch-target: 44px;
+}
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-primary-rgb: 96, 165, 250;
+  --color-primary-hover: #3b82f6;
+  --color-primary-active: #2563eb;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-primary-foreground: #171717;
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #ebebeb;
+  --color-text-secondary: #94a3b8;
+  --color-surface-hover: #334155;
+  --color-border-subtle: #1e293b;
+  --color-border-focus: #60a5fa;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+body { padding: var(--space-6) var(--space-4); }
+
+h1 { font-size: 18px; font-weight: 600; margin: 0 0 var(--space-2); }
+h2 { font-size: 14px; font-weight: 600; color: var(--color-text-secondary); margin: var(--space-6) 0 var(--space-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.section { margin-bottom: var(--space-6); }
+.note { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--space-2); line-height: 1.5; }
+
+/* === Theme toggle === */
+.themeToggle {
+  position: fixed; top: var(--space-4); right: var(--space-4);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--color-surface); color: var(--color-text);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs); cursor: pointer;
+  z-index: 10;
+}
+
+/* === Panel container (simulate SubtitleManagerPanel) === */
+.panel {
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.panelBody {
+  padding: var(--space-4);
+  min-height: 200px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   FooterNavButton — 3 variants (ZaloPay pattern)
+   Vertical stack: icon top, label bottom
+   ============================================================ */
+.footer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0;              /* no gap — equal slots, no divider */
+  padding: var(--space-1-5) var(--space-1) var(--space-2);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+.footerNavBtn {
+  flex: 1 1 0;          /* equal slots */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-1);
+  min-height: var(--touch-target);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+.footerNavBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+.footerNavBtn:active {
+  transform: scale(0.95);
+}
+.footerNavBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.footerNavBtn .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+.footerNavBtn .icon svg {
+  width: 22px;
+  height: 22px;
+}
+.footerNavBtn .label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* --- Variant: active (selected toggle, pale-blue bg) --- */
+.footerNavBtn.active {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+.footerNavBtn.active:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+/* --- Variant: primary (featured action, bold primary, no bg) --- */
+.footerNavBtn.primary {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.footerNavBtn.primary .label {
+  font-weight: 600;
+}
+.footerNavBtn.primary:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+/* --- Variant: disabled --- */
+.footerNavBtn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === Mobile: icon-only (<360px) === */
+@media (max-width: 359px) {
+  .footerNavBtn .label { display: none; }
+  .footerNavBtn { gap: 0; }
+}
+
+/* === Desktop: slightly larger label === */
+@media (min-width: 480px) {
+  .footerNavBtn .label { font-size: 12px; }
+  .footer { padding: var(--space-2) var(--space-2) var(--space-3); }
+}
+
+/* === Variant showcase grid === */
+.variantGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.variantCard {
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  padding: var(--space-3);
+  text-align: center;
+}
+.variantCard .label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+  display: block;
+}
+</style>
+</head>
+<body>
+
+<button class="themeToggle" onclick="toggleTheme()">Toggle dark/light</button>
+
+<h1>FooterNavButton — Mockup (ZaloPay pattern)</h1>
+<p class="note">
+  Redesign footer SubtitleManagerPanel theo pattern ZaloPay: icon trên + label dưới,
+  slots đều nhau, 3 variants (default / active / primary).<br>
+  SVG thật từ ICON_CATALOG, tokens thật từ tokens.css.
+</p>
+
+<!-- === Section 1: Component variants (standalone) === -->
+<h2>1. Component variants — FooterNavButton</h2>
+<div class="variantGrid">
+  <div class="variantCard">
+    <button class="footerNavBtn" style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span>
+      <span class="label">Search</span>
+    </button>
+    <span class="label">default</span>
+  </div>
+  <div class="variantCard">
+    <button class="footerNavBtn active" style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Hide</span>
+    </button>
+    <span class="label">active (toggled)</span>
+  </div>
+  <div class="variantCard">
+    <button class="footerNavBtn primary" style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+    <span class="label">primary (featured)</span>
+  </div>
+  <div class="variantCard">
+    <button class="footerNavBtn" disabled style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+    <span class="label">disabled</span>
+  </div>
+</div>
+
+<!-- === Section 2: Full footer in panel context === -->
+<h2>2. Footer trong panel context (4 buttons — production layout)</h2>
+<div class="panel">
+  <div class="panelBody">
+    Track list + offset stepper (placeholder — footer bên dưới là focus)
+  </div>
+  <div class="footer">
+    <button class="footerNavBtn" aria-label="Search subtitles">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span>
+      <span class="label">Search</span>
+    </button>
+    <button class="footerNavBtn" aria-label="Customize appearance">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4" /><line x1="10" x2="3" y1="4" y2="4" /><line x1="21" x2="12" y1="12" y2="12" /><line x1="8" x2="3" y1="12" y2="12" /><line x1="21" x2="16" y1="20" y2="20" /><line x1="12" x2="3" y1="20" y2="20" /><line x1="14" x2="14" y1="2" y2="6" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="16" x2="16" y1="18" y2="22" /></svg></span>
+      <span class="label">Customize</span>
+    </button>
+    <button class="footerNavBtn active" aria-pressed="true" aria-label="Hide both subtitles">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Hide</span>
+    </button>
+    <button class="footerNavBtn primary" aria-label="Generate native subtitle">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+  </div>
+</div>
+<p class="note">
+  4 slots đều nhau. Search + Customize = default. Hide = active (toggled, pale-blue bg).
+  Generate = primary (bold primary color, no bg — featured action cuối journey).
+</p>
+
+<!-- === Section 3: State comparisons === -->
+<h2>3. Hide button — 3 states (default → hover → active)</h2>
+<div class="variantGrid">
+  <div class="variantCard">
+    <button class="footerNavBtn" style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Show</span>
+    </button>
+    <span class="label">default (visible)</span>
+  </div>
+  <div class="variantCard">
+    <button class="footerNavBtn active" style="width:100%">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Hide</span>
+    </button>
+    <span class="label">active (hidden)</span>
+  </div>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+</script>
+</body>
+</html>

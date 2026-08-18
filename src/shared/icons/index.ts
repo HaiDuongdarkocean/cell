@@ -82,6 +82,14 @@ import pipSvg from './svg/pip.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
 
+// === Design system showcase — atomic design level icons ===
+import layersSvg from './svg/layers.svg?raw';
+import atomSvg from './svg/atom.svg?raw';
+import moleculeSvg from './svg/molecule.svg?raw';
+import organismSvg from './svg/organism.svg?raw';
+import wireframeSvg from './svg/wireframe.svg?raw';
+import windowPageSvg from './svg/window-page.svg?raw';
+
 // === Nav cluster icons ===
 import navPrevSvg from './svg/nav-prev.svg?raw';
 import navNextSvg from './svg/nav-next.svg?raw';
@@ -99,6 +107,7 @@ import generateNativeSvg from './svg/generate-native.svg?raw';
 import sidePanelSvg from './svg/side-panel.svg?raw';
 import subtitleManagerSvg from './svg/subtitle-manager.svg?raw';
 import resetOffsetSvg from './svg/reset-offset.svg?raw';
+import slidersHorizontalSvg from './svg/sliders-horizontal.svg?raw';
 
 // Re-export individual icons for backward compat (existing imports).
 export { default as settingsIcon } from './svg/settings.svg?raw';
@@ -170,6 +179,12 @@ export { default as minimizeIcon } from './svg/minimize.svg?raw';
 export { default as pipIcon } from './svg/pip.svg?raw';
 export { default as pinIcon } from './svg/pin.svg?raw';
 export { default as pinOffIcon } from './svg/pin-off.svg?raw';
+export { default as layersIcon } from './svg/layers.svg?raw';
+export { default as atomIcon } from './svg/atom.svg?raw';
+export { default as moleculeIcon } from './svg/molecule.svg?raw';
+export { default as organismIcon } from './svg/organism.svg?raw';
+export { default as wireframeIcon } from './svg/wireframe.svg?raw';
+export { default as windowPageIcon } from './svg/window-page.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
 export interface IconEntry {
@@ -262,6 +277,7 @@ export const ICON_CATALOG = {
   sidePanel:       { svg: sidePanelSvg,       source: 'custom/subtitle-panel',      tags: ['side','panel','toggle','split','rect'] } as IconEntry,
   subtitleManager: { svg: subtitleManagerSvg, source: 'custom/subtitle-manager',    tags: ['subtitle','manager','list','panel','lines'] } as IconEntry,
   resetOffset:     { svg: resetOffsetSvg,     source: 'custom/subtitle-offset',     tags: ['reset','offset','circular-arrow','hook','undo'] } as IconEntry,
+  slidersHorizontal: { svg: slidersHorizontalSvg, source: 'lucide/sliders-horizontal', tags: ['sliders','customize','appearance','settings','adjust','tune','levels'] } as IconEntry,
 
   // === Media / window control ===
   externalLink: { svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external','link','open','new-tab','outbound'] } as IconEntry,
@@ -277,6 +293,14 @@ export const ICON_CATALOG = {
   pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
   pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,
   pinOff:       { svg: pinOffSvg,       source: 'lucide/pin-off',       tags: ['pin','off','unpin','detach','release','unlock-position'] } as IconEntry,
+
+  // === Design system showcase — atomic design level icons ===
+  layers:       { svg: layersSvg,       source: 'custom/design-system', tags: ['layers','stack','foundation','design-tokens','base','tier'] } as IconEntry,
+  atom:         { svg: atomSvg,         source: 'lucide/atom',           tags: ['atom','orbital','electron','nucleus','particle','smallest-unit'] } as IconEntry,
+  molecule:     { svg: moleculeSvg,     source: 'custom/design-system',  tags: ['molecule','bond','triangle','atoms-combined','compound'] } as IconEntry,
+  organism:     { svg: organismSvg,     source: 'custom/design-system',  tags: ['organism','cell','organelles','complex-unit','biological'] } as IconEntry,
+  wireframe:    { svg: wireframeSvg,    source: 'custom/design-system',  tags: ['wireframe','template','layout','scaffold','blueprint','sections'] } as IconEntry,
+  windowPage:   { svg: windowPageSvg,   source: 'custom/design-system',  tags: ['page','window','browser','document','final','complete'] } as IconEntry,
 } as const;
 
 /** Find icon entries by tag (fuzzy semantic search). */

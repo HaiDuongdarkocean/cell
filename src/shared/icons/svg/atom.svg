@@ -1,0 +1,17 @@
+<!-- @source lucide/atom — Atoms level icon (orbital electron metaphor) -->
+<svg
+  class="lucide lucide-atom"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.5"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+  <path d="M3 19A12 4.2 135 0 0 21 5 12 4.2 135 0 0 3 19" />
+  <path d="M5 3a12 4.2 225 0 1 14 18A12 4.2 225 0 1 5 3" />
+</svg>

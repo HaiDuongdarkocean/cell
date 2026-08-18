@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
-import { Button } from '@/shared/ui/Button';
 import { Tabs } from '@/shared/ui/Tabs';
 import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
+import { SubtitleManagerFooter } from './SubtitleManagerFooter';
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
@@ -546,62 +546,16 @@ export function SubtitleManagerPanel({
             </Tabs>
           </div>
 
-          <div className={styles.footer}>
-            <Button
-              variant="outline"
-              size="md"
-              className={styles.footerCustomize}
-              ref={searchBtnRef}
-              onClick={handleSearchClick}
-              data-cell-id="manager-search-subtitles"
-              leadingIcon={<Icon name="search" size={16} />}
-              title="Search subtitles"
-            >
-              <span className={styles.footerLabel}>Search</span>
-            </Button>
-            {appearance && (
-              <Button
-                variant="outline"
-                size="md"
-                className={styles.footerCustomize}
-                ref={customizeBtnRef}
-                onClick={handleCustomizeClick}
-                data-cell-id="manager-customize-appearance"
-                leadingIcon={<Icon name="slidersHorizontal" size={16} />}
-                title="Customize appearance"
-              >
-                <span className={styles.footerLabel}>Customize</span>
-              </Button>
-            )}
-            {onHideBoth && (
-              <Button
-                variant="outline"
-                size="md"
-                className={[styles.footerCustomize, bothHidden && styles.footerBtnActive].filter(Boolean).join(' ')}
-                aria-pressed={bothHidden}
-                onClick={onHideBoth}
-                data-cell-id="manager-hide-both"
-                leadingIcon={<Icon name="eyeOff" size={16} />}
-                title={bothHidden ? 'Show both' : 'Hide both'}
-              >
-                <span className={styles.footerLabel}>{bothHidden ? 'Show' : 'Hide'}</span>
-              </Button>
-            )}
-            {onGenerateNative && (
-              <Button
-                variant="primary"
-                size="md"
-                className={styles.footerGenerate}
-                onClick={onGenerateNative}
-                data-cell-id="manager-generate-native"
-                disabled={generateNativeDisabled}
-                leadingIcon={<Icon name="generateNative" size={16} />}
-                title="Generate native"
-              >
-                <span className={styles.footerLabel}>Generate</span>
-              </Button>
-            )}
-          </div>
+          <SubtitleManagerFooter
+            onSearch={handleSearchClick}
+            searchBtnRef={searchBtnRef}
+            onCustomize={appearance ? handleCustomizeClick : undefined}
+            customizeBtnRef={customizeBtnRef}
+            onHideBoth={onHideBoth}
+            bothHidden={bothHidden}
+            onGenerateNative={onGenerateNative}
+            generateNativeDisabled={generateNativeDisabled}
+          />
         </div>
       )}
 

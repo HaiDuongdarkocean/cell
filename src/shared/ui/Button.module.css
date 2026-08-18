@@ -143,6 +143,52 @@
   color: var(--color-primary-hover);
 }
 
+/* PrimarySubtle — bold primary text, no background (ZaloPay featured nav action) */
+.primarySubtle {
+  background: var(--button-primary-subtle-bg);
+  color: var(--button-primary-subtle-fg);
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.primarySubtle:hover {
+  background: var(--button-primary-subtle-hover-bg);
+}
+
+.primarySubtle:active {
+  transform: scale(0.97);
+}
+
+/* === Active state — persistent toggle (pale-blue subtle bg + primary color) === */
+.active,
+.active:hover {
+  background: var(--button-toggle-active-bg);
+  color: var(--button-toggle-active-fg);
+  border-color: transparent;
+}
+
+/* === Orientation: vertical (ZaloPay pattern — icon top, label bottom) === */
+.vertical {
+  flex-direction: column;
+  gap: var(--button-vertical-gap);
+  padding: var(--button-vertical-padding-y) var(--button-vertical-padding-x);
+  height: auto;
+  min-height: var(--touch-target);
+}
+
+.vertical .label {
+  font-size: var(--button-vertical-label-size);
+  font-weight: var(--button-vertical-label-weight);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vertical .leadingIcon,
+.vertical .trailingIcon {
+  width: var(--button-vertical-icon-size);
+  height: var(--button-vertical-icon-size);
+}
+
 /* === Icons === */
 .leadingIcon,
 .trailingIcon {

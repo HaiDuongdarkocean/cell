@@ -294,13 +294,89 @@
     @media (max-width: 479px) { .search-head, .search-form, .results-list, .role-picker, .no-keys, .skeleton-list, .search-empty, .search-error { padding-inline: var(--space-3); } .search-form { flex-direction: column; align-items: stretch; } .search-input { width: 100%; } .season-row { flex-direction: column; align-items: stretch; } .num-input { width: 100%; } .search-btn { width: 100%; } .role-btn { min-height: 44px; } }
     @media (max-width: 479px) { body { padding: var(--space-2); } .panel-header, .footer, .section-head { padding-inline: var(--space-3); } .section-body { padding-inline: var(--space-3); } .section-count { display: none; } .timing { align-items: stretch; flex-direction: column; gap: var(--space-2); } .timing-control { width: 100%; max-width: none; } .stepper { width: 100%; max-width: none; } .stepper button { flex: 0 0 48px; width: 48px; min-height: 44px; } .save-state { min-width: 42px; } .widths { margin-left: 0; width: 100%; } .widths button { flex: 1; } .journey { grid-template-columns: 1fr; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+
+    /* ============================================================
+       POSITIONING VARIANTS — 3 cách đặt panel không che subtitle
+       ============================================================ */
+    .pos-grid { display: flex; flex-direction: column; gap: var(--space-8); margin-bottom: var(--space-8); }
+    .pos-card { display: flex; flex-direction: column; gap: var(--space-2); max-width: 780px; }
+    .pos-label { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-primary); }
+    .pos-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--leading-normal); min-height: 2.5em; }
+
+    /* Mock video player */
+    .pos-player { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--color-border); }
+    .pos-video-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); display: flex; align-items: center; justify-content: center; }
+    .pos-video-bg::after { content: '▶'; font-size: 36px; color: rgba(255,255,255,0.1); }
+    .pos-controls { position: absolute; bottom: 0; left: 0; right: 0; height: 32px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); display: flex; align-items: center; padding: 0 var(--space-2); gap: var(--space-2); z-index: 5; }
+    .pos-progress { flex: 1; height: 3px; background: rgba(255,255,255,0.2); border-radius: var(--radius-full); position: relative; }
+    .pos-progress::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 35%; background: var(--color-primary); border-radius: var(--radius-full); }
+    .pos-time { color: rgba(255,255,255,0.7); font-size: var(--font-size-2xs); font-variant-numeric: tabular-nums; }
+
+    /* Subtitle overlay (75% height — matches production) */
+    .pos-subs { position: absolute; left: 0; right: 0; top: 75%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 var(--space-3); z-index: 2; pointer-events: none; }
+    .pos-sub-target { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: #fff; text-shadow: 1px 1px 2px #000; text-align: center; }
+    .pos-sub-native { font-size: var(--font-size-2xs); color: rgba(255,255,255,0.8); text-shadow: 1px 1px 2px #000; text-align: center; }
+
+    /* Manager toggle (floating top-right) */
+    .pos-toggle { position: absolute; top: var(--space-2); right: var(--space-2); width: 32px; height: 32px; border-radius: var(--radius-full); background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; }
+    .pos-toggle svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+    /* Mini panel content (shared) */
+    .pos-panel { display: flex; flex-direction: column; background: var(--color-surface-popover); border: 1px solid var(--color-border); border-radius: var(--radius-dialog); box-shadow: var(--shadow-popover); color: var(--color-text-primary); font-size: var(--font-size-xs); overflow: hidden; }
+    .pos-panel-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border); }
+    .pos-panel-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+    .pos-panel-close { display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+    .pos-panel-close:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .pos-panel-body { flex: 1 1 auto; overflow-y: auto; }
+    .pos-sec { padding: var(--space-1) 0; }
+    .pos-sec-head { display: flex; align-items: center; gap: var(--space-1); min-height: 28px; padding: var(--space-1) var(--space-3); }
+    .pos-sec-name { flex: 1; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); }
+    .pos-sec-count { color: var(--color-text-secondary); font-size: var(--font-size-2xs); }
+    .pos-sec-actions { display: flex; gap: 2px; }
+    .pos-sec-actions button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+    .pos-sec-actions button:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .pos-sec-actions svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+    .pos-sec-body { padding: 0 var(--space-3); }
+    .pos-track { display: flex; align-items: center; gap: var(--space-1); min-height: 28px; padding: var(--space-1) var(--space-1); border-radius: var(--radius-sm); cursor: pointer; }
+    .pos-track:hover { background: var(--color-surface-hover); }
+    .pos-track.active { box-shadow: inset 2px 0 0 var(--color-primary); background: var(--color-primary-subtle); }
+    .pos-track-name { flex: 1; font-size: var(--font-size-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pos-track.active .pos-track-name { color: var(--color-primary); }
+    .pos-panel-foot { flex: 0 0 auto; display: flex; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--color-border); }
+    .pos-btn { flex: 1; min-height: 24px; padding: 2px var(--space-1); border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: transparent; color: var(--color-text-primary); font-size: var(--font-size-2xs); font-weight: var(--font-weight-medium); cursor: pointer; }
+    .pos-btn:hover { background: var(--color-surface-hover); }
+    .pos-btn.primary { background: var(--color-primary); color: var(--color-primary-foreground); border-color: transparent; }
+    .pos-btn.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+
+    /* VARIANT C · Floating Panel (Desktop/Tablet) — Smart Positioning */
+    .pos-c .pos-player { aspect-ratio: auto; height: 340px; }
+    .pos-c .pos-panel { position: absolute; top: var(--space-2); right: var(--space-2); width: 180px; max-height: 70%; background: rgba(27,27,27,0.85); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); z-index: 8; }
+    .pos-c .pos-subs { top: 82%; }
+    .pos-c .pos-toggle { display: none; }
+
+    /* MOBILE · Bottom Sheet — slide up from bottom */
+    .pos-mobile-sheet .pos-player { aspect-ratio: auto; height: 400px; }
+    .pos-mobile-sheet .pos-panel { position: absolute; bottom: 32px; left: 0; right: 0; max-height: 70%; border-radius: var(--radius-dialog) var(--radius-dialog) 0 0; border-bottom: 0; z-index: 8; }
+    .pos-mobile-sheet .pos-panel::before { content: ''; display: block; width: 32px; height: 3px; margin: var(--space-1) auto 0; background: var(--color-border-emphasized); border-radius: var(--radius-full); opacity: 0.5; }
+    /* Subtitle pushed up to 20% to avoid bottom sheet covering it */
+    .pos-mobile-sheet .pos-subs { top: 20%; }
   </style>
 </head>
 <body>
   <main class="page">
     <header class="intro">
-      <h1>Subtitle Manager · Sync journey</h1>
-      <p>Một câu chuyện đơn giản: chọn track → nhập subtitle nếu thiếu → chỉnh cho hai dòng gặp nhau → hệ thống tự lưu.</p>
+      <h1>Subtitle Manager · Redesign</h1>
+      <p>Trật tự: <strong>1 · Positioning</strong> (panel ở đâu cho không che subtitle) → <strong>2 · Sync journey</strong> (nội dung panel) → <strong>3 · Appearance</strong> (tuỳ chỉnh) → <strong>4 · Search</strong> (tìm subtitle).</p>
+    </header>
+
+    <!-- ============================================================
+         SECTION 1 · POSITIONING — Floating Panel (Smart)
+         Responsive: desktop/tablet → floating panel, mobile → bottom sheet
+         Không che subtitle (75% height).
+         ============================================================ -->
+    <header class="intro" style="margin-top: var(--space-6);">
+      <h1>1 · Positioning · Floating Panel (Smart)</h1>
+      <p>Responsive theo kích thước màn hình: <strong>desktop/tablet</strong> → floating panel (như popup dictionary, draggable, semi-transparent). <strong>mobile</strong> → bottom sheet từ dưới lên. <strong>Điều kiện</strong>: không che subtitle (75% height).</p>
     </header>
 
     <div class="toolbar" role="toolbar" aria-label="Mockup controls">
@@ -312,8 +388,69 @@
       </div>
     </div>
 
+    <!-- FLOATING PANEL — 2 chế độ responsive -->
+    <div class="pos-grid">
+
+      <!-- DESKTOP/TABLET · Floating Panel -->
+      <div class="pos-card pos-c">
+        <div class="pos-label">Desktop / Tablet · Floating Panel</div>
+        <div class="pos-desc">Nổi top-right, compact, semi-transparent, draggable (như popup dictionary). Subtitle ở 75% nguyên vị trí — panel ở góc không che.</div>
+        <div class="pos-player">
+          <div class="pos-video-bg"></div>
+          <div class="pos-subs"><div class="pos-sub-target">I've been waiting for this moment.</div><div class="pos-sub-native">Tôi đã chờ đợi khoảnh khắc này.</div></div>
+          <div class="pos-controls"><span class="pos-time">12:34</span><div class="pos-progress"></div><span class="pos-time">36:21</span></div>
+          <div class="pos-panel">
+            <div class="pos-panel-head"><span class="pos-panel-title">Subs</span><button class="pos-panel-close">×</button></div>
+            <div class="pos-panel-body">
+              <div class="pos-sec"><div class="pos-sec-head"><span class="pos-sec-name">Target</span><span class="pos-sec-count">2</span><div class="pos-sec-actions"><button><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></div></div>
+              <div class="pos-sec-body">
+                <div class="pos-track active"><span class="pos-track-name">English #1</span></div>
+                <div class="pos-track"><span class="pos-track-name">test1.srt</span></div>
+              </div></div>
+              <div class="pos-sec"><div class="pos-sec-head"><span class="pos-sec-name">Native</span><span class="pos-sec-count">0</span><div class="pos-sec-actions"><button><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></div></div>
+              <div class="pos-sec-body"><div class="pos-track"><span class="pos-track-name" style="color:var(--color-text-secondary)">Off</span></div></div></div>
+            </div>
+            <div class="pos-panel-foot"><button class="pos-btn">Search</button><button class="pos-btn active">Hide</button><button class="pos-btn primary">Gen</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOBILE · Bottom Sheet -->
+      <div class="pos-card pos-mobile-sheet">
+        <div class="pos-label">Mobile · Bottom Sheet</div>
+        <div class="pos-desc">Trượt từ dưới lên ~50%. Subtitle đẩy lên 20% để không bị che. Drag handle kéo đổi cao. Tap ngoài để đóng.</div>
+        <div class="pos-player">
+          <div class="pos-video-bg"></div>
+          <div class="pos-subs"><div class="pos-sub-target">I've been waiting for this moment.</div><div class="pos-sub-native">Tôi đã chờ đợi khoảnh khắc này.</div></div>
+          <div class="pos-controls"><span class="pos-time">12:34</span><div class="pos-progress"></div><span class="pos-time">36:21</span></div>
+          <div class="pos-panel">
+            <div class="pos-panel-head"><span class="pos-panel-title">Subs</span><button class="pos-panel-close">×</button></div>
+            <div class="pos-panel-body">
+              <div class="pos-sec"><div class="pos-sec-head"><span class="pos-sec-name">Target</span><span class="pos-sec-count">2</span><div class="pos-sec-actions"><button><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></div></div>
+              <div class="pos-sec-body">
+                <div class="pos-track active"><span class="pos-track-name">English #1</span></div>
+                <div class="pos-track"><span class="pos-track-name">test1.srt</span></div>
+              </div></div>
+              <div class="pos-sec"><div class="pos-sec-head"><span class="pos-sec-name">Native</span><span class="pos-sec-count">0</span><div class="pos-sec-actions"><button><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button></div></div>
+              <div class="pos-sec-body"><div class="pos-track"><span class="pos-track-name" style="color:var(--color-text-secondary)">Off</span></div></div></div>
+            </div>
+            <div class="pos-panel-foot"><button class="pos-btn">Search</button><button class="pos-btn active">Hide</button><button class="pos-btn primary">Gen</button></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pos-grid -->
+
+    <!-- ============================================================
+         SECTION 2 · SYNC JOURNEY (panel content)
+         ============================================================ -->
+    <header class="intro" style="margin-top: var(--space-8);">
+      <h1>2 · Sync journey · Panel content</h1>
+      <p>Một câu chuyện đơn giản: chọn track → nhập subtitle nếu thiếu → chỉnh cho hai dòng gặp nhau → hệ thống tự lưu.</p>
+    </header>
+
     <div class="frame" aria-label="Subtitle manager sync journey">
-      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
+      <div class="panel-header"><span class="title">2 · Sync Journey</span><button class="close" type="button" aria-label="Close">×</button></div>
 
       <section class="section">
         <div class="section-head"><button class="section-toggle" type="button" aria-expanded="true"><span class="caret">⌄</span><span class="section-name">Target · English</span><span class="section-count">2 subtitles</span></button><button class="section-import" type="button">Import</button></div>
@@ -330,7 +467,7 @@
 
     <!-- Appearance view frame — Phase 3 minimal -->
     <div class="frame" aria-label="Subtitle manager appearance view" style="margin-top: var(--space-6);">
-      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
+      <div class="panel-header"><span class="title">3 · Appearance</span><button class="close" type="button" aria-label="Close">×</button></div>
 
       <button class="back-btn" type="button"><span class="arrow">←</span> Back to subtitles</button>
 
@@ -550,7 +687,7 @@
 
     <!-- === Search section mockup === -->
     <header class="intro" style="margin-top: var(--space-8);">
-      <h1>Subtitle Search · Redesign preview</h1>
+      <h1>4 · Subtitle Search</h1>
       <p>Search form luôn hiển thị. API status bằng chip (xanh=OK, đỏ=missing/expired). Language tự động từ settings (target→native). Không auto-search — chỉ search khi Enter hoặc click Search.</p>
     </header>
 
@@ -567,7 +704,7 @@
     </div>
 
     <div class="frame" aria-label="Subtitle search view">
-      <div class="panel-header"><span class="title">Subtitle Manager</span><button class="close" type="button" aria-label="Close">×</button></div>
+      <div class="panel-header"><span class="title">4 · Subtitle Search</span><button class="close" type="button" aria-label="Close">×</button></div>
 
       <button class="back-btn" type="button"><span class="arrow">←</span> Back to subtitles</button>
 
