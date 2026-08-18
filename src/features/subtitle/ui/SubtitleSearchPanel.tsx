@@ -16,6 +16,7 @@
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Icon } from '@/shared/icons/Icon';
@@ -250,16 +251,17 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
-          <button
-            type="button"
-            className={`${styles.iconBtn} ${manageKeysOpen ? styles.iconBtnActive : ''}`}
+          <IconButton
+            variant="ghost"
+            size="sm"
+            active={manageKeysOpen}
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
             aria-label="Manage API keys"
             data-cell-id="search-manage-keys-toggle"
           >
-            <Icon name="wrench"  />
-          </button>
+            <Icon name="wrench" />
+          </IconButton>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
           <input
@@ -275,38 +277,39 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           />
           <div className={styles.searchActions}>
             {query && (
-              <button
-                type="button"
-                className={styles.searchInnerBtn}
+              <IconButton
+                variant="ghost"
+                size="xs"
                 onClick={handleClearQuery}
                 aria-label="Clear search"
                 data-cell-id="search-clear"
               >
-                <Icon name="x"  />
-              </button>
+                <Icon name="x" />
+              </IconButton>
             )}
-            <button
-              type="button"
-              className={styles.searchInnerBtn}
+            <IconButton
+              variant="ghost"
+              size="xs"
               onClick={handleSearchClick}
               disabled={formDisabled || !query.trim() || loading}
               aria-label="Search subtitles"
               data-cell-id="search-button"
             >
-              <Icon name="search"  />
-            </button>
+              <Icon name="search" />
+            </IconButton>
           </div>
         </div>
-        <button
-          type="button"
-          className={`${styles.iconBtn} ${advancedOpen ? styles.iconBtnActive : ''} ${hasAdvancedValues ? styles.iconBtnHasValue : ''}`}
+        <IconButton
+          variant="ghost"
+          size="sm"
+          active={advancedOpen}
           onClick={() => setAdvancedOpen((v) => !v)}
           aria-expanded={advancedOpen}
           aria-label="Advanced search options (season, episode)"
           data-cell-id="search-advanced-toggle"
         >
-          <Icon name="slidersHorizontal"  />
-        </button>
+          <Icon name="slidersHorizontal" />
+        </IconButton>
       </div>
 
       {advancedOpen && (
