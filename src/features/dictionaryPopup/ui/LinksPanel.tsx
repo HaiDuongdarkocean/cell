@@ -33,7 +33,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
             className={styles.cellLinksItem}
             data-cell-id={`dictionary-link-${link.id}`}
           >
-            <Icon name="link" size={16} />
+            <Icon name="link" size={24} />
             <span>{link.name}</span>
           </a>
         ))

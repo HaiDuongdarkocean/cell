@@ -220,7 +220,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
           aria-label={addOpen ? 'Close add key form' : 'Add new API key'}
           data-cell-id="akm-add-toggle"
         >
-          <Icon name={addOpen ? 'x' : 'plus'} size={16} />
+          <Icon name={addOpen ? 'x' : 'plus'} size={24} />
           <span>{addOpen ? 'Cancel' : 'Add key'}</span>
         </button>
       </div>
@@ -263,7 +263,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             rel="noopener noreferrer"
             data-cell-id="akm-get-key-link"
           >
-            <Icon name="externalLink" size={14} />
+            <Icon name="externalLink" size={24} />
             <span>Get {PROVIDER_LABELS[addProvider]} API key</span>
           </a>
           <Button
@@ -294,7 +294,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
 
             {groupKeys.length === 0 && (
               <div className={styles.emptyState}>
-                <Icon name="wrench" size={20} className={styles.emptyIcon} />
+                <Icon name="wrench" size={24} className={styles.emptyIcon} />
                 <span className={styles.emptyText}>No {PROVIDER_LABELS[provider]} keys yet</span>
               </div>
             )}
@@ -345,7 +345,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           aria-label={`Edit key ${k.label ?? k.id}`}
                           data-cell-id={`key-edit-${k.id}`}
                         >
-                          <Icon name="pencil" size={16} />
+                          <Icon name="pencil" size={24} />
                         </button>
                         <button
                           type="button"
@@ -354,7 +354,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                           aria-label={`Delete key ${k.label ?? k.id}`}
                           data-cell-id={`key-delete-${k.id}`}
                         >
-                          <Icon name="trash" size={16} />
+                          <Icon name="trash" size={24} />
                         </button>
                       </div>
                     </>
@@ -369,7 +369,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
       {/* Empty state — no keys at all */}
       {totalKeys === 0 && !addOpen && (
         <div className={styles.fullEmpty} data-cell-id="akm-empty">
-          <Icon name="wrench" size={32} className={styles.fullEmptyIcon} />
+          <Icon name="wrench" size={24} className={styles.fullEmptyIcon} />
           <span className={styles.fullEmptyTitle}>No API keys yet</span>
           <span className={styles.fullEmptyHint}>Add a key to start searching for subtitles</span>
           <Button

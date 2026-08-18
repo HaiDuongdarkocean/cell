@@ -158,7 +158,7 @@ export function FieldAutoGrowInput({
           aria-label="Clear"
           onClick={handleClear}
         >
-          <Icon name="x" size={16} />
+          <Icon name="x" size={24} />
         </button>
       )}
     </div>

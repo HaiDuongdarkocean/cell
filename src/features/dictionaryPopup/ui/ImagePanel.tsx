@@ -83,7 +83,7 @@ export function ImagePanel({
                 onError={(): void => onImageError(item.id)}
               />
               <span className={styles.cellDefCheckBox} aria-hidden="true">
-                <Icon name="check" size={16} />
+                <Icon name="check" size={24} />
               </span>
             </button>
           );
