@@ -12,6 +12,7 @@ export function requestManagerOpenOnHost(
   timeoutMs = 3000,
 ): Promise<boolean> {
   if (!isChildFrame()) return Promise.resolve(false);
+  ensureBeforeunloadListener();
   return new Promise((resolve) => {
     let settled = false;
     const onMessage = (e: MessageEvent): void => {
@@ -89,8 +90,13 @@ export function onManagerCloseFromHost(handler: () => void): () => void {
   return () => window.removeEventListener('message', onMessage);
 }
 
-// beforeunload — cleanup if child navigates away while manager open on host
-if (isChildFrame()) {
+// beforeunload — cleanup if child navigates away while manager open on host.
+// Lazy init: this module may be transitively imported by the SW bundle where
+// `window` is undefined. Register the listener on first use, not at module load.
+let beforeunloadInstalled = false;
+function ensureBeforeunloadListener(): void {
+  if (beforeunloadInstalled) return;
+  beforeunloadInstalled = true;
   window.addEventListener('beforeunload', () => {
     if (managerOpenedOnHost) {
       try {
