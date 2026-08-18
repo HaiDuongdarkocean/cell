@@ -14,9 +14,3 @@
   min-width: 0;
   border-radius: var(--radius-none);
 }
-
-/* Active: only icon + label change color, no background change */
-.footer > button.active,
-.footer > button.active:hover {
-  color: var(--color-primary);
-}

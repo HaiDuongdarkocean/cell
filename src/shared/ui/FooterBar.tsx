@@ -44,6 +44,7 @@ export function FooterBar({ slots, className }: FooterBarProps): React.JSX.Eleme
           variant={slot.variant ?? 'ghost'}
           orientation="vertical"
           active={slot.active}
+          activeStyle="flat"
           disabled={slot.disabled}
           ref={slot.ref}
           onClick={slot.onClick}

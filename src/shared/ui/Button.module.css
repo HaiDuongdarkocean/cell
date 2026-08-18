@@ -166,6 +166,14 @@
   border-color: transparent;
 }
 
+/* === Active flat — color only, no background, no animation (footer/tab bar) === */
+.activeFlat,
+.activeFlat:hover {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
 /* === Orientation: vertical (ZaloPay pattern — icon top, label bottom) === */
 .vertical {
   flex-direction: column;

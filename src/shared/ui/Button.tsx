@@ -6,6 +6,7 @@ type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'gh
 type ButtonSize = 'sm' | 'md' | 'lg';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
+type ButtonActiveStyle = 'default' | 'flat';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
@@ -14,8 +15,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   /** Layout direction: horizontal (icon+label inline) or vertical (icon top, label bottom). Default: horizontal. */
   orientation?: ButtonOrientation;
-  /** Persistent active/toggle state — pale-blue subtle bg + primary color. */
+  /** Persistent active/toggle state. Default: pale-blue subtle bg + primary color. */
   active?: boolean;
+  /** Active state visual: 'default' (pale-blue bg + primary color) or 'flat' (primary color only, no bg, no animation). Default: default. */
+  activeStyle?: ButtonActiveStyle;
   /** Show loading spinner and disable interactions. */
   loading?: boolean;
   /** Stretch to fill the available width. */
@@ -42,6 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   size = 'md',
   orientation = 'horizontal',
   active = false,
+  activeStyle = 'default',
   loading = false,
   fullWidth = false,
   elevation = 'none',
@@ -57,7 +61,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     styles[variant],
     styles[size],
     orientation === 'vertical' ? styles.vertical : '',
-    active ? styles.active : '',
+    active ? (activeStyle === 'flat' ? styles.activeFlat : styles.active) : '',
     loading ? styles.loading : '',
     fullWidth ? styles.fullWidth : '',
     elevation !== 'none' ? styles[`elevation_${elevation}`] : '',
