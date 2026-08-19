@@ -753,6 +753,13 @@
 .recCard {
   cursor: pointer;
   transition: transform 0.15s;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+  color: inherit;
+  font: inherit;
 }
 
 .recCard:hover {
@@ -764,6 +771,9 @@
   aspect-ratio: 2 / 3;
   border-radius: var(--sf-radius);
   margin-bottom: 8px;
+  object-fit: cover;
+  display: block;
+  background: #000;
 }
 
 .recTitle {

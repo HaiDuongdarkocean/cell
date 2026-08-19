@@ -25,7 +25,11 @@ import {
   isYoutubePage,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { Sheet } from '@/shared/ui/Sheet';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -275,9 +279,25 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
+    const [managerExiting, setManagerExiting] = useState(false);
     const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
-    const [videoRect, setVideoRect] = useState<DOMRect | null>(null);
-    const [managerOrigin, setManagerOrigin] = useState<{ x: number; y: number } | null>(null);
+    const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isMobile = useIsMobile(BREAKPOINTS.tablet);
+    // Desktop: trigger slide-out animation, then unmount after 280ms.
+    // Mobile: unmount immediately (Sheet handles its own exit animation).
+    const closeManager = useCallback(() => {
+      if (!isMobile) {
+        setManagerExiting(true);
+        if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = setTimeout(() => {
+          setManagerOpen(false);
+          setManagerExiting(false);
+          exitTimerRef.current = null;
+        }, 280);
+      } else {
+        setManagerOpen(false);
+      }
+    }, [isMobile]);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -293,6 +313,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
+    // Persisted mobile sheet height (% of viewport, 20-95). null = not yet loaded.
+    const [managerSheetHeightVh, setManagerSheetHeightVh] = useState<number | null>(null);
     const cleanupRef = useRef<(() => void) | null>(null);
     const savedScrollRef = useRef<number | null>(null);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
@@ -369,22 +391,27 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, []);
 
-    // Create a body-level shadow host for the manager panel so it escapes
-    // the video container's stacking context (YouTube #movie_player, etc.).
-    // The panel is portaled here instead of inside the video container's shadow root.
+    // Manager panel shadow host — mounted in the video player container
+    // (same parent as #cell-subtitle-root) so it shares the overlay's
+    // positioning strategy: absolute within the container, no body-level
+    // portal, no videoRect tracking. Fullscreen reparenting reuses the
+    // same attachFullscreenReparenting helper as the overlay shadow host.
     useEffect(() => {
       if (!managerShadowCss || managerShadowCss.length === 0) return;
+      const overlayHost = document.getElementById('cell-subtitle-root');
+      const container = overlayHost?.parentElement ?? document.body;
       const host = document.createElement('div');
       host.id = 'cell-manager-portal';
-      host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;';
-      document.body.appendChild(host);
+      host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2147483647;';
+      container.appendChild(host);
       const shadow = host.attachShadow({ mode: 'open' });
       const cleanupCss = injectShadowCss(shadow, { css: managerShadowCss });
       const inner = document.createElement('div');
       inner.style.display = 'contents';
       shadow.appendChild(inner);
       setManagerPortalTarget(inner);
-      managerPortalRef.current = { host, cleanup: () => { cleanupCss(); host.remove(); } };
+      const cleanupFullscreen = attachFullscreenReparenting(host, container);
+      managerPortalRef.current = { host, cleanup: () => { cleanupFullscreen(); cleanupCss(); host.remove(); } };
       return () => {
         setManagerPortalTarget(null);
         managerPortalRef.current?.cleanup();
@@ -392,37 +419,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, [managerShadowCss]);
 
-    // Track video player container rect for manager overlay positioning.
-    // Only active when manager is open to avoid unnecessary observers.
-    useEffect(() => {
-      if (!managerOpen) return;
-      const playerShell = findPlayerContainer();
-      if (!playerShell) return;
-
-      const updateRect = (): void => {
-        const r = playerShell.getBoundingClientRect();
-        setVideoRect({ x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, bottom: r.bottom, left: r.left, right: r.right, toJSON: r.toJSON });
-      };
-      updateRect();
-
-      const ro = new ResizeObserver(updateRect);
-      ro.observe(playerShell);
-      window.addEventListener('scroll', updateRect, { passive: true });
-      window.addEventListener('resize', updateRect);
-
-      return () => {
-        ro.disconnect();
-        window.removeEventListener('scroll', updateRect);
-        window.removeEventListener('resize', updateRect);
-      };
-    }, [managerOpen]);
-
     // Child-iframe mobile: delegate manager panel rendering to the host frame.
     // Serialize state + ask host to mount the panel; on success skip the
     // in-iframe portal so we don't render two copies. On failure, fall back to
     // rendering in-iframe as normal (managerOpenOnHost stays false).
+    // Re-runs when isMobile changes → viewport-responsive reparenting:
+    //   desktop→mobile: delegate to host (sheet escapes iframe bounds).
+    //   mobile→desktop: handled by the host-close effect below.
     useEffect(() => {
-      if (!managerOpen || !isChildFrame() || window.innerWidth >= 768) return;
+      if (!managerOpen || !isChildFrame() || !isMobile) return;
       if (!manager) return;
 
       let cancelled = false;
@@ -434,7 +439,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       });
 
       return () => { cancelled = true; };
-    }, [managerOpen, manager, offset, generateNativeEnabled]);
+    }, [managerOpen, manager, offset, generateNativeEnabled, isMobile]);
+
+    // Viewport-responsive reparenting: when viewport grows to desktop while
+    // the sheet is on the host page, close the host sheet so the in-iframe
+    // portal (inside the video container) can resume rendering.
+    useEffect(() => {
+      if (!managerOpenOnHost || isMobile) return;
+      confirmManagerClosed();
+      setManagerOpenOnHost(false);
+    }, [managerOpenOnHost, isMobile]);
 
     // Map host-forwarded manager actions to the local manager callbacks.
     // Guard: ignore actions after close (managerOpen false).
@@ -469,7 +483,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     useEffect(() => {
       if (!managerOpenOnHost) return;
       const cleanup = onManagerCloseFromHost(() => {
-        setManagerOpen(false);
+        closeManager();
       });
       return cleanup;
     }, [managerOpenOnHost]);
@@ -1226,6 +1240,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       return () => { cancelled = true; };
     }, []);
 
+    // Load persisted manager sheet height on mount.
+    useEffect(() => {
+      let cancelled = false;
+      getStorage<Record<string, number>>(STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH)
+        .then((data) => {
+          const stored = data[STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH];
+          if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
+          setManagerSheetHeightVh(Math.min(Math.max(stored, 20), 95));
+        })
+        .catch(() => undefined);
+      return () => { cancelled = true; };
+    }, []);
+
     const dragState = useRef<{
       startY: number;
       startOffset: number;
@@ -1452,9 +1479,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   title="Open subtitle manager"
                   data-cell-id="manager-toggle-btn"
                   size="sm"
-                  onClick={(e) => {
-                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    setManagerOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+                  onClick={() => {
                     onToggleManager();
                   }}
                 >
@@ -1477,49 +1502,80 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
         {managerOpen && manager && managerPortalTarget && !managerOpenOnHost && createPortal(
           <ShadowThemeProvider container={managerPortalTarget}>
-            <div
-              className={styles.panelLayer}
-              data-cell-id="subtitle-manager-layer"
-              style={{
-                ...(videoRect ? {
-                  '--video-x': `${videoRect.x}px`,
-                  '--video-y': `${videoRect.y}px`,
-                  '--video-w': `${videoRect.width}px`,
-                  '--video-h': `${videoRect.height}px`,
-                } : {}),
-                ...(managerOrigin ? {
-                  '--origin-x': `${managerOrigin.x}px`,
-                  '--origin-y': `${managerOrigin.y}px`,
-                } : {}),
-              } as React.CSSProperties}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setManagerOpen(false);
-              }}
-            >
-              <SubtitleManagerPanel
-                targetItems={manager.targetItems}
-                nativeItems={manager.nativeItems}
-                targetActiveIndex={manager.targetActiveIndex}
-                nativeActiveIndex={manager.nativeActiveIndex}
-                onSelect={manager.onSelect}
-                onClose={() => setManagerOpen(false)}
-                onImport={manager.onImport}
-                onGenerateNative={manager.onGenerateNative}
-                onOffsetChange={manager.onOffsetChange}
-                generateNativeDisabled={!generateNativeEnabled}
-                appearance={manager.appearance}
-                hasSearchKeys={manager.hasSearchKeys}
-                apiKeys={manager.apiKeys}
-                onApiKeysChange={manager.onApiKeysChange}
-                onSearchResultSelect={manager.onSearchResultSelect}
-                onDownload={manager.onDownload}
-                onHideSection={manager.onHideSection}
-                onHideBoth={manager.onHideBoth}
-                targetHidden={manager.targetHidden}
-                nativeHidden={manager.nativeHidden}
-                bothHidden={manager.bothHidden}
-              />
-            </div>
+            {isMobile ? (
+              <Sheet
+                open
+                onClose={() => closeManager()}
+                initialHeight={managerSheetHeightVh != null
+                  ? Math.round(window.innerHeight * (managerSheetHeightVh / 100))
+                  : undefined}
+                onHeightChange={(h) => {
+                  const vh = Math.round((h / window.innerHeight) * 100);
+                  const clamped = Math.max(20, Math.min(95, vh));
+                  setManagerSheetHeightVh(clamped);
+                  setStorage({ [STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH]: clamped }).catch(() => undefined);
+                }}
+                data-cell-id="subtitle-manager-layer"
+              >
+                <SubtitleManagerPanel
+                  targetItems={manager.targetItems}
+                  nativeItems={manager.nativeItems}
+                  targetActiveIndex={manager.targetActiveIndex}
+                  nativeActiveIndex={manager.nativeActiveIndex}
+                  onSelect={manager.onSelect}
+                  onClose={() => closeManager()}
+                  onImport={manager.onImport}
+                  onGenerateNative={manager.onGenerateNative}
+                  onOffsetChange={manager.onOffsetChange}
+                  generateNativeDisabled={!generateNativeEnabled}
+                  appearance={manager.appearance}
+                  hasSearchKeys={manager.hasSearchKeys}
+                  apiKeys={manager.apiKeys}
+                  onApiKeysChange={manager.onApiKeysChange}
+                  onSearchResultSelect={manager.onSearchResultSelect}
+                  onDownload={manager.onDownload}
+                  onHideSection={manager.onHideSection}
+                  onHideBoth={manager.onHideBoth}
+                  targetHidden={manager.targetHidden}
+                  nativeHidden={manager.nativeHidden}
+                  bothHidden={manager.bothHidden}
+                  inSheet
+                />
+              </Sheet>
+            ) : (
+              <div
+                className={styles.panelLayer}
+                data-cell-id="subtitle-manager-layer"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) closeManager();
+                }}
+              >
+                <SubtitleManagerPanel
+                  targetItems={manager.targetItems}
+                  nativeItems={manager.nativeItems}
+                  targetActiveIndex={manager.targetActiveIndex}
+                  nativeActiveIndex={manager.nativeActiveIndex}
+                  onSelect={manager.onSelect}
+                  onClose={() => closeManager()}
+                  onImport={manager.onImport}
+                  onGenerateNative={manager.onGenerateNative}
+                  onOffsetChange={manager.onOffsetChange}
+                  generateNativeDisabled={!generateNativeEnabled}
+                  appearance={manager.appearance}
+                  hasSearchKeys={manager.hasSearchKeys}
+                  apiKeys={manager.apiKeys}
+                  onApiKeysChange={manager.onApiKeysChange}
+                  onSearchResultSelect={manager.onSearchResultSelect}
+                  onDownload={manager.onDownload}
+                  onHideSection={manager.onHideSection}
+                  onHideBoth={manager.onHideBoth}
+                  targetHidden={manager.targetHidden}
+                  nativeHidden={manager.nativeHidden}
+                  bothHidden={manager.bothHidden}
+                  exiting={managerExiting}
+                />
+              </div>
+            )}
           </ShadowThemeProvider>,
           managerPortalTarget,
         )}

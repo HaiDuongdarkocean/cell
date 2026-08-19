@@ -57,6 +57,7 @@ import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/med
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
+import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
 
 /** Minimal cue range used for sentence audio capture. */
 export interface CueRange {
@@ -315,6 +316,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let orbitalHoverTrigger: WebTriggerController | null = null;
   let orbitalBadgeSize: number | null = null;
   let orbitalBadgeScale: number | null = null;
+  // In a child iframe, the orbital badge only mounts while the child document
+  // is in native fullscreen (the top-frame badge covers the viewport otherwise).
+  // This listener re-runs syncOrbitalBadge on fullscreen transitions so the
+  // badge appears on enter and is torn down on exit — keeping exactly one
+  // visible badge across normal + fullscreen modes.
+  let orbitalFullscreenListener: (() => void) | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
   /** Original highlight target from the trigger (single word). Stored so we
@@ -1492,6 +1499,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     closePopup();
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
+    if (orbitalFullscreenListener) {
+      document.removeEventListener('fullscreenchange', orbitalFullscreenListener);
+      document.removeEventListener('webkitfullscreenchange', orbitalFullscreenListener);
+      orbitalFullscreenListener = null;
+    }
     wordHighlight.destroy();
     lookupCache.clear();
   }
@@ -1506,6 +1518,30 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function syncOrbitalBadge(dp: DictionaryPopupSettings): void {
     if (!dp.enabled) {
+      orbitalBadge?.destroy();
+      orbitalBadge = null;
+      orbitalBadgeSize = null;
+      orbitalBadgeScale = null;
+      orbitalHoverTrigger?.detach();
+      orbitalHoverTrigger = null;
+      return;
+    }
+    // Install the fullscreen transition listener once (child frames only) so
+    // the badge mounts when entering native fullscreen and tears down on exit.
+    // Must be installed before the child-fullscreen gate below, otherwise the
+    // early return in normal mode would leave the child unable to react to
+    // fullscreen transitions.
+    if (isChildFrame() && !orbitalFullscreenListener) {
+      const onFs = (): void => { syncOrbitalBadge(dpSettings); };
+      orbitalFullscreenListener = onFs;
+      document.addEventListener('fullscreenchange', onFs);
+      document.addEventListener('webkitfullscreenchange', onFs);
+    }
+    // Child iframe: the orbital badge is only useful while this child document
+    // is in native fullscreen. In normal mode the top-frame badge covers the
+    // viewport, so mounting a second badge here would duplicate it (the
+    // original 2-badge bug). Mount on fullscreen enter, tear down on exit.
+    if (isChildFrame() && !document.fullscreenElement) {
       orbitalBadge?.destroy();
       orbitalBadge = null;
       orbitalBadgeSize = null;

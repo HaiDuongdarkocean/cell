@@ -1,6 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
-import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
+import { Sheet } from '@/shared/ui/Sheet';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { SubtitleApiKey } from '@/entities/settings';
 import type {
   SerializedManagerState,
@@ -42,11 +44,37 @@ export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetP
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
 
+  // Persisted sheet height (% of viewport, 20-95). null = not yet loaded.
+  const [sheetHeightVh, setSheetHeightVh] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStorage<Record<string, number>>(STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH)
+      .then((data) => {
+        const stored = data[STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH];
+        if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
+        setSheetHeightVh(Math.min(Math.max(stored, 20), 95));
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <>
       <div className={styles.backdrop} onClick={handleBackdropClick} />
-      <div className={styles.sheet} role="dialog" aria-modal="true">
-        <div className={styles.handle} />
+      <Sheet
+        open
+        onClose={onClose}
+        initialHeight={sheetHeightVh != null
+          ? Math.round(window.innerHeight * (sheetHeightVh / 100))
+          : undefined}
+        onHeightChange={(h) => {
+          const vh = Math.round((h / window.innerHeight) * 100);
+          const clamped = Math.max(20, Math.min(95, vh));
+          setSheetHeightVh(clamped);
+          setStorage({ [STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH]: clamped }).catch(() => undefined);
+        }}
+      >
         <SubtitleManagerPanel
           targetItems={state.targetItems}
           nativeItems={state.nativeItems}
@@ -71,8 +99,9 @@ export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetP
           targetHidden={state.targetHidden}
           nativeHidden={state.nativeHidden}
           bothHidden={state.bothHidden}
+          inSheet
         />
-      </div>
+      </Sheet>
     </>
   );
 }

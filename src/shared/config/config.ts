@@ -306,6 +306,8 @@ export const STORAGE_KEYS = {
   PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
   /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
   SPLIT_VIEW_PCT: 'splitViewPct',
+  /** Subtitle manager mobile sheet height % of viewport (20-95). Survives close/reopen. */
+  SUBTITLE_MANAGER_SHEET_HEIGHT_VH: 'subtitleManagerSheetHeightVh',
   /** Per-key subtitle quota ledger in session storage (spec subtitle-search.md).
    *  Session-only: per-profile, not synced, survives SW restart. */
   SUBTITLE_KEY_LEDGER: 'subtitleKeyLedger',

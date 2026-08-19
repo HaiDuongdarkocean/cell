@@ -36,7 +36,7 @@ installIframePlayerModeBridge();
 let hostSheetRoot: ReturnType<typeof createRoot> | null = null;
 let hostSheetHost: HTMLDivElement | null = null;
 let hostSheetInner: HTMLDivElement | null = null;
-let hostSheetCleanup: (() => void) | null = null;
+let sheetCssCleanup: (() => void) | null = null;
 let currentFrameSrc = '';
 let currentState: SerializedManagerState | null = null;
 
@@ -68,9 +68,9 @@ setHostSheetCallbacks({
       hostSheetHost.remove();
       hostSheetHost = null;
     }
-    if (hostSheetCleanup) {
-      hostSheetCleanup();
-      hostSheetCleanup = null;
+    if (sheetCssCleanup) {
+      sheetCssCleanup();
+      sheetCssCleanup = null;
     }
 
     currentFrameSrc = frameSrc;
@@ -83,7 +83,7 @@ setHostSheetCallbacks({
     document.body.appendChild(hostSheetHost);
 
     const shadow = hostSheetHost.attachShadow({ mode: 'open' });
-    hostSheetCleanup = injectShadowCss(shadow, { css: hostManagerSheetShadowCss });
+    sheetCssCleanup = injectShadowCss(shadow, { css: hostManagerSheetShadowCss });
 
     hostSheetInner = document.createElement('div');
     hostSheetInner.style.display = 'contents';
@@ -107,16 +107,21 @@ setHostSheetCallbacks({
       hostSheetHost = null;
     }
     hostSheetInner = null;
-    if (hostSheetCleanup) {
-      hostSheetCleanup();
-      hostSheetCleanup = null;
+    if (sheetCssCleanup) {
+      sheetCssCleanup();
+      sheetCssCleanup = null;
     }
     currentFrameSrc = '';
     currentState = null;
   },
 });
 
-hostSheetCleanup = installManagerSheetBridge();
+// Bridge lives for the page lifecycle — never cleaned up (the accidental
+// reuse of the old `hostSheetCleanup` variable for both bridge + CSS cleanup
+// was the root cause of the subtitle manager sheet not closing: onOpen called
+// the bridge cleanup, removing the message listener, so __CELL_MANAGER_CLOSED
+// from the child never reached the host and the sheet stayed mounted forever).
+installManagerSheetBridge();
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
 // cannot see this because ISOLATED world globals are not shared with MAIN).

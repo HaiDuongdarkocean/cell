@@ -1,4 +1,6 @@
-/* ─── Panel — fills panelLayer (video overlay area) ─── */
+/* ─── Panel — centered sheet inside panelLayer (YouTube settings style) ───
+   Desktop: centered modal with constrained width, all 4 corners rounded.
+   Mobile: fills the bottom sheet panelLayer. */
 .panel {
   display: flex;
   flex-direction: column;
@@ -12,24 +14,81 @@
   overflow: hidden;
 }
 
-/* Drag handle — mobile bottom sheet only */
+/* Drag handle — visible on all viewports (YouTube settings style) */
 .panel::before {
   content: '';
   display: block;
   width: 32px;
   height: 3px;
-  margin: var(--space-0-5) auto 0;
+  margin: var(--space-1) auto var(--space-0-5);
   background: var(--color-border-emphasized);
   border-radius: var(--radius-full);
   opacity: 0.5;
   flex: 0 0 auto;
 }
 
-/* Desktop ≥768px: fill panelLayer, no drag handle */
+/* Desktop ≥768px: right-aligned sidebar card — max 360×660px.
+   Only left corners rounded (top-left, bottom-left) — right corners flush
+   against container right edge. Slide-in from right on open, slide-out
+   to right on close (see [data-state] animations below).
+   Width: min(100% container, 360px). Height: 100% capped at 660px.
+   Background: --color-glass-sidebar-panel (0.65 alpha for readability).
+   Token SSOT: --color-glass-sidebar-panel. */
 @media (min-width: 768px) {
+  .panel {
+    flex: 0 1 auto;
+    width: min(100%, 360px);
+    height: 100%;
+    max-height: 660px;
+    border-radius: var(--radius-element, 12px) 0 0 var(--radius-element, 12px);
+    background: var(--color-glass-sidebar-panel);
+    overflow: hidden;
+    animation: panelSlideIn 280ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  /* Hide drag handle on desktop sidebar — no bottom-sheet drag needed */
   .panel::before {
     display: none;
   }
+
+  /* Exit state — applied by parent before unmount */
+  .panel[data-state='exiting'] {
+    animation: panelSlideOut 280ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+
+  @keyframes panelSlideIn {
+    from { opacity: 0; transform: translateX(100%); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes panelSlideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(100%); }
+  }
+}
+
+/* Mobile <768px: fill 100% width + height of video container (no centering,
+   no backdrop padding — panel fills the container edge to edge). */
+@media (max-width: 767px) {
+  .panel {
+    height: auto;
+    flex: 0 1 auto;
+  }
+  /* Inside shared Sheet atom — fill sheet height so the internal flexbox
+     layout works: .tracksBody scrolls internally (overflow-y: auto) and the
+     FooterBar pins to the bottom instead of being scrolled away by Sheet
+     .content. Without this, panel shrinks to content → tracksBody has no
+     bounded height → Sheet .content scrolls → footer scrolls out of view. */
+  .inSheet {
+    height: 100%;
+    flex: 1 1 auto;
+  }
+}
+
+/* When rendered inside shared Sheet atom — hide decorative drag handle
+   (Sheet provides its own functional drag handle). */
+.inSheet::before {
+  display: none;
 }
 
 /* ─── Header — container stays fixed, inner content slides between views ─── */
@@ -226,7 +285,6 @@
   gap: var(--space-1-5);
   padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-surface-popover);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -318,8 +376,31 @@
 }
 
 .trackActive {
-  box-shadow: inset 3px 0 0 var(--color-primary);
   background: var(--color-primary-subtle);
+}
+
+/* Glass panel (desktop ≥768px): selected row blends into panel — no inset bar.
+   The active track is conveyed by text color (.trackActive .trackName) only.
+   Header + footer keep hairline border for elevation boundary. */
+@media (min-width: 768px) {
+  .trackActive {
+    box-shadow: none;
+  }
+  .header {
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+  .sectionBar {
+    border-bottom: 0;
+  }
+  .tabsList {
+    border-bottom: 1px solid var(--color-glass-border);
+  }
+  .tabTrigger {
+    border-bottom: 2px solid transparent;
+  }
+  .tabTrigger[aria-selected='true'] {
+    border-bottom-color: var(--color-primary);
+  }
 }
 
 /* Off row — compact */
@@ -702,5 +783,43 @@
                 opacity 180ms ease-out,
                 margin 220ms ease-out,
                 padding 220ms ease-out;
+  }
+}
+
+/* ─── Glass panel overrides (desktop ≥768px) — MUST be last for cascade ───
+   Base rules above define borders on .pillGroup, .valueField, .tabContent, etc.
+   These overrides remove them for the YouTube-style uniform charcoal surface.
+   Placed last so same-specificity rules win the cascade. */
+@media (min-width: 768px) {
+  .pillGroup,
+  .pillGroup:hover {
+    border: 0;
+    border-color: transparent;
+  }
+  .valueField {
+    border-left: 0;
+    border-right: 0;
+  }
+  .searchSectionWrapper {
+    border-bottom: 0;
+  }
+  .tabContent {
+    padding-top: var(--space-1);
+  }
+  /* Glass fills for track rows + latency pill — translucent light on dark panel. */
+  .track {
+    background: var(--color-glass-surface);
+  }
+  .track:hover {
+    background: var(--color-glass-surface-hover);
+  }
+  .trackActive {
+    background: var(--color-glass-surface-hover);
+  }
+  .offRow {
+    background: var(--color-glass-surface);
+  }
+  .pillGroup {
+    background: var(--color-glass-input-bg);
   }
 }

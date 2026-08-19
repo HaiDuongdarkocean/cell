@@ -116,20 +116,26 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
-    const allHosts = document.querySelectorAll('.js-cell-orbital-badge-host');
-    console.log('[DEBUG orbital] fullscreenchange', {
-      fsEl: fsEl?.tagName,
-      fsElId: fsEl?.id,
-      currentParent: mount.host.parentElement?.tagName,
-      hostConnected: mount.host.isConnected,
-      totalHosts: allHosts.length,
-      hostParents: Array.from(allHosts).map(h => h.parentElement?.tagName),
-    });
+    // When a child iframe's video goes native fullscreen, the browser puts
+    // the <iframe> element in the TOP document's top layer — it covers the
+    // entire top viewport. The host badge (position:fixed in the top document)
+    // cannot render over a top-layer iframe, and appending into an <iframe>
+    // element does not render inside the child document. So hide the host
+    // badge while a child iframe is fullscreen; the child frame mounts its
+    // own badge inside its fullscreen document (see syncOrbitalBadge).
+    if (fsEl?.tagName === 'IFRAME') {
+      mount.host.style.display = 'none';
+      return;
+    }
+    // Non-iframe fullscreen (e.g. Cell Player Mode container) or exit: move
+    // the badge into the fullscreen element so it stays visible, or back to
+    // body when leaving. Always restore display.
     if (fsEl && fsEl !== mount.host.parentElement) {
       fsEl.appendChild(mount.host);
     } else if (!fsEl && mount.host.parentElement !== document.body) {
       document.body.appendChild(mount.host);
     }
+    mount.host.style.display = '';
   };
 
   document.addEventListener('fullscreenchange', onFullscreenChange);

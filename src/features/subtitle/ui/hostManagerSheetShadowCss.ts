@@ -7,6 +7,7 @@
  * array in `mountSubtitle.tsx` plus `HostManagerSheet.module.css`.
  */
 import hostManagerSheetCss from './HostManagerSheet.module.css?inline';
+import sheetCss from '@/shared/ui/Sheet.module.css?inline';
 import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
 import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
 import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
@@ -25,6 +26,7 @@ import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 
 export const hostManagerSheetShadowCss: string[] = [
   hostManagerSheetCss,
+  sheetCss,
   subtitleManagerCss,
   subtitleSearchCss,
   apiKeyManagerCss,

@@ -1,11 +1,41 @@
-import { useEffect, useRef, useState, useCallback, type ReactElement } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, type ReactElement } from 'react';
 import helloMp4 from '../design-system-showcase/assets/hello.mp4?url';
 import helloSrt from '../design-system-showcase/assets/hello.srt?raw';
+import jeremyChelseaMp4 from '../design-system-showcase/assets/jeremy-chelsea.mp4?url';
+import jeremyChelseaSrt from '../design-system-showcase/assets/jeremy-chelsea.srt?raw';
+import pleaseAcousticMp4 from '../design-system-showcase/assets/please-acoustic.mp4?url';
+import pleaseAcousticSrt from '../design-system-showcase/assets/please-acoustic.srt?raw';
+import fallInLoveMp4 from '../design-system-showcase/assets/fall-in-love.mp4?url';
+import fallInLoveSrt from '../design-system-showcase/assets/fall-in-love.srt?raw';
+import apologizeMp4 from '../design-system-showcase/assets/apologize.mp4?url';
+import apologizeSrt from '../design-system-showcase/assets/apologize.srt?raw';
+import jeremyChelseaThumb from '../design-system-showcase/assets/jeremy-chelsea-thumb.jpg?url';
+import pleaseAcousticThumb from '../design-system-showcase/assets/please-acoustic-thumb.jpg?url';
+import fallInLoveThumb from '../design-system-showcase/assets/fall-in-love-thumb.jpg?url';
+import apologizeThumb from '../design-system-showcase/assets/apologize-thumb.jpg?url';
+import helloThumb from '../design-system-showcase/assets/hello-thumb.jpg?url';
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import type { SrtCue } from '@/entities/media';
 import styles from './MockStreamingPage.module.css';
 
-const CUES: SrtCue[] = parseSrt(helloSrt).cues;
+// Multi-video catalog — each entry is a distinct video with its own subtitle
+// track. The episode sidebar switches between them so the extension can be
+// tested against multiple video + subtitle pairs on the same page.
+interface MockVideo {
+  readonly id: string;
+  readonly title: string;
+  readonly mp4: string;
+  readonly thumb: string;
+  readonly cues: readonly SrtCue[];
+}
+
+const VIDEOS: readonly MockVideo[] = [
+  { id: 'jeremy-chelsea', title: 'you were good to me (Live)', mp4: jeremyChelseaMp4, thumb: jeremyChelseaThumb, cues: parseSrt(jeremyChelseaSrt).cues },
+  { id: 'please-acoustic', title: 'please (Acoustic)', mp4: pleaseAcousticMp4, thumb: pleaseAcousticThumb, cues: parseSrt(pleaseAcousticSrt).cues },
+  { id: 'fall-in-love', title: 'this is how you fall in love', mp4: fallInLoveMp4, thumb: fallInLoveThumb, cues: parseSrt(fallInLoveSrt).cues },
+  { id: 'apologize', title: 'Apologize ft. OneRepublic', mp4: apologizeMp4, thumb: apologizeThumb, cues: parseSrt(apologizeSrt).cues },
+  { id: 'hello', title: 'hello (demo)', mp4: helloMp4, thumb: helloThumb, cues: parseSrt(helloSrt).cues },
+];
 
 // Convert SRT cues → WebVTT for <track> element
 function srtToVtt(cues: readonly SrtCue[]): string {
@@ -26,39 +56,14 @@ function msToVttTime(ms: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(mmm).padStart(3, '0')}`;
 }
 
-// Create blob URL for VTT track
-const VTT_BLOB = new Blob([srtToVtt(CUES)], { type: 'text/vtt' });
-const VTT_URL = URL.createObjectURL(VTT_BLOB);
-
-const EPISODES = [
-  { num: 1, title: 'Episode 1', active: true },
-  { num: 2, title: 'Episode 2', active: false },
-  { num: 3, title: 'Episode 3', active: false },
-  { num: 4, title: 'Episode 4', active: false },
-  { num: 5, title: 'Episode 5', active: false },
-  { num: 6, title: 'Episode 6', active: false },
-  { num: 7, title: 'Episode 7', active: false },
-  { num: 8, title: 'Episode 8', active: false },
-  { num: 9, title: 'Episode 9', active: false },
-  { num: 10, title: 'Episode 10', active: false },
-  { num: 11, title: 'Episode 11', active: false },
-  { num: 12, title: 'Episode 12', active: false },
-];
+// Create blob URL for VTT track — recreated per active video (see component)
+const EPISODES = VIDEOS.map((v, i) => ({ num: i + 1, title: v.title, active: i === 0 }));
 
 const SERVERS = [
   { id: 'server-1', label: 'Server 1', quality: 'HD', active: true },
   { id: 'server-2', label: 'Server 2', quality: 'HD', active: false },
   { id: 'server-3', label: 'Server 3', quality: 'Full HD', active: false },
   { id: 'server-4', label: 'Server 4', quality: 'Full HD', active: false },
-];
-
-const RECOMMENDED = [
-  { title: 'Solo Leveling Season 2', img: 'linear-gradient(135deg, #667eea, #764ba2)' },
-  { title: 'Tower of God', img: 'linear-gradient(135deg, #f093fb, #f5576c)' },
-  { title: 'The Beginning After The End', img: 'linear-gradient(135deg, #4facfe, #00f2fe)' },
-  { title: 'Omniscient Reader', img: 'linear-gradient(135deg, #43e97b, #38f9d7)' },
-  { title: 'Legend of the Northern Blade', img: 'linear-gradient(135deg, #fa709a, #fee140)' },
-  { title: 'Return of the Mount Hua Sect', img: 'linear-gradient(135deg, #a18cd1, #fbc2eb)' },
 ];
 
 const COMMENTS = [
@@ -84,6 +89,26 @@ export function MockStreamingPage(): ReactElement {
   const [showSubDropdown, setShowSubDropdown] = useState(false);
   const [showQualDropdown, setShowQualDropdown] = useState(false);
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Active video derived from episode selection — single source of truth for
+  // which mp4 + subtitle blob the player shows. Switching episodes swaps both
+  // and resets playback state so the extension sees a clean load.
+  const activeVideo = VIDEOS[activeEp - 1] ?? VIDEOS[0];
+  const vttUrl = useMemo(
+    () => URL.createObjectURL(new Blob([srtToVtt(activeVideo.cues)], { type: 'text/vtt' })),
+    [activeVideo],
+  );
+  // Release the previous blob URL when activeVideo changes — avoids leaking
+  // one blob per switch over a long test session.
+  useEffect(() => () => URL.revokeObjectURL(vttUrl), [vttUrl]);
+
+  // Reset playback state when the active video changes (episode switch).
+  useEffect(() => {
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+    setIsBuffering(true);
+  }, [activeVideo]);
 
   const handleTimeUpdate = useCallback(() => {
     setCurrentTime(videoRef.current?.currentTime ?? 0);
@@ -163,7 +188,7 @@ export function MockStreamingPage(): ReactElement {
   }, [isPlaying, showControlsTemporarily]);
 
   // Active cue for subtitle display
-  const activeCue = CUES.find(c => c.start <= currentTime * 1000 && c.end >= currentTime * 1000);
+  const activeCue = activeVideo.cues.find(c => c.start <= currentTime * 1000 && c.end >= currentTime * 1000);
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
@@ -197,7 +222,7 @@ export function MockStreamingPage(): ReactElement {
         <span>›</span>
         <a href="#">Solo Leveling</a>
         <span>›</span>
-        <span className={styles.breadcrumbActive}>Episode 1</span>
+        <span className={styles.breadcrumbActive}>Episode {activeEp}</span>
       </div>
 
       {/* === Main Content === */}
@@ -217,7 +242,7 @@ export function MockStreamingPage(): ReactElement {
                 <video
                   ref={videoRef}
                   className={styles.videoElement}
-                  src={helloMp4}
+                  src={activeVideo.mp4}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
                   onPlay={() => setIsPlaying(true)}
@@ -231,7 +256,7 @@ export function MockStreamingPage(): ReactElement {
                 >
                   <track
                     kind="subtitles"
-                    src={VTT_URL}
+                    src={vttUrl}
                     srcLang="en"
                     label="English"
                     default
@@ -411,8 +436,8 @@ export function MockStreamingPage(): ReactElement {
 
             {/* Title + metadata */}
             <div className={styles.titleSection}>
-              <h1 className={styles.title}>Solo Leveling</h1>
-              <span className={styles.episodeLabel}>Episode 1</span>
+              <h1 className={styles.title}>{activeVideo.title}</h1>
+              <span className={styles.episodeLabel}>Episode {activeEp}</span>
             </div>
 
             <div className={styles.metadata}>
@@ -503,15 +528,26 @@ export function MockStreamingPage(): ReactElement {
           </aside>
         </div>
 
-        {/* === Recommendations === */}
+        {/* === Recommendations — clickable thumbnails that switch the active video === */}
         <section className={styles.recommendations}>
           <h3 className={styles.recommendationsTitle}>Recommended</h3>
           <div className={styles.recGrid}>
-            {RECOMMENDED.map((r, i) => (
-              <div key={i} className={styles.recCard}>
-                <div className={styles.recPoster} style={{ background: r.img }} />
-                <span className={styles.recTitle}>{r.title}</span>
-              </div>
+            {VIDEOS.map((v, i) => (
+              <button
+                key={v.id}
+                type="button"
+                className={styles.recCard}
+                onClick={() => { setActiveEp(i + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                aria-label={`Play ${v.title}`}
+              >
+                <img
+                  className={styles.recPoster}
+                  src={v.thumb}
+                  alt={v.title}
+                  loading="lazy"
+                />
+                <span className={styles.recTitle}>{v.title}</span>
+              </button>
             ))}
           </div>
         </section>
