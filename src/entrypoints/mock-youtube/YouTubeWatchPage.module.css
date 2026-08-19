@@ -22,6 +22,26 @@
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  scrollbar-color: #717171 transparent;
+  scrollbar-width: thin;
+}
+
+.page ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.page ::-webkit-scrollbar-thumb {
+  background: #717171;
+  border-radius: 4px;
+}
+.page ::-webkit-scrollbar-thumb:hover {
+  background: #909090;
+}
+.page ::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .page * {
