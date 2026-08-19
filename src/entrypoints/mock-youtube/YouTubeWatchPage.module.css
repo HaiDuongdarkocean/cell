@@ -943,9 +943,14 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.relatedThumb {
+.relatedThumbWrap {
+  position: relative;
   width: 168px;
   flex-shrink: 0;
+}
+
+.relatedThumb {
+  width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: var(--yt-radius-sm);
   object-fit: cover;
@@ -1002,6 +1007,266 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+/* === Thumbnail wrapper + duration badge + 3-dot menu === */
+.thumbWrap {
+  position: relative;
+  width: 100%;
+}
+
+.durationBadge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--yt-font);
+  line-height: 18px;
+  pointer-events: none;
+}
+
+.moreMenuBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.videoCard:hover .moreMenuBtn,
+.relatedItem:hover .moreMenuBtn {
+  display: flex;
+  opacity: 1;
+}
+
+.moreMenuBtn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+/* === Verified badge === */
+.verifiedBadge {
+  display: inline-flex;
+  align-items: center;
+  color: var(--yt-text-secondary);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* === Chips bar (home page) === */
+.chipsBar {
+  display: flex;
+  margin: 0 0 16px;
+  position: relative;
+}
+
+.chipsScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.chipsScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--yt-text);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--yt-font);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chipActive {
+  background: var(--yt-text);
+  color: var(--yt-bg);
+}
+
+.chipActive:hover {
+  background: var(--yt-text);
+}
+
+/* === Sidebar extras: chevron, live dot/badge, footer, mini-guide === */
+.chevronRight {
+  margin-left: auto;
+  color: var(--yt-text-secondary);
+  display: inline-flex;
+  align-items: center;
+}
+
+.guideSubAvatarWrap {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  margin-right: 24px;
+  flex-shrink: 0;
+}
+
+.liveDot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff0000;
+  border: 1px solid var(--yt-bg);
+}
+
+.liveBadge {
+  margin-left: auto;
+  color: #ff0000;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 12px 12px;
+}
+
+.footerLink {
+  font-size: 13px;
+  color: var(--yt-text-secondary);
+  cursor: pointer;
+  font-family: var(--yt-font);
+}
+
+.footerLink:hover {
+  color: var(--yt-text);
+}
+
+.footerCopyright {
+  font-size: 12px;
+  color: var(--yt-text-secondary);
+  padding: 0 12px 8px;
+  margin: 0;
+}
+
+/* === Mini-guide (collapsed sidebar) === */
+.miniGuide {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0;
+}
+
+.miniGuideItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--yt-text);
+  font-family: var(--yt-font);
+  transition: background 0.1s;
+  margin: 0 8px;
+}
+
+.miniGuideItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.miniGuideLabel {
+  font-size: 10px;
+  line-height: 1;
+  color: var(--yt-text);
+}
+
+/* === Mobile bottom nav (<792px) === */
+.bottomNav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #0f0f0f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2000;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+}
+
+.bottomNavItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  font-family: var(--yt-font);
+  padding: 4px 8px;
+  border-radius: 10px;
+  flex: 1;
+}
+
+.bottomNavActive {
+  color: #fff;
+}
+
+.bottomNavLabel {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.bottomNavPlus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bottomNavPlusIcon {
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+}
+
 /* === Responsive === */
 @media (max-width: 792px) {
   .guide {
@@ -1010,7 +1275,7 @@
   .content,
   .contentCollapsed {
     margin-left: 0;
-    padding: 16px;
+    padding: 16px 16px 72px;
   }
   .mastheadCenter {
     display: none;
@@ -1018,7 +1283,11 @@
   .videoGrid {
     grid-template-columns: 1fr;
   }
+  .relatedThumbWrap,
   .relatedThumb {
     width: 120px;
+  }
+  .bottomNav {
+    display: flex;
   }
 }
