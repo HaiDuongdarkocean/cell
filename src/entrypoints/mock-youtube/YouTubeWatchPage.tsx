@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactElement } from 'react';
+import { useState, useCallback, useEffect, useRef, type ReactElement } from 'react';
 import jeremyChelseaMp4 from '../design-system-showcase/assets/jeremy-chelsea.mp4?url';
 import jeremyChelseaSrt from '../design-system-showcase/assets/jeremy-chelsea.srt?raw';
 import jeremyChelseaThumb from '../design-system-showcase/assets/jeremy-chelsea-thumb.jpg?url';
@@ -19,7 +19,10 @@ import styles from './YouTubeWatchPage.module.css';
 import {
   MenuIcon, SearchIcon, VoiceSearchIcon, CreateIcon, NotificationsIcon,
   LikeIcon, DislikeIcon, ShareIcon, SaveIcon, DownloadIcon,
-  HomeIcon, ShortsIcon, SubscriptionsIcon, LibraryIcon, HistoryIcon,
+  HomeIcon, ShortsIcon, SubscriptionsIcon, HistoryIcon,
+  ChevronRightIcon, YouIcon, PlaylistsIcon, YourVideosIcon, WatchLaterIcon, LikedIcon,
+  TrendingIcon, MusicIcon, MoviesIcon, GamingIcon, LiveIcon, SettingsIcon,
+  BellIcon, MoreIcon, VerifiedIcon, ThanksIcon, ClipIcon, ReportIcon,
   YouTubeLogo,
 } from './YouTubeIcons';
 import { YouTubePlayer } from './YouTubePlayer';
@@ -43,6 +46,8 @@ interface MockVideo {
   readonly views: string;
   readonly date: string;
   readonly likes: string;
+  readonly duration: string;
+  readonly verified: boolean;
   readonly tags: readonly string[];
   readonly description: string;
   readonly mp4: string;
@@ -59,6 +64,8 @@ const VIDEOS: readonly MockVideo[] = [
     views: '18,406,599 views',
     date: 'May 20, 2021',
     likes: '488K',
+    duration: '4:16',
+    verified: false,
     tags: ['#music', '#live', '#acoustic', '#nyc'],
     description: 'Jeremy Zucker & Chelsea Cutler performing "you were good to me" live in New York.\n\nSubscribe to Jeremy Zucker for more music.',
     mp4: jeremyChelseaMp4,
@@ -73,6 +80,8 @@ const VIDEOS: readonly MockVideo[] = [
     views: '8,123,447 views',
     date: 'Jun 15, 2021',
     likes: '212K',
+    duration: '3:48',
+    verified: false,
     tags: ['#music', '#acoustic', '#brent'],
     description: 'Acoustic version of "please" by Jeremy Zucker & Chelsea Cutler.\n\nFrom the EP "brent".',
     mp4: pleaseAcousticMp4,
@@ -87,6 +96,8 @@ const VIDEOS: readonly MockVideo[] = [
     views: '12,345,678 views',
     date: 'Jul 8, 2021',
     likes: '356K',
+    duration: '3:21',
+    verified: false,
     tags: ['#music', '#love', '#brent'],
     description: '"this is how you fall in love" — Jeremy Zucker & Chelsea Cutler.\n\nFrom the EP "brent II".',
     mp4: fallInLoveMp4,
@@ -101,6 +112,8 @@ const VIDEOS: readonly MockVideo[] = [
     views: '1,234,567,890 views',
     date: 'Oct 24, 2009',
     likes: '8.9M',
+    duration: '3:48',
+    verified: false,
     tags: ['#music', '#timbaland', '#onerepublic', '#apologize'],
     description: 'Timbaland - Apologize ft. OneRepublic (Official Music Video).\n\nFrom the album "Shock Value".',
     mp4: apologizeMp4,
@@ -115,6 +128,8 @@ const VIDEOS: readonly MockVideo[] = [
     views: '3,567,890,123 views',
     date: 'Oct 22, 2015',
     likes: '16M',
+    duration: '4:16',
+    verified: true,
     tags: ['#music', '#adele', '#hello', '#25'],
     description: 'Adele - Hello (Official Music Video) from the album 25.\n\nDirected by Xavier Dolan.',
     mp4: helloMp4,
@@ -142,32 +157,96 @@ const COMMENTS = [
   { name: 'James Wilson', time: '2 months ago', text: 'Still my go-to song when I need to feel something real.', likes: '234', replies: 0 },
 ];
 
-const GUIDE_ITEMS = [
+const CHIPS = ['All', 'Music', 'Gaming', 'Live', 'Mixes', 'Podcasts', 'News', 'Computer programming', 'Recently uploaded', 'New to you'];
+
+const SEARCH_SUGGESTIONS = [
+  'adele hello', 'adele easy on me', 'adele someone like you',
+  'adele rolling in the deep', 'adele set fire to the rain', 'adele when we were young',
+];
+
+const FOOTER_LINKS = [
+  'About', 'Press', 'Copyright', 'Contact us', 'Creators', 'Advertise', 'Developers',
+  'Terms', 'Privacy', 'Policy & Safety', 'How YouTube works', 'Test new features',
+];
+
+const MINI_GUIDE = [
   { icon: 'home', label: 'Home' },
   { icon: 'shorts', label: 'Shorts' },
   { icon: 'subscriptions', label: 'Subscriptions' },
-];
+  { icon: 'you', label: 'You' },
+] as const;
 
-const GUIDE_ITEMS_2 = [
-  { icon: 'library', label: 'Library' },
+const EXPLORE_ITEMS = [
+  { icon: 'trending', label: 'Trending' },
+  { icon: 'music', label: 'Music' },
+  { icon: 'movies', label: 'Movies' },
+  { icon: 'gaming', label: 'Gaming' },
+  { icon: 'live', label: 'Live' },
+  { icon: 'settings', label: 'Settings' },
+] as const;
+
+const YOU_ITEMS = [
   { icon: 'history', label: 'History' },
-];
+  { icon: 'playlists', label: 'Playlists' },
+  { icon: 'yourvideos', label: 'Your videos' },
+  { icon: 'watchlater', label: 'Watch later' },
+  { icon: 'liked', label: 'Liked videos' },
+] as const;
 
-function GuideIcon({ name }: { readonly name: string }): ReactElement {
+type GuideIconName = 'home' | 'shorts' | 'subscriptions' | 'library' | 'history'
+  | 'you' | 'playlists' | 'yourvideos' | 'watchlater' | 'liked'
+  | 'trending' | 'music' | 'movies' | 'gaming' | 'live' | 'settings';
+
+function GuideIcon({ name }: { readonly name: GuideIconName }): ReactElement {
   const icon = (() => {
     switch (name) {
       case 'home': return <HomeIcon size={24} />;
       case 'shorts': return <ShortsIcon size={24} />;
       case 'subscriptions': return <SubscriptionsIcon size={24} />;
-      case 'library': return <LibraryIcon size={24} />;
       case 'history': return <HistoryIcon size={24} />;
+      case 'you': return <YouIcon size={24} />;
+      case 'playlists': return <PlaylistsIcon size={24} />;
+      case 'yourvideos': return <YourVideosIcon size={24} />;
+      case 'watchlater': return <WatchLaterIcon size={24} />;
+      case 'liked': return <LikedIcon size={24} />;
+      case 'trending': return <TrendingIcon size={24} />;
+      case 'music': return <MusicIcon size={24} />;
+      case 'movies': return <MoviesIcon size={24} />;
+      case 'gaming': return <GamingIcon size={24} />;
+      case 'live': return <LiveIcon size={24} />;
+      case 'settings': return <SettingsIcon size={24} />;
       default: return <HomeIcon size={24} />;
     }
   })();
   return <span className={styles.guideItemIcon}>{icon}</span>;
 }
 
+function VerifiedBadge(): ReactElement {
+  return (
+    <span className={styles.verifiedBadge} aria-label="Verified">
+      <VerifiedIcon size={14} />
+    </span>
+  );
+}
+
+function DurationBadge({ duration }: { readonly duration: string }): ReactElement {
+  return <span className={styles.durationBadge}>{duration}</span>;
+}
+
+function MoreMenuButton(): ReactElement {
+  return (
+    <button
+      className={styles.moreMenuBtn}
+      aria-label="More options"
+      onClick={(e) => { e.stopPropagation(); }}
+    >
+      <MoreIcon size={20} />
+    </button>
+  );
+}
+
 type View = 'home' | 'watch';
+type MobileNav = 'home' | 'shorts' | 'subs' | 'you';
 
 export function YouTubeWatchPage(): ReactElement {
   const [view, setView] = useState<View>('home');
@@ -175,27 +254,71 @@ export function YouTubeWatchPage(): ReactElement {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [likeBounce, setLikeBounce] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [activeChip, setActiveChip] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [showMoreSubs, setShowMoreSubs] = useState(false);
+  const [activeNav, setActiveNav] = useState<MobileNav>('home');
+
+  const searchWrapRef = useRef<HTMLDivElement>(null);
 
   const activeVideo = VIDEOS[activeIdx] ?? VIDEOS[0];
+
+  // Close search suggestions on outside click.
+  // Early-return when the click lands inside the search wrap (including the
+  // input itself) so the mousedown that precedes focus never closes the dropdown.
+  useEffect(() => {
+    if (!searchFocused) return;
+    function handleOutsideClick(e: MouseEvent): void {
+      if (searchWrapRef.current?.contains(e.target as Node)) return;
+      setSearchFocused(false);
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [searchFocused]);
 
   const openVideo = useCallback((idx: number) => {
     setActiveIdx(idx);
     setView('watch');
     setLiked(false);
+    setLikeBounce(false);
     setDescExpanded(false);
+    setSubscribed(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const goHome = useCallback(() => {
     setView('home');
+    setActiveNav('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const toggleSidebar = useCallback(() => setSidebarCollapsed(c => !c), []);
 
+  const handleLike = useCallback(() => {
+    setLiked(l => !l);
+    setLikeBounce(true);
+    window.setTimeout(() => setLikeBounce(false), 300);
+  }, []);
+
+  const handleSubscribe = useCallback(() => setSubscribed(s => !s), []);
+
+  const handleSuggestionClick = useCallback((s: string) => {
+    setSearchValue(s);
+    setSearchFocused(false);
+  }, []);
+
+  const filteredSuggestions = searchValue
+    ? SEARCH_SUGGESTIONS.filter(s => s.toLowerCase().includes(searchValue.toLowerCase()))
+    : SEARCH_SUGGESTIONS;
+
+  const visibleSubs = showMoreSubs ? SUBSCRIPTIONS : SUBSCRIPTIONS.slice(0, 4);
+
   return (
     <div className={styles.page}>
-      {/* === Masthead === */}
+      {/* === Masthead (frosted glass) === */}
       <header className={styles.masthead} role="banner">
         <div className={styles.mastheadStart}>
           <button className={styles.iconButton} onClick={toggleSidebar} aria-label="Guide">
@@ -206,11 +329,39 @@ export function YouTubeWatchPage(): ReactElement {
           </a>
         </div>
         <div className={styles.mastheadCenter}>
-          <div className={styles.searchContainer}>
-            <input className={styles.searchInput} type="text" placeholder="Search" />
-            <button className={styles.searchButton} aria-label="Search">
-              <SearchIcon size={24} />
-            </button>
+          <div className={styles.searchWrap} ref={searchWrapRef}>
+            <div className={`${styles.searchContainer} ${searchFocused ? styles.searchContainerFocused : ''}`}>
+              {searchFocused && (
+                <span className={styles.searchInnerIcon}><SearchIcon size={24} /></span>
+              )}
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Search"
+                value={searchValue}
+                onFocus={() => setSearchFocused(true)}
+                onChange={(e) => setSearchValue(e.target.value)}
+              />
+              <button className={styles.searchButton} aria-label="Search">
+                <SearchIcon size={24} />
+              </button>
+            </div>
+            {searchFocused && filteredSuggestions.length > 0 && (
+              <ul className={styles.suggestionsDropdown} role="listbox">
+                {filteredSuggestions.map(s => (
+                  <li
+                    key={s}
+                    className={styles.suggestionItem}
+                    onClick={() => handleSuggestionClick(s)}
+                    role="option"
+                    aria-selected="false"
+                  >
+                    <span className={styles.suggestionIcon}><SearchIcon size={20} /></span>
+                    <span className={styles.suggestionText}>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <button className={styles.voiceButton} aria-label="Search with your voice">
             <VoiceSearchIcon size={24} />
@@ -232,56 +383,144 @@ export function YouTubeWatchPage(): ReactElement {
 
       {/* === Guide / Sidebar === */}
       <aside className={`${styles.guide} ${sidebarCollapsed ? styles.guideCollapsed : ''}`} role="navigation">
-        <div className={styles.guideSection}>
-          {GUIDE_ITEMS.map(item => (
-            <button
-              key={item.label}
-              className={`${styles.guideItem} ${view === 'home' && item.icon === 'home' ? styles.guideItemActive : ''}`}
-              onClick={() => item.icon === 'home' && goHome()}
-            >
-              <GuideIcon name={item.icon} />
-              <span className={styles.guideLabel}>{item.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className={styles.guideSection}>
-          {GUIDE_ITEMS_2.map(item => (
-            <button key={item.label} className={styles.guideItem}>
-              <GuideIcon name={item.icon} />
-              <span className={styles.guideLabel}>{item.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className={styles.guideSection}>
-          <div className={styles.guideSectionTitle}>Subscriptions</div>
-          {SUBSCRIPTIONS.map(s => (
-            <button key={s.name} className={styles.guideItem}>
-              <img className={styles.guideSubAvatar} src={s.avatar} alt="" />
-              <span className={styles.guideLabel}>{s.name}{s.live ? ' \u2022' : ''}</span>
-            </button>
-          ))}
-        </div>
+        {sidebarCollapsed ? (
+          /* Mini-guide: 4 main items */
+          <div className={styles.miniGuide}>
+            {MINI_GUIDE.map(item => (
+              <button
+                key={item.label}
+                className={`${styles.miniGuideItem} ${view === 'home' && item.icon === 'home' ? styles.guideItemActive : ''}`}
+                onClick={() => item.icon === 'home' && goHome()}
+              >
+                <GuideIcon name={item.icon} />
+                <span className={styles.miniGuideLabel}>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Section 1: Home / Shorts / Subscriptions / You */}
+            <div className={styles.guideSection}>
+              <button
+                className={`${styles.guideItem} ${view === 'home' ? styles.guideItemActive : ''}`}
+                onClick={goHome}
+              >
+                <GuideIcon name="home" />
+                <span className={styles.guideLabel}>Home</span>
+              </button>
+              <button className={styles.guideItem}>
+                <GuideIcon name="shorts" />
+                <span className={styles.guideLabel}>Shorts</span>
+              </button>
+              <button className={styles.guideItem}>
+                <GuideIcon name="subscriptions" />
+                <span className={styles.guideLabel}>Subscriptions</span>
+              </button>
+              <button className={styles.guideItem}>
+                <GuideIcon name="you" />
+                <span className={styles.guideLabel}>You</span>
+                <span className={styles.chevronRight}><ChevronRightIcon size={24} /></span>
+              </button>
+            </div>
+
+            {/* Section 2: You > History / Playlists / Your videos / Watch later / Liked videos */}
+            <div className={styles.guideSection}>
+              <div className={styles.guideSectionTitle}>You</div>
+              {YOU_ITEMS.map(item => (
+                <button key={item.label} className={styles.guideItem}>
+                  <GuideIcon name={item.icon} />
+                  <span className={styles.guideLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Section 3: Subscriptions with live indicators + Show more/less */}
+            <div className={styles.guideSection}>
+              <div className={styles.guideSectionTitle}>Subscriptions</div>
+              {visibleSubs.map(s => (
+                <button key={s.name} className={styles.guideItem}>
+                  <span className={styles.guideSubAvatarWrap}>
+                    <img className={styles.guideSubAvatar} src={s.avatar} alt="" />
+                    {s.live && <span className={styles.liveDot} />}
+                  </span>
+                  <span className={styles.guideLabel}>{s.name}</span>
+                  {s.live && <span className={styles.liveBadge}>LIVE</span>}
+                </button>
+              ))}
+              <button
+                className={styles.guideItem}
+                onClick={() => setShowMoreSubs(v => !v)}
+              >
+                <span className={styles.guideItemIcon}><ChevronRightIcon size={24} /></span>
+                <span className={styles.guideLabel}>{showMoreSubs ? 'Show less' : 'Show more'}</span>
+              </button>
+            </div>
+
+            {/* Section 4: Explore */}
+            <div className={styles.guideSection}>
+              <div className={styles.guideSectionTitle}>Explore</div>
+              {EXPLORE_ITEMS.map(item => (
+                <button key={item.label} className={styles.guideItem}>
+                  <GuideIcon name={item.icon} />
+                  <span className={styles.guideLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Section 5: Footer */}
+            <div className={styles.guideFooter}>
+              <div className={styles.footerLinks}>
+                {FOOTER_LINKS.map(link => (
+                  <a key={link} className={styles.footerLink}>{link}</a>
+                ))}
+              </div>
+              <p className={styles.footerCopyright}>© 2026 Google LLC</p>
+            </div>
+          </>
+        )}
       </aside>
 
       {/* === Content === */}
       <div className={`${styles.content} ${sidebarCollapsed ? styles.contentCollapsed : ''}`}>
         {view === 'home' ? (
-          /* === Home: Video Grid === */
-          <div className={styles.videoGrid}>
-            {VIDEOS.map((v, i) => (
-              <div key={v.id} className={styles.videoCard} onClick={() => openVideo(i)}>
-                <img className={styles.videoThumb} src={v.thumb} alt={v.title} loading="lazy" />
-                <div className={styles.videoMeta}>
-                  <img className={styles.channelAvatar} src={userAvatar} alt="" />
-                  <div className={styles.videoInfo}>
-                    <p className={styles.videoTitle}>{v.title}</p>
-                    <p className={styles.videoChannel}>{v.channel}</p>
-                    <p className={styles.videoStats}>{v.views} {'\u00b7'} {v.date}</p>
+          /* === Home: Chips + Video Grid === */
+          <>
+            <div className={styles.chipsBar}>
+              <div className={styles.chipsScroll}>
+                {CHIPS.map((chip, i) => (
+                  <button
+                    key={chip}
+                    className={`${styles.chip} ${i === activeChip ? styles.chipActive : ''}`}
+                    onClick={() => setActiveChip(i)}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className={styles.videoGrid}>
+              {VIDEOS.map((v, i) => (
+                <div key={v.id} className={styles.videoCard} onClick={() => openVideo(i)}>
+                  <div className={styles.thumbWrap}>
+                    <img className={styles.videoThumb} src={v.thumb} alt={v.title} loading="lazy" />
+                    <DurationBadge duration={v.duration} />
+                    <MoreMenuButton />
+                  </div>
+                  <div className={styles.videoMeta}>
+                    <img className={styles.channelAvatar} src={userAvatar} alt="" />
+                    <div className={styles.videoInfo}>
+                      <p className={styles.videoTitle}>{v.title}</p>
+                      <p className={styles.videoChannel}>
+                        {v.channel}
+                        {v.verified && <VerifiedBadge />}
+                      </p>
+                      <p className={styles.videoStats}>{v.views} {'\u00b7'} {v.date}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         ) : (
           /* === Watch Page === */
           <div className={`${styles.watchRow} ${styles.fadeIn}`}>
@@ -303,22 +542,37 @@ export function YouTubeWatchPage(): ReactElement {
                   <div className={styles.watchInfoLeft}>
                     <img className={styles.ownerAvatar} src={ownerAvatar} alt={activeVideo.channel} />
                     <div className={styles.ownerInfo}>
-                      <span className={styles.ownerName}>{activeVideo.channel}</span>
+                      <span className={styles.ownerName}>
+                        {activeVideo.channel}
+                        {activeVideo.verified && <VerifiedBadge />}
+                      </span>
                       <span className={styles.ownerSubs}>{activeVideo.subs}</span>
                     </div>
-                    <button className={styles.subscribeBtn} type="button">Subscribe</button>
+                    <button
+                      className={`${styles.subscribeBtn} ${subscribed ? styles.subscribed : ''}`}
+                      type="button"
+                      onClick={handleSubscribe}
+                      aria-pressed={subscribed}
+                    >
+                      {subscribed ? (
+                        <>
+                          <span className={styles.subBellIcon}><BellIcon size={18} /></span>
+                          Subscribed
+                        </>
+                      ) : 'Subscribe'}
+                    </button>
                   </div>
 
                   <div className={styles.actionBar}>
                     <div className={styles.likeDislikeGroup}>
                       <button
-                        className={styles.likeBtn}
-                        onClick={() => setLiked(l => !l)}
+                        className={`${styles.likeBtn} ${liked ? styles.likedActive : ''} ${likeBounce ? styles.likeBounce : ''}`}
+                        onClick={handleLike}
                         aria-pressed={liked}
                         aria-label={`like this video along with ${activeVideo.likes} other people`}
                       >
                         <span className={styles.actionBtnIcon}><LikeIcon size={18} /></span>
-                        {liked ? activeVideo.likes : activeVideo.likes}
+                        {liked ? `${activeVideo.likes} +1` : activeVideo.likes}
                       </button>
                       <button className={styles.dislikeBtn} aria-label="Dislike this video">
                         <span className={styles.actionBtnIcon}><DislikeIcon size={18} /></span>
@@ -335,10 +589,22 @@ export function YouTubeWatchPage(): ReactElement {
                     <button className={styles.actionBtn} aria-label="Download">
                       <span className={styles.actionBtnIcon}><DownloadIcon size={18} /></span>
                     </button>
+                    <button className={styles.actionBtn} aria-label="Thanks">
+                      <span className={styles.actionBtnIcon}><ThanksIcon size={18} /></span>
+                      Thanks
+                    </button>
+                    <button className={styles.actionBtn} aria-label="Clip">
+                      <span className={styles.actionBtnIcon}><ClipIcon size={18} /></span>
+                      Clip
+                    </button>
+                    <button className={styles.actionBtn} aria-label="Report">
+                      <span className={styles.actionBtnIcon}><ReportIcon size={18} /></span>
+                      Report
+                    </button>
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* Description with expand/collapse */}
                 <div
                   className={`${styles.description} ${descExpanded ? styles.descExpanded : ''}`}
                   onClick={() => setDescExpanded(e => !e)}
@@ -347,10 +613,19 @@ export function YouTubeWatchPage(): ReactElement {
                     <span>{activeVideo.views}</span>
                     <span className={styles.descViews}>{activeVideo.date}</span>
                   </div>
-                  <p className={styles.descText}>{activeVideo.description}</p>
-                  <div className={styles.descTags}>
-                    {activeVideo.tags.map(t => <span key={t} className={styles.descTag}>{t}</span>)}
+                  <div className={styles.descBody}>
+                    <p className={styles.descText}>
+                      <span className={styles.descChannelPrefix}>{activeVideo.channel}</span>
+                      {' '}
+                      {activeVideo.description}
+                    </p>
+                    <div className={styles.descTags}>
+                      {activeVideo.tags.map(t => <span key={t} className={styles.descTag}>{t}</span>)}
+                    </div>
                   </div>
+                  <button className={styles.descToggle} type="button">
+                    {descExpanded ? 'Show less' : '...more'}
+                  </button>
                 </div>
 
                 {/* Comments */}
@@ -373,10 +648,17 @@ export function YouTubeWatchPage(): ReactElement {
                     onClick={() => openVideo(i)}
                     aria-label={`Play ${v.title}`}
                   >
-                    <img className={styles.relatedThumb} src={v.thumb} alt={v.title} loading="lazy" />
+                    <div className={styles.relatedThumbWrap}>
+                      <img className={styles.relatedThumb} src={v.thumb} alt={v.title} loading="lazy" />
+                      <DurationBadge duration={v.duration} />
+                      <MoreMenuButton />
+                    </div>
                     <div className={styles.relatedInfo}>
                       <p className={styles.relatedTitle}>{v.title}</p>
-                      <p className={styles.relatedChannel}>{v.channel}</p>
+                      <p className={styles.relatedChannel}>
+                        {v.channel}
+                        {v.verified && <VerifiedBadge />}
+                      </p>
                       <p className={styles.relatedMeta}>{v.views} {'\u00b7'} {v.date}</p>
                     </div>
                   </button>
@@ -386,6 +668,41 @@ export function YouTubeWatchPage(): ReactElement {
           </div>
         )}
       </div>
+
+      {/* === Mobile bottom nav (<792px) === */}
+      <nav className={styles.bottomNav} role="navigation" aria-label="Mobile navigation">
+        <button
+          className={`${styles.bottomNavItem} ${activeNav === 'home' ? styles.bottomNavActive : ''}`}
+          onClick={() => { setActiveNav('home'); goHome(); }}
+        >
+          <HomeIcon size={24} />
+          <span className={styles.bottomNavLabel}>Home</span>
+        </button>
+        <button
+          className={`${styles.bottomNavItem} ${activeNav === 'shorts' ? styles.bottomNavActive : ''}`}
+          onClick={() => setActiveNav('shorts')}
+        >
+          <ShortsIcon size={24} />
+          <span className={styles.bottomNavLabel}>Shorts</span>
+        </button>
+        <button className={styles.bottomNavPlus} aria-label="Create">
+          <span className={styles.bottomNavPlusIcon}>+</span>
+        </button>
+        <button
+          className={`${styles.bottomNavItem} ${activeNav === 'subs' ? styles.bottomNavActive : ''}`}
+          onClick={() => setActiveNav('subs')}
+        >
+          <SubscriptionsIcon size={24} />
+          <span className={styles.bottomNavLabel}>Subscriptions</span>
+        </button>
+        <button
+          className={`${styles.bottomNavItem} ${activeNav === 'you' ? styles.bottomNavActive : ''}`}
+          onClick={() => setActiveNav('you')}
+        >
+          <YouIcon size={24} />
+          <span className={styles.bottomNavLabel}>You</span>
+        </button>
+      </nav>
     </div>
   );
 }

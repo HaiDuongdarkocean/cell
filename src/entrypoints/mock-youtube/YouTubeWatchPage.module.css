@@ -284,6 +284,7 @@
   width: 240px;
   background: var(--yt-bg);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px 0;
   transition: width 0.2s ease;
   z-index: 1000;
@@ -1039,17 +1040,17 @@
   background: rgba(0, 0, 0, 0.8);
   color: #fff;
   cursor: pointer;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s;
+  transition: opacity 0.15s ease;
+  z-index: 5;
 }
 
 .videoCard:hover .moreMenuBtn,
 .relatedItem:hover .moreMenuBtn {
-  display: flex;
   opacity: 1;
 }
 
@@ -1061,9 +1062,15 @@
 .verifiedBadge {
   display: inline-flex;
   align-items: center;
-  color: var(--yt-text-secondary);
+  color: #aaa;
   margin-left: 4px;
+  flex-shrink: 0;
   vertical-align: middle;
+}
+
+.verifiedBadge svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* === Chips bar (home page) === */
@@ -1149,18 +1156,22 @@
   letter-spacing: 0.5px;
 }
 
+.guideFooter {
+  padding: 16px 24px 24px;
+  font-size: 13px;
+  color: var(--yt-text-secondary);
+}
+
 .footerLinks {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  padding: 8px 12px 12px;
+  margin-bottom: 16px;
 }
 
 .footerLink {
-  font-size: 13px;
   color: var(--yt-text-secondary);
   cursor: pointer;
-  font-family: var(--yt-font);
 }
 
 .footerLink:hover {
@@ -1168,10 +1179,9 @@
 }
 
 .footerCopyright {
+  color: #717171;
   font-size: 12px;
-  color: var(--yt-text-secondary);
-  padding: 0 12px 8px;
-  margin: 0;
+  margin-top: 8px;
 }
 
 /* === Mini-guide (collapsed sidebar) === */
