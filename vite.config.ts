@@ -66,6 +66,78 @@ function designSystemShowcase(): Plugin {
   };
 }
 
+/**
+ * Wrap every `:hover` CSS rule in `@media (hover: hover)` at build time.
+ *
+ * On touch devices, browsers keep a simulated `:hover` state after tap — the
+ * hover background "sticks" and doesn't disappear, which clashes with the
+ * product's own `:active` feedback. `@media (hover: hover)` gates hover styles
+ * to devices that have a real hover input (mouse/trackpad), so touch devices
+ * never trigger them.
+ *
+ * The transform runs at build time on raw CSS (before Vite's CSS-module
+ * hashing), so it covers every surface: React pages, Shadow DOM `?raw`
+ * imports, and `?inline` CSS modules. No source files are changed.
+ *
+ * The codebase uses flat CSS (no native nesting), so every `:hover` rule is
+ * `selector:hover { body }` with no nested braces — a single regex pass is
+ * safe and complete. Rules already inside `@media (hover: hover)` are
+ * extracted first and reinserted to avoid double-wrapping.
+ */
+function hoverOnlyOnHoverDevices(): Plugin {
+  return {
+    name: 'hover-only-on-hover-devices',
+    enforce: 'pre',
+    // Process ?raw / ?inline CSS imports (they become string literals in JS,
+    // so generateBundle never sees them as CSS assets).
+    transform(code, id) {
+      if (!id.includes('.css') || !code.includes(':hover')) return null;
+      const wrapped = wrapHoverRules(code);
+      return wrapped === code ? null : { code: wrapped, map: null };
+    },
+    // Process final CSS assets — catches @imported files whose :hover was
+    // not visible during transform (Vite resolves @import after enforce:pre).
+    generateBundle(_opts, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'asset' || !chunk.fileName.endsWith('.css')) continue;
+        const src = typeof chunk.source === 'string' ? chunk.source : null;
+        if (!src || !src.includes(':hover')) continue;
+        const wrapped = wrapHoverRules(src);
+        if (wrapped !== src) chunk.source = wrapped;
+      }
+    },
+  };
+}
+
+/** Extract @media (hover: hover) blocks, wrap remaining :hover rules, restore. */
+function wrapHoverRules(css: string): string {
+  const HOVER_MEDIA_RE = /@media\s*\(\s*hover:\s*hover\s*\)\s*\{/g;
+  const saved: string[] = [];
+  const spans: { start: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = HOVER_MEDIA_RE.exec(css)) !== null) {
+    let depth = 1;
+    let j = m.index + m[0].length;
+    while (j < css.length && depth > 0) {
+      if (css[j] === '{') depth++;
+      else if (css[j] === '}') depth--;
+      j++;
+    }
+    spans.push({ start: m.index, end: j });
+  }
+  let out = css;
+  for (let i = spans.length - 1; i >= 0; i--) {
+    saved.push(css.slice(spans[i].start, spans[i].end));
+    out = out.slice(0, spans[i].start) + `/*__HOVER_MEDIA_${saved.length - 1}__*/` + out.slice(spans[i].end);
+  }
+  // Flat CSS (no nesting): selector:hover { body } — no braces inside selector or body.
+  out = out.replace(/([^{}]*:hover[^{}]*)\{([^{}]*)\}/g, '@media (hover: hover){$1{$2}}');
+  for (let i = 0; i < saved.length; i++) {
+    out = out.replace(`/*__HOVER_MEDIA_${i}__*/`, saved[i]);
+  }
+  return out;
+}
+
 function autoSeedAssets(mode: string): Plugin {
   // Production builds should not ship test seed files (~42.7MB).
   // Dev builds (`npx vite build --mode development`) keep seeds so the
@@ -99,7 +171,7 @@ function autoSeedAssets(mode: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
-  plugins: [crx({ manifest }), autoSeedAssets(mode), designSystemShowcase()],
+  plugins: [crx({ manifest }), hoverOnlyOnHoverDevices(), autoSeedAssets(mode), designSystemShowcase()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
