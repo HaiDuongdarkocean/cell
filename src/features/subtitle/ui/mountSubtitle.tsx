@@ -25,6 +25,7 @@ import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import sheetCss from '@/shared/ui/Sheet.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 import { ICON_CATALOG } from '@/shared/icons';
@@ -175,6 +176,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       offsetMs={offsetMs}
       onSeek={onSeek}
       managerShadowCss={[
+        sheetCss,
         subtitleManagerCss,
         subtitleSearchCss,
         apiKeyManagerCss,

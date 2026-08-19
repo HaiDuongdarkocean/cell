@@ -15,6 +15,7 @@ import buttonCss from '@/shared/ui/Button.module.css?inline';
 import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
+import sheetCss from '@/shared/ui/Sheet.module.css?inline';
 
 const POPUP_Z_INDEX = 'var(--z-overlay-top)';
 const ORBITAL_BADGE_HOST_CLASS = 'js-cell-orbital-badge-host';
@@ -172,6 +173,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
       parent: getMountParent(),
       position: 'fixed',
       css: [
+        sheetCss,
         popupDictionaryCss,
         dictionaryPanelViewCss,
         searchFieldCss,

@@ -18,6 +18,7 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 │   └── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
+├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
@@ -56,6 +57,16 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-20**: Fix stale subtitle tracks trên SPA nav YouTube — `onSpaNav` (proactive clear trên `yt-navigate-finish`/`popstate`) và AUTO_LOAD null handler (background-driven clear khi MAIN-world detect trả 0 tracks) chỉ clear engine cues + offset, KHÔNG clear manager panel items (`autoTargetItems`/`autoNativeItems`/`targetMatches`/`nativeMatches`/`activeTargetIndex`/`activeNativeIndex`) và `useCuesStore` load status. Kết quả: SubtitleManagerPanel vẫn hiển thị track cũ (vd "EN #1 VTT") sau khi chuyển từ video có subtitle sang video không có subtitle. Fix: thêm clear panel items + `refreshPanel('target'|'native')` + `useCuesStore.setLoadStatus('none'/'idle')` vào cả 2 path. File: `src/features/subtitle/ui/contentScriptController.ts`.
+
+**2026-08-19**: Thêm `docs/subtitle-manager-css-arc-prompt.md` — prompt triển khai arc + fade bằng CSS thuần, không SVG, gồm hướng kỹ thuật pseudo-element/mask gradient, responsive requirements, interaction constraints và AC/verification checklist.
+
+**2026-08-19**: Subtitle Manager desktop right-aligned sidebar panel — breakpoint 768px (`BREAKPOINTS.tablet`): ≥768px → panel `width: min(100% container, 360px)` (sidebar width, cap 360px), `height: 100%` (fill full container height, không gap), `border-radius: 0` (square corners, flush sidebar style), cross-axis (horizontal) = right via `.panelLayer justify-content:flex-end`, main-axis (vertical) = stretch via `height:100%`, **background: `linear-gradient(to right, transparent 0%, var(--color-glass-sidebar-panel) 50%)`** — wide fade zone 50% (độ lan tỏa rộng) tạo chuyển giao mượt với video, không cắt đột ngột, backdrop `var(--color-glass-sidebar-backdrop)` xung quanh, click backdrop = close. Token SSOT: `--color-glass-sidebar-panel: rgba(0,0,0,0.85)` (near-black) + `--color-glass-sidebar-backdrop: rgba(0,0,0,0.5)` (heavy dim) trong `tokens.json` (light + dark). <768px → Sheet component fill toàn màn hình. Áp dụng cả normal + fullscreen mode.
+
+**2026-08-19**: `docs/mockup-g4.html` chuyển arc từ SVG sang CSS-only: panel surface dùng một màu đồng nhất cho header/body/footer; `.panel::after` dùng solid surface + radial mask để tạo biên cong, `.panel::before` tạo outer halo blur fade ra video. Panel co theo container bằng `width:min(100%,360px)` để không tràn ở viewport hẹp.
+
+**2026-08-19**: Subtitle Manager đồng bộ positioning với overlay subtitle — `#cell-manager-portal` chuyển từ body-level portal (`position:fixed;inset:0;z-index:2147483647` + videoRect/ResizeObserver tracking + custom fullscreen polling) sang gắn trong video container (cùng parent `#cell-subtitle-root`), `position:absolute;inset:0;z-index:2147483647`, dùng chung `attachFullscreenReparenting` từ `mountReactShadow.ts`. `.panelLayer` CSS bỏ `--video-x/y/w/h` + `--origin-x/y`, mobile giữ `position:fixed` bottom sheet. Bỏ `videoRect`/`managerOrigin` state + ResizeObserver effect. Export `attachFullscreenReparenting` từ `mountReactShadow.ts` để reuse.
 
 **2026-08-13**: Subtitle Manager search UI sửa Shadow DOM CSS injection: thêm search/preview và shared atom CSS vào `mountSubtitle`, khắc phục layout raw browser trên host page.
 **2026-08-13**: Thêm ADR `079-subtitle-search.md` — WHY decisions cho subtitle search (client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry). Spec: `docs/specs/subtitle-search.md`.

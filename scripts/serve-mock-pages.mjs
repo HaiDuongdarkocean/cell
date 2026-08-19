@@ -32,6 +32,20 @@ const PAGES = [
     outDir: resolve(TMP, 'mock-streaming'),
   },
   {
+    name: 'StreamFlixIframe',
+    id: 'mock-streaming-iframe-page',
+    port: 4323,
+    distHtml: resolve(DIST, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
+    outDir: resolve(TMP, 'mock-streaming-iframe'),
+  },
+  {
+    name: 'IframePlayer',
+    id: 'mock-iframe-player',
+    port: 4324,
+    distHtml: resolve(DIST, 'src/entrypoints/mock-iframe-player/index.html'),
+    outDir: resolve(TMP, 'mock-iframe-player'),
+  },
+  {
     name: 'YouTube',
     id: 'mock-youtube',
     port: 4322,
@@ -42,11 +56,15 @@ const PAGES = [
 
 const args = process.argv.slice(2);
 const streamOnly = args.includes('--stream');
+const streamIframeOnly = args.includes('--stream-iframe');
 const youtubeOnly = args.includes('--youtube');
 const buildOnly = args.includes('--build-only');
 const noBuild = args.includes('--no-build');
 
+// --stream-iframe serves the cross-origin iframe host (4323) + child player
+// (4324) together — both are required for the iframe flow to work.
 const selected = streamOnly ? PAGES.filter(p => p.id === 'mock-streaming-page')
+  : streamIframeOnly ? PAGES.filter(p => p.id === 'mock-streaming-iframe-page' || p.id === 'mock-iframe-player')
   : youtubeOnly ? PAGES.filter(p => p.id === 'mock-youtube')
   : PAGES;
 

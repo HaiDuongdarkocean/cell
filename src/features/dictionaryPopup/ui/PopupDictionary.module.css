@@ -107,11 +107,11 @@
 
 .isSheet {
   position: fixed;
-  inset: auto 0 0 0;
-  width: 100%;
+  inset: auto 3% var(--space-2) 3%;
+  width: 94%;
   max-height: calc(100vh - var(--space-2));
-  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
-  border-bottom: none;
+  border-radius: var(--radius-element);
+  border: none;
 }
 
 .isSheet .resize {

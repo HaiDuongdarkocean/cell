@@ -1,0 +1,59 @@
+/* MockStreamingIframePage — host-page additions for the cross-origin iframe
+   player. The page chrome (header, sidebar, comments, footer) reuses the
+   same-origin mock's CSS module; this file only styles the iframe container
+   and the subtitle-discovery mode toggle. */
+
+.modeToggle {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 4px;
+  background: rgba(26, 26, 46, 0.6);
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+}
+
+.modeTab {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #9999b8;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.modeTab:hover {
+  color: #e8e8f0;
+  background: rgba(108, 92, 231, 0.12);
+}
+
+.modeTabActive {
+  color: #fff;
+  background: #6c5ce7;
+  border-color: #6c5ce7;
+}
+
+/* The iframe host container mirrors the same-origin mock's player dimensions
+   (16:9, max 900px) so the layout is visually identical. `.player-main` is the
+   real-site class the extension's iframePlayerModeBridge looks for when
+   climbing to the fullscreen host. */
+.iframeHost {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 70vh;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.playerIframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}

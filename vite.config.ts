@@ -127,6 +127,8 @@ export default defineConfig(({ mode }) => ({
         cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
         designSystemShowcase: resolve(__dirname, 'src/entrypoints/design-system-showcase/index.html'),
         mockStreamingPage: resolve(__dirname, 'src/entrypoints/mock-streaming-page/index.html'),
+        mockStreamingIframePage: resolve(__dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
+        mockIframePlayer: resolve(__dirname, 'src/entrypoints/mock-iframe-player/index.html'),
         mockYouTube: resolve(__dirname, 'src/entrypoints/mock-youtube/index.html'),
       },
       output: {

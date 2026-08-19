@@ -1,0 +1,75 @@
+/* === Sheet — shared bottom sheet atom (SSOT) ===
+   Used by: Dictionary popup (mobile), SubtitleManager (mobile).
+   94% width centered, slide-up from bottom, all 4 corners rounded.
+   Drag handle: 1:1 height resize + click-to-close.
+   Content drag: translateY dismiss + spring snap-back. */
+
+.sheet {
+  position: fixed;
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: var(--space-2);
+  max-height: calc(100vh - var(--space-2) * 2);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-popover);
+  color: var(--color-text-primary);
+  border-radius: var(--radius-element);
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: var(--z-overlay-top);
+  padding: 0 var(--space-3);
+  /* Enter: slide-up from bottom. @starting-style fires once on insertion. */
+  transition: opacity var(--duration-300) var(--ease-standard),
+              transform var(--duration-300) var(--ease-standard);
+}
+
+@starting-style {
+  .sheet {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* Drag handle — full-width hit zone with centered visual bar.
+   The entire .handle element is the draggable target, not just the bar. */
+.handle {
+  flex: 0 0 auto;
+  width: 100%;
+  height: var(--space-8);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Visual grab bar — centered inside the full-width hit zone. */
+.handle::before {
+  content: '';
+  display: block;
+  width: var(--space-10);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+}
+
+.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  composes: hide from '@/shared/ui/Scrollable.module.css';
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    transition: none;
+  }
+}

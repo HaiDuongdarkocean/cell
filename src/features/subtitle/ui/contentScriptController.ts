@@ -1532,6 +1532,19 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         updateGenerateNativeEnabled();
         useCuesStore.getState().setLoadStatus('target', { state: 'none' });
         useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
+        // Clear auto-detected track list + manager panel so stale tracks from
+        // the previous video don't persist in the panel UI. onSpaNav may have
+        // already cleared these (proactive clear on yt-navigate-finish), but
+        // if onSpaNav didn't fire (lastAutoLoadUrl was undefined) this is the
+        // only clear path.
+        autoTargetItems = [];
+        autoNativeItems = [];
+        targetMatches = [];
+        nativeMatches = [];
+        activeTargetIndex = 0;
+        activeNativeIndex = 0;
+        refreshPanel('target');
+        refreshPanel('native');
       }
       // ADR-021: clear translate prefill on SPA nav (URL changed)
       if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
@@ -2083,6 +2096,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     updateGenerateNativeEnabled();
     lastAutoLoadKey = undefined;
     lastAutoLoadUrl = undefined;
+    // Clear auto-detected track list + manager panel so stale tracks from the
+    // previous video don't persist. Without this, the SubtitleManagerPanel
+    // keeps showing the old video's tracks after SPA nav to a video with no
+    // subtitles (onSpaNav cleared overlay cues but not the panel items).
+    autoTargetItems = [];
+    autoNativeItems = [];
+    targetMatches = [];
+    nativeMatches = [];
+    activeTargetIndex = 0;
+    activeNativeIndex = 0;
+    refreshPanel('target');
+    refreshPanel('native');
+    useCuesStore.getState().setLoadStatus('target', { state: 'none' });
+    useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
   };
   window.addEventListener('yt-navigate-finish', onSpaNav);
   window.addEventListener('popstate', onSpaNav);

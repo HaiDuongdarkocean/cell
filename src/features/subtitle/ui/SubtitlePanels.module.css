@@ -143,24 +143,19 @@
   pointer-events: auto;
 }
 
-/* ─── Manager panel layer — overlays video player area ───
-   Desktop: positioned over video player container via CSS vars from videoRect.
-   Background: dark translucent (YouTube settings panel style).
-   Mobile <768px: bottom sheet 75vh on host page (see below). */
+/* ─── Manager panel layer — backdrop + centered sheet (YouTube settings style)
+   Desktop: absolute backdrop (inset:0, dark translucent) + centered sheet
+   inside. Mobile <768px: bottom sheet 94% width, all 4 corners rounded. */
 .panelLayer {
-  position: fixed;
-  left: var(--video-x, 0);
-  top: var(--video-y, 0);
-  width: var(--video-w, 100vw);
-  height: var(--video-h, 100vh);
+  position: absolute;
+  inset: 0;
   pointer-events: auto;
-  z-index: 2147483647;
-  background: rgba(15, 15, 15, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  z-index: 2;
+  background: var(--color-glass-sidebar-backdrop);
   display: flex;
-  flex-direction: column;
-  transform-origin: var(--origin-x, 50%) var(--origin-y, 50%);
+  align-items: center;
+  justify-content: flex-end;
+  transform-origin: center;
   animation: managerScaleIn 220ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -169,28 +164,72 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Mobile: bottom sheet 75vh — sheet anchored to viewport bottom,
-   video visible above. Overrides video rect positioning. */
+/* Desktop ≥768px: glass panel — scoped token remap so all child modules
+   (SubtitleManagerPanel, search, appearance, shared Button/Input/Select/
+   IconButton/Tabs/FooterBar) inherit translucent light-on-dark values
+   instead of their default opaque theme-aware tokens. Mobile <768px sheet
+   keeps opaque tokens (see media query below).
+   No backdrop on desktop — panel floats directly over video (no dimming). */
+@media (min-width: 768px) {
+  .panelLayer {
+    background: transparent;
+    --color-surface: var(--color-glass-surface);
+    --color-surface-hover: var(--color-glass-surface-hover);
+    --color-surface-popover: var(--color-glass-surface-popover);
+    --color-surface-card: var(--color-glass-surface);
+    --input-bg: var(--color-glass-input-bg);
+    --color-border: transparent;
+    --color-border-subtle: var(--color-glass-border);
+    --color-text-primary: var(--color-glass-text-primary);
+    --color-text-secondary: var(--color-glass-text-secondary);
+    --color-background: var(--color-glass-background);
+    --color-track: var(--color-glass-track);
+    --color-primary-subtle: transparent;
+    /* Button hover/active — var() in custom property resolves at :root scope,
+       so overriding --color-surface-hover above does NOT re-resolve these.
+       Override directly to keep button states translucent on glass. */
+    --iconbutton-hover-bg: var(--color-glass-surface-hover);
+    --button-ghost-hover-bg: var(--color-glass-surface-hover);
+    --button-outline-hover-bg: var(--color-glass-surface-hover);
+    --button-secondary-hover-bg: var(--color-glass-surface-hover);
+  }
+}
+
+/* Mobile <768px: bottom sheet — shared atom specs (BottomSheet.module.css SSOT).
+   94% width centered on main axis, slide-up from bottom, max 75vh.
+   All 4 corners rounded (YouTube settings sheet style). */
 @media (max-width: 767px) {
   .panelLayer {
-    left: 0;
+    position: fixed;
+    left: 3%;
     top: auto;
-    bottom: 0;
-    width: 100vw;
-    height: 75vh;
+    bottom: var(--space-2);
+    width: 94%;
+    max-height: 75vh;
     background: var(--color-surface-popover, #1a1a1a);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    border-radius: var(--radius-dialog, 12px) var(--radius-dialog, 12px) 0 0;
+    border-radius: var(--radius-element, 12px);
     align-items: stretch;
     justify-content: flex-end;
     transform-origin: bottom center;
-    animation: managerSlideUp 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    animation: managerSlideUp var(--duration-300) var(--ease-standard);
   }
 
   @keyframes managerSlideUp {
     from { opacity: 0; transform: translateY(100%); }
     to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* Short devices ≤480px height (e.g. landscape phone, small phone) —
+   75vh = 360px is too small for subtitle manager content (header + tabs +
+   track list + footer). Expand to 95vh = 456px, leaving 24px gap for
+   user to dismiss. Width 94% keeps side margins for swipe gesture. */
+@media (max-width: 767px) and (max-height: 480px) {
+  .panelLayer {
+    max-height: 95vh;
+    bottom: var(--space-1);
   }
 }
 

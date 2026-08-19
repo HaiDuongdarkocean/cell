@@ -62,6 +62,11 @@ export interface SubtitleManagerPanelProps {
   readonly nativeHidden?: boolean;
   /** Whether both subtitles are currently hidden in the overlay. */
   readonly bothHidden?: boolean;
+  /** When true, panel is rendered inside a shared Sheet atom — hide the
+   *  decorative drag handle (Sheet provides its own functional one). */
+  readonly inSheet?: boolean;
+  /** When true, panel plays slide-out animation before unmount (desktop only). */
+  readonly exiting?: boolean;
 }
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -369,6 +374,8 @@ export function SubtitleManagerPanel({
   targetHidden,
   nativeHidden,
   bothHidden,
+  inSheet,
+  exiting,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
     offset: formatSigned(defaultOffsets.target),
@@ -465,12 +472,19 @@ export function SubtitleManagerPanel({
   const searchBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // Skip ESC handling when inside shared Sheet atom — Sheet has its own.
+    if (inSheet) return;
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        // In fullscreen: let browser exit fullscreen, manager stays open.
+        // Not in fullscreen: close manager.
+        if (document.fullscreenElement) return;
+        onClose();
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, inSheet]);
 
   const transitionTo = useCallback((newView: 'tracks' | 'appearance' | 'search', direction: 'forward' | 'backward'): void => {
     setViewDirection(direction);
@@ -529,13 +543,14 @@ export function SubtitleManagerPanel({
 
   return (
     <div
-      className={styles.panel}
+      className={inSheet ? `${styles.panel} ${styles.inSheet}` : styles.panel}
       role="dialog"
       aria-label="Subtitle manager"
       data-cell-id="subtitle-manager-panel"
       data-view={view}
       data-direction={viewDirection}
       data-scrolled={scrolledDir}
+      data-state={exiting ? 'exiting' : undefined}
     >
       {/* Header — container stays fixed, inner content slides between views */}
       <div className={styles.header}>

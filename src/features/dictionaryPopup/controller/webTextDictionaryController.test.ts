@@ -23,10 +23,16 @@ jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({
     },
   })),
 }));
+// isChildFrame is the single source of truth for the child-frame orbital-badge
+// gate. Mocked so tests can toggle the frame context without touching window.top.
+jest.mock('@/features/subtitle/logic/iframeContext', () => ({
+  isChildFrame: jest.fn(() => false),
+}));
 
 import { createWebTextDictionaryController } from './webTextDictionaryController';
 import type { WebTextDictionaryControllerDeps } from './webTextDictionaryController';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
 import type { LookupResult, LookupRequest } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 
@@ -523,6 +529,88 @@ describe('createWebTextDictionaryController', () => {
     const hosts = document.querySelectorAll('.js-cell-orbital-badge-host');
     expect(hosts.length).toBe(1);
     expect(hosts[0]).toBe(host1);
+    ctrl.destroy();
+  });
+
+  // Helper: toggle document.fullscreenElement (jsdom leaves it null). The
+  // child-frame gate reads it to decide whether the badge may mount.
+  function setFullscreenElement(el: Element | null): void {
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => el,
+    });
+  }
+
+  it('child frame without fullscreen does NOT mount an orbital badge', async () => {
+    jest.mocked(isChildFrame).mockReturnValue(true);
+    setFullscreenElement(null);
+    try {
+      const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
+      await act(async () => {
+        ctrl.updateSettings({
+          dictionaryPopup: makePopupSettings({ enabled: true }),
+          cardCreator: makeCardCreatorSettings(),
+          subtitleOverlayNativeLanguage: 'vi',
+        });
+      });
+      // No badge in a child frame while the top-frame badge covers the viewport.
+      expect(document.querySelector('.js-cell-orbital-badge-host')).toBeNull();
+      ctrl.destroy();
+    } finally {
+      jest.mocked(isChildFrame).mockReturnValue(false);
+    }
+  });
+
+  it('child frame in native fullscreen mounts an orbital badge', async () => {
+    jest.mocked(isChildFrame).mockReturnValue(true);
+    const fsEl = document.createElement('div');
+    document.body.appendChild(fsEl);
+    setFullscreenElement(fsEl);
+    try {
+      const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
+      await act(async () => {
+        ctrl.updateSettings({
+          dictionaryPopup: makePopupSettings({ enabled: true }),
+          cardCreator: makeCardCreatorSettings(),
+          subtitleOverlayNativeLanguage: 'vi',
+        });
+      });
+      const host = document.querySelector('.js-cell-orbital-badge-host');
+      expect(host).not.toBeNull();
+      ctrl.destroy();
+    } finally {
+      setFullscreenElement(null);
+      jest.mocked(isChildFrame).mockReturnValue(false);
+    }
+  });
+
+  it('top frame hides the orbital badge while a child iframe is native-fullscreen', async () => {
+    // Top frame: isChildFrame = false (default mock). The badge mounts, then
+    // the fullscreenchange handler in mountOrbitalBadge must hide it when
+    // document.fullscreenElement is an <iframe> (child video native fullscreen
+    // covers the top viewport and the host badge cannot render over it).
+    const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
+    await act(async () => {
+      ctrl.updateSettings({
+        dictionaryPopup: makePopupSettings({ enabled: true }),
+        cardCreator: makeCardCreatorSettings(),
+        subtitleOverlayNativeLanguage: 'vi',
+      });
+    });
+    const host = document.querySelector('.js-cell-orbital-badge-host') as HTMLElement;
+    expect(host).not.toBeNull();
+    expect(host.style.display).toBe(''); // visible before fullscreen
+
+    // Simulate child iframe entering native fullscreen.
+    const fakeIframe = document.createElement('iframe');
+    setFullscreenElement(fakeIframe);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(host.style.display).toBe('none'); // hidden while iframe is fullscreen
+
+    // Simulate exiting fullscreen → badge restored.
+    setFullscreenElement(null);
+    document.dispatchEvent(new Event('fullscreenchange'));
+    expect(host.style.display).toBe('');
     ctrl.destroy();
   });
 
