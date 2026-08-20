@@ -169,7 +169,9 @@ function parseDialogues(sectionLines: string[]): AssDialogue[] {
       const startIdx = indexOf('Start');
       const endIdx = indexOf('End');
       const styleIdx = indexOf('Style');
-      const nameIdx = indexOf('Name');
+      // ASS spec calls this column "Name", but real-world files (and our
+      // collected samples) often label it "Actor". Accept either.
+      const nameIdx = Math.max(indexOf('Name'), indexOf('Actor'));
       const textIdx = indexOf('Text');
 
       if (

@@ -1,0 +1,35 @@
+<SAMI>
+<HEAD>
+<TITLE>Multi-Language SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+.KRCC { Name: Korean; lang: ko-KR; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC>Welcome to our tutorial</P>
+<P Class=KRCC>우리의 튜토리얼에 오신 것을 환영합니다</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC>Today we will learn about SAMI format</P>
+<P Class=KRCC>오늘은 SAMI 형식에 대해 배우겠습니다</P>
+
+<SYNC Start=6000>
+<P Class=ENUSCC>SAMI supports multiple languages in one file</P>
+<P Class=KRCC>SAMI는 하나의 파일에서 여러 언어를 지원합니다</P>
+
+<SYNC Start=9000>
+<P Class=ENUSCC>Each language has its own class</P>
+<P Class=KRCC>각 언어는 자체 클래스가 있습니다</P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC>Thank you for watching!</P>
+<P Class=KRCC>시청해주셔서 감사합니다!</P>
+
+</BODY>
+</SAMI>

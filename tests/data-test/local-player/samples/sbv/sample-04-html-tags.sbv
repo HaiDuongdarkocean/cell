@@ -1,0 +1,24 @@
+0:00:00.000,0:00:03.000
+<b>Welcome</b> to the <i>amazing</i> world of subtitles!
+
+0:00:03.500,0:00:06.500
+This text has <b>bold</b> and <i>italic</i> formatting.
+
+0:00:07.000,0:00:10.000
+<u>Underlined text</u> is also supported in some players.
+
+0:00:10.500,0:00:13.500
+<b><i>Bold and italic combined</i></b> in one line.
+
+0:00:14.000,0:00:17.000
+<font color="red">Red text</font> using font tags.
+
+0:00:17.500,0:00:20.500
+<i>This is italicized</i> and <b>this is bold</b>.
+
+0:00:21.000,0:00:24.000
+<b>Line one is bold</b>
+<i>Line two is italic</i>
+
+0:00:24.500,0:00:27.500
+Normal text <b>then bold</b> then <i>then italic</i> then normal again.

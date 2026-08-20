@@ -202,6 +202,7 @@ export default defineConfig(({ mode }) => ({
         mockStreamingIframePage: resolve(__dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
         mockIframePlayer: resolve(__dirname, 'src/entrypoints/mock-iframe-player/index.html'),
         mockYouTube: resolve(__dirname, 'src/entrypoints/mock-youtube/index.html'),
+        localPlayer: resolve(__dirname, 'src/entrypoints/local-player/index.html'),
       },
       output: {
         manualChunks(id) {

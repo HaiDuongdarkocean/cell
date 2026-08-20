@@ -19,6 +19,7 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 │   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
+│   ├── orca-ocr-layer.md               # Spec: OCR layer (PaddleOCR.js PP-OCRv5) — hard-sub video + image OCR, per-origin persistence, mixed CN+EN+JA, Manager Panel toggle + context menu
 │   └── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
@@ -34,6 +35,8 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-manager-redesign.html # Subtitle Manager Quiet List concept, interactive dark/light + responsive widths
 │   ├── cue-item-redesign.html         # 3 biến thể cue item mới (timestamp trái, text phải, format human-friendly)
 │   └── README.md                      # Rationale + so sánh các mockup + token dùng
+├── ideas/                             # Refined idea one-pagers (idea-refine output)
+│   └── orca-ocr-layer.md              # OCR layer cho Cell (hard-sub video + image + screenshot) — PaddleOCR.js PP-OCRv5 primary, evidence-grounded
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   └── learning-algorithms-summary.md # Learning algorithms summary
 ├── memory/                            # Agent memory — long-term context
@@ -59,6 +62,10 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-21**: Spec `docs/specs/orca-ocr-layer.md` revised sau 3-layer adversarial review (review → phản biện 1 → phản biện 2). 6 blocker + 5 major resolved: (1) ImageBitmap→ImageData via Port, (2) DRM black-frame detect, (3) bundle .wasm (MV3 cấm remotely-hosted code), (4) AC cold start <10s background, (5) script-run segmenter cho mixed intra-box, (6) spec tự mâu thuẫn native sub. Plan `tasks/plan.md` + `tasks/todo.md` updated: 27 tasks, 7 phases (T0 spike → T1-T3 foundation → T4-T7 engine → T8-T12 video pipeline → T13-T16 overlay+dict → T17-T20 Manager Panel → T21-T25 polish). Review log: `docs/specs/orca-ocr-review-final.md`. **Spike T0b PASS 5/5** (subagent browser test): frame capture mock+real (themoviebox.xyz mean luma 116.9, NOT DRM), WebGPU works, ImageData Port transfer OK, OCR POC mixed CN+EN+JA score 0.93-1.00. Test data: 4 JSON fixtures + 10 synthetic PNG frames trong `tests/data-test/ocr/`.
+
+**2026-08-21**: Thêm `docs/ideas/orca-ocr-layer.md` — refined idea one-pager + prototype benchmark cho OCR layer (codename "Orca"): PaddleOCR.js PP-OCRv5 mobile primary (1 model CN+EN+JA, 21.5MB), OcrEngine abstraction + Tesseract fallback + ChromeLens stub, video pipeline subtitle crop + pHash skip + cache, auto-detect vs single-language mode. **Prototype VALIDATED**: mixed-language CN+EN+JA cùng frame (score 0.93-1.00), WebGPU warm 134ms vs WASM 583ms (3.7-4.3x faster sau warmup, nhưng 5s shader JIT first run), poly `[[x1,y1]...]` 4-point. POC tại `prototype/orca-ocr-poc/` (gitignored). Evidence từ 3 subagent research + real benchmark. Còn: MV3 CSP test, real video frame accuracy, pHash subtitle detection.
 
 **2026-08-20**: Thêm spec `subtitle-panels-atom-decomposition.md` + ADR `080-subtitle-panels-atom-decomposition.md` — WHY tách god component `SubtitlePanels.tsx` (1651 dòng) thành 3 molecule (`ClusterRightToolbar`, `ManagerLayer`, `OffsetLayer`) + types SSOT (`subtitlePanelsTypes.ts`) + shared CSS (`subtitlePanelsShared.module.css`). `HostManagerSheet` thành thin adapter, `PlayerModeOverlay` share toolbar. Spec: `docs/specs/subtitle-panels-atom-decomposition.md`.
 

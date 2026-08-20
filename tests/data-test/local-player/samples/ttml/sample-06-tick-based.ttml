@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+    ttp:tickRate="1000"
+    xml:lang="en">
+  <body>
+    <div>
+      <p begin="0t" end="3000t">Subtitle from tick 0 to tick 3000 (3 seconds at 1000 tps)</p>
+      <p begin="3000t" end="6000t">Subtitle from tick 3000 to tick 6000</p>
+      <p begin="6000t" end="9000t">Subtitle from tick 6000 to tick 9000</p>
+      <p begin="9000t" end="12000t">Subtitle from tick 9000 to tick 12000</p>
+    </div>
+  </body>
+</tt>

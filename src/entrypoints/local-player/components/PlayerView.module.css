@@ -1,0 +1,150 @@
+/* === PlayerView — top-level layout of the local player page ===
+   Vertical stack: PlayerMenuBar (top) → video stage (center, flex-fill) →
+   PlayerControls (bottom). Library panel slides over the stage from the right.
+   Consumes tokens only — no raw hex/radius. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: var(--color-background);
+  font-family: var(--font-family);
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-background);
+  overflow: hidden;
+}
+
+.videoWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--overlay-background);
+}
+
+.subtitleOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+  pointer-events: none;
+  container-type: inline-size;
+}
+
+.navClusterOverlay {
+  position: absolute;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-popover);
+}
+
+/* Controls overlay — sits inside videoWrapper, absolute bottom, fades in/out.
+   Gradient backdrop for legibility without a solid bar background. */
+.controlsOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  padding: var(--space-4) var(--space-2) var(--space-3);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--overlay-background) 70%, transparent),
+    transparent
+  );
+  transition: opacity var(--duration-medium) var(--ease-standard);
+}
+
+.noSubtitleBanner {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  z-index: var(--z-popover);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.offsetPanelOverlay {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: var(--z-popover);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-3);
+}
+
+.libraryPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100%);
+  background: var(--color-surface);
+  border-left: var(--border-width-hairline) solid var(--color-border);
+  box-shadow: var(--shadow-modal);
+  z-index: var(--z-popover);
+  overflow-y: auto;
+  animation: slideIn var(--duration-medium) var(--ease-standard);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* === Responsive — mobile / narrow viewport ===
+   Ponytail: below 480px the library panel goes full-width and the subtitle
+   overlay padding tightens so cues don't clip the controls bar. */
+@media (max-width: 480px) {
+  .libraryPanel {
+    width: 100%;
+    border-left: none;
+  }
+
+  .subtitleOverlay {
+    padding: var(--space-4) var(--space-2) var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .libraryPanel {
+    animation: none;
+  }
+  .controlsOverlay {
+    transition: none;
+  }
+}

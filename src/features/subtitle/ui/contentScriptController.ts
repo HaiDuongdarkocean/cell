@@ -38,17 +38,11 @@ import type { SubtitleTokenizeController } from '@/features/tokenize/controller/
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import { buildCardCreatorContext, type CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
-import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
-import { getWordStatuses } from '@/features/dictionaryPopup/services/wordStatusClient';
+import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
+import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
+import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
 
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
-import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
@@ -143,79 +137,6 @@ const shouldDedupeCueSeek = (action: string): boolean => {
   return false;
 };
 
-/** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
- *  timeout. Used before screenshot capture — the user may have just seeked
- *  or paused, leaving the video in a transient state where drawImage would
- *  throw "Video not ready". */
-async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Promise<void> {
-  if (video.readyState >= 2 && video.videoWidth > 0) return;
-  const start = Date.now();
-  await new Promise<void>((resolve) => {
-    const check = (): void => {
-      if (video.readyState >= 2 && video.videoWidth > 0) {
-        resolve();
-        return;
-      }
-      if (Date.now() - start >= timeoutMs) {
-        resolve(); // give up — captureScreenshot will throw a clear error
-        return;
-      }
-      setTimeout(check, 100);
-    };
-    check();
-  });
-}
-
-/** Split a subtitle line into unique lowercase word terms (letters only).
- *  Used by batch quick-add to find unknown/tracking words. */
-function tokenizeSubtitleWords(text: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const raw of text.split(/[^a-zA-Z]+/)) {
-    const w = raw.toLowerCase();
-    if (w.length >= 2 && !seen.has(w)) {
-      seen.add(w);
-      result.push(w);
-    }
-  }
-  return result;
-}
-
-/** Build a Card Creator queue from the current subtitle line: tokenize →
- *  filter unknown/tracking → lookup each in dictionary → return queue items.
- *  Used by edit-card action for the I+N review flow. */
-async function buildSubtitleQueue(targetText: string, sourceLang: string): Promise<CardCreatorQueueItem[]> {
-  const words = tokenizeSubtitleWords(targetText);
-  if (words.length === 0) return [];
-  const statusMap = await getWordStatuses(sourceLang, words);
-  const learnWords = words.filter((w) => {
-    const s = statusMap.get(w);
-    return s === 'unknown' || s === 'tracking';
-  });
-  if (learnWords.length === 0) return [];
-  // Look up each word in the dictionary (parallel for speed).
-  const results = await Promise.all(learnWords.map(async (term) => {
-    try {
-      const response = await sendMessage({
-        type: MESSAGE_TYPES.LOOKUP_REQUEST,
-        payload: {
-          requestId: `queue-${Date.now()}-${term}`,
-          request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-        },
-      }) as { success: boolean; data?: LookupResult[] };
-      const definitions = response.success && response.data && response.data.length > 0
-        ? response.data.flatMap((r) => r.definitions).map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text)).join('\n')
-        : '';
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions, status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    } catch {
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    }
-  }));
-  return results;
-}
-
 /** Load target/native language codes from settings.
  *  Used by import file role assignment + panel selection. */
 async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
@@ -306,6 +227,24 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     () => { void handleGenerateNative(); },
   );
 
+  /** Build SubtitleActionContext from current controller state — shared action
+   *  functions (cardActions.ts) use this to access video, cues, settings, etc.
+   *  Built lazily on each call so it always reflects current state. */
+  function buildActionContext(): SubtitleActionContext {
+    return {
+      video,
+      container,
+      webTextCtrl: sharedWebTextCtrl,
+      getTargetCues: () => blockController.getTargetCues(),
+      getNativeCues: () => blockController.getNativeCues(),
+      getCurrentTargetText: () => blockController.getCurrentTargetText(),
+      getCurrentNativeText: () => blockController.getCurrentNativeText(),
+      getOffsetMs: () => offsetController?.getOffsetMs() ?? 0,
+      showToast: (message, options) => { showToast(message, container, options); },
+      loadSettingsOrToast: (c) => loadSettingsOrToast(c),
+    };
+  }
+
   // Subtitle tokenize controller — injects token spans into subtitle line elements.
   // Independent from web tokenize: toggled via `subtitleUrls` in TokenizeSettings.
   let subtitleTokenizeCtrl: SubtitleTokenizeController | null = null;
@@ -385,224 +324,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
   }
 
-  /** ADR-026: Handle Card Creator action (quick-update or edit-card).
-   *  quick-update → batch quick-add all unknown/tracking words in the current
-   *    subtitle line directly to Anki (no dialog). I+1 = 1 word → 1 card,
-   *    I+N = N words → N cards.
-   *  edit-card → open the Card Creator dialog pre-filled. */
+  /** ADR-026: Handle Card Creator action — delegates to shared cardActions module. */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
-    if (!sharedWebTextCtrl) return;
-    if (action === 'quick-update') {
-      await handleClusterQuickAdd();
-      return;
-    }
-    // edit-card + update-current: open dialog (flow below).
-    // ADR-027: update-current → initialAction='quick-update' (focus Update button).
-    // edit-card → initialAction='edit-card' (neutral).
-    const initialAction = action === 'update-current' ? 'quick-update' : 'edit-card';
-    // Load settings fresh (URL/deck/noteType/lang may have changed since init).
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    sharedWebTextCtrl.updateCardCreatorSettings(settings.cardCreator);
-
-    // ADR-026: prefetch AnkiConnect decks + models NOW (on click) so the
-    // network round-trip overlaps with media capture (screenshot + sentence
-    // audio, 2-5s). When the dialog mounts and loadData runs, it reuses the
-    // cached promise — resolving instantly if capture finished first.
-    void prefetchAnkiConnectData(settings.cardCreator.ankiConnectUrl).catch(() => {
-      // Prefetch failure is non-fatal — loadData will retry with a fresh
-      // promise and surface the error via toast.
-    });
-
-    // Build context from current subtitle state + actual subtitle languages.
-    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
-    const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
-    const ctx = buildCardCreatorContext(
-      video,
-      blockController.getTargetCues(),
-      blockController.getNativeCues(),
-      offsetController?.getOffsetMs() ?? 0,
-      sourceLang,
-      targetLang,
-    );
-    if (!ctx) {
-      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
-      return;
-    }
-
-    // ADR-026 / spec §3 + §4: capture screenshot + sentence audio BEFORE
-    // opening the dialog. The screenshot must reflect the frame the user saw
-    // when they clicked (before any UI changes). Audio capture seeks the video
-    // to cue.start and plays until cue.end — doing this before the dialog opens
-    // avoids the overlay interfering with playback. Show a brief "capturing"
-    // toast so the user knows why there's a short delay.
-    showToast('Capturing media…', container, { variant: 'info' });
-    // Wait for the video to be ready (readyState ≥ 2) before capturing — the
-    // user may have just seeked/paused, leaving the video in a transient state.
-    await waitForVideoReady(video);
-    const initialMedia: MediaFile[] = [];
-    try {
-      const screenshot = await captureScreenshot(video);
-      initialMedia.push(screenshot);
-    } catch {
-      // Screenshot failure is non-fatal — the user can re-capture manually.
-    }
-    try {
-      const cue = ctx.cue!;
-      const audioR = await captureSentenceAudio(video, { start: cue.start, end: cue.end });
-      if (audioR.ok) initialMedia.push(audioR.file);
-    } catch {
-      // Audio failure is non-fatal — screenshot + text fields still work.
-    }
-
-    // Build queue: find unknown/tracking words in the current subtitle line,
-    // look up each in the dictionary. The full queue is sent to the integrated
-    // panel; `useCardCreatorState` shows the sidebar when N ≥ 2 and pre-fills
-    // the first item even when N = 1.
-    const targetText = ctx.cue?.targetText ?? '';
-    const queue = await buildSubtitleQueue(targetText, sourceLang);
-
-    sharedWebTextCtrl.sendToCard({ ...ctx, initialMedia, queue }, initialAction);
-  }
-
-  /** Batch quick-add: find all unknown/tracking words in the current subtitle
-   *  line, look up each in the dictionary, and add a card for each directly to
-   *  Anki (no dialog). I+1 = 1 unknown word → 1 card. I+N = N unknown words →
-   *  N cards. Media (screenshot + sentence audio) is captured once and shared
-   *  across all cards in the same sentence. */
-  async function handleClusterQuickAdd(): Promise<void> {
-    const targetText = blockController.getCurrentTargetText();
-    if (!targetText) {
-      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
-      return;
-    }
-    const nativeText = blockController.getCurrentNativeText();
-
-    // Load settings + draft config.
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    const cc = settings.cardCreator;
-    const autosaver = new DraftAutosaver();
-    const restored = await autosaver.load();
-    const deck = restored?.deck ?? cc.defaultDeck;
-    const noteType = restored?.noteType ?? cc.defaultNoteType;
-    const fieldMapping = restored?.fieldMapping ?? {};
-    const tags = restored?.tags ?? cc.defaultTags;
-    if (!deck || !noteType) {
-      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-    if (Object.keys(fieldMapping).length === 0) {
-      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-
-    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
-
-    // Tokenize the subtitle into unique lowercase word terms.
-    const words = tokenizeSubtitleWords(targetText);
-    if (words.length === 0) {
-      showToast('No words found in the current subtitle.', container, { variant: 'info' });
-      return;
-    }
-
-    // Get word statuses and filter to unknown/tracking.
-    const statusMap = await getWordStatuses(sourceLang, words);
-    const learnWords = words.filter((w) => {
-      const s = statusMap.get(w);
-      return s === 'unknown' || s === 'tracking';
-    });
-    if (learnWords.length === 0) {
-      showToast('No unknown/tracking words in this subtitle line.', container, { variant: 'info' });
-      return;
-    }
-
-    showToast(`Quick Add — looking up ${learnWords.length} word${learnWords.length > 1 ? 's' : ''}…`, container, { variant: 'info' });
-
-    // Capture media once (shared across all cards).
-    const images: MediaFile[] = [];
-    const sentenceAudios: MediaFile[] = [];
-    if (video && video.videoWidth > 0) {
-      await waitForVideoReady(video);
-      try {
-        const screenshot = await captureScreenshot(video);
-        images.push(screenshot);
-      } catch { /* non-fatal */ }
-      try {
-        const cues = blockController.getTargetCues();
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) sentenceAudios.push(audioR.file);
-        }
-      } catch { /* non-fatal */ }
-    }
-
-    // Look up each word + add a card.
-    let added = 0;
-    let skipped = 0;
-    const errors: string[] = [];
-    for (const term of learnWords) {
-      // Dictionary lookup via background service worker.
-      let definitions = '';
-      try {
-        const response = await sendMessage({
-          type: MESSAGE_TYPES.LOOKUP_REQUEST,
-          payload: {
-            requestId: `cluster-qa-${Date.now()}-${term}`,
-            request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-          },
-        }) as { success: boolean; data?: LookupResult[] };
-        if (response.success && response.data && response.data.length > 0) {
-          definitions = response.data
-            .flatMap((r) => r.definitions)
-            .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-            .join('\n');
-        }
-      } catch {
-        // Lookup failure is non-fatal — card is added with empty definitions.
-      }
-
-      const result = await quickAddNote(
-        cc.ankiConnectUrl,
-        deck,
-        noteType,
-        fieldMapping,
-        tags,
-        {
-          targetWord: term,
-          sentence: targetText,
-          sentenceTranslation: nativeText,
-          definitions,
-          note: '',
-          moreExample: '',
-        },
-        { images, sentenceAudios, wordAudios: [] },
-        (msg) => errors.push(`${term}: ${msg}`),
-      );
-
-      if (result.ok && result.noteId !== null) {
-        added++;
-      } else if (result.ok && result.noteId === null) {
-        skipped++;
-      } else if (!result.ok) {
-        errors.push(`${term}: ${result.error}`);
-      }
-    }
-
-    // Summary toast.
-    if (added > 0) {
-      showToast(`Added ${added} card${added > 1 ? 's' : ''} to "${deck}"${skipped > 0 ? `, ${skipped} duplicate${skipped > 1 ? 's' : ''} skipped` : ''}.`, container, { variant: 'success' });
-    } else if (skipped > 0) {
-      showToast(`All ${skipped} card${skipped > 1 ? 's' : ''} already exist (duplicates).`, container, { variant: 'warning' });
-    } else {
-      showToast(`Quick Add failed: ${errors.join('; ')}`, container, { variant: 'error' });
-    }
+    await sharedHandleCardCreatorAction(buildActionContext(), action);
   }
 
   /** Generate native subtitle by translating the active target cues into the
-   *  configured native language. Reuses BackgroundPrefillController and creates
+   *  configured native language. Reuses shared startGenerateNative core + creates
    *  a single in-memory translated manager entry (virtual replacement). */
   async function handleGenerateNative(): Promise<void> {
     const runId = nextGenerateRunId++;
@@ -635,53 +363,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const targetInfo = mergedPanelItems('target');
     const targetItem = targetInfo.items[targetInfo.activeIndex];
 
-    const settings = await loadSettings();
-    currentSettings = settings;
-    const sl = settings.subtitleOverlayTargetLanguage ?? '';
-    const tl = settings.subtitleOverlayNativeLanguage ?? '';
-
-    // Abort if a newer run has superseded this one while loading settings.
-    if (activeGenerateRunId !== runId) return;
-
-    if (!sl || !tl || sl === tl) {
-      showToast('Target and native languages must differ', container, { variant: 'info' });
-      updateGenerateNativeEnabled();
-      return;
-    }
-
-    if (latestTargetCues.length === 0) {
-      showToast('No target subtitle to translate', container, { variant: 'info' });
-      updateGenerateNativeEnabled();
-      return;
-    }
-
+    // Snapshot target cues before async gap (latestTargetCues may change).
     const targetCues = [...latestTargetCues];
     const targetFormat = targetItem?.format ?? 'srt';
     const targetSize = targetItem?.size;
-    const nativeLabel = isoCodeToLabel(tl) ?? tl;
-    const translatedItem: SubtitlePanelItem = {
-      id: 'translated-native',
-      name: `${nativeLabel} (translated)`,
-      format: targetFormat,
-      size: targetSize,
-      source: 'translated',
-      role: 'native',
-      index: 0,
-    };
-    translatedNativeSlot = {
-      replacedSource,
-      replacedIndex,
-      item: translatedItem,
-      cues: [],
-      runId,
-    };
-    activeNativeSource = 'translated';
-    refreshPanel('native');
-    showToast('Generating native subtitle…', container, { variant: 'info' });
-    blockController.setGenerateNativeEnabled(false);
 
-    translatePrefill = new BackgroundPrefillController({
-      translate: createTranslateFunction(sl, tl),
+    // Create the translated manager entry upfront (shown as "translating…").
+    // The actual cues arrive via onChunkTranslated callback.
+    const result = await startGenerateNative(targetCues, {
       onChunkTranslated: (translatedCues: SrtCue[]) => {
         if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
         translatedNativeSlot.cues = translatedCues;
@@ -702,7 +391,49 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         updateGenerateNativeEnabled();
       },
     });
-    translatePrefill.start(targetCues, sl, tl);
+
+    // Abort if a newer run has superseded this one while loading settings.
+    if (activeGenerateRunId !== runId) return;
+
+    if (!result) {
+      // Validation failed — show error + re-enable button.
+      const settings = await loadSettings();
+      currentSettings = settings;
+      const sl = settings.subtitleOverlayTargetLanguage ?? '';
+      const tl = settings.subtitleOverlayNativeLanguage ?? '';
+      const error = !sl || !tl || sl === tl
+        ? 'Target and native languages must differ'
+        : 'No target subtitle to translate';
+      showToast(error, container, { variant: 'info' });
+      updateGenerateNativeEnabled();
+      return;
+    }
+
+    // Create the translated manager entry now that validation passed.
+    const translatedItem: SubtitlePanelItem = {
+      id: 'translated-native',
+      name: `${result.nativeLabel} (translated)`,
+      format: targetFormat,
+      size: targetSize,
+      source: 'translated',
+      role: 'native',
+      index: 0,
+    };
+    translatedNativeSlot = {
+      replacedSource,
+      replacedIndex,
+      item: translatedItem,
+      cues: [],
+      runId,
+    };
+    activeNativeSource = 'translated';
+    refreshPanel('native');
+    showToast('Generating native subtitle…', container, { variant: 'info' });
+    blockController.setGenerateNativeEnabled(false);
+
+    // Store the prefill controller (already started by startGenerateNative).
+    translatePrefill = result.prefill;
+    currentSettings = await loadSettings();
   }
 
   loadOverlaySettings().then(async ({ target, native, block, cluster, settings }) => {

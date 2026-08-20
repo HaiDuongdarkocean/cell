@@ -1,346 +1,263 @@
-# Todo: Subtitle Panels Atom Decomposition
+# Todo: Orca OCR Layer
 
-> Spec: `docs/specs/subtitle-panels-atom-decomposition.md` | Plan: `tasks/plan.md`
-> Mỗi task commit riêng. AC = acceptance criteria. Verify = lệnh kiểm tra.
+> Spec: `docs/specs/orca-ocr-layer.md` (revised)
+> Plan: `tasks/plan.md`
+> Review: `docs/specs/orca-ocr-review-final.md`
 
----
+## Phase 0: Spike — verify blockers + collect test data
 
-## Phase 0: Baseline
+- [ ] T0a: Collect real hard-sub frame screenshots (Tier 3 test data)
+  - AC: 4 screenshots trong `tests/data-test/ocr/real-frames/`: themoviebox-zh-01.png, kisskh-zh-01.png, moviepire-en-01.png, netflix-drm-01.png. Mỗi frame có subtitle text visible (trừ DRM black frame).
+  - Verify: `ls tests/data-test/ocr/real-frames/*.png` → 4 files. Visual inspect: subtitle text visible.
+  - Files: `tests/data-test/ocr/real-frames/*.png`
+  - Dependencies: None
+  - Scope: S (browser test only)
 
-### Task 0: Verify baseline pass
-**Description**: Chạy typecheck + test + build trên codebase hiện tại để có baseline trước refactor.
-**Acceptance criteria:**
-- [ ] `npm run typecheck` pass (0 error)
-- [ ] `npm run test:unit` pass (0 fail)
-- [ ] `npm run build` pass (0 error)
-- [ ] Ghi lại số dòng `SubtitlePanels.tsx` hiện tại (baseline = 1651)
-**Verification:**
-- [ ] `npm run typecheck && npm run test:unit && npm run build` exit 0
-- [ ] `wc -l src/features/subtitle/ui/SubtitlePanels.tsx` = 1651
-**Dependencies:** None
-**Files likely touched:** None (read-only)
-**Estimated scope:** XS
+- [ ] T0b: Spike WebGPU + WASM trong offscreen + frame capture trên site thật
+  - AC: (1) WebGPU chạy trong offscreen document hoặc xác nhận WASM-only. (2) Frame capture thành công trên themoviebox.xyz (no DRM) → ImageData non-black. (3) Frame capture fail trên Netflix (DRM black frame) → ImageData all-black. (4) ImageData transfer qua Port hoạt động. (5) OCR real frame screenshots (T0a) → text+bbox trả về đúng.
+  - Verify: browser test stealth-chrome-devtools — load extension, navigate themoviebox + Netflix, capture frame, check ImageData. Run OCR trên real-frames/*.png.
+  - Files: `prototype/orca-ocr-poc/` (extend POC), no src/ changes
+  - Dependencies: T0a
+  - Scope: M (POC only)
 
----
+## Checkpoint 0: Spike pass
+- [ ] WebGPU chạy trong offscreen (hoặc xác nhận WASM-only)
+- [ ] Frame capture thành công trên themoviebox.xyz (no DRM)
+- [ ] Frame capture fail trên Netflix (DRM black frame) → drmGuard detect
+- [ ] ImageData transfer qua Port hoạt động
 
-## Phase 1: Foundation (PARALLEL)
+## Phase 1: Foundation — types + script-run segmenter + persistence
 
-### Task 1: Tạo `subtitlePanelsTypes.ts` — SSOT types
-**Description**: Dời `ManagerState`, `OffsetState`, `SubtitlePanelsRef`, `SubtitlePanelsProps` từ `SubtitlePanels.tsx` + `AppearanceState` từ `SubtitleManagerPanel.tsx` sang file `src/features/subtitle/ui/subtitlePanelsTypes.ts`. `SubtitlePanels.tsx` + `SubtitleManagerPanel.tsx` re-export từ đây để backward-compatible. CHƯA sửa import bên `logic/` (Task 11 làm).
-**Acceptance criteria:**
-- [ ] `src/features/subtitle/ui/subtitlePanelsTypes.ts` tồn tại, chứa 5 type trên (pure type file, no JSX)
-- [ ] `SubtitlePanels.tsx` import 4 type từ `subtitlePanelsTypes.ts` + re-export
-- [ ] `SubtitleManagerPanel.tsx` import `AppearanceState` từ `subtitlePanelsTypes.ts` + re-export
-- [ ] `npm run typecheck` pass (re-export giữ backward-compat)
-- [ ] `npm run build` pass
-**Verification:**
-- [ ] `npm run typecheck` exit 0
-- [ ] `npm run build` exit 0
-- [ ] grep `subtitlePanelsTypes` trong `SubtitlePanels.tsx` + `SubtitleManagerPanel.tsx`
-**Dependencies:** T0
-**Files likely touched:**
-- `src/features/subtitle/ui/subtitlePanelsTypes.ts` (mới)
-- `src/features/subtitle/ui/SubtitlePanels.tsx`
-- `src/features/subtitle/ui/SubtitleManagerPanel.tsx`
-**Estimated scope:** S
+- [ ] T1: OcrEngine interface + types (`src/features/ocr/engine/`)
+  - AC: `OcrEngine` interface, `OcrResult`/`OcrResultItem`/`OcrOptions`/`OcrConfig`/`ImageSource` types. `ImageSource = { data: Uint8ClampedArray, width, height }` (KHÔNG ImageBitmap). `PaddleOcrEngine` skeleton (throw NOT_IMPLEMENTED).
+  - Verify: `npm run typecheck` pass, unit test types compile
+  - Files: `src/features/ocr/engine/ocrEngine.ts`, `types.ts`, `paddleOcrEngine.ts`, `paddleOcrEngine.test.ts`
+  - Dependencies: None
+  - Scope: S (3-4 files)
 
-### Task 2: Tạo `subtitlePanelsShared.module.css` — SSOT CSS
-**Description**: Dời `.panelLayer`, `.offsetRow`, `.clusterRight` family (`.primaryCol`, `.secondaryCol`, `.toggleWrap`, `.extraCol`, `.expanded`) + glass token remap + mobile media query từ `SubtitlePanels.module.css` sang `src/features/subtitle/ui/subtitlePanelsShared.module.css`. `SubtitlePanels.module.css` import shared hoặc giữ class alias re-export (CSS Modules không support re-export → giữ class ở shared, `SubtitlePanels.module.css` xóa class đã dời, consumer import trực tiếp shared). CHƯA sửa consumer (Task 6/7/9 làm).
-**Acceptance criteria:**
-- [ ] `src/features/subtitle/ui/subtitlePanelsShared.module.css` tồn tại, chứa `.panelLayer`, `.offsetRow`, `.clusterRight`, `.primaryCol`, `.secondaryCol`, `.toggleWrap`, `.extraCol`, `.expanded` + glass token remap + mobile media query
-- [ ] `SubtitlePanels.module.css` không còn class đã dời (xóa, không duplicate)
-- [ ] Class definition byte-identical với cũ (diff token/value)
-- [ ] `npm run build` pass (Vite accept CSS file mới)
-**Verification:**
-- [ ] `npm run build` exit 0
-- [ ] diff class content giữa shared file và git HEAD `SubtitlePanels.module.css` → identical
-- [ ] grep `.panelLayer` trong `SubtitlePanels.module.css` → 0 match
-**Dependencies:** T0
-**Files likely touched:**
-- `src/features/subtitle/ui/subtitlePanelsShared.module.css` (mới)
-- `src/features/subtitle/ui/SubtitlePanels.module.css`
-**Estimated scope:** S
+- [ ] T2: Script-run segmenter — upgrade detectLangCode (SSOT)
+  - AC: `scriptRunSegmenter(text) → ScriptRun[] { text, script: 'zh'|'en'|'ja'|'ko'|'unknown' }`. State machine ~50-80 LOC, O(n) single pass. Handle mixed: "我喜欢 watching" → [{ text: "我喜欢", script: 'zh' }, { text: " watching", script: 'en' }]. Upgrade `detectLangCode` → delegate to `scriptRunSegmenter`, 4 call site vẫn hoạt động (subtitleTriggerController, webTriggerController x2, subtitleTokenWrap, resolveWordAtTip).
+  - Verify: unit test với 15 cases từ `tests/data-test/ocr/fixtures/scriptRunCases.json` — "我喜欢" → zh, "Hello" → en, "日本語" → ja, "안녕" → ko, "123!" → unknown, "我喜欢 watching" → [zh, en], "日本語をstudy" → [ja, en], "用WiFi看4K电影" → [zh, en, zh, unknown, zh], "東京駅からTokyo Stationへ" → [ja, en, ja], empty → [], "2026年8月21日" → [unknown, zh, unknown, zh, unknown, zh], "你好👋World🌍" → [zh, unknown, en, unknown]. `npm run test:unit` pass (existing + new tests).
+  - Test data: `tests/data-test/ocr/fixtures/scriptRunCases.json` (15 cases: zh/en/ja/ko/unknown, mixed intra-box, brands, romaji, numbers, emoji, empty, whitespace)
+  - Files: `src/features/ocr/language/scriptRunSegmenter.ts`, `.test.ts`, `src/features/dictionaryPopup/trigger/subtitleTriggerController.ts` (upgrade detectLangCode)
+  - Dependencies: None
+  - Scope: M (3-4 files)
 
----
+- [ ] T3: Per-origin OCR state — reuse tokenizeSettingsStore pattern
+  - AC: `ocrPreference: Record<origin, OcrOriginState>` trong settings. `getOcrPreference(origin)`, `setOcrPreference(origin, state)`, `clearOcrPreference(origin)`. Reuse `extractOrigin()`. KHÔNG tạo key ad-hoc.
+  - Verify: unit test with fake settings — set/get/clear, origin extraction, SSOT pattern
+  - Files: `src/entities/settings/types.ts` (extend), `src/features/ocr/persistence/ocrStateStore.ts`, `.test.ts`
+  - Dependencies: None
+  - Scope: M (3 files)
 
-## Phase 2: Molecules (PARALLEL, sau Phase 1)
-
-### Task 3: Tạo `ClusterRightToolbar.tsx` + test
-**Description**: Tách toolbar phải (lines 1399-1501 `SubtitlePanels.tsx` + lines 461-508 `PlayerModeOverlay.tsx`) thành `src/features/subtitle/ui/ClusterRightToolbar.tsx`. Props: `mode: 'overlay' | 'player'`, `onQuickAdd`, `onEditCard`, `onUpdateCurrentCard`, `onToggleManager`, `onGenerateNative`, `onToggleSidePanel`, `onTogglePlayerMode`/`onExit`, `toolsExpanded`, `onToggleTools`, `generateNativeEnabled`, `splitViewOpen`/`playerMode` (cho label). CSS từ `subtitlePanelsShared.module.css`. Giữ tất cả `data-cell-id` (C5).
-**Acceptance criteria:**
-- [ ] `src/features/subtitle/ui/ClusterRightToolbar.tsx` tồn tại, named export `ClusterRightToolbar`
-- [ ] `mode='overlay'`: render nút player-mode toggle (`data-cell-id="player-mode-btn"`)
-- [ ] `mode='player'`: render nút Exit (`data-cell-id="player-mode-exit-btn"`) thay player-mode toggle
-- [ ] Tất cả `data-cell-id` giữ nguyên: `quick-add-btn`, `edit-card-btn`, `subtitle-tools-extra`, `panel-toggle-btn`, `generate-native-btn`, `tools-toggle-btn`, `update-current-card-btn`, `manager-toggle-btn`, `nav-cluster-right` (overlay) / `player-mode-actions` (player)
-- [ ] `ClusterRightToolbar.test.tsx` tồn tại: verify render cả 2 mode, conditional nút, callback wiring, failure path (undefined callbacks)
-- [ ] `npm run typecheck && npm run test:unit` pass
-**Verification:**
-- [ ] `npm run typecheck` exit 0
-- [ ] `npm run test:unit -- --testPathPattern="ClusterRightToolbar"` pass
-- [ ] grep `data-cell-id` trong `ClusterRightToolbar.tsx` → đủ C5 selectors
-**Dependencies:** T1, T2
-**Files likely touched:**
-- `src/features/subtitle/ui/ClusterRightToolbar.tsx` (mới)
-- `src/features/subtitle/ui/ClusterRightToolbar.test.tsx` (mới)
-**Estimated scope:** M
-
-### Task 4: Tạo `ManagerLayer.tsx` + test
-**Description**: Tách render `SubtitleManagerPanel` (lines 1503-1581 `SubtitlePanels.tsx` mobile Sheet + desktop panelLayer) thành `src/features/subtitle/ui/ManagerLayer.tsx`. Props: `manager: ManagerState`, `isMobile`, `exiting?`, `onClose`, `sheetHeightVh?`, `onSheetHeightChange?`, `portalTarget?` (in-overlay portal). Một render path duy nhất cho `SubtitleManagerPanel` (mobile/desktop branch bên trong). Persist `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` logic dời vào đây. Backdrop logic dời vào đây. CSS từ `subtitlePanelsShared.module.css` (`.panelLayer`).
-**Acceptance criteria:**
-- [ ] `src/features/subtitle/ui/ManagerLayer.tsx` tồn tại, named export `ManagerLayer`
-- [ ] `SubtitleManagerPanel` render **1 lần** trong file (mobile/desktop branch, không duplicate props)
-- [ ] Mobile: render trong `Sheet` + `data-cell-id="subtitle-manager-layer"`
-- [ ] Desktop: render trong `.panelLayer` div + `data-cell-id="subtitle-manager-layer"`
-- [ ] Persist `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` (getStorage/setStorage) ở đây
-- [ ] `ManagerLayer.test.tsx` tồn tại: verify mobile/desktop branch, open/close, sheet height persist, callback wiring, failure path (undefined manager)
-- [ ] `npm run typecheck && npm run test:unit` pass
-**Verification:**
-- [ ] `npm run typecheck` exit 0
-- [ ] `npm run test:unit -- --testPathPattern="ManagerLayer"` pass
-- [ ] grep `SubtitleManagerPanel` trong `ManagerLayer.tsx` → 1 match
-**Dependencies:** T1, T2
-**Files likely touched:**
-- `src/features/subtitle/ui/ManagerLayer.tsx` (mới)
-- `src/features/subtitle/ui/ManagerLayer.test.tsx` (mới)
-**Estimated scope:** M
-
-### Task 5: Tạo `OffsetLayer.tsx` + test
-**Description**: Tách render `SubtitleOffsetPanel` target + native (lines 1583-1596 `SubtitlePanels.tsx`) thành `src/features/subtitle/ui/OffsetLayer.tsx`. Props: `offset: OffsetState`. CSS reuse `.offsetRow` từ `subtitlePanelsShared.module.css` (không file CSS riêng — D3). Giữ `data-cell-id="subtitle-offset-layer"`.
-**Acceptance criteria:**
-- [ ] `src/features/subtitle/ui/OffsetLayer.tsx` tồn tại, named export `OffsetLayer`
-- [ ] Render 2 `SubtitleOffsetPanel` (target + native) trong `.offsetRow` div
-- [ ] `data-cell-id="subtitle-offset-layer"` giữ nguyên
-- [ ] Không tạo `OffsetLayer.module.css` (D3)
-- [ ] `OffsetLayer.test.tsx` tồn tại: verify render target + native, callback wiring, failure path (undefined offset)
-- [ ] `npm run typecheck && npm run test:unit` pass
-**Verification:**
-- [ ] `npm run typecheck` exit 0
-- [ ] `npm run test:unit -- --testPathPattern="OffsetLayer"` pass
-- [ ] grep `SubtitleOffsetPanel` trong `OffsetLayer.tsx` → 2 match
-**Dependencies:** T1, T2
-**Files likely touched:**
-- `src/features/subtitle/ui/OffsetLayer.tsx` (mới)
-- `src/features/subtitle/ui/OffsetLayer.test.tsx` (mới)
-**Estimated scope:** S
-
----
-
-## Phase 3: Consumers (PARALLEL, sau Phase 2)
-
-### Task 6: `SubtitlePanels.tsx` compose molecule
-**Description**: Thay inline toolbar (lines 1399-1501) bằng `<ClusterRightToolbar mode="overlay" ... />`. Thay inline manager render (lines 1503-1581) bằng `<ManagerLayer ... />`. Thay inline offset (lines 1583-1596) bằng `<OffsetLayer ... />`. Giữ state/effects nguyên (non-goal). Giữ `data-cell-id="subtitle-panels-root"` + root div + NavCluster + SubtitleBlock + toast + hint + split-view portal.
-**Acceptance criteria:**
-- [ ] `SubtitlePanels.tsx` ≤ 1350 dòng (giảm ≥ 18%)
-- [ ] `<ClusterRightToolbar mode="overlay" ... />` thay inline toolbar
-- [ ] `<ManagerLayer ... />` thay inline manager render (0 `SubtitleManagerPanel` inline)
-- [ ] `<OffsetLayer ... />` thay inline offset (0 `SubtitleOffsetPanel` inline)
-- [ ] `data-cell-id="subtitle-panels-root"` giữ nguyên
-- [ ] State/effects (fullscreen, iframe bridge, split-view, player-mode, portal, toast) giữ nguyên — không đụng
-- [ ] `npm run typecheck && npm run test:unit && npm run build` pass
-**Verification:**
-- [ ] `wc -l src/features/subtitle/ui/SubtitlePanels.tsx` ≤ 1350
-- [ ] `npm run typecheck && npm run test:unit && npm run build` exit 0
-- [ ] grep `SubtitleManagerPanel` trong `SubtitlePanels.tsx` → 0 match
-- [ ] grep `SubtitleOffsetPanel` trong `SubtitlePanels.tsx` → 0 match
-- [ ] grep `ClusterRightToolbar\|ManagerLayer\|OffsetLayer` trong `SubtitlePanels.tsx` → 3 match
-**Dependencies:** T3, T4, T5
-**Files likely touched:**
-- `src/features/subtitle/ui/SubtitlePanels.tsx`
-**Estimated scope:** M
-
-### Task 7: `PlayerModeOverlay.tsx` share `ClusterRightToolbar`
-**Description**: Thay inline toolbar (lines 461-508) bằng `<ClusterRightToolbar mode="player" ... />`. Import CSS từ `subtitlePanelsShared.module.css` thay `SubtitlePanels.module.css`. Giữ `data-cell-id="player-mode-actions"` wrapper. Callback: `onToggleSidePanel` → `setCueListOpen`, nút cuối = `onExit`.
-**Acceptance criteria:**
-- [ ] `<ClusterRightToolbar mode="player" ... />` thay inline toolbar
-- [ ] `import panelStyles from './SubtitlePanels.module.css'` → `import sharedStyles from './subtitlePanelsShared.module.css'`
-- [ ] `data-cell-id="player-mode-actions"` giữ nguyên
-- [ ] `data-cell-id="player-mode-exit-btn"` giữ nguyên (nút Exit)
-- [ ] Behavior Player Mode không đổi (toggle, Esc exit, layout)
-- [ ] `npm run typecheck && npm run build` pass
-**Verification:**
-- [ ] `npm run typecheck && npm run build` exit 0
-- [ ] grep `SubtitlePanels.module.css` trong `PlayerModeOverlay.tsx` → 0 match
-- [ ] grep `subtitlePanelsShared.module.css` trong `PlayerModeOverlay.tsx` → 1 match
-- [ ] grep `ClusterRightToolbar` trong `PlayerModeOverlay.tsx` → 1 match
-**Dependencies:** T3
-**Files likely touched:**
-- `src/features/subtitle/ui/PlayerModeOverlay.tsx`
-**Estimated scope:** S
-
-### Task 8: `HostManagerSheet.tsx` thin adapter
-**Description**: Refactor `HostManagerSheet.tsx` thành thin adapter — convert `SerializedManagerState + onAction` → `ManagerState` (dùng `buildAppearance` helper đã có) rồi truyền vào `<ManagerLayer mode="host-sheet" ... />` (hoặc ManagerLayer prop cho host-sheet: no portal, render backdrop + Sheet trực tiếp). Xóa duplicate persist `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` + backdrop (đã ở ManagerLayer). Giữ `HostManagerSheet.module.css` backdrop hoặc dời vào ManagerLayer.
-**Acceptance criteria:**
-- [ ] `HostManagerSheet.tsx` chỉ chứa: `buildAppearance` adapter + gọi `<ManagerLayer ... />`
-- [ ] `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` persist KHÔNG còn ở `HostManagerSheet.tsx` (chỉ ở `ManagerLayer.tsx`)
-- [ ] Backdrop logic ở `ManagerLayer` (hoặc `HostManagerSheet` delegate)
-- [ ] `HostManagerSheet.test.tsx` pass (adapter wiring)
-- [ ] `npm run typecheck && npm run test:unit` pass
-**Verification:**
-- [ ] `npm run typecheck && npm run test:unit -- --testPathPattern="HostManagerSheet"` pass
-- [ ] grep `SUBTITLE_MANAGER_SHEET_HEIGHT_VH` trong `HostManagerSheet.tsx` → 0 match
-- [ ] grep `ManagerLayer` trong `HostManagerSheet.tsx` → 1 match
-**Dependencies:** T4
-**Files likely touched:**
-- `src/features/subtitle/ui/HostManagerSheet.tsx`
-- `src/features/subtitle/ui/HostManagerSheet.module.css` (có thể xóa backdrop)
-**Estimated scope:** S
-
-### Task 9: `OverlayPreview.module.css` dùng shared CSS
-**Description**: Thay "copy pattern" (comment "Layout matches SubtitlePanels.module.css production patterns") bằng import `subtitlePanelsShared.module.css` hoặc dùng class chung. Xóa comment "matches ... patterns". Đảm bảo layout preview không đổi.
-**Acceptance criteria:**
-- [ ] `OverlayPreview.module.css` không có class duplicate token/value với `subtitlePanelsShared.module.css`
-- [ ] Không còn comment "matches ... patterns"
-- [ ] Layout preview byte-identical (diff computed style trước/sau)
-- [ ] `npm run build` pass
-**Verification:**
-- [ ] `npm run build` exit 0
-- [ ] grep "matches.*patterns" trong `OverlayPreview.module.css` → 0 match
-- [ ] diff class definition → không duplicate
-**Dependencies:** T2
-**Files likely touched:**
-- `src/features/subtitle/ui/appearance/OverlayPreview.module.css`
-**Estimated scope:** XS
-
----
-
-## Phase 4: Wiring (PARALLEL, sau Phase 3)
-
-### Task 10: CSS manifest — `mountSubtitle.tsx` + `hostManagerSheetShadowCss.ts`
-**Description**: Thêm `subtitlePanelsSharedCss` + molecule CSS mới (nếu có CSS riêng — theo D3 chỉ shared) vào 3 manifest array: `mountSubtitle.tsx` `css[]` + `managerShadowCss[]` + `hostManagerSheetShadowCss.ts` array. Import `subtitlePanelsShared.module.css?inline`.
-**Acceptance criteria:**
-- [ ] `mountSubtitle.tsx` `css[]` chứa `subtitlePanelsSharedCss`
-- [ ] `mountSubtitle.tsx` `managerShadowCss[]` chứa `subtitlePanelsSharedCss`
-- [ ] `hostManagerSheetShadowCss.ts` array chứa `subtitlePanelsSharedCss`
-- [ ] `npm run build` pass (shadow DOM có CSS)
-- [ ] `npx vite build --mode development` pass (dev seed)
-**Verification:**
-- [ ] `npm run build && npx vite build --mode development` exit 0
-- [ ] grep `subtitlePanelsShared` trong 3 manifest → 3 match
-**Dependencies:** T6, T7, T8, T9
-**Files likely touched:**
-- `src/features/subtitle/ui/mountSubtitle.tsx`
-- `src/features/subtitle/ui/hostManagerSheetShadowCss.ts`
-**Estimated scope:** S
-
-### Task 11: `logic/` import types + `index.ts` export
-**Description**: Sửa import trong `managerStateSerializer.ts`, `managerStateSerializer.test.ts`, `iframeManagerBridgeTypes.ts` từ `SubtitlePanels.tsx`/`SubtitleManagerPanel.tsx` → `subtitlePanelsTypes.ts`. Export molecule + types mới từ `src/features/subtitle/ui/index.ts`.
-**Acceptance criteria:**
-- [ ] `managerStateSerializer.ts` import type từ `subtitlePanelsTypes.ts`
-- [ ] `managerStateSerializer.test.ts` import type từ `subtitlePanelsTypes.ts`
-- [ ] `iframeManagerBridgeTypes.ts` import type từ `subtitlePanelsTypes.ts` (nếu cần)
-- [ ] `index.ts` export `ClusterRightToolbar`, `ManagerLayer`, `OffsetLayer`, types từ `subtitlePanelsTypes.ts`
-- [ ] `npm run typecheck && npm run test:unit` pass
-**Verification:**
-- [ ] `npm run typecheck && npm run test:unit` exit 0
-- [ ] grep `from.*SubtitlePanels'` trong `logic/managerStateSerializer.ts` → 0 match
-- [ ] grep `subtitlePanelsTypes` trong `logic/managerStateSerializer.ts` → 1+ match
-- [ ] grep `ClusterRightToolbar\|ManagerLayer\|OffsetLayer` trong `index.ts` → 3 match
-**Dependencies:** T1, T6
-**Files likely touched:**
-- `src/features/subtitle/logic/managerStateSerializer.ts`
-- `src/features/subtitle/logic/managerStateSerializer.test.ts`
-- `src/features/subtitle/logic/iframeManagerBridgeTypes.ts`
-- `src/features/subtitle/ui/index.ts`
-**Estimated scope:** S
-
-### Task 12: Showcase pages import types
-**Description**: Sửa import types trong `VideoPlayerPage.showcase.tsx` + `SubtitleOverlayPage.showcase.tsx` từ `SubtitlePanels.tsx` → `subtitlePanelsTypes.ts`. Giữ `<SubtitlePanels>` direct (D4).
-**Acceptance criteria:**
-- [ ] 2 showcase file import types từ `subtitlePanelsTypes.ts`
-- [ ] `<SubtitlePanels>` vẫn render direct (không qua mountSubtitle)
-- [ ] `npm run typecheck && npm run build` pass
-**Verification:**
-- [ ] `npm run typecheck && npm run build` exit 0
-- [ ] grep `subtitlePanelsTypes` trong 2 showcase → 2 match
-**Dependencies:** T1
-**Files likely touched:**
-- `src/entrypoints/design-system-showcase/pages/VideoPlayerPage.showcase.tsx`
-- `src/entrypoints/design-system-showcase/pages/SubtitleOverlayPage.showcase.tsx`
-**Estimated scope:** XS
-
----
-
-## Checkpoint: Build + test + typecheck (sau Phase 4)
-
-### Task 13: Full verify checkpoint
-**Description**: Chạy full verify sau khi tất cả Phase 1-4 merge. Nếu fail → revert task gây fail + fix.
-**Acceptance criteria:**
+## Checkpoint 1: Foundation
 - [ ] `npm run typecheck` pass
-- [ ] `npm run test:unit` pass (tất cả test hiện có + test mới)
+- [ ] `npm run test:unit` pass (T1-T3 tests + existing tests)
 - [ ] `npm run build` pass
-- [ ] `npx vite build --mode development` pass
-- [ ] `wc -l SubtitlePanels.tsx` ≤ 1350
-- [ ] grep `data-cell-id` selectors C5 tất cả tồn tại
-**Verification:**
-- [ ] `npm run typecheck && npm run test:unit && npm run build && npx vite build --mode development` exit 0
-**Dependencies:** T10, T11, T12
-**Files likely touched:** None (verify-only, fix nếu cần)
-**Estimated scope:** XS
+- [ ] 4 existing call site của detectLangCode vẫn hoạt động
 
----
+## Phase 2: PaddleOcrEngine + offscreen OCR
 
-## Phase 5: Docs (PARALLEL, sau checkpoint)
+- [ ] T4: PaddleOcrEngine implementation
+  - AC: `PaddleOcrEngine` implements `OcrEngine`. `initialize()` loads `@paddleocr/paddleocr-js` PP-OCRv5 mobile (WebGPU preferred, WASM fallback). Bundle `.wasm` files, set `env.wasm.wasmPaths` trỏ nội bộ. `recognize(image: ImageSource)` returns `OcrResult[]`. `dispose()` free ORT session + model + WebGPU device.
+  - Verify: unit test with mock PaddleOCR — init/recognize/dispose called correctly, wasmPaths set. Integration test với `tests/data-test/ocr/frames/hardsub-zh-01.png` → mock recognize returns text "我喜欢北京".
+  - Test data: `tests/data-test/ocr/frames/hardsub-zh-01.png` + `hardsub-mixed-3-lines-01.png` + `drm-black-frame.png`
+  - Files: `src/features/ocr/engine/paddleOcrEngine.ts`, `.test.ts`
+  - Dependencies: T1, T0b (spike results)
+  - Scope: M (3-4 files)
 
-### Task 14: Update `docs/2-architechture-system.md`
-**Description**: Cập nhật tree + dependency + CSS manifest + function index cho `subtitle/ui` phản ánh molecule mới (`ClusterRightToolbar`, `ManagerLayer`, `OffsetLayer`, `subtitlePanelsTypes.ts`, `subtitlePanelsShared.module.css`). Cập nhật entry T045/T046.
-**Acceptance criteria:**
-- [ ] Tree `subtitle/ui` liệt kê 5 file mới
-- [ ] Dependency graph phản ánh molecule → consumer
-- [ ] CSS manifest ghi `subtitlePanelsShared.module.css` + 3 manifest array
-- [ ] Function index có entry molecule mới
-**Verification:**
-- [ ] grep `ClusterRightToolbar\|ManagerLayer\|OffsetLayer\|subtitlePanelsTypes\|subtitlePanelsShared` trong `docs/2-architechture-system.md` → 5 match
-**Dependencies:** T13
-**Files likely touched:**
-- `docs/2-architechture-system.md`
-**Estimated scope:** S
+- [ ] T5: Offscreen OCR Worker (extend ffmpeg.html)
+  - AC: `ocr-worker.ts` imports PaddleOcrEngine, handles `OCR_INIT`/`OCR_RECOGNIZE`/`OCR_DISPOSE` messages. `OCR_DISPOSE` free session, KHÔNG gọi `closeOffscreenDocument()`. Worker chạy trong offscreen document (cùng ffmpeg.html).
+  - Verify: manual — load extension, inspect offscreen document exists, worker loads
+  - Files: `src/entrypoints/offscreen/ocr-worker.ts`, `src/entrypoints/offscreen/ffmpeg.html` (extend), `src/entrypoints/offscreen/index.ts` (extend)
+  - Dependencies: T4
+  - Scope: M (3 files)
 
-### Task 15: Tạo ADR + update `docs/0-wiki.md`
-**Description**: Tạo `docs/adr/080-subtitle-panels-atom-decomposition.md` (số tiếp theo sau 079) ghi WHY tách (chỉ WHY, không HOW). Update `docs/0-wiki.md` mục lục nếu thêm spec/ADR.
-**Acceptance criteria:**
-- [ ] `docs/adr/080-subtitle-panels-atom-decomposition.md` tồn tại, ghi WHY (god component pain, duplicate HostManagerSheet, CSS coupling, type phân tầng)
-- [ ] `docs/0-wiki.md` có entry cho spec + ADR mới
-**Verification:**
-- [ ] ls `docs/adr/080-*.md` tồn tại
-- [ ] grep `subtitle-panels-atom-decomposition` trong `docs/0-wiki.md` → 1+ match
-**Dependencies:** T13
-**Files likely touched:**
-- `docs/adr/080-subtitle-panels-atom-decomposition.md` (mới)
-- `docs/0-wiki.md`
-**Estimated scope:** S
+- [ ] T6: Background OCR message handler (Port-based)
+  - AC: Handle `OCR_INIT`/`OCR_RECOGNIZE`/`OCR_DISPOSE`/`OCR_GET_STATE`/`OCR_SET_STATE`. Route to offscreen via Port. Manage offscreen lifecycle (create if not exists, KHÔNG close). `OCR_RECOGNIZE` dùng Port (structured clone + transfer ImageData).
+  - Verify: unit test message routing with mock offscreen + mock Port
+  - Files: `src/entrypoints/background/handlers/ocr.ts`, `.test.ts`, `src/entrypoints/background/index.ts` (extend)
+  - Dependencies: T5, T3
+  - Scope: M (3 files)
 
----
+- [ ] T7: Content-script OCR controller (Port client)
+  - AC: `OcrController` class — `init()`, `recognize(imageData: ImageSource)`, `dispose()`, `getState()`, `setState()`. Dùng `chrome.runtime.connect` Port cho `recognize` (transfer ImageData). Thin client, no OCR logic.
+  - Verify: unit test with mock Port — message format correct, ImageData transfer
+  - Files: `src/entrypoints/content/ocrController.ts`, `.test.ts`
+  - Dependencies: T6
+  - Scope: S (2 files)
 
-## Phase 6: Browser verify (sau docs)
+- [ ] T7b: Mock hard-sub video page (Tier 4 test data)
+  - AC: Mock page `mock-hardsub-page` tại port 4325. Page có `<video>` (short MP4 hoặc canvas-animated) + canvas overlay burned-in subtitle (zh/en/ja/mixed). Extend `scripts/serve-mock-pages.mjs`.
+  - Verify: `npm run mock` → navigate `http://127.0.0.1:4325/index.html` → video plays with visible hard-sub. Subtitle text changes every 3s (test dedup).
+  - Test data: `tests/data-test/ocr/frames/*.png` (overlay trên video)
+  - Files: `src/entrypoints/mock-hardsub-page/index.html`, `index.ts`, `scripts/serve-mock-pages.mjs` (extend)
+  - Dependencies: None
+  - Scope: M (3 files)
 
-### Task 16: Browser verify 4 environment
-**Description**: Dùng skill `browser-testing-with-devtools` verify trên 4 environment (text + video + anti-automation + mock iframe) theo checklist observable ở spec Testing Strategy. Nếu fail → revert + bug task.
-**Acceptance criteria:**
-- [ ] Text site: overlay render, toolbar, manager mở/đóng (desktop + mobile), offset
-- [ ] Video site: overlay + player mode (toolbar share) + split view
-- [ ] Anti-automation site: overlay render, manager, iframe bridge
-- [ ] Mock iframe (`npm run mock:stream:iframe`): HostManagerSheet adapter, sheet height persist, backdrop, callbacks
-- [ ] No console error, no visual regression
-**Verification:**
-- [ ] Manual check 4 environment pass checklist
-- [ ] Screenshot/video evidence (nếu có)
-**Dependencies:** T13, T14, T15
-**Files likely touched:** None (verify-only)
-**Estimated scope:** M
+## Checkpoint 2: Engine works
+- [ ] Load extension → OCR init → model load → recognize 1 ImageData → return text+bbox
+- [ ] Browser test: stealth-chrome-devtools
 
----
+## Phase 3: Video OCR pipeline
 
-## Phase 7: Final commit
+- [ ] T8: Subtitle region detector
+  - AC: `cropSubtitleRegion(canvas, regionPct, position) → { data, width, height }`. Default bottom 15%, configurable. Support 'bottom'|'top'. Pure logic: `computeCropRect(videoWidth, videoHeight, regionPct, position)`.
+  - Verify: unit test với 8 cases từ `tests/data-test/ocr/fixtures/cropRectCases.json` — 1920x1080@15%bottom={0,918,1920,162}, 1920x1080@15%top={0,0,1920,162}, 1920x1080@20%bottom={0,864,1920,216}, 1280x720@15%bottom={0,612,1280,108}, 640x360@10%bottom={0,324,640,36}, 3840x2160@15%bottom={0,1836,3840,324}, 100%bottom=full, 0%bottom=empty.
+  - Test data: `tests/data-test/ocr/fixtures/cropRectCases.json` (8 crop rect cases: 1080p/720p/360p/4K, bottom/top, 0-100%)
+  - Files: `src/features/ocr/video/subtitleRegionDetector.ts`, `.test.ts`
+  - Dependencies: None
+  - Scope: S (2 files)
 
-### Task 17: Final commit + PR
-**Description**: Commit tất cả task (nếu chưa commit từng task) + tạo PR. Dùng skill `git-workflow-and-versioning`.
-**Acceptance criteria:**
-- [ ] Build + test + typecheck + browser verify pass
-- [ ] Commit message theo convention repo
-- [ ] PR body link spec + plan + ADR
-**Verification:**
-- [ ] `git status` clean
-- [ ] PR created via `gh pr create`
-**Dependencies:** T16
-**Files likely touched:** None
-**Estimated scope:** XS
+- [ ] T9: DRM guard (black-frame detect)
+  - AC: `isBlackFrame(imageData, threshold=5) → boolean`. Mean pixel < threshold → black frame. Pure logic: `computeMeanLuma(imageData) → number`.
+  - Verify: unit test với 5 cases từ `tests/data-test/ocr/fixtures/imageDataMocks.json` — all-black → true (mean=0), all-white → false (mean=255), near-black-DRM → true (mean=2.4), subtitle-frame → false (mean=130), gradient → false (mean=96). Threshold tuning: threshold=5 → DRM detect, threshold=200 → false positive.
+  - Test data: `tests/data-test/ocr/fixtures/imageDataMocks.json` (5 ImageData cases: black, white, DRM noise, subtitle, gradient)
+  - Files: `src/features/ocr/video/drmGuard.ts`, `.test.ts`
+  - Dependencies: None
+  - Scope: S (2 files)
+
+- [ ] T10: Frame sampler (rVFC + time gate + luma-diff + text dedup)
+  - AC: `computeLumaDiff(curr: ImageData, prev: ImageData, w=32, h=8) → number` (downscale + mean-abs-diff). `framesDiffer(diff, threshold) → boolean`. `sampleFrame(video, rVFCCallback)` — uses `requestVideoFrameCallback` + time gate 3fps. `textDedup(currText, prevText) → boolean`.
+  - Verify: unit test với lumaDiffCases từ `tests/data-test/ocr/fixtures/imageDataMocks.json` — identical frames → diff=0, subtitle-appeared → diff>100, subtitle-changed → 10<diff<100, background-motion → diff>5 (text-dedup fallback). Text dedup: same text → true, different text → false.
+  - Test data: `tests/data-test/ocr/fixtures/imageDataMocks.json` (4 luma-diff cases + text dedup cases)
+  - Files: `src/features/ocr/video/frameSampler.ts`, `.test.ts`
+  - Dependencies: T8
+  - Scope: M (2-3 files)
+
+- [ ] T11: OCR cache (videoId, timestampBucket, LRU)
+  - AC: `OcrCache` class — `get(videoId, timestampBucket)`, `set(videoId, timestampBucket, result)`, `clear(videoId)`. LRU eviction (max 100 entries). Pure logic: `buildCacheKey(videoId, timestampBucket)`, `bucketTimestamp(timeMs, bucketMs=1000)`, `computeVideoId(video) → string` (hash src+duration).
+  - Verify: unit test với cacheKeyCases + videoIdCases từ `tests/data-test/ocr/fixtures/cropRectCases.json` — basic-bucket "abc123:5000", round-down 5999→5000, different-bucket-size 5500→4000, zero-time "abc123:0", different-video "xyz789:5000". videoId: YouTube extract "dQw4w9WgXcQ", blob-url hash 16 chars, direct-url hash 16 chars. LRU eviction: set 101 entries → oldest evicted.
+  - Test data: `tests/data-test/ocr/fixtures/cropRectCases.json` (5 cacheKeyCases + 3 videoIdCases)
+  - Files: `src/features/ocr/video/ocrCache.ts`, `.test.ts`
+  - Dependencies: None
+  - Scope: S (2 files)
+
+- [ ] T12: Video OCR controller (wire sampler + guard + orchestrator + cache)
+  - AC: `VideoOcrController` — `start(video)`, `stop()`. Wires frameSampler → drmGuard → luma-diff → ocrController.recognize → text-dedup → ocrCache → callback(onOcrResult). State machine: MONITORING → SUBTITLE_CHANGED → OCR_PROCESSING → CACHE_RESULT. DRM_ERROR → abort + user error.
+  - Verify: unit test with mock video + mock ocrController — state transitions, cache hit/miss, DRM abort. Integration test với `tests/data-test/ocr/frames/hardsub-zh-01.png` → mock recognize returns ocrResultMocks zh-single-box.
+  - Test data: `tests/data-test/ocr/fixtures/ocrResultMocks.json` + `tests/data-test/ocr/frames/drm-black-frame.png`
+  - Files: `src/features/ocr/video/videoOcrController.ts`, `.test.ts`
+  - Dependencies: T7, T8, T9, T10, T11
+  - Scope: M (2-3 files)
+
+## Checkpoint 3: Video OCR works
+- [ ] Hard-sub video → OCR runs → dedup works → subtitle change detected
+- [ ] DRM video → black frame detect → abort + user error
+- [ ] Browser test: mock YouTube hard-sub
+
+## Phase 4: Overlay + dictionary integration
+
+- [ ] T13: OCR token wrap — bbox + script-run → hitbox spans
+  - AC: `wrapOcrTokens(container, ocrItems, scriptRuns) → HTMLSpanElement[]` hitboxes. Each span: `data-cell-term`, `data-cell-start`, `data-cell-end`, position:absolute at bbox coords, transparent. Mirror `subtitleTokenWrap` pattern. Per-script-run hitbox (not per-box).
+  - Verify: unit test với 8 cases từ `tests/data-test/ocr/fixtures/ocrResultMocks.json` — zh-single-box: bbox [[277,64]...] + "我喜欢北京" → span data-cell-term="我喜欢北京" at position. mixed-zh-en-intra-box: bbox + "我喜欢 watching movies" → 2 spans (zh "我喜欢" + en " watching movies"). mixed-3-boxes: 3 boxes → spans per script-run. empty-result: 0 spans. low-score: span with score 0.45.
+  - Test data: `tests/data-test/ocr/fixtures/ocrResultMocks.json` (8 mock OcrResult[]: zh/en/ja single, mixed intra-box, 3-box mixed, low-score, empty, multi-box)
+  - Files: `src/features/ocr/overlay/ocrTokenWrap.ts`, `.test.ts`
+  - Dependencies: T2
+  - Scope: M (2 files)
+
+- [ ] T14: OCR overlay mount/unmount
+  - AC: `mountOcrOverlay(container, ocrItems, scriptRuns) → { unmount() }`. Transparent overlay div, pointer-events:auto on hitboxes, pointer-events:none on container. Overlay sống ở frame chứa `<video>`.
+  - Verify: unit test — mount creates overlay + hitboxes, unmount removes
+  - Files: `src/features/ocr/overlay/ocrOverlay.ts`, `.test.ts`
+  - Dependencies: T13
+  - Scope: S (2 files)
+
+- [ ] T15: Language router — script-run → language plugin
+  - AC: `routeScriptRuns(scriptRuns) → items with langCode`. Route zh → chinesePlugin, en → englishPlugin, ja → fallbackPlugin (single-char), ko → fallbackPlugin, unknown → englishPlugin.
+  - Verify: unit test với scriptRunCases từ `tests/data-test/ocr/fixtures/scriptRunCases.json` + ocrResultMocks — "我喜欢" → langCode='zh', "Hello" → 'en', "日本語" → 'ja' (fallback), "안녕" → 'ko' (fallback), "123!" → 'en' (unknown→en fallback). Mixed: "我喜欢 watching" → 2 items (zh + en).
+  - Test data: `tests/data-test/ocr/fixtures/scriptRunCases.json` + `ocrResultMocks.json`
+  - Files: `src/features/ocr/language/languageRouter.ts`, `.test.ts`
+  - Dependencies: T2
+  - Scope: S (2 files)
+
+- [ ] T16: Wire OCR → subtitleTriggerController.attach() → dictionary
+  - AC: OCR hitbox click → `subtitleTriggerController.attach(hitboxSpans, sentence, langCode)` handles → `lookupOrchestrator` → dictionary popup. Reuse existing trigger pipeline — hitbox spans same data attributes.
+  - Verify: browser test trên mock hard-sub page (T7b) — click "北京" hitbox → Chinese dictionary popup, click "watching" hitbox → English dictionary (same box, different script-run). Test với `tests/data-test/ocr/frames/hardsub-mixed-zh-en-01.png`.
+  - Test data: `tests/data-test/ocr/frames/hardsub-mixed-zh-en-01.png` + mock page `http://127.0.0.1:4325`
+  - Files: `src/entrypoints/content/ocrController.ts` (extend), `src/features/dictionaryPopup/trigger/subtitleTriggerController.ts` (verify reuse)
+  - Dependencies: T12, T14, T15, T7b
+  - Scope: M (2-3 files)
+
+## Checkpoint 4: Click → dictionary
+- [ ] OCR hitbox click → dictionary popup → correct word
+- [ ] Mixed: click "北京" → Chinese dict, click "watching" → English dict (same box)
+- [ ] Browser test
+
+## Phase 5: Manager Panel UI + persistence
+
+- [ ] T17: OcrSettingsPanel component
+  - AC: React component — toggle "Enable OCR video", status display (Ready/Initializing/Error/DRM), backend display, language mode radio (auto/zh/en/ja), subtitle region slider. Uses design system tokens.
+  - Verify: component test — toggle click → onChange called, status renders
+  - Files: `src/features/ocr/ui/OcrSettingsPanel.tsx`, `.module.css`, `.test.tsx`
+  - Dependencies: T3
+  - Scope: M (3 files)
+
+- [ ] T18: Add OCR tab to SubtitleManagerPanel
+  - AC: SubtitleManagerPanel has new "OCR" tab. Tab renders OcrSettingsPanel. Tab bar: [Tracks] [Appearance] [OCR].
+  - Verify: component test — tab click → OcrSettingsPanel renders
+  - Files: `src/features/subtitle/ui/SubtitleManagerPanel.tsx` (extend), `.test.tsx`
+  - Dependencies: T17
+  - Scope: S (2 files)
+
+- [ ] T19: Wire toggle → settings → OCR init/dispose
+  - AC: Toggle ON → `setOcrPreference(origin, {ocrEnabled:true})` + `ocrController.init()`. Toggle OFF → `clearOcrPreference(origin)` + `ocrController.dispose()`. Status updates during init.
+  - Verify: browser test — toggle ON → OCR starts; OFF → stops + dispose
+  - Files: `src/features/ocr/ui/OcrSettingsPanel.tsx` (extend), `src/entrypoints/content/ocrController.ts` (extend)
+  - Dependencies: T7, T17, T18
+  - Scope: M (2-3 files)
+
+- [ ] T20: Per-origin persistence — reload/SPA-nav handling
+  - AC: Content-script init → `getOcrPreference(origin)` → auto-start if enabled. SPA nav same-origin → keep; diff-origin → clear + read new. Reuse existing `yt-navigate-finish`/`popstate` hooks.
+  - Verify: browser test — reload → OCR auto-starts; SPA nav same-origin → keep; diff-origin → clear
+  - Files: `src/entrypoints/content/ocrController.ts` (extend), `src/features/subtitle/ui/contentScriptController.ts` (add OCR init hook)
+  - Dependencies: T19
+  - Scope: M (2-3 files)
+
+## Checkpoint 5: Manager Panel works
+- [ ] Toggle ON/OFF works, persistence across reload/SPA-nav
+- [ ] Browser test
+
+## Phase 6: Polish + verify
+
+- [ ] T21: WebGPU shader JIT warmup (dummy frame during init)
+  - AC: `PaddleOcrEngine.initialize()` runs dummy recognize() to trigger shader JIT before READY status. User doesn't see 5s stall.
+  - Verify: browser test — init time < 6s (including warmup), first real OCR < 200ms
+  - Files: `src/features/ocr/engine/paddleOcrEngine.ts` (extend)
+  - Dependencies: T4
+  - Scope: S (1 file)
+
+- [ ] T22: Error handling — OCR_ERROR → RETRY/FALLBACK
+  - AC: OCR fail → retry max 3 → fallback WASM if WebGPU fail → error status in Manager Panel.
+  - Verify: unit test — mock OCR fail → retry count, fallback triggers
+  - Files: `src/features/ocr/video/videoOcrController.ts` (extend), `src/features/ocr/engine/paddleOcrEngine.ts` (extend)
+  - Dependencies: T12
+  - Scope: S (2 files)
+
+- [ ] T23: Dictionary probe cache (createDictionaryProbeAsync)
+  - AC: Cache dictionary probe (Set) sau first load. Reuse across lookups. OCR tăng bậc số lookup → cache cần thiết.
+  - Verify: unit test — first lookup loads, second lookup uses cache
+  - Files: `src/features/dictionaryPopup/orchestrator/lookupOrchestrator.ts` (extend), `.test.ts`
+  - Dependencies: None
+  - Scope: S (2 files)
+
+- [ ] T24: Update docs/2-architechture-system.md
+  - AC: Add `src/features/ocr/` to tree + dependency map + function index. Per AGENTS.md update protocol.
+  - Verify: `ls src/features/ocr/` matches docs
+  - Files: `docs/2-architechture-system.md`
+  - Dependencies: all
+  - Scope: S (1 file)
+
+- [ ] T25: Full browser test — hard-sub video + mixed-language + DRM
+  - AC: All success criteria in spec met. Browser test with stealth-chrome-devtools on mock sites + real sites (themoviebox, kisskh). Test matrix: (1) mock hard-sub page zh → click → Chinese dict. (2) mock hard-sub page mixed zh+en → click both → correct dict. (3) mock hard-sub page ja → click → fallback dict. (4) mock DRM black frame → abort + user error. (5) themoviebox.xyz real hard-sub → OCR → click → dict. (6) Netflix DRM → black frame → abort. (7) per-origin persistence: reload → auto-start, SPA nav → keep/clear. (8) toggle ON/OFF → dispose + memory free.
+  - Test data: `tests/data-test/ocr/frames/*.png` (Tier 2) + `tests/data-test/ocr/real-frames/*.png` (Tier 3) + mock page `http://127.0.0.1:4325` (Tier 4)
+  - Verify: browser test pass — all 8 test matrix cases
+  - Files: test report
+  - Dependencies: all
+  - Scope: M (test only)
+
+## Checkpoint 6: Complete
+- [ ] All success criteria in spec met
+- [ ] `npm run build` + `typecheck` + `test:unit` pass
+- [ ] Browser verify pass
+- [ ] Ready for review

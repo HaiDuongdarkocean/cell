@@ -50,6 +50,11 @@
 | "sentence mode" | ◀▶ sentence-seek mode | ◀▶ tua theo cue (mặc định khi đã load subtitle) |
 | "hold-to-loop" | Repeat hold-to-loop | Giữ nút 🔁 ≥500ms = loop; có subtitle → cue start→end, không subtitle → last-3s time window, release = stop. A-B tap rejected G1 |
 | "collapse mode" | Cluster collapse | Cluster thu gọn thành half-circle 32px edge-stuck (mirror theo mép), tap = expand |
+| "local player" | Local video player | Standalone player page của extension, play video file local + auto-match subtitle, không phụ thuộc host site |
+| "condense audio" | Condensed audio extraction | Extract audio theo subtitle timing, remove silence giữa các cue → output MP3/AAC cho passive immersion |
+| "track extraction" | Audio/subtitle track export | Extract audio/subtitle track từ container (MKV) ra file riêng, giữ nguyên format hoặc convert sang SRT |
+| "folder watch" | Folder watch library | Scan 1 folder, list tất cả video, browse như media library (giống Plex/Jellyfin) |
+| "resume position" | Resume position | Lưu giây hiện tại của mỗi file, mở lại → tiếp tục từ đó |
 
 ## Architecture Terms
 

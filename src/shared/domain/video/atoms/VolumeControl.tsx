@@ -12,6 +12,9 @@ interface VolumeControlProps {
   /** Called when user clicks the mute toggle. */
   onMuteToggle: () => void;
   className?: string;
+  /** When true, slider collapses to 0 width and only expands on hover/focus
+   *  (YouTube-style). Default false — slider always visible. */
+  collapsible?: boolean;
 }
 
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
@@ -40,6 +43,7 @@ export function VolumeControl({
   onVolumeChange,
   onMuteToggle,
   className,
+  collapsible = false,
 }: VolumeControlProps): React.JSX.Element {
   const effective = muted ? 0 : volume;
   const pct = clamp01(effective) * 100;
@@ -89,7 +93,9 @@ export function VolumeControl({
     el.addEventListener('pointerup', handleUp);
   };
 
-  const cls = [styles.container, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.container, collapsible && styles.collapsible, className ?? '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={cls}>

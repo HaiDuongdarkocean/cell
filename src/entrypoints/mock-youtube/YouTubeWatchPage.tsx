@@ -22,7 +22,7 @@ import {
   HomeIcon, ShortsIcon, SubscriptionsIcon, HistoryIcon,
   ChevronRightIcon, YouIcon, PlaylistsIcon, YourVideosIcon, WatchLaterIcon, LikedIcon,
   TrendingIcon, MusicIcon, MoviesIcon, GamingIcon, LiveIcon, SettingsIcon,
-  BellIcon, MoreIcon, VerifiedIcon, ThanksIcon, ClipIcon, ReportIcon,
+  BellIcon, MoreIcon, VerifiedIcon, ReportIcon,
   YouTubeLogo,
 } from './YouTubeIcons';
 import { YouTubePlayer } from './YouTubePlayer';
@@ -252,6 +252,7 @@ export function YouTubeWatchPage(): ReactElement {
   const [view, setView] = useState<View>('home');
   const [activeIdx, setActiveIdx] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeBounce, setLikeBounce] = useState(false);
@@ -261,8 +262,11 @@ export function YouTubeWatchPage(): ReactElement {
   const [searchValue, setSearchValue] = useState('');
   const [showMoreSubs, setShowMoreSubs] = useState(false);
   const [activeNav, setActiveNav] = useState<MobileNav>('home');
+  const [overflowOpen, setOverflowOpen] = useState(false);
 
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
+  const guideOverlayRef = useRef<HTMLDivElement>(null);
 
   const activeVideo = VIDEOS[activeIdx] ?? VIDEOS[0];
 
@@ -278,6 +282,42 @@ export function YouTubeWatchPage(): ReactElement {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [searchFocused]);
+
+  // Close guide overlay on outside click or Escape (watch page only).
+  useEffect(() => {
+    if (!guideOpen) return;
+    function handleGuideOutside(e: MouseEvent): void {
+      if (guideOverlayRef.current?.contains(e.target as Node)) return;
+      setGuideOpen(false);
+    }
+    function handleEscape(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setGuideOpen(false);
+    }
+    document.addEventListener('mousedown', handleGuideOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleGuideOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [guideOpen]);
+
+  // Close overflow menu on outside click or Escape.
+  useEffect(() => {
+    if (!overflowOpen) return;
+    function handleOverflowOutside(e: MouseEvent): void {
+      if (overflowRef.current?.contains(e.target as Node)) return;
+      setOverflowOpen(false);
+    }
+    function handleEscape(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setOverflowOpen(false);
+    }
+    document.addEventListener('mousedown', handleOverflowOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOverflowOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [overflowOpen]);
 
   const openVideo = useCallback((idx: number) => {
     setActiveIdx(idx);
@@ -295,7 +335,13 @@ export function YouTubeWatchPage(): ReactElement {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const toggleSidebar = useCallback(() => setSidebarCollapsed(c => !c), []);
+  const toggleSidebar = useCallback(() => {
+    if (view === 'watch') {
+      setGuideOpen(o => !o);
+    } else {
+      setSidebarCollapsed(c => !c);
+    }
+  }, [view]);
 
   const handleLike = useCallback(() => {
     setLiked(l => !l);
@@ -321,7 +367,11 @@ export function YouTubeWatchPage(): ReactElement {
       {/* === Masthead (frosted glass) === */}
       <header className={styles.masthead} role="banner">
         <div className={styles.mastheadStart}>
-          <button className={styles.iconButton} onClick={toggleSidebar} aria-label="Guide">
+          <button
+            className={styles.iconButton}
+            onClick={toggleSidebar}
+            aria-label="Guide"
+          >
             <MenuIcon size={24} />
           </button>
           <a className={styles.logoLink} onClick={goHome} aria-label="YouTube Home">
@@ -368,21 +418,37 @@ export function YouTubeWatchPage(): ReactElement {
           </button>
         </div>
         <div className={styles.mastheadEnd}>
-          <button className={styles.iconButton} aria-label="Create">
-            <CreateIcon size={24} />
-          </button>
-          <button className={styles.iconButton} aria-label="Notifications" style={{ position: 'relative' }}>
-            <NotificationsIcon size={24} />
-            <span className={styles.notifBadge}>9+</span>
-          </button>
-          <button className={styles.avatarButton} aria-label="Account">
-            <img src={userAvatar} alt="User avatar" />
-          </button>
+          {view === 'watch' ? (
+            <>
+              <button className={styles.iconButton} aria-label="More">
+                <MoreIcon size={24} />
+              </button>
+              <button className={styles.signInBtn} type="button">
+                <span className={styles.signInAvatar} aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                </span>
+                Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <button className={styles.iconButton} aria-label="Create">
+                <CreateIcon size={24} />
+              </button>
+              <button className={styles.iconButton} aria-label="Notifications" style={{ position: 'relative' }}>
+                <NotificationsIcon size={24} />
+                <span className={styles.notifBadge}>9+</span>
+              </button>
+              <button className={styles.avatarButton} aria-label="Account">
+                <img src={userAvatar} alt="User avatar" />
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       {/* === Guide / Sidebar === */}
-      <aside className={`${styles.guide} ${sidebarCollapsed ? styles.guideCollapsed : ''}`} role="navigation">
+      <aside className={`${styles.guide} ${sidebarCollapsed ? styles.guideCollapsed : ''} ${view === 'watch' ? styles.guideHidden : ''}`} role="navigation">
         {sidebarCollapsed ? (
           /* Mini-guide: 4 main items */
           <div className={styles.miniGuide}>
@@ -480,8 +546,51 @@ export function YouTubeWatchPage(): ReactElement {
         )}
       </aside>
 
+      {/* === Guide overlay (watch page only) === */}
+      {view === 'watch' && guideOpen && (
+        <div className={styles.guideOverlay} onClick={() => setGuideOpen(false)}>
+          <div ref={guideOverlayRef} className={styles.guideOverlayPanel} onClick={e => e.stopPropagation()}>
+            <div className={styles.guideSection}>
+              <button
+                className={`${styles.guideItem} ${view === 'home' ? styles.guideItemActive : ''}`}
+                onClick={() => { goHome(); setGuideOpen(false); }}
+              >
+                <GuideIcon name="home" />
+                <span className={styles.guideLabel}>Home</span>
+              </button>
+              <button className={styles.guideItem}>
+                <GuideIcon name="shorts" />
+                <span className={styles.guideLabel}>Shorts</span>
+              </button>
+              <button className={styles.guideItem}>
+                <GuideIcon name="subscriptions" />
+                <span className={styles.guideLabel}>Subscriptions</span>
+              </button>
+            </div>
+            <div className={styles.guideSection}>
+              <div className={styles.guideSectionTitle}>You</div>
+              {YOU_ITEMS.map(item => (
+                <button key={item.label} className={styles.guideItem}>
+                  <GuideIcon name={item.icon} />
+                  <span className={styles.guideLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className={styles.guideSection}>
+              <div className={styles.guideSectionTitle}>Explore</div>
+              {EXPLORE_ITEMS.map(item => (
+                <button key={item.label} className={styles.guideItem}>
+                  <GuideIcon name={item.icon} />
+                  <span className={styles.guideLabel}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* === Content === */}
-      <div className={`${styles.content} ${sidebarCollapsed ? styles.contentCollapsed : ''}`}>
+      <div className={`${styles.content} ${view === 'watch' ? styles.contentWatch : sidebarCollapsed ? styles.contentCollapsed : ''}`}>
         {view === 'home' ? (
           /* === Home: Chips + Video Grid === */
           <>
@@ -582,25 +691,33 @@ export function YouTubeWatchPage(): ReactElement {
                       <span className={styles.actionBtnIcon}><ShareIcon size={18} /></span>
                       Share
                     </button>
+                    <button className={styles.actionBtn} aria-label="Download">
+                      <span className={styles.actionBtnIcon}><DownloadIcon size={18} /></span>
+                      Download
+                    </button>
                     <button className={styles.actionBtn} aria-label="Save to playlist">
                       <span className={styles.actionBtnIcon}><SaveIcon size={18} /></span>
                       Save
                     </button>
-                    <button className={styles.actionBtn} aria-label="Download">
-                      <span className={styles.actionBtnIcon}><DownloadIcon size={18} /></span>
-                    </button>
-                    <button className={styles.actionBtn} aria-label="Thanks">
-                      <span className={styles.actionBtnIcon}><ThanksIcon size={18} /></span>
-                      Thanks
-                    </button>
-                    <button className={styles.actionBtn} aria-label="Clip">
-                      <span className={styles.actionBtnIcon}><ClipIcon size={18} /></span>
-                      Clip
-                    </button>
-                    <button className={styles.actionBtn} aria-label="Report">
-                      <span className={styles.actionBtnIcon}><ReportIcon size={18} /></span>
-                      Report
-                    </button>
+                    <div ref={overflowRef} style={{ position: 'relative' }}>
+                      <button
+                        className={styles.actionBtn}
+                        aria-label="More actions"
+                        onClick={(e) => { e.stopPropagation(); setOverflowOpen(o => !o); }}
+                      >
+                        <span className={styles.actionBtnIcon}><MoreIcon size={18} /></span>
+                      </button>
+                      {overflowOpen && (
+                        <div className={styles.overflowMenu} onClick={(e) => e.stopPropagation()}>
+                          <button className={styles.overflowRow}>
+                            <ReportIcon size={18} /> Report
+                          </button>
+                          <button className={styles.overflowRow}>
+                            Show transcript
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

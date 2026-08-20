@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <body>
+    <div>
+      <p begin="0.76s" end="3.45s">Hello, world!</p>
+      <p begin="5.0s" end="10.0s">This is a basic TTML subtitle.</p>
+      <p begin="10.0s" end="16.0s">Goodbye, world!</p>
+    </div>
+  </body>
+</tt>

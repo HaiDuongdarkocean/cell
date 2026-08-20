@@ -1,0 +1,26 @@
+<SAMI>
+<HEAD>
+<TITLE>Long Text SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC>Welcome to this comprehensive lecture on the history of computing, from the earliest mechanical calculators to modern quantum computers that are pushing the boundaries of what we thought was possible in information processing.</P>
+
+<SYNC Start=10000>
+<P Class=ENUSCC>In the early 19th century, Charles Babbage designed the Analytical Engine, a mechanical general-purpose computer that, although never fully built in his lifetime, laid the conceptual foundation for all modern computing machines that would follow in the decades and centuries to come.</P>
+
+<SYNC Start=20000>
+<P Class=ENUSCC>The Turing machine, proposed by Alan Turing in 1936, provided a formal mathematical model of computation that remains fundamental to theoretical computer science today, defining the very limits of what can and cannot be computed by any algorithmic process.</P>
+
+<SYNC Start=30000>
+<P Class=ENUSCC>The development of the transistor at Bell Labs in 1947 marked a pivotal turning point, replacing bulky and unreliable vacuum tubes with small, efficient solid-state devices that would enable the miniaturization of electronic computers and eventually lead to the integrated circuit.</P>
+
+</BODY>
+</SAMI>

@@ -1,0 +1,17 @@
+WEBVTT
+
+1 - First Cue
+00:00:01.000 --> 00:00:04.000
+This cue has an identifier.
+
+2 - Second Cue
+00:00:05.000 --> 00:00:08.000
+This cue also has an identifier.
+
+cue-3
+00:00:09.000 --> 00:00:12.000
+Identifiers can be arbitrary strings.
+
+title-crawl
+00:00:13.000 --> 00:00:16.000
+Useful for referencing in JS and CSS.

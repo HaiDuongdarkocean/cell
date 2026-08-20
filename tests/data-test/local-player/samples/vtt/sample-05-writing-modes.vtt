@@ -1,0 +1,13 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000 vertical:rl
+Right-to-left vertical text for Japanese
+
+00:00:05.000 --> 00:00:08.000 vertical:lr
+Left-to-right vertical text
+
+00:00:09.000 --> 00:00:12.000
+Normal horizontal text (no writing mode specified)
+
+00:00:13.000 --> 00:00:16.000 vertical:rl
+縦書きのテキストです
