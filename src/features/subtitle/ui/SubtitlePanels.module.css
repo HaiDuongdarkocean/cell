@@ -50,9 +50,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: clamp(var(--space-1), 0.8cqw, var(--space-2));
   /* Don't contribute height to .root flex row — SubtitleBlock overflows
-     freely without stretching the root (and shifting translateY position). */
+     freely without stretching the root (and shifting translateY position).
+     justify-content:center centers the block around the 0-height point
+     (which sits at .root's vertical center via align-items:center). */
   height: 0;
   overflow: visible;
 }
