@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { VideoRecord, SubtitleRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitlesState, SubtitleStatus } from '@/entrypoints/local-player/hooks/useLocalPlayerStore';
@@ -12,7 +12,6 @@ import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subti
 import { ICON_CATALOG } from '@/shared/icons';
 import type { SubtitleActionHandlers } from '@/entrypoints/local-player/hooks/useSubtitleActions';
 import type { SubtitlePanelsRef, ManagerState } from '@/features/subtitle/ui/subtitlePanelsTypes';
-import { SubtitleOffsetPanel } from '@/features/subtitle/ui/SubtitleOffsetPanel';
 import { useCuesStore } from '@/stores/cuesStore';
 import type { BilingualCue, KeyboardShortcut, SrtCue } from '@/entities/media';
 import {
@@ -21,6 +20,8 @@ import {
   DEFAULT_KEYBOARD_SHORTCUTS,
 } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { PlayerMenuBar } from './PlayerMenuBar';
@@ -58,6 +59,14 @@ export interface PlayerViewProps {
   manager: ManagerState;
   /** Card/dictionary/generate-native handlers from useSubtitleActions. */
   subtitleActions: SubtitleActionHandlers;
+  /** Whether a previous video is available in the library. */
+  hasPrevVideo?: boolean;
+  /** Whether a next video is available in the library. */
+  hasNextVideo?: boolean;
+  /** Load the previous video from the library. */
+  onPrevVideo?: () => void;
+  /** Load the next video from the library. */
+  onNextVideo?: () => void;
 }
 
 type SkipDirection = 'forward' | 'backward';
@@ -116,16 +125,21 @@ export function PlayerView({
   subtitleEngine,
   manager,
   subtitleActions,
+  hasPrevVideo = false,
+  hasNextVideo = false,
+  onPrevVideo,
+  onNextVideo,
 }: PlayerViewProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const subtitlePanelsRef = useRef<SubtitlePanelsRef>(null);
   const controls = useLocalVideo(videoRef, containerRef, { onTimeUpdate, videoFile, autoPlay: true });
-  const [showOffset, setShowOffset] = useState(false);
   const [showTrackSelector, setShowTrackSelector] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [flashPulse, setFlashPulse] = useState(0);
   const [flashIcon, setFlashIcon] = useState<'play' | 'pause'>('play');
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shortcutsRef = useRef<KeyboardShortcut[]>(DEFAULT_KEYBOARD_SHORTCUTS);
 
   // Read cues from the global cuesStore (driven by SubtitleCueEngine).
@@ -134,8 +148,11 @@ export function PlayerView({
 
   const hasVideo = videoFile !== null;
   const hasSubtitles = subtitleEngine.hasSubtitles && targetCues.length > 0;
-  const showNoSubtitle = subtitleStatus === 'not-found' && hasVideo;
-  const showSubtitleError = subtitleStatus === 'error' && hasVideo;
+  // SubtitlePanels renders whenever a video is loaded — even without subtitles,
+  // so the overlay panel (split view, manager, tools) stays accessible.
+  const showSubtitlePanels = hasVideo;
+  const showNoSubtitle = subtitleStatus === 'not-found' && hasVideo && !hasSubtitles;
+  const showSubtitleError = subtitleStatus === 'error' && hasVideo && !hasSubtitles;
 
   // ponytail ceiling: storage write after load won't reflect until reload.
   // Upgrade: onStorageChanged listener (like sidepanel).
@@ -164,12 +181,73 @@ export function PlayerView({
     setFlashPulse((n) => n + 1);
   }, [controls.isPlaying]);
 
-  // Auto-open split view when subtitles load (default show).
+  // Auto-hide controls (YouTube-style): show on mousemove, hide after 3s idle.
+  // Paused state always shows controls so user can see the play button.
+  const showControls = useCallback((): void => {
+    setControlsVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      if (controls.isPlaying) setControlsVisible(false);
+    }, 3000);
+  }, [controls.isPlaying]);
+
   useEffect(() => {
-    if (hasSubtitles) {
-      subtitlePanelsRef.current?.toggleSplitView();
+    if (!hasVideo) return;
+    const wrapper = containerRef.current;
+    if (!wrapper) return;
+    const handleMove = (): void => showControls();
+    const handleEnter = (): void => showControls();
+    const handleLeave = (): void => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      if (controls.isPlaying) setControlsVisible(false);
+    };
+    wrapper.addEventListener('mousemove', handleMove);
+    wrapper.addEventListener('mouseenter', handleEnter);
+    wrapper.addEventListener('mouseleave', handleLeave);
+    return (): void => {
+      wrapper.removeEventListener('mousemove', handleMove);
+      wrapper.removeEventListener('mouseenter', handleEnter);
+      wrapper.removeEventListener('mouseleave', handleLeave);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, [hasVideo, showControls, controls.isPlaying]);
+
+  // When paused, always show controls; when playing resumes, restart hide timer.
+  useEffect(() => {
+    if (!controls.isPlaying) {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      setControlsVisible(true);
+    } else {
+      showControls();
     }
-  }, [hasSubtitles]);
+  }, [controls.isPlaying, showControls]);
+
+  // Restore subtitle-panel (Split View) enable state from previous session.
+  // Default disable — only open if user explicitly enabled before. Runs once
+  // after SubtitlePanels mounts (which requires a loaded video).
+  const restoredPanelPrefRef = useRef(false);
+  useEffect(() => {
+    if (!showSubtitlePanels || restoredPanelPrefRef.current) return;
+    restoredPanelPrefRef.current = true;
+    let cancelled = false;
+    void (async (): Promise<void> => {
+      try {
+        const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN);
+        if (cancelled) return;
+        if (data[STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN] === true) {
+          subtitlePanelsRef.current?.setSplitViewOpen(true);
+        }
+      } catch {
+        // Storage unavailable (e.g. test env) — keep default disable.
+      }
+    })();
+    return (): void => { cancelled = true; };
+  }, [showSubtitlePanels]);
+
+  // Persist subtitle-panel enable state when user toggles it.
+  const handleSplitViewChange = useCallback((open: boolean): void => {
+    void setStorage({ [STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN]: open }).catch(() => undefined);
+  }, []);
 
   // Set video.src when a new file is loaded.
   useEffect(() => {
@@ -257,7 +335,7 @@ export function PlayerView({
               <PlayPauseOverlay icon={flashIcon} pulseKey={flashPulse} />
             )}
 
-            {hasSubtitles && (
+            {showSubtitlePanels && (
               <div className={styles.subtitleOverlay}>
                 <SubtitlePanels
                   ref={subtitlePanelsRef}
@@ -290,6 +368,7 @@ export function PlayerView({
                   currentTimeMs={controls.currentTime * 1000}
                   offsetMs={subtitleEngine.offsetMs}
                   onSeek={(ms) => controls.seek(ms / 1000)}
+                  onSplitViewChange={handleSplitViewChange}
                   managerShadowCss={hostManagerSheetShadowCss}
                 />
               </div>
@@ -315,17 +394,6 @@ export function PlayerView({
               </div>
             )}
 
-            {showOffset && hasSubtitles && (
-              <div className={styles.offsetPanelOverlay}>
-                <SubtitleOffsetPanel
-                  offsetMs={subtitleEngine.offsetMs}
-                  onOffsetChange={subtitleEngine.setOffset}
-                  onCommit={subtitleEngine.setOffset}
-                  onReset={() => subtitleEngine.setOffset(0)}
-                />
-              </div>
-            )}
-
             {showTrackSelector && subtitles.others.length > 0 && (
               <TrackSelector
                 currentTarget={subtitles.target?.filename ?? null}
@@ -337,6 +405,38 @@ export function PlayerView({
                 }}
               />
             )}
+
+            <div className={styles.controlsOverlay} data-cell-id="controls-overlay"
+              data-visible={controlsVisible}
+              style={{ opacity: controlsVisible ? '1' : '0', pointerEvents: controlsVisible ? 'auto' : 'none' }}
+            >
+              <PlayerControls
+                isPlaying={controls.isPlaying}
+                currentTime={controls.currentTime}
+                duration={controls.duration}
+                volume={controls.volume}
+                muted={controls.muted}
+                playbackRate={controls.playbackRate}
+                isHidden={!hasVideo}
+                captionsOn={captionsOn}
+                captionsAvailable={hasSubtitles}
+                onToggleCaptions={() => setCaptionsOn((v) => !v)}
+                onToggleTrackSelector={() => setShowTrackSelector((v) => !v)}
+                hasMultipleTracks={subtitles.others.length > 0}
+                onPlayPause={() => (controls.isPlaying ? controls.pause() : controls.play())}
+                onSeek={controls.seek}
+                onVolumeChange={controls.setVolume}
+                onMuteToggle={controls.toggleMute}
+                onSpeedChange={controls.setPlaybackRate}
+                onToggleFullscreen={controls.toggleFullscreen}
+                onTogglePiP={controls.togglePiP}
+                onSkip={handleSkip}
+                hasPrevVideo={hasPrevVideo}
+                hasNextVideo={hasNextVideo}
+                onPrevVideo={onPrevVideo}
+                onNextVideo={onNextVideo}
+              />
+            </div>
           </div>
         ) : (
           <EmptyState onOpenFile={onOpenFile} onOpenFolder={onOpenFolder} onFilesDrop={onFilesDrop} />
@@ -355,30 +455,6 @@ export function PlayerView({
           </aside>
         )}
       </div>
-
-      <PlayerControls
-        isPlaying={controls.isPlaying}
-        currentTime={controls.currentTime}
-        duration={controls.duration}
-        volume={controls.volume}
-        muted={controls.muted}
-        playbackRate={controls.playbackRate}
-        isHidden={!hasVideo}
-        captionsOn={captionsOn}
-        captionsAvailable={hasSubtitles}
-        onToggleCaptions={() => setCaptionsOn((v) => !v)}
-        onToggleOffset={() => setShowOffset((v) => !v)}
-        onToggleTrackSelector={() => setShowTrackSelector((v) => !v)}
-        hasMultipleTracks={subtitles.others.length > 0}
-        onPlayPause={() => (controls.isPlaying ? controls.pause() : controls.play())}
-        onSeek={controls.seek}
-        onVolumeChange={controls.setVolume}
-        onMuteToggle={controls.toggleMute}
-        onSpeedChange={controls.setPlaybackRate}
-        onToggleFullscreen={controls.toggleFullscreen}
-        onTogglePiP={controls.togglePiP}
-        onSkip={handleSkip}
-      />
     </div>
   );
 }
