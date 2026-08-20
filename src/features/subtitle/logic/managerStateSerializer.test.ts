@@ -8,8 +8,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { serializeManagerState, serializeAppearanceState } from './managerStateSerializer';
-import type { ManagerState, OffsetState } from '../ui/SubtitlePanels';
-import type { AppearanceState } from '../ui/SubtitleManagerPanel';
+import type { ManagerState, OffsetState, AppearanceState } from '../ui/subtitlePanelsTypes';
 
 // Helper: create a mock ManagerState with all required + optional fields.
 // Optional function callbacks are included so we can assert they are stripped.
