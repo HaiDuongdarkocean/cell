@@ -1,85 +1,84 @@
-# Implementation Plan: Manager Host Sheet Bridge
+# Implementation Plan: Subtitle Panels Atom Decomposition
+
+> Spec: `docs/specs/subtitle-panels-atom-decomposition.md`
+> Decisions D1-D6 đã resolve. Refactor thuần, behavior-identical.
 
 ## Overview
-Bridge protocol để render SubtitleManagerPanel trên host page khi user mở manager trong cross-origin iframe trên mobile. Child iframe gửi state, host page render sheet, actions gửi ngược qua postMessage.
 
-## Architecture Decisions
-- **File split strategy**: Mỗi module là 1 file riêng → tối đa parallel subagent, 0 file conflict
-- **Types file first**: Tất cả types trong 1 file, mọi module import từ đó → wave 2 parallel
-- **Serializer tách riêng**: `ManagerState` (có callbacks) → `SerializedManagerState` (JSON-only) tách hàm thuần, dễ test
-- **Host sheet component tách riêng**: React component độc lập, không depend `SubtitlePanels.tsx`
-- **Action dispatcher pattern**: `MGR_ACTION` generic `{action, args}` → child-side map action→callback, dễ extend Phase 2
+Tách `SubtitlePanels.tsx` (1651 dòng) thành 3 molecule (`ClusterRightToolbar`, `ManagerLayer`, `OffsetLayer`) + 1 types file (`subtitlePanelsTypes.ts`) + 1 shared CSS (`subtitlePanelsShared.module.css`). Gộp `HostManagerSheet` render logic vào `ManagerLayer` (HostManagerSheet giữ làm thin adapter). Share `ClusterRightToolbar` với `PlayerModeOverlay` (mode prop). Mục tiêu: ≤ 1350 dòng `SubtitlePanels.tsx`, SSOT toolbar/manager/offset/types/CSS.
 
-## File Ownership Map (0 conflict guaranteed)
+## Architecture Decisions (từ spec)
 
-| File | Owner Task | Status |
-|------|-----------|--------|
-| `src/features/subtitle/logic/iframeManagerBridgeTypes.ts` | T1 | NEW |
-| `src/features/subtitle/logic/managerStateSerializer.ts` | T2 | NEW |
-| `src/features/subtitle/logic/iframeManagerBridgeChild.ts` | T3 | NEW |
-| `src/features/subtitle/logic/iframeManagerBridgeHost.ts` | T4 | NEW |
-| `src/features/subtitle/ui/HostManagerSheet.tsx` | T5 | NEW |
-| `src/features/subtitle/ui/HostManagerSheet.module.css` | T6 | NEW |
-| `src/features/subtitle/logic/iframeManagerBridgeTypes.test.ts` | T7 | NEW |
-| `src/features/subtitle/logic/managerStateSerializer.test.ts` | T8 | NEW |
-| `src/features/subtitle/logic/iframeManagerBridgeChild.test.ts` | T9 | NEW |
-| `src/features/subtitle/ui/HostManagerSheet.test.tsx` | T10 | NEW |
-| `src/features/subtitle/ui/SubtitlePanels.tsx` | T11 | EXISTING — sole editor |
-| `src/entrypoints/content/content-script.ts` | T12 | EXISTING — sole editor |
-| `src/features/subtitle/logic/iframePlayerModeBridge.ts` | T13 | EXISTING — sole editor (revert expand) |
-| `docs/2-architechture-system.md` | T14 | EXISTING — sole editor |
-| `docs/0-wiki.md` | T15 | EXISTING — sole editor |
+- **D1**: `ManagerLayer` nhận `ManagerState`; `HostManagerSheet` = thin adapter convert `SerializedManagerState + onAction` → `ManagerState`.
+- **D2**: `subtitlePanelsShared.module.css` chứa `.panelLayer`, `.offsetRow`, `.clusterRight` family. Molecule + PlayerModeOverlay import từ đó.
+- **D3**: Không `OffsetLayer.module.css` — reuse `.offsetRow` từ shared CSS.
+- **D4**: Showcase giữ `<SubtitlePanels>` direct, import types từ `subtitlePanelsTypes.ts`.
+- **D5**: `ClusterRightToolbar` share với `mode: 'overlay' | 'player'` + flexible callbacks.
+- **D6**: `AppearanceState` dời vào `subtitlePanelsTypes.ts`, `SubtitleManagerPanel` re-export.
 
-## Dependency Graph + Waves
+## Dependency Graph
 
 ```
-Wave 1 (4 parallel — no deps):
-  T1: types          T6: CSS
-  T13: revert expand  T14: arch doc (stub)
-
-Wave 2 (5 parallel — depend on T1):
-  T2: serializer     T3: child bridge
-  T4: host bridge    T5: host sheet component
-  T15: wiki update
-
-Wave 3 (4 parallel — depend on wave 2):
-  T7: types test     T8: serializer test
-  T9: child bridge test  T10: host sheet test
-
-Wave 4 (2 parallel — depend on wave 2+3):
-  T11: SubtitlePanels integration (needs T2+T3)
-  T12: contentScript install (needs T4+T5)
-
-Wave 5 (1 — final):
-  T16: build + verify all
+Phase 0: Baseline verify (sequential, 1 agent)
+    │
+Phase 1: Foundation (PARALLEL — 2 agents)
+    ├── T1: subtitlePanelsTypes.ts (types SSOT)
+    └── T2: subtitlePanelsShared.module.css (CSS SSOT)
+    │
+Phase 2: Molecules (PARALLEL — 3 agents, sau Phase 1)
+    ├── T3: ClusterRightToolbar.tsx + test
+    ├── T4: ManagerLayer.tsx + test
+    └── T5: OffsetLayer.tsx + test
+    │
+Phase 3: Consumers (PARALLEL — 4 agents, sau Phase 2)
+    ├── T6: SubtitlePanels.tsx compose molecule
+    ├── T7: PlayerModeOverlay.tsx share ClusterRightToolbar
+    ├── T8: HostManagerSheet.tsx thin adapter
+    └── T9: OverlayPreview.module.css dùng shared CSS
+    │
+Phase 4: Wiring (PARALLEL — 3 agents, sau Phase 3)
+    ├── T10: mountSubtitle.tsx + hostManagerSheetShadowCss.ts CSS manifest
+    ├── T11: logic/ files import types + index.ts export
+    └── T12: showcase pages import types
+    │
+Checkpoint: Build + test + typecheck (sequential, 1 agent)
+    │
+Phase 5: Docs (PARALLEL — 2 agents)
+    ├── T13: docs/2-architechture-system.md update
+    └── T14: ADR + docs/0-wiki.md
+    │
+Phase 6: Browser verify (sequential, 1 agent)
+    │
+Phase 7: Final commit (sequential, 1 agent)
 ```
 
-Max parallel: **5** (wave 2). Total: **16 tasks**.
+## Parallelization (max 20 agents)
 
-## Checkpoints
+| Phase | Agents | Tasks |
+|-------|--------|-------|
+| 0 | 1 | T0 baseline |
+| 1 | 2 | T1, T2 (song song) |
+| 2 | 3 | T3, T4, T5 (song song, sau Phase 1) |
+| 3 | 4 | T6, T7, T8, T9 (song song, sau Phase 2) |
+| 4 | 3 | T10, T11, T12 (song song, sau Phase 3) |
+| Checkpoint | 1 | Build+test+typecheck |
+| 5 | 2 | T13, T14 (song song) |
+| 6 | 1 | Browser verify |
+| 7 | 1 | Final commit |
 
-### Checkpoint A: After Wave 1+2 (types + modules)
-- [ ] `npm run build` pass (all new files compile)
-- [ ] Types export đúng, serializer round-trip OK
-- [ ] Bridge functions no-op when !isChildFrame
+**Max concurrent**: 4 (Phase 3). Tổng 15 task + 4 checkpoint/verify/commit = 19 bước. Đặt trong 20 agent budget.
 
-### Checkpoint B: After Wave 3 (tests)
-- [ ] `npm run test:unit` pass
-- [ ] All new modules have co-located tests
+## Risks and Mitigations
 
-### Checkpoint C: After Wave 4 (integration)
-- [ ] `npm run build` pass
-- [ ] SubtitlePanels correctly skips portal when managerOpenOnHost
-- [ ] contentScript installs host bridge
-
-### Checkpoint D: After Wave 5 (verify)
-- [ ] animekai.be mobile: sheet trên host page, 25% top visible
-- [ ] animekai.be desktop: manager overlay video (unchanged)
-- [ ] Same-origin: manager render bình thường (unchanged)
-
-## Risks
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| T11 (SubtitlePanels) là task lớn nhất | Med | AC rõ ràng, chia nhỏ trong task |
-| T5 (HostManagerSheet) cần reuse SubtitleManagerPanel props | Med | T5 import types từ T1, props match |
-| T13 revert expand có thể break build tạm thời | Low | T13 chạy wave 1, build lại ở checkpoint A |
+| CSS move break shadow DOM render | High | T2 giữ cả class cũ (re-export) + T10 verify manifest đầy đủ; build catch |
+| PlayerModeOverlay toolbar share lệch behavior | High | T7 giữ `data-cell-id="player-mode-exit-btn"` + test DOM selector |
+| HostManagerSheet adapter subtle diff (`onGenerateNative` ternary) | Med | T8 giữ `buildAppearance` helper nguyên, test host-sheet branch |
+| iframe bridge state sync break | High | Non-goal giữ effect; T6 chỉ compose molecule, không đụng effect |
+| Build fail do circular CSS import | Med | D2: shared file không import molecule |
+| Browser regression không phát hiện | High | T15 verify 4 environment + checklist observable |
+
+## Open Questions
+
+Không còn (D1-D6 resolved).

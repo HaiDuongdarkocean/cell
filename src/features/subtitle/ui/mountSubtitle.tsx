@@ -21,6 +21,7 @@ import tabsCss from '@/shared/ui/Tabs.module.css?inline';
 import subtitleToastCss from './SubtitleToast.module.css?inline';
 import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
+import subtitlePanelsSharedCss from './subtitlePanelsShared.module.css?inline';
 import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
@@ -188,6 +189,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         skeletonCss,
         tabsCss,
         subtitlePanelsCss,
+        subtitlePanelsSharedCss,
         iconCss,
         iconButtonCss,
         buildTokenSpanCssForShadow(),
@@ -218,6 +220,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitleToastCss,
         subtitleHintCss,
         subtitlePanelsCss,
+        subtitlePanelsSharedCss,
         playerModeOverlayCss,
         cueListCss,
         iconCss,
