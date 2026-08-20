@@ -5,11 +5,10 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
-import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
+import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
-import { SubtitlePanelItem } from './subtitlePanelModel';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
@@ -38,7 +37,6 @@ import subtitlePanelCss from './SubtitlePanel.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
-import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitlePanels.module.css';
@@ -50,8 +48,22 @@ import {
   onManagerAction,
   onManagerCloseFromHost,
 } from '@/features/subtitle/logic/iframeManagerBridgeChild';
+import type {
+  ManagerState,
+  OffsetState,
+  SubtitlePanelsRef,
+  SubtitlePanelsProps,
+  IconCatalogKey,
+} from './subtitlePanelsTypes';
 
-type IconCatalogKey = keyof typeof ICON_CATALOG;
+// Re-export for backward compatibility — SSOT lives in subtitlePanelsTypes.ts
+export type {
+  ManagerState,
+  OffsetState,
+  SubtitlePanelsRef,
+  SubtitlePanelsProps,
+  AppearanceState,
+} from './subtitlePanelsTypes';
 
 // --- Split View diagnostic logging (temporary — remove after fix) ---
 // Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
@@ -84,145 +96,6 @@ function rectLog(el: Element | null | undefined): Record<string, number> | null 
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
-}
-
-export interface ManagerState {
-  targetItems: SubtitlePanelItem[];
-  nativeItems: SubtitlePanelItem[];
-  targetActiveIndex: number;
-  nativeActiveIndex: number;
-  onSelect: (role: 'target' | 'native', index: number) => void;
-  onImport?: (role: 'target' | 'native') => void;
-  onGenerateNative?: () => void;
-  onOffsetChange?: (role: 'target' | 'native', ms: number) => void;
-  /** Appearance view props — when provided, "Customize appearance" button shows in footer. */
-  appearance?: AppearanceState;
-  /** Whether subtitle search API keys are configured (controls search UI availability). */
-  hasSearchKeys: boolean;
-  /** API keys for subtitle search (for inline ApiKeyManager in search view). */
-  apiKeys: readonly SubtitleApiKey[];
-  /** Persist API key changes to settings storage. */
-  onApiKeysChange: (keys: SubtitleApiKey[]) => void;
-  /** User selected a search result to download + load (delegated to contentScriptController). */
-  onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
-  /** Download a specific subtitle item to the user's machine. */
-  onDownload?: (role: 'target' | 'native', index: number) => void;
-  /** Toggle hide/show for a section's subtitle in the overlay. */
-  onHideSection?: (role: 'target' | 'native') => void;
-  /** Toggle hide/show for both target + native subtitles in the overlay. */
-  onHideBoth?: () => void;
-  /** Whether target subtitle is currently hidden in the overlay. */
-  targetHidden?: boolean;
-  /** Whether native subtitle is currently hidden in the overlay. */
-  nativeHidden?: boolean;
-  /** Whether both subtitles are currently hidden in the overlay. */
-  bothHidden?: boolean;
-}
-
-export interface OffsetState {
-  targetMs: number;
-  nativeMs: number;
-  onTargetChange: (ms: number) => void;
-  onNativeChange: (ms: number) => void;
-}
-
-export interface SubtitlePanelsRef {
-  /** Update target + native overlay styles. */
-  setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
-  /** Update nav cluster settings (buttonSize, textOpacity, bgOpacity, enabled). */
-  setClusterSettings: (settings: NavClusterSettings) => void;
-  /** Update subtitle block settings (bgOpacity, globalScale, yOffsetPercent). */
-  setBlockSettings: (settings: SubtitleBlockSettings) => void;
-  /** Replace the manager items and callbacks. */
-  setManager: (manager: ManagerState) => void;
-  /** Replace the offset state and callbacks. */
-  setOffset: (offset: OffsetState) => void;
-  /** Show or hide the subtitle manager panel. */
-  setManagerOpen: (open: boolean) => void;
-  /** Show or hide the offset panel. */
-  setOffsetOpen: (open: boolean) => void;
-  /** Show or hide the drag/drop hint. */
-  setHintOpen: (open: boolean) => void;
-  /** Add a toast notification. */
-  addToast: (message: string, variant?: ToastVariant) => void;
-  /** Clear all toasts. */
-  clearToasts: () => void;
-  /** Update whether the video is playing. */
-  setIsPlaying: (playing: boolean) => void;
-  /** Update the repeat AB-loop active state. */
-  setRepeatActive: (active: boolean) => void;
-  /** Update the repeat button icon and label. */
-  setRepeatIcon: (icon: IconCatalogKey, label?: string) => void;
-  /** Enable or disable the manager-panel generate-native button. */
-  setGenerateNativeEnabled: (enabled: boolean) => void;
-  /** Collapse or expand the nav cluster. */
-  setCollapsed: (collapsed: boolean) => void;
-  /** Update the block vertical position (percent 0-95). */
-  setYOffsetPercent: (yOffsetPercent: number) => void;
-  /** Update bilingual cues for CueList in Player Mode. */
-  setCues: (cues: BilingualCue[]) => void;
-  /** Update current video time (ms) for CueList highlight. */
-  setCurrentTimeMs: (timeMs: number) => void;
-  /** Toggle Player Mode (same as clicking the Player Mode button). */
-  togglePlayerMode: () => void;
-  /** Toggle Split View — CueList panel beside video container (page thường only). */
-  toggleSplitView: () => void;
-}
-
-export interface SubtitlePanelsProps {
-  targetStyle: OverlayStyleConfig;
-  nativeStyle: OverlayStyleConfig;
-  collapsed: boolean;
-  isPlaying: boolean;
-  repeatActive: boolean;
-  repeatIcon?: IconCatalogKey;
-  repeatLabel?: string;
-  /** Nav cluster settings from extension popup. */
-  clusterSettings?: NavClusterSettings;
-  /** Subtitle block settings from extension popup. */
-  blockSettings?: SubtitleBlockSettings;
-  /** Block vertical position as percent of video height (0-95, center of block). ADR-025. */
-  yOffsetPercent: number;
-  /** Called when user drags the block to a new Y position (percent 0-95, snapped). */
-  onDragReposition?: (yOffsetPercent: number) => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onRepeat: () => void;
-  onRewind: () => void;
-  onForward: () => void;
-  onPlayPause: () => void;
-  onToggleCollapsed: () => void;
-  /** Quick-add all unknown/tracking words in the current subtitle line. */
-  onQuickAdd?: () => void;
-  /** Open the Card Creator dialog pre-filled for the current line. */
-  onEditCard?: () => void;
-  /** Update the card matching the current subtitle line. */
-  onUpdateCurrentCard?: () => void;
-  /** Generate a native subtitle from the current target cues. */
-  onGenerateNative?: () => void;
-  /** Open/close the Chrome side panel. */
-  onToggleSidePanel?: () => void;
-  /** Open the subtitle manager panel. */
-  onToggleManager?: () => void;
-  manager?: ManagerState;
-  offset?: OffsetState;
-  generateNativeEnabled?: boolean;
-  /** Intrinsic video width/height ratio used by Player Mode layout. */
-  videoAspectRatio?: number;
-  /** Called when user toggles Player Mode. */
-  onTogglePlayerMode?: (active: boolean) => void;
-  /** Bilingual cues for CueList in Player Mode. */
-  cues?: BilingualCue[];
-  /** Current video time in ms (for CueList highlight). */
-  currentTimeMs?: number;
-  /** Subtitle offset in ms (ADR-019 sync). */
-  offsetMs?: number;
-  /** Seek video to timeMs when user clicks a cue. */
-  onSeek?: (timeMs: number) => void;
-  /** CSS strings to inject into the body-level shadow root for the manager panel.
-   *  Needed because the manager panel portals to document.body to escape the
-   *  video container's stacking context (e.g. YouTube #movie_player z-index:0). */
-  managerShadowCss?: string[];
 }
 
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
