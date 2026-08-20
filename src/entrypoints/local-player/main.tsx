@@ -52,6 +52,7 @@ import {
 import { useSubtitleEngine } from './hooks/useSubtitleEngine';
 import { useSubtitleActions } from './hooks/useSubtitleActions';
 import type { SortBy } from '@/features/local-player/logic/librarySort';
+import { sortLibrary } from '@/features/local-player/logic/librarySort';
 import type { SrtCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
@@ -169,6 +170,12 @@ function LocalPlayerApp(): React.JSX.Element {
   // Pending subtitles dropped before any video — matched when a video arrives.
   // Ponytail: not persisted (lost on tab close). Upgrade: save to IndexedDB.
   const pendingSubsRef = useRef<Map<string, File>>(new Map());
+  // In-memory cache of drag-dropped video File objects (videoId → File).
+  // Drag-dropped videos have no FileSystemFileHandle, so handleVideoSelect
+  // can't reopen them from storage. This cache lets prev/next navigation
+  // reload them within the same session.
+  // Ponytail: not persisted (lost on tab close). Upgrade: IndexedDB blob store.
+  const videoFileCacheRef = useRef<Map<string, File>>(new Map());
 
   // Subtitle overlay hide/show state (manager "Hide" buttons).
   const [targetHidden, setTargetHidden] = useState(false);
@@ -330,6 +337,11 @@ function LocalPlayerApp(): React.JSX.Element {
     // Sort videos: numeric suffix first, then alphabetical.
     const sorted = sortVideosByNumericSuffix(videoFiles.map((f) => f.name));
     const sortedFiles = sorted.map((name) => videoFiles.find((f) => f.name === name)!);
+
+    // Cache all dropped video File objects for prev/next navigation.
+    for (const f of sortedFiles) {
+      videoFileCacheRef.current.set(`${f.name}-${f.size}-${f.lastModified}`, f);
+    }
 
     // Play first video, queue rest into library.
     const [first, ...rest] = sortedFiles;
@@ -715,9 +727,15 @@ function LocalPlayerApp(): React.JSX.Element {
     };
   }, []);
 
-  // ── Library video select — reopen from stored handle ───────────────────
+  // ── Library video select — reopen from stored handle or in-memory cache ─
   const handleVideoSelect = useCallback(
     async (videoId_: string): Promise<void> => {
+      // Fast path: in-memory cache (drag-dropped videos have no fileHandle).
+      const cachedFile = videoFileCacheRef.current.get(videoId_);
+      if (cachedFile) {
+        await loadVideo(cachedFile);
+        return;
+      }
       const record = await getVideo(videoId_);
       if (!record?.fileHandle) return;
       // Re-request permission for stored handle (reverts to 'prompt' on retrieval).
@@ -728,6 +746,26 @@ function LocalPlayerApp(): React.JSX.Element {
     },
     [],
   );
+
+  // ── Prev/next video navigation (sorted library order) ──────────────────
+  // Matches the order the user sees in LibraryView (sortLibrary SSOT).
+  const sortedLibrary = useMemo(
+    () => sortLibrary(library, librarySort as SortBy),
+    [library, librarySort],
+  );
+  const currentIndex = currentVideo
+    ? sortedLibrary.findIndex((v) => v.id === currentVideo.id)
+    : -1;
+  const hasPrevVideo = currentIndex > 0;
+  const hasNextVideo = currentIndex >= 0 && currentIndex < sortedLibrary.length - 1;
+  const handlePrevVideo = useCallback((): void => {
+    if (!hasPrevVideo) return;
+    void handleVideoSelect(sortedLibrary[currentIndex - 1].id);
+  }, [hasPrevVideo, sortedLibrary, currentIndex, handleVideoSelect]);
+  const handleNextVideo = useCallback((): void => {
+    if (!hasNextVideo) return;
+    void handleVideoSelect(sortedLibrary[currentIndex + 1].id);
+  }, [hasNextVideo, sortedLibrary, currentIndex, handleVideoSelect]);
 
   // ── Library sort change (bridge LibrarySort → SortBy) ──────────────────
   const handleSortChange = useCallback(
@@ -960,6 +998,10 @@ function LocalPlayerApp(): React.JSX.Element {
       subtitleEngine={subtitleEngine}
       manager={manager}
       subtitleActions={subtitleActions}
+      hasPrevVideo={hasPrevVideo}
+      hasNextVideo={hasNextVideo}
+      onPrevVideo={handlePrevVideo}
+      onNextVideo={handleNextVideo}
     />
   );
 }
