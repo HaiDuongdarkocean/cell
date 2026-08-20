@@ -340,6 +340,9 @@ export class ReactSubtitleController {
     const current = this.engine.getBlockSettings();
     const merged = { ...current, ...partial };
     this.engine.updateSettings({ blockSettings: merged });
+    if (partial.yOffsetPercent !== undefined) {
+      this.mount.setYOffsetPercent(partial.yOffsetPercent);
+    }
     this.updateStylesFromEngine();
     this.mount.setManager(this.buildManagerState());
 

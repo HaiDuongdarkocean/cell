@@ -19,6 +19,7 @@ import selectCss from '@/shared/ui/Select.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
 import tabsCss from '@/shared/ui/Tabs.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
+import subtitlePanelsSharedCss from './subtitlePanelsShared.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
@@ -38,6 +39,7 @@ export const hostManagerSheetShadowCss: string[] = [
   skeletonCss,
   tabsCss,
   subtitlePanelsCss,
+  subtitlePanelsSharedCss,
   iconCss,
   iconButtonCss,
   buildTokenSpanCssForShadow(),

@@ -9,26 +9,13 @@ import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
-import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { SubtitleBlockSettings, NavClusterSettings, SubtitleApiKey } from '@/entities/settings';
+import type { SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
 import styles from './SubtitleManagerPanel.module.css';
+import type { AppearanceState } from './subtitlePanelsTypes';
 
-export interface AppearanceState {
-  targetStyle: OverlayStyleConfig;
-  nativeStyle: OverlayStyleConfig;
-  blockSettings: SubtitleBlockSettings;
-  clusterSettings: NavClusterSettings;
-  defaultTargetStyle: OverlayStyleConfig;
-  defaultNativeStyle: OverlayStyleConfig;
-  previewTargetText: string;
-  previewNativeText: string;
-  onStyleChange: (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>) => void;
-  onBlockSettingsChange: (partial: Partial<SubtitleBlockSettings>) => void;
-  onClusterSettingsChange: (partial: Partial<NavClusterSettings>) => void;
-  onResetStyle: (role: 'target' | 'native') => void;
-  onPreviewTextChange: (role: 'target' | 'native', text: string) => void;
-}
+// Re-export for backward compatibility — SSOT lives in subtitlePanelsTypes.ts
+export type { AppearanceState } from './subtitlePanelsTypes';
 
 export interface SubtitleManagerPanelProps {
   targetItems: SubtitlePanelItem[];
