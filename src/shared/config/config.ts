@@ -324,6 +324,8 @@ export const STORAGE_KEYS = {
   LOCAL_PLAYER_LIBRARY: 'localPlayerLibrary',
   /** Local player subtitle-panel (Split View CueList) enable state — survives reload. */
   LOCAL_PLAYER_SUBTITLE_PANEL_OPEN: 'localPlayerSubtitlePanelOpen',
+  /** Per-origin OCR preference (spec orca-ocr-layer.md). Map origin → OcrOriginState. */
+  OCR_SETTINGS: 'ocrSettings',
 } as const;
 
 // === Popup Dimensions ===

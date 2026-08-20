@@ -1,6 +1,6 @@
 /* === PlayerView — top-level layout of the local player page ===
-   Vertical stack: PlayerMenuBar (top) → video stage (center, flex-fill) →
-   PlayerControls (bottom). Library panel slides over the stage from the right.
+   Stack: PlayerMenuBar (top) → video stage (center, flex-fill) → PlayerControls (bottom).
+   LibraryView slides in from the right as an overlay panel.
    Consumes tokens only — no raw hex/radius. */
 
 .root {
@@ -53,13 +53,6 @@
   container-type: inline-size;
 }
 
-.navClusterOverlay {
-  position: absolute;
-  bottom: var(--space-4);
-  right: var(--space-4);
-  z-index: var(--z-popover);
-}
-
 /* Controls overlay — sits inside videoWrapper, absolute bottom, fades in/out.
    Gradient backdrop for legibility without a solid bar background. */
 .controlsOverlay {
@@ -95,40 +88,21 @@
   color: var(--color-text-secondary);
 }
 
-.offsetPanelOverlay {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: var(--z-popover);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-modal);
-  padding: var(--space-3);
-}
-
+/* Library panel — slides in from the right as an overlay. */
 .libraryPanel {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(420px, 100%);
+  width: var(--space-96);
+  max-width: 100%;
   background: var(--color-surface);
   border-left: var(--border-width-hairline) solid var(--color-border);
-  box-shadow: var(--shadow-modal);
   z-index: var(--z-popover);
-  overflow-y: auto;
-  animation: slideIn var(--duration-medium) var(--ease-standard);
+  overflow: hidden;
 }
 
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-/* === Responsive — mobile / narrow viewport ===
-   Ponytail: below 480px the library panel goes full-width and the subtitle
-   overlay padding tightens so cues don't clip the controls bar. */
+/* === Responsive — mobile / narrow viewport === */
 @media (max-width: 480px) {
   .libraryPanel {
     width: 100%;
@@ -141,9 +115,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .libraryPanel {
-    animation: none;
-  }
   .controlsOverlay {
     transition: none;
   }

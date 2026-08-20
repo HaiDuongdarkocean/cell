@@ -515,6 +515,26 @@ tests/
 | `content/subtitleOffsetPanel.ts` | subtitleOffset (logic: OffsetState, formatOffsetDisplay) | offsetController.ts | **ADR-019**: Offset section DOM factory — collapsible section nested trong Subtitle Manager Panel (mimic createSection pattern). Header (chevron + "OFFSET" + value display) + body (4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5s/±2s, input + apply + reset full-width, flashSaved "✓ Đã lưu" 1.5s). Inversion of control: nhận handlers callback |
 | `content/subtitleOffsetBadge.ts` | subtitleOffset (logic: AUTO_COMMIT_MS) | offsetController.ts | **ADR-019**: Lazy badge DOM factory — pill top-right overlay, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible (Enter/Space), tabIndex=0, role=status, aria-label dynamic. Idempotent keyframes injection |
 | `content/subtitleOffset.ts` (logic) | — | subtitleOffsetPanel, subtitleOffsetBadge, offsetController, subtitleSync (findCurrentLine offsetMs) | **ADR-019**: Pure offset logic — OffsetState (valueMs/mode/lastActionAt), INITIAL_OFFSET_STATE, parseOffsetInput (string→ms|null), clampOffsetMs (±60s), shouldAutoCommit (wall-clock > 2 phút), formatOffsetDisplay (+0.500s/-2.000s), AUTO_COMMIT_MS=120000 |
+| `entrypoints/content/ocrContentScript.ts` | OcrController, OcrOverlay (createHitboxes, wireOcrHitboxesToTrigger), ocrPipeline (runPipelineStep, OcrPipelineState, DEFAULT_PIPELINE_CONFIG), frameCapture (captureFrame, scheduleNextFrame), ocrStateStore (isOcrEnabledForUrl, loadOcrSettings, extractOriginFromUrl), ocrStateTypes (OcrOriginState), SubtitleTriggerController (type) | content-script.ts (init call) | **Orca OCR layer (spec §AD1-§AD7)**: OcrSession class — manages full pipeline for one video (controller + overlay + pipelineState). `start(video, originState)` → init engine + attach overlay + rVFC loop. `loop()` skips paused/ended frames. `processFrame()` calls `runPipelineStep` → on `ocr` status creates per-script-run hitboxes + wires to SubtitleTriggerController (T16). `stop()` disposes engine + detaches overlay. **T19**: `initOcrContentScript()` sets up chrome.storage.onChanged listener → toggle ON/OFF re-inits session. **T20**: auto-start on page load + SPA nav (`yt-navigate-finish`, `popstate`) re-checks origin via `initOcrForCurrentUrl`. `stopOcrSession()` for toggle OFF. `setTriggerController(tc)` wires dictionary popup |
+| `entrypoints/content/ocrController.ts` | ocrRunner (sendMessage OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE), ocrEngine types | ocrContentScript.ts | **Orca T9**: OcrController — proxy to offscreen OCR engine via chrome.runtime messaging. `init(languageMode, backend)` → OCR_INIT message → background creates offscreen document + forwards to ocrRunner. `recognize(image, minScore)` → OCR_RECOGNIZE → returns OcrResult[]. `dispose()` → OCR_DISPOSE. State machine: UNINIT → INITIALIZING → READY → DISPOSED |
+| `entrypoints/offscreen/ocrRunner.ts` | paddleOcrEngine (PaddleOcrEngine), ocrEngine types | background/handlers/ocr.ts | **Orca T9**: Offscreen document OCR runner — owns PaddleOcrEngine instance. Receives OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE messages from background. PaddleOcrEngine lazy-loads @paddleocr/paddleocr-js (WebGPU preferred, WASM fallback). **T21**: WebGPU shader JIT warmup — runs dummy predict() on 64×32 black canvas after init to trigger shader compilation (hides 5s first-run stall) |
+| `entrypoints/background/handlers/ocr.ts` | offscreen (createOffscreenDocument, closeOffscreenDocument), messages (OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE) | background/index.ts | **Orca T9**: Background OCR handler — bridges content-script ↔ offscreen document. Creates offscreen document on first OCR_INIT, forwards messages, closes on OCR_DISPOSE |
+| `features/ocr/engine/paddleOcrEngine.ts` | @paddleocr/paddleocr-js, ocrEngine (OcrEngine), ocrEngine types | offscreen/ocrRunner.ts | **Orca T1-T3**: PaddleOcrEngine — wraps PaddleOCR.js PP-OCRv5 mobile. `initialize(config)` → PaddleOCR.create({lang, ocrVersion, ortOptions}). `recognize(image, options)` → OffscreenCanvas + predict() → adaptResult → OcrResult[]. `dispose()` releases instance. **T21**: `warmupShaderJit()` private method — dummy predict on 64×32 black canvas. LANG_MAP: auto/zh/en/ja → 'ch' (PP-OCRv5 'ch' model covers CN+EN+JA mixed) |
+| `features/ocr/engine/ocrEngine.ts` | ocrEngine types | paddleOcrEngine.ts | **Orca T1**: OcrEngine interface — initialize(config), recognize(image, options), dispose(), getBackend() |
+| `features/ocr/engine/types.ts` | — | paddleOcrEngine, ocrPipeline, ocrOverlay, ocrController | **Orca T1**: OCR type definitions — ImageSource (RGBA Uint8ClampedArray), OcrResult, OcrResultItem (poly + text + score), OcrConfig, OcrOptions, OcrBackend, Quad |
+| `features/ocr/pipeline/frameCapture.ts` | ocrEngine types (ImageSource) | ocrContentScript.ts | **Orca T8**: `captureFrame(video, canvas?)` → rVFC + OffscreenCanvas.drawImage + getImageData → ImageSource. `scheduleNextFrame(video, callback)` → requestVideoFrameCallback (rAF fallback). Reuses canvas to avoid allocation |
+| `features/ocr/pipeline/drmGuard.ts` | ocrEngine types (ImageSource) | ocrPipeline.ts | **Orca T5**: `checkDrmGuard(image)` → meanLuma < 16 → isDrm=true. Detects black DRM frames |
+| `features/ocr/pipeline/lumaDiff.ts` | ocrEngine types (ImageSource) | ocrPipeline.ts | **Orca T6**: `regionMeanLuma(image, region)` → average luma of subtitle region. `shouldRunOcr(current, previous, threshold)` → luma diff check. `subtitleRegionHash(image, region)` → 8×8 pHash for dedup |
+| `features/ocr/pipeline/cropRegion.ts` | ocrEngine types (ImageSource) | ocrPipeline.ts | **Orca T7**: `computeSubtitleRegion(width, height, pct)` → bottom pct% region. `cropImage(image, region)` → cropped ImageSource |
+| `features/ocr/pipeline/ocrPipeline.ts` | drmGuard, lumaDiff, cropRegion, scriptRunSegmenter, ocrEngine types | ocrContentScript.ts | **Orca T12 + T10 + T22**: `runPipelineStep(image, recognizeFn, state, config, frameTimeMs)` → PipelineStepResult. Order: (1) time gate 3fps `shouldRunByTimeGate` (T10, default 333ms), (2) DRM guard, (3) luma-diff, (4) pHash dedup, (5) crop, (6) OCR with retry `maxRetries` (T22, default 3), (7) script-run segment, (8) text dedup `textMatchesPrevious` (T10), (9) update state. `OcrPipelineState` tracks previousLuma/Hash/Text/lastOcrTimeMs/drmDetected. `DEFAULT_PIPELINE_CONFIG`: subtitleRegionPct=15, lumaDiffThreshold=3, minScore=0.5, minFrameIntervalMs=333, maxRetries=3 |
+| `features/ocr/language/scriptRunSegmenter.ts` | — | ocrPipeline.ts, ocrOverlay.ts | **Orca T14**: `scriptRunSegmenter(text)` → ScriptRun[] (text + script: 'zh'|'en'|'ja'|'unknown'). Unicode range detection: CJK → zh, Hiragana/Katakana → ja, Latin → en |
+| `features/ocr/language/languageRouter.ts` | scriptRunSegmenter (ScriptRun) | ocrOverlay.ts | **Orca T15**: `routeScriptRunToLangCode(scriptRun)` → langCode ('zh'|'en'|'ja'). Maps script → language plugin code. `routeScriptRunsToLangCodes(runs)` → batch |
+| `features/ocr/overlay/ocrOverlay.ts` | ocrEngine types, scriptRunSegmenter, languageRouter, subtitleTriggerController (type) | ocrContentScript.ts | **Orca T13 + T16 + T17**: `createHitboxes(items, scriptRuns)` → OcrHitbox[] (per-script-run, widthFraction + offsetFraction). `quadToCssRect(poly, vw, vh, dw, dh, widthFrac?, offsetFrac?)` → bounding box rect with scaling. `createHitboxElement(hitbox, rect)` → span.cell-ocr-hitbox (data-cell-term, data-cell-lang). `OcrOverlay` class: attach(video), updateHitboxes(hitboxes, vw, vh), clear(), detach(), getHitboxElements(). `wireOcrHitboxesToTrigger(overlay, triggerController)` → groups hitboxes by langCode → triggerController.attach(spans, sentence, langCode) per group (T16) |
+| `features/ocr/persistence/ocrStateStore.ts` | ocrStateTypes (OcrSettings, OcrOriginState), chrome.storage.local | ocrContentScript.ts, OcrSettingsPanel.tsx | **Orca T17**: `loadOcrSettings()` → OcrSettings from chrome.storage.local. `saveOcrSettings(settings)`. `isOcrEnabledForUrl(settings, url)` → origin check. `setOcrPreference(settings, origin, state)`, `clearOcrPreference(settings, origin)`, `extractOriginFromUrl(url)` |
+| `features/ocr/persistence/ocrStateTypes.ts` | — | ocrStateStore.ts, ocrContentScript.ts, OcrSettingsPanel.tsx | **Orca T17**: OcrOriginState (ocrEnabled, languageMode, subtitleRegionPct). OcrSettings (schemaVersion, origins: Record<origin, OcrOriginState>). DEFAULT_OCR_ORIGIN_STATE, DEFAULT_OCR_SETTINGS, OCR_SETTINGS_SCHEMA_VERSION=1 |
+| `features/ocr/cache/ocrCache.ts` | — | ocrContentScript.ts | **Orca T11**: OcrCache class — LRU cache keyed by (videoId, timestampBucket). `get(videoId, timestampMs)` → cached OcrResult[] | null. `set(videoId, timestampMs, results)`. Bucket size 1s. Max 500 entries. `clear(videoId?)` |
+| `features/ocr/ui/OcrSettingsPanel.tsx` | Toggle (shared/ui), ocrStateStore (loadOcrSettings, saveOcrSettings, getOcrPreference, clearOcrPreference, setOcrPreference, extractOriginFromUrl), ocrStateTypes | SubtitleManagerPanel.tsx (OCR tab) | **Orca T17-T20**: Manager Panel OCR tab UI — per-origin toggle, language mode select (auto/zh/en/ja), subtitle region % slider. Persists to chrome.storage.local on change |
+| `features/dictionaryPopup/logic/lookupOrchestrator.ts` (T23 update) | getAllResources, findDictionaryByResource, pluginRegistry, languagePlugin | ocrContentScript (via trigger) | **T23**: Module-level `probeCache: Map<langCode, TermProbe>` — `createDictionaryProbeAsync(langCode)` returns cached probe if available, else loads + caches. `clearDictionaryProbeCache()` invalidates (call after dictionary import). Avoids reloading 120k CEDICT terms per lookup — essential for OCR high-frequency lookups |
 
 ### Side Panel layer (ADR-008)
 
@@ -888,6 +908,59 @@ downloader.downloadM3u8Streaming(playlist)
       → if depth exceeded → throw error
 ```
 
+### 8. OCR Hard-Sub Pipeline Flow (Orca — spec §AD1-§AD7)
+
+```
+Content-script load (T20)
+  → initOcrContentScript()
+    → initOcrForCurrentUrl(window.location.href)
+      → extractOriginFromUrl(url) → origin
+      → shouldEnableOcr(url) → loadOcrSettings() → isOcrEnabledForUrl
+      → IF enabled + video found + originState.ocrEnabled:
+          → new OcrSession() → start(video, originState)
+            → OcrController.init(languageMode, 'webgpu')
+              → sendMessage(OCR_INIT) → background
+                → createOffscreenDocument('offscreen/ffmpeg.html')
+                → forward to ocrRunner → PaddleOcrEngine.initialize(config)
+                  → import @paddleocr/paddleocr-js
+                  → PaddleOCR.create({lang:'ch', ocrVersion:'PP-OCRv5', ortOptions:{backend:'webgpu', wasmPaths, numThreads:1, simd:true}})
+                  → T21: warmupShaderJit() — dummy predict(64×32 black canvas) → trigger WebGPU shader JIT
+            → OcrOverlay.attach(video) — create .cell-ocr-overlay container
+            → loop() — rVFC scheduleNextFrame
+              → IF paused/ended: skip, reschedule
+              → captureFrame(video, canvas) → ImageSource (RGBA)
+              → processFrame(frame)
+                → runPipelineStep(frame, recognizeFn, state, config, frameTimeMs)
+                  → (1) T10 time gate 3fps: shouldRunByTimeGate(frameTimeMs, lastOcrTimeMs, 333) → skip_time_gate
+                  → (2) DRM guard: checkDrmGuard(frame) → meanLuma < 16 → drm_detected → stop()
+                  → (3) luma-diff: regionMeanLuma + shouldRunOcr → skip_unchanged
+                  → (4) pHash dedup: subtitleRegionHash → skip_duplicate
+                  → (5) crop: cropImage(frame, subtitleRegion)
+                  → (6) T22 retry: recognizeFn(cropped, minScore) × maxRetries=3 → error if all fail
+                  → (7) script-run segment: scriptRunSegmenter(item.text) per OCR item
+                  → (8) T10 text dedup: textMatchesPrevious → skip_text_duplicate
+                  → (9) update state (luma, hash, text, lastOcrTimeMs)
+                → IF status='ocr':
+                  → createHitboxes(items, scriptRuns) → per-script-run OcrHitbox[]
+                  → OcrOverlay.updateHitboxes(hitboxes, videoWidth, videoHeight)
+                  → T16: wireOcrHitboxesToTrigger(overlay, triggerController)
+                    → group hitboxes by langCode (routeScriptRunToLangCode)
+                    → triggerController.attach(spans, sentence, langCode) per group
+                    → click hitbox → dictionary lookup → popup
+
+Settings change (T19):
+  → chrome.storage.onChanged listener
+    → initOcrForCurrentUrl(window.location.href) — re-check (toggle ON → start, OFF → stop)
+
+SPA navigation (T20):
+  → yt-navigate-finish / popstate event
+    → initOcrForCurrentUrl(window.location.href) — origin changed → stop old + start new
+
+Dictionary probe cache (T23):
+  → createDictionaryProbeAsync(langCode) → probeCache.get(langCode) ?? load+cache
+  → clearDictionaryProbeCache() on dictionary import
+```
+
 ---
 
 ## Test files (auto-select / auto-download feature)
@@ -1095,7 +1168,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `isVideoFile` / `isSubtitleFile` | `features/local-player/logic/folderScan.ts` | (filename) → boolean | scanFolder | Extension check: video (mp4/webm/ogg/ogv/mov), subtitle (srt/vtt/ass/ssa/ttml/dfxp/sbv/smi/sami) |
 | `openFolder` | `entrypoints/local-player/hooks/useFileSystemAccess.ts` | () → Promise<FileSystemDirectoryHandle \| null> | local-player main.tsx handleOpenFolder | **Folder flow**: `window.showDirectoryPicker({ id: 'local-player-folder' })`. Returns null on AbortError (user cancel), re-throws SecurityError |
 | `handleOpenFolder` | `entrypoints/local-player/main.tsx` | () → Promise<void> | PlayerView onOpenFolder → EmptyState "Open folder" button | **Folder flow**: openFolder → scanFolder → matchVideosWithSubtitles → saveVideo (with fallback if fileHandle not cloneable) → setLibrary → toggleLibrary. Caches dirHandle + subtitleFileMap for subsequent video clicks |
-| `handleFilesDrop` | `entrypoints/local-player/main.tsx` | (files: File[]) → void | PlayerView onFilesDrop → EmptyState drop handler | **Drag-drop flow**: split video/sub by extension (reuse `isVideoFile`/`isSubtitleFile` from folderScan SSOT) → stash subs in `pendingSubsRef` + `subtitleFileMapRef` → sort videos via `sortVideosByNumericSuffix` (numeric suffix 1→N then alphabetical) → cache all video File objects in `videoFileCacheRef` (key=videoId, for prev/next navigation without fileHandle) → play first video via `loadVideoWithPendingSubs` → save rest to library + toggleLibrary. Sub-only drop: if video loaded → match now; else pending until video arrives. No-match subs stay in `subtitleFileMapRef` for TrackSelector manual pick |
+| `handleFilesDrop` | `entrypoints/local-player/main.tsx` | (files: File[]) → void | PlayerView video stage (useDropzone) → onFilesDrop | **Drag-drop flow**: split video/sub by extension (reuse `isVideoFile`/`isSubtitleFile` from folderScan SSOT) → stash subs in `pendingSubsRef` + `subtitleFileMapRef` → sort videos via `sortVideosByNumericSuffix` (numeric suffix 1→N then alphabetical) → cache all video File objects in `videoFileCacheRef` (key=videoId, for prev/next navigation without fileHandle) → play first video via `loadVideoWithPendingSubs` → save rest to library + toggleLibrary. Sub-only drop: if video loaded → match now; else pending until video arrives. No-match subs stay in `subtitleFileMapRef` for TrackSelector manual pick |
 | `loadVideoWithPendingSubs` | `entrypoints/local-player/main.tsx` | (file: File) → Promise<void> | handleFilesDrop | Build record → setVideo → saveVideo → addHistoryEntry → refresh library → create throttled saver → `matchPendingSubsForVideo` |
 | `matchPendingSubsForVideo` | `entrypoints/local-player/main.tsx` | (videoFile: File) → Promise<void> | loadVideoWithPendingSubs, matchPendingSubsForCurrentVideo | Match pending subs (from `pendingSubsRef`) against video filename via `matchSubtitlesForVideo`. Target+native → loadAndParseSubtitle. 1 sub no match → auto-pair. Multiple no match → not-found (subs stay in subtitleFileMapRef for manual TrackSelector) |
 | `sortVideosByNumericSuffix` | `features/local-player/logic/videoSort.ts` | (filenames: readonly string[]) → string[] | handleFilesDrop | Sort by trailing numeric suffix (1→N), fallback alphabetical. O(n log n) — ponytail: acceptable for drag-drop (n ≤ ~50) |
@@ -1105,6 +1178,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `PlayerView` | `entrypoints/local-player/components/PlayerView.tsx` | (PlayerViewProps) → JSX | local-player main.tsx | **Local-player top-level layout**: PlayerMenuBar → video stage → PlayerControls. **Click-to-pause**: `onClick` on `<video>` toggles play/pause (clicks pass through `.subtitleOverlay` via `pointer-events:none`). **Play/pause flash**: `PlayPauseOverlay` centered icon (pop+fade, 410ms `ease-spring`) triggered by `isPlaying` change effect — covers click + Space + any toggle source. **Subtitle shortcuts**: window keydown listener calls `handleShortcutKey(DEFAULT_KEYBOARD_SHORTCUTS)` → dispatches to subtitleEngine (prev/next/repeat), subtitlePanelsRef (toggleSplitView), subtitleActions (onQuickAdd/onEditCard/onGenerateNative), local `overlayVisible` state (toggle-overlay via `w`). Loads user shortcuts from `loadSettings()` async. Skips `play-pause` (useLocalVideo handles Space — no double-toggle), `toggle-player-mode` + `toggle-translate` (host-page-only, ponytail ceiling). Editable guard skips when focus in input/textarea. **Subtitle manager**: passes `managerShadowCss={hostManagerSheetShadowCss}` to `SubtitlePanels` so the manager portal shadow root (`#cell-manager-portal`) gets design tokens + component CSS — without it `managerPortalTarget` stays null and `ManagerLayer` never renders. **Prev/next video**: passes `hasPrevVideo`/`hasNextVideo`/`onPrevVideo`/`onNextVideo` to PlayerControls (chevron-left/right flanking play/pause) |
 | `PlayerControls` | `entrypoints/local-player/components/PlayerControls.tsx` | (PlayerControlsProps) → JSX | PlayerView | **Bottom control bar**: two-row layout (Timeline full-width + controls row). Left pill: prev-video (chevron-left, disabled at index 0) → play/pause → next-video (chevron-right, disabled at last) → skip ±10s → volume (hover→slider) → time. Right pill: captions + settings popover (speed, track selector) + PiP + fullscreen. Prev/next video buttons only render when `onPrevVideo`/`onNextVideo` provided; disabled state from `hasPrevVideo`/`hasNextVideo` |
 | `PlayPauseOverlay` | `entrypoints/local-player/components/PlayPauseOverlay.tsx` | ({ icon, pulseKey }) → JSX | PlayerView | Centered play/pause icon flash. `pulseKey` remounts node to replay CSS animation (pop-in scale 0.6→1.1→1 + fade-out, `duration-medium` `ease-spring`). `pointer-events:none` so clicks pass through. `prefers-reduced-motion` shortens to `duration-fast` + no scale |
+| `useDropzone` | `entrypoints/local-player/hooks/useDropzone.ts` | (onFilesDrop) → { dragging, handlers } | PlayerView video stage | **Drag-drop logic hook** (pure, testable). Counter pattern: dragenter/dragleave fire on every child boundary — a depth counter keeps `dragging` stable until cursor fully exits the container (prevents flicker over nested children). File filter reuses `isVideoFile`/`isSubtitleFile` from folderScan (SSOT). Decoupled from EmptyState so drop works whether stage shows EmptyState or an active video |
+| `DropOverlay` | `entrypoints/local-player/components/DropOverlay.tsx` | () → JSX | PlayerView (renders when `dragging`) | **Drag-over visual feedback layer** — absolute inset:0, `pointer-events:none` (never blocks the stage drop target), dashed border + primary-subtle backdrop + blur + icon badge + hint "Drop to add video & subtitles". Follows PlayPauseOverlay pattern. Renders identically over EmptyState or active video |
 | `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number, offsetMs=0) → number | subtitleOverlay, navClusterActions | Binary search O(log n) for current subtitle line by video time. ADR-019: optional offsetMs shifts search window (apply offset globally, no per-cue mutation) |
 | `createOverlay` | `content/subtitleUI.ts` | (HTMLElement, OverlayConfig) → HTMLDivElement | subtitleOverlay | Create subtitle overlay div appended to video wrapper |
 | `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | subtitleOverlay | Set text and show overlay |

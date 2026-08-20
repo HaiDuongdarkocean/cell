@@ -15,7 +15,7 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import { segmentFMM, isChengyu } from '../plugins/chinesePlugin';
 import type { TermProbe } from '../plugins/languagePlugin';
-import { lookupOrchestrator, createDictionaryProbeAsync } from './lookupOrchestrator';
+import { lookupOrchestrator, createDictionaryProbeAsync, clearDictionaryProbeCache } from './lookupOrchestrator';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
@@ -64,6 +64,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   closeAllDBs();
+  clearDictionaryProbeCache(); // T23: clear probe cache between tests.
 });
 
 beforeEach(async () => {

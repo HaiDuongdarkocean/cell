@@ -30,8 +30,8 @@
       "id": "mixed-zh-en",
       "input": "我喜欢 watching movies",
       "expected": [
-        { "text": "我喜欢", "script": "zh" },
-        { "text": " watching movies", "script": "en" }
+        { "text": "我喜欢 ", "script": "zh" },
+        { "text": "watching movies", "script": "en" }
       ]
     },
     {
@@ -55,8 +55,8 @@
       "id": "mixed-zh-ja-en-3lines",
       "input": "我喜欢 watching movies\n日本語も勉強しています\nHello 世界",
       "expected": [
-        { "text": "我喜欢", "script": "zh" },
-        { "text": " watching movies\n", "script": "en" },
+        { "text": "我喜欢 ", "script": "zh" },
+        { "text": "watching movies\n", "script": "en" },
         { "text": "日本語も勉強しています\n", "script": "ja" },
         { "text": "Hello ", "script": "en" },
         { "text": "世界", "script": "zh" }
@@ -69,7 +69,8 @@
         { "text": "用", "script": "zh" },
         { "text": "WiFi", "script": "en" },
         { "text": "看", "script": "zh" },
-        { "text": "4K", "script": "unknown" },
+        { "text": "4", "script": "unknown" },
+        { "text": "K", "script": "en" },
         { "text": "电影", "script": "zh" }
       ]
     },

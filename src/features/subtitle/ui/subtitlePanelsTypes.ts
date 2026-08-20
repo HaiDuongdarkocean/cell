@@ -11,6 +11,7 @@
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, SubtitleApiKey } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
+import type { ReactNode } from 'react';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
@@ -178,4 +179,10 @@ export interface SubtitlePanelsProps {
    *  Needed because the manager panel portals to document.body to escape the
    *  video container's stacking context (e.g. YouTube #movie_player z-index:0). */
   managerShadowCss?: string[];
+  /** Content rendered in the "Playlist" tab of the Split View panel (local-player only). */
+  playlistContent?: ReactNode;
+  /** Open file picker (local-player only, rendered in Playlist tab footer). */
+  onOpenFile?: () => void;
+  /** Open folder picker (local-player only, rendered in Playlist tab footer). */
+  onOpenFolder?: () => void;
 }

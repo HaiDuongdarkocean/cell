@@ -99,7 +99,13 @@ export type MessageType =
   | 'GET_HISTORY'
   | 'SAVE_HISTORY'
   | 'GET_LIBRARY'
-  | 'LOCAL_PLAYER_VIDEO_OPENED';
+  | 'LOCAL_PLAYER_VIDEO_OPENED'
+  // OCR (spec: orca-ocr-layer.md)
+  | 'OCR_INIT'
+  | 'OCR_RECOGNIZE'
+  | 'OCR_DISPOSE'
+  | 'OCR_GET_STATE'
+  | 'OCR_SET_STATE';
 
 // === Message Request ===
 

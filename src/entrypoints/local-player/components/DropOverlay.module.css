@@ -1,0 +1,66 @@
+/* DropOverlay — drag-over feedback layer for the video stage.
+   pointer-events:none so the stage (drop target) still receives the drop.
+   Tokens only — no raw hex/radius. Follows PlayPauseOverlay pattern. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-popover);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  border: var(--border-width-status) dashed var(--color-primary);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-primary-subtle) 80%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--color-text);
+  text-align: center;
+  pointer-events: none;
+  animation: cell-drop-fade-in var(--duration-fast) var(--ease-standard) forwards;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-16);
+  height: var(--space-16);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
+}
+
+.hint {
+  margin: 0;
+  max-width: 50ch;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-normal);
+}
+
+@keyframes cell-drop-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
+  }
+}
+
+/* === Responsive — tighten on small screens === */
+@media (max-width: 480px) {
+  .overlay {
+    padding: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .hint {
+    font-size: var(--font-size-base);
+  }
+}
