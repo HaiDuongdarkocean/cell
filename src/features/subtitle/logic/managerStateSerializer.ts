@@ -1,5 +1,4 @@
-import type { ManagerState, OffsetState } from '../ui/SubtitlePanels';
-import type { AppearanceState } from '../ui/SubtitleManagerPanel';
+import type { ManagerState, OffsetState, AppearanceState } from '../ui/subtitlePanelsTypes';
 import type { SerializedManagerState, SerializedAppearanceState } from './iframeManagerBridgeTypes';
 
 export function serializeAppearanceState(appearance: AppearanceState): SerializedAppearanceState {

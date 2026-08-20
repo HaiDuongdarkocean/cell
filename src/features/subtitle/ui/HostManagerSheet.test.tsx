@@ -8,6 +8,13 @@ jest.mock('./SubtitleManagerPanel', () => ({
   SubtitleManagerPanel: jest.fn(() => null),
 }));
 
+// ManagerLayer (rendered by HostManagerSheet) persists sheet height via
+// chrome.storage. Stub the adapter so jsdom doesn't throw "chrome is not defined".
+jest.mock('@/shared/lib/chrome-apis', () => ({
+  getStorage: jest.fn().mockResolvedValue({}),
+  setStorage: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 const mockPanel = jest.mocked(SubtitleManagerPanel);
 
