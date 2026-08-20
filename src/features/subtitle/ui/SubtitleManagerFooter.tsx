@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
-import { FooterBar, type FooterBarSlot } from '@/shared/ui';
+import { FooterBar } from '@/shared/ui/FooterBar';
+import type { FooterBarSlot } from '@/shared/ui/FooterBar';
 import { Icon } from '@/shared/icons/Icon';
 
 export interface SubtitleManagerFooterProps {
@@ -11,6 +12,7 @@ export interface SubtitleManagerFooterProps {
   readonly bothHidden?: boolean;
   readonly onGenerateNative?: () => void;
   readonly generateNativeDisabled?: boolean;
+  readonly onOcr?: () => void;
 }
 
 export function SubtitleManagerFooter({
@@ -22,6 +24,7 @@ export function SubtitleManagerFooter({
   bothHidden = false,
   onGenerateNative,
   generateNativeDisabled = false,
+  onOcr,
 }: SubtitleManagerFooterProps): React.JSX.Element {
   const slots: FooterBarSlot[] = [
     {
@@ -32,6 +35,15 @@ export function SubtitleManagerFooter({
       ref: searchBtnRef,
       buttonProps: { title: 'Search subtitles', 'data-cell-id': 'manager-search-subtitles' },
     },
+    ...(onOcr
+      ? [{
+          key: 'ocr',
+          icon: <Icon name="captions"  />,
+          label: 'OCR',
+          onClick: onOcr,
+          buttonProps: { title: 'OCR settings', 'data-cell-id': 'manager-ocr-settings' },
+        }]
+      : []),
     ...(onCustomize
       ? [{
           key: 'customize',

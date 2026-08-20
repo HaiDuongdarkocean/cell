@@ -55,6 +55,60 @@
   /* Label visible on wider viewports; hidden on mobile via media query. */
 }
 
+/* Open pill — 2 picker buttons (File | Folder) in one rounded container.
+   Buttons have no border-radius so hover/active fills the half-pill flush. */
+.openPill {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  border: var(--border-width-hairline) solid var(--color-border);
+  overflow: hidden;
+}
+
+.openPillBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  flex: 1 1 0;
+  min-width: var(--space-16);
+  padding: var(--space-1) var(--space-2-5);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.openPillBtn:hover {
+  background: var(--color-primary-subtle);
+}
+
+.openPillBtn:active {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.openPillBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.openPillDivider {
+  width: var(--border-width-hairline);
+  align-self: center;
+  height: var(--space-4);
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
 /* === Responsive — mobile / narrow viewport === */
 @media (max-width: 480px) {
   .bar {

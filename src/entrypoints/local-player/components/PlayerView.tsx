@@ -27,9 +27,11 @@ import { Icon } from '@/shared/icons/Icon';
 import { PlayerMenuBar } from './PlayerMenuBar';
 import { PlayerControls } from './PlayerControls';
 import { PlayPauseOverlay } from './PlayPauseOverlay';
+import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { LibraryView } from './LibraryView';
 import { TrackSelector } from './TrackSelector';
+import { useDropzone } from '../hooks/useDropzone';
 import styles from './PlayerView.module.css';
 
 export interface PlayerViewProps {
@@ -133,6 +135,10 @@ export function PlayerView({
   const containerRef = useRef<HTMLDivElement>(null);
   const subtitlePanelsRef = useRef<SubtitlePanelsRef>(null);
   const controls = useLocalVideo(videoRef, containerRef, { onTimeUpdate, videoFile, autoPlay: true });
+  // Dropzone lives on the video stage so drag-and-drop works whether the
+  // stage shows EmptyState (no video) or an active video — decoupled from
+  // playback state. DropOverlay is the visual layer (pointer-events:none).
+  const { dragging, handlers: dropHandlers } = useDropzone(onFilesDrop);
   const [showTrackSelector, setShowTrackSelector] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(true);
   const [overlayVisible, setOverlayVisible] = useState(true);
@@ -223,8 +229,6 @@ export function PlayerView({
   }, [controls.isPlaying, showControls]);
 
   // Restore subtitle-panel (Split View) enable state from previous session.
-  // Default disable — only open if user explicitly enabled before. Runs once
-  // after SubtitlePanels mounts (which requires a loaded video).
   const restoredPanelPrefRef = useRef(false);
   useEffect(() => {
     if (!showSubtitlePanels || restoredPanelPrefRef.current) return;
@@ -244,7 +248,6 @@ export function PlayerView({
     return (): void => { cancelled = true; };
   }, [showSubtitlePanels]);
 
-  // Persist subtitle-panel enable state when user toggles it.
   const handleSplitViewChange = useCallback((open: boolean): void => {
     void setStorage({ [STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN]: open }).catch(() => undefined);
   }, []);
@@ -318,10 +321,22 @@ export function PlayerView({
         filename={filename}
         isLibraryOpen={showLibrary}
         onOpenFile={onOpenFile}
+        onOpenFolder={onOpenFolder}
         onToggleLibrary={onToggleLibrary}
       />
 
-      <div className={styles.stage} data-cell-id="video-stage">
+      <div
+        className={styles.stage}
+        data-cell-id="video-stage"
+        data-dropzone="true"
+        data-dragging={dragging}
+        onDragEnter={dropHandlers.onDragEnter}
+        onDragOver={dropHandlers.onDragOver}
+        onDragLeave={dropHandlers.onDragLeave}
+        onDrop={dropHandlers.onDrop}
+      >
+        {dragging && <DropOverlay />}
+
         {hasVideo ? (
           <div className={styles.videoWrapper}>
             <video
@@ -356,7 +371,7 @@ export function PlayerView({
                   onForward={subtitleEngine.forward}
                   onPlayPause={subtitleEngine.playPause}
                   onToggleCollapsed={() => {}}
-                  onToggleSidePanel={() => {}}
+                  onToggleSidePanel={() => subtitlePanelsRef.current?.toggleSplitView()}
                   onQuickAdd={subtitleActions.onQuickAdd}
                   onEditCard={subtitleActions.onEditCard}
                   onUpdateCurrentCard={subtitleActions.onUpdateCurrentCard}
@@ -369,6 +384,18 @@ export function PlayerView({
                   offsetMs={subtitleEngine.offsetMs}
                   onSeek={(ms) => controls.seek(ms / 1000)}
                   onSplitViewChange={handleSplitViewChange}
+                  playlistContent={
+                    <LibraryView
+                      videos={library}
+                      subtitles={subtitlesLibrary}
+                      sortBy={librarySort}
+                      onSortChange={onSortChange}
+                      onVideoSelect={onVideoSelect}
+                      onSubtitleSelect={onSubtitleSelect}
+                    />
+                  }
+                  onOpenFile={onOpenFile}
+                  onOpenFolder={onOpenFolder}
                   managerShadowCss={hostManagerSheetShadowCss}
                 />
               </div>
@@ -439,22 +466,22 @@ export function PlayerView({
             </div>
           </div>
         ) : (
-          <EmptyState onOpenFile={onOpenFile} onOpenFolder={onOpenFolder} onFilesDrop={onFilesDrop} />
-        )}
-
-        {showLibrary && (
-          <aside className={styles.libraryPanel} data-cell-id="library-panel">
-            <LibraryView
-              videos={library}
-              subtitles={subtitlesLibrary}
-              sortBy={librarySort}
-              onSortChange={onSortChange}
-              onVideoSelect={onVideoSelect}
-              onSubtitleSelect={onSubtitleSelect}
-            />
-          </aside>
+          <EmptyState onOpenFile={onOpenFile} onOpenFolder={onOpenFolder} />
         )}
       </div>
+
+      {showLibrary && (
+        <div className={styles.libraryPanel} data-cell-id="library-panel">
+          <LibraryView
+            videos={library}
+            subtitles={subtitlesLibrary}
+            sortBy={librarySort}
+            onSortChange={onSortChange}
+            onVideoSelect={onVideoSelect}
+            onSubtitleSelect={onSubtitleSelect}
+          />
+        </div>
+      )}
     </div>
   );
 }

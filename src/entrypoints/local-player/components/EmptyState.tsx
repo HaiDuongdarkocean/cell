@@ -1,7 +1,4 @@
-import { useCallback, useState, type DragEvent } from 'react';
-import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
-import { isVideoFile, isSubtitleFile } from '@/features/local-player/logic/folderScan';
 import styles from './EmptyState.module.css';
 
 export interface EmptyStateProps {
@@ -9,77 +6,42 @@ export interface EmptyStateProps {
   onOpenFile: () => void;
   /** Called when the user clicks "Open folder" (scan folder for videos + subtitles). */
   onOpenFolder: () => void;
-  /** Called with all dropped files (video + subtitle). Caller splits + matches.
-   *  Non-video/non-subtitle files are filtered out here. */
-  onFilesDrop: (files: File[]) => void;
 }
 
 /**
- * EmptyState — dropzone + "Open file" button shown when no video is loaded.
+ * EmptyState — placeholder UI shown in the video stage when no video is loaded.
  *
- * Accepts drag-and-drop of video AND subtitle files (detected by extension,
- * not MIME — drag-drop MIME is unreliable). Caller handles matching + queue.
+ * Drag-and-drop is handled by the parent video stage (useDropzone + DropOverlay)
+ * so it works whether the stage shows this EmptyState or an active video.
+ * This component is pure presentation: icon badge, hint text, and two buttons.
  */
-export function EmptyState({ onOpenFile, onOpenFolder, onFilesDrop }: EmptyStateProps): React.JSX.Element {
-  const [dragging, setDragging] = useState(false);
-
-  const handleDragEnter = useCallback((e: DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-    setDragging(true);
-  }, []);
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-  }, []);
-
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-    setDragging(false);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>): void => {
-      e.preventDefault();
-      setDragging(false);
-      const dropped = Array.from(e.dataTransfer.files ?? []);
-      const accepted = dropped.filter((f) => isVideoFile(f.name) || isSubtitleFile(f.name));
-      if (accepted.length > 0) onFilesDrop(accepted);
-    },
-    [onFilesDrop],
-  );
-
+export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React.JSX.Element {
   return (
-    <div
-      data-cell-id="empty-dropzone"
-      data-dragging={dragging}
-      className={styles.dropzone}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      role="button"
-      tabIndex={0}
-      aria-label="Drop a video file here or click to browse"
-    >
-      <Icon name="video" size={48} className={styles.icon} />
-      <p className={styles.hint}>Drop a video file here or click to browse</p>
+    <div className={styles.dropzone} data-cell-id="empty-state-content">
+      <div className={styles.iconBadge}>
+        <Icon name="video" size={40} />
+      </div>
+      <p className={styles.primaryHint}>Drop your video and subtitles here</p>
+      <p className={styles.noteHint}>You can add multiple subtitle files, but only one video</p>
       <div className={styles.buttonRow}>
-        <Button
-          variant="primary"
-          size="lg"
-          leadingIcon={<Icon name="video" size={18} />}
+        <button
+          type="button"
+          className={styles.addFilesBtn}
           onClick={onOpenFile}
+          aria-label="Add files"
         >
-          Open file
-        </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          leadingIcon={<Icon name="folderOpen" size={18} />}
+          <Icon name="plus" size={18} />
+          <span>Add files</span>
+        </button>
+        <button
+          type="button"
+          className={styles.addFolderBtn}
           onClick={onOpenFolder}
+          aria-label="Add folder"
         >
-          Open folder
-        </Button>
+          <Icon name="folderOpen" size={18} />
+          <span>Add folder</span>
+        </button>
       </div>
     </div>
   );

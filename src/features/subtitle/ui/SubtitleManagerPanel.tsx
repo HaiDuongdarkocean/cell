@@ -9,6 +9,7 @@ import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './appearance/SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
+import { OcrSettingsPanel } from '@/features/ocr/ui/OcrSettingsPanel';
 import type { SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
 import styles from './SubtitleManagerPanel.module.css';
@@ -374,9 +375,9 @@ export function SubtitleManagerPanel({
     saveState: 'saved',
     lastValid: defaultOffsets.native,
   });
-  const [view, setView] = useState<'tracks' | 'appearance' | 'search'>('tracks');
+  const [view, setView] = useState<'tracks' | 'appearance' | 'search' | 'ocr'>('tracks');
   const [viewDirection, setViewDirection] = useState<'forward' | 'backward'>('forward');
-  const [prevView, setPrevView] = useState<'tracks' | 'appearance' | 'search' | null>(null);
+  const [prevView, setPrevView] = useState<'tracks' | 'appearance' | 'search' | 'ocr' | null>(null);
   const viewRef = useRef(view);
   viewRef.current = view;
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
@@ -473,7 +474,7 @@ export function SubtitleManagerPanel({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, inSheet]);
 
-  const transitionTo = useCallback((newView: 'tracks' | 'appearance' | 'search', direction: 'forward' | 'backward'): void => {
+  const transitionTo = useCallback((newView: 'tracks' | 'appearance' | 'search' | 'ocr', direction: 'forward' | 'backward'): void => {
     setViewDirection(direction);
     setPrevView(viewRef.current);
     setView(newView);
@@ -498,12 +499,20 @@ export function SubtitleManagerPanel({
     requestAnimationFrame(() => searchBtnRef.current?.focus());
   }, [transitionTo]);
 
+  const handleOcrClick = useCallback((): void => {
+    transitionTo('ocr', 'forward');
+  }, [transitionTo]);
+
+  const handleOcrBack = useCallback((): void => {
+    transitionTo('tracks', 'backward');
+  }, [transitionTo]);
+
   const activeLabel = activeTab === 'target' ? targetLabel : nativeLabel;
   const activeHidden = activeTab === 'target' ? targetHidden : nativeHidden;
 
-  const renderHeaderContent = (v: 'tracks' | 'appearance' | 'search'): React.JSX.Element => {
-    const title = v === 'search' ? 'Search' : v === 'appearance' ? 'Customize' : 'Subtitle Manager';
-    const handleBack = v === 'search' ? handleSearchBack : handleBackClick;
+  const renderHeaderContent = (v: 'tracks' | 'appearance' | 'search' | 'ocr'): React.JSX.Element => {
+    const title = v === 'search' ? 'Search' : v === 'appearance' ? 'Customize' : v === 'ocr' ? 'OCR Settings' : 'Subtitle Manager';
+    const handleBack = v === 'search' ? handleSearchBack : v === 'ocr' ? handleOcrBack : handleBackClick;
     return (
       <>
         {v !== 'tracks' && (
@@ -660,6 +669,7 @@ export function SubtitleManagerPanel({
             bothHidden={bothHidden}
             onGenerateNative={onGenerateNative}
             generateNativeDisabled={generateNativeDisabled}
+            onOcr={handleOcrClick}
           />
         </div>
       )}
@@ -674,6 +684,14 @@ export function SubtitleManagerPanel({
               onSearchResultSelect={onSearchResultSelect}
               mockResults={mockSearchResults}
             />
+          </div>
+        </div>
+      )}
+
+      {view === 'ocr' && (
+        <div key="ocr" className={styles.viewContent}>
+          <div className={styles.appearanceBody}>
+            <OcrSettingsPanel url={typeof window !== 'undefined' ? window.location.href : ''} />
           </div>
         </div>
       )}

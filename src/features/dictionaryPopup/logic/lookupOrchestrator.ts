@@ -112,16 +112,27 @@ function findTokenAtOffset(tokens: readonly Token[], cursorOffset: number): Toke
  *
  * For large dictionaries (120k CEDICT entries), loading into a Set is
  * ~10MB heap — acceptable for a Web Worker on 4GB RAM.
+ *
+ * T23: Module-level probe cache — avoids reloading 120k terms per lookup.
+ * OCR increases lookup frequency → cache is essential. Clear on dictionary import.
  */
+const probeCache = new Map<string, TermProbe>();
+
+/** T23: Clear the dictionary probe cache (call after dictionary import). */
+export function clearDictionaryProbeCache(): void {
+  probeCache.clear();
+}
+
 export async function createDictionaryProbeAsync(langCode: string): Promise<TermProbe> {
+  // T23: Return cached probe if available.
+  const cached = probeCache.get(langCode);
+  if (cached) return cached;
+
   const resources = await getAllResources(langCode);
   const dictResources = resources.filter((r) => r.type === 'DICTIONARY');
   const terms = new Set<string>();
 
   // Load all dictionary terms. For CEDICT this is ~120k entries.
-  // ponytail: loading all terms per lookup is expensive. Upgrade: cache
-  // the Set in the worker and invalidate on import. For now, this is
-  // correct but slow — the worker should hold the Set persistently.
   for (const r of dictResources) {
     if (r.id === undefined) continue;
     const { findDictionaryByResource } = await import(
@@ -133,7 +144,9 @@ export async function createDictionaryProbeAsync(langCode: string): Promise<Term
     }
   }
 
-  return { hasTerm: (term: string) => terms.has(term.toLowerCase()) };
+  const probe = { hasTerm: (term: string) => terms.has(term.toLowerCase()) };
+  probeCache.set(langCode, probe);
+  return probe;
 }
 
 /**

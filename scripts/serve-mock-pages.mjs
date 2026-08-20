@@ -52,6 +52,13 @@ const PAGES = [
     distHtml: resolve(DIST, 'src/entrypoints/mock-youtube/index.html'),
     outDir: resolve(TMP, 'mock-youtube'),
   },
+  {
+    name: 'HardSub',
+    id: 'mock-hardsub-page',
+    port: 4325,
+    distHtml: resolve(DIST, 'src/entrypoints/mock-hardsub-page/index.html'),
+    outDir: resolve(TMP, 'mock-hardsub'),
+  },
 ];
 
 const args = process.argv.slice(2);

@@ -134,6 +134,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onSeek,
       onSplitViewChange,
       managerShadowCss,
+      playlistContent,
+      onOpenFile,
+      onOpenFolder,
     },
     ref,
   ): React.JSX.Element {
@@ -159,7 +162,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [managerExiting, setManagerExiting] = useState(false);
     const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
     const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isMobile = useIsMobile(BREAKPOINTS.tablet);
+    const isMobile = useIsMobile(BREAKPOINTS.mobileLg);
     // Desktop: trigger slide-out animation, then unmount after 280ms.
     // Mobile: unmount immediately (Sheet handles its own exit animation).
     const closeManager = useCallback(() => {
@@ -275,10 +278,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // mountSubtitle creates it for content-script). Use rootRef's parent
     // (.subtitleOverlay div, position:absolute+inset:0 inside .videoWrapper)
     // so the manager overlays the video stage, not document.body.
+    //
+    // Mobile (Sheet mode): ALWAYS mount on document.body. The Sheet atom uses
+    // position:fixed which must be relative to the viewport. If the portal host
+    // is inside a container-type:inline-size ancestor (e.g. .subtitleOverlay in
+    // the local player), contain:layout creates a containing block for
+    // position:fixed, breaking the Sheet's viewport-relative positioning — the
+    // resize handle gets clipped by .stage's overflow:hidden.
     useEffect(() => {
       if (!managerShadowCss || managerShadowCss.length === 0) return;
       const overlayHost = document.getElementById('cell-subtitle-root');
-      const container = overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body;
+      const container = isMobile
+        ? document.body
+        : (overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body);
       const host = document.createElement('div');
       host.id = 'cell-manager-portal';
       host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2147483647;';
@@ -296,7 +308,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         managerPortalRef.current?.cleanup();
         managerPortalRef.current = null;
       };
-    }, [managerShadowCss]);
+    }, [managerShadowCss, isMobile]);
 
     // Child-iframe mobile: delegate manager panel rendering to the host frame.
     // Serialize state + ask host to mount the panel; on success skip the
@@ -1317,6 +1329,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             offsetMs={offsetMs}
             onSeek={onSeek}
             onClose={handleToggleSplitView}
+            playlistContent={playlistContent}
+            onOpenFile={onOpenFile}
+            onOpenFolder={onOpenFolder}
           />,
           splitViewPortalTarget,
         )}

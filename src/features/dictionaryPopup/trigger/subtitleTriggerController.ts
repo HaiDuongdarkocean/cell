@@ -18,6 +18,7 @@ import type { LookupRequest, TriggerMode } from '../types';
 import type { Token } from '../plugins/languagePlugin';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import { segmentFMM } from '../plugins/chinesePlugin';
+import { scriptRunSegmenter } from '@/features/ocr/language/scriptRunSegmenter';
 
 /** Hover debounce: only lookup after the cursor has stayed on the token for this long. */
 export const HOVER_DEBOUNCE_MS = 80;
@@ -44,12 +45,19 @@ function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
   }
 }
 
-/** Detect language from text: CJK-only → 'zh', else 'en'. */
+/** Detect language from text: CJK (zh+ja) majority → 'zh', else 'en'.
+ *  Delegates to scriptRunSegmenter (SSOT) — ja kanji counts as CJK. */
 export function detectLangCode(text: string): string {
-  // Strip whitespace + punctuation, check if remaining is CJK.
-  const cjkChars = [...text].filter((ch) => /[\u4e00-\u9fff\u3400-\u4dbf]/.test(ch));
-  const allChars = [...text].filter((ch) => /\S/.test(ch));
-  if (allChars.length > 0 && cjkChars.length / allChars.length > 0.5) return 'zh';
+  const runs = scriptRunSegmenter(text);
+  let cjkCount = 0;
+  let enCount = 0;
+  for (const run of runs) {
+    const nonWs = run.text.replace(/\s/g, '').length;
+    if (run.script === 'zh' || run.script === 'ja' || run.script === 'ko') cjkCount += nonWs;
+    else if (run.script === 'en') enCount += nonWs;
+  }
+  const total = cjkCount + enCount;
+  if (total > 0 && cjkCount / total > 0.5) return 'zh';
   return 'en';
 }
 

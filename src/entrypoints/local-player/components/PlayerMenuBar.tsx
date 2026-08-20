@@ -7,8 +7,10 @@ interface PlayerMenuBarProps {
   filename: string | null;
   /** Whether the library panel is currently open (toggles button highlight). */
   isLibraryOpen: boolean;
-  /** Called when the user clicks "Open file". */
+  /** Called when the user clicks "File" (open file picker). */
   onOpenFile: () => void;
+  /** Called when the user clicks "Folder" (open folder picker). */
+  onOpenFolder: () => void;
   /** Called when the user clicks "Library". */
   onToggleLibrary: () => void;
 }
@@ -17,7 +19,7 @@ interface PlayerMenuBarProps {
  * PlayerMenuBar — top bar of the local player page.
  *
  * Left: app title + current filename (or "No file loaded" placeholder).
- * Right: "Open file" + "Library" toggle buttons.
+ * Right: Open pill (File | Folder) + Library toggle button.
  * Responsive: on narrow viewports the title shrinks and buttons collapse to
  * icon-only labels hidden via CSS.
  */
@@ -25,6 +27,7 @@ export function PlayerMenuBar({
   filename,
   isLibraryOpen,
   onOpenFile,
+  onOpenFolder,
   onToggleLibrary,
 }: PlayerMenuBarProps): React.JSX.Element {
   return (
@@ -38,15 +41,27 @@ export function PlayerMenuBar({
       </div>
 
       <div className={styles.right}>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onOpenFile}
-          leadingIcon={<Icon name="folderOpen" size={18} />}
-          aria-label="Open file"
-        >
-          <span className={styles.btnLabel}>Open file</span>
-        </Button>
+        <div className={styles.openPill} role="group" aria-label="Open media">
+          <button
+            type="button"
+            className={styles.openPillBtn}
+            onClick={onOpenFile}
+            aria-label="Open file"
+          >
+            <Icon name="fileVideo" size={16} />
+            <span className={styles.btnLabel}>File</span>
+          </button>
+          <span className={styles.openPillDivider} aria-hidden="true" />
+          <button
+            type="button"
+            className={styles.openPillBtn}
+            onClick={onOpenFolder}
+            aria-label="Open folder"
+          >
+            <Icon name="folderOpen" size={16} />
+            <span className={styles.btnLabel}>Folder</span>
+          </button>
+        </div>
 
         <Button
           variant="ghost"

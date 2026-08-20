@@ -1,10 +1,59 @@
-// PaddleOcrEngine tests — T1 skeleton. Real OCR tests in T4 with mock PaddleOCR.
+// PaddleOcrEngine tests — T4. Uses mock PaddleOCR.js module.
+// Real OCR integration tested in T4 browser test + T25 full browser test.
 
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+
+// Mock @paddleocr/paddleocr-js before importing PaddleOcrEngine.
+const mockPredict = jest.fn((_input?: unknown) => Promise.resolve(undefined as unknown));
+const mockInitialize = jest.fn(() => Promise.resolve(undefined as unknown));
+const mockCreate = jest.fn((_config?: unknown) => Promise.resolve(undefined as unknown));
+
+jest.mock('@paddleocr/paddleocr-js', () => ({
+  PaddleOCR: { create: mockCreate },
+}), { virtual: true });
+
 import { PaddleOcrEngine } from './paddleOcrEngine';
 import type { ImageSource, OcrConfig } from './types';
 
-describe('PaddleOcrEngine (T1 skeleton)', () => {
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockPredict.mockReset();
+  mockInitialize.mockReset();
+  mockCreate.mockReset();
+  // Default mock: create returns instance with predict + initialize.
+  mockCreate.mockResolvedValue({
+    predict: mockPredict,
+    initialize: mockInitialize,
+  });
+  mockInitialize.mockResolvedValue({ backend: 'webgpu', webgpuAvailable: true });
+});
+
+// Stub OffscreenCanvas + ImageData for jsdom (not available in test env).
+// ponytail: real browser has these natively — stub is test-only.
+class MockOffscreenCanvas {
+  width: number;
+  height: number;
+  constructor(w: number, h: number) { this.width = w; this.height = h; }
+  getContext() {
+    return {
+      putImageData: jest.fn(),
+      createImageData: (w: number, h: number) => ({
+        data: new Uint8ClampedArray(w * h * 4),
+        width: w,
+        height: h,
+      }),
+    };
+  }
+}
+(globalThis as unknown as { OffscreenCanvas: unknown }).OffscreenCanvas = MockOffscreenCanvas;
+
+describe('PaddleOcrEngine (T4)', () => {
+  const config: OcrConfig = {
+    languageMode: 'auto',
+    backend: 'webgpu',
+    wasmPaths: 'chrome-extension://mock/wasm/',
+  };
+
   it('implements OcrEngine interface', () => {
     const engine = new PaddleOcrEngine();
     expect(typeof engine.initialize).toBe('function');
@@ -12,28 +61,110 @@ describe('PaddleOcrEngine (T1 skeleton)', () => {
     expect(typeof engine.dispose).toBe('function');
   });
 
-  it('initialize throws NOT_IMPLEMENTED', async () => {
+  it('initialize calls PaddleOCR.create with correct params', async () => {
     const engine = new PaddleOcrEngine();
-    const config: OcrConfig = {
-      languageMode: 'auto',
-      backend: 'webgpu',
-      wasmPaths: 'chrome-extension://mock/wasm/',
-    };
-    await expect(engine.initialize(config)).rejects.toThrow('NOT_IMPLEMENTED');
+    await engine.initialize(config);
+    expect(mockCreate).toHaveBeenCalledWith({
+      lang: 'ch',
+      ocrVersion: 'PP-OCRv5',
+      ortOptions: {
+        backend: 'webgpu',
+        wasmPaths: 'chrome-extension://mock/wasm/',
+        numThreads: 1,
+        simd: true,
+      },
+    });
   });
 
-  it('recognize throws NOT_IMPLEMENTED', async () => {
+  it('initialize is idempotent — second call does not re-create', async () => {
     const engine = new PaddleOcrEngine();
+    await engine.initialize(config);
+    await engine.initialize(config);
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('recognize throws if not initialized', async () => {
+    const engine = new PaddleOcrEngine();
+    const image: ImageSource = { data: new Uint8ClampedArray(16), width: 2, height: 2 };
+    await expect(engine.recognize(image)).rejects.toThrow('not initialized');
+  });
+
+  it('recognize returns adapted OcrResult[]', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize(config);
+
+    mockPredict.mockResolvedValueOnce([{
+      image: { width: 800, height: 200 },
+      items: [
+        { poly: [[277, 64], [524, 67], [524, 125], [277, 123]], text: '我喜欢北京', score: 1.0 },
+      ],
+      metrics: { detMs: 167, recMs: 94, totalMs: 261 },
+    }]);
+
     const image: ImageSource = {
-      data: new Uint8ClampedArray(16),
-      width: 2,
-      height: 2,
+      data: new Uint8ClampedArray(800 * 200 * 4),
+      width: 800,
+      height: 200,
     };
-    await expect(engine.recognize(image)).rejects.toThrow('NOT_IMPLEMENTED');
+    const results = await engine.recognize(image);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.items).toHaveLength(1);
+    expect(results[0]!.items[0]!.text).toBe('我喜欢北京');
+    expect(results[0]!.items[0]!.score).toBe(1.0);
+    expect(results[0]!.image.width).toBe(800);
+    expect(results[0]!.image.height).toBe(200);
   });
 
-  it('dispose throws NOT_IMPLEMENTED', async () => {
+  it('recognize applies minScore filter', async () => {
     const engine = new PaddleOcrEngine();
-    await expect(engine.dispose()).rejects.toThrow('NOT_IMPLEMENTED');
+    await engine.initialize(config);
+
+    mockPredict.mockResolvedValueOnce([{
+      image: { width: 800, height: 200 },
+      items: [
+        { poly: [[0, 0], [100, 0], [100, 50], [0, 50]], text: 'high', score: 0.95 },
+        { poly: [[0, 0], [100, 0], [100, 50], [0, 50]], text: 'low', score: 0.3 },
+      ],
+      metrics: { detMs: 100, recMs: 50, totalMs: 150 },
+    }]);
+
+    const image: ImageSource = {
+      data: new Uint8ClampedArray(800 * 200 * 4),
+      width: 800,
+      height: 200,
+    };
+    const results = await engine.recognize(image, { minScore: 0.5 });
+    expect(results[0]!.items).toHaveLength(1);
+    expect(results[0]!.items[0]!.text).toBe('high');
+  });
+
+  it('dispose releases instance', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize(config);
+    expect(engine.getBackend()).toBe('webgpu');
+    await engine.dispose();
+    expect(engine.getBackend()).toBeNull();
+    // After dispose, recognize should throw.
+    const image: ImageSource = { data: new Uint8ClampedArray(16), width: 2, height: 2 };
+    await expect(engine.recognize(image)).rejects.toThrow('not initialized');
+  });
+
+  it('maps language modes to PaddleOCR lang param', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize({ ...config, languageMode: 'zh' });
+    expect(mockCreate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ lang: 'ch' }),
+    );
+  });
+
+  it('wasmPaths passed to ortOptions (MV3 bundle requirement)', async () => {
+    const engine = new PaddleOcrEngine();
+    const customPaths = 'chrome-extension://abc/dist/wasm/';
+    await engine.initialize({ ...config, wasmPaths: customPaths });
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ortOptions: expect.objectContaining({ wasmPaths: customPaths }),
+      }),
+    );
   });
 });

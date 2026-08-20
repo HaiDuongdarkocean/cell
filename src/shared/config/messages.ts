@@ -81,4 +81,10 @@ export const MESSAGE_TYPES = {
   SAVE_HISTORY: 'SAVE_HISTORY',
   GET_LIBRARY: 'GET_LIBRARY',
   LOCAL_PLAYER_VIDEO_OPENED: 'LOCAL_PLAYER_VIDEO_OPENED',
+  // === OCR (spec orca-ocr-layer.md) ===
+  OCR_INIT: 'OCR_INIT',
+  OCR_RECOGNIZE: 'OCR_RECOGNIZE',
+  OCR_DISPOSE: 'OCR_DISPOSE',
+  OCR_GET_STATE: 'OCR_GET_STATE',
+  OCR_SET_STATE: 'OCR_SET_STATE',
 } as const satisfies Record<string, MessageType>;
