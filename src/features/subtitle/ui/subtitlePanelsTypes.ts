@@ -19,6 +19,7 @@ import { ICON_CATALOG } from '@/shared/icons';
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
 export type { IconCatalogKey };
+export type { SubtitlePanelItem };
 
 export interface AppearanceState {
   targetStyle: OverlayStyleConfig;
