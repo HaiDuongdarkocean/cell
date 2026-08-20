@@ -4,7 +4,7 @@ import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUB
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import { useCuesStore } from '@/stores/cuesStore';
 import type { SrtCue } from '@/entities/media';
-import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelModel';
+import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelsTypes';
 import helloSrt from '../assets/hello.srt?raw';
 import helloMp4 from '../assets/hello.mp4?url';
 import styles from './VideoPlayerPage.module.css';
