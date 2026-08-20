@@ -23,13 +23,18 @@
 /* 3-zone horizontal layout for the preview overlay.
    --sb-y maps 0% = top edge, 100% = bottom edge of the frame.
    translateY scales proportionally so the subtitle block stays fully
-   visible at both extremes instead of being half-clipped. */
+   visible at both extremes instead of being half-clipped.
+   Width = 300cqw (3× frame) to emulate real overlay container width
+   (~1000px video), so cqw-based font-size in SubtitleBlock resolves
+   correctly instead of clamping to minimum. Scale 1/3 brings it back
+   to frame width. */
 .overlayRoot {
   position: absolute;
-  left: 0;
-  right: 0;
   top: calc(var(--sb-y, 75) * 1%);
-  transform: translateY(calc(var(--sb-y, 75) * -1%));
+  left: 0;
+  width: 300cqw;
+  transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.3333);
+  transform-origin: top left;
   display: flex;
   flex-direction: row;
   align-items: center;
