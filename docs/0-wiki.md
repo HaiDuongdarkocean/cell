@@ -13,11 +13,13 @@ docs/           # Tài liệu dự án
 ├── adr/                                 # Architecture Decision Records (per AGENTS.md: quyết định kiến trúc → docs/adr/<tên>.md)
 │   ├── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng native Fullscreen API và project player vào videoStage thay vì top-frame bridge
 │   ├── subtitle-appearance-in-manager.md        # Di chuyển subtitle appearance customization từ Settings sang Subtitle Manager Panel
-│   └── 079-subtitle-search.md                   # WHY: client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry
+│   ├── 079-subtitle-search.md                   # WHY: client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry
+│   └── 080-subtitle-panels-atom-decomposition.md # WHY: tách god component SubtitlePanels.tsx thành 3 molecule (ClusterRightToolbar/ManagerLayer/OffsetLayer) + types SSOT + shared CSS; HostManagerSheet thin adapter; PlayerModeOverlay share toolbar
 ├── specs/
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
-│   └── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
+│   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
+│   └── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
@@ -57,6 +59,8 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-20**: Thêm spec `subtitle-panels-atom-decomposition.md` + ADR `080-subtitle-panels-atom-decomposition.md` — WHY tách god component `SubtitlePanels.tsx` (1651 dòng) thành 3 molecule (`ClusterRightToolbar`, `ManagerLayer`, `OffsetLayer`) + types SSOT (`subtitlePanelsTypes.ts`) + shared CSS (`subtitlePanelsShared.module.css`). `HostManagerSheet` thành thin adapter, `PlayerModeOverlay` share toolbar. Spec: `docs/specs/subtitle-panels-atom-decomposition.md`.
 
 **2026-08-20**: Fix stale subtitle tracks trên SPA nav YouTube — `onSpaNav` (proactive clear trên `yt-navigate-finish`/`popstate`) và AUTO_LOAD null handler (background-driven clear khi MAIN-world detect trả 0 tracks) chỉ clear engine cues + offset, KHÔNG clear manager panel items (`autoTargetItems`/`autoNativeItems`/`targetMatches`/`nativeMatches`/`activeTargetIndex`/`activeNativeIndex`) và `useCuesStore` load status. Kết quả: SubtitleManagerPanel vẫn hiển thị track cũ (vd "EN #1 VTT") sau khi chuyển từ video có subtitle sang video không có subtitle. Fix: thêm clear panel items + `refreshPanel('target'|'native')` + `useCuesStore.setLoadStatus('none'/'idle')` vào cả 2 path. File: `src/features/subtitle/ui/contentScriptController.ts`.
 
