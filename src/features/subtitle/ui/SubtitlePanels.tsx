@@ -5,8 +5,9 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
-import { SubtitleManagerPanel } from './SubtitleManagerPanel';
-import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
+import { ClusterRightToolbar } from './ClusterRightToolbar';
+import { ManagerLayer } from './ManagerLayer';
+import { OffsetLayer } from './OffsetLayer';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
@@ -26,7 +27,6 @@ import {
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
-import { Sheet } from '@/shared/ui/Sheet';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -37,8 +37,6 @@ import subtitlePanelCss from './SubtitlePanel.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
-import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitlePanels.module.css';
 import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
 import {
@@ -186,8 +184,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
-    // Persisted mobile sheet height (% of viewport, 20-95). null = not yet loaded.
-    const [managerSheetHeightVh, setManagerSheetHeightVh] = useState<number | null>(null);
     const cleanupRef = useRef<(() => void) | null>(null);
     const savedScrollRef = useRef<number | null>(null);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
@@ -1113,19 +1109,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       return () => { cancelled = true; };
     }, []);
 
-    // Load persisted manager sheet height on mount.
-    useEffect(() => {
-      let cancelled = false;
-      getStorage<Record<string, number>>(STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH)
-        .then((data) => {
-          const stored = data[STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH];
-          if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
-          setManagerSheetHeightVh(Math.min(Math.max(stored, 20), 95));
-        })
-        .catch(() => undefined);
-      return () => { cancelled = true; };
-    }, []);
-
     const dragState = useRef<{
       startY: number;
       startOffset: number;
@@ -1270,202 +1253,39 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         {!collapsed && (
-          <div className={styles.clusterRight} style={clusterRightStyle} data-cell-id="nav-cluster-right">
-            <div className={styles.primaryCol}>
-              {onQuickAdd && (
-                <IconButton variant="transparent"
-                  aria-label="Quick add card"
-                  title="Quick add (Q)"
-                  data-cell-id="quick-add-btn"
-                  size="sm"
-                  onClick={onQuickAdd}
-                >
-                  <Icon name="zap"  />
-                </IconButton>
-              )}
-              {onEditCard && (
-                <IconButton variant="transparent"
-                  aria-label="Edit card"
-                  title="Edit card (E)"
-                  data-cell-id="edit-card-btn"
-                  size="sm"
-                  onClick={onEditCard}
-                >
-                  <Icon name="pencil"  />
-                </IconButton>
-              )}
-              <div className={styles.toggleWrap}>
-                <div
-                  className={`${styles.extraCol} ${toolsExpanded ? styles.expanded : ''}`}
-                  data-cell-id="subtitle-tools-extra"
-                >
-                  {onToggleSidePanel && (
-                    <IconButton variant="transparent"
-                      aria-label={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
-                      title="Toggle subtitle list (T)"
-                      data-cell-id="panel-toggle-btn"
-                      size="sm"
-                      onClick={handleToggleSplitView}
-                    >
-                      <Icon name="sidePanel"  />
-                    </IconButton>
-                  )}
-                  {onGenerateNative && (
-                    <IconButton variant="transparent"
-                      aria-label="Generate native subtitle"
-                      title="Generate native (H)"
-                      data-cell-id="generate-native-btn"
-                      size="sm"
-                      onClick={onGenerateNative}
-                      disabled={!generateNativeEnabled}
-                    >
-                      <Icon name="languages"  />
-                    </IconButton>
-                  )}
-                </div>
-                <IconButton variant="transparent"
-                  aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-                  title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-                  data-cell-id="tools-toggle-btn"
-                  size="sm"
-                  onClick={() => setToolsExpanded((v) => !v)}
-                >
-                  <Icon name="chevronLeft"  />
-                </IconButton>
-              </div>
-            </div>
-            <div className={styles.secondaryCol}>
-              {onUpdateCurrentCard && (
-                <IconButton variant="transparent"
-                  aria-label="Update current card"
-                  title="Update current card (U)"
-                  data-cell-id="update-current-card-btn"
-                  size="sm"
-                  onClick={onUpdateCurrentCard}
-                >
-                  <Icon name="rotateCcw"  />
-                </IconButton>
-              )}
-              {onToggleManager && (
-                <IconButton variant="transparent"
-                  aria-label="Open subtitle manager"
-                  title="Open subtitle manager"
-                  data-cell-id="manager-toggle-btn"
-                  size="sm"
-                  onClick={() => {
-                    onToggleManager();
-                  }}
-                >
-                  <Icon name="subtitleManager"  />
-                </IconButton>
-              )}
-              <IconButton variant="transparent"
-                aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
-                title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
-                data-cell-id="player-mode-btn"
-                size="sm"
-                onClick={handleTogglePlayerMode}
-                active={playerMode}
-              >
-                <Icon name={playerMode ? 'minimize' : 'maximize'}  />
-              </IconButton>
-            </div>
-          </div>
+          <ClusterRightToolbar
+            mode="overlay"
+            clusterRightStyle={clusterRightStyle}
+            onQuickAdd={onQuickAdd}
+            onEditCard={onEditCard}
+            onUpdateCurrentCard={onUpdateCurrentCard}
+            onToggleManager={onToggleManager}
+            onGenerateNative={onGenerateNative}
+            generateNativeEnabled={generateNativeEnabled}
+            onToggleSidePanel={onToggleSidePanel ? handleToggleSplitView : undefined}
+            sidePanelLabel={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
+            toolsExpanded={toolsExpanded}
+            onToggleTools={() => setToolsExpanded((v) => !v)}
+            onTogglePlayerMode={handleTogglePlayerMode}
+            playerMode={playerMode}
+          />
         )}
 
         {managerOpen && manager && managerPortalTarget && !managerOpenOnHost && createPortal(
           <ShadowThemeProvider container={managerPortalTarget}>
-            {isMobile ? (
-              <Sheet
-                open
-                onClose={() => closeManager()}
-                initialHeight={managerSheetHeightVh != null
-                  ? Math.round(window.innerHeight * (managerSheetHeightVh / 100))
-                  : undefined}
-                onHeightChange={(h) => {
-                  const vh = Math.round((h / window.innerHeight) * 100);
-                  const clamped = Math.max(20, Math.min(95, vh));
-                  setManagerSheetHeightVh(clamped);
-                  setStorage({ [STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH]: clamped }).catch(() => undefined);
-                }}
-                data-cell-id="subtitle-manager-layer"
-              >
-                <SubtitleManagerPanel
-                  targetItems={manager.targetItems}
-                  nativeItems={manager.nativeItems}
-                  targetActiveIndex={manager.targetActiveIndex}
-                  nativeActiveIndex={manager.nativeActiveIndex}
-                  onSelect={manager.onSelect}
-                  onClose={() => closeManager()}
-                  onImport={manager.onImport}
-                  onGenerateNative={manager.onGenerateNative}
-                  onOffsetChange={manager.onOffsetChange}
-                  generateNativeDisabled={!generateNativeEnabled}
-                  appearance={manager.appearance}
-                  hasSearchKeys={manager.hasSearchKeys}
-                  apiKeys={manager.apiKeys}
-                  onApiKeysChange={manager.onApiKeysChange}
-                  onSearchResultSelect={manager.onSearchResultSelect}
-                  onDownload={manager.onDownload}
-                  onHideSection={manager.onHideSection}
-                  onHideBoth={manager.onHideBoth}
-                  targetHidden={manager.targetHidden}
-                  nativeHidden={manager.nativeHidden}
-                  bothHidden={manager.bothHidden}
-                  inSheet
-                />
-              </Sheet>
-            ) : (
-              <div
-                className={styles.panelLayer}
-                data-cell-id="subtitle-manager-layer"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) closeManager();
-                }}
-              >
-                <SubtitleManagerPanel
-                  targetItems={manager.targetItems}
-                  nativeItems={manager.nativeItems}
-                  targetActiveIndex={manager.targetActiveIndex}
-                  nativeActiveIndex={manager.nativeActiveIndex}
-                  onSelect={manager.onSelect}
-                  onClose={() => closeManager()}
-                  onImport={manager.onImport}
-                  onGenerateNative={manager.onGenerateNative}
-                  onOffsetChange={manager.onOffsetChange}
-                  generateNativeDisabled={!generateNativeEnabled}
-                  appearance={manager.appearance}
-                  hasSearchKeys={manager.hasSearchKeys}
-                  apiKeys={manager.apiKeys}
-                  onApiKeysChange={manager.onApiKeysChange}
-                  onSearchResultSelect={manager.onSearchResultSelect}
-                  onDownload={manager.onDownload}
-                  onHideSection={manager.onHideSection}
-                  onHideBoth={manager.onHideBoth}
-                  targetHidden={manager.targetHidden}
-                  nativeHidden={manager.nativeHidden}
-                  bothHidden={manager.bothHidden}
-                  exiting={managerExiting}
-                />
-              </div>
-            )}
+            <ManagerLayer
+              manager={manager}
+              isMobile={isMobile}
+              exiting={managerExiting}
+              onClose={closeManager}
+              generateNativeEnabled={generateNativeEnabled}
+            />
           </ShadowThemeProvider>,
           managerPortalTarget,
         )}
 
         {offsetOpen && offset && (
-          <div className={styles.panelLayer} data-cell-id="subtitle-offset-layer">
-            <div className={styles.offsetRow}>
-              <SubtitleOffsetPanel
-                offsetMs={offset.targetMs}
-                onOffsetChange={offset.onTargetChange}
-              />
-              <SubtitleOffsetPanel
-                offsetMs={offset.nativeMs}
-                onOffsetChange={offset.onNativeChange}
-              />
-            </div>
-          </div>
+          <OffsetLayer offset={offset} />
         )}
 
         <div className={styles.toastLayer}>
