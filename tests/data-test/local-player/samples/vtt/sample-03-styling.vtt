@@ -1,0 +1,27 @@
+WEBVTT
+
+STYLE
+::cue {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+::cue(b) {
+  color: red;
+  font-weight: bold;
+}
+::cue(i) {
+  color: yellow;
+  font-style: italic;
+}
+::cue(.emphasis) {
+  text-decoration: underline;
+}
+
+00:00:01.000 --> 00:00:04.000
+<b>Bold red text</b> from ::cue(b) styling
+
+00:00:05.000 --> 00:00:08.000
+<i>Italic yellow text</i> from ::cue(i) styling
+
+00:00:09.000 --> 00:00:12.000
+<c.emphasis>Underlined emphasis class</c>

@@ -1,0 +1,41 @@
+<SAMI>
+<HEAD>
+<TITLE>CJK Characters SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+.KRCC { Name: Korean; lang: ko-KR; SAMIType: CC; }
+.JPCC { Name: Japanese; lang: ja-JP; SAMIType: CC; }
+.CNCC { Name: Chinese; lang: zh-CN; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC>Hello everyone, welcome to the show.</P>
+<P Class=KRCC>안녕하세요 여러분, 쇼에 오신 것을 환영합니다.</P>
+<P Class=JPCC>こんにちは皆さん、ショーへようこそ。</P>
+<P Class=CNCC>大家好，欢迎来到节目。</P>
+
+<SYNC Start=4000>
+<P Class=ENUSCC>Today's topic is about subtitle formats.</P>
+<P Class=KRCC>오늘의 주제는 자막 형식에 관한 것입니다.</P>
+<P Class=JPCC>今日のテーマは字幕フォーマットについてです。</P>
+<P Class=CNCC>今天的主题是关于字幕格式的。</P>
+
+<SYNC Start=8000>
+<P Class=ENUSCC>SAMI supports CJK characters natively.</P>
+<P Class=KRCC>SAMI는 CJK 문자를 기본적으로 지원합니다.</P>
+<P Class=JPCC>SAMIはCJK文字をネイティブにサポートしています。</P>
+<P Class=CNCC>SAMI原生支持CJK字符。</P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC>Special characters: café, naïve, résumé, façade</P>
+<P Class=KRCC>특수 문자: café, naïve, résumé, façade</P>
+<P Class=JPCC>特殊文字: café, naïve, résumé, façade</P>
+<P Class=CNCC>特殊字符: café, naïve, résumé, façade</P>
+
+</BODY>
+</SAMI>

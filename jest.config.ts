@@ -16,7 +16,11 @@ const moduleNameMapper = {
   // Mock Vite ?worker imports — returns a no-op Worker class for tests
   '\\?worker$': '<rootDir>/tests/workerMock.ts',
   '^@/(.*)$': '<rootDir>/src/$1',
+  // CSS module mock must come BEFORE plain .css mock so module files
+  // get the Proxy (class-name passthrough) instead of the empty string.
   '\\.module\\.css$': '<rootDir>/tests/styleMock.ts',
+  // Mock plain (non-module) CSS imports — returns empty string for tests.
+  '\\.css$': '<rootDir>/tests/cssRawMock.ts',
   // Mock devMode in tests — source uses import.meta.env which is invalid in Jest's CJS
   '^@/shared/lib/env/devMode$': '<rootDir>/tests/__mocks__/devMode.ts',
   // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)

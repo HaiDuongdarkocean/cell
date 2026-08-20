@@ -1,0 +1,19 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000 align:start
+Start-aligned text (left in LTR)
+
+00:00:05.000 --> 00:00:08.000 align:center
+Center-aligned text
+
+00:00:09.000 --> 00:00:12.000 align:end
+End-aligned text (right in LTR)
+
+00:00:13.000 --> 00:00:16.000 align:left
+Left-aligned text explicitly
+
+00:00:17.000 --> 00:00:20.000 align:right
+Right-aligned text explicitly
+
+00:00:21.000 --> 00:00:24.000 align:center line:50%
+Center-aligned at middle of screen

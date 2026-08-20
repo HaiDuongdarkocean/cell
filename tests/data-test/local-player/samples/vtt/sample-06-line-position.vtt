@@ -1,0 +1,16 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000 line:0
+Subtitle at the very top (line 0)
+
+00:00:05.000 --> 00:00:08.000 line:50%
+Subtitle at 50% from top
+
+00:00:09.000 --> 00:00:12.000 position:50% align:center
+Subtitle centered horizontally
+
+00:00:13.000 --> 00:00:16.000 line:0 position:20% size:60% align:start
+Top-left positioned subtitle
+
+00:00:17.000 --> 00:00:20.000 line:-1 align:end
+Subtitle at the bottom, right-aligned

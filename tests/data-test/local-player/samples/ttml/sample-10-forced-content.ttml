@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xml:lang="en">
+  <head>
+    <styling>
+      <style xml:id="forced" tts:color="yellow" tts:fontWeight="bold"/>
+      <style xml:id="normal" tts:color="white"/>
+    </styling>
+  </head>
+  <body>
+    <div>
+      <p begin="1s" end="4s" style="forced" ttm:role="forced">[FORCED] On-screen text: "EXIT"</p>
+      <p begin="5s" end="8s" style="normal">Normal dialogue subtitle</p>
+      <p begin="9s" end="12s" style="forced" ttm:role="forced">[FORCED] Sign: "CAUTION"</p>
+      <p begin="13s" end="16s" style="normal">Another normal dialogue line</p>
+      <p begin="17s" end="20s" style="forced" ttm:role="x-forced">Forced content with custom role</p>
+    </div>
+  </body>
+</tt>

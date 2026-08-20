@@ -2,6 +2,7 @@
 export { CaptionsButton } from './CaptionsButton';
 export { FullscreenButton } from './FullscreenButton';
 export { MuteButton } from './MuteButton';
+export { PlaybackSpeedControl } from './PlaybackSpeedControl';
 export { PiPButton } from './PiPButton';
 export { PlayPauseButton } from './PlayPauseButton';
 export { SkipButton } from './SkipButton';

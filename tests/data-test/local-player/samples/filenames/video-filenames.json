@@ -1,0 +1,202 @@
+[
+  {
+    "filename": "Movie_720p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Standard 720p with underscore separator. Resolution suffix _720p is stripped."
+  },
+  {
+    "filename": "Movie_1080p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Standard 1080p with underscore separator. Resolution suffix _1080p is stripped."
+  },
+  {
+    "filename": "Movie_480p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "SD resolution 480p with underscore separator. Stripped."
+  },
+  {
+    "filename": "Movie_360p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Low resolution 360p. Stripped."
+  },
+  {
+    "filename": "Movie_240p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Very low resolution 240p. Stripped."
+  },
+  {
+    "filename": "Movie_144p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Minimal resolution 144p. Stripped."
+  },
+  {
+    "filename": "Movie_2160p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "4K UHD resolution 2160p. Stripped."
+  },
+  {
+    "filename": "Movie_4320p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "8K UHD resolution 4320p. Stripped."
+  },
+  {
+    "filename": "Movie_576p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "PAL SD resolution 576p. Stripped."
+  },
+  {
+    "filename": "Movie.1080p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Dot separator before resolution. Common in scene naming. Stripped."
+  },
+  {
+    "filename": "Movie-1080p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Dash separator before resolution. Stripped."
+  },
+  {
+    "filename": "Movie 1080p.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Space separator before resolution. Stripped."
+  },
+  {
+    "filename": "Movie_1080P.mp4",
+    "expectedBaseName": "Movie",
+    "notes": "Uppercase P in resolution. Case-insensitive strip required."
+  },
+  {
+    "filename": "Movie_4K.mp4",
+    "expectedBaseName": "Movie_4K",
+    "notes": "Non-standard suffix 4K. Should NOT be stripped — ponytail ceiling. 4K is not a numeric+p pattern."
+  },
+  {
+    "filename": "Movie_HDR.mp4",
+    "expectedBaseName": "Movie_HDR",
+    "notes": "HDR tag. Should NOT be stripped. Not a resolution pattern."
+  },
+  {
+    "filename": "Movie_DV.mp4",
+    "expectedBaseName": "Movie_DV",
+    "notes": "Dolby Vision tag. Should NOT be stripped."
+  },
+  {
+    "filename": "Movie_REMUX.mp4",
+    "expectedBaseName": "Movie_REMUX",
+    "notes": "Remux tag. Should NOT be stripped. Not a resolution pattern."
+  },
+  {
+    "filename": "Adele-Hello-Official-Music-Video_1080p.mp4",
+    "expectedBaseName": "Adele-Hello-Official-Music-Video",
+    "notes": "Music video with dash-separated title and underscore resolution suffix. Real-world YouTube-style naming."
+  },
+  {
+    "filename": "The.Shawshank.Redemption.1994.1080p.BluRay.x264.mp4",
+    "expectedBaseName": "The.Shawshank.Redemption.1994",
+    "notes": "Classic scene naming: Title.Year.Resolution.Source.Codec. Only resolution (1080p) and everything after is stripped, leaving Title.Year as base. Per scene standards, resolution is the split point."
+  },
+  {
+    "filename": "[HorribleSubs] Attack on Titan - 01 [1080p].mkv",
+    "expectedBaseName": "[HorribleSubs] Attack on Titan - 01",
+    "notes": "Anime fansub naming with bracketed group and resolution. Resolution in brackets [1080p] is stripped. Common HorribleSubs format."
+  },
+  {
+    "filename": "Game.of.Thrones.S01E01.1080p.BluRay.x264-RAiNDEER.mkv",
+    "expectedBaseName": "Game.of.Thrones.S01E01",
+    "notes": "TV show scene naming: Show.SxxExx.Resolution.Source.Codec-Group. Resolution is the split point."
+  },
+  {
+    "filename": "Avengers.Endgame.2019.2160p.UHD.BluRay.x265.HDR.mkv",
+    "expectedBaseName": "Avengers.Endgame.2019",
+    "notes": "UHD movie with 2160p resolution and HDR tag. Resolution and all trailing tags stripped."
+  },
+  {
+    "filename": "Breaking.Bad.S05E01.720p.HDTV.x264.mkv",
+    "expectedBaseName": "Breaking.Bad.S05E01",
+    "notes": "TV show with 720p HDTV source. Standard scene naming."
+  },
+  {
+    "filename": "Movie.Title.2023.4K.WEB-DL.DDP5.1.Atmos.H.264.mkv",
+    "expectedBaseName": "Movie.Title.2023.4K.WEB-DL.DDP5.1.Atmos.H.264",
+    "notes": "4K tag instead of numeric resolution. 4K is NOT stripped (no NNNp pattern). Base name retains everything since no strippable resolution suffix found."
+  },
+  {
+    "filename": "蜘蛛侠.2002.1080p.BluRay.x264.mp4",
+    "expectedBaseName": "蜘蛛侠.2002",
+    "notes": "CJK (Chinese) title with year and resolution. Resolution stripped, CJK characters preserved in base name."
+  },
+  {
+    "filename": "名探偵コナン.1080p.mkv",
+    "expectedBaseName": "名探偵コナン",
+    "notes": "Japanese title with resolution only. Resolution stripped, Japanese characters preserved."
+  },
+  {
+    "filename": "Movie_2023_1080p.mp4",
+    "expectedBaseName": "Movie_2023",
+    "notes": "Year before resolution with underscore separators. Resolution stripped, year preserved in base name."
+  },
+  {
+    "filename": "Movie.Title.with.many.dots.2023.1080p.WEB-DL.mp4",
+    "expectedBaseName": "Movie.Title.with.many.dots.2023",
+    "notes": "Long dot-separated title with year, resolution, and source. Resolution is the split point."
+  },
+  {
+    "filename": "Movie (2009) [1080p].mp4",
+    "expectedBaseName": "Movie (2009)",
+    "notes": "Plex-style naming with year in parentheses and resolution in brackets. Bracketed [1080p] is stripped."
+  },
+  {
+    "filename": "Movie.Title.2023.720p.AMZN.WEB-DL.DDP5.1.H.264.mkv",
+    "expectedBaseName": "Movie.Title.2023",
+    "notes": "Amazon WEB-DL with 720p. AMZN = Amazon source tag. Resolution is split point."
+  },
+  {
+    "filename": "Movie_Title_Directors_Cut_2009_1080p.mp4",
+    "expectedBaseName": "Movie_Title_Directors_Cut_2009",
+    "notes": "Director's Cut edition with year and resolution. Underscore separators. Resolution stripped."
+  },
+  {
+    "filename": "Movie.2023.1080p.NF.WEB-DL.DDP5.1.Atmos.H.264.mkv",
+    "expectedBaseName": "Movie.2023",
+    "notes": "Netflix WEB-DL. NF = Netflix source tag. Resolution is split point."
+  },
+  {
+    "filename": "Movie.2023.1080p.CR.WEB-DL.AAC2.0.H.264.mkv",
+    "expectedBaseName": "Movie.2023",
+    "notes": "Criterion Collection WEB-DL. CR = Criterion source tag. Resolution is split point."
+  },
+  {
+    "filename": "Movie.Title.1995.1080p.BluRay.REMUX.AVC.FLAC-2.0.mkv",
+    "expectedBaseName": "Movie.Title.1995",
+    "notes": "BluRay Remux with FLAC audio. Resolution is split point, REMUX and trailing tags stripped along with it."
+  },
+  {
+    "filename": "Movie.Title.2024.2160p.UHD.HDR10+.DV.WEB-DL.HDR.mkv",
+    "expectedBaseName": "Movie.Title.2024",
+    "notes": "UHD with HDR10+ and Dolby Vision. 2160p resolution is split point. All trailing quality tags stripped."
+  },
+  {
+    "filename": "Shameless.2011.S05E01.1080p.AMZN.WEB.DL.mkv",
+    "expectedBaseName": "Shameless.2011.S05E01",
+    "notes": "TV show with year, season/episode, and AMZN WEB-DL. Real-world Plex/VidHub naming convention."
+  },
+  {
+    "filename": "Guardians.of.the.Galaxy.Vol.2.2017.1080p.BluRay.x264-SPARKS.mkv",
+    "expectedBaseName": "Guardians.of.the.Galaxy.Vol.2.2017",
+    "notes": "Movie with dots, year, resolution, source, codec, and release group. Real scene release naming."
+  },
+  {
+    "filename": "Band of Brothers (2001) - s01e01 - Currahee [1080p Bluray].mkv",
+    "expectedBaseName": "Band of Brothers (2001) - s01e01 - Currahee",
+    "notes": "Plex recommended naming with year, episode title, and quality in brackets. Bracketed resolution+source stripped."
+  },
+  {
+    "filename": "[Judas] Black Clover 091-123 [1080p][HEVC x265 10bit][Dual-Audio][Multi-Subs].mkv",
+    "expectedBaseName": "[Judas] Black Clover 091-123",
+    "notes": "Anime batch release with bracketed metadata. All bracketed tags after title stripped."
+  },
+  {
+    "filename": "The Movie Title (2010) - {Ultimate Extended Edition} [Bluray-1080p Proper][DTS 5.1][x264]-RlsGrp.mkv",
+    "expectedBaseName": "The Movie Title (2010) - {Ultimate Extended Edition}",
+    "notes": "TRaSH Guides Radarr recommended naming scheme with edition tags, quality in brackets, and release group. Complex bracketed suffix stripped."
+  }
+]

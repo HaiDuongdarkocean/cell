@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <body>
+    <div xml:lang="en">
+      <p begin="1s" end="4s">English subtitle</p>
+      <p begin="5s" end="8s" xml:lang="fr">French: Bonjour le monde</p>
+      <p begin="9s" end="12s" xml:lang="ja">Japanese: こんにちは世界</p>
+      <p begin="13s" end="16s" xml:lang="zh">Chinese: 你好世界</p>
+      <p begin="17s" end="20s" xml:lang="ko">Korean: 안녕하세요 세계</p>
+      <p begin="21s" end="24s" xml:lang="vi">Vietnamese: Xin chào thế giới</p>
+    </div>
+  </body>
+</tt>

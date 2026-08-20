@@ -1,0 +1,118 @@
+{
+  "comment": "Script-run segmenter test cases — input text + expected script-runs. Each run: { text, script }. Script: 'zh'|'en'|'ja'|'ko'|'unknown'.",
+  "cases": [
+    {
+      "id": "zh-only",
+      "input": "我喜欢北京",
+      "expected": [{ "text": "我喜欢北京", "script": "zh" }]
+    },
+    {
+      "id": "en-only",
+      "input": "Hello World",
+      "expected": [{ "text": "Hello World", "script": "en" }]
+    },
+    {
+      "id": "ja-only",
+      "input": "日本語を勉強する",
+      "expected": [{ "text": "日本語を勉強する", "script": "ja" }]
+    },
+    {
+      "id": "ko-only",
+      "input": "안녕하세요",
+      "expected": [{ "text": "안녕하세요", "script": "ko" }]
+    },
+    {
+      "id": "unknown-only",
+      "input": "123!@#",
+      "expected": [{ "text": "123!@#", "script": "unknown" }]
+    },
+    {
+      "id": "mixed-zh-en",
+      "input": "我喜欢 watching movies",
+      "expected": [
+        { "text": "我喜欢", "script": "zh" },
+        { "text": " watching movies", "script": "en" }
+      ]
+    },
+    {
+      "id": "mixed-en-zh",
+      "input": "Hello 世界",
+      "expected": [
+        { "text": "Hello ", "script": "en" },
+        { "text": "世界", "script": "zh" }
+      ]
+    },
+    {
+      "id": "mixed-ja-en",
+      "input": "日本語をstudyしています",
+      "expected": [
+        { "text": "日本語を", "script": "ja" },
+        { "text": "study", "script": "en" },
+        { "text": "しています", "script": "ja" }
+      ]
+    },
+    {
+      "id": "mixed-zh-ja-en-3lines",
+      "input": "我喜欢 watching movies\n日本語も勉強しています\nHello 世界",
+      "expected": [
+        { "text": "我喜欢", "script": "zh" },
+        { "text": " watching movies\n", "script": "en" },
+        { "text": "日本語も勉強しています\n", "script": "ja" },
+        { "text": "Hello ", "script": "en" },
+        { "text": "世界", "script": "zh" }
+      ]
+    },
+    {
+      "id": "zh-with-latin-brands",
+      "input": "用WiFi看4K电影",
+      "expected": [
+        { "text": "用", "script": "zh" },
+        { "text": "WiFi", "script": "en" },
+        { "text": "看", "script": "zh" },
+        { "text": "4K", "script": "unknown" },
+        { "text": "电影", "script": "zh" }
+      ]
+    },
+    {
+      "id": "ja-with-romaji",
+      "input": "東京駅からTokyo Stationへ",
+      "expected": [
+        { "text": "東京駅から", "script": "ja" },
+        { "text": "Tokyo Station", "script": "en" },
+        { "text": "へ", "script": "ja" }
+      ]
+    },
+    {
+      "id": "empty-string",
+      "input": "",
+      "expected": []
+    },
+    {
+      "id": "whitespace-only",
+      "input": "   \n\t  ",
+      "expected": [{ "text": "   \n\t  ", "script": "unknown" }]
+    },
+    {
+      "id": "numbers-only",
+      "input": "2026年8月21日",
+      "expected": [
+        { "text": "2026", "script": "unknown" },
+        { "text": "年", "script": "zh" },
+        { "text": "8", "script": "unknown" },
+        { "text": "月", "script": "zh" },
+        { "text": "21", "script": "unknown" },
+        { "text": "日", "script": "zh" }
+      ]
+    },
+    {
+      "id": "emoji-mixed",
+      "input": "你好👋World🌍",
+      "expected": [
+        { "text": "你好", "script": "zh" },
+        { "text": "👋", "script": "unknown" },
+        { "text": "World", "script": "en" },
+        { "text": "🌍", "script": "unknown" }
+      ]
+    }
+  ]
+}

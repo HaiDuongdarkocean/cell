@@ -118,6 +118,8 @@ export interface SubtitlePanelsRef {
   togglePlayerMode: () => void;
   /** Toggle Split View — CueList panel beside video container (page thường only). */
   toggleSplitView: () => void;
+  /** Set Split View open state directly (local-player preference restore). */
+  setSplitViewOpen: (open: boolean) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -170,6 +172,8 @@ export interface SubtitlePanelsProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue. */
   onSeek?: (timeMs: number) => void;
+  /** Fired when user toggles Split View (local-player persists enable state). */
+  onSplitViewChange?: (open: boolean) => void;
   /** CSS strings to inject into the body-level shadow root for the manager panel.
    *  Needed because the manager panel portals to document.body to escape the
    *  video container's stacking context (e.g. YouTube #movie_player z-index:0). */

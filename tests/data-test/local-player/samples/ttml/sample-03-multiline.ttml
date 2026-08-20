@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <body>
+    <div>
+      <p begin="1s" end="4s">Line one<br/>Line two</p>
+      <p begin="5s" end="9s">First line<br/>Second line<br/>Third line</p>
+      <p begin="10s" end="14s">Single line for contrast</p>
+      <p begin="15s" end="19s" tts:textAlign="center">Centered first line<br/>Centered second line</p>
+    </div>
+  </body>
+</tt>

@@ -68,6 +68,11 @@ import circleInfoSvg from './svg/circle-info.svg?raw';
 import messageSquareSvg from './svg/message-square.svg?raw';
 import bookOpenSvg from './svg/book-open.svg?raw';
 
+// === Local player icons ===
+import folderOpenSvg from './svg/folder-open.svg?raw';
+import librarySvg from './svg/library.svg?raw';
+import fileVideoSvg from './svg/file-video.svg?raw';
+
 // === Media / window control icons ===
 import externalLinkSvg from './svg/external-link.svg?raw';
 import checkDoubleSvg from './svg/check-double.svg?raw';
@@ -82,6 +87,7 @@ import minimizeSvg from './svg/minimize.svg?raw';
 import pipSvg from './svg/pip.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
+import gaugeSvg from './svg/gauge.svg?raw';
 
 // === Design system showcase — atomic design level icons ===
 import layersSvg from './svg/layers.svg?raw';
@@ -154,6 +160,9 @@ export { default as circleXIcon } from './svg/circle-x.svg?raw';
 export { default as circleInfoIcon } from './svg/circle-info.svg?raw';
 export { default as messageSquareIcon } from './svg/message-square.svg?raw';
 export { default as bookOpenIcon } from './svg/book-open.svg?raw';
+export { default as folderOpenIcon } from './svg/folder-open.svg?raw';
+export { default as libraryIcon } from './svg/library.svg?raw';
+export { default as fileVideoIcon } from './svg/file-video.svg?raw';
 export { default as navPrevIcon } from './svg/nav-prev.svg?raw';
 export { default as navNextIcon } from './svg/nav-next.svg?raw';
 export { default as navRepeatIcon } from './svg/nav-repeat.svg?raw';
@@ -181,6 +190,7 @@ export { default as minimizeIcon } from './svg/minimize.svg?raw';
 export { default as pipIcon } from './svg/pip.svg?raw';
 export { default as pinIcon } from './svg/pin.svg?raw';
 export { default as pinOffIcon } from './svg/pin-off.svg?raw';
+export { default as gaugeIcon } from './svg/gauge.svg?raw';
 export { default as layersIcon } from './svg/layers.svg?raw';
 export { default as atomIcon } from './svg/atom.svg?raw';
 export { default as moleculeIcon } from './svg/molecule.svg?raw';
@@ -263,6 +273,11 @@ export const ICON_CATALOG = {
   messageSquare: { svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message','sentence','text','speech','bubble','chat','audio-sentence'] } as IconEntry,
   bookOpen:    { svg: bookOpenSvg,    source: 'lucide/book-open',    tags: ['dictionary','book','lexicon'] } as IconEntry,
 
+  // === Local player ===
+  folderOpen:  { svg: folderOpenSvg,  source: 'lucide/folder-open',  tags: ['folder','open','file','directory','browse'] } as IconEntry,
+  library:     { svg: librarySvg,     source: 'lucide/library',      tags: ['library','collection','history','list','book-stack'] } as IconEntry,
+  fileVideo:   { svg: fileVideoSvg,   source: 'lucide/file-video',   tags: ['file','video','media','document','filename'] } as IconEntry,
+
   // === Nav cluster ===
   navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,
   navNext:         { svg: navNextSvg,         source: 'svgrepo/round-alt-arrow-right', tags: ['nav','next','forward','sentence','chevron-right','circle'] } as IconEntry,
@@ -296,6 +311,7 @@ export const ICON_CATALOG = {
   pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
   pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,
   pinOff:       { svg: pinOffSvg,       source: 'lucide/pin-off',       tags: ['pin','off','unpin','detach','release','unlock-position'] } as IconEntry,
+  gauge:        { svg: gaugeSvg,        source: 'lucide/gauge',         tags: ['gauge','speed','meter','playback-speed','rate','fast','slow'] } as IconEntry,
 
   // === Design system showcase — atomic design level icons ===
   layers:       { svg: layersSvg,       source: 'custom/design-system', tags: ['layers','stack','foundation','design-tokens','base','tier'] } as IconEntry,

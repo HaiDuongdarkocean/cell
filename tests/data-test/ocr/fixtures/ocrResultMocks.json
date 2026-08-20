@@ -1,0 +1,134 @@
+{
+  "comment": "Mock OcrResult[] fixtures — simulate PaddleOCR.js output. Used for ocrTokenWrap, languageRouter, ocrCache unit tests. poly = 4-point [[x,y],...].",
+  "cases": [
+    {
+      "id": "zh-single-box",
+      "input": "我喜欢北京",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [
+          {
+            "poly": [[277, 64], [524, 67], [524, 125], [277, 123]],
+            "text": "我喜欢北京",
+            "score": 1.0
+          }
+        ],
+        "metrics": { "detMs": 167.8, "recMs": 94.3, "totalMs": 264.6 }
+      }]
+    },
+    {
+      "id": "en-single-box",
+      "input": "Hello World",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [
+          {
+            "poly": [[200, 80], [600, 80], [600, 130], [200, 130]],
+            "text": "Hello World",
+            "score": 0.98
+          }
+        ],
+        "metrics": { "detMs": 150, "recMs": 80, "totalMs": 230 }
+      }]
+    },
+    {
+      "id": "ja-single-box",
+      "input": "日本語を勉強する",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [
+          {
+            "poly": [[180, 70], [620, 70], [620, 130], [180, 130]],
+            "text": "日本語を勉強する",
+            "score": 0.95
+          }
+        ],
+        "metrics": { "detMs": 170, "recMs": 100, "totalMs": 270 }
+      }]
+    },
+    {
+      "id": "mixed-zh-en-intra-box",
+      "input": "我喜欢 watching movies",
+      "results": [{
+        "image": { "width": 800, "height": 100 },
+        "items": [
+          {
+            "poly": [[184, 49], [615, 54], [615, 97], [184, 92]],
+            "text": "我喜欢 watching movies",
+            "score": 0.995
+          }
+        ],
+        "metrics": { "detMs": 234, "recMs": 359, "totalMs": 595 }
+      }]
+    },
+    {
+      "id": "mixed-3-boxes-3-lines",
+      "input": "我喜欢 watching movies\n日本語も勉強しています\nHello 世界",
+      "results": [{
+        "image": { "width": 800, "height": 300 },
+        "items": [
+          {
+            "poly": [[184, 49], [615, 54], [615, 97], [184, 92]],
+            "text": "我喜欢 watching movies",
+            "score": 0.995
+          },
+          {
+            "poly": [[184, 126], [615, 126], [615, 169], [184, 169]],
+            "text": "日本語も勉強しています",
+            "score": 1.0
+          },
+          {
+            "poly": [[305, 198], [494, 198], [494, 245], [305, 245]],
+            "text": "Hello 世界",
+            "score": 0.935
+          }
+        ],
+        "metrics": { "detMs": 234, "recMs": 359, "totalMs": 595 }
+      }]
+    },
+    {
+      "id": "low-score-box",
+      "input": "fuzzy text",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [
+          {
+            "poly": [[100, 50], [300, 50], [300, 100], [100, 100]],
+            "text": "fuzzy text",
+            "score": 0.45
+          }
+        ],
+        "metrics": { "detMs": 100, "recMs": 50, "totalMs": 150 }
+      }]
+    },
+    {
+      "id": "empty-result",
+      "input": "",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [],
+        "metrics": { "detMs": 50, "recMs": 0, "totalMs": 50 }
+      }]
+    },
+    {
+      "id": "multi-box-same-line",
+      "input": "left right",
+      "results": [{
+        "image": { "width": 800, "height": 200 },
+        "items": [
+          {
+            "poly": [[100, 80], [300, 80], [300, 130], [100, 130]],
+            "text": "left",
+            "score": 0.97
+          },
+          {
+            "poly": [[500, 80], [700, 80], [700, 130], [500, 130]],
+            "text": "right",
+            "score": 0.96
+          }
+        ],
+        "metrics": { "detMs": 120, "recMs": 90, "totalMs": 210 }
+      }]
+    }
+  ]
+}

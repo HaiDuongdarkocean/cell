@@ -1,0 +1,35 @@
+<SAMI>
+<HEAD>
+<TITLE>Empty SYNC Blocks SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC>This cue has text content.</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC>&nbsp;</P>
+
+<SYNC Start=6000>
+<P Class=ENUSCC>This cue also has text content.</P>
+
+<SYNC Start=9000>
+<P Class=ENUSCC></P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC>Another empty block was above this one.</P>
+
+<SYNC Start=15000>
+<P Class=ENUSCC>&nbsp;</P>
+
+<SYNC Start=18000>
+<P Class=ENUSCC>The last cue with actual content.</P>
+
+</BODY>
+</SAMI>

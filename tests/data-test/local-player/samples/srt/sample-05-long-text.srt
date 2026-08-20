@@ -1,0 +1,11 @@
+1
+00:00:01,000 --> 00:00:10,000
+This is a very long subtitle line that exceeds two hundred characters in total length to test how the subtitle renderer handles extremely long text blocks that may need to be wrapped or truncated depending on the display area available on screen and the font size being used by the player at that moment in time, which could vary significantly.
+
+2
+00:00:11,000 --> 00:00:20,000
+Another long cue: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit.
+
+3
+00:00:21,000 --> 00:00:30,000
+Long single line: The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. Done.

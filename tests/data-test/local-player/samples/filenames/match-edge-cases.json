@@ -1,0 +1,326 @@
+[
+  {
+    "id": 1,
+    "description": "Different resolution in subtitle vs video — both should strip resolution and match by base name",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "Movie_1080p.en.srt",
+      "Movie_1080p.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie_1080p.en.srt",
+      "native": "Movie_1080p.vi.srt",
+      "others": []
+    },
+    "notes": "Video base = 'Movie' (720p stripped). Subtitle base = 'Movie' (1080p stripped). Bases match despite different resolutions."
+  },
+  {
+    "id": 2,
+    "description": "CJK name video and subtitle — exact CJK match required",
+    "videoFile": "蜘蛛侠.2002.1080p.mp4",
+    "subtitleFiles": [
+      "蜘蛛侠.2002.zh-Hans.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": [
+        "蜘蛛侠.2002.zh-Hans.srt"
+      ]
+    },
+    "notes": "Video base = '蜘蛛侠.2002'. Subtitle base = '蜘蛛侠.2002'. Bases match. Only zh-Hans available, no en or vi."
+  },
+  {
+    "id": 3,
+    "description": "Year preserved in base name — resolution stripped, year kept",
+    "videoFile": "Movie.2023.1080p.mp4",
+    "subtitleFiles": [
+      "Movie.2023.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.2023.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = 'Movie.2023' (1080p stripped). Subtitle base = 'Movie.2023'. Year is part of base name, not stripped."
+  },
+  {
+    "id": 4,
+    "description": "Video with no resolution suffix — base name is entire filename minus extension",
+    "videoFile": "Movie.mp4",
+    "subtitleFiles": [
+      "Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "No resolution to strip. Video base = 'Movie'. Direct match with subtitle base 'Movie'."
+  },
+  {
+    "id": 5,
+    "description": "Spaces in both video and subtitle filenames",
+    "videoFile": "My Movie 1080p.mp4",
+    "subtitleFiles": [
+      "My Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "My Movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Space separator. Video base = 'My Movie' (1080p stripped with space delimiter). Subtitle base = 'My Movie'."
+  },
+  {
+    "id": 6,
+    "description": "Dots as separators in both video and subtitle",
+    "videoFile": "My.Movie.1080p.mp4",
+    "subtitleFiles": [
+      "My.Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "My.Movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Dot separator. Video base = 'My.Movie' (1080p stripped). Subtitle base = 'My.Movie'."
+  },
+  {
+    "id": 7,
+    "description": "Multiple .en.srt files with version suffix — sort alphabetically, pick first",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.en-2.srt",
+      "Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": null,
+      "others": [
+        "Movie.en-2.srt"
+      ]
+    },
+    "notes": "Both match 'en'. Alphabetical sort: 'Movie.en.srt' < 'Movie.en-2.srt'. First is target, second is in others."
+  },
+  {
+    "id": 8,
+    "description": "Subtitle in subfolder — algorithm must search subfolders like 'subs/'",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "subs/Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "subs/Movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Subtitle in 'subs/' subfolder. Common in scene releases (Movie.2023.1080p.BluRay.x264/Subs/). Algorithm must traverse subfolders."
+  },
+  {
+    "id": 9,
+    "description": "No subtitle at all — graceful null return",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    },
+    "notes": "Empty subtitle list. Algorithm must handle gracefully — return all nulls."
+  },
+  {
+    "id": 10,
+    "description": "Completely different base name — no match",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "OtherMovie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = 'Movie'. Subtitle base = 'OtherMovie'. No match — subtitle is for a different video."
+  },
+  {
+    "id": 11,
+    "description": "4K suffix NOT stripped — base name retains _4K",
+    "videoFile": "Movie_4K.mp4",
+    "subtitleFiles": [
+      "Movie_4K.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie_4K.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "4K is not NNNp pattern, so NOT stripped. Video base = 'Movie_4K'. Subtitle base = 'Movie_4K'. Match succeeds because neither is stripped."
+  },
+  {
+    "id": 12,
+    "description": "Bilingual SRT — single file with target+native interleaved, no language code",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.srt",
+      "native": "Movie.srt",
+      "others": []
+    },
+    "notes": "Single bilingual SRT with no language code. Fallback subtitle serves as both target and native. Algorithm should return same file for both."
+  },
+  {
+    "id": 13,
+    "description": "Case mismatch between video and subtitle base names",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = 'Movie'. Subtitle base = 'movie'. Case-insensitive comparison required for base name matching."
+  },
+  {
+    "id": 14,
+    "description": "Uppercase P in resolution — case-insensitive resolution strip",
+    "videoFile": "Movie_1080P.mp4",
+    "subtitleFiles": [
+      "Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Video has '1080P' (uppercase P). Resolution strip must be case-insensitive. Video base = 'Movie'. Subtitle base = 'Movie'."
+  },
+  {
+    "id": 15,
+    "description": "HDR suffix NOT stripped — base name retains .HDR",
+    "videoFile": "Movie.HDR.mp4",
+    "subtitleFiles": [
+      "Movie.HDR.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.HDR.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "HDR is not a resolution pattern, NOT stripped. Video base = 'Movie.HDR'. Subtitle base = 'Movie.HDR'. Match succeeds."
+  },
+  {
+    "id": 16,
+    "description": "Director's Cut with spaces — resolution stripped, edition text preserved",
+    "videoFile": "Movie Directors Cut 2009 1080p.mp4",
+    "subtitleFiles": [
+      "Movie Directors Cut.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = 'Movie Directors Cut 2009' (1080p stripped). Subtitle base = 'Movie Directors Cut'. MISMATCH — subtitle lacks year. No match unless algorithm does fuzzy/partial matching."
+  },
+  {
+    "id": 17,
+    "description": "Anime bracket naming — group and resolution in brackets stripped",
+    "videoFile": "[Group] Movie - 01 [1080p].mkv",
+    "subtitleFiles": [
+      "Movie - 01.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = '[Group] Movie - 01' (bracketed [1080p] stripped). Subtitle base = 'Movie - 01'. MISMATCH — subtitle lacks [Group] prefix. No match unless algorithm strips bracketed group tags."
+  },
+  {
+    "id": 18,
+    "description": "Complex WEB-DL naming with NF source — resolution is split point",
+    "videoFile": "Movie.2023.1080p.NF.WEB-DL.mkv",
+    "subtitleFiles": [
+      "Movie.2023.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": "Movie.2023.vi.srt",
+      "others": []
+    },
+    "notes": "Video base = 'Movie.2023' (1080p and trailing NF.WEB-DL stripped). Subtitle base = 'Movie.2023'. Match. Only vi available, no en."
+  },
+  {
+    "id": 19,
+    "description": "Long dot-separated title — resolution is split point, year preserved",
+    "videoFile": "Movie.Title.with.many.dots.2023.1080p.WEB-DL.mp4",
+    "subtitleFiles": [
+      "Movie.Title.with.many.dots.2023.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.Title.with.many.dots.2023.en.srt",
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = 'Movie.Title.with.many.dots.2023' (1080p.WEB-DL stripped). Subtitle base = 'Movie.Title.with.many.dots.2023'. Exact match."
+  },
+  {
+    "id": 20,
+    "description": "CJK title with BCP 47 script subtag subtitle",
+    "videoFile": "蜘蛛侠.2002.1080p.mp4",
+    "subtitleFiles": [
+      "蜘蛛侠.zh-Hans.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    },
+    "notes": "Video base = '蜘蛛侠.2002' (1080p stripped). Subtitle base = '蜘蛛侠'. MISMATCH — subtitle lacks year '2002'. No match unless algorithm does partial CJK matching. Only zh-Hans available, no en or vi."
+  }
+]

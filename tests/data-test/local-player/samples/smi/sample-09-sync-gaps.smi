@@ -1,0 +1,38 @@
+<SAMI>
+<HEAD>
+<TITLE>Sync Gaps SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC>The first subtitle appears immediately.</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC>&nbsp;</P>
+
+<SYNC Start=15000>
+<P Class=ENUSCC>After a 12-second gap, subtitles resume here.</P>
+
+<SYNC Start=18000>
+<P Class=ENUSCC>&nbsp;</P>
+
+<SYNC Start=35000>
+<P Class=ENUSCC>Another long gap — 17 seconds of silence.</P>
+
+<SYNC Start=38000>
+<P Class=ENUSCC>Short gap before the next one.</P>
+
+<SYNC Start=40000>
+<P Class=ENUSCC>&nbsp;</P>
+
+<SYNC Start=60000>
+<P Class=ENUSCC>A 20-second gap before this final subtitle.</P>
+
+</BODY>
+</SAMI>

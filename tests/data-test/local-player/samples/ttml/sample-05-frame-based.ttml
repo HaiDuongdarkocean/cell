@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+    ttp:frameRate="25"
+    ttp:frameRateMultiplier="1 1"
+    xml:lang="en">
+  <body>
+    <div>
+      <p begin="0f" end="100f">Subtitle from frame 0 to frame 100 (25fps)</p>
+      <p begin="100f" end="200f">Subtitle from frame 100 to frame 200</p>
+      <p begin="200f" end="300f">Subtitle from frame 200 to frame 300</p>
+      <p begin="300f" end="400f">Subtitle from frame 300 to frame 400</p>
+      <p begin="400f" end="500f">Subtitle from frame 400 to frame 500</p>
+    </div>
+  </body>
+</tt>

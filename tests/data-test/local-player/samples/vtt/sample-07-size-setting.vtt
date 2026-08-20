@@ -1,0 +1,16 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:04.000 size:100%
+Full width subtitle
+
+00:00:05.000 --> 00:00:08.000 size:50%
+Half width subtitle
+
+00:00:09.000 --> 00:00:12.000 size:30% position:50%
+30% width centered
+
+00:00:13.000 --> 00:00:16.000 size:80% position:10% align:start
+80% width left-aligned
+
+00:00:17.000 --> 00:00:20.000 size:40% position:60% align:end
+40% width right-aligned at 60% position

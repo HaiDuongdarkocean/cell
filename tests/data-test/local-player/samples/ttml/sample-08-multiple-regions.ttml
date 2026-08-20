@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <head>
+    <layout>
+      <region xml:id="bottom" tts:origin="10% 80%" tts:extent="80% 15%" tts:displayAlign="after"/>
+      <region xml:id="top" tts:origin="10% 5%" tts:extent="80% 15%" tts:displayAlign="before"/>
+      <region xml:id="left" tts:origin="5% 40%" tts:extent="40% 20%"/>
+      <region xml:id="right" tts:origin="55% 40%" tts:extent="40% 20%"/>
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p begin="1s" end="4s" region="bottom">Bottom region subtitle</p>
+      <p begin="1s" end="4s" region="top">Top region subtitle (simultaneous)</p>
+      <p begin="5s" end="8s" region="left">Left region subtitle</p>
+      <p begin="5s" end="8s" region="right">Right region subtitle (simultaneous)</p>
+      <p begin="9s" end="12s" region="bottom">Back to bottom region</p>
+    </div>
+  </body>
+</tt>

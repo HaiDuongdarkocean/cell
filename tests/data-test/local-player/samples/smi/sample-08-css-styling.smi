@@ -1,0 +1,50 @@
+<SAMI>
+<HEAD>
+<TITLE>CSS Styling SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    color: white;
+    background-color: black;
+    text-align: center;
+    margin-left: 8pt;
+    margin-right: 8pt;
+    margin-top: 2pt;
+    margin-bottom: 2pt;
+}
+
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+.KRCC { Name: Korean; lang: ko-KR; SAMIType: CC; }
+
+#Standard { Name: Standard; color: #FFFFFF; font-size: 14pt; }
+#LargePrn { Name: Large Print; color: #FFFF00; font-size: 18pt; }
+#SmallPrn { Name: Small Print; color: #00FFFF; font-size: 10pt; }
+#Source { color: red; background-color: blue; font-family: Courier; font-size: 12pt; font-weight: normal; text-align: left; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC ID=Source>The Speaker</P>
+<P Class=ENUSCC>Welcome to the styled presentation</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC ID=Source>Dr. Smith</P>
+<P Class=ENUSCC>This subtitle uses CSS styling from HEAD</P>
+
+<SYNC Start=6000>
+<P Class=KRCC ID=Source>김 교수님</P>
+<P Class=KRCC>이 자막은 HEAD의 CSS 스타일을 사용합니다</P>
+
+<SYNC Start=9000>
+<P Class=ENUSCC ID=Source>The Speaker</P>
+<P Class=ENUSCC>Multiple style IDs are defined: Standard, Large, Small</P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC>Thank you for watching the styled demo!</P>
+
+</BODY>
+</SAMI>

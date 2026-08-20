@@ -1,0 +1,32 @@
+<SAMI>
+<HEAD>
+<TITLE>Nested Tags SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC><B><I><U>Deeply nested formatting</U></I></B> in one line.</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC><FONT COLOR="yellow"><B>Bold inside font color</B></FONT> with outer text.</P>
+
+<SYNC Start=6000>
+<P Class=ENUSCC><B>Outer bold <I>with inner italic</I> and back to bold</B> then normal.</P>
+
+<SYNC Start=9000>
+<P Class=ENUSCC><FONT COLOR="cyan"><B><I>Triple nested: font, bold, italic</I></B></FONT></P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC><I>Italic start <B>bold inside</B> italic continues</I> normal end.</P>
+
+<SYNC Start=15000>
+<P Class=ENUSCC><B>Bold <FONT COLOR="red">red font inside bold</FONT> bold continues</B></P>
+
+</BODY>
+</SAMI>
