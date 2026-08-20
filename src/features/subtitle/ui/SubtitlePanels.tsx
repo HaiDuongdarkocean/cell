@@ -132,6 +132,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       currentTimeMs: initialCurrentTimeMs,
       offsetMs,
       onSeek,
+      onSplitViewChange,
       managerShadowCss,
     },
     ref,
@@ -148,6 +149,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [blockSettings, setBlockSettingsState] = useState<SubtitleBlockSettings | undefined>(initialBlockSettings);
     const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
+    // Sync manager prop → state when parent rebuilds it (e.g. local-player
+    // rebuilds ManagerState when subtitles change). useState(initialManager)
+    // only sets the first render; without this effect, track switching + import
+    // callbacks stay stale.
+    useEffect(() => { setManager(initialManager); }, [initialManager]);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
     const [managerExiting, setManagerExiting] = useState(false);
@@ -174,7 +180,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [toasts, setToasts] = useState<ToastItem[]>([]);
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [toolsExpanded, setToolsExpanded] = useState(false);
-    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+    const [, setPortalTarget] = useState<HTMLElement | null>(null);
     // Body-level shadow host for the manager panel — escapes video container
     // stacking context (e.g. YouTube #movie_player z-index:0 + position:relative)
     const [managerPortalTarget, setManagerPortalTarget] = useState<HTMLElement | null>(null);
@@ -265,10 +271,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // positioning strategy: absolute within the container, no body-level
     // portal, no videoRect tracking. Fullscreen reparenting reuses the
     // same attachFullscreenReparenting helper as the overlay shadow host.
+    // Local-player fallback: #cell-subtitle-root doesn't exist (only
+    // mountSubtitle creates it for content-script). Use rootRef's parent
+    // (.subtitleOverlay div, position:absolute+inset:0 inside .videoWrapper)
+    // so the manager overlays the video stage, not document.body.
     useEffect(() => {
       if (!managerShadowCss || managerShadowCss.length === 0) return;
       const overlayHost = document.getElementById('cell-subtitle-root');
-      const container = overlayHost?.parentElement ?? document.body;
+      const container = overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body;
       const host = document.createElement('div');
       host.id = 'cell-manager-portal';
       host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2147483647;';
@@ -366,7 +376,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         sendManagerStateUpdate(serializeManagerState(manager, offset, !generateNativeEnabled));
       }, 100);
       return () => { if (stateSyncRef.current) clearTimeout(stateSyncRef.current); };
-    }, [managerOpenOnHost, manager.targetItems, manager.nativeItems, manager.targetActiveIndex, manager.nativeActiveIndex, manager.targetHidden, manager.nativeHidden, manager.bothHidden, manager.appearance, offset?.targetMs, offset?.nativeMs]);
+    }, [managerOpenOnHost, manager?.targetItems, manager?.nativeItems, manager?.targetActiveIndex, manager?.nativeActiveIndex, manager?.targetHidden, manager?.nativeHidden, manager?.bothHidden, manager?.appearance, offset?.targetMs, offset?.nativeMs]);
 
     // Cleanup on close: notify host the child closed the manager + reset flag.
     useEffect(() => {
@@ -437,8 +447,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (playerMode) { svLog('toggle BLOCKED by playerMode'); return; }
       const childFrame = isChildFrame();
       svLog('toggle', { from: splitViewOpen, to: !splitViewOpen, playerMode, isFullscreen, childFrame, url: location.href });
-      setSplitViewOpen((v) => !v);
-    }, [playerMode, splitViewOpen, isFullscreen]);
+      const next = !splitViewOpen;
+      setSplitViewOpen(next);
+      onSplitViewChange?.(next);
+    }, [playerMode, splitViewOpen, isFullscreen, onSplitViewChange]);
 
     useImperativeHandle(
       ref,
@@ -464,6 +476,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setCurrentTimeMs,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
+        setSplitViewOpen: (open: boolean) => { setSplitViewOpen(open); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView],
     );
@@ -961,7 +974,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // CSS handles all YouTube player sizing now (height:100%!important,
       // object-fit:contain). No setSize bridge needed — it set hardcoded
       // pixel sizes that froze on resize.
-      const restoreYoutubeSplitView = (): void => undefined;
       window.dispatchEvent(new Event('resize'));
 
       // Drag resize: measure the flex container (wrapper or playerShell).
