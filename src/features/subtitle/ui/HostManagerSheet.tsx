@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
-import { Sheet } from '@/shared/ui/Sheet';
-import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS } from '@/shared/config/config';
+import { useCallback } from 'react';
+import { ManagerLayer } from './ManagerLayer';
+import type { AppearanceState, ManagerState } from './subtitlePanelsTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
 import type {
   SerializedManagerState,
@@ -39,69 +37,52 @@ function buildAppearance(
   };
 }
 
+/**
+ * HostManagerSheet — thin adapter for the host-page mobile iframe-child.
+ *
+ * Converts `SerializedManagerState` → `ManagerState` (wiring `onAction` callbacks)
+ * and delegates all rendering (Sheet + persisted height + panel) to `ManagerLayer`.
+ * Only the host-page backdrop remains here — `ManagerLayer`'s mobile branch does
+ * not render one (the shared `Sheet` atom has no backdrop of its own).
+ *
+ * Spec: docs/specs/subtitle-panels-atom-decomposition.md (Decision D1, Task 8)
+ */
 export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetProps): React.JSX.Element {
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
 
-  // Persisted sheet height (% of viewport, 20-95). null = not yet loaded.
-  const [sheetHeightVh, setSheetHeightVh] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    getStorage<Record<string, number>>(STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH)
-      .then((data) => {
-        const stored = data[STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH];
-        if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
-        setSheetHeightVh(Math.min(Math.max(stored, 20), 95));
-      })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, []);
+  const manager: ManagerState = {
+    targetItems: state.targetItems,
+    nativeItems: state.nativeItems,
+    targetActiveIndex: state.targetActiveIndex,
+    nativeActiveIndex: state.nativeActiveIndex,
+    onSelect: (role, index) => onAction('select', { role, index }),
+    onImport: (role) => onAction('import', { role }),
+    onGenerateNative: state.generateNativeDisabled ? undefined : () => onAction('generateNative', {}),
+    onOffsetChange: (role, ms) => onAction('offsetChange', { role, ms }),
+    appearance: state.appearance ? buildAppearance(state.appearance, onAction) : undefined,
+    hasSearchKeys: state.hasSearchKeys,
+    apiKeys: state.apiKeys as readonly SubtitleApiKey[],
+    onApiKeysChange: (keys) => onAction('apiKeysChange', { keys }),
+    onSearchResultSelect: (result, role) => onAction('searchResultSelect', { result, role }),
+    onDownload: (role, index) => onAction('download', { role, index }),
+    onHideSection: (role) => onAction('hideSection', { role }),
+    onHideBoth: () => onAction('hideBoth', {}),
+    targetHidden: state.targetHidden,
+    nativeHidden: state.nativeHidden,
+    bothHidden: state.bothHidden,
+  };
 
   return (
     <>
       <div className={styles.backdrop} onClick={handleBackdropClick} />
-      <Sheet
-        open
+      <ManagerLayer
+        manager={manager}
+        isMobile={true}
         onClose={onClose}
-        initialHeight={sheetHeightVh != null
-          ? Math.round(window.innerHeight * (sheetHeightVh / 100))
-          : undefined}
-        onHeightChange={(h) => {
-          const vh = Math.round((h / window.innerHeight) * 100);
-          const clamped = Math.max(20, Math.min(95, vh));
-          setSheetHeightVh(clamped);
-          setStorage({ [STORAGE_KEYS.SUBTITLE_MANAGER_SHEET_HEIGHT_VH]: clamped }).catch(() => undefined);
-        }}
-      >
-        <SubtitleManagerPanel
-          targetItems={state.targetItems}
-          nativeItems={state.nativeItems}
-          targetActiveIndex={state.targetActiveIndex}
-          nativeActiveIndex={state.nativeActiveIndex}
-          targetLabel={state.targetLabel}
-          nativeLabel={state.nativeLabel}
-          onSelect={(role, index) => onAction('select', { role, index })}
-          onClose={onClose}
-          onImport={(role) => onAction('import', { role })}
-          onGenerateNative={state.generateNativeDisabled ? undefined : () => onAction('generateNative', {})}
-          onOffsetChange={(role, ms) => onAction('offsetChange', { role, ms })}
-          generateNativeDisabled={state.generateNativeDisabled}
-          appearance={state.appearance ? buildAppearance(state.appearance, onAction) : undefined}
-          hasSearchKeys={state.hasSearchKeys}
-          apiKeys={state.apiKeys as readonly SubtitleApiKey[]}
-          onApiKeysChange={(keys) => onAction('apiKeysChange', { keys })}
-          onSearchResultSelect={(result, role) => onAction('searchResultSelect', { result, role })}
-          onDownload={(role, index) => onAction('download', { role, index })}
-          onHideSection={(role) => onAction('hideSection', { role })}
-          onHideBoth={() => onAction('hideBoth', {})}
-          targetHidden={state.targetHidden}
-          nativeHidden={state.nativeHidden}
-          bothHidden={state.bothHidden}
-          inSheet
-        />
-      </Sheet>
+        generateNativeEnabled={!state.generateNativeDisabled}
+      />
     </>
   );
 }
