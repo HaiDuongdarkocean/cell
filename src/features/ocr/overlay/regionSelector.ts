@@ -20,6 +20,17 @@ export function defaultBottomRegion(regionPct: number, regionWidthPct = 100): Cu
   return { xPct: (100 - regionWidthPct) / 2, yPct: 100 - regionPct, widthPct: regionWidthPct, heightPct: regionPct };
 }
 
+/** CSS injected once to hide universal panel during region selection. */
+let panelHideStyleInjected = false;
+function injectPanelHideStyle(): void {
+  if (panelHideStyleInjected) return;
+  panelHideStyleInjected = true;
+  const style = document.createElement('style');
+  style.id = 'cell-ocr-region-selecting-style';
+  style.textContent = 'body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: none !important; }';
+  document.head.appendChild(style);
+}
+
 /** Region selector overlay — manages rectangle + handles + buttons on video. */
 export class RegionSelector {
   private container: HTMLDivElement | null = null;
@@ -42,6 +53,7 @@ export class RegionSelector {
   /** Attach selector to a video element's parent. */
   attach(video: HTMLVideoElement, region: CustomRegion, mode: RegionSelectorMode = 'view'): void {
     this.detach();
+    injectPanelHideStyle();
     this.video = video;
     this.currentRegion = region;
     this.mode = mode;
@@ -64,6 +76,7 @@ export class RegionSelector {
 
     this.render();
     this.attachListeners();
+    this.syncBodyFlag();
 
     if (mode !== 'view') {
       this.boundOnKeyDown = (e: KeyboardEvent) => {
@@ -79,6 +92,7 @@ export class RegionSelector {
     this.pendingRegion = null;
     this.render();
     this.attachListeners();
+    this.syncBodyFlag();
     if (mode !== 'view') {
       if (!this.boundOnKeyDown) {
         this.boundOnKeyDown = (e: KeyboardEvent) => {
@@ -126,6 +140,14 @@ export class RegionSelector {
     this.toolbar = null;
     this.video = null;
     this.dragState = null;
+    this.syncBodyFlag();
+  }
+
+  /** Set body[data-ocr-region-selecting] so CSS can hide the universal panel during selection. */
+  private syncBodyFlag(): void {
+    const selecting = this.mode !== 'view' && this.container != null;
+    document.body.dataset.ocrRegionSelecting = selecting ? 'true' : '';
+    if (!selecting) delete document.body.dataset.ocrRegionSelecting;
   }
 
   // ─── Internal rendering ───
