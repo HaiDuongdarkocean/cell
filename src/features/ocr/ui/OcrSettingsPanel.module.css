@@ -1,59 +1,192 @@
+/* === OcrSettingsPanel — iOS Settings card style ===
+   Matches SubtitleBlockSettingsPanel pattern: rounded cards, hairline borders,
+   grouped rows with separator. Tokens from design system (no hardcoded values). */
+
 .container {
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--surface-2, #1e1e2e);
-  border: 1px solid var(--border-default, #333344);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
 }
 
-.header {
+/* ─── Card — rounded, hairline border, grouped rows ─── */
+.card,
+.configCard {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+/* Config card — reveal animation when OCR enabled */
+.configCard {
+  animation: configReveal var(--duration-300) var(--ease-standard);
+  transform-origin: top;
+}
+
+@keyframes configReveal {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Toggle row — label group left, toggle right ─── */
+.toggleRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
 }
 
-.title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #eee);
+/* ─── Row (language) — label group left, select right ─── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
 }
 
-.config {
-  margin-top: 12px;
+/* ─── Label group — icon + label + info icon, main axis center, cross axis left ─── */
+.labelGroup {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
+.row + .row,
+.row + .rowStack,
+.rowStack + .row {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* ─── Stacked row (slider) — vertical: header + slider + hint ─── */
+.rowStack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-1-5);
+  padding: var(--space-3) var(--space-4);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+/* ─── Row leading icon — 20px, secondary color ─── */
+.rowIcon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.rowIcon svg {
+  width: 20px;
+  height: 20px;
 }
 
-.label {
-  font-size: 12px;
-  color: var(--text-secondary, #aaa);
+/* ─── Row label ─── */
+.rowLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-tight);
+  user-select: none;
 }
 
-.select {
-  padding: 6px 8px;
-  border-radius: 4px;
-  background: var(--surface-1, #181828);
-  color: var(--text-primary, #eee);
-  border: 1px solid var(--border-default, #333344);
-  font-size: 13px;
+/* ─── Info button — compact, hover/focus → info color ─── */
+.infoBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.infoBtn:hover {
+  color: var(--color-info);
+}
+.infoBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+.infoBtn svg {
+  width: 16px;
+  height: 16px;
 }
 
-.slider {
-  width: 100%;
-  accent-color: var(--accent-primary, #6c8);
+/* ─── Inline expandable hint — grid 0fr→1fr, attached to card ─── */
+.hintRow {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-300) var(--ease-standard);
 }
-
-.hint {
+.hintRow[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.hintInner {
+  overflow: hidden;
+}
+.hintContent {
   margin: 0;
-  font-size: 11px;
-  color: var(--text-tertiary, #777);
-  line-height: 1.4;
+  padding: var(--space-2-5) var(--space-4) var(--space-3) var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.hintStrong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ─── Slider header — label group left, value right ─── */
+.sliderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.sliderValue {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Slider hint — below slider ─── */
+.sliderHint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Select — compact width in row ─── */
+.row :global(.selectRoot),
+.row > :global([class*='select']),
+.row > div {
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 160px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .configCard,
+  .hintRow {
+    animation: none;
+    transition: none;
+  }
 }

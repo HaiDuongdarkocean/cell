@@ -1,10 +1,13 @@
 // OcrEngine types — spec §AD1, §Architecture.
-// ImageSource = ImageData shape (transferable via Port), KHÔNG phải ImageBitmap.
+// ImageSource = ImageData shape, transferable via chrome.runtime.sendMessage.
+// Note: chrome.runtime.sendMessage uses JSON serialization, so Uint8ClampedArray
+// becomes {} (data lost). Callers must convert to number[] before sending.
+// Receivers handle both Uint8ClampedArray (direct) and number[] (via message).
 
 /** Transferable image data — matches canvas.getImageData() shape.
- *  Sent via chrome.runtime.connect Port with transfer list [data.buffer]. */
+ *  data: Uint8ClampedArray when called directly, number[] when received via sendMessage. */
 export interface ImageSource {
-  readonly data: Uint8ClampedArray;
+  readonly data: Uint8ClampedArray | number[];
   readonly width: number;
   readonly height: number;
 }

@@ -28,14 +28,22 @@ function makeImageWithSubtitle(width: number, height: number, bgValue: number, s
 }
 
 describe('ocrPipeline (T12)', () => {
-  it('detects DRM black frame and aborts', async () => {
+  it('detects DRM after warmup + 3 consecutive black frames', async () => {
     const blackFrame = makeImage(640, 480, 0);
     const state = new OcrPipelineState();
-    const recognizeFn = jest.fn() as unknown as RecognizeFn;
-    const result = await runPipelineStep(blackFrame, recognizeFn, state);
-    expect(result.status).toBe('drm_detected');
+    const recognizeFn = jest.fn(async (): Promise<OcrResult[]> => []) as unknown as RecognizeFn;
+    // During warmup (first 60 frames), black frames fall through to OCR.
+    // recognizeFn is called but returns empty (no text on black frame).
+    for (let i = 0; i < 60; i++) {
+      await runPipelineStep(blackFrame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, i * 400);
+    }
+    // After warmup, 3 consecutive black frames trigger DRM detection.
+    // Frame 60 in the loop already incremented drmCount to 1 (frameCount=60 >= 60).
+    let result = await runPipelineStep(blackFrame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, 60 * 400);
+    expect(result.status).toBe('skip_unchanged'); // drmCount=2, fall through to luma-diff skip
+    result = await runPipelineStep(blackFrame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, 61 * 400);
+    expect(result.status).toBe('drm_detected'); // drmCount=3 → DRM
     expect(state.isDrmDetected()).toBe(true);
-    expect(recognizeFn).not.toHaveBeenCalled();
   });
 
   it('runs OCR on first frame', async () => {

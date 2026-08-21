@@ -3,7 +3,6 @@
 
 import type { ImageSource, OcrResult, OcrResultItem } from '@/features/ocr/engine/types';
 import { checkDrmGuard } from './drmGuard';
-import { regionMeanLuma, shouldRunOcr, subtitleRegionHash } from './lumaDiff';
 import { computeSubtitleRegion, cropImage } from './cropRegion';
 import { scriptRunSegmenter, type ScriptRun } from '../language/scriptRunSegmenter';
 
@@ -23,9 +22,9 @@ export interface OcrPipelineConfig {
 
 export const DEFAULT_PIPELINE_CONFIG: OcrPipelineConfig = {
   subtitleRegionPct: 15,
-  lumaDiffThreshold: 3,
-  minScore: 0.5,
-  minFrameIntervalMs: 333, // 3fps time gate.
+  lumaDiffThreshold: 1, // Unused — luma gate removed, kept for config compatibility.
+  minScore: 0.3, // Lower threshold — catch low-confidence text like "Hello" in "Hello World".
+  minFrameIntervalMs: 200, // 5fps time gate — faster cue detection for short subtitles.
   maxRetries: 3,
 };
 
@@ -48,6 +47,26 @@ export function textMatchesPrevious(
   return currentText === previousText;
 }
 
+/**
+ * Post-process OCR text to restore spaces lost by PaddleOCR.
+ * 1. Insert space between CJK and Latin character boundaries.
+ * 2. Insert space between lowercase→uppercase Latin transitions,
+ *    but only if the preceding lowercase run is ≥3 chars (excludes "WiFi", "4K").
+ */
+export function restoreSpaces(text: string): string {
+  // 1. CJK ↔ Latin boundaries.
+  let result = text
+    .replace(/([\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff])([A-Za-z])/g, '$1 $2')
+    .replace(/([A-Za-z])([\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff])/g, '$1 $2');
+
+  // 2. Lowercase→Uppercase transition: insert space if preceding run ≥3 lowercase chars.
+  //    "TokyoStation" → "Tokyo Station" (Tokyo=4 chars ✓)
+  //    "WiFi" → "WiFi" (Wi=2 chars ✗, preserved)
+  result = result.replace(/([a-z]{3,})([A-Z])/g, '$1 $2');
+
+  return result;
+}
+
 /** OCR pipeline state — tracks previous frame for dedup. */
 export class OcrPipelineState {
   private previousLuma: number | null = null;
@@ -55,6 +74,8 @@ export class OcrPipelineState {
   private previousText: string | null = null;
   private lastOcrTimeMs: number | null = null;
   private drmDetected = false;
+  private consecutiveDrmCount = 0;
+  private frameCount = 0;
 
   /** Reset state (e.g. on video change). */
   reset(): void {
@@ -63,6 +84,8 @@ export class OcrPipelineState {
     this.previousText = null;
     this.lastOcrTimeMs = null;
     this.drmDetected = false;
+    this.consecutiveDrmCount = 0;
+    this.frameCount = 0;
   }
 
   /** Mark DRM detected — pipeline should abort. */
@@ -72,6 +95,31 @@ export class OcrPipelineState {
 
   isDrmDetected(): boolean {
     return this.drmDetected;
+  }
+
+  /** Increment frame counter (called each pipeline step). */
+  incrementFrameCount(): void {
+    this.frameCount++;
+  }
+
+  /** Get current frame count. */
+  getFrameCount(): number {
+    return this.frameCount;
+  }
+
+  /** Increment consecutive DRM-dark-frame counter. */
+  incrementDrmCount(): void {
+    this.consecutiveDrmCount++;
+  }
+
+  /** Reset consecutive DRM counter (called when a non-dark frame is seen). */
+  resetDrmCount(): void {
+    this.consecutiveDrmCount = 0;
+  }
+
+  /** Get consecutive DRM-dark-frame count. */
+  getConsecutiveDrmCount(): number {
+    return this.consecutiveDrmCount;
   }
 
   getPreviousLuma(): number | null {
@@ -94,7 +142,7 @@ export class OcrPipelineState {
     return this.previousText;
   }
 
-  setPreviousText(text: string): void {
+  setPreviousText(text: string | null): void {
     this.previousText = text;
   }
 
@@ -110,8 +158,7 @@ export class OcrPipelineState {
 /** Pipeline step result — what happened in this frame. */
 export type PipelineStepResult =
   | { readonly status: 'ocr'; readonly results: readonly OcrResultItem[]; readonly scriptRuns: readonly ScriptRun[][] }
-  | { readonly status: 'skip_unchanged' }
-  | { readonly status: 'skip_duplicate' }
+  | { readonly status: 'subtitle_gone' }
   | { readonly status: 'skip_text_duplicate' }
   | { readonly status: 'skip_time_gate' }
   | { readonly status: 'drm_detected'; readonly meanLuma: number }
@@ -119,11 +166,17 @@ export type PipelineStepResult =
 
 /**
  * Run one pipeline step on a captured frame.
- * 1. Time gate — skip if too soon since last OCR (3fps).
+ * 1. Time gate — skip if too soon since last OCR.
  * 2. DRM guard — if black frame, abort.
- * 3. Compute subtitle region luma — if unchanged, skip.
- * 4. Compute pHash — if duplicate, skip.
- * 5. Crop subtitle region → OCR (with retry T22) → text dedup → script-run segment.
+ * 3. Crop subtitle region → OCR (with retry T22).
+ * 4. If empty results → subtitle_gone (clear overlay, reset text state).
+ * 5. If same text as previous → skip_text_duplicate.
+ * 6. If new text → return OCR results.
+ *
+ * Luma/pHash gates removed for accuracy: they were too insensitive to detect
+ * text changes between cues (white-on-black text has similar luma regardless
+ * of content). The processing lock in OcrSession prevents concurrent OCR
+ * calls, so every frame that passes the time gate gets OCR'd directly.
  *
  * @param image Full video frame.
  * @param recognizeFn OCR function (from OcrController.recognize).
@@ -138,39 +191,35 @@ export async function runPipelineStep(
   config: OcrPipelineConfig = DEFAULT_PIPELINE_CONFIG,
   frameTimeMs: number = performance.now(),
 ): Promise<PipelineStepResult> {
-  // 1. Time gate — skip if too soon since last OCR (3fps). T10.
+  // 1. Time gate — skip if too soon since last OCR.
   if (!shouldRunByTimeGate(frameTimeMs, state.getLastOcrTimeMs(), config.minFrameIntervalMs)) {
     return { status: 'skip_time_gate' };
   }
 
-  // 2. DRM guard — check full frame.
+  state.incrementFrameCount();
+
+  // 2. DRM guard — check full frame. Require 3 consecutive dark frames
+  //    after a 60-frame warmup to avoid false positives from transitional/black
+  //    frames at video start. ponytail: ceiling = 10s black intro, upgrade to
+  //    content-aware DRM fingerprinting if real DRM content is encountered.
   const drmCheck = checkDrmGuard(image);
   if (drmCheck.isDrm) {
-    state.markDrm();
-    return { status: 'drm_detected', meanLuma: drmCheck.meanLuma };
+    if (state.getFrameCount() >= 60) {
+      state.incrementDrmCount();
+      if (state.getConsecutiveDrmCount() >= 3) {
+        state.markDrm();
+        return { status: 'drm_detected', meanLuma: drmCheck.meanLuma };
+      }
+    }
+  } else {
+    state.resetDrmCount();
   }
 
-  // 3. Compute subtitle region.
+  // 3. Crop subtitle region.
   const region = computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct);
-  const currentLuma = regionMeanLuma(image, region);
-
-  // 4. Luma-diff check — skip if subtitle area unchanged.
-  if (!shouldRunOcr(currentLuma, state.getPreviousLuma(), config.lumaDiffThreshold)) {
-    state.setPreviousLuma(currentLuma);
-    return { status: 'skip_unchanged' };
-  }
-
-  // 5. pHash dedup — skip if text content identical.
-  const currentHash = subtitleRegionHash(image, region);
-  if (currentHash === state.getPreviousHash()) {
-    state.setPreviousLuma(currentLuma);
-    return { status: 'skip_duplicate' };
-  }
-
-  // 6. Crop subtitle region.
   const cropped = cropImage(image, region);
 
-  // 7. OCR with retry. T22.
+  // 4. OCR with retry. T22.
   let ocrResults: OcrResult[] | null = null;
   let lastError: string | null = null;
   for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
@@ -186,27 +235,33 @@ export async function runPipelineStep(
     return { status: 'error', error: lastError ?? 'unknown', attempts: config.maxRetries };
   }
 
-  // 8. Script-run segment each OCR item's text.
+  // 5. Script-run segment each OCR item's text (with space restoration).
   const allItems: OcrResultItem[] = [];
   const allScriptRuns: ScriptRun[][] = [];
   for (const result of ocrResults) {
     for (const item of result.items) {
-      allItems.push(item);
-      allScriptRuns.push([...scriptRunSegmenter(item.text)]);
+      const restoredText = restoreSpaces(item.text);
+      allItems.push({ ...item, text: restoredText });
+      allScriptRuns.push([...scriptRunSegmenter(restoredText)]);
     }
   }
 
-  // 9. Text-level dedup — skip if OCR text identical to previous. T10.
+  // 6. Empty results → subtitle disappeared from frame.
+  //    Clear overlay + reset text state so next cue is detected as new.
   const currentText = allItems.map(i => i.text).join(' ');
+  if (allItems.length === 0) {
+    state.setLastOcrTimeMs(frameTimeMs);
+    state.setPreviousText(null);
+    return { status: 'subtitle_gone' };
+  }
+
+  // 7. Text-level dedup — skip if OCR text identical to previous. T10.
   if (textMatchesPrevious(currentText, state.getPreviousText())) {
-    state.setPreviousLuma(currentLuma);
     state.setLastOcrTimeMs(frameTimeMs);
     return { status: 'skip_text_duplicate' };
   }
 
-  // 10. Update state.
-  state.setPreviousLuma(currentLuma);
-  state.setPreviousHash(currentHash);
+  // 8. New text detected — update state.
   state.setPreviousText(currentText);
   state.setLastOcrTimeMs(frameTimeMs);
 

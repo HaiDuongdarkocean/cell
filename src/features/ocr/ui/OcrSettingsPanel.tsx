@@ -1,8 +1,9 @@
 // OcrSettingsPanel — T17-T20. Manager Panel UI for OCR toggle + config.
 // spec §AD4: Per-origin OCR enable toggle, language mode, subtitle region %.
+// UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { Toggle } from '@/shared/ui';
+import { Toggle, Select, Slider, Icon } from '@/shared/ui';
 import {
   loadOcrSettings,
   saveOcrSettings,
@@ -16,6 +17,13 @@ import {
 import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
 import styles from './OcrSettingsPanel.module.css';
 
+const LANGUAGE_OPTIONS = [
+  { value: 'auto', label: 'Auto-detect' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'en', label: 'English' },
+  { value: 'ja', label: 'Japanese' },
+];
+
 export interface OcrSettingsPanelProps {
   /** Current page URL — used to determine origin. */
   readonly url: string;
@@ -25,6 +33,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
   const [settings, setSettings] = useState<OcrSettings | null>(null);
   const [origin, setOrigin] = useState('');
   const [ocrState, setOcrState] = useState<OcrOriginState | undefined>(undefined);
+  const [hintOpen, setHintOpen] = useState(false);
 
   // Load settings once on mount.
   useEffect(() => {
@@ -54,9 +63,9 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     await saveOcrSettings(next);
   }, [settings, origin, ocrState]);
 
-  const handleLanguageModeChange = useCallback(async (mode: OcrOriginState['languageMode']) => {
+  const handleLanguageModeChange = useCallback(async (mode: string) => {
     if (!settings || !origin || !ocrState) return;
-    const next = setOcrPreference(settings, origin, { ...ocrState, languageMode: mode });
+    const next = setOcrPreference(settings, origin, { ...ocrState, languageMode: mode as OcrOriginState['languageMode'] });
     await saveOcrSettings(next);
     setSettings(next);
     setOcrState(getOcrPreference(next, origin));
@@ -72,53 +81,91 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
   }, [settings, origin, ocrState]);
 
   const enabled = ocrState?.ocrEnabled ?? false;
-
-  // Debug: log render state when enabled but config not showing.
-  // ponytail: remove after verifying in browser test.
+  const regionPct = ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct;
+  const languageMode = ocrState?.languageMode ?? DEFAULT_OCR_ORIGIN_STATE.languageMode;
 
   return (
     <div className={styles.container} data-testid="ocr-settings-panel" data-enabled={enabled}>
-      <div className={styles.header}>
-        <h3 className={styles.title}>OCR Subtitles</h3>
-        <Toggle
-          checked={enabled}
-          onChange={handleToggle}
-          ariaLabel="Toggle OCR for this site"
-          dataTestId="ocr-toggle"
-        />
-      </div>
-      {enabled && (
-        <div className={styles.config}>
-          <label className={styles.field}>
-            <span className={styles.label}>Language</span>
-            <select
-              className={styles.select}
-              value={ocrState?.languageMode ?? DEFAULT_OCR_ORIGIN_STATE.languageMode}
-              onChange={(e) => void handleLanguageModeChange(e.target.value as OcrOriginState['languageMode'])}
-              data-testid="ocr-language-mode"
+      {/* ─── Toggle card — label group (icon + label + info) + toggle ─── */}
+      <div className={styles.card}>
+        <div className={styles.toggleRow}>
+          <span className={styles.labelGroup}>
+            <span className={styles.rowIcon} aria-hidden="true">
+              <Icon name="image" />
+            </span>
+            <span className={styles.rowLabel}>Detect burned-in subtitles</span>
+            <button
+              type="button"
+              className={styles.infoBtn}
+              aria-label="What is OCR?"
+              aria-expanded={hintOpen}
+              data-cell-id="ocr-info-btn"
+              onClick={() => setHintOpen((v) => !v)}
             >
-              <option value="auto">Auto-detect</option>
-              <option value="zh">Chinese</option>
-              <option value="en">English</option>
-              <option value="ja">Japanese</option>
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span className={styles.label}>Subtitle region: {ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct}%</span>
-            <input
-              className={styles.slider}
-              type="range"
+              <Icon name="info" />
+            </button>
+          </span>
+          <Toggle
+            checked={enabled}
+            onChange={handleToggle}
+            ariaLabel="Toggle OCR for this site"
+            dataTestId="ocr-toggle"
+            size="sm"
+          />
+        </div>
+        {/* Inline expandable hint — grid 0fr→1fr, attached to card */}
+        <div className={styles.hintRow} data-open={hintOpen}>
+          <div className={styles.hintInner}>
+            <p className={styles.hintContent}>
+              Detects text burned into the video frame and makes it clickable for dictionary lookup.{' '}
+              <strong className={styles.hintStrong}>For this site only.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Config card — revealed when OCR enabled ─── */}
+      {enabled && (
+        <div className={styles.configCard}>
+          {/* Language row */}
+          <div className={styles.row}>
+            <span className={styles.labelGroup}>
+              <span className={styles.rowIcon} aria-hidden="true">
+                <Icon name="languages" />
+              </span>
+              <span className={styles.rowLabel}>Language</span>
+            </span>
+            <Select
+              value={languageMode}
+              options={LANGUAGE_OPTIONS}
+              onChange={(v) => void handleLanguageModeChange(v)}
+              aria-label="OCR language"
+              data-cell-id="ocr-language-mode"
+              menuAlign="right"
+            />
+          </div>
+
+          {/* Region slider row */}
+          <div className={styles.rowStack}>
+            <div className={styles.sliderHeader}>
+              <span className={styles.labelGroup}>
+                <span className={styles.rowIcon} aria-hidden="true">
+                  <Icon name="gauge" />
+                </span>
+                <span className={styles.rowLabel}>Scan region</span>
+              </span>
+              <span className={styles.sliderValue}>{regionPct}%</span>
+            </div>
+            <Slider
+              value={regionPct}
               min={5}
               max={50}
-              value={ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct}
-              onChange={(e) => void handleRegionPctChange(Number(e.target.value))}
-              data-testid="ocr-region-pct"
+              step={1}
+              onChange={(v) => void handleRegionPctChange(v)}
+              aria-label="Subtitle scan region percentage"
             />
-          </label>
-          <p className={styles.hint}>
-            OCR detects burned-in subtitles in video frames and makes them clickable for dictionary lookup.
-            Works on sites without native subtitle tracks.
-          </p>
+            <p className={styles.sliderHint}>Bottom {regionPct}% of the video frame</p>
+          </div>
         </div>
       )}
     </div>

@@ -11,4 +11,6 @@ export interface OcrEngine {
   recognize(image: ImageSource, options?: OcrOptions): Promise<OcrResult[]>;
   /** Free model + session + backend resources. Does NOT close the offscreen document. */
   dispose(): Promise<void>;
+  /** Whether the engine has finished initialization and is ready for recognition. */
+  isInitialized(): boolean;
 }

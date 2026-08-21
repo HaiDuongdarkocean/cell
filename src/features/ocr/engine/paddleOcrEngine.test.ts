@@ -12,6 +12,24 @@ jest.mock('@paddleocr/paddleocr-js', () => ({
   PaddleOCR: { create: mockCreate },
 }), { virtual: true });
 
+// Mock @techstark/opencv-js — dynamically imported inside initialize().
+// __esModule: true ensures (await import(...)).default returns the mock object.
+// calledRun=true → pre-init logic skips await (cv-already-ready path).
+jest.mock('@techstark/opencv-js', () => ({
+  __esModule: true,
+  default: {
+    Mat: jest.fn(() => ({ delete: jest.fn() })),
+    CV_8UC1: 0,
+    imread: jest.fn(() => ({ delete: jest.fn() })),
+    calledRun: true,
+  },
+}));
+
+// Mock chrome-apis getURL — chrome.runtime.getURL not available in jsdom.
+jest.mock('@/shared/lib/chrome-apis', () => ({
+  getURL: (path: string) => `chrome-extension://mock/${path}`,
+}));
+
 import { PaddleOcrEngine } from './paddleOcrEngine';
 import type { ImageSource, OcrConfig } from './types';
 
@@ -64,16 +82,19 @@ describe('PaddleOcrEngine (T4)', () => {
   it('initialize calls PaddleOCR.create with correct params', async () => {
     const engine = new PaddleOcrEngine();
     await engine.initialize(config);
-    expect(mockCreate).toHaveBeenCalledWith({
-      lang: 'ch',
-      ocrVersion: 'PP-OCRv5',
-      ortOptions: {
-        backend: 'webgpu',
-        wasmPaths: 'chrome-extension://mock/wasm/',
-        numThreads: 1,
-        simd: true,
-      },
-    });
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lang: 'ch',
+        ocrVersion: 'PP-OCRv5',
+        textDetectionModelName: 'PP-OCRv5_mobile_det',
+        textRecognitionModelName: 'PP-OCRv5_mobile_rec',
+        ortOptions: expect.objectContaining({
+          backend: 'webgpu',
+          numThreads: 1,
+          simd: true,
+        }),
+      }),
+    );
   });
 
   it('initialize is idempotent — second call does not re-create', async () => {
@@ -163,7 +184,9 @@ describe('PaddleOcrEngine (T4)', () => {
     await engine.initialize({ ...config, wasmPaths: customPaths });
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        ortOptions: expect.objectContaining({ wasmPaths: customPaths }),
+        ortOptions: expect.objectContaining({
+          wasmPaths: { wasm: customPaths + 'ort-wasm-simd-threaded.jsep.wasm' },
+        }),
       }),
     );
   });

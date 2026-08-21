@@ -11,6 +11,12 @@
  * result back to OPFS, and responds with the output file name.
  */
 
+// Debug: verify offscreen document code runs + sendMessage reaches background.
+// This is called immediately when the offscreen document loads.
+try {
+  void chrome.runtime.sendMessage({ type: 'OFFSCREEN_DEBUG_LOG', data: { kind: 'ffmpeg-loaded', time: Date.now() } }).catch(() => {});
+} catch {}
+
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { transmuxTsToFmp4 } from '@/features/transmux';
 import { executeParallelConversion } from '@/features/transmux';
@@ -20,6 +26,7 @@ import {
   readFile as opfsReadFile,
 } from '@/shared/lib/storage/opfsStorage';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { ocrMessageListener } from './ocrRunner';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { encodeBase64 } from '@/shared/lib/base64';
 import type {
@@ -332,6 +339,31 @@ export async function startMessageListener(): Promise<void> {
     const request = message as MessageRequest;
     const type = request?.type;
 
+    // Debug: log every message received by the offscreen listener.
+    console.log('[OFFSCREEN-LISTENER] received:', type);
+    try {
+      chrome.storage.local.set({ __offscreenListenerMsg: type + '@' + Date.now() }).catch((e: unknown) => {
+        console.error('[OFFSCREEN] chrome.storage.local.set rejected:', e);
+      });
+    } catch (e) {
+      console.error('[OFFSCREEN] chrome.storage.local.set threw:', e);
+    }
+
+    if (
+      type === MESSAGE_TYPES.OCR_INIT ||
+      type === MESSAGE_TYPES.OCR_RECOGNIZE ||
+      type === MESSAGE_TYPES.OCR_DISPOSE ||
+      type === '_OFFSCREEN_OCR_INIT' ||
+      type === '_OFFSCREEN_OCR_RECOGNIZE' ||
+      type === '_OFFSCREEN_OCR_DISPOSE'
+    ) {
+      // Normalize _OFFSCREEN_ prefixed types back to the base type for ocrRunner.
+      const normalized = type.startsWith('_OFFSCREEN_')
+        ? { ...message, type: type.replace('_OFFSCREEN_', '') }
+        : message;
+      return ocrMessageListener(normalized, _sender, sendResponse);
+    }
+
     if (type === MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2) {
       const payload = request.payload as ConvertTsToMp4V2Payload;
       // Update parallel settings from the payload before conversion
@@ -508,10 +540,23 @@ function bootstrapOffscreenListener(): void {
   if (typeof chrome === 'undefined' || !chrome?.runtime?.onMessage) return;
 
   bootstrapped = true;
+  console.log('[OFFSCREEN] bootstrapOffscreenListener start');
+  try { chrome.storage.local.set({ __ffmpegBootstrap: 'start@' + Date.now() }).catch(() => {}); } catch {}
   void startMessageListener().then(() => {
-    
+    console.log('[OFFSCREEN] startMessageListener done');
+    try { chrome.storage.local.set({ __ffmpegBootstrap: 'done@' + Date.now() }).catch(() => {}); } catch {}
+  }).catch((e) => {
+    console.error('[OFFSCREEN] startMessageListener error:', e);
+    try { chrome.storage.local.set({ __ffmpegBootstrap: 'error:' + String(e)?.slice(0, 200) }).catch(() => {}); } catch {}
   });
 }
 
 bootstrapOffscreenListener();
+// Debug: log script load to chrome.storage.local.
+console.log('[OFFSCREEN] ffmpegRunner.ts script loaded');
+try { chrome.storage.local.set({ __ffmpegScriptLoaded: true, __ffmpegLoadTime: Date.now() }).catch((e: unknown) => {
+  console.error('[OFFSCREEN] __ffmpegScriptLoaded storage.set rejected:', e);
+}); } catch (e) {
+  console.error('[OFFSCREEN] __ffmpegScriptLoaded storage.set threw:', e);
+}
 

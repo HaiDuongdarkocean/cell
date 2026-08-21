@@ -3,7 +3,9 @@
 
 import type { ImageSource } from '@/features/ocr/engine/types';
 
-/** Capture a single video frame as ImageSource (RGBA Uint8ClampedArray). */
+/** Capture a single video frame as ImageSource (RGBA Uint8ClampedArray).
+ *  If a sibling canvas overlay exists (e.g. mock hard-sub page), composite it
+ *  on top of the video frame so OCR can read burned-in subtitles. */
 export function captureFrame(
   video: HTMLVideoElement,
   canvas?: OffscreenCanvas | HTMLCanvasElement,
@@ -21,6 +23,16 @@ export function captureFrame(
   if (!ctx) throw new Error('Failed to get 2d context for frame capture.');
 
   ctx.drawImage(video, 0, 0, width, height);
+
+  // Composite sibling canvas overlay (hard-sub simulation) if present.
+  const siblingCanvas = video.parentElement?.querySelector('canvas');
+  if (siblingCanvas && siblingCanvas !== (video as unknown as Element) && siblingCanvas.width > 0) {
+    ctx.drawImage(siblingCanvas, 0, 0, width, height);
+    (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg = `composited canvas ${siblingCanvas.width}x${siblingCanvas.height}`;
+  } else {
+    (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg = `no sibling canvas (parent=${video.parentElement?.tagName}, children=${video.parentElement?.children.length})`;
+  }
+
   const imageData = ctx.getImageData(0, 0, width, height);
   return {
     data: imageData.data,
