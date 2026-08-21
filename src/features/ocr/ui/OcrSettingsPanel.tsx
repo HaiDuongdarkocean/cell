@@ -273,16 +273,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                   <Icon name="pencil" /> Edit
                 </Button>
               )}
-              {hasCustomRegion && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void handleResetRegion()}
-                  data-cell-id="ocr-region-reset"
-                >
-                  <Icon name="rotateCcw" /> Reset
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void handleResetRegion()}
+                data-cell-id="ocr-region-reset"
+              >
+                <Icon name="rotateCcw" /> Reset
+              </Button>
             </div>
           </div>
         </div>
