@@ -30,6 +30,10 @@ export interface SubtitleManagerPanelProps {
   onImport?: (role: 'target' | 'native') => void;
   onGenerateNative?: () => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
+  /** Current subtitle offset in ms — initializes the Latency stepper so
+   *  reopening the manager reflects the persisted offset instead of 0.
+   *  Target + native share one offset (ADR-019 single-offset model). */
+  offsetMs?: number;
   generateNativeDisabled?: boolean;
   appearance?: AppearanceState;
   readonly hasSearchKeys: boolean;
@@ -65,7 +69,6 @@ interface SectionState {
   lastValid: number;
 }
 
-const defaultOffsets = { target: 0, native: 0 };
 const OFFSET_STEP = 0.5;
 
 function getSourceLabel(source: SubtitlePanelItem['source']): string {
@@ -349,6 +352,7 @@ export function SubtitleManagerPanel({
   onImport,
   onGenerateNative,
   onOffsetChange,
+  offsetMs,
   generateNativeDisabled,
   appearance,
   hasSearchKeys,
@@ -365,15 +369,19 @@ export function SubtitleManagerPanel({
   inSheet,
   exiting,
 }: SubtitleManagerPanelProps): React.JSX.Element {
+  // Latency stepper initial value comes from the controller's current offset
+  // (persisted per-site). The panel mounts fresh on each open, so reading the
+  // prop once here is sufficient — user edits then flow through local state.
+  const initialOffsetSec = (offsetMs ?? 0) / 1000;
   const [targetState, setTargetState] = useState<SectionState>({
-    offset: formatSigned(defaultOffsets.target),
+    offset: formatSigned(initialOffsetSec),
     saveState: 'saved',
-    lastValid: defaultOffsets.target,
+    lastValid: initialOffsetSec,
   });
   const [nativeState, setNativeState] = useState<SectionState>({
-    offset: formatSigned(defaultOffsets.native),
+    offset: formatSigned(initialOffsetSec),
     saveState: 'saved',
-    lastValid: defaultOffsets.native,
+    lastValid: initialOffsetSec,
   });
   const [view, setView] = useState<'tracks' | 'appearance' | 'search' | 'ocr'>('tracks');
   const [viewDirection, setViewDirection] = useState<'forward' | 'backward'>('forward');

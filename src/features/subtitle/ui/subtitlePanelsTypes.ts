@@ -47,6 +47,10 @@ export interface ManagerState {
   onImport?: (role: 'target' | 'native') => void;
   onGenerateNative?: () => void;
   onOffsetChange?: (role: 'target' | 'native', ms: number) => void;
+  /** Current subtitle offset (ms) — drives the panel's Latency stepper initial
+   *  value so reopening the manager reflects the persisted offset instead of 0.
+   *  Target + native share one offset (ADR-019 single-offset model). */
+  offsetMs?: number;
   /** Appearance view props — when provided, "Customize appearance" button shows in footer. */
   appearance?: AppearanceState;
   /** Whether subtitle search API keys are configured (controls search UI availability). */

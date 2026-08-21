@@ -41,6 +41,11 @@ export class ReactSubtitleController {
   private playerModeHost: PlayerModeHostController | null = null;
   private readonly videoAspectRatio: number;
   private readonly url: string;
+  /** Storage key for subtitle offset — site origin (not full URL) so the
+   *  latency persists across episodes on SPAs like kisskh where each episode
+   *  has a different URL but the same origin. ADR-019 amendment (per-site). */
+  private readonly offsetKey: string;
+  private destroyed = false;
   private readonly onGenerateNative: () => void;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
   private readonly onUpdateCurrentCard: () => void;
@@ -114,6 +119,7 @@ export class ReactSubtitleController {
       resolveVideoAspectRatio(videoRect.width, videoRect.height),
     );
     this.url = window.location?.href ?? '';
+    this.offsetKey = this.resolveOffsetKey(this.url);
     this.onCardCreatorAction = onCardCreatorAction;
     this.onUpdateCurrentCard = onUpdateCurrentCard;
     this.onGenerateNative = onGenerateNative;
@@ -184,12 +190,35 @@ export class ReactSubtitleController {
     });
   }
 
+  /** Resolve the storage key for subtitle offset. Prefer the site origin so
+   *  latency persists across episodes on SPAs (kisskh) where the URL changes
+   *  per episode but the origin stays constant. Fall back to the full URL when
+   *  the origin cannot be parsed (e.g. non-standard schemes). */
+  private resolveOffsetKey(url: string): string {
+    try {
+      const origin = new URL(url).origin;
+      return origin === 'null' ? url : origin;
+    } catch {
+      return url;
+    }
+  }
+
   private loadPersistedOffset(): void {
     try {
       loadSettings().then((settings) => {
-        const persisted = settings.subtitleOffset?.[this.url];
+        if (this.destroyed) return;
+        const persisted = settings.subtitleOffset?.[this.offsetKey];
         if (typeof persisted === 'number' && !Number.isNaN(persisted)) {
           this.offsetMs = clampOffsetMs(persisted);
+          // Apply the loaded offset to the already-constructed mount + engine.
+          // The constructor builds these with offsetMs=0; the async load
+          // resolves later, so by now mount/engine exist. Without this, the
+          // OffsetLayer display + manager panel show 0 after a controller
+          // re-init (SPA episode switch) even though the engine's offset
+          // provider would eventually pick up the new value.
+          this.mount.setOffset(this.buildOffsetState());
+          this.mount.setManager(this.buildManagerState());
+          this.engine.onTimeUpdate();
         }
         if (typeof settings.subtitlePreviewTargetText === 'string' && settings.subtitlePreviewTargetText) {
           this.previewTargetText = settings.subtitlePreviewTargetText;
@@ -207,7 +236,16 @@ export class ReactSubtitleController {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
-      saveSettings({ [OFFSET_SETTINGS_KEY]: { [this.url]: this.offsetMs } } as Partial<Settings>).catch(() => undefined);
+      // Read-modify-write the subtitleOffset map: saveSettings shallow-merges
+      // top-level keys, so passing `{ [key]: ms }` alone would wipe every
+      // other site's persisted offset. Merge with the existing map first.
+      loadSettings()
+        .then((s) => {
+          if (this.destroyed) return;
+          const merged = { ...(s.subtitleOffset ?? {}), [this.offsetKey]: this.offsetMs };
+          saveSettings({ [OFFSET_SETTINGS_KEY]: merged } as Partial<Settings>).catch(() => undefined);
+        })
+        .catch(() => undefined);
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }
 
@@ -233,6 +271,7 @@ export class ReactSubtitleController {
       onImport: this.onImportFiles ? (role) => this.openImportFileInput(role) : undefined,
       onGenerateNative: () => this.onGenerateNative(),
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
+      offsetMs: this.offsetMs,
       appearance: this.buildAppearanceState(),
       hasSearchKeys: this.hasSearchKeys,
       apiKeys: this.searchApiKeys,
@@ -528,6 +567,11 @@ export class ReactSubtitleController {
     this.offsetMs = clampOffsetMs(ms);
     this.persistOffset();
     this.mount.setOffset(this.buildOffsetState());
+    // Refresh manager state so the panel's offsetMs prop stays current —
+    // the panel mounts fresh on each open and reads this prop as its initial
+    // Latency value. Without this, reopening after a change shows the stale
+    // pre-change value.
+    this.mount.setManager(this.buildManagerState());
     // Re-render current cue with new offset.
     this.engine.onTimeUpdate();
   }
@@ -730,6 +774,7 @@ export class ReactSubtitleController {
   }
 
   destroy(): void {
+    this.destroyed = true;
     if (this.playerModeResizeHandler) {
       window.removeEventListener('resize', this.playerModeResizeHandler);
       this.playerModeResizeHandler = null;
