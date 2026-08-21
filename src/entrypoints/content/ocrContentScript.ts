@@ -270,29 +270,6 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   getTriggerController = triggerFactory ?? null;
   document.body.dataset.ocrInitCalled = 'true';
 
-  // Debug: poll chrome.storage.local for offscreen debug logs.
-  // Offscreen documents can't write to chrome.storage.local and can't send
-  // messages to content scripts directly. The background relays offscreen
-  // debug logs to chrome.storage.local, which we poll here.
-  if (typeof chrome !== 'undefined' && chrome.storage?.local?.get) {
-    setInterval(() => {
-      try {
-        chrome.storage.local.get(['__offscreenDebugLog', '__offscreenDebugTotal', '__offscreenDebugCounts'], (result: { __offscreenDebugLog?: unknown[]; __offscreenDebugTotal?: number; __offscreenDebugCounts?: Record<string, number> }) => {
-          if (result?.__offscreenDebugLog) {
-            const arr = result.__offscreenDebugLog;
-            const last10 = arr.slice(-10);
-            document.body.dataset.offscreenDebugLog = JSON.stringify({
-              total: result.__offscreenDebugTotal,
-              counts: result.__offscreenDebugCounts,
-              buffered: arr.length,
-              last10,
-            }).slice(0, 3000);
-          }
-        });
-      } catch {}
-    }, 2000);
-  }
-
   // T20: Initial check on page load.
   void initOcrForCurrentUrl(window.location.href);
 
@@ -316,118 +293,37 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
     void initOcrForCurrentUrl(window.location.href);
   });
 
-  // Dev debug hook: page can request OCR init via postMessage.
-  // Usage (from page MAIN world or DevTools console):
-  //   postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto' }, '*')
-  // This bypasses the storage check — useful for browser testing when
-  // chrome.storage.local cannot be set from the MAIN world.
+  // Dev debug hook: page can request OCR init via postMessage (used by MCP browser tests).
+  // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto' }, '*')
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as { type?: string; origin?: string; languageMode?: string };
-    if (data?.type === '__CELL_OCR_DEBUG_INIT' && data.origin) {
-      // Debug: check chrome.runtime availability in isolated world.
-      const cr = (typeof chrome !== 'undefined') ? chrome : null;
-      document.body.dataset.ocrDebugRuntime = JSON.stringify({
-        hasChrome: !!cr,
-        hasRuntime: !!cr?.runtime,
-        runtimeId: cr?.runtime?.id,
-        hasSendMessage: typeof cr?.runtime?.sendMessage,
-        hasStorage: typeof cr?.storage,
-        hasStorageLocal: typeof cr?.storage?.local,
-      });
-      // Timer test: does setTimeout fire in the isolated world?
-      setTimeout(() => { document.body.dataset.ocrTimerTest = 'fired'; }, 2000);
-      // sendMessage test: does chrome.runtime.sendMessage return a resolving promise?
-      if (cr?.runtime?.sendMessage) {
-        try {
-          // Test 1: simple ping
-          const testP = cr.runtime.sendMessage({ type: 'TEST_PING' });
-          document.body.dataset.ocrSendTest = 'returned-' + (typeof testP?.then === 'function' ? 'promise' : typeof testP);
-          if (testP && typeof testP.then === 'function') {
-            testP.then(
-              (r: unknown) => { document.body.dataset.ocrSendTestResult = 'resolved:' + JSON.stringify(r)?.slice(0, 100); },
-              (e: unknown) => { document.body.dataset.ocrSendTestResult = 'rejected:' + String(e)?.slice(0, 100); },
-            );
-            setTimeout(() => {
-              if (!document.body.dataset.ocrSendTestResult) {
-                document.body.dataset.ocrSendTestResult = 'timeout-10s';
-              }
-            }, 10000);
-          }
-          // Test 2: OCR_INIT directly
-          const ocrP = cr.runtime.sendMessage({ type: 'OCR_INIT', payload: { languageMode: 'auto', backend: 'webgpu' } });
-          document.body.dataset.ocrDirectInitTest = 'returned-' + (typeof ocrP?.then === 'function' ? 'promise' : typeof ocrP);
-          if (ocrP && typeof ocrP.then === 'function') {
-            ocrP.then(
-              (r: unknown) => { document.body.dataset.ocrDirectInitResult = 'resolved:' + JSON.stringify(r)?.slice(0, 200); },
-              (e: unknown) => { document.body.dataset.ocrDirectInitResult = 'rejected:' + String(e)?.slice(0, 200); },
-            );
-            setTimeout(() => {
-              if (!document.body.dataset.ocrDirectInitResult) {
-                document.body.dataset.ocrDirectInitResult = 'timeout-15s';
-              }
-            }, 15000);
-          }
-          // Test 3: OFFSCREEN_PING — does offscreen document respond?
-          const pingP = cr.runtime.sendMessage({ type: 'OFFSCREEN_PING' });
-          document.body.dataset.ocrPingTest = 'returned-' + (typeof pingP?.then === 'function' ? 'promise' : typeof pingP);
-          if (pingP && typeof pingP.then === 'function') {
-            pingP.then(
-              (r: unknown) => { document.body.dataset.ocrPingResult = 'resolved:' + JSON.stringify(r)?.slice(0, 200); },
-              (e: unknown) => { document.body.dataset.ocrPingResult = 'rejected:' + String(e)?.slice(0, 200); },
-            );
-            setTimeout(() => {
-              if (!document.body.dataset.ocrPingResult) {
-                document.body.dataset.ocrPingResult = 'timeout-15s';
-              }
-            }, 15000);
-          }
-        } catch (e) {
-          document.body.dataset.ocrSendTest = 'throw:' + String(e)?.slice(0, 100);
+    if (data?.type !== '__CELL_OCR_DEBUG_INIT' || !data.origin) return;
+    void (async () => {
+      try {
+        document.body.dataset.ocrDebugStep = '1-start';
+        if (activeSession?.isRunning()) {
+          await activeSession.stop();
+          activeSession = null;
         }
+        currentOrigin = data.origin ?? '';
+        const video = findVideoElement();
+        document.body.dataset.ocrDebugStep = '2-video-' + (video ? 'found' : 'null');
+        if (!video) return;
+        const originState = {
+          ocrEnabled: true,
+          languageMode: (data.languageMode ?? 'auto') as 'auto' | 'zh' | 'en' | 'ja',
+          subtitleRegionPct: 15,
+        };
+        activeSession = new OcrSession();
+        const tc = getTriggerController?.() ?? null;
+        if (tc) activeSession.setTriggerController(tc);
+        document.body.dataset.ocrDebugStep = '3-before-start';
+        await activeSession.start(video, originState);
+        document.body.dataset.ocrDebugStep = '4-after-start';
+      } catch (e) {
+        document.body.dataset.ocrDebugException = String(e);
       }
-      // Read debug info from chrome.storage.local (set by background handler).
-      if (cr?.storage?.local?.get) {
-        try {
-          cr.storage.local.get('__ocrBgDebug', (result: unknown) => {
-            document.body.dataset.ocrBgDebug = JSON.stringify(result)?.slice(0, 300);
-          });
-        } catch {}
-      }
-      // Also listen for delayed debug read requests.
-      window.addEventListener('message', (e) => {
-        if (e.data?.type === '__CELL_OCR_READ_DEBUG' && cr?.storage?.local?.get) {
-          cr.storage.local.get(['__ocrBgDebug', '__ocrInitProgress', '__ocrListenerMsg', '__ocrEngineProgress', '__ocrOffscreenError', '__ocrScriptLoadTime', '__ocrScriptLoaded', '__ocrBgStep', '__msgBusLast', '__ffmpegScriptLoaded', '__ffmpegBootstrap', '__sendMessageDebug', '__offscreenListenerMsg', '__pingDebug', '__offscreenDebugLog'], (result: unknown) => {
-            document.body.dataset.ocrBgDebugDelayed = JSON.stringify(result)?.slice(0, 1500);
-          });
-        }
-      });
-      void (async () => {
-        try {
-          document.body.dataset.ocrDebugStep = '1-start';
-          if (activeSession?.isRunning()) {
-            await activeSession.stop();
-            activeSession = null;
-          }
-          currentOrigin = data.origin ?? '';
-          const video = findVideoElement();
-          document.body.dataset.ocrDebugStep = '2-video-' + (video ? 'found' : 'null');
-          if (!video) return;
-          const originState = {
-            ocrEnabled: true,
-            languageMode: (data.languageMode ?? 'auto') as 'auto' | 'zh' | 'en' | 'ja',
-            subtitleRegionPct: 15,
-          };
-          activeSession = new OcrSession();
-          const tc = getTriggerController?.() ?? null;
-          if (tc) activeSession.setTriggerController(tc);
-          document.body.dataset.ocrDebugStep = '3-before-start';
-          await activeSession.start(video, originState);
-          document.body.dataset.ocrDebugStep = '4-after-start';
-        } catch (e) {
-          document.body.dataset.ocrDebugException = String(e);
-        }
-      })();
-    }
+    })();
   });
 }

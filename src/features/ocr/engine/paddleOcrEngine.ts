@@ -56,14 +56,10 @@ export class PaddleOcrEngine implements OcrEngine {
   async initialize(config: OcrConfig): Promise<void> {
     if (this.instance) return; // Idempotent.
 
-    const dbg = (msg: string) => { console.log('[OCR-ENGINE]', msg); try { chrome.runtime.sendMessage({ type: 'OFFSCREEN_DEBUG_LOG', data: { kind: 'engine', msg, step, time: Date.now() } }).catch(() => {}); } catch {} };
     let step = 'start';
 
     try {
-    // Lazy-load PaddleOCR.js module — only in offscreen document context.
-    dbg('before-module-import');
     step = 'import-paddleocr';
-    console.log('[PaddleOcrEngine] loading module...');
     const mod = await Promise.race([
       import('@paddleocr/paddleocr-js'),
       new Promise<never>((_, reject) =>
@@ -71,63 +67,39 @@ export class PaddleOcrEngine implements OcrEngine {
       ),
     ]) as NonNullable<typeof this.module>;
     this.module = mod;
-    dbg('after-module-import');
-    console.log('[PaddleOcrEngine] module loaded, PaddleOCR:', typeof mod.PaddleOCR);
     const { PaddleOCR } = mod;
 
-    // Dynamic import OpenCV — defers 9.9MB WASM load to here (not script load).
-    // If WASM fails, the error is caught by handleOcrInit's try-catch in ocrRunner.
-    // 15s timeout: the module itself is ~10MB (embedded WASM as base64 data URI);
-    // parsing + evaluation should complete in 2-5s. If it hangs (CSP EvalError
-    // during module evaluation that doesn't throw), the timeout fires and
-    // returns an error instead of hanging sendMessage forever.
-    dbg('before-cv-import');
+    // Dynamic import OpenCV — bypass Vite preload helper with @vite-ignore.
+    // Vite's __vite__preloadHelper creates <link> elements that hang in offscreen
+    // documents. Direct chrome.runtime.getURL() import skips the preload entirely.
     step = 'import-opencv';
-    // Debug: check if main thread is alive after module import
-    setTimeout(() => dbg('cv-import-timeout-0ms'), 0);
-    // Bypass Vite preload helper with @vite-ignore + full chrome-extension URL
-    // Vite's preload helper creates <link> elements that may block in offscreen documents
     const cvUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
       ? chrome.runtime.getURL('assets/opencv-Cphpfehb.js')
       : null;
-    dbg('cv-import-url:' + cvUrl);
     const cv = cvUrl
       ? (await Promise.race([
-          import(/* @vite-ignore */ cvUrl).then(m => {
-            dbg('cv-import-resolved:hasDefault=' + typeof m.default);
-            return m;
-          }).catch(e => {
-            dbg('cv-import-rejected:' + String(e).slice(0, 200));
-            throw e;
-          }),
+          import(/* @vite-ignore */ cvUrl),
           new Promise<never>((_, reject) =>
-            setTimeout(() => { dbg('cv-import-timeout-15s'); reject(new Error('OpenCV module import timeout (15s)')); }, 15000),
+            setTimeout(() => reject(new Error('OpenCV module import timeout (15s)')), 15000),
           ),
         ])).default
       : (await import('@techstark/opencv-js')).default;
-    dbg('after-cv-import:hasMat=' + typeof cv?.Mat);
 
     const lang = LANG_MAP[config.languageMode] ?? 'ch';
     this.currentBackend = config.backend;
 
-    dbg('before-create');
-    step = 'cv-preinit';
-    console.log('[PaddleOcrEngine] calling PaddleOCR.create()...', { lang, backend: config.backend, wasmPaths: config.wasmPaths });
-
     // Pre-initialize OpenCV — wait for Emscripten's then() to resolve
     // (fires after initRuntime() which binds WASM types).
+    step = 'cv-preinit';
     const cvPre = cv as unknown as { then?: (cb: (m: unknown) => void) => void; calledRun?: boolean };
     if (cvPre.then) {
-      dbg('cv-preinit-await');
       await Promise.race([
         new Promise<void>((resolve) => cvPre.then!(() => resolve())),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('OpenCV pre-init timeout (10s)')), 10000),
         ),
       ]);
-      dbg('cv-preinit-done');
     } else if (!cvPre.calledRun) {
-      dbg('cv-preinit-wait-callback');
       await Promise.race([
         new Promise<void>((resolve) => {
           (cv as unknown as { onRuntimeInitialized: () => void }).onRuntimeInitialized = () => resolve();
@@ -136,17 +108,10 @@ export class PaddleOcrEngine implements OcrEngine {
           setTimeout(() => reject(new Error('OpenCV pre-init timeout (10s)')), 10000),
         ),
       ]);
-      dbg('cv-preinit-done');
-    } else {
-      dbg('cv-already-ready');
     }
 
-    // Debug: inspect cv state after pre-init.
-    const cvAfter = cv as unknown as { Mat?: unknown; calledRun?: boolean; then?: unknown; onRuntimeInitialized?: unknown };
-    dbg('cv-after-preinit: hasMat=' + typeof cvAfter.Mat + ' calledRun=' + cvAfter.calledRun + ' hasThen=' + typeof cvAfter.then + ' hasOnRuntime=' + typeof cvAfter.onRuntimeInitialized);
-
-    // Test: try creating a cv.Mat(rows, cols, type) — the constructor with args that PaddleOCR uses.
-    // This verifies embind type binding is complete (specifically the `int` type).
+    // Verify embind type binding is complete — PaddleOCR needs cv.Mat constructor.
+    // UnboundTypeError occurs when Emscripten types aren't registered yet.
     const cvTest = cv as unknown as { Mat: new (...args: number[]) => unknown; CV_8UC1?: number; imread?: (canvas: HTMLCanvasElement) => unknown };
     for (let i = 0; i < 10; i++) {
       try {
@@ -157,48 +122,35 @@ export class PaddleOcrEngine implements OcrEngine {
         if (typeof cvTest.imread !== 'function') throw new Error('OpenCV imread unavailable');
         const testImg = cvTest.imread(testCanvas);
         (testImg as { delete?: () => void }).delete?.();
-        dbg('cv-mat-test-ok: attempt=' + (i + 1));
         break;
       } catch (matErr) {
-        const errStr = String(matErr);
-        dbg('cv-mat-test-fail: attempt=' + (i + 1) + ' err=' + errStr.slice(0, 100));
-        if (i === 9) throw new Error('OpenCV Mat creation failed after 10 retries: ' + errStr);
+        if (i === 9) throw new Error('OpenCV Mat creation failed after 10 retries: ' + String(matErr));
         await new Promise((r) => setTimeout(r, 500));
       }
     }
-    // Use locally-bundled model files to avoid CDN download delay.
-    // Models are .tar archives in public/models/ → copied to dist/models/ by Vite.
+
     const modelBase = getURL('models/');
-    // Non-worker mode: OpenCV + ORT run on the main thread of the offscreen document.
-    // Worker mode is impossible because MV3 CSP blocks Function() inside Workers
-    // (OpenCV/Emscripten requires Function() for runtime wrappers).
-    // On the main thread, Function() IS allowed (confirmed via CSP test).
-    const createPromise = PaddleOCR.create({
-      lang,
-      ocrVersion: 'PP-OCRv5',
-      textDetectionModelName: 'PP-OCRv5_mobile_det',
-      textDetectionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_det_onnx_infer.tar' },
-      textRecognitionModelName: 'PP-OCRv5_mobile_rec',
-      textRecognitionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_rec_onnx_infer.tar' },
-      ortOptions: {
-        backend: config.backend,
-        // MV3: .wasm and .mjs must be bundled. wasmPaths is a directory prefix
-        // that ORT appends filenames to (e.g. prefix + "ort-wasm-simd-threaded.jsep.wasm").
-        // patch-ocr-csp.mjs copies the hashed .wasm to the unhashed name AND
-        // copies the .mjs from node_modules to dist/assets/.
-        wasmPaths: config.wasmPaths,
-        numThreads: 1,  // Single-thread (no SharedArrayBuffer without COOP/COEP).
-        simd: true,
-      },
-    });
     this.instance = await Promise.race([
-      createPromise,
+      PaddleOCR.create({
+        lang,
+        ocrVersion: 'PP-OCRv5',
+        textDetectionModelName: 'PP-OCRv5_mobile_det',
+        textDetectionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_det_onnx_infer.tar' },
+        textRecognitionModelName: 'PP-OCRv5_mobile_rec',
+        textRecognitionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_rec_onnx_infer.tar' },
+        ortOptions: {
+          backend: config.backend,
+          // wasmPaths is a directory prefix — ORT appends filenames to it.
+          // patch-ocr-csp.mjs copies .wasm + .mjs to dist/assets/ with expected names.
+          wasmPaths: config.wasmPaths,
+          numThreads: 1,  // Single-thread (no SharedArrayBuffer without COOP/COEP).
+          simd: true,
+        },
+      }),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`PaddleOCR.create() timeout (120s) — backend=${config.backend}, model download from Baidu CDN may be slow`)), 120000),
+        setTimeout(() => reject(new Error(`PaddleOCR.create() timeout (120s) — backend=${config.backend}`)), 120000),
       ),
     ]) as PaddleOCRInstance | null;
-    dbg('after-create');
-    console.log('[PaddleOcrEngine] PaddleOCR.create() returned:', typeof this.instance, !!this.instance);
 
     // PaddleOCR.create may auto-initialize; call initialize() if available.
     const maybeInit = this.instance as unknown as { initialize?: () => Promise<unknown> };
@@ -209,14 +161,7 @@ export class PaddleOcrEngine implements OcrEngine {
         // Already initialized — safe to ignore.
       }
     }
-
-    // T21: WebGPU shader JIT warmup — skipped during init to avoid extra delay.
-    // Shader JIT happens lazily on first real recognize() call instead.
-    // if (config.backend === 'webgpu') {
-    //   await this.warmupShaderJit();
-    // }
     } catch (e) {
-      console.error('[OCR-ENGINE] FAILED at step:', step, 'error:', e);
       throw new Error(`[step=${step}] ${String(e)}`);
     }
   }
