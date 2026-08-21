@@ -69,6 +69,7 @@ export function ManagerLayer({
       onImport: manager.onImport,
       onGenerateNative: manager.onGenerateNative,
       onOffsetChange: manager.onOffsetChange,
+      offsetMs: manager.offsetMs,
       generateNativeDisabled: !generateNativeEnabled,
       appearance: manager.appearance,
       hasSearchKeys: manager.hasSearchKeys,

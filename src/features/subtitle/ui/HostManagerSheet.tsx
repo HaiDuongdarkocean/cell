@@ -61,6 +61,7 @@ export function HostManagerSheet({ state, onAction, onClose }: HostManagerSheetP
     onImport: (role) => onAction('import', { role }),
     onGenerateNative: state.generateNativeDisabled ? undefined : () => onAction('generateNative', {}),
     onOffsetChange: (role, ms) => onAction('offsetChange', { role, ms }),
+    offsetMs: state.targetOffsetMs,
     appearance: state.appearance ? buildAppearance(state.appearance, onAction) : undefined,
     hasSearchKeys: state.hasSearchKeys,
     apiKeys: state.apiKeys as readonly SubtitleApiKey[],
