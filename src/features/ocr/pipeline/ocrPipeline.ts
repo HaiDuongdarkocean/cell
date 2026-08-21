@@ -2,14 +2,19 @@
 // spec §AD5: The main video pipeline loop.
 
 import type { ImageSource, OcrResult, OcrResultItem } from '@/features/ocr/engine/types';
+import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { checkDrmGuard } from './drmGuard';
 import { computeSubtitleRegion, cropImage } from './cropRegion';
 import { scriptRunSegmenter, type ScriptRun } from '../language/scriptRunSegmenter';
 
 /** OCR pipeline config. */
 export interface OcrPipelineConfig {
-  /** Subtitle region height as % of video height (default 15). */
+  /** Subtitle region height as % of video height (default 15). Used in default bottom mode. */
   readonly subtitleRegionPct: number;
+  /** Subtitle region width as % of video width, centered (default 100). Used in default bottom mode. */
+  readonly subtitleRegionWidthPct: number;
+  /** Custom region (x, y, width, height in %). null = use default bottom mode. */
+  readonly customRegion: CustomRegion | null;
   /** Luma diff threshold for frame skip (default 3). */
   readonly lumaDiffThreshold: number;
   /** Min OCR confidence score (default 0.5). */
@@ -22,6 +27,8 @@ export interface OcrPipelineConfig {
 
 export const DEFAULT_PIPELINE_CONFIG: OcrPipelineConfig = {
   subtitleRegionPct: 15,
+  subtitleRegionWidthPct: 100,
+  customRegion: null,
   lumaDiffThreshold: 1, // Unused — luma gate removed, kept for config compatibility.
   minScore: 0.3, // Lower threshold — catch low-confidence text like "Hello" in "Hello World".
   minFrameIntervalMs: 200, // 5fps time gate — faster cue detection for short subtitles.
@@ -216,7 +223,7 @@ export async function runPipelineStep(
   }
 
   // 3. Crop subtitle region.
-  const region = computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct);
+  const region = computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct, config.subtitleRegionWidthPct, config.customRegion);
   const cropped = cropImage(image, region);
 
   // 4. OCR with retry. T22.

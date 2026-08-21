@@ -106,4 +106,16 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
 
   // OCR_GET_STATE / OCR_SET_STATE handled by content-script directly via ocrStateStore.
   // Background does not need to mediate — content-script reads/writes chrome.storage.local.
+
+  // OCR_REGION_COMMAND — forward to active tab's content script.
+  ctx.on(MESSAGE_TYPES.OCR_REGION_COMMAND, async (request): Promise<MessageResponse<{ ok: true }>> => {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return { success: false, error: 'No active tab' };
+      await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: request.payload });
+      return { success: true, data: { ok: true } };
+    } catch (e) {
+      return { success: false, error: `OCR_REGION_COMMAND failed: ${String(e)}` };
+    }
+  });
 }
