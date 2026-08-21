@@ -1,0 +1,26 @@
+{
+  "id": "mv3-csp-unsafe-eval-patch-closures",
+  "title": "MV3 CSP blocks new Function() → patch with safe closures in post-build",
+  "category": ["build", "data"],
+  "tags": ["csp", "unsafe-eval", "mv3", "emscripten", "opencv", "function-constructor", "post-build", "patch"],
+  "trigger": "Emscripten/WASM library uses new Function() or Function() constructor — blocked by MV3 CSP script-src 'self' 'wasm-unsafe-eval'",
+  "principle": "MV3 extension CSP blocks new Function() (unsafe-eval). Emscripten-generated code (OpenCV, ORT) uses Function() for named function wrappers, dynCall wrappers, and embind invoker/method callers. These don't actually need eval — they create closures from known arguments. Replace with explicit closure factories in a post-build patch script that does string replacement on the bundled JS.",
+  "cases": [
+    {
+      "context": "OpenCV Emscripten bundle uses Function() to create named function wrappers — EvalError in offscreen document",
+      "bad": "// Emscripten original: uses Function() constructor (CSP-blocked)\nFunction(`body`, `return function ` + e + `() {\n    \"use strict\";    return body.apply(this, arguments);\n};\n`)(t);\n// → EvalError: Code generation from strings disallowed",
+      "good": "// Post-build patch: replace with explicit closure factory\n(function(e, t) {\n  var fn = function() { \"use strict\"; return t.apply(this, arguments); };\n  Object.defineProperty(fn, \"name\", { value: e, configurable: true });\n  return fn;\n})(e, t);\n// → No eval, CSP-compliant, same behavior"
+    },
+    {
+      "context": "embind craftInvokerFunction uses new Function() to create invoker closures with arg type wiring — CSP blocks it",
+      "bad": "// Emscripten: Pn(Function, m).apply(null, h) — creates invoker via Function()\n// Pn() is minified new_() helper: new Function(...m)\n// CSP blocks → EvalError or silent hang during type registration",
+      "good": "// Post-build patch: reconstruct invoker closure from h[] array\n// h[0]=throwBindingError, h[1]=invoker, h[2]=fn, h[3]=receivers,\n// h[4]=returnType, h[5]=thisArg, h[6+]=argTypes\n(function(m, h) {\n  var tbe = h[0], inv = h[1], fn = h[2], rd = h[3], rt = h[4], cp = h[5];\n  // ... extract arg types, build closure manually\n  return function() { /* invoker logic without eval */ };\n})(m, h);"
+    }
+  ],
+  "applyFor": [
+    "Emscripten-generated code (OpenCV.js, ORT Web) in MV3 extensions",
+    "Any WASM library using Function() constructor for runtime wrappers",
+    "Sandboxed pages with strict CSP (no unsafe-eval)",
+    "Post-build patching strategy for third-party bundles with CSP violations"
+  ]
+}

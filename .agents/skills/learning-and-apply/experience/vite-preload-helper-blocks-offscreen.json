@@ -1,0 +1,21 @@
+{
+  "id": "vite-preload-helper-blocks-offscreen",
+  "title": "Vite preload helper creates <link> elements that hang in restricted contexts",
+  "category": ["build", "async"],
+  "tags": ["vite", "preload", "modulepreload", "offscreen", "dynamic-import", "vite-ignore", "chrome-extension"],
+  "trigger": "Dynamic import() in Chrome extension offscreen document (or sandboxed/restricted context) hangs indefinitely",
+  "principle": "Vite's __vite__preloadHelper wraps dynamic import() with <link rel='modulepreload'> creation to preload dependencies. In restricted contexts (offscreen documents, sandboxed pages), this DOM manipulation can block or hang without throwing. Bypass with import(/* @vite-ignore */ fullUrl) using chrome.runtime.getURL() to skip the preload helper entirely.",
+  "cases": [
+    {
+      "context": "import('@techstark/opencv-js') hangs in offscreen document — module evaluates (export fires) but Promise never resolves",
+      "bad": "// Vite transforms this into preload helper that creates <link> elements\nconst cv = (await import('@techstark/opencv-js')).default;\n// Hangs forever — preload helper blocks in offscreen document",
+      "good": "// Bypass Vite preload with @vite-ignore + full extension URL\nconst cvUrl = chrome.runtime.getURL('assets/opencv-Cphpfehb.js');\nconst cv = (await import(/* @vite-ignore */ cvUrl)).default;\n// Resolves immediately — no preload helper, direct module fetch"
+    }
+  ],
+  "applyFor": [
+    "Chrome extension offscreen documents with dynamic import()",
+    "Sandboxed pages where Vite preload <link> creation fails silently",
+    "Any restricted DOM context where modulepreload polyfill hangs",
+    "Web Workers that can't create <link> elements for preload"
+  ]
+}

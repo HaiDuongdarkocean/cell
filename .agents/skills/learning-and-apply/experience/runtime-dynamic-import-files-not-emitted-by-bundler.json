@@ -1,0 +1,26 @@
+{
+  "id": "runtime-dynamic-import-files-not-emitted-by-bundler",
+  "title": "Runtime dynamic import() needs files the bundler doesn't emit → copy in post-build",
+  "category": ["build"],
+  "tags": ["vite", "dynamic-import", "wasm", "ort", "onnxruntime", "post-build", "node-modules", "copy-file"],
+  "trigger": "Library does internal dynamic import() of a file (e.g. .mjs, .wasm) at runtime, but bundler doesn't emit it to dist/",
+  "principle": "Some libraries (ONNX Runtime Web, Emscripten modules) use internal dynamic import() or fetch() for files that the bundler can't statically analyze. The bundler emits the main module but not the runtime-imported satellite files. Fix with a post-build script that copies the missing files from node_modules to dist/assets/ with the exact filename the library expects.",
+  "cases": [
+    {
+      "context": "ONNX Runtime Web dynamically imports 'ort-wasm-simd-threaded.jsep.mjs' at runtime — Vite doesn't emit it, causing 'Failed to fetch dynamically imported module' error",
+      "bad": "// Vite build emits ort-wasm-simd-threaded.jsep.wasm but NOT .mjs\n// ORT runtime: import('./ort-wasm-simd-threaded.jsep.mjs')\n// → TypeError: Failed to fetch dynamically imported module: chrome-extension://.../assets/ort-wasm-simd-threaded.jsep.mjs",
+      "good": "// post-build script (patch-ocr-csp.mjs): copy .mjs from node_modules\nimport { copyFileSync, existsSync } from 'fs';\nconst src = join(cwd, 'node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.jsep.mjs');\nconst dst = join(cwd, 'dist/assets/ort-wasm-simd-threaded.jsep.mjs');\nif (existsSync(src)) {\n  copyFileSync(src, dst);\n  console.log('[OK] Copied .mjs from node_modules → dist/assets/');\n}"
+    },
+    {
+      "context": "ORT expects wasmPaths as directory prefix but code passes full file path — ORT appends filename to the prefix, producing double filename",
+      "bad": "// ORT appends 'ort-wasm-simd-threaded.jsep.wasm' to wasmPaths\nwasmPaths: config.wasmPaths + 'ort-wasm-simd-threaded.jsep.wasm'\n// → fetches 'assets/ort-wasm-simd-threaded.jsep.wasmort-wasm-simd-threaded.jsep.wasm' — 404",
+      "good": "// wasmPaths is a directory prefix — ORT appends the filename\nwasmPaths: config.wasmPaths  // e.g. 'chrome-extension://.../assets/'\n// → fetches 'chrome-extension://.../assets/ort-wasm-simd-threaded.jsep.wasm' — 200 OK"
+    }
+  ],
+  "applyFor": [
+    "ONNX Runtime Web in Vite/Webpack bundles",
+    "Emscripten modules with runtime dynamic imports",
+    "Any library with internal import() of satellite files not tracked by bundler",
+    "WASM libraries needing .wasm + .mjs files at specific paths"
+  ]
+}

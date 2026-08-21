@@ -1,0 +1,21 @@
+{
+  "id": "offscreen-message-relay-for-content-script",
+  "title": "Offscreen documents can't message content scripts directly → relay through background",
+  "category": ["messaging"],
+  "tags": ["offscreen", "content-script", "chrome-runtime", "sendmessage", "relay", "background", "chrome-tabs"],
+  "trigger": "Offscreen document needs to send debug logs or data to content script (or vice versa)",
+  "principle": "chrome.runtime.sendMessage from offscreen documents only reaches the background service worker, NOT content scripts. Content scripts require chrome.tabs.sendMessage(tabId, msg). To bridge offscreen→content, relay through background: offscreen sends to background, background forwards via chrome.tabs.sendMessage or writes to chrome.storage.local for content script to poll.",
+  "cases": [
+    {
+      "context": "Offscreen document sends debug logs via chrome.runtime.sendMessage expecting content script to receive them — content script listener never fires",
+      "bad": "// offscreen: sends debug broadcast\nchrome.runtime.sendMessage({ type: '_OFFSCREEN_DEBUG', data });\n// content script: listens but never receives\nchrome.runtime.onMessage.addListener((msg) => {\n  if (msg.type === '_OFFSCREEN_DEBUG') { /* never fires */ }\n});",
+      "good": "// offscreen: send to background only\nchrome.runtime.sendMessage({ type: 'OFFSCREEN_DEBUG_LOG', data });\n// background: relay to chrome.storage.local for content script to poll\nchrome.runtime.onMessage.addListener((msg) => {\n  if (msg.type === 'OFFSCREEN_DEBUG_LOG') {\n    debugBuf.push(msg.data);\n    chrome.storage.local.set({ __offscreenDebugLog: debugBuf.slice(-100) });\n  }\n});\n// content script: poll chrome.storage.local\nsetInterval(() => {\n  chrome.storage.local.get('__offscreenDebugLog', (result) => {\n    if (result.__offscreenDebugLog) { /* process logs */ }\n  });\n}, 2000);"
+    }
+  ],
+  "applyFor": [
+    "Chrome extension offscreen→content script communication",
+    "Debug logging from offscreen documents to DevTools-visible context",
+    "Any architecture where offscreen needs to reach content script context",
+    "Relay patterns for contexts with restricted chrome.runtime.sendMessage scope"
+  ]
+}
