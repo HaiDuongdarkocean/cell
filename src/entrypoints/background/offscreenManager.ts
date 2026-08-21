@@ -34,7 +34,6 @@ const PING_RETRY_DELAY_MS = 100;
  */
 export class OffscreenManager {
   private documentExists = false;
-  private listenerReady = false;
   // In-flight promise for `ensureOffscreenDocument` — when multiple callers
   // request the document concurrently (e.g. several
   // `resolveUnknownSubtitleLanguages` fetches running in parallel), they all
@@ -139,15 +138,10 @@ export class OffscreenManager {
         const response = await sendMessage<{ success?: boolean }>({
           type: MESSAGE_TYPES.OFFSCREEN_PING,
         });
-        console.log(`[OffscreenManager] ping attempt ${attempt + 1}:`, JSON.stringify(response));
-        try { chrome.storage.local.set({ __pingDebug: { attempt: attempt + 1, response: JSON.stringify(response)?.slice(0, 200), time: Date.now() } }); } catch {}
         if (response?.success) {
-          this.listenerReady = true;
           return;
         }
-      } catch (e) {
-        console.log(`[OffscreenManager] ping attempt ${attempt + 1} error:`, String(e));
-        try { chrome.storage.local.set({ __pingDebug: { attempt: attempt + 1, error: String(e)?.slice(0, 200), time: Date.now() } }); } catch {}
+      } catch {
         // "Could not establish connection" — listener not ready yet, retry.
       }
       await sleep(PING_RETRY_DELAY_MS);
@@ -171,7 +165,6 @@ export class OffscreenManager {
 
     await closeOffscreenDocument();
     this.documentExists = false;
-    this.listenerReady = false;
   }
 
   /**

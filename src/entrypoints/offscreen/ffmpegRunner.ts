@@ -11,12 +11,6 @@
  * result back to OPFS, and responds with the output file name.
  */
 
-// Debug: verify offscreen document code runs + sendMessage reaches background.
-// This is called immediately when the offscreen document loads.
-try {
-  void chrome.runtime.sendMessage({ type: 'OFFSCREEN_DEBUG_LOG', data: { kind: 'ffmpeg-loaded', time: Date.now() } }).catch(() => {});
-} catch {}
-
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { transmuxTsToFmp4 } from '@/features/transmux';
 import { executeParallelConversion } from '@/features/transmux';

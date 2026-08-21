@@ -97,8 +97,6 @@ export class MessageBus {
     request: MessageRequest,
     sender: chrome.runtime.MessageSender,
   ): Promise<MessageResponse> {
-    // Debug: log every message to chrome.storage.local for offscreen debugging.
-    try { chrome.storage.local.set({ __msgBusLast: request.type + '@' + Date.now() }); } catch {}
     // Skip _OFFSCREEN_ prefixed messages — these are forwarded by background
     // to the offscreen document. The start() listener already returns false for
     // these, so handleMessage is never called with them. This is a safety net.

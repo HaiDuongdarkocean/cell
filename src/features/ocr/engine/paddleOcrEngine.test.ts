@@ -185,7 +185,7 @@ describe('PaddleOcrEngine (T4)', () => {
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         ortOptions: expect.objectContaining({
-          wasmPaths: { wasm: customPaths + 'ort-wasm-simd-threaded.jsep.wasm' },
+          wasmPaths: customPaths,
         }),
       }),
     );
