@@ -6,24 +6,29 @@
 
 import { OcrController } from './ocrController';
 import { OcrOverlay, createHitboxes, wireOcrHitboxesToTrigger } from '@/features/ocr/overlay/ocrOverlay';
+import { RegionSelector, defaultBottomRegion, type RegionSelectorMode } from '@/features/ocr/overlay/regionSelector';
 import { OcrPipelineState, runPipelineStep, DEFAULT_PIPELINE_CONFIG, type OcrPipelineConfig } from '@/features/ocr/pipeline/ocrPipeline';
 import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCapture';
-import { isOcrEnabledForUrl, loadOcrSettings, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
-import type { OcrOriginState } from '@/features/ocr/persistence/ocrStateTypes';
+import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
+import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
+import type { OcrOriginState, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /** OCR content-script session — manages the full pipeline for one video. */
 export class OcrSession {
   private readonly controller: OcrController;
   private readonly overlay: OcrOverlay;
   private readonly pipelineState: OcrPipelineState;
+  private readonly regionSelector: RegionSelector;
   private video: HTMLVideoElement | null = null;
   private canvas: OffscreenCanvas | null = null;
   private running = false;
   private processing = false;
   private loopCount = 0;
   private config: OcrPipelineConfig = DEFAULT_PIPELINE_CONFIG;
+  private originState: OcrOriginState | null = null;
   private triggerController: SubtitleTriggerController | null = null;
   /** Bound listeners (for removal on stop). */
   private onSeeked: (() => void) | null = null;
@@ -33,7 +38,14 @@ export class OcrSession {
     this.controller = new OcrController();
     this.overlay = new OcrOverlay();
     this.pipelineState = new OcrPipelineState();
+    this.regionSelector = new RegionSelector({
+      onRegionChange: (region) => { this.pendingRegion = region; },
+      onApply: () => { void this.handleRegionApply(); },
+      onCancel: () => { void this.handleRegionCancel(); },
+    });
   }
+
+  private pendingRegion: CustomRegion | null = null;
 
   /** Set the SubtitleTriggerController for dictionary lookup wiring (T16). */
   setTriggerController(tc: SubtitleTriggerController): void {
@@ -44,9 +56,12 @@ export class OcrSession {
   async start(video: HTMLVideoElement, originState: OcrOriginState): Promise<void> {
     if (this.running) return;
     this.video = video;
+    this.originState = originState;
     this.config = {
       ...DEFAULT_PIPELINE_CONFIG,
       subtitleRegionPct: originState.subtitleRegionPct,
+      subtitleRegionWidthPct: originState.subtitleRegionWidthPct,
+      customRegion: originState.customRegion,
     };
     this.pipelineState.reset();
 
@@ -63,6 +78,10 @@ export class OcrSession {
     document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
     this.overlay.attach(video);
     document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
+
+    // Attach region selector in view mode (green rectangle showing scan area).
+    const initialRegion = originState.customRegion ?? defaultBottomRegion(originState.subtitleRegionPct, originState.subtitleRegionWidthPct);
+    this.regionSelector.attach(video, initialRegion, 'view');
 
     this.running = true;
 
@@ -103,6 +122,10 @@ export class OcrSession {
       if (!this.canvas && typeof OffscreenCanvas !== 'undefined') {
         this.canvas = new OffscreenCanvas(frame.width, frame.height);
       }
+
+      // Debug: log crop region coords.
+      const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct);
+      document.body.dataset.ocrCropRegion = JSON.stringify(region);
 
       this.processing = true;
       void this.processFrame(frame).finally(() => {
@@ -189,11 +212,70 @@ export class OcrSession {
     this.onSeeked = null;
     this.onEnded = null;
     this.overlay.detach();
+    this.regionSelector.detach();
     // Engine stays alive in offscreen document — next start() hits the
     // `engine?.isInitialized()` fast path in ocrRunner (~100ms vs ~15s).
     // Dispose only on explicit shutdown (stopOcrSession / page unload).
     this.video = null;
     this.canvas = null;
+    this.pendingRegion = null;
+  }
+
+  /** Light update of region config without full restart. Called when slider changes. */
+  updateRegionConfig(originState: OcrOriginState): void {
+    this.originState = originState;
+    this.config = {
+      ...this.config,
+      subtitleRegionPct: originState.subtitleRegionPct,
+      subtitleRegionWidthPct: originState.subtitleRegionWidthPct,
+      customRegion: originState.customRegion,
+    };
+    if (this.video && this.running) {
+      const region = originState.customRegion ?? defaultBottomRegion(originState.subtitleRegionPct, originState.subtitleRegionWidthPct);
+      this.regionSelector.updateRegion(region);
+    }
+  }
+
+  /** Enter region-select/edit/view mode. Called from Settings Panel via message. */
+  setRegionMode(mode: RegionSelectorMode): void {
+    if (!this.video || !this.running) return;
+    if (mode === 'view') {
+      this.regionSelector.setMode('view');
+      return;
+    }
+    const currentRegion = this.originState?.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct);
+    this.regionSelector.attach(this.video, currentRegion, mode);
+  }
+
+  /** Reset to default bottom region and clear custom region. */
+  resetRegion(): void {
+    if (!this.originState) return;
+    const defaultRegion = defaultBottomRegion(this.originState.subtitleRegionPct, this.originState.subtitleRegionWidthPct);
+    this.regionSelector.updateRegion(defaultRegion);
+    this.regionSelector.setMode('view');
+  }
+
+  /** Handle Apply from region selector — save region to storage. */
+  private async handleRegionApply(): Promise<void> {
+    if (!this.originState || !currentOrigin) return;
+    const region = this.pendingRegion ?? this.regionSelector.getRegion();
+    this.config = { ...this.config, customRegion: region };
+    this.regionSelector.setMode('view');
+    const settings = await loadOcrSettings();
+    const next = setOcrPreference(settings, currentOrigin, { ...this.originState, customRegion: region });
+    await saveOcrSettings(next);
+    this.originState = { ...this.originState, customRegion: region };
+    this.pendingRegion = null;
+    void chrome.storage.local.set({ __ocrRegionResult: { applied: true, timestamp: Date.now() } });
+  }
+
+  /** Handle Cancel from region selector — revert to saved region. */
+  private async handleRegionCancel(): Promise<void> {
+    const savedRegion = this.originState?.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct);
+    this.regionSelector.updateRegion(savedRegion);
+    this.regionSelector.setMode('view');
+    this.pendingRegion = null;
+    void chrome.storage.local.set({ __ocrRegionResult: { applied: false, timestamp: Date.now() } });
   }
 
   /** Full shutdown — dispose engine in offscreen document. */
@@ -280,10 +362,68 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
       // OCR settings are stored under the 'ocrSettings' key (STORAGE_KEYS.OCR_SETTINGS),
       // NOT the general 'settings' key. Check both for safety.
       if (changes.ocrSettings?.newValue || changes.settings?.newValue) {
+        // Light path: if session is running and only region config changed, update without restart.
+        if (activeSession?.isRunning() && currentOrigin) {
+          void (async () => {
+            const settings = await loadOcrSettings();
+            const originState = settings.origins[currentOrigin];
+            if (originState?.ocrEnabled) {
+              activeSession!.updateRegionConfig(originState);
+            } else {
+              // OCR disabled — full stop.
+              await stopOcrSession();
+            }
+          })();
+          return;
+        }
+        // Full init path: no active session or origin change.
         void initOcrForCurrentUrl(window.location.href);
       }
     });
   }
+
+  // Region-select commands from Settings Panel.
+  // Settings Panel sends via chrome.runtime.sendMessage → background → chrome.tabs.sendMessage.
+  // Also accept window.postMessage for direct testing.
+  if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      if (msg?.type !== MESSAGE_TYPES.OCR_REGION_COMMAND) return;
+      const mode = msg.payload?.mode as RegionSelectorMode | 'reset';
+      if (!activeSession?.isRunning()) {
+        sendResponse({ success: false, error: 'OCR session not running' });
+        return;
+      }
+      if (mode === 'reset') {
+        activeSession.resetRegion();
+        void (async () => {
+          if (!currentOrigin) return;
+          const settings = await loadOcrSettings();
+          const originState = settings.origins[currentOrigin];
+          if (originState) {
+            const next = setOcrPreference(settings, currentOrigin, { ...originState, customRegion: null });
+            await saveOcrSettings(next);
+          }
+        })();
+      } else {
+        activeSession.setRegionMode(mode);
+      }
+      sendResponse({ success: true });
+      return true;
+    });
+  }
+
+  // Direct window.postMessage handler for region commands (testing + same-frame).
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data as { type?: string; mode?: RegionSelectorMode | 'reset' };
+    if (data?.type !== '__CELL_OCR_REGION_COMMAND') return;
+    if (!activeSession?.isRunning()) return;
+    if (data.mode === 'reset') {
+      activeSession.resetRegion();
+    } else if (data.mode) {
+      activeSession.setRegionMode(data.mode);
+    }
+  });
 
   // T20: SPA navigation — re-check origin.
   window.addEventListener('yt-navigate-finish', () => {
@@ -314,6 +454,8 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
           ocrEnabled: true,
           languageMode: (data.languageMode ?? 'auto') as 'auto' | 'zh' | 'en' | 'ja',
           subtitleRegionPct: 15,
+          subtitleRegionWidthPct: 100,
+          customRegion: null,
         };
         activeSession = new OcrSession();
         const tc = getTriggerController?.() ?? null;

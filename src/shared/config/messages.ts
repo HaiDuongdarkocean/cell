@@ -87,4 +87,5 @@ export const MESSAGE_TYPES = {
   OCR_DISPOSE: 'OCR_DISPOSE',
   OCR_GET_STATE: 'OCR_GET_STATE',
   OCR_SET_STATE: 'OCR_SET_STATE',
+  OCR_REGION_COMMAND: 'OCR_REGION_COMMAND',
 } as const satisfies Record<string, MessageType>;

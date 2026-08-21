@@ -3,7 +3,7 @@
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { Toggle, Select, Slider, Icon } from '@/shared/ui';
+import { Toggle, Select, Slider, Button, Icon } from '@/shared/ui';
 import {
   loadOcrSettings,
   saveOcrSettings,
@@ -15,6 +15,8 @@ import {
   type OcrOriginState,
 } from '@/features/ocr/persistence/ocrStateStore';
 import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendMessage } from '@/shared/lib/chrome-apis';
 import styles from './OcrSettingsPanel.module.css';
 
 const LANGUAGE_OPTIONS = [
@@ -49,8 +51,26 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     return () => { cancelled = true; };
   }, [url]);
 
+  // Listen for region-select results (Apply/Cancel) from content script.
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
+    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area !== 'local') return;
+      if (changes.__ocrRegionResult?.newValue) {
+        // Reload settings to pick up applied region.
+        void (async () => {
+          const s = await loadOcrSettings();
+          const org = extractOriginFromUrl(url);
+          setSettings(s);
+          setOcrState(getOcrPreference(s, org));
+        })();
+      }
+    };
+    chrome.storage.onChanged.addListener(listener);
+    return () => chrome.storage.onChanged.removeListener(listener);
+  }, [url]);
+
   const handleToggle = useCallback(async (enabled: boolean) => {
-    // Optimistic update — update state immediately, then persist.
     const currentSettings = settings ?? { schemaVersion: 1, origins: {} };
     const currentState = ocrState ?? DEFAULT_OCR_ORIGIN_STATE;
     const newState = { ...currentState, ocrEnabled: enabled };
@@ -59,7 +79,6 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
       ? setOcrPreference(currentSettings, origin, newState)
       : clearOcrPreference(currentSettings, origin);
     setSettings(next);
-    setOrigin(origin);
     await saveOcrSettings(next);
   }, [settings, origin, ocrState]);
 
@@ -71,7 +90,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     setOcrState(getOcrPreference(next, origin));
   }, [settings, origin, ocrState]);
 
-  const handleRegionPctChange = useCallback(async (pct: number) => {
+  const handleRegionHeightChange = useCallback(async (pct: number) => {
     if (!settings || !origin || !ocrState) return;
     const clamped = Math.max(5, Math.min(50, pct));
     const next = setOcrPreference(settings, origin, { ...ocrState, subtitleRegionPct: clamped });
@@ -80,9 +99,33 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     setOcrState(getOcrPreference(next, origin));
   }, [settings, origin, ocrState]);
 
+  const handleRegionWidthChange = useCallback(async (pct: number) => {
+    if (!settings || !origin || !ocrState) return;
+    const clamped = Math.max(10, Math.min(100, pct));
+    const next = setOcrPreference(settings, origin, { ...ocrState, subtitleRegionWidthPct: clamped });
+    await saveOcrSettings(next);
+    setSettings(next);
+    setOcrState(getOcrPreference(next, origin));
+  }, [settings, origin, ocrState]);
+
+  const sendRegionCommand = useCallback((mode: 'select' | 'edit' | 'view' | 'reset') => {
+    void sendMessage({ type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: { mode } });
+  }, []);
+
+  const handleResetRegion = useCallback(async () => {
+    if (!settings || !origin || !ocrState) return;
+    sendRegionCommand('reset');
+    const next = setOcrPreference(settings, origin, { ...ocrState, customRegion: null });
+    await saveOcrSettings(next);
+    setSettings(next);
+    setOcrState(getOcrPreference(next, origin));
+  }, [settings, origin, ocrState, sendRegionCommand]);
+
   const enabled = ocrState?.ocrEnabled ?? false;
   const regionPct = ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct;
+  const regionWidthPct = ocrState?.subtitleRegionWidthPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionWidthPct;
   const languageMode = ocrState?.languageMode ?? DEFAULT_OCR_ORIGIN_STATE.languageMode;
+  const hasCustomRegion = ocrState?.customRegion != null;
 
   return (
     <div className={styles.container} data-testid="ocr-settings-panel" data-enabled={enabled}>
@@ -145,26 +188,102 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             />
           </div>
 
-          {/* Region slider row */}
-          <div className={styles.rowStack}>
-            <div className={styles.sliderHeader}>
-              <span className={styles.labelGroup}>
-                <span className={styles.rowIcon} aria-hidden="true">
-                  <Icon name="gauge" />
+          {/* Region sliders — only in default mode (no custom region) */}
+          {!hasCustomRegion && (
+            <>
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="gauge" />
+                    </span>
+                    <span className={styles.rowLabel}>Scan height</span>
+                  </span>
+                  <span className={styles.sliderValue}>{regionPct}%</span>
+                </div>
+                <Slider
+                  value={regionPct}
+                  min={5}
+                  max={50}
+                  step={1}
+                  onChange={(v) => void handleRegionHeightChange(v)}
+                  aria-label="Subtitle scan region height"
+                />
+                <p className={styles.sliderHint}>Bottom {regionPct}% of the video frame</p>
+              </div>
+
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="resize" />
+                    </span>
+                    <span className={styles.rowLabel}>Scan width</span>
+                  </span>
+                  <span className={styles.sliderValue}>{regionWidthPct}%</span>
+                </div>
+                <Slider
+                  value={regionWidthPct}
+                  min={10}
+                  max={100}
+                  step={1}
+                  onChange={(v) => void handleRegionWidthChange(v)}
+                  aria-label="Subtitle scan region width"
+                />
+                <p className={styles.sliderHint}>Centered {regionWidthPct}% of the video width</p>
+              </div>
+            </>
+          )}
+
+          {/* Custom region info — shown when custom region exists */}
+          {hasCustomRegion && (
+            <div className={styles.rowStack}>
+              <div className={styles.sliderHeader}>
+                <span className={styles.labelGroup}>
+                  <span className={styles.rowIcon} aria-hidden="true">
+                    <Icon name="resize" />
+                  </span>
+                  <span className={styles.rowLabel}>Custom region</span>
                 </span>
-                <span className={styles.rowLabel}>Scan region</span>
-              </span>
-              <span className={styles.sliderValue}>{regionPct}%</span>
+              </div>
+              <p className={styles.sliderHint}>
+                {ocrState!.customRegion!.widthPct}%×{ocrState!.customRegion!.heightPct}% at ({ocrState!.customRegion!.xPct}%, {ocrState!.customRegion!.yPct}%)
+              </p>
             </div>
-            <Slider
-              value={regionPct}
-              min={5}
-              max={50}
-              step={1}
-              onChange={(v) => void handleRegionPctChange(v)}
-              aria-label="Subtitle scan region percentage"
-            />
-            <p className={styles.sliderHint}>Bottom {regionPct}% of the video frame</p>
+          )}
+
+          {/* Region action buttons */}
+          <div className={styles.rowStack}>
+            <div className={styles.regionButtons}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => sendRegionCommand('select')}
+                data-cell-id="ocr-region-select"
+              >
+                <Icon name="resize" /> Select Region
+              </Button>
+              {hasCustomRegion && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sendRegionCommand('edit')}
+                  data-cell-id="ocr-region-edit"
+                >
+                  <Icon name="pencil" /> Edit
+                </Button>
+              )}
+              {hasCustomRegion && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void handleResetRegion()}
+                  data-cell-id="ocr-region-reset"
+                >
+                  <Icon name="rotateCcw" /> Reset
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}

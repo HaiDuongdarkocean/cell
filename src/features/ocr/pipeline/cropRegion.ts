@@ -1,7 +1,9 @@
 // cropRegion — T11. Crop subtitle region from full frame.
 // spec §AD5: Bottom 15% of video by default, configurable per-origin.
+// Custom region: user-drawn rectangle (x%, y%, width%, height%).
 
 import type { ImageSource } from '@/features/ocr/engine/types';
+import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 
 /** Crop region spec — x, y, width, height in pixels. */
 export interface CropRegion {
@@ -14,17 +16,31 @@ export interface CropRegion {
 /** Compute subtitle crop region from full frame dimensions.
  *  @param imageWidth Full frame width.
  *  @param imageHeight Full frame height.
- *  @param regionPct Percentage of height from bottom (default 15). */
+ *  @param regionPct Percentage of height from bottom (default 15). Used in default bottom mode.
+ *  @param regionWidthPct Percentage of width, centered (default 100). Used in default bottom mode.
+ *  @param customRegion Custom region in % (x, y, width, height). null = use default bottom mode. */
 export function computeSubtitleRegion(
   imageWidth: number,
   imageHeight: number,
   regionPct = 15,
+  regionWidthPct = 100,
+  customRegion: CustomRegion | null = null,
 ): CropRegion {
+  if (customRegion) {
+    return {
+      x: Math.floor(imageWidth * customRegion.xPct / 100),
+      y: Math.floor(imageHeight * customRegion.yPct / 100),
+      width: Math.floor(imageWidth * customRegion.widthPct / 100),
+      height: Math.floor(imageHeight * customRegion.heightPct / 100),
+    };
+  }
   const regionHeight = Math.floor(imageHeight * regionPct / 100);
+  const regionWidth = Math.floor(imageWidth * regionWidthPct / 100);
+  const x = Math.floor((imageWidth - regionWidth) / 2);
   return {
-    x: 0,
+    x,
     y: imageHeight - regionHeight,
-    width: imageWidth,
+    width: regionWidth,
     height: regionHeight,
   };
 }
