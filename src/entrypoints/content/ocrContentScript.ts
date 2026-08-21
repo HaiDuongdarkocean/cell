@@ -21,8 +21,13 @@ export class OcrSession {
   private video: HTMLVideoElement | null = null;
   private canvas: OffscreenCanvas | null = null;
   private running = false;
+  private processing = false;
+  private loopCount = 0;
   private config: OcrPipelineConfig = DEFAULT_PIPELINE_CONFIG;
   private triggerController: SubtitleTriggerController | null = null;
+  /** Bound listeners (for removal on stop). */
+  private onSeeked: (() => void) | null = null;
+  private onEnded: (() => void) | null = null;
 
   constructor() {
     this.controller = new OcrController();
@@ -46,12 +51,32 @@ export class OcrSession {
     this.pipelineState.reset();
 
     // Init OCR engine in offscreen document.
-    await this.controller.init(originState.languageMode, 'webgpu');
+    try {
+      const initResult = await this.controller.init(originState.languageMode, 'webgpu');
+      document.body.dataset.ocrInitResult = JSON.stringify(initResult);
+    } catch (e) {
+      document.body.dataset.ocrInitError = String(e);
+      throw e;
+    }
 
     // Attach overlay.
+    document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
     this.overlay.attach(video);
+    document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
 
     this.running = true;
+
+    // Clear stale hitboxes + reset pipeline on seek (different scene).
+    this.onSeeked = () => {
+      this.overlay.clear();
+      this.pipelineState.reset();
+    };
+    this.onEnded = () => {
+      this.overlay.clear();
+    };
+    video.addEventListener('seeked', this.onSeeked);
+    video.addEventListener('ended', this.onEnded);
+
     this.loop();
   }
 
@@ -62,6 +87,16 @@ export class OcrSession {
       scheduleNextFrame(this.video, () => this.loop());
       return;
     }
+    // Processing lock — only one OCR in-flight at a time.
+    // Without this, multiple processFrame calls race and results arrive
+    // out-of-order, causing text from an earlier cue to appear over a later cue.
+    if (this.processing) {
+      scheduleNextFrame(this.video, () => this.loop());
+      return;
+    }
+
+    this.loopCount = (this.loopCount ?? 0) + 1;
+    document.body.dataset.ocrLoopCount = String(this.loopCount);
 
     try {
       const frame = captureFrame(this.video, this.canvas ?? undefined);
@@ -69,9 +104,13 @@ export class OcrSession {
         this.canvas = new OffscreenCanvas(frame.width, frame.height);
       }
 
-      void this.processFrame(frame);
-    } catch {
-      // Frame capture may fail during video load — skip and retry.
+      this.processing = true;
+      void this.processFrame(frame).finally(() => {
+        this.processing = false;
+      });
+    } catch (e) {
+      document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
+      this.processing = false;
     }
 
     scheduleNextFrame(this.video, () => this.loop());
@@ -81,38 +120,86 @@ export class OcrSession {
   private async processFrame(frame: ImageSource): Promise<void> {
     if (this.pipelineState.isDrmDetected()) return;
 
-    const result = await runPipelineStep(
-      frame,
-      (img, minScore) => this.controller.recognize(img, minScore),
-      this.pipelineState,
-      this.config,
-    );
+    try {
+      const result = await runPipelineStep(
+        frame,
+        (img, minScore) => this.controller.recognize(img, minScore),
+        this.pipelineState,
+        this.config,
+      );
 
-    if (result.status === 'drm_detected') {
-      // Stop OCR — DRM-protected content.
-      this.stop();
-      return;
-    }
-
-    if (result.status === 'ocr' && this.video) {
-      // Update overlay with per-script-run hitboxes.
-      const hitboxes = createHitboxes(result.results, result.scriptRuns);
-      this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
-
-      // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
-      if (this.triggerController) {
-        wireOcrHitboxesToTrigger(this.overlay, this.triggerController);
+      // Dev debug: log pipeline result status.
+      const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
+      statuses.push(result.status);
+      document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
+      // Also log luma debug from pipeline.
+      const lumaDbg = (globalThis as { __ocrLumaDbg?: string[] }).__ocrLumaDbg;
+      if (lumaDbg && lumaDbg.length > 0) {
+        document.body.dataset.ocrLumaDbg = lumaDbg.join(' | ');
       }
+      const captureDbg = (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg;
+      if (captureDbg) {
+        document.body.dataset.ocrCaptureDbg = captureDbg;
+      }
+      if (result.status === 'ocr') {
+        document.body.dataset.ocrLastResult = JSON.stringify(result.results.map(r => r.text)).slice(0, 200);
+      }
+      if (result.status === 'error') {
+        document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+      }
+
+      if (result.status === 'drm_detected') {
+        // Stop OCR — DRM-protected content.
+        document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+        this.stop();
+        return;
+      }
+
+      if (result.status === 'subtitle_gone') {
+        // Subtitle disappeared from frame — clear overlay immediately.
+        this.overlay.clear();
+      }
+
+      if (result.status === 'ocr' && this.video) {
+        const hitboxes = createHitboxes(result.results, result.scriptRuns);
+        console.log(`[OCR] t=${this.video.currentTime.toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
+        this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
+
+        // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
+        if (this.triggerController) {
+          wireOcrHitboxesToTrigger(this.overlay, this.triggerController);
+        }
+      }
+    } catch (e) {
+      // Dev debug: expose errors via DOM dataset (visible from MAIN world).
+      const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
+      errs.push(String(e));
+      document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
     }
   }
 
-  /** Stop OCR session. */
+  /** Stop OCR session — soft stop keeps engine alive for fast re-init. */
   async stop(): Promise<void> {
     this.running = false;
+    // Remove video listeners.
+    if (this.video) {
+      if (this.onSeeked) this.video.removeEventListener('seeked', this.onSeeked);
+      if (this.onEnded) this.video.removeEventListener('ended', this.onEnded);
+    }
+    this.onSeeked = null;
+    this.onEnded = null;
     this.overlay.detach();
-    await this.controller.dispose();
+    // Engine stays alive in offscreen document — next start() hits the
+    // `engine?.isInitialized()` fast path in ocrRunner (~100ms vs ~15s).
+    // Dispose only on explicit shutdown (stopOcrSession / page unload).
     this.video = null;
     this.canvas = null;
+  }
+
+  /** Full shutdown — dispose engine in offscreen document. */
+  async shutdown(): Promise<void> {
+    await this.stop();
+    await this.controller.dispose();
   }
 
   /** Whether the session is running. */
@@ -136,6 +223,7 @@ export function findVideoElement(): HTMLVideoElement | null {
 
 let activeSession: OcrSession | null = null;
 let currentOrigin = '';
+let getTriggerController: (() => SubtitleTriggerController | null) | null = null;
 
 /** T20: Start OCR if enabled for the current URL. Called on page load + SPA nav. */
 export async function initOcrForCurrentUrl(url: string): Promise<void> {
@@ -160,13 +248,15 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   if (!originState?.ocrEnabled) return;
 
   activeSession = new OcrSession();
+  const tc = getTriggerController?.() ?? null;
+  if (tc) activeSession.setTriggerController(tc);
   await activeSession.start(video, originState);
 }
 
 /** T19: Stop OCR session (called when toggle OFF or page unload). */
 export async function stopOcrSession(): Promise<void> {
   if (activeSession?.isRunning()) {
-    await activeSession.stop();
+    await activeSession.shutdown();
   }
   activeSession = null;
 }
@@ -176,7 +266,33 @@ export async function stopOcrSession(): Promise<void> {
  *  - Initial OCR check for current URL
  *  - chrome.storage.onChanged listener (toggle ON/OFF → start/stop)
  *  - SPA nav listener (yt-navigate-finish, popstate → re-check origin) */
-export function initOcrContentScript(): void {
+export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerController | null)): void {
+  getTriggerController = triggerFactory ?? null;
+  document.body.dataset.ocrInitCalled = 'true';
+
+  // Debug: poll chrome.storage.local for offscreen debug logs.
+  // Offscreen documents can't write to chrome.storage.local and can't send
+  // messages to content scripts directly. The background relays offscreen
+  // debug logs to chrome.storage.local, which we poll here.
+  if (typeof chrome !== 'undefined' && chrome.storage?.local?.get) {
+    setInterval(() => {
+      try {
+        chrome.storage.local.get(['__offscreenDebugLog', '__offscreenDebugTotal', '__offscreenDebugCounts'], (result: { __offscreenDebugLog?: unknown[]; __offscreenDebugTotal?: number; __offscreenDebugCounts?: Record<string, number> }) => {
+          if (result?.__offscreenDebugLog) {
+            const arr = result.__offscreenDebugLog;
+            const last10 = arr.slice(-10);
+            document.body.dataset.offscreenDebugLog = JSON.stringify({
+              total: result.__offscreenDebugTotal,
+              counts: result.__offscreenDebugCounts,
+              buffered: arr.length,
+              last10,
+            }).slice(0, 3000);
+          }
+        });
+      } catch {}
+    }, 2000);
+  }
+
   // T20: Initial check on page load.
   void initOcrForCurrentUrl(window.location.href);
 
@@ -184,7 +300,9 @@ export function initOcrContentScript(): void {
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local' && area !== 'sync') return;
-      if (changes.settings?.newValue) {
+      // OCR settings are stored under the 'ocrSettings' key (STORAGE_KEYS.OCR_SETTINGS),
+      // NOT the general 'settings' key. Check both for safety.
+      if (changes.ocrSettings?.newValue || changes.settings?.newValue) {
         void initOcrForCurrentUrl(window.location.href);
       }
     });
@@ -196,5 +314,120 @@ export function initOcrContentScript(): void {
   });
   window.addEventListener('popstate', () => {
     void initOcrForCurrentUrl(window.location.href);
+  });
+
+  // Dev debug hook: page can request OCR init via postMessage.
+  // Usage (from page MAIN world or DevTools console):
+  //   postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto' }, '*')
+  // This bypasses the storage check — useful for browser testing when
+  // chrome.storage.local cannot be set from the MAIN world.
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data as { type?: string; origin?: string; languageMode?: string };
+    if (data?.type === '__CELL_OCR_DEBUG_INIT' && data.origin) {
+      // Debug: check chrome.runtime availability in isolated world.
+      const cr = (typeof chrome !== 'undefined') ? chrome : null;
+      document.body.dataset.ocrDebugRuntime = JSON.stringify({
+        hasChrome: !!cr,
+        hasRuntime: !!cr?.runtime,
+        runtimeId: cr?.runtime?.id,
+        hasSendMessage: typeof cr?.runtime?.sendMessage,
+        hasStorage: typeof cr?.storage,
+        hasStorageLocal: typeof cr?.storage?.local,
+      });
+      // Timer test: does setTimeout fire in the isolated world?
+      setTimeout(() => { document.body.dataset.ocrTimerTest = 'fired'; }, 2000);
+      // sendMessage test: does chrome.runtime.sendMessage return a resolving promise?
+      if (cr?.runtime?.sendMessage) {
+        try {
+          // Test 1: simple ping
+          const testP = cr.runtime.sendMessage({ type: 'TEST_PING' });
+          document.body.dataset.ocrSendTest = 'returned-' + (typeof testP?.then === 'function' ? 'promise' : typeof testP);
+          if (testP && typeof testP.then === 'function') {
+            testP.then(
+              (r: unknown) => { document.body.dataset.ocrSendTestResult = 'resolved:' + JSON.stringify(r)?.slice(0, 100); },
+              (e: unknown) => { document.body.dataset.ocrSendTestResult = 'rejected:' + String(e)?.slice(0, 100); },
+            );
+            setTimeout(() => {
+              if (!document.body.dataset.ocrSendTestResult) {
+                document.body.dataset.ocrSendTestResult = 'timeout-10s';
+              }
+            }, 10000);
+          }
+          // Test 2: OCR_INIT directly
+          const ocrP = cr.runtime.sendMessage({ type: 'OCR_INIT', payload: { languageMode: 'auto', backend: 'webgpu' } });
+          document.body.dataset.ocrDirectInitTest = 'returned-' + (typeof ocrP?.then === 'function' ? 'promise' : typeof ocrP);
+          if (ocrP && typeof ocrP.then === 'function') {
+            ocrP.then(
+              (r: unknown) => { document.body.dataset.ocrDirectInitResult = 'resolved:' + JSON.stringify(r)?.slice(0, 200); },
+              (e: unknown) => { document.body.dataset.ocrDirectInitResult = 'rejected:' + String(e)?.slice(0, 200); },
+            );
+            setTimeout(() => {
+              if (!document.body.dataset.ocrDirectInitResult) {
+                document.body.dataset.ocrDirectInitResult = 'timeout-15s';
+              }
+            }, 15000);
+          }
+          // Test 3: OFFSCREEN_PING — does offscreen document respond?
+          const pingP = cr.runtime.sendMessage({ type: 'OFFSCREEN_PING' });
+          document.body.dataset.ocrPingTest = 'returned-' + (typeof pingP?.then === 'function' ? 'promise' : typeof pingP);
+          if (pingP && typeof pingP.then === 'function') {
+            pingP.then(
+              (r: unknown) => { document.body.dataset.ocrPingResult = 'resolved:' + JSON.stringify(r)?.slice(0, 200); },
+              (e: unknown) => { document.body.dataset.ocrPingResult = 'rejected:' + String(e)?.slice(0, 200); },
+            );
+            setTimeout(() => {
+              if (!document.body.dataset.ocrPingResult) {
+                document.body.dataset.ocrPingResult = 'timeout-15s';
+              }
+            }, 15000);
+          }
+        } catch (e) {
+          document.body.dataset.ocrSendTest = 'throw:' + String(e)?.slice(0, 100);
+        }
+      }
+      // Read debug info from chrome.storage.local (set by background handler).
+      if (cr?.storage?.local?.get) {
+        try {
+          cr.storage.local.get('__ocrBgDebug', (result: unknown) => {
+            document.body.dataset.ocrBgDebug = JSON.stringify(result)?.slice(0, 300);
+          });
+        } catch {}
+      }
+      // Also listen for delayed debug read requests.
+      window.addEventListener('message', (e) => {
+        if (e.data?.type === '__CELL_OCR_READ_DEBUG' && cr?.storage?.local?.get) {
+          cr.storage.local.get(['__ocrBgDebug', '__ocrInitProgress', '__ocrListenerMsg', '__ocrEngineProgress', '__ocrOffscreenError', '__ocrScriptLoadTime', '__ocrScriptLoaded', '__ocrBgStep', '__msgBusLast', '__ffmpegScriptLoaded', '__ffmpegBootstrap', '__sendMessageDebug', '__offscreenListenerMsg', '__pingDebug', '__offscreenDebugLog'], (result: unknown) => {
+            document.body.dataset.ocrBgDebugDelayed = JSON.stringify(result)?.slice(0, 1500);
+          });
+        }
+      });
+      void (async () => {
+        try {
+          document.body.dataset.ocrDebugStep = '1-start';
+          if (activeSession?.isRunning()) {
+            await activeSession.stop();
+            activeSession = null;
+          }
+          currentOrigin = data.origin ?? '';
+          const video = findVideoElement();
+          document.body.dataset.ocrDebugStep = '2-video-' + (video ? 'found' : 'null');
+          if (!video) return;
+          const originState = {
+            ocrEnabled: true,
+            languageMode: (data.languageMode ?? 'auto') as 'auto' | 'zh' | 'en' | 'ja',
+            subtitleRegionPct: 15,
+          };
+          activeSession = new OcrSession();
+          const tc = getTriggerController?.() ?? null;
+          if (tc) activeSession.setTriggerController(tc);
+          document.body.dataset.ocrDebugStep = '3-before-start';
+          await activeSession.start(video, originState);
+          document.body.dataset.ocrDebugStep = '4-after-start';
+        } catch (e) {
+          document.body.dataset.ocrDebugException = String(e);
+        }
+      })();
+    }
   });
 }

@@ -79,7 +79,8 @@ export function quadToCssRect(
   };
 }
 
-/** Create a DOM span element for a hitbox (span for subtitleTriggerController compat). */
+/** Create a DOM span element for a hitbox — displays OCR text as selectable subtitle overlay.
+ *  Text is styled like burned-in subtitle (white + black outline) and user-selectable. */
 export function createHitboxElement(
   hitbox: OcrHitbox,
   rect: { left: number; top: number; width: number; height: number },
@@ -89,7 +90,8 @@ export function createHitboxElement(
   el.className = 'cell-ocr-hitbox';
   el.dataset.cellTerm = hitbox.text.trim();
   el.dataset.cellLang = hitbox.langCode;
-  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto;display:inline-block;`;
+  el.textContent = hitbox.text;
+  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:text;pointer-events:auto;display:flex;align-items:center;justify-content:center;user-select:text;-webkit-user-select:text;color:#fff;font-size:${Math.floor(rect.height * 0.7)}px;line-height:1;text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;white-space:nowrap;overflow:hidden;`;
   return el;
 }
 
@@ -106,7 +108,7 @@ export class OcrOverlay {
     parent.style.position = 'relative';
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-overlay';
-    this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+    this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;user-select:none;-webkit-user-select:none;';
     parent.appendChild(this.container);
   }
 

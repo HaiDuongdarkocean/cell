@@ -76,6 +76,13 @@ jest.mock('@/features/transmux/merging/tsTransmuxer', () => ({
   transmuxTsToFmp4: jest.fn(),
 }));
 
+jest.mock('@/entrypoints/offscreen/ocrRunner', () => ({
+  ocrMessageListener: jest.fn((_message, _sender, sendResponse) => {
+    sendResponse({ status: 'ready', backend: 'wasm' });
+    return true;
+  }),
+}));
+
 // ---- chrome mock ----
 
 const onMessageListeners: Array<
@@ -284,6 +291,25 @@ describe('offscreen ffmpegRunner (V2)', () => {
       expect(response.data?.downloadId).toBe('dl-xyz');
       expect(response.data?.outputName).toBe('output.mp4');
       expect(response.data?.mimeType).toBe('video/mp4');
+    });
+
+    it('routes OCR messages through the single offscreen listener', async () => {
+      await startMessageListener();
+      const listener = onMessageListeners[0];
+      const sendResponse = jest.fn();
+      const ocrRunner = jest.requireMock('@/entrypoints/offscreen/ocrRunner') as {
+        ocrMessageListener: jest.Mock;
+      };
+
+      const returnValue = listener(
+        { type: MESSAGE_TYPES.OCR_INIT, payload: { languageMode: 'auto', backend: 'webgpu' } },
+        {} as chrome.runtime.MessageSender,
+        sendResponse,
+      );
+
+      expect(returnValue).toBe(true);
+      expect(ocrRunner.ocrMessageListener).toHaveBeenCalledTimes(1);
+      expect(sendResponse).toHaveBeenCalledWith({ status: 'ready', backend: 'wasm' });
     });
 
     it('returns false for non-CONVERT_TS_TO_MP4_V2 messages', async () => {

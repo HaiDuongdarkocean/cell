@@ -181,6 +181,37 @@ export class BackgroundService implements BackgroundContext {
     chrome.runtime.onMessage.addListener(svLogListener);
     this.unsubscribers.push(() => chrome.runtime.onMessage.removeListener(svLogListener));
 
+    // 1a2. Offscreen debug log relay — offscreen documents can't write to
+    // chrome.storage.local (silent failure) and chrome.runtime.sendMessage
+    // from offscreen doesn't reach content scripts. Relay debug logs here
+    // so they appear in chrome.storage.local for the content script to read.
+    const offscreenDebugBuf: unknown[] = [];
+    let offscreenDebugTotal = 0;
+    const kindCounts: Record<string, number> = {};
+    const offscreenDebugListener = (
+      msg: unknown,
+      _sender: chrome.runtime.MessageSender,
+    ): void => {
+      if (typeof msg !== 'object' || msg === null) return;
+      const m = msg as { type?: string; data?: unknown };
+      if (m.type !== 'OFFSCREEN_DEBUG_LOG') return;
+      const data = m.data as { kind?: string } | undefined;
+      const kind = data?.kind ?? '?';
+      kindCounts[kind] = (kindCounts[kind] || 0) + 1;
+      offscreenDebugTotal++;
+      // Only buffer non-craft-invoker messages (craft-invoker floods the buffer)
+      if (kind !== 'craft-invoker' && kind !== 'named-fn') {
+        offscreenDebugBuf.push(m.data);
+      }
+      void chrome.storage.local.set({
+        __offscreenDebugLog: offscreenDebugBuf.slice(-100),
+        __offscreenDebugTotal: offscreenDebugTotal,
+        __offscreenDebugCounts: kindCounts,
+      });
+    };
+    chrome.runtime.onMessage.addListener(offscreenDebugListener);
+    this.unsubscribers.push(() => chrome.runtime.onMessage.removeListener(offscreenDebugListener));
+
     // 1b. Start session restore IMMEDIATELY (before any await)
     this.sessionReady = performSessionRestore(this);
 

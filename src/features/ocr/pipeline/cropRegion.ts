@@ -47,7 +47,10 @@ export function cropImage(image: ImageSource, region: CropRegion): ImageSource {
   for (let y = 0; y < cropHeight; y++) {
     const srcRowStart = ((startY + y) * srcWidth + startX) * 4;
     const dstRowStart = y * cropWidth * 4;
-    cropped.set(data.subarray(srcRowStart, srcRowStart + cropWidth * 4), dstRowStart);
+    const row = Array.isArray(data)
+      ? data.slice(srcRowStart, srcRowStart + cropWidth * 4)
+      : data.subarray(srcRowStart, srcRowStart + cropWidth * 4);
+    cropped.set(row as number[] | Uint8ClampedArray, dstRowStart);
   }
 
   return { data: cropped, width: cropWidth, height: cropHeight };

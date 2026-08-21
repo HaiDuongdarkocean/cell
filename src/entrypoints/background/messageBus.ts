@@ -97,6 +97,14 @@ export class MessageBus {
     request: MessageRequest,
     sender: chrome.runtime.MessageSender,
   ): Promise<MessageResponse> {
+    // Debug: log every message to chrome.storage.local for offscreen debugging.
+    try { chrome.storage.local.set({ __msgBusLast: request.type + '@' + Date.now() }); } catch {}
+    // Skip _OFFSCREEN_ prefixed messages — these are forwarded by background
+    // to the offscreen document. The start() listener already returns false for
+    // these, so handleMessage is never called with them. This is a safety net.
+    if (request.type.startsWith('_OFFSCREEN_')) {
+      return new Promise<MessageResponse>(() => {});
+    }
     const handler = this.handlers.get(request.type);
     if (!handler) {
       return {
@@ -161,6 +169,16 @@ export class MessageBus {
       sender: chrome.runtime.MessageSender,
       sendResponse: (response: MessageResponse) => void,
     ): boolean => {
+      // _OFFSCREEN_ messages are forwarded by background to the offscreen document.
+      // The offscreen listener owns the response. Returning true here would keep
+      // the channel open, but handleMessage returns a never-resolving promise for
+      // these types (sendResponse never called). Chrome's sendMessage Promise
+      // waits for ALL listeners that returned true to call sendResponse — the
+      // never-resolving promise hangs sendMessage forever. Return false to close
+      // our channel immediately so the offscreen listener can respond.
+      if (request.type?.startsWith?.('_OFFSCREEN_')) {
+        return false;
+      }
       // Respond asynchronously.
       void this.handleMessage(request, sender).then(sendResponse);
       return true;
