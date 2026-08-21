@@ -1279,6 +1279,46 @@
       "category": ["ux", "css"],
       "tags": ["button", "ghost", "outline", "navigation", "footer", "zalo-pay", "transparent", "no-border", "variant"],
       "trigger": "Navigation/footer button dùng outline variant (border) tạo cảm giác 'nút action' thay vì 'navigation slot'"
+    },
+    {
+      "type": "experience",
+      "id": "vite-preload-helper-blocks-offscreen",
+      "title": "Vite preload helper creates <link> elements that hang in restricted contexts",
+      "category": ["build", "async"],
+      "tags": ["vite", "preload", "modulepreload", "offscreen", "dynamic-import", "vite-ignore", "chrome-extension"],
+      "trigger": "Dynamic import() in Chrome extension offscreen document (or sandboxed/restricted context) hangs indefinitely"
+    },
+    {
+      "type": "experience",
+      "id": "offscreen-message-relay-for-content-script",
+      "title": "Offscreen documents can't message content scripts directly → relay through background",
+      "category": ["messaging"],
+      "tags": ["offscreen", "content-script", "chrome-runtime", "sendmessage", "relay", "background", "chrome-tabs"],
+      "trigger": "Offscreen document needs to send debug logs or data to content script (or vice versa)"
+    },
+    {
+      "type": "experience",
+      "id": "chrome-storage-silent-failure-offscreen",
+      "title": "chrome.storage.local.set silently fails in offscreen documents",
+      "category": ["state", "messaging"],
+      "tags": ["chrome-storage", "offscreen", "silent-failure", "debug", "chrome-runtime", "sendmessage"],
+      "trigger": "Debug logging or state persistence via chrome.storage.local in offscreen document — data never appears"
+    },
+    {
+      "type": "experience",
+      "id": "runtime-dynamic-import-files-not-emitted-by-bundler",
+      "title": "Runtime dynamic import() needs files the bundler doesn't emit → copy in post-build",
+      "category": ["build"],
+      "tags": ["vite", "dynamic-import", "wasm", "ort", "onnxruntime", "post-build", "node-modules", "copy-file"],
+      "trigger": "Library does internal dynamic import() of a file (e.g. .mjs, .wasm) at runtime, but bundler doesn't emit it to dist/"
+    },
+    {
+      "type": "experience",
+      "id": "mv3-csp-unsafe-eval-patch-closures",
+      "title": "MV3 CSP blocks new Function() → patch with safe closures in post-build",
+      "category": ["build", "data"],
+      "tags": ["csp", "unsafe-eval", "mv3", "emscripten", "opencv", "function-constructor", "post-build", "patch"],
+      "trigger": "Emscripten/WASM library uses new Function() or Function() constructor — blocked by MV3 CSP script-src 'self' 'wasm-unsafe-eval'"
     }
   ]
 }
