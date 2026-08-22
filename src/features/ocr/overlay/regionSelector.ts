@@ -12,7 +12,7 @@
 // - .cell-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
 
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
-import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLeftIcon } from '@/shared/icons';
+import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLeftIcon, pencilIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
@@ -34,6 +34,8 @@ export interface RegionSelectorCallbacks {
   onSplitRatioChange?: (ratio: number) => void;
   /** Called when user clicks Split toggle in the action bar (view mode only). */
   onToggleSplit?: () => void;
+  /** Called when user clicks Edit Region in the action bar (view mode only). */
+  onEditRegion?: () => void;
   /** Called when user clicks Select Region in the action bar (view mode only). */
   onSelectRegion?: () => void;
   /** Called when user clicks Reset Region in the action bar (view mode only). */
@@ -216,11 +218,18 @@ export class RegionSelector {
     toggleBtn.dataset.collapsed = 'false';
     this.actionBar.appendChild(toggleBtn);
 
-    // Inner container for the 3 action buttons (collapsible).
+    // Inner container for the action buttons (collapsible).
     this.actionBarInner = document.createElement('div');
     this.actionBarInner.className = 'cell-ocr-action-bar-inner';
     this.actionBarInner.dataset.collapsed = 'false';
     this.actionBar.appendChild(this.actionBarInner);
+
+    // Edit Region button (drag handles to resize current region).
+    const editBtn = this.makeActionButton(pencilIcon, 'Edit OCR region', () => {
+      this.callbacks.onEditRegion?.();
+    });
+    editBtn.dataset.cellId = 'ocr-action-edit';
+    this.actionBarInner.appendChild(editBtn);
 
     // Split toggle button.
     const splitBtn = this.makeActionButton(moveVerticalIcon, 'Toggle split dual subtitles', () => {
