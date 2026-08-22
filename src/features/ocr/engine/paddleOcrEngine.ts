@@ -17,8 +17,9 @@ type PaddleOCRModule = typeof import('@paddleocr/paddleocr-js');
 type PaddleOCRInstance = Awaited<ReturnType<PaddleOCRModule['PaddleOCR']['create']>>;
 type PaddleOcrResult = Awaited<ReturnType<PaddleOCRInstance['predict']>>;
 
-/** Map OcrLanguageMode → PaddleOCR.js lang param. */
-const LANG_MAP: Record<OcrConfig['languageMode'], string> = {
+/** Map languageMode → PaddleOCR.js lang param. 'zh'/'ja' = legacy stored values
+ *  (pre-catalog states in chrome.storage) — kept so old data still resolves. */
+const LANG_MAP: Readonly<Record<string, string>> = {
   auto: 'ch',  // PP-OCRv5 'ch' model covers CN+EN+JA (mixed-language).
   zh: 'ch',
   en: 'ch',    // Same model — 'ch' handles English too.
