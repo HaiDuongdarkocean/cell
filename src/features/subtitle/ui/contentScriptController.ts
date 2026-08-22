@@ -667,8 +667,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let autoNativeItems: SubtitlePanelItem[] = [];
   // Track which source is currently active per role (so merged panel highlights
   // the correct item when both auto + imported exist).
-  let activeTargetSource: 'auto' | 'imported' | 'searched' = 'auto';
-  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' = 'auto';
+  let activeTargetSource: 'auto' | 'imported' | 'searched' | 'ocr' = 'auto';
+  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr' = 'auto';
   // Generate-native: virtual replacement slot in the native manager panel.
   // Underlying auto/imported arrays are not mutated; this slot replaces the
   // active native item in the merged panel display and provides translated cues.
@@ -680,6 +680,30 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     readonly runId: number;
   }
   let translatedNativeSlot: TranslatedNativeSlot | null = null;
+  // OCR split dual-stream (spec ocr-split-dual-stream): two virtual slots fed by
+  // the OCR content script via window.postMessage('__CELL_OCR_TRACKS'). Like the
+  // translated slot, underlying auto/imported/searched arrays are not mutated —
+  // the OCR items are appended to the merged panel and replace the active source.
+  interface OcrTrackSlot {
+    readonly item: SubtitlePanelItem;
+    cues: SrtCue[];
+  }
+  let ocrTargetSlot: OcrTrackSlot | null = null;
+  let ocrNativeSlot: OcrTrackSlot | null = null;
+  // Active sources before the first OCR tracks message — restored on END.
+  type PreOcrSources = {
+    target: 'auto' | 'imported' | 'searched' | 'ocr';
+    native: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr';
+  };
+  let preOcrSources: PreOcrSources | null = null;
+  const makeOcrPanelItem = (id: string, name: string, role: 'target' | 'native'): SubtitlePanelItem => ({
+    id,
+    name,
+    format: 'live',
+    source: 'ocr',
+    role,
+    index: 0,
+  });
 
   /**
    * Build merged panel items for a role: auto items first, then imported items.
@@ -689,6 +713,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * switch between auto-detected and imported subtitles freely.
    */
   const mergedPanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
+    const base = basePanelItems(role);
+    // OCR dual-stream: append the live OCR item at the end (existing indices
+    // unchanged) and highlight it while the OCR source is active.
+    const ocrSlot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
+    if (!ocrSlot) return base;
+    const source = role === 'target' ? activeTargetSource : activeNativeSource;
+    const items = [...base.items, ocrSlot.item];
+    return { items, activeIndex: source === 'ocr' ? items.length - 1 : base.activeIndex };
+  };
+
+  const basePanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
     const autoItems = role === 'target' ? autoTargetItems : autoNativeItems;
     const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
     const searchedItems = role === 'target' ? searchedTargetItems : searchedNativeItems;
@@ -1585,6 +1620,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       await onSearchedSelect(role, item.index);
       return;
     }
+    if (item.source === 'ocr') {
+      // OCR dual-stream: re-activate the live OCR track for this role.
+      const slot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
+      if (slot) {
+        if (role === 'target') activeTargetSource = 'ocr';
+        else activeNativeSource = 'ocr';
+        refreshPanel(role);
+        // D1 merge: empty other side keeps the existing side (onSubtitleSelect pattern).
+        blockController?.loadBilingualCues(role === 'target' ? slot.cues : [], role === 'native' ? slot.cues : []);
+        showOverlay();
+        syncSidePanelFromBlock();
+      }
+      return;
+    }
     if (item.source === 'translated') {
       if (role === 'native' && translatedNativeSlot) {
         activeNativeSource = 'translated';
@@ -1845,12 +1894,55 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   window.addEventListener('yt-navigate-finish', onSpaNav);
   window.addEventListener('popstate', onSpaNav);
 
+  // OCR dual-stream bridge (spec ocr-split-dual-stream): the OCR content script
+  // (same isolated world) posts '__CELL_OCR_TRACKS' with growing target/native cue
+  // lists and '__CELL_OCR_TRACKS_END' when the split session stops or split turns
+  // off. First message snapshots the active sources (restored on END), creates the
+  // two virtual slots and auto-switches both roles to the OCR source.
+  const onOcrTracksMessage = (e: MessageEvent): void => {
+    if (e.source !== window) return;
+    const d = e.data as { type?: string; targetCues?: SrtCue[]; nativeCues?: SrtCue[] };
+    if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
+      if (!ocrTargetSlot || !ocrNativeSlot) {
+        preOcrSources = { target: activeTargetSource, native: activeNativeSource };
+        ocrTargetSlot = { item: makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
+        ocrNativeSlot = { item: makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
+      }
+      ocrTargetSlot.cues = d.targetCues;
+      ocrNativeSlot.cues = d.nativeCues;
+      activeTargetSource = 'ocr';
+      activeNativeSource = 'ocr';
+      blockController?.loadBilingualCues(d.targetCues, d.nativeCues);
+      showOverlay();
+      latestTargetCues = d.targetCues;
+      offsetController?.loadCues(true);
+      bilingualCues = mergeCuesForPanel(d.targetCues, d.nativeCues);
+      broadcastCues(bilingualCues);
+      refreshPanel('target');
+      refreshPanel('native');
+      return;
+    }
+    if (d?.type === '__CELL_OCR_TRACKS_END') {
+      ocrTargetSlot = null;
+      ocrNativeSlot = null;
+      if (preOcrSources) {
+        activeTargetSource = preOcrSources.target;
+        activeNativeSource = preOcrSources.native;
+        preOcrSources = null;
+      }
+      refreshPanel('target');
+      refreshPanel('native');
+    }
+  };
+  window.addEventListener('message', onOcrTracksMessage);
+
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
   // re-render, but document/onMessage listeners would otherwise leak).
   // ponytail: document keydown + onMessage listeners leak — ceiling: memory
   // leak after many episode switches. Upgrade path: track + remove all listeners.
   return () => {
+    window.removeEventListener('message', onOcrTracksMessage);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
