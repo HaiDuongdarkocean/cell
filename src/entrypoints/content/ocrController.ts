@@ -7,6 +7,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { MessageResponse } from '@/entities/message';
+import { OCR_DEFAULT_ENGINE_KEY } from '@/features/ocr/engine/types';
 import type { OcrBackend, OcrLanguageMode, ImageSource, OcrResult } from '@/features/ocr/engine/types';
 
 /** OCR init result. */
@@ -18,14 +19,19 @@ export interface OcrInitResult {
 
 /** OCR controller — thin client for content-script to talk to background/offscreen. */
 export class OcrController {
-  private initialized = false;
+  /** Engine keys (model names) successfully inited in offscreen — Set instead of one flag for dual-stream. */
+  private readonly initializedKeys = new Set<string>();
   private backend: OcrBackend | null = null;
 
-  /** Initialize OCR engine in offscreen document. */
-  async init(languageMode: OcrLanguageMode = 'auto', backend: OcrBackend = 'webgpu'): Promise<OcrInitResult> {
+  /** Initialize OCR engine in offscreen document. engineKey = model name (ADR-082); missing → default model. */
+  async init(languageMode: OcrLanguageMode = 'auto', backend: OcrBackend = 'webgpu', engineKey?: string): Promise<OcrInitResult> {
+    const key = engineKey ?? OCR_DEFAULT_ENGINE_KEY;
     try {
       document.body.dataset.ocrInitStep = 'a-before-send';
-      const msg = { type: MESSAGE_TYPES.OCR_INIT, payload: { languageMode, backend } };
+      const msg = {
+        type: MESSAGE_TYPES.OCR_INIT,
+        payload: { languageMode, backend, ...(engineKey !== undefined ? { engineKey } : {}) },
+      };
       document.body.dataset.ocrInitStep = 'b-msg-built';
       const sendPromise = sendMessage<MessageResponse<OcrInitResult> | OcrInitResult>(msg);
       document.body.dataset.ocrInitStep = 'c-send-returned-' + (typeof sendPromise?.then === 'function' ? 'promise' : 'non-promise');
@@ -42,23 +48,23 @@ export class OcrController {
       const isWrapper = response && 'success' in response;
       const data = isWrapper ? response.data : response;
       if (data?.status === 'ready') {
-        this.initialized = true;
+        this.initializedKeys.add(key);
         this.backend = data.backend;
         return { status: 'ready', backend: this.backend };
       }
-      this.initialized = false;
+      this.initializedKeys.delete(key);
       const error = isWrapper ? (response.error ?? data?.error ?? 'Init failed') : (data?.error ?? 'Init failed');
       return { status: 'error', backend: 'wasm', error };
     } catch (e) {
       document.body.dataset.ocrBgException = String(e);
-      this.initialized = false;
+      this.initializedKeys.delete(key);
       return { status: 'error', backend: 'wasm', error: String(e) };
     }
   }
 
   /** Run OCR on an image. Returns detected text boxes. */
-  async recognize(image: ImageSource, minScore?: number): Promise<OcrResult[]> {
-    if (!this.initialized) throw new Error('OCR not initialized — call init() first.');
+  async recognize(image: ImageSource, minScore?: number, engineKey?: string): Promise<OcrResult[]> {
+    if (this.initializedKeys.size === 0) throw new Error('OCR not initialized — call init() first.');
     try {
       // chrome.runtime.sendMessage uses JSON serialization — Uint8ClampedArray becomes {}.
       // Convert to regular Array to preserve pixel data through the message channel.
@@ -70,7 +76,7 @@ export class OcrController {
       const response = await Promise.race([
         sendMessage<{ success: boolean; data?: { results: OcrResult[] }; error?: string; results?: OcrResult[] }>({
           type: MESSAGE_TYPES.OCR_RECOGNIZE,
-          payload: { image: serializableImage, minScore },
+          payload: { image: serializableImage, minScore, ...(engineKey !== undefined ? { engineKey } : {}) },
         }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_RECOGNIZE timeout (30s)')), 30000)),
       ]);
@@ -83,17 +89,25 @@ export class OcrController {
     }
   }
 
-  /** Dispose OCR engine (frees session, does NOT close offscreen document). */
-  async dispose(): Promise<void> {
-    if (!this.initialized) return;
-    await sendMessage({ type: MESSAGE_TYPES.OCR_DISPOSE });
-    this.initialized = false;
-    this.backend = null;
+  /** Dispose OCR engines (frees sessions, does NOT close offscreen document).
+   *  engineKey → dispose that engine only; missing → dispose all (legacy behavior). */
+  async dispose(engineKey?: string): Promise<void> {
+    if (this.initializedKeys.size === 0) return;
+    await sendMessage({
+      type: MESSAGE_TYPES.OCR_DISPOSE,
+      ...(engineKey !== undefined ? { payload: { engineKey } } : {}),
+    });
+    if (engineKey !== undefined) {
+      this.initializedKeys.delete(engineKey);
+    } else {
+      this.initializedKeys.clear();
+    }
+    if (this.initializedKeys.size === 0) this.backend = null;
   }
 
-  /** Whether engine is initialized. */
+  /** Whether any engine is initialized. */
   isInitialized(): boolean {
-    return this.initialized;
+    return this.initializedKeys.size > 0;
   }
 
   /** Current backend (for status display). */

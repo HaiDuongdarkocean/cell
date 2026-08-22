@@ -110,3 +110,70 @@ describe('OcrController (T7)', () => {
     expect(sendMessageMock).not.toHaveBeenCalled();
   });
 });
+
+describe('OcrController engineKey routing (Task 5)', () => {
+  it('init plumbs engineKey into payload and tracks the key', async () => {
+    sendMessageMock.mockResolvedValueOnce({ success: true, data: { status: 'ready', backend: 'wasm' } });
+    const ctrl = new OcrController();
+    await ctrl.init('fr', 'wasm', 'latin');
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      type: 'OCR_INIT',
+      payload: { languageMode: 'fr', backend: 'wasm', engineKey: 'latin' },
+    });
+    expect(ctrl.isInitialized()).toBe(true);
+  });
+
+  it('init without engineKey omits the field (backward compat → default model offscreen)', async () => {
+    sendMessageMock.mockResolvedValueOnce({ success: true, data: { status: 'ready', backend: 'wasm' } });
+    const ctrl = new OcrController();
+    await ctrl.init('auto', 'webgpu');
+    expect(sendMessageMock).toHaveBeenCalledWith({
+      type: 'OCR_INIT',
+      payload: { languageMode: 'auto', backend: 'webgpu' },
+    });
+  });
+
+  it('recognize plumbs engineKey into payload', async () => {
+    sendMessageMock.mockResolvedValueOnce({ success: true, data: { status: 'ready', backend: 'wasm' } });
+    const ctrl = new OcrController();
+    await ctrl.init('ru', 'wasm', 'eslav');
+
+    sendMessageMock.mockResolvedValueOnce({ success: true, data: { results: [] } });
+    const image: ImageSource = { data: new Uint8ClampedArray(16), width: 2, height: 2 };
+    await ctrl.recognize(image, 0.5, 'eslav');
+    expect(sendMessageMock).toHaveBeenLastCalledWith({
+      type: 'OCR_RECOGNIZE',
+      payload: { image: { data: Array.from(image.data), width: 2, height: 2 }, minScore: 0.5, engineKey: 'eslav' },
+    });
+  });
+
+  it('dispose with engineKey disposes only that key — other keys stay initialized', async () => {
+    sendMessageMock.mockResolvedValue({ success: true, data: { status: 'ready', backend: 'wasm' } });
+    const ctrl = new OcrController();
+    await ctrl.init('fr', 'wasm', 'latin');
+    await ctrl.init('ru', 'wasm', 'eslav');
+    expect(ctrl.isInitialized()).toBe(true);
+
+    await ctrl.dispose('latin');
+    expect(sendMessageMock).toHaveBeenLastCalledWith({
+      type: 'OCR_DISPOSE',
+      payload: { engineKey: 'latin' },
+    });
+    expect(ctrl.isInitialized()).toBe(true); // eslav still resident
+
+    await ctrl.dispose('eslav');
+    expect(ctrl.isInitialized()).toBe(false);
+    expect(ctrl.getBackend()).toBeNull();
+  });
+
+  it('dispose without engineKey clears all keys (legacy behavior)', async () => {
+    sendMessageMock.mockResolvedValue({ success: true, data: { status: 'ready', backend: 'wasm' } });
+    const ctrl = new OcrController();
+    await ctrl.init('fr', 'wasm', 'latin');
+    await ctrl.init('ru', 'wasm', 'eslav');
+
+    await ctrl.dispose();
+    expect(sendMessageMock).toHaveBeenLastCalledWith({ type: 'OCR_DISPOSE' });
+    expect(ctrl.isInitialized()).toBe(false);
+  });
+});
