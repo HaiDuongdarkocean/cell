@@ -17,7 +17,7 @@ import {
 import { DEFAULT_OCR_ORIGIN_STATE, type CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
-import { formatPct } from '@/features/ocr/overlay/regionSelector';
+import { formatPct, defaultBottomRegion } from '@/features/ocr/overlay/regionSelector';
 import styles from './OcrSettingsPanel.module.css';
 
 const LANGUAGE_OPTIONS = [
@@ -91,31 +91,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     setOcrState(getOcrPreference(next, origin));
   }, [settings, origin, ocrState]);
 
-  const handleRegionHeightChange = useCallback(async (pct: number) => {
-    if (!settings || !origin || !ocrState) return;
-    const clamped = Math.max(5, Math.min(50, pct));
-    const next = setOcrPreference(settings, origin, { ...ocrState, subtitleRegionPct: clamped });
-    await saveOcrSettings(next);
-    setSettings(next);
-    setOcrState(getOcrPreference(next, origin));
-  }, [settings, origin, ocrState]);
-
-  const handleRegionWidthChange = useCallback(async (pct: number) => {
-    if (!settings || !origin || !ocrState) return;
-    const clamped = Math.max(10, Math.min(100, pct));
-    const next = setOcrPreference(settings, origin, { ...ocrState, subtitleRegionWidthPct: clamped });
-    await saveOcrSettings(next);
-    setSettings(next);
-    setOcrState(getOcrPreference(next, origin));
-  }, [settings, origin, ocrState]);
-
-  // ─── Custom region slider handlers (X, Y, W, H in %) ───
+  // ─── Region slider handlers (X, Y, W, H in %) ───
+  // Works in both default + custom mode. In default mode, moving any slider
+  // promotes to a custom region (derived from defaultBottomRegion).
   // Slider max props already prevent invalid combinations (W max = 100-xPct,
-  // X max = 100-widthPct). Handler only does basic range clamping — no
-  // cross-dependency clamping (that caused width/xPct to fight each other).
-  const handleCustomRegionChange = useCallback(async (patch: Partial<CustomRegion>) => {
-    if (!settings || !origin || !ocrState?.customRegion) return;
-    const base = ocrState.customRegion;
+  // X max = 100-widthPct). Handler only does basic range clamping.
+  const handleRegionSliderChange = useCallback(async (patch: Partial<CustomRegion>) => {
+    if (!settings || !origin || !ocrState) return;
+    const base = ocrState.customRegion ?? defaultBottomRegion(ocrState.subtitleRegionPct, ocrState.subtitleRegionWidthPct);
     const updated: CustomRegion = {
       xPct: Math.max(0, Math.min(100, patch.xPct ?? base.xPct)),
       yPct: Math.max(0, Math.min(100, patch.yPct ?? base.yPct)),
@@ -142,10 +125,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
   }, [settings, origin, ocrState, sendRegionCommand]);
 
   const enabled = ocrState?.ocrEnabled ?? false;
-  const regionPct = ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct;
-  const regionWidthPct = ocrState?.subtitleRegionWidthPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionWidthPct;
   const languageMode = ocrState?.languageMode ?? DEFAULT_OCR_ORIGIN_STATE.languageMode;
   const hasCustomRegion = ocrState?.customRegion != null;
+  // Effective region: custom if set, otherwise derived from default bottom region.
+  const effRegion: CustomRegion = ocrState?.customRegion
+    ?? defaultBottomRegion(
+      ocrState?.subtitleRegionPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionPct,
+      ocrState?.subtitleRegionWidthPct ?? DEFAULT_OCR_ORIGIN_STATE.subtitleRegionWidthPct,
+    );
 
   return (
     <div className={styles.container} data-testid="ocr-settings-panel" data-enabled={enabled}>
@@ -206,99 +193,63 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
           />
         </SettingsRow>
 
-          {/* Region sliders — only in default mode (no custom region) */}
-          {!hasCustomRegion && (
-            <>
-              <SliderRow
-                icon={<Icon name="moveVertical" size="sm" />}
-                label="Scan height"
-                hint="Bottom % of the video frame"
-                value={regionPct}
-                min={5}
-                max={50}
-                step={1}
-                onChange={(v) => void handleRegionHeightChange(v)}
-                aria-label="Subtitle scan region height"
-                variant="end"
-                divider
-              />
-              <SliderRow
-                icon={<Icon name="moveHorizontal" size="sm" />}
-                label="Scan width"
-                hint="Centered % of the video width"
-                value={regionWidthPct}
-                min={10}
-                max={100}
-                step={1}
-                onChange={(v) => void handleRegionWidthChange(v)}
-                aria-label="Subtitle scan region width"
-                variant="end"
-                divider
-              />
-            </>
-          )}
-
-          {/* Custom region sliders — X, Y, W, H in % */}
-          {hasCustomRegion && (
-            <>
-              <SliderRow
-                icon={<Icon name="moveHorizontal" size="sm" />}
-                label="Position X"
-                hint="Horizontal offset from left edge"
-                value={ocrState!.customRegion!.xPct}
-                min={0}
-                max={100 - ocrState!.customRegion!.widthPct}
-                step={1}
-                onChange={(v) => void handleCustomRegionChange({ xPct: v })}
-                aria-label="Custom region X position"
-                variant="end"
-                divider
-                formatValue={(v) => `${formatPct(v)}%`}
-              />
-              <SliderRow
-                icon={<Icon name="moveVertical" size="sm" />}
-                label="Position Y"
-                hint="Vertical offset from top edge"
-                value={ocrState!.customRegion!.yPct}
-                min={0}
-                max={100 - ocrState!.customRegion!.heightPct}
-                step={1}
-                onChange={(v) => void handleCustomRegionChange({ yPct: v })}
-                aria-label="Custom region Y position"
-                variant="end"
-                divider
-                formatValue={(v) => `${formatPct(v)}%`}
-              />
-              <SliderRow
-                icon={<Icon name="moveHorizontal" size="sm" />}
-                label="Width"
-                hint="Horizontal capture range"
-                value={ocrState!.customRegion!.widthPct}
-                min={1}
-                max={100 - ocrState!.customRegion!.xPct}
-                step={1}
-                onChange={(v) => void handleCustomRegionChange({ widthPct: v })}
-                aria-label="Custom region width"
-                variant="end"
-                divider
-                formatValue={(v) => `${formatPct(v)}%`}
-              />
-              <SliderRow
-                icon={<Icon name="moveVertical" size="sm" />}
-                label="Height"
-                hint="Vertical capture range"
-                value={ocrState!.customRegion!.heightPct}
-                min={1}
-                max={100 - ocrState!.customRegion!.yPct}
-                step={1}
-                onChange={(v) => void handleCustomRegionChange({ heightPct: v })}
-                aria-label="Custom region height"
-                variant="end"
-                divider
-                formatValue={(v) => `${formatPct(v)}%`}
-              />
-            </>
-          )}
+          {/* Region sliders — X, Y, W, H in % (always visible) */}
+          <SliderRow
+            icon={<Icon name="moveHorizontal" size="sm" />}
+            label="Position X"
+            hint="Horizontal offset from left edge"
+            value={effRegion.xPct}
+            min={0}
+            max={100 - effRegion.widthPct}
+            step={1}
+            onChange={(v) => void handleRegionSliderChange({ xPct: v })}
+            aria-label="Region X position"
+            variant="end"
+            divider
+            formatValue={(v) => `${formatPct(v)}%`}
+          />
+          <SliderRow
+            icon={<Icon name="moveVertical" size="sm" />}
+            label="Position Y"
+            hint="Vertical offset from top edge"
+            value={effRegion.yPct}
+            min={0}
+            max={100 - effRegion.heightPct}
+            step={1}
+            onChange={(v) => void handleRegionSliderChange({ yPct: v })}
+            aria-label="Region Y position"
+            variant="end"
+            divider
+            formatValue={(v) => `${formatPct(v)}%`}
+          />
+          <SliderRow
+            icon={<Icon name="moveHorizontal" size="sm" />}
+            label="Width"
+            hint="Horizontal capture range"
+            value={effRegion.widthPct}
+            min={1}
+            max={100 - effRegion.xPct}
+            step={1}
+            onChange={(v) => void handleRegionSliderChange({ widthPct: v })}
+            aria-label="Region width"
+            variant="end"
+            divider
+            formatValue={(v) => `${formatPct(v)}%`}
+          />
+          <SliderRow
+            icon={<Icon name="moveVertical" size="sm" />}
+            label="Height"
+            hint="Vertical capture range"
+            value={effRegion.heightPct}
+            min={1}
+            max={100 - effRegion.yPct}
+            step={1}
+            onChange={(v) => void handleRegionSliderChange({ heightPct: v })}
+            aria-label="Region height"
+            variant="end"
+            divider
+            formatValue={(v) => `${formatPct(v)}%`}
+          />
 
           {/* Region action buttons — icon+label, collapse to icon-only on narrow container */}
           <SettingsRow stacked divider>
