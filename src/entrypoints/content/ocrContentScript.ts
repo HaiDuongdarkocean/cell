@@ -3,6 +3,8 @@
 // Activated when OCR is enabled for the current origin.
 // T19: Reacts to settings changes (toggle ON/OFF → init/dispose).
 // T20: Auto-start on page load + SPA nav handling.
+// Task 7 (spec ocr-split-dual-stream): split dual-stream — region chia đôi,
+// 2 engine keys, detections → cues → window.postMessage('__CELL_OCR_TRACKS').
 
 import { OcrController } from './ocrController';
 import { OcrOverlay, createHitboxes, wireOcrHitboxesToTrigger } from '@/features/ocr/overlay/ocrOverlay';
@@ -10,13 +12,74 @@ import { RegionSelector, defaultBottomRegion, type RegionSelectorMode } from '@/
 import { OcrPipelineState, runPipelineStep, DEFAULT_PIPELINE_CONFIG, type OcrPipelineConfig } from '@/features/ocr/pipeline/ocrPipeline';
 import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCapture';
 import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
+import { computeSplitHalves, SPLIT_DEFAULT_REGION_PCT, type SplitHalf } from '@/features/ocr/pipeline/splitRegion';
+import { ocrTextToCues, type OcrDetection } from '@/features/ocr/pipeline/ocrToCues';
+import { resolveOcrLang, ENGINE_KEY_FOR_LANG, type ResolvedOcrLang } from '@/features/ocr/engine/paddleOcrLanguages';
 import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import type { OcrOriginState, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+
+/** Session pipeline config = shared pipeline config + split dual-stream fields. */
+interface OcrSessionConfig extends OcrPipelineConfig {
+  readonly splitEnabled: boolean;
+  readonly splitRatio: number;
+  readonly splitTopIsTarget: boolean;
+}
+
+const DEFAULT_SESSION_CONFIG: OcrSessionConfig = {
+  ...DEFAULT_PIPELINE_CONFIG,
+  splitEnabled: false,
+  splitRatio: 0.5,
+  splitTopIsTarget: true,
+};
+
+/** navigator.deviceMemory (GB) — undefined on Firefox → assume 8 (dual-engine capable). */
+function deviceMemoryGb(): number {
+  return (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+}
+
+/** Engine plan for split dual-stream (ADR-082): distinct model keys need >= 4GB RAM,
+ *  otherwise both streams share the target engine (low-memory mode). */
+export interface SplitEnginePlan {
+  readonly targetKey: string;
+  readonly nativeKey: string;
+  readonly dualEngine: boolean;
+}
+
+export function planSplitEngines(targetLang: ResolvedOcrLang, nativeLang: ResolvedOcrLang, memoryGb: number): SplitEnginePlan {
+  const targetKey = ENGINE_KEY_FOR_LANG(targetLang);
+  const nativeKey = ENGINE_KEY_FOR_LANG(nativeLang);
+  const dualEngine = targetKey !== nativeKey && memoryGb >= 4;
+  return { targetKey, nativeKey: dualEngine ? nativeKey : targetKey, dualEngine };
+}
+
+/** Region height % used for the split parent: default bottom 15% chia đôi quá thấp → bump 40% (spec user story 9). */
+export function effectiveSplitRegionPct(originState: OcrOriginState): number {
+  return originState.splitEnabled && !originState.customRegion ? SPLIT_DEFAULT_REGION_PCT : originState.subtitleRegionPct;
+}
+
+/** Divider labels for the two halves (top may be target or native). */
+function splitLabels(topIsTarget: boolean): { topLabel: string; bottomLabel: string } {
+  return topIsTarget
+    ? { topLabel: 'Target', bottomLabel: 'Native' }
+    : { topLabel: 'Native', bottomLabel: 'Target' };
+}
+
+/** Persist a divider-drag ratio for an origin, keeping every other field (incl. customRegion) unchanged. */
+export async function saveSplitRatioForOrigin(origin: string, ratio: number, fallback?: OcrOriginState): Promise<void> {
+  if (!origin) return;
+  const settings = await loadOcrSettings();
+  const existing = settings.origins[origin] ?? fallback;
+  if (!existing) return;
+  const clamped = Math.max(0.1, Math.min(0.9, ratio));
+  const next = setOcrPreference(settings, origin, { ...existing, splitRatio: clamped });
+  await saveOcrSettings(next);
+}
 
 /** OCR content-script session — manages the full pipeline for one video. */
 export class OcrSession {
@@ -29,9 +92,15 @@ export class OcrSession {
   private running = false;
   private processing = false;
   private loopCount = 0;
-  private config: OcrPipelineConfig = DEFAULT_PIPELINE_CONFIG;
+  private config: OcrSessionConfig = DEFAULT_SESSION_CONFIG;
   private originState: OcrOriginState | null = null;
   private triggerController: SubtitleTriggerController | null = null;
+  // ── Split dual-stream (Task 7, spec ocr-split-dual-stream) ──
+  private splitPipelineStates: { target: OcrPipelineState; native: OcrPipelineState } | null = null;
+  private splitDetections: { target: OcrDetection[]; native: OcrDetection[] } = { target: [], native: [] };
+  private splitEngineKeys: { target: string; native: string } | null = null;
+  private splitTracksPosted = false;
+  private systemLangs: { target: string; native: string } = { target: 'auto', native: 'auto' };
   /** Bound listeners (for removal on stop). */
   private onSeeked: (() => void) | null = null;
   private onEnded: (() => void) | null = null;
@@ -44,6 +113,7 @@ export class OcrSession {
       onRegionChange: (region) => { this.pendingRegion = region; },
       onApply: () => { void this.handleRegionApply(); },
       onCancel: () => { void this.handleRegionCancel(); },
+      onSplitRatioChange: (ratio) => { void this.handleSplitRatioChange(ratio); },
     });
   }
 
@@ -54,23 +124,41 @@ export class OcrSession {
     this.triggerController = tc;
   }
 
-  /** Start OCR session for a video element. */
-  async start(video: HTMLVideoElement, originState: OcrOriginState): Promise<void> {
+  /** Start OCR session for a video element.
+   *  systemLangs: system subtitle languages (from general settings) used when
+   *  the origin has no target/native override — defaults to 'auto'. */
+  async start(
+    video: HTMLVideoElement,
+    originState: OcrOriginState,
+    systemLangs: { target: string; native: string } = { target: 'auto', native: 'auto' },
+  ): Promise<void> {
     if (this.running) return;
     this.video = video;
     this.originState = originState;
+    this.systemLangs = systemLangs;
     this.config = {
-      ...DEFAULT_PIPELINE_CONFIG,
-      subtitleRegionPct: originState.subtitleRegionPct,
+      ...DEFAULT_SESSION_CONFIG,
+      subtitleRegionPct: effectiveSplitRegionPct(originState),
       subtitleRegionWidthPct: originState.subtitleRegionWidthPct,
       customRegion: originState.customRegion,
+      splitEnabled: originState.splitEnabled,
+      splitRatio: originState.splitRatio,
+      splitTopIsTarget: originState.splitTopIsTarget,
     };
     this.pipelineState.reset();
+    this.splitPipelineStates = originState.splitEnabled
+      ? { target: new OcrPipelineState(), native: new OcrPipelineState() }
+      : null;
+    this.splitDetections = { target: [], native: [] };
 
     // Init OCR engine in offscreen document.
     try {
-      const initResult = await this.controller.init(originState.languageMode, 'webgpu');
-      document.body.dataset.ocrInitResult = JSON.stringify(initResult);
+      if (originState.splitEnabled) {
+        await this.initSplitEngines(originState, systemLangs);
+      } else {
+        const initResult = await this.controller.init(originState.languageMode, 'webgpu');
+        document.body.dataset.ocrInitResult = JSON.stringify(initResult);
+      }
     } catch (e) {
       document.body.dataset.ocrInitError = String(e);
       throw e;
@@ -82,8 +170,12 @@ export class OcrSession {
     document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
 
     // Attach region selector in view mode (green rectangle showing scan area).
-    const initialRegion = originState.customRegion ?? defaultBottomRegion(originState.subtitleRegionPct, originState.subtitleRegionWidthPct);
+    const initialRegion = originState.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, originState.subtitleRegionWidthPct);
     this.regionSelector.attach(video, initialRegion, 'view');
+    if (originState.splitEnabled) {
+      const { topLabel, bottomLabel } = splitLabels(originState.splitTopIsTarget);
+      this.regionSelector.setSplit(true, originState.splitRatio, topLabel, bottomLabel);
+    }
 
     this.running = true;
 
@@ -91,6 +183,9 @@ export class OcrSession {
     this.onSeeked = () => {
       this.overlay.clear();
       this.pipelineState.reset();
+      this.splitPipelineStates?.target.reset();
+      this.splitPipelineStates?.native.reset();
+      this.splitDetections = { target: [], native: [] };
     };
     this.onEnded = () => {
       this.overlay.clear();
@@ -141,8 +236,13 @@ export class OcrSession {
     scheduleNextFrame(this.video, () => this.loop());
   }
 
-  /** Process a single frame through the pipeline. */
+  /** Process a single frame through the pipeline. Split dual-stream runs its
+   *  own two-region path; otherwise the single-stream path is unchanged. */
   private async processFrame(frame: ImageSource): Promise<void> {
+    if (this.config.splitEnabled && this.splitPipelineStates) {
+      await this.processSplitFrame(frame);
+      return;
+    }
     if (this.pipelineState.isDrmDetected()) return;
 
     try {
@@ -203,9 +303,107 @@ export class OcrSession {
     }
   }
 
+  /** Split dual-stream: OCR the top + bottom halves with their own pipeline
+   *  states + engines, accumulate detections, and push cue tracks to the
+   *  subtitle controller bridge. DRM on either stream stops the session. */
+  private async processSplitFrame(frame: ImageSource): Promise<void> {
+    const states = this.splitPipelineStates;
+    const keys = this.splitEngineKeys;
+    if (!states || !keys || !this.video) return; // engines still initializing
+
+    const parent = this.config.customRegion
+      ?? defaultBottomRegion(this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct);
+    const { top, bottom } = computeSplitHalves(parent, this.config.splitRatio);
+    const topIsTarget = this.config.splitTopIsTarget;
+    const streams: { half: SplitHalf; state: OcrPipelineState; key: string; track: 'target' | 'native' }[] = [
+      { half: top, state: topIsTarget ? states.target : states.native, key: topIsTarget ? keys.target : keys.native, track: topIsTarget ? 'target' : 'native' },
+      { half: bottom, state: topIsTarget ? states.native : states.target, key: topIsTarget ? keys.native : keys.target, track: topIsTarget ? 'native' : 'target' },
+    ];
+
+    const timeMs = this.video.currentTime * 1000;
+    let hasUpdate = false;
+    for (const { half, state, key, track } of streams) {
+      try {
+        const result = await runPipelineStep(
+          frame,
+          (img, minScore) => this.controller.recognize(img, minScore, key),
+          state,
+          this.config,
+          undefined,
+          half,
+        );
+        const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
+        statuses.push(result.status);
+        document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
+        if (result.status === 'drm_detected') {
+          // Stop OCR — DRM-protected content (either stream).
+          document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+          await this.stop();
+          return;
+        }
+        if (result.status === 'ocr') {
+          this.splitDetections[track].push({ text: result.results.map(r => r.text).join(' '), timeMs });
+          hasUpdate = true;
+        } else if (result.status === 'subtitle_gone') {
+          // Empty text closes the currently open cue (ocrToCues contract).
+          this.splitDetections[track].push({ text: '', timeMs });
+          hasUpdate = true;
+        } else if (result.status === 'error') {
+          document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+        }
+      } catch (e) {
+        const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
+        errs.push(String(e));
+        document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
+      }
+    }
+    if (hasUpdate) this.postOcrTracks();
+  }
+
+  /** Resolve split langs + init engines (Task 7 / ADR-082). Engine 2 failure or
+   *  low RAM degrades to both streams sharing the target engine — never crashes
+   *  the session (region selector still attaches). */
+  private async initSplitEngines(originState: OcrOriginState, systemLangs: { target: string; native: string }): Promise<void> {
+    const targetLang = resolveOcrLang(originState.targetLangOverride ?? null, systemLangs.target);
+    const nativeLang = resolveOcrLang(originState.nativeLangOverride ?? null, systemLangs.native);
+    const plan = planSplitEngines(targetLang, nativeLang, deviceMemoryGb());
+    const targetInit = await this.controller.init(targetLang, 'webgpu', plan.targetKey);
+    document.body.dataset.ocrInitResult = JSON.stringify(targetInit);
+    if (plan.dualEngine) {
+      const nativeInit = await this.controller.init(nativeLang, 'webgpu', plan.nativeKey);
+      if (nativeInit.status !== 'ready') {
+        // Graceful: native stream falls back to the target engine (low-memory behavior).
+        document.body.dataset.ocrNativeInitError = nativeInit.error ?? 'unknown';
+        this.splitEngineKeys = { target: plan.targetKey, native: plan.targetKey };
+        return;
+      }
+    }
+    this.splitEngineKeys = { target: plan.targetKey, native: plan.nativeKey };
+  }
+
+  /** Push the current dual-stream cue tracks to the subtitle controller.
+   *  ponytail ceiling: recomputes the FULL cue list per update (O(n) with n =
+   *  detections so far) and detections grow unboundedly over the video — fine
+   *  for ~5 updates/s on typical subtitle volume; upgrade to an incremental
+   *  cue builder if long videos show CPU overhead. */
+  private postOcrTracks(): void {
+    const targetCues = ocrTextToCues(this.splitDetections.target);
+    const nativeCues = ocrTextToCues(this.splitDetections.native);
+    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues, nativeCues }, '*');
+    this.splitTracksPosted = true;
+  }
+
+  /** Tell the subtitle controller the OCR tracks are gone (session stop / split off). */
+  private endOcrTracks(): void {
+    if (!this.splitTracksPosted) return;
+    window.postMessage({ type: '__CELL_OCR_TRACKS_END' }, '*');
+    this.splitTracksPosted = false;
+  }
+
   /** Stop OCR session — soft stop keeps engine alive for fast re-init. */
   async stop(): Promise<void> {
     this.running = false;
+    this.endOcrTracks();
     // Remove video listeners.
     if (this.video) {
       if (this.onSeeked) this.video.removeEventListener('seeked', this.onSeeked);
@@ -221,20 +419,45 @@ export class OcrSession {
     this.video = null;
     this.canvas = null;
     this.pendingRegion = null;
+    this.splitPipelineStates = null;
+    this.splitEngineKeys = null;
+    this.splitDetections = { target: [], native: [] };
   }
 
   /** Light update of region config without full restart. Called when slider changes. */
   updateRegionConfig(originState: OcrOriginState): void {
+    const wasSplit = this.config.splitEnabled;
     this.originState = originState;
     this.config = {
       ...this.config,
-      subtitleRegionPct: originState.subtitleRegionPct,
+      subtitleRegionPct: effectiveSplitRegionPct(originState),
       subtitleRegionWidthPct: originState.subtitleRegionWidthPct,
       customRegion: originState.customRegion,
+      splitEnabled: originState.splitEnabled,
+      splitRatio: originState.splitRatio,
+      splitTopIsTarget: originState.splitTopIsTarget,
     };
     if (this.video && this.running) {
-      const region = originState.customRegion ?? defaultBottomRegion(originState.subtitleRegionPct, originState.subtitleRegionWidthPct);
+      const region = originState.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, originState.subtitleRegionWidthPct);
       this.regionSelector.updateRegion(region);
+      if (originState.splitEnabled) {
+        if (!this.splitPipelineStates) {
+          // Split toggled ON mid-session — create states + init engines async;
+          // processSplitFrame skips frames until splitEngineKeys is set.
+          this.splitPipelineStates = { target: new OcrPipelineState(), native: new OcrPipelineState() };
+          this.splitEngineKeys = null;
+          void this.initSplitEngines(originState, this.systemLangs);
+        }
+        const { topLabel, bottomLabel } = splitLabels(originState.splitTopIsTarget);
+        this.regionSelector.setSplit(true, originState.splitRatio, topLabel, bottomLabel);
+      } else if (wasSplit) {
+        // Split toggled OFF — single-stream path resumes; drop the OCR slots.
+        this.splitPipelineStates = null;
+        this.splitEngineKeys = null;
+        this.splitDetections = { target: [], native: [] };
+        this.regionSelector.setSplit(false, 0);
+        this.endOcrTracks();
+      }
     }
   }
 
@@ -255,6 +478,16 @@ export class OcrSession {
     const defaultRegion = defaultBottomRegion(this.originState.subtitleRegionPct, this.originState.subtitleRegionWidthPct);
     this.regionSelector.updateRegion(defaultRegion);
     this.regionSelector.setMode('view');
+  }
+
+  /** Handle divider drag end (view mode) — persist the new split ratio per-origin.
+   *  The storage.onChanged listener then calls updateRegionConfig, which only
+   *  re-renders the selector (no storage write) — no feedback loop. */
+  private async handleSplitRatioChange(ratio: number): Promise<void> {
+    if (!this.originState) return;
+    await saveSplitRatioForOrigin(currentOrigin, ratio, this.originState);
+    this.originState = { ...this.originState, splitRatio: ratio };
+    this.config = { ...this.config, splitRatio: ratio };
   }
 
   /** Handle Apply from region selector — save region to storage. */
@@ -374,7 +607,14 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   activeSession = new OcrSession();
   const tc = getTriggerController?.() ?? null;
   if (tc) activeSession.setTriggerController(tc);
-  await activeSession.start(video, originState);
+  // System subtitle languages (target/native) from the general settings store —
+  // used by split dual-stream when the origin has no language override.
+  const generalSettings = await loadSettings().catch(() => null);
+  const systemLangs = {
+    target: generalSettings?.subtitleOverlayTargetLanguage ?? 'auto',
+    native: generalSettings?.subtitleOverlayNativeLanguage ?? 'auto',
+  };
+  await activeSession.start(video, originState, systemLangs);
 }
 
 /** T19: Stop OCR session (called when toggle OFF or page unload). */

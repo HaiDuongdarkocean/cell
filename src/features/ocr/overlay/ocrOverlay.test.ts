@@ -108,6 +108,13 @@ describe('OcrOverlay (T13-T16)', () => {
     parent.appendChild(video);
     Object.defineProperty(parent, 'clientWidth', { value: 640, configurable: true });
     Object.defineProperty(parent, 'clientHeight', { value: 360, configurable: true });
+    // attach() resolves the host via findFarthestSameSizeContainer (getBoundingClientRect
+    // walk-up). jsdom rects are all 0x0 and the walk skips zero-size nodes, returning the
+    // video itself — mock real boxes so the walk settles on parent like in a browser.
+    const box = (): DOMRect =>
+      ({ x: 0, y: 0, left: 0, top: 0, right: 640, bottom: 360, width: 640, height: 360, toJSON: () => ({}) }) as DOMRect;
+    video.getBoundingClientRect = box;
+    parent.getBoundingClientRect = box;
   });
 
   afterEach(() => {
