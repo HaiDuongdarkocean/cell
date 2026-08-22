@@ -40,7 +40,8 @@ describe('ocrPipeline (T12)', () => {
     // After warmup, 3 consecutive black frames trigger DRM detection.
     // Frame 60 in the loop already incremented drmCount to 1 (frameCount=60 >= 60).
     let result = await runPipelineStep(blackFrame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, 60 * 400);
-    expect(result.status).toBe('skip_unchanged'); // drmCount=2, fall through to luma-diff skip
+    // Luma/pHash gates removed — black frame with empty OCR → subtitle_gone (drmCount=2, not yet 3).
+    expect(result.status).toBe('subtitle_gone');
     result = await runPipelineStep(blackFrame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, 61 * 400);
     expect(result.status).toBe('drm_detected'); // drmCount=3 → DRM
     expect(state.isDrmDetected()).toBe(true);
@@ -72,9 +73,9 @@ describe('ocrPipeline (T12)', () => {
     const cfg = { ...DEFAULT_PIPELINE_CONFIG, lumaDiffThreshold: 50 };
     // First frame runs OCR.
     await runPipelineStep(frame, recognizeFn, state, cfg, 0);
-    // Second identical frame should skip.
+    // Second identical frame: luma gate removed, OCR returns empty → subtitle_gone.
     const result2 = await runPipelineStep(frame, recognizeFn, state, cfg, 500);
-    expect(result2.status).toBe('skip_unchanged');
+    expect(result2.status).toBe('subtitle_gone');
   });
 
   it('skips duplicate text (same pHash)', async () => {
@@ -88,9 +89,9 @@ describe('ocrPipeline (T12)', () => {
     // Second frame has different luma but same pHash → skip_duplicate.
     const result2 = await runPipelineStep(frame2, recognizeFn, state, cfg, 500);
     // pHash may or may not match depending on the 1-pixel difference.
-    // If luma diff > threshold but pHash same → skip_duplicate.
-    // If luma diff > threshold and pHash different → ocr.
-    expect(['skip_duplicate', 'ocr', 'skip_unchanged', 'skip_text_duplicate']).toContain(result2.status);
+    // pHash/luma gates removed — recognizeFn returns empty, so both frames
+    // produce subtitle_gone (no text detected on either frame).
+    expect(['subtitle_gone', 'skip_duplicate', 'ocr', 'skip_unchanged', 'skip_text_duplicate']).toContain(result2.status);
   });
 
   it('reset clears state', async () => {
