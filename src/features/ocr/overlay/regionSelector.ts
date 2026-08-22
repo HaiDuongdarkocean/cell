@@ -139,10 +139,19 @@ export class RegionSelector {
   private mode: RegionSelectorMode = 'view';
   private currentRegion: CustomRegion;
   private pendingRegion: CustomRegion | null = null;
+  /** Intrinsic-space region (stable across browser resize — shell-space shifts
+   *  with letterbox but intrinsic-space is % of video content, invariant). */
+  private intrinsicRegion: CustomRegion;
   private video: HTMLVideoElement | null = null;
   private readonly callbacks: RegionSelectorCallbacks;
   private dragState: { type: 'move' | 'resize' | 'draw'; handle: string; startX: number; startY: number; startRegion: CustomRegion } | null = null;
   private boundOnKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  /** Resize observer on video element + window resize listener — re-converts
+   *  intrinsicRegion → shell-space when the player geometry changes (browser
+   *  resize, fullscreen toggle, control bar show/hide). Without this the rect
+   *  sits at stale shell-space coordinates until a manual action triggers render. */
+  private resizeObserver: ResizeObserver | null = null;
+  private boundOnWindowResize: (() => void) | null = null;
 
   // ─── Split dual-stream (spec ocr-split-dual-stream) ───
   private splitEnabled = false;
@@ -159,7 +168,9 @@ export class RegionSelector {
 
   constructor(callbacks: RegionSelectorCallbacks) {
     this.callbacks = callbacks;
-    this.currentRegion = defaultBottomRegion(15);
+    const defaultReg = defaultBottomRegion(15);
+    this.currentRegion = defaultReg;
+    this.intrinsicRegion = defaultReg;
   }
 
   /** Attach selector to a video element's parent.
@@ -236,11 +247,13 @@ export class RegionSelector {
     // toShellRegion can read live geometry. (Attach-order bug: converting before
     // container creation returned identity → rectangle sat at naive 85% under
     // letterbox instead of the content bottom.)
+    this.intrinsicRegion = region;
     this.currentRegion = this.toShellRegion(region);
 
     this.render();
     this.attachListeners();
     this.syncBodyFlag();
+    this.attachResizeObservers();
 
     if (mode !== 'view') {
       this.boundOnKeyDown = (e: KeyboardEvent) => {
@@ -272,6 +285,7 @@ export class RegionSelector {
 
   /** Update region from external source (e.g. slider). Intrinsic-space input. */
   updateRegion(region: CustomRegion): void {
+    this.intrinsicRegion = region;
     this.currentRegion = this.toShellRegion(region);
     // In interactive modes, sync pendingRegion too so slider updates are visible
     // (render uses pendingRegion when set, falling back to currentRegion).
@@ -328,6 +342,7 @@ export class RegionSelector {
       window.removeEventListener('keydown', this.boundOnKeyDown);
       this.boundOnKeyDown = null;
     }
+    this.detachResizeObservers();
     this.removeListeners();
     this.handles = [];
     if (this.container) {
@@ -355,6 +370,62 @@ export class RegionSelector {
     const selecting = this.mode !== 'view' && this.container != null;
     document.body.dataset.ocrRegionSelecting = selecting ? 'true' : '';
     if (!selecting) delete document.body.dataset.ocrRegionSelecting;
+  }
+
+  // ─── Responsive resize ───
+  // Watch video + container geometry changes (browser resize, fullscreen,
+  // control bar show/hide). On change, re-convert intrinsicRegion → shell-space
+  // and re-render so the rect tracks the video content. Without this the rect
+  // sits at stale shell-space coords until a manual action triggers render.
+
+  /** Attach ResizeObserver on video + window resize listener. */
+  private attachResizeObservers(): void {
+    this.detachResizeObservers();
+    if (!this.video) return;
+    // ResizeObserver fires when the video element's border-box changes (player
+    // resize, fullscreen, control bar). Debounce via rAF to coalesce bursts.
+    let rafId = 0;
+    const schedule = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => { rafId = 0; this.handleResize(); });
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(schedule);
+      this.resizeObserver.observe(this.video);
+      // Also observe the container (parent) — catches layout shifts that don't
+      // change the video element's box but shift the container (e.g. sidebar).
+      if (this.container) this.resizeObserver.observe(this.container);
+    }
+    // Window resize: catches cases ResizeObserver misses (e.g. CSS media queries
+    // changing player layout without resizing the video element itself).
+    this.boundOnWindowResize = schedule;
+    window.addEventListener('resize', this.boundOnWindowResize);
+  }
+
+  /** Detach resize observers + window resize listener. */
+  private detachResizeObservers(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    if (this.boundOnWindowResize) {
+      window.removeEventListener('resize', this.boundOnWindowResize);
+      this.boundOnWindowResize = null;
+    }
+  }
+
+  /** Re-convert intrinsicRegion → shell-space + re-render on geometry change. */
+  private handleResize(): void {
+    if (!this.video || !this.container) return;
+    // Skip during active drag — the user is in control; re-converting mid-drag
+    // would fight their mouse movement (shell-space shifts under them).
+    if (this.dragState || this.splitDrag) return;
+    // Re-convert from stable intrinsic-space to new shell-space.
+    this.currentRegion = this.toShellRegion(this.intrinsicRegion);
+    if (this.pendingRegion && this.mode !== 'view') {
+      this.pendingRegion = this.toShellRegion(this.intrinsicRegion);
+    }
+    this.render();
   }
 
   // ─── Coordinate-space conversion (regionMapping) ───
@@ -657,6 +728,11 @@ export class RegionSelector {
     this.dragState = null;
     document.removeEventListener('mousemove', this.onDragMove);
     document.removeEventListener('mouseup', this.onDragEnd);
+    // Sync intrinsicRegion from the final pendingRegion so handleResize()
+    // re-converts from the user's last position, not the pre-drag position.
+    if (this.pendingRegion) {
+      this.intrinsicRegion = this.toIntrinsicRegion(this.pendingRegion);
+    }
   };
 
   private onSplitDragStart = (e: MouseEvent): void => {
@@ -692,7 +768,8 @@ export class RegionSelector {
   private handleApply(): void {
     if (this.pendingRegion) {
       this.currentRegion = this.pendingRegion;
-      this.callbacks.onRegionChange(this.toIntrinsicRegion(this.currentRegion));
+      this.intrinsicRegion = this.toIntrinsicRegion(this.currentRegion);
+      this.callbacks.onRegionChange(this.intrinsicRegion);
     }
     this.callbacks.onApply();
   }
