@@ -1,7 +1,16 @@
 // regionSelector — visual region selector overlay on video.
-// Modes: view (green rectangle, not interactive), select (drag to draw), edit (drag handles to resize).
+// Modes: view (blue dashed rectangle, not interactive), select (drag to draw), edit (drag handles to resize).
 // Emits region changes via callback. Apply/Cancel/Reset controlled by caller.
+//
+// DOM contract (verified by browser tests):
+// - .cell-ocr-region-selector  container (pointer-events none)
+// - .cell-ocr-region-rect      rectangle; data-mode=view|select|edit; % position inline
+// - .cell-ocr-region-label     dimension readout (rounded %)
+// - [data-handle]              8 resize handles in edit mode (created once, listener bound at creation)
+// - .cell-ocr-region-btn       Apply / Cancel toolbar buttons
 
+import { STATIC_TOKENS } from '@/shared/lib/tokens';
+import { checkIcon, xIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
@@ -20,14 +29,66 @@ export function defaultBottomRegion(regionPct: number, regionWidthPct = 100): Cu
   return { xPct: (100 - regionWidthPct) / 2, yPct: 100 - regionPct, widthPct: regionWidthPct, heightPct: regionPct };
 }
 
-/** CSS injected once to hide universal panel during region selection. */
-let panelHideStyleInjected = false;
-function injectPanelHideStyle(): void {
-  if (panelHideStyleInjected) return;
-  panelHideStyleInjected = true;
+/** Round a percentage for display (drawn regions carry long decimals like 29.722222%). */
+export function formatPct(pct: number): number {
+  return Math.round(pct);
+}
+
+const FONT = STATIC_TOKENS['--font-family'] ?? 'sans-serif';
+const ACCENT = STATIC_TOKENS['--overlay-ocr-region-accent'] ?? '#0066ff';
+const FILL = STATIC_TOKENS['--overlay-ocr-region-fill'] ?? 'rgba(0, 102, 255, 0.05)';
+const FILL_ACTIVE = STATIC_TOKENS['--overlay-ocr-region-fill-active'] ?? 'rgba(0, 102, 255, 0.12)';
+const RADIUS_PILL = STATIC_TOKENS['--radius-pill'] ?? '9999px';
+
+/** CSS injected once: class-based styling (hover/transition need a stylesheet, not inline styles).
+ *  Also hides the universal panel during selection (was a separate style tag). */
+let overlayCssInjected = false;
+function injectOverlayCss(): void {
+  if (overlayCssInjected) return;
+  overlayCssInjected = true;
   const style = document.createElement('style');
-  style.id = 'cell-ocr-region-selecting-style';
-  style.textContent = 'body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: none !important; }';
+  style.id = 'cell-ocr-region-style';
+  style.textContent = `
+body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: none !important; }
+.cell-ocr-region-selector, .cell-ocr-region-selector * { box-sizing: border-box; }
+.cell-ocr-region-rect {
+  position: absolute; border: 2px dashed ${ACCENT}; background: ${FILL};
+  pointer-events: none; z-index: 99998; transition: background 120ms ease;
+}
+.cell-ocr-region-rect[data-mode="select"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: crosshair; }
+.cell-ocr-region-rect[data-mode="edit"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
+.cell-ocr-region-label {
+  position: absolute; top: -22px; left: -2px; padding: 2px 8px;
+  font-family: ${FONT}; font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: 0.2px;
+  color: ${ACCENT}; background: rgba(0, 0, 0, 0.75); border-radius: 5px;
+  white-space: nowrap; pointer-events: none;
+}
+.cell-ocr-region-handle {
+  position: absolute; width: 10px; height: 10px;
+  background: ${ACCENT}; border: 1px solid rgba(0, 0, 0, 0.55); border-radius: 3px;
+  pointer-events: auto;
+}
+.cell-ocr-region-handle:hover { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35); }
+.cell-ocr-region-handle[data-handle="nw"] { left: -5px; top: -5px; cursor: nwse-resize; }
+.cell-ocr-region-handle[data-handle="n"]  { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
+.cell-ocr-region-handle[data-handle="ne"] { right: -5px; top: -5px; cursor: nesw-resize; }
+.cell-ocr-region-handle[data-handle="e"]  { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.cell-ocr-region-handle[data-handle="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+.cell-ocr-region-handle[data-handle="s"]  { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
+.cell-ocr-region-handle[data-handle="sw"] { left: -5px; bottom: -5px; cursor: nesw-resize; }
+.cell-ocr-region-handle[data-handle="w"]  { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+.cell-ocr-region-btn {
+  appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 12px; height: 28px; margin: 0; border: none; border-radius: ${RADIUS_PILL};
+  font-family: ${FONT}; font-size: 12px; font-weight: 600; line-height: 1; letter-spacing: 0.2px;
+  cursor: pointer; pointer-events: auto; transition: filter 120ms ease, background 120ms ease;
+}
+.cell-ocr-region-btn svg { width: 13px; height: 13px; display: block; }
+.cell-ocr-region-btn--apply { background: ${ACCENT}; color: #fff; }
+.cell-ocr-region-btn--apply:hover { filter: brightness(1.15); }
+.cell-ocr-region-btn--cancel { background: rgba(0, 0, 0, 0.6); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.cell-ocr-region-btn--cancel:hover { background: rgba(170, 0, 0, 0.85); box-shadow: none; }
+`;
   document.head.appendChild(style);
 }
 
@@ -53,7 +114,7 @@ export class RegionSelector {
   /** Attach selector to a video element's parent. */
   attach(video: HTMLVideoElement, region: CustomRegion, mode: RegionSelectorMode = 'view'): void {
     this.detach();
-    injectPanelHideStyle();
+    injectOverlayCss();
     this.video = video;
     this.currentRegion = region;
     this.mode = mode;
@@ -63,7 +124,7 @@ export class RegionSelector {
 
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-region-selector';
-    this.container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99998;';
+    this.container.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:99998;';
     parent.appendChild(this.container);
 
     this.rect = document.createElement('div');
@@ -71,7 +132,7 @@ export class RegionSelector {
     this.container.appendChild(this.rect);
 
     this.toolbar = document.createElement('div');
-    this.toolbar.style.cssText = 'position:absolute;top:8px;right:8px;display:flex;gap:6px;pointer-events:auto;z-index:99999;';
+    this.toolbar.style.cssText = 'position:absolute;top:10px;right:10px;display:flex;gap:8px;pointer-events:auto;z-index:99999;';
     this.container.appendChild(this.toolbar);
 
     this.render();
@@ -151,67 +212,72 @@ export class RegionSelector {
   }
 
   // ─── Internal rendering ───
+  // render() runs on every drag frame: it must UPDATE existing nodes, never
+  // recreate handles/buttons — recreated nodes lose their event listeners
+  // (the edit-resize bug: after one move drag, all handles went dead).
 
   private render(): void {
     if (!this.rect || !this.toolbar) return;
     const r = this.getRegion();
-    const isInteractive = this.mode !== 'view';
-    const borderStyle = '2px dashed #0066ff';
-    const bg = isInteractive ? 'rgba(0, 102, 255, 0.1)' : 'rgba(0, 102, 255, 0.05)';
-    this.rect.style.cssText = `position:absolute;left:${r.xPct}%;top:${r.yPct}%;width:${r.widthPct}%;height:${r.heightPct}%;border:${borderStyle};background:${bg};box-sizing:border-box;pointer-events:${isInteractive ? 'auto' : 'none'};cursor:${this.mode === 'edit' ? 'move' : 'crosshair'};z-index:99998;`;
+    this.rect.dataset.mode = this.mode;
+    this.rect.style.left = `${r.xPct}%`;
+    this.rect.style.top = `${r.yPct}%`;
+    this.rect.style.width = `${r.widthPct}%`;
+    this.rect.style.height = `${r.heightPct}%`;
 
-    // Label
-    const existingLabel = this.rect.querySelector('.cell-ocr-region-label');
-    if (existingLabel) existingLabel.remove();
-    const label = document.createElement('span');
-    label.className = 'cell-ocr-region-label';
-    label.textContent = this.mode === 'view' ? `OCR region (${r.widthPct}%×${r.heightPct}%)` : `${this.mode}: ${r.widthPct}%×${r.heightPct}%`;
-    label.style.cssText = 'position:absolute;top:-18px;left:0;font-size:11px;color:#0066ff;background:rgba(0,0,0,0.7);padding:1px 4px;font-family:monospace;white-space:nowrap;';
-    this.rect.appendChild(label);
+    let label = this.rect.querySelector<HTMLElement>('.cell-ocr-region-label');
+    if (!label) {
+      label = document.createElement('span');
+      label.className = 'cell-ocr-region-label';
+      this.rect.appendChild(label);
+    }
+    const dims = `${formatPct(r.widthPct)}%×${formatPct(r.heightPct)}%`;
+    label.textContent = this.mode === 'view' ? `OCR region (${dims})` : `${this.mode}: ${dims}`;
 
-    // Handles (edit mode only)
-    this.handles.forEach(h => h.remove());
-    this.handles = [];
-    if (this.mode === 'edit') {
-      const handlePositions = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-      const cursors: Record<string, string> = {
-        nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize', e: 'ew-resize',
-        se: 'nwse-resize', s: 'ns-resize', sw: 'nesw-resize', w: 'ew-resize',
-      };
-      for (const pos of handlePositions) {
+    // Handles: create once on entering edit mode; positions are % anchored to
+    // the rect so they track every resize without recreation.
+    if (this.mode !== 'edit') {
+      this.handles.forEach(h => h.remove());
+      this.handles = [];
+    } else if (this.handles.length === 0) {
+      for (const pos of ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']) {
         const h = document.createElement('div');
+        h.className = 'cell-ocr-region-handle';
         h.dataset.handle = pos;
-        const size = 10;
-        const offsets: Record<string, string> = {
-          nw: `left:-${size/2}px;top:-${size/2}px`,
-          n: `left:50%;top:-${size/2}px;transform:translateX(-50%)`,
-          ne: `right:-${size/2}px;top:-${size/2}px`,
-          e: `right:-${size/2}px;top:50%;transform:translateY(-50%)`,
-          se: `right:-${size/2}px;bottom:-${size/2}px`,
-          s: `left:50%;bottom:-${size/2}px;transform:translateX(-50%)`,
-          sw: `left:-${size/2}px;bottom:-${size/2}px`,
-          w: `left:-${size/2}px;top:50%;transform:translateY(-50%)`,
-        };
-        h.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:#0066ff;border:1px solid #000;${offsets[pos]};cursor:${cursors[pos]};pointer-events:auto;z-index:99999;`;
+        h.addEventListener('mousedown', this.onEditResizeStart);
         this.rect.appendChild(h);
         this.handles.push(h);
       }
     }
 
-    // Toolbar buttons
-    this.toolbar.innerHTML = '';
-    if (this.mode === 'select' || this.mode === 'edit') {
-      this.toolbar.appendChild(this.makeButton('Apply', '#0066ff', () => this.handleApply()));
-      this.toolbar.appendChild(this.makeButton('Cancel', '#aa0000', () => this.handleCancel()));
+    // Toolbar: rebuild only when crossing the view↔interactive boundary.
+    const needToolbar = this.mode !== 'view';
+    if (needToolbar && this.toolbar.childElementCount === 0) {
+      this.toolbar.appendChild(this.makeButton('Apply', 'apply', checkIcon, () => this.handleApply()));
+      this.toolbar.appendChild(this.makeButton('Cancel', 'cancel', xIcon, () => this.handleCancel()));
+    } else if (!needToolbar && this.toolbar.childElementCount > 0) {
+      this.toolbar.innerHTML = '';
     }
   }
 
-  private makeButton(text: string, color: string, onClick: () => void): HTMLButtonElement {
+  private makeButton(text: string, variant: 'apply' | 'cancel', iconSvg: string, onClick: () => void): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.textContent = text;
-    btn.style.cssText = `padding:4px 10px;font-size:12px;color:#fff;background:${color};border:none;border-radius:4px;cursor:pointer;font-family:monospace;`;
+    btn.type = 'button';
+    btn.className = `cell-ocr-region-btn cell-ocr-region-btn--${variant}`;
+    btn.appendChild(this.iconElement(iconSvg));
+    btn.appendChild(document.createTextNode(text));
     btn.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
     return btn;
+  }
+
+  private iconElement(svg: string): HTMLElement {
+    // ?raw imports carry a license comment + newlines — strip to the pure <svg> tag.
+    const start = svg.indexOf('<svg');
+    const tag = start >= 0 ? svg.slice(start) : svg;
+    const host = document.createElement('span');
+    host.style.cssText = 'display:inline-flex;';
+    host.innerHTML = tag;
+    return host;
   }
 
   // ─── Drag listeners ───
@@ -224,11 +290,8 @@ export class RegionSelector {
       // Click-drag on container to draw new rectangle
       this.rect.addEventListener('mousedown', this.onSelectStart);
     } else if (this.mode === 'edit') {
-      // Drag rect to move, drag handles to resize
+      // Drag rect to move; handles bound at creation in render()
       this.rect.addEventListener('mousedown', this.onEditMoveStart);
-      for (const h of this.handles) {
-        h.addEventListener('mousedown', this.onEditResizeStart);
-      }
     }
   }
 
@@ -237,9 +300,9 @@ export class RegionSelector {
       this.rect.removeEventListener('mousedown', this.onSelectStart);
       this.rect.removeEventListener('mousedown', this.onEditMoveStart);
     }
-    for (const h of this.handles) {
-      h.removeEventListener('mousedown', this.onEditResizeStart);
-    }
+    // Handle listeners are bound at handle creation (render) and die with the
+    // node on detach — never removed here, or attachListeners() would strip
+    // them right after render() bound them.
     document.removeEventListener('mousemove', this.onDragMove);
     document.removeEventListener('mouseup', this.onDragEnd);
   }
