@@ -23,6 +23,8 @@ import {
 } from '@/features/ocr/engine/paddleOcrLanguages';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { ENGINE_KEY_FOR_LANG } from '@/features/ocr/engine/paddleOcrLanguages';
 import { formatPct, defaultBottomRegion } from '@/features/ocr/overlay/regionSelector';
 import styles from './OcrSettingsPanel.module.css';
 
@@ -46,13 +48,36 @@ export interface OcrSettingsPanelProps {
 
 export function OcrSettingsPanel({
   url,
-  systemTargetLang = 'auto',
-  systemNativeLang = 'auto',
+  systemTargetLang,
+  systemNativeLang,
 }: OcrSettingsPanelProps): ReactElement {
   const [settings, setSettings] = useState<OcrSettings | null>(null);
   const [origin, setOrigin] = useState('');
   const [ocrState, setOcrState] = useState<OcrOriginState | undefined>(undefined);
   const [hintOpen, setHintOpen] = useState(false);
+  const [loadedSystemLangs, setLoadedSystemLangs] = useState<{ target: string; native: string } | null>(null);
+
+  // System subtitle languages (default dropdown values) — props win, else load
+  // from the settings store so the display matches what the OCR session uses.
+  useEffect(() => {
+    let cancelled = false;
+    void loadSettings()
+      .then((gs) => {
+        if (cancelled) return;
+        setLoadedSystemLangs({ target: gs.subtitleOverlayTargetLanguage ?? 'auto', native: gs.subtitleOverlayNativeLanguage ?? 'auto' });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const effectiveTargetLang = systemTargetLang ?? loadedSystemLangs?.target ?? 'auto';
+  const effectiveNativeLang = systemNativeLang ?? loadedSystemLangs?.native ?? 'auto';
+  const engineKeyFor = (override: string | null, systemLang: string): string => {
+    const resolved = resolveOcrLang(override, systemLang);
+    return ENGINE_KEY_FOR_LANG(resolved === 'auto' ? 'ch' : resolved);
+  };
+  const targetResolvesNonDefaultModel = engineKeyFor(ocrState?.targetLangOverride ?? null, effectiveTargetLang) !== 'ch';
+  const nativeResolvesNonDefaultModel = engineKeyFor(ocrState?.nativeLangOverride ?? null, effectiveNativeLang) !== 'ch';
 
   // Load settings once on mount.
   useEffect(() => {
@@ -73,8 +98,9 @@ export function OcrSettingsPanel({
     if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area !== 'local') return;
-      if (changes.__ocrRegionResult?.newValue) {
-        // Reload settings to pick up applied region.
+      if (changes.__ocrRegionResult?.newValue || changes.ocrSettings?.newValue) {
+        // Reload on region Apply/Cancel AND on divider-drag ratio commits
+        // (written by the OCR session) so the slider stays in live sync.
         void (async () => {
           const s = await loadOcrSettings();
           const org = extractOriginFromUrl(url);
@@ -217,7 +243,7 @@ export function OcrSettingsPanel({
           />
           <div className={styles.langRow}>
             <Select
-              value={resolveOcrLang(targetLangOverride, systemTargetLang)}
+              value={resolveOcrLang(targetLangOverride, effectiveTargetLang)}
               options={LANGUAGE_OPTIONS}
               onChange={(v) => handleLangOverrideChange('targetLangOverride', v)}
               aria-label="OCR target language"
@@ -247,7 +273,7 @@ export function OcrSettingsPanel({
           />
           <div className={styles.langRow}>
             <Select
-              value={resolveOcrLang(nativeLangOverride, systemNativeLang)}
+              value={resolveOcrLang(nativeLangOverride, effectiveNativeLang)}
               options={LANGUAGE_OPTIONS}
               onChange={(v) => handleLangOverrideChange('nativeLangOverride', v)}
               aria-label="OCR native language"
@@ -268,6 +294,14 @@ export function OcrSettingsPanel({
             )}
           </div>
         </SettingsRow>
+
+        {/* Language hints — defaults source + first-use model download (SC#12/SC#16). */}
+        <p className={styles.sliderHint}>Defaults come from your subtitle settings. Override per-site.</p>
+        {(targetResolvesNonDefaultModel || nativeResolvesNonDefaultModel) && (
+          <p className={styles.sliderHint}>
+            Non-default languages download their recognition model on first use (a few MB, cached for next time).
+          </p>
+        )}
 
         {/* ─── Split dual-stream section (spec ocr-split-dual-stream) ─── */}
         <SettingsRow divider>
