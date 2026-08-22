@@ -7,6 +7,7 @@ import type { OcrResultItem } from '@/features/ocr/engine/types';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 import { routeScript } from '../language/languageRouter';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
+import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
 
 /** OCR hitbox — one per script-run within a detected text box. */
 export interface OcrHitbox {
@@ -100,10 +101,12 @@ export class OcrOverlay {
   private container: HTMLDivElement | null = null;
   private hitboxes: HTMLSpanElement[] = [];
 
-  /** Attach overlay to a video element's parent. */
+  /** Attach overlay to a video element's player container.
+   *  Uses findFarthestSameSizeContainer — same algorithm as the subtitle/drag-drop
+   *  layer — so the overlay covers the real player shell, not a thin wrapper. */
   attach(video: HTMLVideoElement): void {
     if (this.container) return;
-    const parent = video.parentElement;
+    const parent = findFarthestSameSizeContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
     this.container = document.createElement('div');
