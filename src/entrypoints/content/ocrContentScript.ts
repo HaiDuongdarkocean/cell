@@ -115,6 +115,7 @@ export class OcrSession {
       onCancel: () => { void this.handleRegionCancel(); },
       onSplitRatioChange: (ratio) => { void this.handleSplitRatioChange(ratio); },
       onToggleSplit: () => { void this.handleToggleSplit(); },
+      onEditRegion: () => { this.setRegionMode('edit'); },
       onSelectRegion: () => { this.setRegionMode('select'); },
       onResetRegion: () => { void this.handleResetRegion(); },
     });
