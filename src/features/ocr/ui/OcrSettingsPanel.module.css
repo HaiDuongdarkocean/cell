@@ -1,6 +1,6 @@
 /* === OcrSettingsPanel — iOS Settings card style ===
-   Matches SubtitleBlockSettingsPanel pattern: rounded cards, hairline borders,
-   grouped rows with separator. Tokens from design system (no hardcoded values). */
+   Row layout delegated to SettingsRow + LabelGroup components.
+   Tokens from design system (no hardcoded values). */
 
 .container {
   display: flex;
@@ -27,76 +27,6 @@
 @keyframes configReveal {
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* ─── Toggle row — label group left, toggle right ─── */
-.toggleRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  min-width: 0;
-}
-
-/* ─── Row (language) — label group left, select right ─── */
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  min-width: 0;
-}
-
-/* ─── Label group — icon + label + info icon, main axis center, cross axis left ─── */
-.labelGroup {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
-}
-
-.row + .row,
-.row + .rowStack,
-.rowStack + .row {
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-}
-
-/* ─── Stacked row (slider) — vertical: header + slider + hint ─── */
-.rowStack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
-  padding: var(--space-3) var(--space-4);
-}
-
-/* ─── Row leading icon — 20px, secondary color ─── */
-.rowIcon {
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  color: var(--color-text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.rowIcon svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* ─── Row label ─── */
-.rowLabel {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-  letter-spacing: var(--tracking-normal);
-  line-height: var(--leading-tight);
-  user-select: none;
 }
 
 /* ─── Info button — compact, hover/focus → info color ─── */
@@ -152,35 +82,30 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* ─── Slider header — label group left, value right ─── */
-.sliderHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
+/* ─── Slider value — right-aligned, primary color, tabular nums ─── */
 .sliderValue {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  color: var(--color-primary);
   font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
 }
 
-/* ─── Slider hint — below slider ─── */
-.sliderHint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  line-height: var(--leading-normal);
-}
-
-/* ─── Select — compact width in row ─── */
-.row :global(.selectRoot),
-.row > :global([class*='select']),
-.row > div {
+/* ─── Select — compact width + height in row ───
+   The shared Select trigger sets `min-height: var(--touch-target)` (40px)
+   which overrides its `height: var(--input-height)` (32px), making the
+   Language row ~8px taller than the toggle row. Override the trigger's
+   min-height here so the row matches the compact toggle-row height.
+   NOTE: scoped to [data-cell-id='ocr-language-mode'] — using [class*='select']
+   would also match .cell-ocr-region-selector (contains 'select'), breaking
+   the region overlay's width. */
+:global([data-cell-id='ocr-language-mode']) {
   flex: 0 0 auto;
   min-width: 120px;
   max-width: 160px;
+}
+:global([data-cell-id='ocr-language-mode']) :global([class*='trigger']) {
+  min-height: var(--input-height);
 }
 
 /* ─── Region action buttons — flex row, wrap on small screens ─── */
@@ -188,6 +113,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  container-type: inline-size;
 }
 
 @media (prefers-reduced-motion: reduce) {
