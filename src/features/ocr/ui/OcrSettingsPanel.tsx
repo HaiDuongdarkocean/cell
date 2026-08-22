@@ -200,12 +200,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             hint="Horizontal offset from left edge"
             value={effRegion.xPct}
             min={0}
-            max={100 - effRegion.widthPct}
+            max={Math.max(0, 100 - effRegion.widthPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ xPct: v })}
             aria-label="Region X position"
             variant="end"
             divider
+            disabled={100 - effRegion.widthPct <= 0}
+            disabledNote="Reduce Width to move horizontally"
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
@@ -214,12 +216,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             hint="Vertical offset from top edge"
             value={effRegion.yPct}
             min={0}
-            max={100 - effRegion.heightPct}
+            max={Math.max(0, 100 - effRegion.heightPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ yPct: v })}
             aria-label="Region Y position"
             variant="end"
             divider
+            disabled={100 - effRegion.heightPct <= 0}
+            disabledNote="Reduce Height to move vertically"
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
@@ -228,12 +232,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             hint="Horizontal capture range"
             value={effRegion.widthPct}
             min={1}
-            max={100 - effRegion.xPct}
+            max={Math.max(1, 100 - effRegion.xPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ widthPct: v })}
             aria-label="Region width"
             variant="end"
             divider
+            disabled={100 - effRegion.xPct <= 1}
+            disabledNote="Reduce Position X to widen"
             formatValue={(v) => `${formatPct(v)}%`}
           />
           <SliderRow
@@ -242,12 +248,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             hint="Vertical capture range"
             value={effRegion.heightPct}
             min={1}
-            max={100 - effRegion.yPct}
+            max={Math.max(1, 100 - effRegion.yPct)}
             step={1}
             onChange={(v) => void handleRegionSliderChange({ heightPct: v })}
             aria-label="Region height"
             variant="end"
             divider
+            disabled={100 - effRegion.yPct <= 1}
+            disabledNote="Reduce Position Y to heighten"
             formatValue={(v) => `${formatPct(v)}%`}
           />
 
