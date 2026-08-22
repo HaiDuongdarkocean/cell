@@ -88,6 +88,11 @@ import pipSvg from './svg/pip.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
 import gaugeSvg from './svg/gauge.svg?raw';
+import cropSvg from './svg/crop.svg?raw';
+import moveSvg from './svg/move.svg?raw';
+import moveVerticalSvg from './svg/move-vertical.svg?raw';
+import moveHorizontalSvg from './svg/move-horizontal.svg?raw';
+import scanTextSvg from './svg/scan-text.svg?raw';
 
 // === Design system showcase — atomic design level icons ===
 import layersSvg from './svg/layers.svg?raw';
@@ -307,6 +312,11 @@ export const ICON_CATALOG = {
   volumeMute:   { svg: volumeMuteSvg,   source: 'lucide/volume-x',      tags: ['volume','mute','silent','off','sound','audio','speaker'] } as IconEntry,
   captions:     { svg: captionsSvg,     source: 'lucide/captions',      tags: ['captions','subtitle','cc','closed-caption','text','accessibility'] } as IconEntry,
   maximize:     { svg: maximizeSvg,     source: 'lucide/maximize',      tags: ['maximize','expand','fullscreen','enlarge','scale-up'] } as IconEntry,
+  crop:         { svg: cropSvg,         source: 'lucide/crop',          tags: ['crop','select-region','area','frame','capture','marquee'] } as IconEntry,
+  move:         { svg: moveSvg,         source: 'lucide/move',          tags: ['move','drag','reposition','pan','all-directions'] } as IconEntry,
+  moveVertical: { svg: moveVerticalSvg, source: 'lucide/move-vertical', tags: ['move','vertical','height','resize-vertical','up-down'] } as IconEntry,
+  moveHorizontal: { svg: moveHorizontalSvg, source: 'lucide/move-horizontal', tags: ['move','horizontal','width','resize-horizontal','left-right'] } as IconEntry,
+  scanText:     { svg: scanTextSvg,     source: 'lucide/scan-text',     tags: ['scan','text','ocr','detect-text','frame-text','recognize'] } as IconEntry,
   minimize:     { svg: minimizeSvg,     source: 'lucide/minimize',      tags: ['minimize','collapse','shrink','scale-down','reduce'] } as IconEntry,
   pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
   pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,

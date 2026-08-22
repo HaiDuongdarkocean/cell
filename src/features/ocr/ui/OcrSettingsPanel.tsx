@@ -17,6 +17,7 @@ import {
 import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { formatPct } from '@/features/ocr/overlay/regionSelector';
 import styles from './OcrSettingsPanel.module.css';
 
 const LANGUAGE_OPTIONS = [
@@ -134,7 +135,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
         <div className={styles.toggleRow}>
           <span className={styles.labelGroup}>
             <span className={styles.rowIcon} aria-hidden="true">
-              <Icon name="image" />
+              <Icon name="scanText" />
             </span>
             <span className={styles.rowLabel}>Detect burned-in subtitles</span>
             <button
@@ -195,7 +196,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 <div className={styles.sliderHeader}>
                   <span className={styles.labelGroup}>
                     <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="gauge" />
+                      <Icon name="moveVertical" />
                     </span>
                     <span className={styles.rowLabel}>Scan height</span>
                   </span>
@@ -216,7 +217,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 <div className={styles.sliderHeader}>
                   <span className={styles.labelGroup}>
                     <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="resize" />
+                      <Icon name="moveHorizontal" />
                     </span>
                     <span className={styles.rowLabel}>Scan width</span>
                   </span>
@@ -241,13 +242,13 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
               <div className={styles.sliderHeader}>
                 <span className={styles.labelGroup}>
                   <span className={styles.rowIcon} aria-hidden="true">
-                    <Icon name="resize" />
+                    <Icon name="crop" />
                   </span>
                   <span className={styles.rowLabel}>Custom region</span>
                 </span>
               </div>
               <p className={styles.sliderHint}>
-                {ocrState!.customRegion!.widthPct}%×{ocrState!.customRegion!.heightPct}% at ({ocrState!.customRegion!.xPct}%, {ocrState!.customRegion!.yPct}%)
+                {formatPct(ocrState!.customRegion!.widthPct)}%×{formatPct(ocrState!.customRegion!.heightPct)}% at ({formatPct(ocrState!.customRegion!.xPct)}%, {formatPct(ocrState!.customRegion!.yPct)}%)
               </p>
             </div>
           )}
@@ -261,7 +262,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 onClick={() => sendRegionCommand('select')}
                 data-cell-id="ocr-region-select"
               >
-                <Icon name="resize" /> Select Region
+                <Icon name="crop" /> Select Region
               </Button>
               {hasCustomRegion && (
                 <Button
@@ -270,7 +271,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                   onClick={() => sendRegionCommand('edit')}
                   data-cell-id="ocr-region-edit"
                 >
-                  <Icon name="pencil" /> Edit
+                  <Icon name="move" /> Edit
                 </Button>
               )}
               <Button
