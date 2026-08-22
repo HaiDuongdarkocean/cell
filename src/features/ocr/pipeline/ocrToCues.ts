@@ -1,5 +1,6 @@
 // ocrToCues — OCR detection stream → SrtCue[] (spec ocr-split-dual-stream).
 // O(n) single pass. Flicker merge: same text quay lại trong CUE_MERGE_GAP_MS → extend cue cũ.
+// Timeline continuity: cue.end = start của cue kế tiếp (text stay on screen cho đến detection mới).
 import type { SrtCue } from '@/entities/media/types';
 
 export interface OcrDetection {
@@ -9,6 +10,9 @@ export interface OcrDetection {
 
 export const CUE_TAIL_MS = 500;
 export const CUE_MERGE_GAP_MS = 700;
+/** Last cue tail — OCR detection has ~1-2s delay, so the last cue's end must
+ *  extend beyond currentTime to stay visible until the next detection arrives. */
+export const LAST_CUE_TAIL_MS = 3000;
 
 export function ocrTextToCues(detections: readonly OcrDetection[]): SrtCue[] {
   const cues: SrtCue[] = [];
@@ -43,5 +47,16 @@ export function ocrTextToCues(detections: readonly OcrDetection[]): SrtCue[] {
     open = { text: d.text, start: d.timeMs, lastTime: d.timeMs };
   }
   close();
+  // Timeline continuity: extend each cue's end to the start of the next cue
+  // so text stays on screen until the next detection (user requirement: cue
+  // spans from its scan frame to the next scan frame). Last cue gets a longer
+  // tail (3s) to bridge the OCR detection delay until the next frame arrives.
+  for (let i = 0; i < cues.length - 1; i++) {
+    if (cues[i].end < cues[i + 1].start) cues[i].end = cues[i + 1].start;
+  }
+  if (cues.length > 0) {
+    const last = cues[cues.length - 1]!;
+    last.end = last.start + LAST_CUE_TAIL_MS;
+  }
   return cues;
 }

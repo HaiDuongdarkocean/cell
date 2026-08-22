@@ -16,7 +16,7 @@ import { checkIcon, xIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
-import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry } from '@/features/ocr/pipeline/regionMapping';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
@@ -142,11 +142,11 @@ export class RegionSelector {
     injectOverlayCss();
     this.video = video;
     this.mode = mode;
-    // Use the same container-finding algorithm as the subtitle/drag-drop layer:
-    // walk up from video to the farthest ancestor within 10% size tolerance.
-    // This avoids attaching to a thin wrapper (e.g. YouTube .html5-video-container)
-    // and instead attaches to the real player shell that owns the controls.
-    const parent = findFarthestSameSizeContainer(video);
+    // SSOT: use the same container-finding algorithm as the subtitle overlay
+    // (findVideoContainer — ADR-008 D2). Both OCR region selector + subtitle
+    // block must attach to the SAME container so the region rect aligns with
+    // the subtitle block's coordinate space.
+    const parent = findVideoContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
 

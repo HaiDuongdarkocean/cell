@@ -1,5 +1,6 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { useCuesStore } from '@/stores/cuesStore';
@@ -96,28 +97,6 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
     // ponytail: storage might not be available in test contexts — fallback
   }
   return DEFAULT_KEYBOARD_SHORTCUTS;
-}
-
-/**
- * Find the overlay container for a video — ADR-008 D2.
- *
- * Starts at `video.parentElement` and walks up to the first ancestor whose
- * height is at least 50% of the video's height. This handles sites where
- * `video.parentElement` has zero height (e.g. YouTube's `.html5-video-container`
- * has `height:0` with the `<video>` absolutely positioned inside it, while the
- * real sized container is `#movie_player` — the grandparent). On normal sites
- * the parent already matches the video height, so the walk-up stops immediately.
- * Falls back to `document.body` if no suitable ancestor is found.
- */
-function findVideoContainer(video: HTMLVideoElement): HTMLElement {
-  const videoHeight = video.getBoundingClientRect().height;
-  let el: HTMLElement | null = video.parentElement;
-  while (el && el !== document.body) {
-    const h = el.getBoundingClientRect().height;
-    if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
-    el = el.parentElement;
-  }
-  return video.parentElement ?? document.body;
 }
 
 // ADR-032 cue-seek dedupe — module-level so multiple init() instances

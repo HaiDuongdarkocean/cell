@@ -1,6 +1,6 @@
 // ocrToCues.test.ts
 import { describe, expect, it } from '@jest/globals';
-import { ocrTextToCues, CUE_TAIL_MS, CUE_MERGE_GAP_MS } from './ocrToCues';
+import { ocrTextToCues, CUE_TAIL_MS, CUE_MERGE_GAP_MS, LAST_CUE_TAIL_MS } from './ocrToCues';
 
 describe('ocrTextToCues', () => {
   it('groups consecutive identical text into one cue', () => {
@@ -8,14 +8,14 @@ describe('ocrTextToCues', () => {
       { text: 'hello', timeMs: 1000 }, { text: 'hello', timeMs: 1330 }, { text: 'hello', timeMs: 1660 },
     ]);
     expect(cues).toHaveLength(1);
-    expect(cues[0]).toMatchObject({ start: 1000, end: 1660 + CUE_TAIL_MS, text: 'hello', index: 0 });
+    expect(cues[0]).toMatchObject({ start: 1000, end: 1000 + LAST_CUE_TAIL_MS, text: 'hello', index: 0 });
   });
-  it('text change closes cue and opens new one', () => {
+  it('text change closes cue and opens new one; timeline continuity extends cue[0].end to cue[1].start', () => {
     const cues = ocrTextToCues([
       { text: 'a', timeMs: 1000 }, { text: 'b', timeMs: 2000 },
     ]);
     expect(cues).toHaveLength(2);
-    expect(cues[0]!.end).toBe(1000 + CUE_TAIL_MS);
+    expect(cues[0]!.end).toBe(2000); // timeline continuity: cue[0].end = cue[1].start
     expect(cues[1]!.start).toBe(2000);
   });
   it('flicker A → miss → A within merge gap extends the SAME cue (no overlap)', () => {
