@@ -3,7 +3,7 @@
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { Toggle, Select, Slider, Button, Icon } from '@/shared/ui';
+import { Toggle, Select, Slider, Button, Icon, Tooltip } from '@/shared/ui';
 import {
   loadOcrSettings,
   saveOcrSettings,
@@ -14,7 +14,7 @@ import {
   type OcrSettings,
   type OcrOriginState,
 } from '@/features/ocr/persistence/ocrStateStore';
-import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
+import { DEFAULT_OCR_ORIGIN_STATE, type CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { formatPct } from '@/features/ocr/overlay/regionSelector';
@@ -109,6 +109,22 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     setOcrState(getOcrPreference(next, origin));
   }, [settings, origin, ocrState]);
 
+  // ─── Custom region slider handlers (X, Y, W, H in %) ───
+  const handleCustomRegionChange = useCallback(async (patch: Partial<CustomRegion>) => {
+    if (!settings || !origin || !ocrState?.customRegion) return;
+    const base = ocrState.customRegion;
+    const updated: CustomRegion = {
+      xPct: Math.max(0, Math.min(100 - base.widthPct, patch.xPct ?? base.xPct)),
+      yPct: Math.max(0, Math.min(100 - base.heightPct, patch.yPct ?? base.yPct)),
+      widthPct: Math.max(1, Math.min(100 - base.xPct, patch.widthPct ?? base.widthPct)),
+      heightPct: Math.max(1, Math.min(100 - base.yPct, patch.heightPct ?? base.heightPct)),
+    };
+    const next = setOcrPreference(settings, origin, { ...ocrState, customRegion: updated });
+    await saveOcrSettings(next);
+    setSettings(next);
+    setOcrState(getOcrPreference(next, origin));
+  }, [settings, origin, ocrState]);
+
   const sendRegionCommand = useCallback((mode: 'select' | 'edit' | 'view' | 'reset') => {
     void sendMessage({ type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: { mode } });
   }, []);
@@ -135,7 +151,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
         <div className={styles.toggleRow}>
           <span className={styles.labelGroup}>
             <span className={styles.rowIcon} aria-hidden="true">
-              <Icon name="scanText" />
+              <Icon name="scanText" size="sm" />
             </span>
             <span className={styles.rowLabel}>Detect burned-in subtitles</span>
             <button
@@ -146,7 +162,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
               data-cell-id="ocr-info-btn"
               onClick={() => setHintOpen((v) => !v)}
             >
-              <Icon name="info" />
+              <Icon name="info" size="sm" />
             </button>
           </span>
           <Toggle
@@ -175,7 +191,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
           <div className={styles.row}>
             <span className={styles.labelGroup}>
               <span className={styles.rowIcon} aria-hidden="true">
-                <Icon name="languages" />
+                <Icon name="languages" size="sm" />
               </span>
               <span className={styles.rowLabel}>Language</span>
             </span>
@@ -196,7 +212,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 <div className={styles.sliderHeader}>
                   <span className={styles.labelGroup}>
                     <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveVertical" />
+                      <Icon name="moveVertical" size="sm" />
                     </span>
                     <span className={styles.rowLabel}>Scan height</span>
                   </span>
@@ -217,7 +233,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 <div className={styles.sliderHeader}>
                   <span className={styles.labelGroup}>
                     <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveHorizontal" />
+                      <Icon name="moveHorizontal" size="sm" />
                     </span>
                     <span className={styles.rowLabel}>Scan width</span>
                   </span>
@@ -236,52 +252,132 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             </>
           )}
 
-          {/* Custom region info — shown when custom region exists */}
+          {/* Custom region sliders — X, Y, W, H in % */}
           {hasCustomRegion && (
-            <div className={styles.rowStack}>
-              <div className={styles.sliderHeader}>
-                <span className={styles.labelGroup}>
-                  <span className={styles.rowIcon} aria-hidden="true">
-                    <Icon name="crop" />
+            <>
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="moveHorizontal" size="sm" />
+                    </span>
+                    <span className={styles.rowLabel}>Position X</span>
                   </span>
-                  <span className={styles.rowLabel}>Custom region</span>
-                </span>
+                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.xPct)}%</span>
+                </div>
+                <Slider
+                  value={ocrState!.customRegion!.xPct}
+                  min={0}
+                  max={100 - ocrState!.customRegion!.widthPct}
+                  step={1}
+                  onChange={(v) => void handleCustomRegionChange({ xPct: v })}
+                  aria-label="Custom region X position"
+                />
               </div>
-              <p className={styles.sliderHint}>
-                {formatPct(ocrState!.customRegion!.widthPct)}%×{formatPct(ocrState!.customRegion!.heightPct)}% at ({formatPct(ocrState!.customRegion!.xPct)}%, {formatPct(ocrState!.customRegion!.yPct)}%)
-              </p>
-            </div>
+
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="moveVertical" size="sm" />
+                    </span>
+                    <span className={styles.rowLabel}>Position Y</span>
+                  </span>
+                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.yPct)}%</span>
+                </div>
+                <Slider
+                  value={ocrState!.customRegion!.yPct}
+                  min={0}
+                  max={100 - ocrState!.customRegion!.heightPct}
+                  step={1}
+                  onChange={(v) => void handleCustomRegionChange({ yPct: v })}
+                  aria-label="Custom region Y position"
+                />
+              </div>
+
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="moveHorizontal" size="sm" />
+                    </span>
+                    <span className={styles.rowLabel}>Width</span>
+                  </span>
+                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.widthPct)}%</span>
+                </div>
+                <Slider
+                  value={ocrState!.customRegion!.widthPct}
+                  min={1}
+                  max={100 - ocrState!.customRegion!.xPct}
+                  step={1}
+                  onChange={(v) => void handleCustomRegionChange({ widthPct: v })}
+                  aria-label="Custom region width"
+                />
+              </div>
+
+              <div className={styles.rowStack}>
+                <div className={styles.sliderHeader}>
+                  <span className={styles.labelGroup}>
+                    <span className={styles.rowIcon} aria-hidden="true">
+                      <Icon name="moveVertical" size="sm" />
+                    </span>
+                    <span className={styles.rowLabel}>Height</span>
+                  </span>
+                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.heightPct)}%</span>
+                </div>
+                <Slider
+                  value={ocrState!.customRegion!.heightPct}
+                  min={1}
+                  max={100 - ocrState!.customRegion!.yPct}
+                  step={1}
+                  onChange={(v) => void handleCustomRegionChange({ heightPct: v })}
+                  aria-label="Custom region height"
+                />
+              </div>
+            </>
           )}
 
-          {/* Region action buttons */}
+          {/* Region action buttons — icon+label, collapse to icon-only on narrow container */}
           <div className={styles.rowStack}>
             <div className={styles.regionButtons}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => sendRegionCommand('select')}
-                data-cell-id="ocr-region-select"
-              >
-                <Icon name="crop" /> Select Region
-              </Button>
-              {hasCustomRegion && (
+              <Tooltip content="Select Region" placement="top">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => sendRegionCommand('edit')}
-                  data-cell-id="ocr-region-edit"
+                  collapseLabel
+                  leadingIcon={<Icon name="crop" size="sm" />}
+                  onClick={() => sendRegionCommand('select')}
+                  data-cell-id="ocr-region-select"
                 >
-                  <Icon name="move" /> Edit
+                  Select Region
                 </Button>
+              </Tooltip>
+              {hasCustomRegion && (
+                <Tooltip content="Edit" placement="top">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    collapseLabel
+                    leadingIcon={<Icon name="move" size="sm" />}
+                    onClick={() => sendRegionCommand('edit')}
+                    data-cell-id="ocr-region-edit"
+                  >
+                    Edit
+                  </Button>
+                </Tooltip>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => void handleResetRegion()}
-                data-cell-id="ocr-region-reset"
-              >
-                <Icon name="rotateCcw" /> Reset
-              </Button>
+              <Tooltip content="Reset" placement="top">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  collapseLabel
+                  leadingIcon={<Icon name="rotateCcw" size="sm" />}
+                  onClick={() => void handleResetRegion()}
+                  data-cell-id="ocr-region-reset"
+                >
+                  Reset
+                </Button>
+              </Tooltip>
             </div>
           </div>
         </div>
