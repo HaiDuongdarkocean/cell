@@ -105,7 +105,7 @@ export class RegionSelector {
   private pendingRegion: CustomRegion | null = null;
   private video: HTMLVideoElement | null = null;
   private readonly callbacks: RegionSelectorCallbacks;
-  private dragState: { type: 'move' | 'resize'; handle: string; startX: number; startY: number; startRegion: CustomRegion } | null = null;
+  private dragState: { type: 'move' | 'resize' | 'draw'; handle: string; startX: number; startY: number; startRegion: CustomRegion } | null = null;
   private boundOnKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(callbacks: RegionSelectorCallbacks) {
@@ -322,7 +322,7 @@ export class RegionSelector {
     const rect = parent.getBoundingClientRect();
     const startXPct = ((e.clientX - rect.left) / rect.width) * 100;
     const startYPct = ((e.clientY - rect.top) / rect.height) * 100;
-    this.dragState = { type: 'resize', handle: 'se', startX: startXPct, startY: startYPct, startRegion: { xPct: startXPct, yPct: startYPct, widthPct: 0, heightPct: 0 } };
+    this.dragState = { type: 'draw', handle: 'se', startX: startXPct, startY: startYPct, startRegion: { xPct: startXPct, yPct: startYPct, widthPct: 0, heightPct: 0 } };
     this.pendingRegion = this.dragState.startRegion;
     this.render();
     document.addEventListener('mousemove', this.onDragMove);
@@ -359,29 +359,27 @@ export class RegionSelector {
       const xPct = Math.max(0, Math.min(100 - sr.widthPct, sr.xPct + dxPct));
       const yPct = Math.max(0, Math.min(100 - sr.heightPct, sr.yPct + dyPct));
       this.pendingRegion = { ...sr, xPct, yPct };
-    } else if (this.dragState.type === 'resize') {
-      if (this.mode === 'select') {
-        // Draw rectangle from start point
-        const curXPct = ((e.clientX - rect.left) / rect.width) * 100;
-        const curYPct = ((e.clientY - rect.top) / rect.height) * 100;
-        const xPct = Math.min(this.dragState.startX, curXPct);
-        const yPct = Math.min(this.dragState.startY, curYPct);
-        const widthPct = Math.min(100 - xPct, Math.abs(curXPct - this.dragState.startX));
-        const heightPct = Math.min(100 - yPct, Math.abs(curYPct - this.dragState.startY));
-        this.pendingRegion = { xPct, yPct, widthPct: Math.max(1, widthPct), heightPct: Math.max(1, heightPct) };
-      } else {
-        // Edit mode — resize from handle
-        const dxPct = ((e.clientX - this.dragState.startX) / rect.width) * 100;
-        const dyPct = ((e.clientY - this.dragState.startY) / rect.height) * 100;
-        const sr = this.dragState.startRegion;
-        const handle = this.dragState.handle;
-        let { xPct, yPct, widthPct, heightPct } = sr;
-        if (handle.includes('e')) widthPct = Math.max(1, Math.min(100 - xPct, sr.widthPct + dxPct));
-        if (handle.includes('w')) { const newW = Math.max(1, Math.min(xPct + widthPct - 1, sr.widthPct - dxPct)); xPct = sr.xPct + (sr.widthPct - newW); widthPct = newW; }
-        if (handle.includes('s')) heightPct = Math.max(1, Math.min(100 - yPct, sr.heightPct + dyPct));
-        if (handle.includes('n')) { const newH = Math.max(1, Math.min(yPct + heightPct - 1, sr.heightPct - dyPct)); yPct = sr.yPct + (sr.heightPct - newH); heightPct = newH; }
-        this.pendingRegion = { xPct, yPct, widthPct, heightPct };
-      }
+    } else if (this.dragState.type === 'draw') {
+      // Draw new rectangle from start point (startX/startY are percentages)
+      const curXPct = ((e.clientX - rect.left) / rect.width) * 100;
+      const curYPct = ((e.clientY - rect.top) / rect.height) * 100;
+      const xPct = Math.min(this.dragState.startX, curXPct);
+      const yPct = Math.min(this.dragState.startY, curYPct);
+      const widthPct = Math.min(100 - xPct, Math.abs(curXPct - this.dragState.startX));
+      const heightPct = Math.min(100 - yPct, Math.abs(curYPct - this.dragState.startY));
+      this.pendingRegion = { xPct, yPct, widthPct: Math.max(1, widthPct), heightPct: Math.max(1, heightPct) };
+    } else {
+      // Resize from handle (startX/startY are pixels) — works in both select + edit modes
+      const dxPct = ((e.clientX - this.dragState.startX) / rect.width) * 100;
+      const dyPct = ((e.clientY - this.dragState.startY) / rect.height) * 100;
+      const sr = this.dragState.startRegion;
+      const handle = this.dragState.handle;
+      let { xPct, yPct, widthPct, heightPct } = sr;
+      if (handle.includes('e')) widthPct = Math.max(1, Math.min(100 - xPct, sr.widthPct + dxPct));
+      if (handle.includes('w')) { const newW = Math.max(1, Math.min(xPct + widthPct - 1, sr.widthPct - dxPct)); xPct = sr.xPct + (sr.widthPct - newW); widthPct = newW; }
+      if (handle.includes('s')) heightPct = Math.max(1, Math.min(100 - yPct, sr.heightPct + dyPct));
+      if (handle.includes('n')) { const newH = Math.max(1, Math.min(yPct + heightPct - 1, sr.heightPct - dyPct)); yPct = sr.yPct + (sr.heightPct - newH); heightPct = newH; }
+      this.pendingRegion = { xPct, yPct, widthPct, heightPct };
     }
 
     if (this.pendingRegion) {
