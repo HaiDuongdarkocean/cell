@@ -12,7 +12,7 @@ import { RegionSelector, defaultBottomRegion, type RegionSelectorMode } from '@/
 import { OcrPipelineState, runPipelineStep, DEFAULT_PIPELINE_CONFIG, type OcrPipelineConfig } from '@/features/ocr/pipeline/ocrPipeline';
 import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCapture';
 import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
-import { computeSplitHalves, SPLIT_DEFAULT_REGION_PCT, type SplitHalf } from '@/features/ocr/pipeline/splitRegion';
+import { computeSplitHalves, type SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { ocrTextToCues, type OcrDetection } from '@/features/ocr/pipeline/ocrToCues';
 import { resolveOcrLang, ENGINE_KEY_FOR_LANG, type ResolvedOcrLang } from '@/features/ocr/engine/paddleOcrLanguages';
 import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
@@ -58,9 +58,9 @@ export function planSplitEngines(targetLang: ResolvedOcrLang, nativeLang: Resolv
   return { targetKey, nativeKey: dualEngine ? nativeKey : targetKey, dualEngine };
 }
 
-/** Region height % used for the split parent: default bottom 15% chia đôi quá thấp → bump 40% (spec user story 9). */
+/** Region height % — same regardless of split mode (user controls via slider). */
 export function effectiveSplitRegionPct(originState: OcrOriginState): number {
-  return originState.splitEnabled && !originState.customRegion ? SPLIT_DEFAULT_REGION_PCT : originState.subtitleRegionPct;
+  return originState.subtitleRegionPct;
 }
 
 /** Divider labels for the two halves (top may be target or native). */

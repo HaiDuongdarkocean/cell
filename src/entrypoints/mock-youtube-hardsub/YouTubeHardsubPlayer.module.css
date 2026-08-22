@@ -34,6 +34,13 @@
   font-weight: 600;
 }
 
+.seekActive {
+  background: #ff8c00;
+  border-color: #ff8c00;
+  color: #000;
+  font-weight: 600;
+}
+
 .time {
   font-size: 13px;
   color: #aaa;

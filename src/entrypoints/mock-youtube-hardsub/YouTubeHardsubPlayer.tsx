@@ -26,20 +26,20 @@ function readArParam(): AspectRatio {
 
 /** Draw burned-in subtitle text onto the canvas at intrinsic resolution.
  *  Transparent background — frameCapture composites this over the video frame.
- *  Draws English (top, ~70% y) + Vietnamese (bottom, ~90% y) so split mode OCR
- *  (top=target=English, bottom=native=Vietnamese) can detect both streams.
- *  Positions match the split region (bottom 40% = y 60%..100%, ratio 0.5):
- *    top half 60%..80% → English at 70% (centered)
- *    bottom half 80%..100% → Vietnamese at 90% (centered)
- *  Single-stream mode scans bottom 15% (y 85%..100%) → catches Vietnamese only. */
+ *  Draws English (top, ~88% y) + Vietnamese (bottom, ~96% y) — close together
+ *  near the bottom, matching real hardsub layout. Both lines fit within the
+ *  default OCR region (bottom 15% = y 85%..100%):
+ *    top half 85%..92.5% → English at 88% (centered)
+ *    bottom half 92.5%..100% → Vietnamese at 96% (centered)
+ *  Single-stream mode scans bottom 15% → catches both lines. */
 function drawSubtitle(ctx: CanvasRenderingContext2D, en: string, vi: string, width: number, height: number): void {
-  const fontSize = Math.floor(height * 0.04);
+  const fontSize = Math.floor(height * 0.035);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const x = width / 2;
-  const yEn = height * 0.70; // upper line — split top half center (60-80%)
-  const yVi = height * 0.90; // lower line — split bottom half center (80-100%) + single-stream bottom 15%
+  const yEn = height * 0.88; // upper line — centered in split top half (85-92.5%)
+  const yVi = height * 0.96; // lower line — centered in split bottom half (92.5-100%)
   const drawLine = (text: string, y: number): void => {
     ctx.fillStyle = 'black';
     ctx.shadowColor = 'black';
@@ -109,11 +109,18 @@ export function YouTubeHardsubPlayer(): ReactElement {
     if (v.paused) void v.play(); else v.pause();
   };
 
+  const seekTo = (t: number): void => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = t;
+  };
+
   return (
     <div className={styles.wrap}>
       <div className={styles.toolbar}>
         <button onClick={togglePlay} className={styles.btn}>{playing ? 'Pause' : 'Play'}</button>
         <span className={styles.time}>{time.toFixed(1)}s</span>
+        <button onClick={() => seekTo(26)} className={`${styles.btn} ${styles.seekActive}`}>Seek 26s</button>
         <span className={styles.arLabel}>aspect-ratio:</span>
         {(['4:3', '16:9', '21:9'] as AspectRatio[]).map((a) => (
           <button
