@@ -353,9 +353,9 @@ export class RegionSelector {
 
   private onDragMove = (e: MouseEvent): void => {
     if (!this.dragState || !this.video || !this.container) return;
-    const parent = this.container.parentElement;
-    if (!parent) return;
-    const rect = parent.getBoundingClientRect();
+    // Use the container's rect (same as onSelectStart) — the rect is positioned
+    // relative to the container, so all % coordinates must be relative to it.
+    const rect = this.container.getBoundingClientRect();
 
     if (this.dragState.type === 'move') {
       const dxPct = ((e.clientX - this.dragState.startX) / rect.width) * 100;
