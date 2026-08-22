@@ -80,8 +80,9 @@ export function quadToCssRect(
   };
 }
 
-/** Create a DOM span element for a hitbox — displays OCR text as selectable subtitle overlay.
- *  Text is styled like burned-in subtitle (white + black outline) and user-selectable. */
+/** Create a DOM span element for a hitbox — invisible click target for
+ *  dictionary lookup. Text is NOT rendered here (subtitle block shows OCR
+ *  text); the span only captures clicks → triggerController → popup. */
 export function createHitboxElement(
   hitbox: OcrHitbox,
   rect: { left: number; top: number; width: number; height: number },
@@ -91,8 +92,7 @@ export function createHitboxElement(
   el.className = 'cell-ocr-hitbox';
   el.dataset.cellTerm = hitbox.text.trim();
   el.dataset.cellLang = hitbox.langCode;
-  el.textContent = hitbox.text;
-  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:text;pointer-events:auto;display:flex;align-items:center;justify-content:center;user-select:text;-webkit-user-select:text;color:#fff;font-size:${Math.floor(rect.height * 0.7)}px;line-height:1;text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;white-space:nowrap;overflow:hidden;`;
+  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:text;pointer-events:auto;user-select:text;-webkit-user-select:text;`;
   return el;
 }
 
