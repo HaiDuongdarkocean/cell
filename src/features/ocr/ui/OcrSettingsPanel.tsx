@@ -1,5 +1,6 @@
-// OcrSettingsPanel — T17-T20. Manager Panel UI for OCR toggle + config.
-// spec §AD4: Per-origin OCR enable toggle, language mode, subtitle region %.
+// OcrSettingsPanel — T17-T20 + split dual-stream (Task 8).
+// Manager Panel UI for OCR toggle + config: per-origin enable, target/native
+// language (108-lang PaddleOCR catalog), split dual-stream, subtitle region %.
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
@@ -15,24 +16,39 @@ import {
   type OcrOriginState,
 } from '@/features/ocr/persistence/ocrStateStore';
 import { DEFAULT_OCR_ORIGIN_STATE, type CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
+import {
+  PADDLE_OCR_LANGUAGE_GROUPS,
+  resolveOcrLang,
+  type PaddleOcrLangEntry,
+} from '@/features/ocr/engine/paddleOcrLanguages';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { formatPct, defaultBottomRegion } from '@/features/ocr/overlay/regionSelector';
 import styles from './OcrSettingsPanel.module.css';
 
+/** Auto-detect first, then the 108-language PaddleOCR catalog (alphabetical). */
 const LANGUAGE_OPTIONS = [
-  { value: 'auto', label: 'Auto-detect' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'en', label: 'English' },
-  { value: 'ja', label: 'Japanese' },
+  { value: 'auto', label: 'Auto-detect (system default)' },
+  ...PADDLE_OCR_LANGUAGE_GROUPS
+    .flatMap((g): PaddleOcrLangEntry[] => [...g.languages])
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((l) => ({ value: l.abbr, label: l.label })),
 ];
 
 export interface OcrSettingsPanelProps {
   /** Current page URL — used to determine origin. */
   readonly url: string;
+  /** System default for the target language dropdown (ISO/BCP-47). Default 'auto'. */
+  readonly systemTargetLang?: string;
+  /** System default for the native language dropdown (ISO/BCP-47). Default 'auto'. */
+  readonly systemNativeLang?: string;
 }
 
-export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
+export function OcrSettingsPanel({
+  url,
+  systemTargetLang = 'auto',
+  systemNativeLang = 'auto',
+}: OcrSettingsPanelProps): ReactElement {
   const [settings, setSettings] = useState<OcrSettings | null>(null);
   const [origin, setOrigin] = useState('');
   const [ocrState, setOcrState] = useState<OcrOriginState | undefined>(undefined);
@@ -83,13 +99,23 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     await saveOcrSettings(next);
   }, [settings, origin, ocrState]);
 
-  const handleLanguageModeChange = useCallback(async (mode: string) => {
+  // Shared patch → persist → refresh (pattern of handleRegionSliderChange).
+  const patchOcrState = useCallback(async (patch: Partial<OcrOriginState>) => {
     if (!settings || !origin || !ocrState) return;
-    const next = setOcrPreference(settings, origin, { ...ocrState, languageMode: mode as OcrOriginState['languageMode'] });
+    const next = setOcrPreference(settings, origin, { ...ocrState, ...patch });
     await saveOcrSettings(next);
     setSettings(next);
     setOcrState(getOcrPreference(next, origin));
   }, [settings, origin, ocrState]);
+
+  // 'auto' in the dropdown = clear override → fall back to system default.
+  const handleLangOverrideChange = useCallback((key: 'targetLangOverride' | 'nativeLangOverride', value: string) => {
+    void patchOcrState({ [key]: value === 'auto' ? null : value });
+  }, [patchOcrState]);
+
+  const handleLangReset = useCallback((key: 'targetLangOverride' | 'nativeLangOverride') => {
+    void patchOcrState({ [key]: null });
+  }, [patchOcrState]);
 
   // ─── Region slider handlers (X, Y, W, H in %) ───
   // Works in both default + custom mode. In default mode, moving any slider
@@ -125,8 +151,14 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
   }, [settings, origin, ocrState, sendRegionCommand]);
 
   const enabled = ocrState?.ocrEnabled ?? false;
-  const languageMode = ocrState?.languageMode ?? DEFAULT_OCR_ORIGIN_STATE.languageMode;
   const hasCustomRegion = ocrState?.customRegion != null;
+  const targetLangOverride = ocrState?.targetLangOverride ?? null;
+  const nativeLangOverride = ocrState?.nativeLangOverride ?? null;
+  const splitEnabled = ocrState?.splitEnabled ?? DEFAULT_OCR_ORIGIN_STATE.splitEnabled;
+  const splitRatio = ocrState?.splitRatio ?? DEFAULT_OCR_ORIGIN_STATE.splitRatio;
+  const splitTopIsTarget = ocrState?.splitTopIsTarget ?? DEFAULT_OCR_ORIGIN_STATE.splitTopIsTarget;
+  // jsdom/mobile Safari: deviceMemory is optional — default to 8 (no low-RAM hint).
+  const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
   // Effective region: custom if set, otherwise derived from default bottom region.
   const effRegion: CustomRegion = ocrState?.customRegion
     ?? defaultBottomRegion(
@@ -177,21 +209,129 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
       {/* ─── Config card — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-        {/* Language row */}
+        {/* Target language row — 108-lang select + reset-to-system-default */}
         <SettingsRow divider>
           <LabelGroup
             icon={<Icon name="languages" size="sm" />}
-            label="Language"
+            label="Target language"
           />
-          <Select
-            value={languageMode}
-            options={LANGUAGE_OPTIONS}
-            onChange={(v) => void handleLanguageModeChange(v)}
-            aria-label="OCR language"
-            data-cell-id="ocr-language-mode"
-            menuAlign="right"
+          <div className={styles.langRow}>
+            <Select
+              value={resolveOcrLang(targetLangOverride, systemTargetLang)}
+              options={LANGUAGE_OPTIONS}
+              onChange={(v) => handleLangOverrideChange('targetLangOverride', v)}
+              aria-label="OCR target language"
+              data-cell-id="ocr-target-language"
+              menuAlign="right"
+              className={styles.langSelect}
+            />
+            {targetLangOverride != null && (
+              <button
+                type="button"
+                className={styles.resetBtn}
+                aria-label="Reset target language to system default"
+                data-cell-id="ocr-target-lang-reset"
+                onClick={() => handleLangReset('targetLangOverride')}
+              >
+                <Icon name="rotateCcw" size="sm" />
+              </button>
+            )}
+          </div>
+        </SettingsRow>
+
+        {/* Native language row */}
+        <SettingsRow divider>
+          <LabelGroup
+            icon={<Icon name="languages" size="sm" />}
+            label="Native language"
+          />
+          <div className={styles.langRow}>
+            <Select
+              value={resolveOcrLang(nativeLangOverride, systemNativeLang)}
+              options={LANGUAGE_OPTIONS}
+              onChange={(v) => handleLangOverrideChange('nativeLangOverride', v)}
+              aria-label="OCR native language"
+              data-cell-id="ocr-native-language"
+              menuAlign="right"
+              className={styles.langSelect}
+            />
+            {nativeLangOverride != null && (
+              <button
+                type="button"
+                className={styles.resetBtn}
+                aria-label="Reset native language to system default"
+                data-cell-id="ocr-native-lang-reset"
+                onClick={() => handleLangReset('nativeLangOverride')}
+              >
+                <Icon name="rotateCcw" size="sm" />
+              </button>
+            )}
+          </div>
+        </SettingsRow>
+
+        {/* ─── Split dual-stream section (spec ocr-split-dual-stream) ─── */}
+        <SettingsRow divider>
+          <LabelGroup
+            icon={<Icon name="crop" size="sm" />}
+            label="Split"
+            hint="Split the capture region into two halves — one per language stream"
+          />
+          <Toggle
+            checked={splitEnabled}
+            onChange={(v) => void patchOcrState({ splitEnabled: v })}
+            ariaLabel="Toggle split dual subtitles"
+            dataTestId="ocr-split-toggle"
+            size="sm"
           />
         </SettingsRow>
+        {splitEnabled && (
+          <>
+            <SettingsRow stacked divider>
+              <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
+              <div className={styles.segmentButtons}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  active={splitTopIsTarget}
+                  onClick={() => void patchOcrState({ splitTopIsTarget: true })}
+                  data-cell-id="ocr-split-top-target"
+                >
+                  Top = Target
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  active={!splitTopIsTarget}
+                  onClick={() => void patchOcrState({ splitTopIsTarget: false })}
+                  data-cell-id="ocr-split-top-native"
+                >
+                  Top = Native
+                </Button>
+              </div>
+            </SettingsRow>
+            <SliderRow
+              icon={<Icon name="moveVertical" size="sm" />}
+              label="Split ratio"
+              hint="Height of the top half as % of the capture region"
+              value={Math.round(splitRatio * 100)}
+              min={10}
+              max={90}
+              step={1}
+              onChange={(v) => void patchOcrState({ splitRatio: v / 100 })}
+              aria-label="OCR split ratio"
+              variant="end"
+              divider
+              formatValue={(v) => `${v}%`}
+            />
+            {deviceMemory < 4 && (
+              <SettingsRow stacked divider>
+                <p className={styles.sliderHint}>
+                  Low memory mode: both halves use the target model
+                </p>
+              </SettingsRow>
+            )}
+          </>
+        )}
 
           {/* Region sliders — X, Y, W, H in % (always visible) */}
           <SliderRow
