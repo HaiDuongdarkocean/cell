@@ -283,6 +283,11 @@ export class OcrSession {
       if (result.status === 'subtitle_gone') {
         // Subtitle disappeared from frame — clear overlay immediately.
         this.overlay.clear();
+        // Close the currently open cue (ocrToCues contract: empty text closes).
+        if (this.video) {
+          this.splitDetections.target.push({ text: '', timeMs: this.video.currentTime * 1000 });
+          this.postOcrTracks();
+        }
       }
 
       if (result.status === 'ocr' && this.video) {
@@ -294,6 +299,10 @@ export class OcrSession {
         if (this.triggerController) {
           wireOcrHitboxesToTrigger(this.overlay, this.triggerController);
         }
+        // Push detection to subtitle block (same as split mode — single stream
+        // is target-only, native stays empty).
+        this.splitDetections.target.push({ text: result.results.map(r => r.text).join(' '), timeMs: this.video.currentTime * 1000 });
+        this.postOcrTracks();
       }
     } catch (e) {
       // Dev debug: expose errors via DOM dataset (visible from MAIN world).
