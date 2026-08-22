@@ -175,6 +175,33 @@ describe('ocrTextToCues — 10 subtitle dedup scenarios', () => {
     expect(cues[0]).toMatchObject({ start: 51023, text: 'My ego got in the way' });
   });
 
+  // 16. Short subtitle (28 chars) with OCR typo: "Wll" vs "Will" → 1 cue
+  //     Edgecase từ E2E 3+ phút: "Will you still take me back" (28 chars) < 30
+  //     cũ threshold → không fuzzy match → 4 duplicate cues.
+  it('16. short subtitle (28 chars) OCR typo Wll vs Will → 1 cue', () => {
+    const cues = ocrTextToCues([
+      { text: 'Will you still take me back', timeMs: 171514 },
+      { text: 'Wll you still take me back', timeMs: 171912 },
+      { text: 'Wil you still take me back', timeMs: 174469 },
+      { text: 'Will you still take me back', timeMs: 174946 },
+    ]);
+    expect(cues).toHaveLength(1);
+    expect(cues[0]).toMatchObject({ start: 171514, text: 'Will you still take me back' });
+  });
+
+  // 17. OCR misread "I'll" → "IM" / "IIl" / "I" (edit distance 2) → 1 cue
+  //     Edgecase từ E2E 3+ phút: OCR nuốt apostrophe, misread "I'll" thành
+  //     "IM", "IIl", "I". Edit distance 2 nhưng threshold cũ chỉ 1 → không merge.
+  it('17. OCR misread Ill → IM / IIl / I (edit distance 2) → 1 cue', () => {
+    const cues = ocrTextToCues([
+      { text: "IM be a different and better version of me", timeMs: 104778 },
+      { text: "IIl be a different and better version of me", timeMs: 105335 },
+      { text: "I be a different and better version of me", timeMs: 107588 },
+    ]);
+    expect(cues).toHaveLength(1);
+    expect(cues[0]).toMatchObject({ start: 104778, text: "IM be a different and better version of me" });
+  });
+
   // ─── normalizeText unit tests ───
   describe('normalizeText', () => {
     it('trims leading/trailing whitespace', () => {
