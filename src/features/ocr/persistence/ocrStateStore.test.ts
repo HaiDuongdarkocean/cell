@@ -96,11 +96,14 @@ describe('ocrStateStore', () => {
   it('setOcrPreference overwrites existing state', () => {
     const settings = enableOcrForOrigin(DEFAULT_OCR_SETTINGS, 'themoviebox.xyz');
     const updated = setOcrPreference(settings, 'themoviebox.xyz', {
+      ...DEFAULT_OCR_ORIGIN_STATE,
       ocrEnabled: true,
-      languageMode: 'zh',
+      languageMode: 'ch',
       subtitleRegionPct: 20,
+      subtitleRegionWidthPct: 100,
+      customRegion: null,
     });
-    expect(getOcrPreference(updated, 'themoviebox.xyz')?.languageMode).toBe('zh');
+    expect(getOcrPreference(updated, 'themoviebox.xyz')?.languageMode).toBe('ch');
     expect(getOcrPreference(updated, 'themoviebox.xyz')?.subtitleRegionPct).toBe(20);
   });
 

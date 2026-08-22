@@ -4,6 +4,8 @@
 // becomes {} (data lost). Callers must convert to number[] before sending.
 // Receivers handle both Uint8ClampedArray (direct) and number[] (via message).
 
+import type { PaddleLangAbbr } from './paddleOcrLanguages';
+
 /** Transferable image data — matches canvas.getImageData() shape.
  *  data: Uint8ClampedArray when called directly, number[] when received via sendMessage. */
 export interface ImageSource {
@@ -35,8 +37,8 @@ export interface OcrResult {
 /** OCR backend selection. */
 export type OcrBackend = 'webgpu' | 'wasm';
 
-/** Language mode — 'auto' lets engine detect, others hint the model. */
-export type OcrLanguageMode = 'auto' | 'zh' | 'en' | 'ja';
+/** Language mode — 'auto' lets engine detect; others are PaddleOCR catalog abbrs (SSOT: paddleOcrLanguages). */
+export type OcrLanguageMode = 'auto' | PaddleLangAbbr;
 
 /** Engine initialization config. */
 export interface OcrConfig {

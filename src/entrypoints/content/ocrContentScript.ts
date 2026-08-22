@@ -13,6 +13,7 @@ import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
 import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import type { OcrOriginState, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
+import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -501,12 +502,10 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
         const video = findVideoElement();
         document.body.dataset.ocrDebugStep = '2-video-' + (video ? 'found' : 'null');
         if (!video) return;
-        const originState = {
+        const originState: OcrOriginState = {
+          ...DEFAULT_OCR_ORIGIN_STATE,
           ocrEnabled: true,
-          languageMode: (data.languageMode ?? 'auto') as 'auto' | 'zh' | 'en' | 'ja',
-          subtitleRegionPct: 15,
-          subtitleRegionWidthPct: 100,
-          customRegion: null,
+          languageMode: (data.languageMode ?? 'auto') as OcrOriginState['languageMode'],
         };
         activeSession = new OcrSession();
         const tc = getTriggerController?.() ?? null;

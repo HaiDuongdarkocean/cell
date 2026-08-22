@@ -172,7 +172,7 @@ describe('PaddleOcrEngine (T4)', () => {
 
   it('maps language modes to PaddleOCR lang param', async () => {
     const engine = new PaddleOcrEngine();
-    await engine.initialize({ ...config, languageMode: 'zh' });
+    await engine.initialize({ ...config, languageMode: 'ch' });
     expect(mockCreate).toHaveBeenLastCalledWith(
       expect.objectContaining({ lang: 'ch' }),
     );
