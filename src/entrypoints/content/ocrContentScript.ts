@@ -482,6 +482,12 @@ export class OcrSession {
     }
     const currentRegion = this.originState?.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct);
     this.regionSelector.attach(this.video, currentRegion, mode);
+    // Re-apply split after attach — attach recreates the container, wiping
+    // split nodes. Without this, split halves + divider vanish in edit mode.
+    if (this.originState?.splitEnabled) {
+      const { topLabel, bottomLabel } = splitLabels(this.originState.splitTopIsTarget);
+      this.regionSelector.setSplit(true, this.originState.splitRatio, topLabel, bottomLabel);
+    }
   }
 
   /** Reset to default bottom region and clear custom region. */

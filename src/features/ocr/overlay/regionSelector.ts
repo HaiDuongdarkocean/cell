@@ -395,6 +395,10 @@ export class RegionSelector {
     const r = this.pendingRegion ?? this.currentRegion;
     this.rect.dataset.mode = this.mode;
     if (this.container) this.container.dataset.mode = this.mode;
+    // Select mode: hide the old rect so user can see the video to pick a new
+    // position. Once user starts dragging (pendingRegion set), rect reappears
+    // to show the new selection being drawn.
+    this.rect.style.display = (this.mode === 'select' && !this.pendingRegion) ? 'none' : '';
     this.rect.style.left = `${r.xPct}%`;
     this.rect.style.top = `${r.yPct}%`;
     this.rect.style.width = `${r.widthPct}%`;
@@ -440,9 +444,11 @@ export class RegionSelector {
     // letterbox the container has black bars; toolbar must sit inside the video.
     this.positionToolbar();
 
-    // Split halves + divider: visible only in view mode (in select/edit the user
-    // is adjusting the parent region — a live divider would fight them). Nodes
-    // are created once in setSplit(); render() only repositions them (ADR-081).
+    // Split halves + divider: visible in view + edit mode (user can see
+    // target/native split while adjusting the region). Hidden in select mode
+    // (user is drawing a brand-new region — split would be meaningless until
+    // the new region is applied). Nodes are created once in setSplit();
+    // render() only repositions them (ADR-081).
     if (this.splitTop && this.splitBottom && this.divider) {
       const { top, bottom } = computeSplitHalves(r, this.splitRatio);
       this.positionHalf(this.splitTop, top);
@@ -450,7 +456,7 @@ export class RegionSelector {
       this.divider.style.left = `${top.xPct}%`;
       this.divider.style.top = `${top.yPct + top.heightPct}%`;
       this.divider.style.width = `${top.widthPct}%`;
-      const splitVisible = this.splitEnabled && this.mode === 'view';
+      const splitVisible = this.splitEnabled && this.mode !== 'select';
       this.splitTop.style.display = splitVisible ? '' : 'none';
       this.splitBottom.style.display = splitVisible ? '' : 'none';
       this.divider.style.display = splitVisible ? '' : 'none';
