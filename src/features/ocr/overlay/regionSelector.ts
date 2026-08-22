@@ -313,9 +313,10 @@ export class RegionSelector {
   }
 
   private onSelectStart = (e: MouseEvent): void => {
-    // Only fire for clicks on the container itself (outside the rect) —
-    // rect body clicks go to onEditMoveStart, handle clicks to onEditResizeStart.
-    if (e.target === this.rect || (e.target as HTMLElement)?.dataset?.handle) return;
+    // Only fire for clicks on the container itself (outside the rect + toolbar) —
+    // rect body clicks go to onEditMoveStart, handle clicks to onEditResizeStart,
+    // toolbar button clicks go to their own click handlers.
+    if (e.target === this.rect || (e.target as HTMLElement)?.dataset?.handle || this.toolbar?.contains(e.target as Node)) return;
     e.preventDefault();
     const parent = this.rect?.parentElement;
     if (!parent || !this.video) return;
