@@ -8,10 +8,14 @@
 // - .cell-ocr-region-label     dimension readout (rounded %)
 // - [data-handle]              8 resize handles in edit mode (created once, listener bound at creation)
 // - .cell-ocr-region-btn       Apply / Cancel toolbar buttons
+// - .cell-ocr-split-half       split stream halves, data-label (view mode only, pointer-events none)
+// - .cell-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
 
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
 import { checkIcon, xIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
+import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
+import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
 import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
@@ -23,6 +27,8 @@ export interface RegionSelectorCallbacks {
   onApply: () => void;
   /** Called when user clicks Cancel or presses Esc. */
   onCancel: () => void;
+  /** Called when the user finishes dragging the split divider (mouseup) — ratio clamped 0.1-0.9. Real-time drag only updates UI. */
+  onSplitRatioChange?: (ratio: number) => void;
 }
 
 /** Compute default bottom region as CustomRegion (centered x, bottom y). */
@@ -91,6 +97,10 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
 .cell-ocr-region-btn--apply:hover { filter: brightness(1.15); }
 .cell-ocr-region-btn--cancel { background: rgba(0, 0, 0, 0.6); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
 .cell-ocr-region-btn--cancel:hover { background: rgba(170, 0, 0, 0.85); box-shadow: none; }
+.cell-ocr-split-half { position: absolute; background: rgba(255, 255, 255, 0.08); pointer-events: none; }
+.cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(255, 255, 255, 0.85); font-family: ${FONT}; }
+.cell-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
+.cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255, 255, 255, 0.9); border-radius: 1px; }
 `;
   document.head.appendChild(style);
 }
@@ -108,6 +118,14 @@ export class RegionSelector {
   private readonly callbacks: RegionSelectorCallbacks;
   private dragState: { type: 'move' | 'resize' | 'draw'; handle: string; startX: number; startY: number; startRegion: CustomRegion } | null = null;
   private boundOnKeyDown: ((e: KeyboardEvent) => void) | null = null;
+
+  // ─── Split dual-stream (spec ocr-split-dual-stream) ───
+  private splitEnabled = false;
+  private splitRatio = 0.5;
+  private splitTop: HTMLDivElement | null = null;
+  private splitBottom: HTMLDivElement | null = null;
+  private divider: HTMLDivElement | null = null;
+  private splitDrag: { startY: number; startRatio: number } | null = null;
 
   constructor(callbacks: RegionSelectorCallbacks) {
     this.callbacks = callbacks;
@@ -192,6 +210,40 @@ export class RegionSelector {
     return this.pendingRegion ?? this.currentRegion;
   }
 
+  /** Enable/disable split view: two tinted halves + a draggable divider (view mode only).
+   *  Nodes are created once — the divider mousedown listener is bound at creation (ADR-081). */
+  setSplit(enabled: boolean, ratio: number, topLabel = '', bottomLabel = ''): void {
+    this.splitEnabled = enabled;
+    this.splitRatio = Math.max(0.1, Math.min(0.9, ratio));
+    if (!enabled) {
+      this.splitTop?.remove();
+      this.splitBottom?.remove();
+      this.divider?.remove();
+      this.splitTop = this.splitBottom = this.divider = null;
+      this.render();
+      return;
+    }
+    if (!this.splitTop && this.rect) {
+      this.splitTop = document.createElement('div');
+      this.splitTop.className = 'cell-ocr-split-half';
+      this.splitBottom = document.createElement('div');
+      this.splitBottom.className = 'cell-ocr-split-half';
+      this.divider = document.createElement('div');
+      this.divider.className = 'cell-ocr-split-divider';
+      this.divider.addEventListener('mousedown', this.onSplitDragStart);
+      this.container?.append(this.splitTop, this.splitBottom, this.divider);
+    }
+    if (this.splitTop) this.splitTop.dataset.label = topLabel;
+    if (this.splitBottom) this.splitBottom.dataset.label = bottomLabel;
+    this.render();
+  }
+
+  /** Update divider + halves position from an external ratio change (e.g. settings slider). */
+  updateSplitRatio(ratio: number): void {
+    this.splitRatio = Math.max(0.1, Math.min(0.9, ratio));
+    this.render();
+  }
+
   /** Detach overlay from DOM. */
   detach(): void {
     if (this.boundOnKeyDown) {
@@ -212,6 +264,9 @@ export class RegionSelector {
     this.toolbar = null;
     this.video = null;
     this.dragState = null;
+    // Split nodes are children of the container (removed with it above) — drop references.
+    this.splitTop = this.splitBottom = this.divider = null;
+    this.splitDrag = null;
     this.syncBodyFlag();
   }
 
@@ -270,6 +325,29 @@ export class RegionSelector {
     } else if (!needToolbar && this.toolbar.childElementCount > 0) {
       this.toolbar.innerHTML = '';
     }
+
+    // Split halves + divider: visible only in view mode (in select/edit the user
+    // is adjusting the parent region — a live divider would fight them). Nodes
+    // are created once in setSplit(); render() only repositions them (ADR-081).
+    if (this.splitTop && this.splitBottom && this.divider) {
+      const { top, bottom } = computeSplitHalves(r, this.splitRatio);
+      this.positionHalf(this.splitTop, top);
+      this.positionHalf(this.splitBottom, bottom);
+      this.divider.style.left = `${top.xPct}%`;
+      this.divider.style.top = `${top.yPct + top.heightPct}%`;
+      this.divider.style.width = `${top.widthPct}%`;
+      const splitVisible = this.splitEnabled && this.mode === 'view';
+      this.splitTop.style.display = splitVisible ? '' : 'none';
+      this.splitBottom.style.display = splitVisible ? '' : 'none';
+      this.divider.style.display = splitVisible ? '' : 'none';
+    }
+  }
+
+  private positionHalf(el: HTMLDivElement, half: SplitHalf): void {
+    el.style.left = `${half.xPct}%`;
+    el.style.top = `${half.yPct}%`;
+    el.style.width = `${half.widthPct}%`;
+    el.style.height = `${half.heightPct}%`;
   }
 
   private makeButton(text: string, variant: 'apply' | 'cancel', iconSvg: string, onClick: () => void): HTMLButtonElement {
@@ -319,6 +397,8 @@ export class RegionSelector {
     // them right after render() bound them.
     document.removeEventListener('mousemove', this.onDragMove);
     document.removeEventListener('mouseup', this.onDragEnd);
+    document.removeEventListener('mousemove', this.onSplitDragMove);
+    document.removeEventListener('mouseup', this.onSplitDragEnd);
   }
 
   private onSelectStart = (e: MouseEvent): void => {
@@ -402,6 +482,36 @@ export class RegionSelector {
     this.dragState = null;
     document.removeEventListener('mousemove', this.onDragMove);
     document.removeEventListener('mouseup', this.onDragEnd);
+  };
+
+  private onSplitDragStart = (e: MouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.splitDrag = { startY: e.clientY, startRatio: this.splitRatio };
+    document.addEventListener('mousemove', this.onSplitDragMove);
+    document.addEventListener('mouseup', this.onSplitDragEnd);
+  };
+
+  private onSplitDragMove = (e: MouseEvent): void => {
+    if (!this.splitDrag || !this.container) return;
+    const parent = this.container.parentElement;
+    if (!parent) return;
+    const pr = parent.getBoundingClientRect();
+    if (pr.height <= 0) return; // jsdom / detached: avoid NaN poisoning the ratio
+    // Divider sits at yPct + heightPct*ratio — convert the pixel delta to a
+    // ratio delta relative to the REGION height so the bar tracks the cursor.
+    const dyPct = ((e.clientY - this.splitDrag.startY) / pr.height) * 100;
+    const region = this.getRegion();
+    const ratio = (this.splitDrag.startRatio * region.heightPct + dyPct) / region.heightPct;
+    this.splitRatio = Math.max(0.1, Math.min(0.9, ratio));
+    this.render(); // real-time UI only — persist on mouseup
+  };
+
+  private onSplitDragEnd = (): void => {
+    this.splitDrag = null;
+    document.removeEventListener('mousemove', this.onSplitDragMove);
+    document.removeEventListener('mouseup', this.onSplitDragEnd);
+    this.callbacks.onSplitRatioChange?.(this.splitRatio);
   };
 
   private handleApply(): void {
