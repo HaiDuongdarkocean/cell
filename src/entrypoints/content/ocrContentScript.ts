@@ -11,6 +11,7 @@ import { OcrPipelineState, runPipelineStep, DEFAULT_PIPELINE_CONFIG, type OcrPip
 import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCapture';
 import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
 import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
+import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import type { OcrOriginState, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
@@ -307,10 +308,41 @@ let activeSession: OcrSession | null = null;
 let currentOrigin = '';
 let getTriggerController: (() => SubtitleTriggerController | null) | null = null;
 
+// SPA video watcher — kisskh (Angular) mounts <video> seconds AFTER the content
+// script runs, so initOcrForCurrentUrl finds nothing on page load and OCR never
+// auto-starts (region selector missing after reload). The observer waits for a
+// READY video (ADR-012 two-phase gate) then retries the init once.
+let ocrVideoObserver: MutationObserver | null = null;
+
+function stopOcrVideoObserver(): void {
+  ocrVideoObserver?.disconnect();
+  ocrVideoObserver = null;
+}
+
+function startOcrVideoObserver(url: string): void {
+  stopOcrVideoObserver();
+  ocrVideoObserver = new MutationObserver(() => {
+    const v = findVideoElement();
+    if (v && isVideoReady(v)) {
+      stopOcrVideoObserver();
+      void initOcrForCurrentUrl(url);
+    }
+  });
+  ocrVideoObserver.observe(document.body ?? document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src'],
+  });
+}
+
 /** T20: Start OCR if enabled for the current URL. Called on page load + SPA nav. */
 export async function initOcrForCurrentUrl(url: string): Promise<void> {
   const newOrigin = extractOriginFromUrl(url);
-  if (newOrigin === currentOrigin && activeSession?.isRunning()) return;
+  if (newOrigin === currentOrigin && activeSession?.isRunning()) {
+    stopOcrVideoObserver();
+    return;
+  }
 
   // Origin changed — stop existing session.
   if (activeSession?.isRunning()) {
@@ -320,10 +352,19 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   currentOrigin = newOrigin;
 
   const enabled = await shouldEnableOcr(url);
-  if (!enabled) return;
+  if (!enabled) {
+    stopOcrVideoObserver();
+    return;
+  }
 
   const video = findVideoElement();
-  if (!video) return;
+  // Not mounted yet (SPA) or still in template phase (src="") — attaching now
+  // would be wiped by the framework's continued render (ADR-012).
+  if (!video || !isVideoReady(video)) {
+    startOcrVideoObserver(url);
+    return;
+  }
+  stopOcrVideoObserver();
 
   const settings = await loadOcrSettings();
   const originState = settings.origins[newOrigin];
@@ -337,6 +378,7 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
 
 /** T19: Stop OCR session (called when toggle OFF or page unload). */
 export async function stopOcrSession(): Promise<void> {
+  stopOcrVideoObserver();
   if (activeSession?.isRunning()) {
     await activeSession.shutdown();
   }
