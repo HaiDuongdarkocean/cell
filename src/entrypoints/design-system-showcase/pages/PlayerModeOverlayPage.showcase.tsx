@@ -52,7 +52,7 @@ export function Showcase(): ReactElement {
             onExit={() => {}}
             onQuickAdd={() => {}}
             onEditCard={() => {}}
-            onUpdateCurrentCard={() => {}}
+            onToggleOcr={() => {}}
             onGenerateNative={() => {}}
             onToggleSidePanel={() => setCueListOpen((v) => !v)}
             onToggleManager={() => {}}

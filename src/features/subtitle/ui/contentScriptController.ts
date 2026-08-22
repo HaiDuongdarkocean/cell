@@ -202,7 +202,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     nativeStyle,
     clusterSettings,
     (action) => { void handleCardCreatorAction(action); },
-    () => { void handleCardCreatorAction('update-current'); },
     () => { void handleGenerateNative(); },
   );
 
@@ -473,6 +472,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
     blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     blockController.onToggleSidePanel = toggleSidePanel;
+    // OCR toggle: post message to OCR content script (same page) to toggle
+    // ocrEnabled for current origin. OCR content script handles storage save.
+    blockController.onToggleOcr = () => {
+      window.postMessage({ type: '__CELL_OCR_TOGGLE' }, '*');
+    };
     blockController.onSearchResultSelect = (result, role) => { void handleSearchResultSelect(result, role); };
     blockController.setHasSearchKeys(hasSearchKeys());
     blockController.setSearchApiKeys(currentSettings?.subtitleApiKeys ?? []);
@@ -480,6 +484,15 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Force re-render with the new callbacks.
     blockController.refreshManagerState();
     // ADR-025: offset provider already wired in ReactSubtitleController constructor.
+
+    // Listen for OCR state changes from ocrContentScript → update toolbar button.
+    window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      const d = e.data as { type?: string; enabled?: boolean };
+      if (d?.type === '__CELL_OCR_STATE' && typeof d.enabled === 'boolean') {
+        blockController?.setOcrEnabled(d.enabled);
+      }
+    });
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
     onStorageChanged((changes, area) => {

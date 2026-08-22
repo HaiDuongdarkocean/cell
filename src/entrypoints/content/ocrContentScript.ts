@@ -114,6 +114,9 @@ export class OcrSession {
       onApply: () => { void this.handleRegionApply(); },
       onCancel: () => { void this.handleRegionCancel(); },
       onSplitRatioChange: (ratio) => { void this.handleSplitRatioChange(ratio); },
+      onToggleSplit: () => { void this.handleToggleSplit(); },
+      onSelectRegion: () => { this.setRegionMode('select'); },
+      onResetRegion: () => { void this.handleResetRegion(); },
     });
   }
 
@@ -499,6 +502,25 @@ export class OcrSession {
     this.config = { ...this.config, splitRatio: ratio };
   }
 
+  /** Toggle split dual-stream on/off (from action bar). Persists to storage;
+   *  storage.onChanged listener calls updateRegionConfig to apply the change. */
+  private async handleToggleSplit(): Promise<void> {
+    if (!this.originState || !currentOrigin) return;
+    const nextSplit = !this.originState.splitEnabled;
+    const settings = await loadOcrSettings();
+    const next = setOcrPreference(settings, currentOrigin, { ...this.originState, splitEnabled: nextSplit });
+    await saveOcrSettings(next);
+  }
+
+  /** Reset region to default + clear customRegion from storage (from action bar). */
+  private async handleResetRegion(): Promise<void> {
+    if (!this.originState || !currentOrigin) return;
+    this.resetRegion();
+    const settings = await loadOcrSettings();
+    const next = setOcrPreference(settings, currentOrigin, { ...this.originState, customRegion: null });
+    await saveOcrSettings(next);
+  }
+
   /** Handle Apply from region selector — save region to storage. */
   private async handleRegionApply(): Promise<void> {
     if (!this.originState || !currentOrigin) return;
@@ -591,12 +613,14 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   if (activeSession?.isRunning()) {
     await activeSession.stop();
     activeSession = null;
+    postOcrState(false);
   }
   currentOrigin = newOrigin;
 
   const enabled = await shouldEnableOcr(url);
   if (!enabled) {
     stopOcrVideoObserver();
+    postOcrState(false);
     return;
   }
 
@@ -624,6 +648,7 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
     native: generalSettings?.subtitleOverlayNativeLanguage ?? 'auto',
   };
   await activeSession.start(video, originState, systemLangs);
+  postOcrState(true);
 }
 
 /** T19: Stop OCR session (called when toggle OFF or page unload). */
@@ -633,6 +658,12 @@ export async function stopOcrSession(): Promise<void> {
     await activeSession.shutdown();
   }
   activeSession = null;
+  postOcrState(false);
+}
+
+/** Post OCR enabled state to other content scripts (subtitle overlay toolbar). */
+function postOcrState(enabled: boolean): void {
+  window.postMessage({ type: '__CELL_OCR_STATE', enabled }, '*');
 }
 
 /** T19+T20: Initialize OCR content script — call on content-script load.
@@ -774,9 +805,27 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
         document.body.dataset.ocrDebugStep = '3-before-start';
         await activeSession.start(video, originState);
         document.body.dataset.ocrDebugStep = '4-after-start';
+        postOcrState(true);
       } catch (e) {
         document.body.dataset.ocrDebugException = String(e);
       }
+    })();
+  });
+
+  // OCR toggle from subtitle overlay toolbar button.
+  // Toggles ocrEnabled for current origin in storage; storage.onChanged listener
+  // handles the actual start/stop.
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data as { type?: string };
+    if (data?.type !== '__CELL_OCR_TOGGLE') return;
+    void (async () => {
+      if (!currentOrigin) return;
+      const settings = await loadOcrSettings();
+      const originState = settings.origins[currentOrigin] ?? DEFAULT_OCR_ORIGIN_STATE;
+      const nextEnabled = !originState.ocrEnabled;
+      const next = setOcrPreference(settings, currentOrigin, { ...originState, ocrEnabled: nextEnabled });
+      await saveOcrSettings(next);
     })();
   });
 }

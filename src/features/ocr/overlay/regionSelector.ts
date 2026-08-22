@@ -12,12 +12,12 @@
 // - .cell-ocr-split-divider    draggable split divider (view mode only, listener bound at creation)
 
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
-import { checkIcon, xIcon } from '@/shared/icons';
+import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLeftIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
 import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
-import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry } from '@/features/ocr/pipeline/regionMapping';
+import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry, computeContentRect } from '@/features/ocr/pipeline/regionMapping';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
 
@@ -32,6 +32,12 @@ export interface RegionSelectorCallbacks {
   onCancel: () => void;
   /** Called when the user finishes dragging the split divider (mouseup) — ratio clamped 0.1-0.9. Real-time drag only updates UI. */
   onSplitRatioChange?: (ratio: number) => void;
+  /** Called when user clicks Split toggle in the action bar (view mode only). */
+  onToggleSplit?: () => void;
+  /** Called when user clicks Select Region in the action bar (view mode only). */
+  onSelectRegion?: () => void;
+  /** Called when user clicks Reset Region in the action bar (view mode only). */
+  onResetRegion?: () => void;
 }
 
 /** Compute default bottom region as CustomRegion (centered x, bottom y). */
@@ -104,6 +110,22 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
 .cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(255, 255, 255, 0.85); font-family: ${FONT}; }
 .cell-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
 .cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255, 255, 255, 0.9); border-radius: 1px; }
+.cell-ocr-action-bar { position: absolute; bottom: 4px; right: 4px; display: flex; align-items: center; gap: 4px; pointer-events: auto; z-index: 99999; }
+.cell-ocr-action-bar-inner { display: flex; align-items: center; gap: 4px; overflow: hidden; transition: max-width 200ms ease, opacity 150ms ease; }
+.cell-ocr-action-bar-inner[data-collapsed="true"] { max-width: 0; opacity: 0; }
+.cell-ocr-action-bar-inner[data-collapsed="false"] { max-width: 200px; opacity: 1; }
+.cell-ocr-action-btn {
+  appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; margin: 0; border: none; border-radius: ${RADIUS_PILL};
+  background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; pointer-events: auto;
+  transition: filter 120ms ease, background 120ms ease; flex-shrink: 0;
+}
+.cell-ocr-action-btn svg { width: 14px; height: 14px; display: block; }
+.cell-ocr-action-btn:hover { filter: brightness(1.3); }
+.cell-ocr-action-btn[data-active="true"] { background: ${ACCENT}; }
+.cell-ocr-action-toggle { width: 26px; height: 26px; flex-shrink: 0; }
+.cell-ocr-action-toggle svg { transition: transform 200ms ease; }
+.cell-ocr-action-toggle[data-collapsed="true"] svg { transform: rotate(180deg); }
 `;
   document.head.appendChild(style);
 }
@@ -129,6 +151,11 @@ export class RegionSelector {
   private splitBottom: HTMLDivElement | null = null;
   private divider: HTMLDivElement | null = null;
   private splitDrag: { startY: number; startRatio: number } | null = null;
+
+  // ─── Action bar (view mode only: Split/Select/Reset, collapsible) ───
+  private actionBar: HTMLDivElement | null = null;
+  private actionBarInner: HTMLDivElement | null = null;
+  private actionBarCollapsed = false;
 
   constructor(callbacks: RegionSelectorCallbacks) {
     this.callbacks = callbacks;
@@ -160,8 +187,50 @@ export class RegionSelector {
     this.container.appendChild(this.rect);
 
     this.toolbar = document.createElement('div');
+    // Initial CSS — positionToolbar() will reposition to video content on render.
     this.toolbar.style.cssText = 'position:absolute;top:10px;right:10px;display:flex;gap:8px;pointer-events:auto;z-index:99999;';
     this.container.appendChild(this.toolbar);
+
+    // Action bar: inside rect at bottom-right (view mode only, collapsible).
+    this.actionBar = document.createElement('div');
+    this.actionBar.className = 'cell-ocr-action-bar';
+    this.rect.appendChild(this.actionBar);
+
+    // Collapse/expand toggle button (always visible when action bar is shown).
+    const toggleBtn = this.makeActionButton(chevronLeftIcon, 'Toggle action bar', () => {
+      this.actionBarCollapsed = !this.actionBarCollapsed;
+      this.renderActionBar();
+    });
+    toggleBtn.classList.add('cell-ocr-action-toggle');
+    toggleBtn.dataset.collapsed = 'false';
+    this.actionBar.appendChild(toggleBtn);
+
+    // Inner container for the 3 action buttons (collapsible).
+    this.actionBarInner = document.createElement('div');
+    this.actionBarInner.className = 'cell-ocr-action-bar-inner';
+    this.actionBarInner.dataset.collapsed = 'false';
+    this.actionBar.appendChild(this.actionBarInner);
+
+    // Split toggle button.
+    const splitBtn = this.makeActionButton(moveVerticalIcon, 'Toggle split dual subtitles', () => {
+      this.callbacks.onToggleSplit?.();
+    });
+    splitBtn.dataset.cellId = 'ocr-action-split';
+    this.actionBarInner.appendChild(splitBtn);
+
+    // Select Region button.
+    const selectBtn = this.makeActionButton(cropIcon, 'Select OCR region', () => {
+      this.callbacks.onSelectRegion?.();
+    });
+    selectBtn.dataset.cellId = 'ocr-action-select';
+    this.actionBarInner.appendChild(selectBtn);
+
+    // Reset Region button.
+    const resetBtn = this.makeActionButton(rotateCcwIcon, 'Reset OCR region', () => {
+      this.callbacks.onResetRegion?.();
+    });
+    resetBtn.dataset.cellId = 'ocr-action-reset';
+    this.actionBarInner.appendChild(resetBtn);
 
     // Convert intrinsic-space → shell-space AFTER container + video are set, so
     // toShellRegion can read live geometry. (Attach-order bug: converting before
@@ -273,6 +342,8 @@ export class RegionSelector {
     this.toolbar = null;
     this.video = null;
     this.dragState = null;
+    this.actionBar = null;
+    this.actionBarInner = null;
     // Split nodes are children of the container (removed with it above) — drop references.
     this.splitTop = this.splitBottom = this.divider = null;
     this.splitDrag = null;
@@ -365,6 +436,9 @@ export class RegionSelector {
     } else if (!needToolbar && this.toolbar.childElementCount > 0) {
       this.toolbar.innerHTML = '';
     }
+    // Position toolbar at top-right of VIDEO CONTENT (not container) — under
+    // letterbox the container has black bars; toolbar must sit inside the video.
+    this.positionToolbar();
 
     // Split halves + divider: visible only in view mode (in select/edit the user
     // is adjusting the parent region — a live divider would fight them). Nodes
@@ -381,6 +455,9 @@ export class RegionSelector {
       this.splitBottom.style.display = splitVisible ? '' : 'none';
       this.divider.style.display = splitVisible ? '' : 'none';
     }
+
+    // Action bar: visible only in view mode, hidden in select/edit.
+    this.renderActionBar();
   }
 
   private positionHalf(el: HTMLDivElement, half: SplitHalf): void {
@@ -388,6 +465,25 @@ export class RegionSelector {
     el.style.top = `${half.yPct}%`;
     el.style.width = `${half.widthPct}%`;
     el.style.height = `${half.heightPct}%`;
+  }
+
+  /** Position toolbar at top-right of video content (inside letterbox). */
+  private positionToolbar(): void {
+    if (!this.toolbar || !this.video || !this.container) return;
+    const geo = readVideoGeometry(this.video, this.container);
+    if (!geo) return;
+    const content = computeContentRect(
+      { left: 0, top: 0, width: geo.videoRect.width, height: geo.videoRect.height },
+      geo.intrinsic, geo.objectFit, geo.objectPosition,
+    );
+    if (content.cw <= 0 || content.ch <= 0) return;
+    // Video content offset within shell (px).
+    const ox = geo.videoRect.left - geo.shellRect.left + content.cx;
+    const oy = geo.videoRect.top - geo.shellRect.top + content.cy;
+    // Top-right of video content, 10px inset, in shell-space px.
+    const rightPx = ox + content.cw - 10;
+    const topPx = oy + 10;
+    this.toolbar.style.cssText = `position:absolute;left:${rightPx}px;top:${topPx}px;display:flex;gap:8px;pointer-events:auto;z-index:99999;transform:translateX(-100%);`;
   }
 
   private makeButton(text: string, variant: 'apply' | 'cancel', iconSvg: string, onClick: () => void): HTMLButtonElement {
@@ -398,6 +494,31 @@ export class RegionSelector {
     btn.appendChild(document.createTextNode(text));
     btn.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
     return btn;
+  }
+
+  /** Create an icon-only action button for the action bar (Split/Select/Reset). */
+  private makeActionButton(iconSvg: string, ariaLabel: string, onClick: () => void): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cell-ocr-action-btn';
+    btn.setAttribute('aria-label', ariaLabel);
+    btn.title = ariaLabel;
+    btn.appendChild(this.iconElement(iconSvg));
+    btn.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+    return btn;
+  }
+
+  /** Update action bar visibility + collapsed state. Only visible in view mode. */
+  private renderActionBar(): void {
+    if (!this.actionBar || !this.actionBarInner) return;
+    const visible = this.mode === 'view';
+    this.actionBar.style.display = visible ? '' : 'none';
+    this.actionBarInner.dataset.collapsed = String(this.actionBarCollapsed);
+    const toggleBtn = this.actionBar.querySelector('.cell-ocr-action-toggle');
+    if (toggleBtn) (toggleBtn as HTMLButtonElement).dataset.collapsed = String(this.actionBarCollapsed);
+    // Update split button active state.
+    const splitBtn = this.actionBarInner.querySelector('[data-cell-id="ocr-action-split"]');
+    if (splitBtn) (splitBtn as HTMLButtonElement).dataset.active = String(this.splitEnabled);
   }
 
   private iconElement(svg: string): HTMLElement {
@@ -445,7 +566,8 @@ export class RegionSelector {
     // Only fire for clicks on the container itself (outside the rect + toolbar) —
     // rect body clicks go to onEditMoveStart, handle clicks to onEditResizeStart,
     // toolbar button clicks go to their own click handlers.
-    if (e.target === this.rect || (e.target as HTMLElement)?.dataset?.handle || this.toolbar?.contains(e.target as Node)) return;
+    // Action bar clicks (inside rect) also bail — they have their own handlers.
+    if (e.target === this.rect || (e.target as HTMLElement)?.dataset?.handle || this.toolbar?.contains(e.target as Node) || this.actionBar?.contains(e.target as Node)) return;
     e.preventDefault();
     const parent = this.rect?.parentElement;
     if (!parent || !this.video) return;
@@ -461,6 +583,8 @@ export class RegionSelector {
 
   private onEditMoveStart = (e: MouseEvent): void => {
     if (e.target !== this.rect) return;
+    // Action bar clicks (child of rect) have their own handlers — don't drag.
+    if (this.actionBar?.contains(e.target as Node)) return;
     e.preventDefault();
     // Use SHELL-space (internal currentRegion/pendingRegion), NOT getRegion()
     // (intrinsic-space public API) — onDragMove applies shell-space deltas, so

@@ -37,6 +37,11 @@ import subtitlePanelCss from './SubtitlePanel.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import tabsCss from '@/shared/ui/Tabs.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import libraryViewCss from '@/entrypoints/local-player/components/LibraryView.module.css?inline';
+import libraryCardCss from '@/entrypoints/local-player/components/LibraryCard.module.css?inline';
 import styles from './SubtitlePanels.module.css';
 import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
 import {
@@ -119,7 +124,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onToggleCollapsed,
       onQuickAdd,
       onEditCard,
-      onUpdateCurrentCard,
+      onToggleOcr,
+      ocrEnabled,
       onGenerateNative,
       onToggleSidePanel,
       onToggleManager,
@@ -135,8 +141,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onSplitViewChange,
       managerShadowCss,
       playlistContent,
-      onOpenFile,
-      onOpenFolder,
+      filename,
+      fallbackPlayerContainerRef,
     },
     ref,
   ): React.JSX.Element {
@@ -182,6 +188,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
+    const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const [, setPortalTarget] = useState<HTMLElement | null>(null);
     // Body-level shadow host for the manager panel — escapes video container
@@ -191,6 +198,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
+    // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
+    useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
+    useEffect(() => { setCurrentTimeMs(initialCurrentTimeMs ?? 0); }, [initialCurrentTimeMs]);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
     const cleanupRef = useRef<(() => void) | null>(null);
@@ -489,6 +499,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
         setSplitViewOpen: (open: boolean) => { setSplitViewOpen(open); },
+        setOcrEnabled: (enabled: boolean) => { setOcrEnabledState(enabled); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView],
     );
@@ -629,6 +640,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       const childFrame = isChildFrame();
       svLog('effect ENTER', { splitViewOpen, playerMode, isFullscreen, childFrame, splitViewPct, url: location.href });
       let playerShell = findPlayerContainer();
+      if (!playerShell && fallbackPlayerContainerRef?.current) {
+        playerShell = fallbackPlayerContainerRef.current;
+        svLog('using fallbackPlayerContainer', { tag: playerShell.tagName, id: playerShell.id || null });
+      }
       if (!playerShell) { svLog('effect EXIT — no playerShell'); return; }
       svLog('playerShell found', {
         tag: playerShell.tagName,
@@ -737,7 +752,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
       const panel = document.createElement('div');
       panel.setAttribute('data-cell-split-view', 'panel');
-      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;`;
+      // Apple §7: enter from right, exit to right — symmetric path.
+      // §4: critically damped spring feel (no overshoot).
+      // flex-basis animates so the video expands smoothly as the panel slides out.
+      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-medium) var(--ease-standard),opacity var(--duration-medium) var(--ease-standard),flex-basis var(--duration-medium) var(--ease-standard);transform:translateX(100%);opacity:0.3;`;
 
       // Attach a shadow root to the panel so the design-system tokens
       // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
@@ -746,7 +764,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // undefined → colors fall back to browser defaults.
       const panelShadow = panel.attachShadow({ mode: 'open' });
       injectShadowCss(panelShadow, {
-        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss],
+        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss, tabsCss, selectCss, buttonCss, libraryViewCss, libraryCardCss],
       });
       const panelInner = document.createElement('div');
       panelInner.setAttribute('data-theme', 'dark');
@@ -983,6 +1001,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       }
 
       setSplitViewPortalTarget(panelInner);
+      // Apple §1: respond instantly — slide panel in from right on next frame.
+      // rAF ensures the initial translateX(100%) is painted before animating to 0.
+      requestAnimationFrame(() => {
+        panel.style.transform = 'translateX(0)';
+        panel.style.opacity = '1';
+      });
       // CSS handles all YouTube player sizing now (height:100%!important,
       // object-fit:contain). No setSize bridge needed — it set hardcoded
       // pixel sizes that froze on resize.
@@ -1021,10 +1045,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       return () => {
         svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
         handle.removeEventListener('pointerdown', onPointerDown);
-        setSplitViewPortalTarget(null);
         handle.removeEventListener('pointermove', onPointerMove);
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
+        // Apple §7: exit along the same path as entry — slide out to right.
+        // §8: hint in the direction of the gesture — rotate chevron to point right.
+        // §1: start the animation immediately, defer DOM removal until it settles.
+        const subtitlePanelEl = panelInner.querySelector('[data-cell-id="subtitle-panel"]') as HTMLElement | null;
+        if (subtitlePanelEl) subtitlePanelEl.setAttribute('data-closing', 'true');
+        panel.style.transform = 'translateX(100%)';
+        panel.style.opacity = '0.3';
+        panel.style.flexBasis = '0%';
+        panel.style.minWidth = '0';
+        const ANIM_MS = 410;
+        setTimeout(() => {
         if (isPlayerFullscreen) {
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
@@ -1117,6 +1151,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // Dispatch resize so YouTube re-measures and updates <video> px.
         window.dispatchEvent(new Event('resize'));
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
+        setSplitViewPortalTarget(null);
+        }, ANIM_MS);
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
 
@@ -1219,7 +1255,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             videoAspectRatio={videoAspectRatio}
             onQuickAdd={onQuickAdd}
             onEditCard={onEditCard}
-            onUpdateCurrentCard={onUpdateCurrentCard}
+            onToggleOcr={onToggleOcr}
+            ocrEnabled={ocrEnabledState}
             onGenerateNative={onGenerateNative}
             onToggleSidePanel={onToggleSidePanel}
             onToggleManager={onToggleManager}
@@ -1282,7 +1319,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             clusterRightStyle={clusterRightStyle}
             onQuickAdd={onQuickAdd}
             onEditCard={onEditCard}
-            onUpdateCurrentCard={onUpdateCurrentCard}
+            onToggleOcr={onToggleOcr}
+            ocrEnabled={ocrEnabledState}
             onToggleManager={onToggleManager}
             onGenerateNative={onGenerateNative}
             generateNativeEnabled={generateNativeEnabled}
@@ -1322,7 +1360,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {splitViewOpen && splitViewPortalTarget && cues.length > 0 && onSeek && createPortal(
+        {splitViewOpen && splitViewPortalTarget && (cues.length > 0 || playlistContent) && onSeek && createPortal(
           <SubtitlePanel
             cues={[...cues]}
             currentTimeMs={currentTimeMs}
@@ -1330,8 +1368,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onSeek={onSeek}
             onClose={handleToggleSplitView}
             playlistContent={playlistContent}
-            onOpenFile={onOpenFile}
-            onOpenFolder={onOpenFolder}
+            filename={filename}
           />,
           splitViewPortalTarget,
         )}

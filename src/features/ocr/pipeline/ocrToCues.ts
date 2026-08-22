@@ -52,11 +52,11 @@ export function ocrTextToCues(detections: readonly OcrDetection[]): SrtCue[] {
   // spans from its scan frame to the next scan frame). Last cue gets a longer
   // tail (3s) to bridge the OCR detection delay until the next frame arrives.
   for (let i = 0; i < cues.length - 1; i++) {
-    if (cues[i].end < cues[i + 1].start) cues[i].end = cues[i + 1].start;
+    if (cues[i].end < cues[i + 1].start) cues[i] = { ...cues[i], end: cues[i + 1].start };
   }
   if (cues.length > 0) {
     const last = cues[cues.length - 1]!;
-    last.end = last.start + LAST_CUE_TAIL_MS;
+    cues[cues.length - 1] = { ...last, end: last.start + LAST_CUE_TAIL_MS };
   }
   return cues;
 }
