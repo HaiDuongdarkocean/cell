@@ -55,8 +55,10 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
   position: absolute; border: 2px dashed ${ACCENT}; background: ${FILL};
   pointer-events: none; z-index: 99998; transition: background 120ms ease;
 }
-.cell-ocr-region-rect[data-mode="select"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: crosshair; }
+.cell-ocr-region-rect[data-mode="select"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
 .cell-ocr-region-rect[data-mode="edit"] { background: ${FILL_ACTIVE}; pointer-events: auto; cursor: move; }
+.cell-ocr-region-selector { pointer-events: none; }
+.cell-ocr-region-selector[data-mode="select"] { pointer-events: auto; cursor: crosshair; }
 .cell-ocr-region-label {
   position: absolute; top: -22px; left: -2px; padding: 2px 8px;
   font-family: ${FONT}; font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: 0.2px;
@@ -124,7 +126,7 @@ export class RegionSelector {
 
     this.container = document.createElement('div');
     this.container.className = 'cell-ocr-region-selector';
-    this.container.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:99998;';
+    this.container.style.cssText = 'position:absolute;inset:0;z-index:99998;';
     parent.appendChild(this.container);
 
     this.rect = document.createElement('div');
@@ -220,6 +222,7 @@ export class RegionSelector {
     if (!this.rect || !this.toolbar) return;
     const r = this.getRegion();
     this.rect.dataset.mode = this.mode;
+    if (this.container) this.container.dataset.mode = this.mode;
     this.rect.style.left = `${r.xPct}%`;
     this.rect.style.top = `${r.yPct}%`;
     this.rect.style.width = `${r.widthPct}%`;
@@ -234,9 +237,9 @@ export class RegionSelector {
     const dims = `${formatPct(r.widthPct)}%×${formatPct(r.heightPct)}%`;
     label.textContent = this.mode === 'view' ? `OCR region (${dims})` : `${this.mode}: ${dims}`;
 
-    // Handles: create once on entering edit mode; positions are % anchored to
+    // Handles: create once on entering interactive mode; positions are % anchored to
     // the rect so they track every resize without recreation.
-    if (this.mode !== 'edit') {
+    if (this.mode === 'view') {
       this.handles.forEach(h => h.remove());
       this.handles = [];
     } else if (this.handles.length === 0) {
@@ -286,12 +289,11 @@ export class RegionSelector {
     this.removeListeners();
     if (!this.rect || this.mode === 'view') return;
 
-    if (this.mode === 'select') {
-      // Click-drag on container to draw new rectangle
-      this.rect.addEventListener('mousedown', this.onSelectStart);
-    } else if (this.mode === 'edit') {
-      // Drag rect to move; handles bound at creation in render()
-      this.rect.addEventListener('mousedown', this.onEditMoveStart);
+    // Both select + edit: drag rect body to move, drag handles to resize.
+    this.rect.addEventListener('mousedown', this.onEditMoveStart);
+    // Select mode: click outside rect (on container) to draw a new rectangle.
+    if (this.mode === 'select' && this.container) {
+      this.container.addEventListener('mousedown', this.onSelectStart);
     }
   }
 
@@ -299,6 +301,9 @@ export class RegionSelector {
     if (this.rect) {
       this.rect.removeEventListener('mousedown', this.onSelectStart);
       this.rect.removeEventListener('mousedown', this.onEditMoveStart);
+    }
+    if (this.container) {
+      this.container.removeEventListener('mousedown', this.onSelectStart);
     }
     // Handle listeners are bound at handle creation (render) and die with the
     // node on detach — never removed here, or attachListeners() would strip
@@ -308,7 +313,9 @@ export class RegionSelector {
   }
 
   private onSelectStart = (e: MouseEvent): void => {
-    if (e.target !== this.rect) return;
+    // Only fire for clicks on the container itself (outside the rect) —
+    // rect body clicks go to onEditMoveStart, handle clicks to onEditResizeStart.
+    if (e.target === this.rect || (e.target as HTMLElement)?.dataset?.handle) return;
     e.preventDefault();
     const parent = this.rect?.parentElement;
     if (!parent || !this.video) return;
