@@ -462,7 +462,11 @@ export class RegionSelector {
   private onEditMoveStart = (e: MouseEvent): void => {
     if (e.target !== this.rect) return;
     e.preventDefault();
-    this.dragState = { type: 'move', handle: '', startX: e.clientX, startY: e.clientY, startRegion: this.getRegion() };
+    // Use SHELL-space (internal currentRegion/pendingRegion), NOT getRegion()
+    // (intrinsic-space public API) — onDragMove applies shell-space deltas, so
+    // the start base must match. Mixing spaces causes the region to jump when
+    // letterbox makes intrinsic ≠ shell (e.g. 4:3 video in 16:9 container).
+    this.dragState = { type: 'move', handle: '', startX: e.clientX, startY: e.clientY, startRegion: this.pendingRegion ?? this.currentRegion };
     document.addEventListener('mousemove', this.onDragMove);
     document.addEventListener('mouseup', this.onDragEnd);
   };
@@ -471,7 +475,8 @@ export class RegionSelector {
     const handle = (e.target as HTMLElement).dataset.handle ?? '';
     e.preventDefault();
     e.stopPropagation();
-    this.dragState = { type: 'resize', handle, startX: e.clientX, startY: e.clientY, startRegion: this.getRegion() };
+    // Same shell-space fix as onEditMoveStart — see comment there.
+    this.dragState = { type: 'resize', handle, startX: e.clientX, startY: e.clientY, startRegion: this.pendingRegion ?? this.currentRegion };
     document.addEventListener('mousemove', this.onDragMove);
     document.addEventListener('mouseup', this.onDragEnd);
   };
