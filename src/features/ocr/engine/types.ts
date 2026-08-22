@@ -40,6 +40,10 @@ export type OcrBackend = 'webgpu' | 'wasm';
 /** Language mode — 'auto' lets engine detect; others are PaddleOCR catalog abbrs (SSOT: paddleOcrLanguages). */
 export type OcrLanguageMode = 'auto' | PaddleLangAbbr;
 
+/** Default engineKey (model name) when a message omits it — the bundled default model.
+ *  Backward compatible with pre-multilingual messages. */
+export const OCR_DEFAULT_ENGINE_KEY = 'ch';
+
 /** Engine initialization config. */
 export interface OcrConfig {
   readonly languageMode: OcrLanguageMode;

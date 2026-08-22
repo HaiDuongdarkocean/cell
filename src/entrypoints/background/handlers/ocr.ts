@@ -20,10 +20,18 @@ export interface OcrRecognizeResult {
   readonly results: OcrResult[];
 }
 
-/** OCR init payload. */
+/** OCR init payload — forwarded verbatim to offscreen. */
 export interface OcrInitPayload {
   readonly languageMode: OcrLanguageMode;
   readonly backend: OcrBackend;
+  /** Model name (ADR-082). Missing → default model (backward compat). */
+  readonly engineKey?: string;
+}
+
+/** OCR dispose payload — forwarded verbatim to offscreen. */
+export interface OcrDisposePayload {
+  /** Dispose a single engine; missing → dispose all (legacy behavior). */
+  readonly engineKey?: string;
 }
 
 /** Register OCR handlers on the background message bus. */
@@ -73,10 +81,14 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   });
 
   // OCR_DISPOSE — route to offscreen. Frees engine, does NOT close offscreen.
-  ctx.on(MESSAGE_TYPES.OCR_DISPOSE, async (): Promise<MessageResponse<{ ok: true }>> => {
+  // Payload forwarded verbatim: engineKey disposes one engine, missing disposes all.
+  ctx.on(MESSAGE_TYPES.OCR_DISPOSE, async (request): Promise<MessageResponse<{ ok: true }>> => {
     try {
       await ctx.offscreenManager.ensureOffscreenReady();
-      await sendMessage({ type: '_OFFSCREEN_OCR_DISPOSE' as unknown as typeof MESSAGE_TYPES.OCR_DISPOSE });
+      await sendMessage({
+        type: '_OFFSCREEN_OCR_DISPOSE' as unknown as typeof MESSAGE_TYPES.OCR_DISPOSE,
+        payload: request.payload as OcrDisposePayload | undefined,
+      });
       return { success: true, data: { ok: true } };
     } catch (e) {
       return { success: false, error: `OCR_DISPOSE failed: ${String(e)}` };
@@ -89,7 +101,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     async (request): Promise<MessageResponse<OcrRecognizeResult>> => {
       try {
         await ctx.offscreenManager.ensureOffscreenReady();
-        const payload = request.payload as { image: ImageSource; minScore?: number };
+        const payload = request.payload as { image: ImageSource; minScore?: number; engineKey?: string };
         const response = await sendMessage<{ results: OcrResult[]; error?: string }>({
           type: '_OFFSCREEN_OCR_RECOGNIZE' as unknown as typeof MESSAGE_TYPES.OCR_RECOGNIZE,
           payload,

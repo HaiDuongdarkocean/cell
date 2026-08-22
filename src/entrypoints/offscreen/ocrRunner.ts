@@ -1,13 +1,17 @@
 // ocrRunner — offscreen document script for OCR (spec §AD2, §AD5).
 // Runs alongside ffmpegRunner.ts in the same offscreen document (ffmpeg.html).
 // Handles OCR_INIT / OCR_RECOGNIZE / OCR_DISPOSE messages from background.
-// OCR_DISPOSE frees the engine — does NOT close the offscreen document (ffmpeg may be running).
+// One engine per engineKey (model name, ADR-082) with LRU eviction.
+// OCR_DISPOSE frees engines — does NOT close the offscreen document (ffmpeg may be running).
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { getURL } from '@/shared/lib/chrome-apis';
 import { PaddleOcrEngine } from '@/features/ocr/engine/paddleOcrEngine';
+import { PADDLE_OCR_LANGUAGE_GROUPS } from '@/features/ocr/engine/paddleOcrLanguages';
+import type { PaddleLangAbbr } from '@/features/ocr/engine/paddleOcrLanguages';
 import type { OcrEngine } from '@/features/ocr/engine/ocrEngine';
-import type { ImageSource, OcrResult, OcrConfig, OcrBackend } from '@/features/ocr/engine/types';
+import { OCR_DEFAULT_ENGINE_KEY } from '@/features/ocr/engine/types';
+import type { ImageSource, OcrResult, OcrConfig, OcrBackend, OcrLanguageMode } from '@/features/ocr/engine/types';
 
 // Catch CSP errors that try-catch misses — CSP violations fire as window.onerror,
 // not as caught exceptions. Without this, EvalError from OpenCV/ORT is silent.
@@ -19,11 +23,19 @@ import type { ImageSource, OcrResult, OcrConfig, OcrBackend } from '@/features/o
 interface OcrInitPayload {
   readonly languageMode: OcrConfig['languageMode'];
   readonly backend: OcrBackend;
+  /** Model name (ADR-082). Missing → default model (backward compat). */
+  readonly engineKey?: string;
 }
 
 interface OcrRecognizePayload {
   readonly image: ImageSource;
   readonly minScore?: number;
+  readonly engineKey?: string;
+}
+
+interface OcrDisposePayload {
+  /** Dispose a single engine; missing → dispose all (legacy behavior). */
+  readonly engineKey?: string;
 }
 
 interface OcrInitResult {
@@ -36,9 +48,25 @@ interface OcrRecognizeResult {
   readonly results: OcrResult[];
 }
 
-/** Singleton OCR engine — lives in offscreen document. */
-let engine: OcrEngine | null = null;
-let currentBackend: OcrBackend | null = null;
+/** Resident OCR engines keyed by engineKey — live in offscreen document (ADR-082). */
+interface EngineEntry {
+  readonly engine: OcrEngine;
+  readonly backend: OcrBackend;
+  lastUsed: number;
+}
+const engines = new Map<string, EngineEntry>();
+
+/** Max resident engines — each WASM model is RAM-heavy (deviceMemory heuristic). */
+const DEVICE_MEMORY = typeof navigator === 'undefined'
+  ? 8
+  : (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
+const MAX_RESIDENT = DEVICE_MEMORY >= 4 ? 2 : 1;
+let lruClock = 0;
+
+/** model name → representative catalog abbr (auto-init language for a key after LRU eviction). */
+const MODEL_DEFAULT_LANG = new Map<string, PaddleLangAbbr>(
+  PADDLE_OCR_LANGUAGE_GROUPS.map((g) => [g.model, g.languages[0]!.abbr] as const),
+);
 
 /** Default wasmPaths — bundled in extension assets/ (Vite output).
  *  Extension root is dist/, so chrome.runtime.getURL('assets/') resolves
@@ -73,57 +101,83 @@ export function ocrMessageListener(
       return true;
     }
 
-    case MESSAGE_TYPES.OCR_DISPOSE:
-      void handleOcrDispose().then(sendResponse).catch((e: unknown) => sendResponse({ error: String(e) }));
+    case MESSAGE_TYPES.OCR_DISPOSE: {
+      const payload = (msg as unknown as { payload?: OcrDisposePayload }).payload ?? {};
+      void handleOcrDispose(payload).then(sendResponse).catch((e: unknown) => sendResponse({ error: String(e) }));
       return true;
+    }
   }
 }
 
-async function handleOcrInit(payload: OcrInitPayload): Promise<OcrInitResult> {
-  if (engine?.isInitialized()) {
-    return { status: 'ready', backend: currentBackend ?? payload.backend };
+function touchEntry(entry: EngineEntry): EngineEntry {
+  entry.lastUsed = ++lruClock;
+  return entry;
+}
+
+function evictIfNeeded(): void {
+  while (engines.size > MAX_RESIDENT) {
+    let oldestKey: string | null = null;
+    let oldest = Infinity;
+    for (const [k, e] of engines) if (e.lastUsed < oldest) { oldest = e.lastUsed; oldestKey = k; }
+    if (!oldestKey) break;
+    const victim = engines.get(oldestKey);
+    engines.delete(oldestKey);
+    void victim?.engine.dispose().catch(() => {});
   }
-  if (engine) {
-    try { await engine.dispose(); } catch {}
-    engine = null;
+}
+
+async function getOrInitEngine(engineKey: string, languageMode: OcrLanguageMode): Promise<EngineEntry> {
+  const existing = engines.get(engineKey);
+  if (existing?.engine.isInitialized()) return touchEntry(existing);
+  if (existing) {
+    // Engine exists but PaddleOCR.create() returned null — drop and reinitialize.
+    try { await existing.engine.dispose(); } catch {}
+    engines.delete(engineKey);
   }
+  evictIfNeeded();
   // Force WASM backend — WebGPU hangs in offscreen documents (no GPU rendering context).
   const effectiveBackend: OcrBackend = 'wasm';
-  engine = new PaddleOcrEngine();
+  const engine: OcrEngine = new PaddleOcrEngine();
   const config: OcrConfig = {
-    languageMode: payload.languageMode,
+    languageMode,
     backend: effectiveBackend,
     wasmPaths: defaultWasmPaths(),
   };
+  await engine.initialize(config);
+  const fresh: EngineEntry = { engine, backend: effectiveBackend, lastUsed: ++lruClock };
+  engines.set(engineKey, fresh);
+  return fresh;
+}
+
+async function handleOcrInit(payload: OcrInitPayload): Promise<OcrInitResult> {
   try {
-    await engine.initialize(config);
-    currentBackend = effectiveBackend;
-    return { status: 'ready', backend: currentBackend };
+    const entry = await getOrInitEngine(payload.engineKey ?? OCR_DEFAULT_ENGINE_KEY, payload.languageMode);
+    return { status: 'ready', backend: entry.backend };
   } catch (e) {
-    engine = null;
-    return { status: 'error', backend: effectiveBackend, error: String(e) };
+    // Backend is always forced to 'wasm' — mirrors the pre-multilingual error shape.
+    return { status: 'error', backend: 'wasm', error: String(e) };
   }
 }
 
 async function handleOcrRecognize(payload: OcrRecognizePayload): Promise<OcrRecognizeResult> {
-  if (!engine) throw new Error('OCR engine not initialized — send OCR_INIT first.');
-  if (!engine.isInitialized()) {
-    // Engine exists but PaddleOCR.create() returned null — reinitialize.
-    await engine.initialize({
-      languageMode: 'auto',
-      backend: currentBackend ?? 'wasm',
-      wasmPaths: defaultWasmPaths(),
-    });
-  }
-  const results = await engine.recognize(payload.image, { minScore: payload.minScore });
+  const engineKey = payload.engineKey ?? OCR_DEFAULT_ENGINE_KEY;
+  // Engine not resident (LRU-evicted or never inited) — auto-init with the model's representative lang.
+  const entry = await getOrInitEngine(engineKey, MODEL_DEFAULT_LANG.get(engineKey) ?? OCR_DEFAULT_ENGINE_KEY);
+  const results = await entry.engine.recognize(payload.image, { minScore: payload.minScore });
   return { results };
 }
 
-async function handleOcrDispose(): Promise<{ ok: true }> {
-  if (engine) {
-    await engine.dispose();
-    engine = null;
-    currentBackend = null;
+async function handleOcrDispose(payload: OcrDisposePayload): Promise<{ ok: true }> {
+  if (payload.engineKey) {
+    const entry = engines.get(payload.engineKey);
+    if (entry) {
+      engines.delete(payload.engineKey);
+      await entry.engine.dispose();
+    }
+  } else {
+    const entries = [...engines.values()];
+    engines.clear();
+    for (const e of entries) await e.engine.dispose();
   }
   // Do NOT close the offscreen document — ffmpeg may still be running.
   return { ok: true };
