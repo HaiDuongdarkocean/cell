@@ -110,7 +110,14 @@ export class OcrSession {
     this.overlay = new OcrOverlay();
     this.pipelineState = new OcrPipelineState();
     this.regionSelector = new RegionSelector({
-      onRegionChange: (region) => { this.pendingRegion = region; },
+      onRegionChange: (region) => {
+        this.pendingRegion = region;
+        // Update scan region in real-time so OCR uses the new region during
+        // edit/select drag — not just after Apply. Without this, the scan keeps
+        // using the old region until the user clicks Apply, making edit mode
+        // feel disconnected from the actual OCR output.
+        this.config = { ...this.config, customRegion: region };
+      },
       onApply: () => { void this.handleRegionApply(); },
       onCancel: () => { void this.handleRegionCancel(); },
       onSplitRatioChange: (ratio) => { void this.handleSplitRatioChange(ratio); },
@@ -224,8 +231,8 @@ export class OcrSession {
         this.canvas = new OffscreenCanvas(frame.width, frame.height);
       }
 
-      // Debug: log crop region coords.
-      const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct);
+      // Debug: log ACTUAL crop region coords (customRegion if set, else default).
+      const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct, this.config.customRegion);
       document.body.dataset.ocrCropRegion = JSON.stringify(region);
 
       this.processing = true;
@@ -495,6 +502,8 @@ export class OcrSession {
   resetRegion(): void {
     if (!this.originState) return;
     const defaultRegion = defaultBottomRegion(this.originState.subtitleRegionPct, this.originState.subtitleRegionWidthPct);
+    // Clear customRegion from config so scan reverts to default bottom region.
+    this.config = { ...this.config, customRegion: null };
     this.regionSelector.updateRegion(defaultRegion);
     this.regionSelector.setMode('view');
   }
@@ -545,6 +554,9 @@ export class OcrSession {
   /** Handle Cancel from region selector — revert to saved region. */
   private async handleRegionCancel(): Promise<void> {
     const savedRegion = this.originState?.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct);
+    // Revert config.customRegion to saved — onRegionChange may have mutated it
+    // during drag. Without this, Cancel leaves the scan on the dragged region.
+    this.config = { ...this.config, customRegion: this.originState?.customRegion ?? null };
     this.regionSelector.updateRegion(savedRegion);
     this.regionSelector.setMode('view');
     this.pendingRegion = null;
