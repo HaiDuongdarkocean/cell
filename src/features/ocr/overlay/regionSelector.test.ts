@@ -233,3 +233,147 @@ describe('RegionSelector', () => {
     sel2.detach();
   });
 });
+
+// ─── Intrinsic-space contract (regionMapping wiring) ───
+// Proves the selector's public API is intrinsic-space and that the overlay
+// rectangle is positioned in SHELL space so it visually aligns with the actual
+// video content — the fix for "OCR scan sai vùng".
+describe('RegionSelector intrinsic-space contract (letterbox)', () => {
+  let shell: HTMLDivElement;
+  let vid: HTMLVideoElement;
+  let computeSpy: ReturnType<typeof jest.spyOn>;
+
+  /** 4:3 container (1200×900) with a 16:9 video (1920×1080) + object-fit: contain.
+   *  Video content = 1200×675 centered → 112.5px black bars top & bottom. */
+  function setupLetterbox(objectFit = 'contain'): void {
+    shell = document.createElement('div');
+    vid = document.createElement('video');
+    shell.appendChild(vid);
+    document.body.appendChild(shell);
+    // Intrinsic resolution (readonly in jsdom → defineProperty).
+    Object.defineProperty(vid, 'videoWidth', { configurable: true, get: () => 1920 });
+    Object.defineProperty(vid, 'videoHeight', { configurable: true, get: () => 1080 });
+    // Shell + video both 1200×900 (video inset:0 fills the shell).
+    const box = (): DOMRect => ({ x: 0, y: 0, left: 0, top: 0, right: 1200, bottom: 900, width: 1200, height: 900, toJSON: () => ({}) } as DOMRect);
+    shell.getBoundingClientRect = box;
+    vid.getBoundingClientRect = box;
+    // object-fit via getComputedStyle mock (jsdom doesn't implement it).
+    computeSpy = jest.spyOn(window, 'getComputedStyle').mockImplementation((el: Element) => {
+      if (el === vid) {
+        return { objectFit, objectPosition: '50% 50%' } as unknown as CSSStyleDeclaration;
+      }
+      return {} as CSSStyleDeclaration;
+    });
+  }
+
+  afterEach(() => {
+    computeSpy?.mockRestore();
+    shell?.remove();
+  });
+
+  /** Attach + give the overlay container a real rect (jsdom default is 0×0) then
+   *  re-render so the shell↔intrinsic conversion uses the mocked geometry. */
+  function attachWithGeometry(
+    sel: RegionSelector,
+    region: CustomRegion,
+    mode: 'view' | 'select' | 'edit' = 'view',
+  ): HTMLDivElement {
+    sel.attach(vid, region, mode);
+    const container = shell.querySelector('.cell-ocr-region-selector') as HTMLDivElement;
+    container.getBoundingClientRect = shell.getBoundingClientRect;
+    // Re-render with the now-correct container rect (attach's internal render
+    // ran while the container rect was still 0×0 → identity).
+    sel.updateRegion(region);
+    return container;
+  }
+
+  it('attach with intrinsic bottom-15% renders the rectangle at the SHELL-space content bottom (NOT 85%)', () => {
+    setupLetterbox('contain');
+    const intrinsicBottom: CustomRegion = { xPct: 0, yPct: 85, widthPct: 100, heightPct: 15 };
+    const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
+    attachWithGeometry(sel, intrinsicBottom, 'view');
+    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    // Shell-space: content bottom-15% sits at y 76.25% (not 85%) because of the
+    // 112.5px top bar; height 11.25% (not 15%) because content is shorter than shell.
+    expect(parseFloat(rect.style.top)).toBeCloseTo(76.25, 3);
+    expect(parseFloat(rect.style.height)).toBeCloseTo(11.25, 3);
+    expect(parseFloat(rect.style.left)).toBeCloseTo(0, 3);
+    expect(parseFloat(rect.style.width)).toBeCloseTo(100, 3);
+    sel.detach();
+  });
+
+  it('getRegion() returns the intrinsic-space region back (round-trip)', () => {
+    setupLetterbox('contain');
+    const intrinsicBottom: CustomRegion = { xPct: 0, yPct: 85, widthPct: 100, heightPct: 15 };
+    const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
+    attachWithGeometry(sel, intrinsicBottom, 'view');
+    const back = sel.getRegion();
+    expect(back.xPct).toBeCloseTo(0, 3);
+    expect(back.yPct).toBeCloseTo(85, 3);
+    expect(back.widthPct).toBeCloseTo(100, 3);
+    expect(back.heightPct).toBeCloseTo(15, 3);
+    sel.detach();
+  });
+
+  it('drawing a region over the visible content bottom emits intrinsic ~{0,85,100,15}', () => {
+    setupLetterbox('contain');
+    const changes: CustomRegion[] = [];
+    const sel = new RegionSelector({ onRegionChange: (r) => { changes.push(r); }, onApply: () => {}, onCancel: () => {} });
+    const container = attachWithGeometry(sel, { xPct: 0, yPct: 0, widthPct: 100, heightPct: 100 }, 'select');
+    // Draw over the visible content bottom band: shell y 686.25..787.5 (= content bottom 15%).
+    fire(container, 'mousedown', 0, 686.25);
+    fire(document, 'mousemove', 1200, 787.5);
+    fire(document, 'mouseup', 1200, 787.5);
+    const emitted = changes.at(-1)!;
+    expect(emitted.xPct).toBeCloseTo(0, 2);
+    expect(emitted.yPct).toBeCloseTo(85, 2);
+    expect(emitted.widthPct).toBeCloseTo(100, 2);
+    expect(emitted.heightPct).toBeCloseTo(15, 2);
+    sel.detach();
+  });
+
+  it('object-fit fill (no letterbox) → intrinsic region renders unchanged (identity)', () => {
+    setupLetterbox('fill');
+    const r: CustomRegion = { xPct: 20, yPct: 30, widthPct: 50, heightPct: 30 };
+    const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
+    attachWithGeometry(sel, r, 'view');
+    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    expect(parseFloat(rect.style.left)).toBeCloseTo(20, 3);
+    expect(parseFloat(rect.style.top)).toBeCloseTo(30, 3);
+    expect(parseFloat(rect.style.width)).toBeCloseTo(50, 3);
+    expect(parseFloat(rect.style.height)).toBeCloseTo(30, 3);
+    sel.detach();
+  });
+
+  it('21:9 container (letterbox top/bottom) — vertical 1:1, horizontal shifts', () => {
+    // 21:9 container 1890×810, 16:9 video contain → content 1440×810, cx=225, cy=0.
+    shell = document.createElement('div');
+    vid = document.createElement('video');
+    shell.appendChild(vid);
+    document.body.appendChild(shell);
+    Object.defineProperty(vid, 'videoWidth', { configurable: true, get: () => 1920 });
+    Object.defineProperty(vid, 'videoHeight', { configurable: true, get: () => 1080 });
+    const box = (): DOMRect => ({ x: 0, y: 0, left: 0, top: 0, right: 1890, bottom: 810, width: 1890, height: 810, toJSON: () => ({}) } as DOMRect);
+    shell.getBoundingClientRect = box;
+    vid.getBoundingClientRect = box;
+    computeSpy = jest.spyOn(window, 'getComputedStyle').mockImplementation((el: Element) => {
+      if (el === vid) return { objectFit: 'contain', objectPosition: '50% 50%' } as unknown as CSSStyleDeclaration;
+      return {} as CSSStyleDeclaration;
+    });
+    const intrinsicBottom: CustomRegion = { xPct: 0, yPct: 85, widthPct: 100, heightPct: 15 };
+    const sel = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
+    attachWithGeometry(sel, intrinsicBottom, 'view');
+    const rect = shell.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
+    // Vertical 1:1 (no top/bottom bar): top=85%, height=15%.
+    expect(parseFloat(rect.style.top)).toBeCloseTo(85, 3);
+    expect(parseFloat(rect.style.height)).toBeCloseTo(15, 3);
+    // Horizontal: content left = 225px = 11.9% of shell; width = 1440px = 76.19%.
+    expect(parseFloat(rect.style.left)).toBeCloseTo(225 / 1890 * 100, 2);
+    expect(parseFloat(rect.style.width)).toBeCloseTo(1440 / 1890 * 100, 2);
+    // getRegion round-trips to the intrinsic input.
+    const back = sel.getRegion();
+    expect(back.yPct).toBeCloseTo(85, 2);
+    expect(back.heightPct).toBeCloseTo(15, 2);
+    sel.detach();
+  });
+});

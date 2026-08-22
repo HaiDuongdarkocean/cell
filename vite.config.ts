@@ -203,6 +203,7 @@ export default defineConfig(({ mode }) => ({
         mockIframePlayer: resolve(__dirname, 'src/entrypoints/mock-iframe-player/index.html'),
         mockYouTube: resolve(__dirname, 'src/entrypoints/mock-youtube/index.html'),
         mockHardSubPage: resolve(__dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
+        mockYouTubeHardsub: resolve(__dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
         localPlayer: resolve(__dirname, 'src/entrypoints/local-player/index.html'),
       },
       output: {

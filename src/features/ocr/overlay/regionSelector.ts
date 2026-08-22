@@ -17,11 +17,14 @@ import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
 import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry } from '@/features/ocr/pipeline/regionMapping';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
 
 export interface RegionSelectorCallbacks {
-  /** Called when user drags/resizes the rectangle (real-time, in %). */
+  /** Called when user drags/resizes the rectangle (real-time, in INTRINSIC-space %).
+   *  Intrinsic-space = % of video.videoWidth/Height, so the value maps 1:1 to the
+   *  crop region regardless of letterbox/control-bar offset. */
   onRegionChange: (region: CustomRegion) => void;
   /** Called when user clicks Apply. */
   onApply: () => void;
@@ -132,12 +135,12 @@ export class RegionSelector {
     this.currentRegion = defaultBottomRegion(15);
   }
 
-  /** Attach selector to a video element's parent. */
+  /** Attach selector to a video element's parent.
+   *  @param region Initial region in INTRINSIC-space (% of videoWidth/Height). */
   attach(video: HTMLVideoElement, region: CustomRegion, mode: RegionSelectorMode = 'view'): void {
     this.detach();
     injectOverlayCss();
     this.video = video;
-    this.currentRegion = region;
     this.mode = mode;
     // Use the same container-finding algorithm as the subtitle/drag-drop layer:
     // walk up from video to the farthest ancestor within 10% size tolerance.
@@ -159,6 +162,12 @@ export class RegionSelector {
     this.toolbar = document.createElement('div');
     this.toolbar.style.cssText = 'position:absolute;top:10px;right:10px;display:flex;gap:8px;pointer-events:auto;z-index:99999;';
     this.container.appendChild(this.toolbar);
+
+    // Convert intrinsic-space → shell-space AFTER container + video are set, so
+    // toShellRegion can read live geometry. (Attach-order bug: converting before
+    // container creation returned identity → rectangle sat at naive 85% under
+    // letterbox instead of the content bottom.)
+    this.currentRegion = this.toShellRegion(region);
 
     this.render();
     this.attachListeners();
@@ -192,22 +201,22 @@ export class RegionSelector {
     }
   }
 
-  /** Update region from external source (e.g. slider). */
+  /** Update region from external source (e.g. slider). Intrinsic-space input. */
   updateRegion(region: CustomRegion): void {
-    this.currentRegion = region;
+    this.currentRegion = this.toShellRegion(region);
     // In interactive modes, sync pendingRegion too so slider updates are visible
     // (render uses pendingRegion when set, falling back to currentRegion).
     if (this.mode !== 'view') {
-      this.pendingRegion = region;
+      this.pendingRegion = this.toShellRegion(region);
     } else {
       this.pendingRegion = null;
     }
     this.render();
   }
 
-  /** Get current region. */
+  /** Get current region in INTRINSIC-space (% of videoWidth/Height). */
   getRegion(): CustomRegion {
-    return this.pendingRegion ?? this.currentRegion;
+    return this.toIntrinsicRegion(this.pendingRegion ?? this.currentRegion);
   }
 
   /** Enable/disable split view: two tinted halves + a draggable divider (view mode only).
@@ -277,6 +286,30 @@ export class RegionSelector {
     if (!selecting) delete document.body.dataset.ocrRegionSelecting;
   }
 
+  // ─── Coordinate-space conversion (regionMapping) ───
+  // The overlay lives in SHELL space (the player container); drag math and CSS
+  // positioning are shell-space. The PUBLIC contract (attach/updateRegion/
+  // getRegion/onRegionChange) is INTRINSIC space (% of videoWidth/Height) so the
+  // stored region maps 1:1 to the crop regardless of letterbox/control-bar.
+  // When video geometry is unavailable (jsdom, pre-metadata), conversion is
+  // identity — shell-space == intrinsic-space, preserving prior behavior.
+
+  /** Intrinsic-space region → shell-space for internal storage + CSS rendering. */
+  private toShellRegion(intrinsic: CustomRegion): CustomRegion {
+    if (!this.video || !this.container) return intrinsic;
+    const geo = readVideoGeometry(this.video, this.container);
+    if (!geo) return intrinsic;
+    return mapIntrinsicToShell(intrinsic, geo.shellRect, geo.videoRect, geo.intrinsic, geo.objectFit, geo.objectPosition);
+  }
+
+  /** Shell-space region (internal) → intrinsic-space for the public contract. */
+  private toIntrinsicRegion(shell: CustomRegion): CustomRegion {
+    if (!this.video || !this.container) return shell;
+    const geo = readVideoGeometry(this.video, this.container);
+    if (!geo) return shell;
+    return mapShellToIntrinsic(shell, geo.shellRect, geo.videoRect, geo.intrinsic, geo.objectFit, geo.objectPosition);
+  }
+
   // ─── Internal rendering ───
   // render() runs on every drag frame: it must UPDATE existing nodes, never
   // recreate handles/buttons — recreated nodes lose their event listeners
@@ -284,7 +317,11 @@ export class RegionSelector {
 
   private render(): void {
     if (!this.rect || !this.toolbar) return;
-    const r = this.getRegion();
+    // render uses the INTERNAL shell-space region (pendingRegion ?? currentRegion)
+    // for CSS positioning — the rect is a child of the container, positioned in
+    // shell-space. getRegion() returns intrinsic-space (public contract) and must
+    // NOT be used here, or the rectangle would be misplaced under letterbox.
+    const r = this.pendingRegion ?? this.currentRegion;
     this.rect.dataset.mode = this.mode;
     if (this.container) this.container.dataset.mode = this.mode;
     this.rect.style.left = `${r.xPct}%`;
@@ -298,7 +335,10 @@ export class RegionSelector {
       label.className = 'cell-ocr-region-label';
       this.rect.appendChild(label);
     }
-    const dims = `${formatPct(r.widthPct)}%×${formatPct(r.heightPct)}%`;
+    // Label shows the INTRINSIC-space dims (what the user actually scans), not
+    // the shell-space dims (which differ under letterbox and would confuse).
+    const intrinsic = this.toIntrinsicRegion(r);
+    const dims = `${formatPct(intrinsic.widthPct)}%×${formatPct(intrinsic.heightPct)}%`;
     label.textContent = this.mode === 'view' ? `OCR region (${dims})` : `${this.mode}: ${dims}`;
 
     // Handles: create once on entering interactive mode; positions are % anchored to
@@ -474,7 +514,7 @@ export class RegionSelector {
 
     if (this.pendingRegion) {
       this.render();
-      this.callbacks.onRegionChange(this.pendingRegion);
+      this.callbacks.onRegionChange(this.toIntrinsicRegion(this.pendingRegion));
     }
   };
 
@@ -517,7 +557,7 @@ export class RegionSelector {
   private handleApply(): void {
     if (this.pendingRegion) {
       this.currentRegion = this.pendingRegion;
-      this.callbacks.onRegionChange(this.currentRegion);
+      this.callbacks.onRegionChange(this.toIntrinsicRegion(this.currentRegion));
     }
     this.callbacks.onApply();
   }
