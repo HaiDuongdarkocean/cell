@@ -9,6 +9,7 @@
     "dev": "vite",
     "prebuild": "node scripts/generate-tokens.js && node scripts/check-icons.js",
     "build": "vite build",
+    "postbuild": "node scripts/patch-ocr-csp.mjs",
     "design-system": "npx http-server docs/design-system -p 8123 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
     "preview": "vite preview",
