@@ -8,6 +8,8 @@ import { RegionSelector, defaultBottomRegion, formatPct } from './regionSelector
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 
 const REGION: CustomRegion = { xPct: 20, yPct: 30, widthPct: 50, heightPct: 30 };
+/** Full-height region: on the 1000px fake box, dragging +100px = +10% of BOTH container and region → ratio +0.1. */
+const FULL_HEIGHT: CustomRegion = { xPct: 0, yPct: 0, widthPct: 100, heightPct: 100 };
 
 /** jsdom layout is all zeros — give the overlay container a 1000×1000 box. */
 function fakeBox(): DOMRect {
@@ -16,6 +18,13 @@ function fakeBox(): DOMRect {
 
 function fire(target: EventTarget, type: string, x: number, y: number): void {
   target.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }));
+}
+
+/** Drag math reads the CONTAINER box (a separate node from parent) — mock it too. */
+function containerOf(scope: HTMLElement): HTMLDivElement {
+  const c = scope.querySelector('.cell-ocr-region-selector') as HTMLDivElement;
+  c.getBoundingClientRect = fakeBox;
+  return c;
 }
 
 describe('helpers', () => {
@@ -82,6 +91,7 @@ describe('RegionSelector', () => {
 
   it('regression: resize handles stay live AFTER a move drag (bug: render() recreated handles without rebinding)', () => {
     selector.attach(video, REGION, 'edit');
+    containerOf(parent);
     const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
     const handleBefore = parent.querySelector('[data-handle="se"]') as HTMLDivElement;
 
@@ -109,10 +119,10 @@ describe('RegionSelector', () => {
 
   it('select mode drag draws a new region from the press point', () => {
     selector.attach(video, REGION, 'select');
-    // onSelectStart reads the CONTAINER box (not the outer parent) — mock it too.
-    (parent.querySelector('.cell-ocr-region-selector') as HTMLDivElement).getBoundingClientRect = fakeBox;
+    const container = containerOf(parent);
     const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
-    fire(rect, 'mousedown', 250, 500);
+    // Draw starts on a container press OUTSIDE the rect (pressing the rect body moves it).
+    fire(container, 'mousedown', 250, 500);
     fire(document, 'mousemove', 750, 850);
     fire(document, 'mouseup', 750, 850);
     expect(rect.style.left).toBe('25%');
@@ -124,6 +134,7 @@ describe('RegionSelector', () => {
 
   it('Apply commits pending region and fires callback; Cancel reverts render', () => {
     selector.attach(video, REGION, 'edit');
+    containerOf(parent);
     const rect = parent.querySelector('.cell-ocr-region-rect') as HTMLDivElement;
     fire(rect, 'mousedown', 450, 450);
     fire(document, 'mousemove', 550, 550);
@@ -155,5 +166,70 @@ describe('RegionSelector', () => {
     const label2 = parent.querySelector('.cell-ocr-region-label');
     expect(label2).toBe(label1);
     expect(label2?.textContent).toBe('OCR region (33%×30%)');
+  });
+
+  it('split: setSplit renders halves + divider; drag updates ratio & fires onSplitRatioChange once on mouseup', () => {
+    const splitRatios: number[] = [];
+    const sel2 = new RegionSelector({
+      onRegionChange: () => {},
+      onApply: () => {},
+      onCancel: () => {},
+      onSplitRatioChange: (r) => { splitRatios.push(r); },
+    });
+    sel2.attach(video, FULL_HEIGHT, 'view');
+    // In jsdom every box is 0×0, so the container walk stops AT the video —
+    // the divider drag reads the CONTAINER's parent box, i.e. the video here.
+    video.getBoundingClientRect = fakeBox;
+    sel2.setSplit(true, 0.5, 'Target', 'Native');
+    const halves = [...parent.querySelectorAll('.cell-ocr-split-half')] as HTMLDivElement[];
+    expect(halves).toHaveLength(2);
+    expect(halves[0]?.dataset.label).toBe('Target');
+    expect(halves[1]?.dataset.label).toBe('Native');
+    // 50/50 of a full-height region → halves at 0%/50%, divider centered on the split line.
+    expect(halves[0]?.style.height).toBe('50%');
+    expect(halves[1]?.style.top).toBe('50%');
+    const divider = parent.querySelector('.cell-ocr-split-divider') as HTMLDivElement;
+    expect(divider).not.toBeNull();
+    expect(divider.style.top).toBe('50%');
+
+    fire(divider, 'mousedown', 500, 500);
+    fire(document, 'mousemove', 500, 600); // +10% of container height
+    expect(splitRatios).toHaveLength(0); // real-time drag updates UI only — no callback
+    fire(document, 'mouseup', 500, 600);
+    expect(splitRatios).toHaveLength(1); // persisted exactly once, on mouseup
+    expect(splitRatios[0]).toBeGreaterThan(0.55);
+    expect(splitRatios[0]).toBeLessThan(0.65);
+
+    // Node identity (ADR-081): updateSplitRatio repositions, never recreates.
+    sel2.updateSplitRatio(0.3);
+    expect(parent.querySelector('.cell-ocr-split-divider')).toBe(divider);
+    expect(parent.querySelector('.cell-ocr-split-half')).toBe(halves[0]);
+    expect(divider.style.top).toBe('30%');
+    sel2.detach();
+  });
+
+  it('split: divider + halves hidden outside view mode; setSplit(false) removes nodes', () => {
+    const sel2 = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
+    sel2.attach(video, FULL_HEIGHT, 'view');
+    sel2.setSplit(true, 0.5, 'Target', 'Native');
+    const divider = parent.querySelector('.cell-ocr-split-divider') as HTMLDivElement;
+    const halves = [...parent.querySelectorAll('.cell-ocr-split-half')] as HTMLDivElement[];
+    expect(divider.style.display).not.toBe('none');
+
+    // select/edit: user is adjusting the parent region — divider must not fight them.
+    sel2.setMode('edit');
+    expect(divider.style.display).toBe('none');
+    for (const h of halves) expect(h.style.display).toBe('none');
+    sel2.setMode('select');
+    expect(divider.style.display).toBe('none');
+
+    sel2.setMode('view');
+    expect(divider.style.display).not.toBe('none');
+    for (const h of halves) expect(h.style.display).not.toBe('none');
+
+    sel2.setSplit(false, 0.5);
+    expect(parent.querySelectorAll('.cell-ocr-split-half')).toHaveLength(0);
+    expect(parent.querySelector('.cell-ocr-split-divider')).toBeNull();
+    sel2.detach();
   });
 });
