@@ -468,18 +468,8 @@ function runSubtitleDiscoveryScan(): void {
 // present in the DOM. This lets the overlay register before the background's first
 // AUTO_LOAD_SUBTITLES push, avoiding a lost load-on-start race in cross-origin
 // iframes like moviepire → vidnest.
-function hasRealChildSrc(v: HTMLVideoElement): boolean {
-  return !!v.querySelector('source[src]:not([src=""]), track[src]:not([src=""])');
-}
-
-function isVideoReady(v: HTMLVideoElement): boolean {
-  return (
-    (v.src !== '' && v.src.startsWith('blob:')) ||
-    v.currentSrc !== '' ||
-    v.readyState >= 2 ||
-    hasRealChildSrc(v)
-  );
-}
+// SSOT helper moved to src/shared/lib/dom/videoReady.ts (shared with ocrContentScript).
+import { isVideoReady } from '@/shared/lib/dom/videoReady';
 
 // Track current overlay cleanup so we can tear down before re-init on SPA
 // episode switch. Angular replaces <video> on episode switch → old overlay UI
