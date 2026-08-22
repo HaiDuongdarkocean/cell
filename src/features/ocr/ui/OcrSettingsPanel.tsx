@@ -3,7 +3,7 @@
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { Toggle, Select, Slider, Button, Icon, Tooltip } from '@/shared/ui';
+import { Toggle, Select, SliderRow, Button, Icon, Tooltip, LabelGroup, SettingsRow } from '@/shared/ui';
 import {
   loadOcrSettings,
   saveOcrSettings,
@@ -110,14 +110,17 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
   }, [settings, origin, ocrState]);
 
   // ─── Custom region slider handlers (X, Y, W, H in %) ───
+  // Slider max props already prevent invalid combinations (W max = 100-xPct,
+  // X max = 100-widthPct). Handler only does basic range clamping — no
+  // cross-dependency clamping (that caused width/xPct to fight each other).
   const handleCustomRegionChange = useCallback(async (patch: Partial<CustomRegion>) => {
     if (!settings || !origin || !ocrState?.customRegion) return;
     const base = ocrState.customRegion;
     const updated: CustomRegion = {
-      xPct: Math.max(0, Math.min(100 - base.widthPct, patch.xPct ?? base.xPct)),
-      yPct: Math.max(0, Math.min(100 - base.heightPct, patch.yPct ?? base.yPct)),
-      widthPct: Math.max(1, Math.min(100 - base.xPct, patch.widthPct ?? base.widthPct)),
-      heightPct: Math.max(1, Math.min(100 - base.yPct, patch.heightPct ?? base.heightPct)),
+      xPct: Math.max(0, Math.min(100, patch.xPct ?? base.xPct)),
+      yPct: Math.max(0, Math.min(100, patch.yPct ?? base.yPct)),
+      widthPct: Math.max(1, Math.min(100, patch.widthPct ?? base.widthPct)),
+      heightPct: Math.max(1, Math.min(100, patch.heightPct ?? base.heightPct)),
     };
     const next = setOcrPreference(settings, origin, { ...ocrState, customRegion: updated });
     await saveOcrSettings(next);
@@ -148,23 +151,23 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
     <div className={styles.container} data-testid="ocr-settings-panel" data-enabled={enabled}>
       {/* ─── Toggle card — label group (icon + label + info) + toggle ─── */}
       <div className={styles.card}>
-        <div className={styles.toggleRow}>
-          <span className={styles.labelGroup}>
-            <span className={styles.rowIcon} aria-hidden="true">
-              <Icon name="scanText" size="sm" />
-            </span>
-            <span className={styles.rowLabel}>Detect burned-in subtitles</span>
-            <button
-              type="button"
-              className={styles.infoBtn}
-              aria-label="What is OCR?"
-              aria-expanded={hintOpen}
-              data-cell-id="ocr-info-btn"
-              onClick={() => setHintOpen((v) => !v)}
-            >
-              <Icon name="info" size="sm" />
-            </button>
-          </span>
+        <SettingsRow>
+          <LabelGroup
+            icon={<Icon name="scanText" size="sm" />}
+            label="Detect burned-in subtitles"
+            trailing={
+              <button
+                type="button"
+                className={styles.infoBtn}
+                aria-label="What is OCR?"
+                aria-expanded={hintOpen}
+                data-cell-id="ocr-info-btn"
+                onClick={() => setHintOpen((v) => !v)}
+              >
+                <Icon name="info" size="sm" />
+              </button>
+            }
+          />
           <Toggle
             checked={enabled}
             onChange={handleToggle}
@@ -172,7 +175,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
             dataTestId="ocr-toggle"
             size="sm"
           />
-        </div>
+        </SettingsRow>
         {/* Inline expandable hint — grid 0fr→1fr, attached to card */}
         <div className={styles.hintRow} data-open={hintOpen}>
           <div className={styles.hintInner}>
@@ -187,158 +190,118 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
       {/* ─── Config card — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-          {/* Language row */}
-          <div className={styles.row}>
-            <span className={styles.labelGroup}>
-              <span className={styles.rowIcon} aria-hidden="true">
-                <Icon name="languages" size="sm" />
-              </span>
-              <span className={styles.rowLabel}>Language</span>
-            </span>
-            <Select
-              value={languageMode}
-              options={LANGUAGE_OPTIONS}
-              onChange={(v) => void handleLanguageModeChange(v)}
-              aria-label="OCR language"
-              data-cell-id="ocr-language-mode"
-              menuAlign="right"
-            />
-          </div>
+        {/* Language row */}
+        <SettingsRow divider>
+          <LabelGroup
+            icon={<Icon name="languages" size="sm" />}
+            label="Language"
+          />
+          <Select
+            value={languageMode}
+            options={LANGUAGE_OPTIONS}
+            onChange={(v) => void handleLanguageModeChange(v)}
+            aria-label="OCR language"
+            data-cell-id="ocr-language-mode"
+            menuAlign="right"
+          />
+        </SettingsRow>
 
           {/* Region sliders — only in default mode (no custom region) */}
           {!hasCustomRegion && (
             <>
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveVertical" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Scan height</span>
-                  </span>
-                  <span className={styles.sliderValue}>{regionPct}%</span>
-                </div>
-                <Slider
-                  value={regionPct}
-                  min={5}
-                  max={50}
-                  step={1}
-                  onChange={(v) => void handleRegionHeightChange(v)}
-                  aria-label="Subtitle scan region height"
-                />
-                <p className={styles.sliderHint}>Bottom {regionPct}% of the video frame</p>
-              </div>
-
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveHorizontal" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Scan width</span>
-                  </span>
-                  <span className={styles.sliderValue}>{regionWidthPct}%</span>
-                </div>
-                <Slider
-                  value={regionWidthPct}
-                  min={10}
-                  max={100}
-                  step={1}
-                  onChange={(v) => void handleRegionWidthChange(v)}
-                  aria-label="Subtitle scan region width"
-                />
-                <p className={styles.sliderHint}>Centered {regionWidthPct}% of the video width</p>
-              </div>
+              <SliderRow
+                icon={<Icon name="moveVertical" size="sm" />}
+                label="Scan height"
+                hint="Bottom % of the video frame"
+                value={regionPct}
+                min={5}
+                max={50}
+                step={1}
+                onChange={(v) => void handleRegionHeightChange(v)}
+                aria-label="Subtitle scan region height"
+                variant="end"
+                divider
+              />
+              <SliderRow
+                icon={<Icon name="moveHorizontal" size="sm" />}
+                label="Scan width"
+                hint="Centered % of the video width"
+                value={regionWidthPct}
+                min={10}
+                max={100}
+                step={1}
+                onChange={(v) => void handleRegionWidthChange(v)}
+                aria-label="Subtitle scan region width"
+                variant="end"
+                divider
+              />
             </>
           )}
 
           {/* Custom region sliders — X, Y, W, H in % */}
           {hasCustomRegion && (
             <>
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveHorizontal" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Position X</span>
-                  </span>
-                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.xPct)}%</span>
-                </div>
-                <Slider
-                  value={ocrState!.customRegion!.xPct}
-                  min={0}
-                  max={100 - ocrState!.customRegion!.widthPct}
-                  step={1}
-                  onChange={(v) => void handleCustomRegionChange({ xPct: v })}
-                  aria-label="Custom region X position"
-                />
-              </div>
-
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveVertical" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Position Y</span>
-                  </span>
-                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.yPct)}%</span>
-                </div>
-                <Slider
-                  value={ocrState!.customRegion!.yPct}
-                  min={0}
-                  max={100 - ocrState!.customRegion!.heightPct}
-                  step={1}
-                  onChange={(v) => void handleCustomRegionChange({ yPct: v })}
-                  aria-label="Custom region Y position"
-                />
-              </div>
-
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveHorizontal" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Width</span>
-                  </span>
-                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.widthPct)}%</span>
-                </div>
-                <Slider
-                  value={ocrState!.customRegion!.widthPct}
-                  min={1}
-                  max={100 - ocrState!.customRegion!.xPct}
-                  step={1}
-                  onChange={(v) => void handleCustomRegionChange({ widthPct: v })}
-                  aria-label="Custom region width"
-                />
-              </div>
-
-              <div className={styles.rowStack}>
-                <div className={styles.sliderHeader}>
-                  <span className={styles.labelGroup}>
-                    <span className={styles.rowIcon} aria-hidden="true">
-                      <Icon name="moveVertical" size="sm" />
-                    </span>
-                    <span className={styles.rowLabel}>Height</span>
-                  </span>
-                  <span className={styles.sliderValue}>{formatPct(ocrState!.customRegion!.heightPct)}%</span>
-                </div>
-                <Slider
-                  value={ocrState!.customRegion!.heightPct}
-                  min={1}
-                  max={100 - ocrState!.customRegion!.yPct}
-                  step={1}
-                  onChange={(v) => void handleCustomRegionChange({ heightPct: v })}
-                  aria-label="Custom region height"
-                />
-              </div>
+              <SliderRow
+                icon={<Icon name="moveHorizontal" size="sm" />}
+                label="Position X"
+                hint="Horizontal offset from left edge"
+                value={ocrState!.customRegion!.xPct}
+                min={0}
+                max={100 - ocrState!.customRegion!.widthPct}
+                step={1}
+                onChange={(v) => void handleCustomRegionChange({ xPct: v })}
+                aria-label="Custom region X position"
+                variant="end"
+                divider
+                formatValue={(v) => `${formatPct(v)}%`}
+              />
+              <SliderRow
+                icon={<Icon name="moveVertical" size="sm" />}
+                label="Position Y"
+                hint="Vertical offset from top edge"
+                value={ocrState!.customRegion!.yPct}
+                min={0}
+                max={100 - ocrState!.customRegion!.heightPct}
+                step={1}
+                onChange={(v) => void handleCustomRegionChange({ yPct: v })}
+                aria-label="Custom region Y position"
+                variant="end"
+                divider
+                formatValue={(v) => `${formatPct(v)}%`}
+              />
+              <SliderRow
+                icon={<Icon name="moveHorizontal" size="sm" />}
+                label="Width"
+                hint="Horizontal capture range"
+                value={ocrState!.customRegion!.widthPct}
+                min={1}
+                max={100 - ocrState!.customRegion!.xPct}
+                step={1}
+                onChange={(v) => void handleCustomRegionChange({ widthPct: v })}
+                aria-label="Custom region width"
+                variant="end"
+                divider
+                formatValue={(v) => `${formatPct(v)}%`}
+              />
+              <SliderRow
+                icon={<Icon name="moveVertical" size="sm" />}
+                label="Height"
+                hint="Vertical capture range"
+                value={ocrState!.customRegion!.heightPct}
+                min={1}
+                max={100 - ocrState!.customRegion!.yPct}
+                step={1}
+                onChange={(v) => void handleCustomRegionChange({ heightPct: v })}
+                aria-label="Custom region height"
+                variant="end"
+                divider
+                formatValue={(v) => `${formatPct(v)}%`}
+              />
             </>
           )}
 
           {/* Region action buttons — icon+label, collapse to icon-only on narrow container */}
-          <div className={styles.rowStack}>
+          <SettingsRow stacked divider>
             <div className={styles.regionButtons}>
               <Tooltip content="Select Region" placement="top">
                 <Button
@@ -379,7 +342,7 @@ export function OcrSettingsPanel({ url }: OcrSettingsPanelProps): ReactElement {
                 </Button>
               </Tooltip>
             </div>
-          </div>
+          </SettingsRow>
         </div>
       )}
     </div>
