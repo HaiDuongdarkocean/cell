@@ -74,9 +74,11 @@ describe('OcrController (T7)', () => {
     const results = await ctrl.recognize(image, 0.5);
     expect(results).toHaveLength(1);
     expect(results[0]!.items[0]!.text).toBe('test');
+    // chrome.runtime.sendMessage uses JSON serialization — Uint8ClampedArray
+    // becomes {}, so OcrController converts to a regular Array before sending.
     expect(sendMessageMock).toHaveBeenLastCalledWith({
       type: 'OCR_RECOGNIZE',
-      payload: { image, minScore: 0.5 },
+      payload: { image: { data: Array.from(image.data), width: image.width, height: image.height }, minScore: 0.5 },
     });
   });
 

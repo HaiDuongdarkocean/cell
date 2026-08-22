@@ -68,7 +68,7 @@ describe('OcrSettingsPanel (T17-T20)', () => {
     }, { timeout: 3000 });
     // Config should now be visible — query within container.
     await waitFor(() => {
-      const select = container.querySelector('[data-testid="ocr-language-mode"]');
+      const select = container.querySelector('[data-cell-id="ocr-language-mode"]');
       expect(select).toBeTruthy();
     }, { timeout: 3000 });
   });
