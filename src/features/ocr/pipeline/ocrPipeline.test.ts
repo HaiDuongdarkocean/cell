@@ -175,6 +175,15 @@ describe('ocrPipeline (T12)', () => {
     expect(recognizeFn).toHaveBeenCalledTimes(3);
   });
 
+  it('uses explicit region when provided (split halves)', async () => {
+    const frame = makeImage(100, 100, 255);
+    const state = new OcrPipelineState();
+    const recognizeFn = jest.fn(async (): Promise<OcrResult[]> => []) as unknown as RecognizeFn;
+    await runPipelineStep(frame, recognizeFn, state, DEFAULT_PIPELINE_CONFIG, undefined,
+      { xPct: 0, yPct: 0, widthPct: 100, heightPct: 50 });
+    expect(recognizeFn).toHaveBeenCalledWith(expect.objectContaining({ height: 50 }), expect.anything());
+  });
+
   it('T22: succeeds on retry after initial failure', async () => {
     const frame = makeImageWithSubtitle(640, 480, 100, 200);
     const state = new OcrPipelineState();

@@ -5,6 +5,7 @@ import type { ImageSource, OcrResult, OcrResultItem } from '@/features/ocr/engin
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { checkDrmGuard } from './drmGuard';
 import { computeSubtitleRegion, cropImage } from './cropRegion';
+import type { SplitHalf } from './splitRegion';
 import { scriptRunSegmenter, type ScriptRun } from '../language/scriptRunSegmenter';
 
 /** OCR pipeline config. */
@@ -190,6 +191,8 @@ export type PipelineStepResult =
  * @param state Pipeline state (tracks previous frame).
  * @param config Pipeline config.
  * @param frameTimeMs Current frame time in ms (for time gate).
+ * @param explicitRegion Region in % — when provided (split dual-stream), crop it
+ *   instead of computing the subtitle region from config.
  */
 export async function runPipelineStep(
   image: ImageSource,
@@ -197,6 +200,7 @@ export async function runPipelineStep(
   state: OcrPipelineState,
   config: OcrPipelineConfig = DEFAULT_PIPELINE_CONFIG,
   frameTimeMs: number = performance.now(),
+  explicitRegion?: SplitHalf | null,
 ): Promise<PipelineStepResult> {
   // 1. Time gate — skip if too soon since last OCR.
   if (!shouldRunByTimeGate(frameTimeMs, state.getLastOcrTimeMs(), config.minFrameIntervalMs)) {
@@ -222,8 +226,15 @@ export async function runPipelineStep(
     state.resetDrmCount();
   }
 
-  // 3. Crop subtitle region.
-  const region = computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct, config.subtitleRegionWidthPct, config.customRegion);
+  // 3. Crop subtitle region. explicitRegion (split dual-stream) overrides config-based region.
+  const region = explicitRegion
+    ? {
+        x: Math.round((explicitRegion.xPct / 100) * image.width),
+        y: Math.round((explicitRegion.yPct / 100) * image.height),
+        width: Math.round((explicitRegion.widthPct / 100) * image.width),
+        height: Math.round((explicitRegion.heightPct / 100) * image.height),
+      }
+    : computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct, config.subtitleRegionWidthPct, config.customRegion);
   const cropped = cropImage(image, region);
 
   // 4. OCR with retry. T22.
