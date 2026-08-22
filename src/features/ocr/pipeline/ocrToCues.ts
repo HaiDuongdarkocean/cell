@@ -58,17 +58,21 @@ function editDistance(a: string, b: string): number {
  *  ≤ threshold (OCR typo). Prefix match: if the shorter string is a prefix of the
  *  longer one (≥ 15 chars), OCR likely appended garbage to the end — common when
  *  engine misreads adjacent pixels as extra characters.
- *  Edit distance only applies when both strings are ≥ 30 chars — below that, even
- *  1-char differences are likely real content changes (e.g. "Sentence 1" vs "Sentence 2"). */
+ *  Edit distance applies when both strings are ≥ 25 chars — below that, even 1-char
+ *  differences are likely real content changes (e.g. "Sentence 1" vs "Sentence 2" at
+ *  20 chars). 25+ chars is short enough for real subtitle lines like "Will you still
+ *  take me back" (28 chars) where OCR drops a letter ("Wll" vs "Will"). */
 function fuzzyMatch(a: string, b: string): boolean {
   if (a === b) return true;
   // Prefix match: shorter is prefix of longer (OCR trailing garbage).
   const [shorter, longer] = a.length <= b.length ? [a, b] : [b, a];
   if (shorter.length >= 15 && longer.startsWith(shorter)) return true;
-  // Edit distance: OCR typo tolerance (e.g. "stll" vs "still").
-  if (a.length < 30 || b.length < 30) return false;
+  // Edit distance: OCR typo tolerance (e.g. "stll" vs "still", "IM" vs "I'll").
+  if (a.length < 25 || b.length < 25) return false;
   const dist = editDistance(a, b);
-  const threshold = Math.min(3, Math.max(1, Math.floor(Math.max(a.length, b.length) / 25)));
+  // 1 edit per 20 chars, capped at 3 — catches "stll"→"still" (1), "IM"→"I'll" (2),
+  // but not "Sentence 1"→"Sentence 2" (excluded by length gate).
+  const threshold = Math.min(3, Math.max(1, Math.floor(Math.max(a.length, b.length) / 20)));
   return dist <= threshold;
 }
 
