@@ -462,6 +462,15 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
     if (!activeSession?.isRunning()) return;
     if (data.mode === 'reset') {
       activeSession.resetRegion();
+      void (async () => {
+        if (!currentOrigin) return;
+        const settings = await loadOcrSettings();
+        const originState = settings.origins[currentOrigin];
+        if (originState) {
+          const next = setOcrPreference(settings, currentOrigin, { ...originState, customRegion: null });
+          await saveOcrSettings(next);
+        }
+      })();
     } else if (data.mode) {
       activeSession.setRegionMode(data.mode);
     }
