@@ -91,21 +91,73 @@
   flex: 0 0 auto;
 }
 
-/* ─── Select — compact width + height in row ───
+/* ─── Language rows — Select + inline reset button ─── */
+.langRow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Select — compact width + height in row.
    The shared Select trigger sets `min-height: var(--touch-target)` (40px)
    which overrides its `height: var(--input-height)` (32px), making the
-   Language row ~8px taller than the toggle row. Override the trigger's
+   language row ~8px taller than the toggle row. Override the trigger's
    min-height here so the row matches the compact toggle-row height.
-   NOTE: scoped to [data-cell-id='ocr-language-mode'] — using [class*='select']
-   would also match .cell-ocr-region-selector (contains 'select'), breaking
-   the region overlay's width. */
-:global([data-cell-id='ocr-language-mode']) {
+   NOTE: scoped via .langSelect (applied to Select root) — using
+   [class*='select'] would also match .cell-ocr-region-selector
+   (contains 'select'), breaking the region overlay's width. */
+.langSelect {
   flex: 0 0 auto;
   min-width: 120px;
   max-width: 160px;
 }
-:global([data-cell-id='ocr-language-mode']) :global([class*='trigger']) {
+.langSelect :global([class*='trigger']) {
   min-height: var(--input-height);
+}
+
+/* Reset-to-system-default icon button — visible only when an override is set */
+.resetBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.resetBtn:hover {
+  color: var(--color-primary);
+}
+.resetBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+.resetBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Split section — Top/Bottom assignment segment buttons ─── */
+.segmentButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Low-RAM hint under split controls */
+.sliderHint {
+  margin: 0;
+  padding: var(--space-2-5) var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
 }
 
 /* ─── Region action buttons — flex row, wrap on small screens ─── */
