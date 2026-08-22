@@ -72,6 +72,7 @@ import bookOpenSvg from './svg/book-open.svg?raw';
 import folderOpenSvg from './svg/folder-open.svg?raw';
 import librarySvg from './svg/library.svg?raw';
 import fileVideoSvg from './svg/file-video.svg?raw';
+import playRoundedRectSvg from './svg/play-rounded-rect.svg?raw';
 
 // === Media / window control icons ===
 import externalLinkSvg from './svg/external-link.svg?raw';
@@ -168,6 +169,7 @@ export { default as bookOpenIcon } from './svg/book-open.svg?raw';
 export { default as folderOpenIcon } from './svg/folder-open.svg?raw';
 export { default as libraryIcon } from './svg/library.svg?raw';
 export { default as fileVideoIcon } from './svg/file-video.svg?raw';
+export { default as playRoundedRectIcon } from './svg/play-rounded-rect.svg?raw';
 export { default as navPrevIcon } from './svg/nav-prev.svg?raw';
 export { default as navNextIcon } from './svg/nav-next.svg?raw';
 export { default as navRepeatIcon } from './svg/nav-repeat.svg?raw';
@@ -201,6 +203,9 @@ export { default as atomIcon } from './svg/atom.svg?raw';
 export { default as moleculeIcon } from './svg/molecule.svg?raw';
 export { default as organismIcon } from './svg/organism.svg?raw';
 export { default as wireframeIcon } from './svg/wireframe.svg?raw';
+export { default as cropIcon } from './svg/crop.svg?raw';
+export { default as moveVerticalIcon } from './svg/move-vertical.svg?raw';
+export { default as scanTextIcon } from './svg/scan-text.svg?raw';
 export { default as windowPageIcon } from './svg/window-page.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
@@ -282,6 +287,7 @@ export const ICON_CATALOG = {
   folderOpen:  { svg: folderOpenSvg,  source: 'lucide/folder-open',  tags: ['folder','open','file','directory','browse'] } as IconEntry,
   library:     { svg: librarySvg,     source: 'lucide/library',      tags: ['library','collection','history','list','book-stack'] } as IconEntry,
   fileVideo:   { svg: fileVideoSvg,   source: 'lucide/file-video',   tags: ['file','video','media','document','filename'] } as IconEntry,
+  playRoundedRect: { svg: playRoundedRectSvg, source: 'custom/play-rounded-rect', tags: ['play','video','media','player','local-player','rounded','rectangle'] } as IconEntry,
 
   // === Nav cluster ===
   navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,

@@ -11,7 +11,7 @@
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, SubtitleApiKey } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
@@ -125,6 +125,8 @@ export interface SubtitlePanelsRef {
   toggleSplitView: () => void;
   /** Set Split View open state directly (local-player preference restore). */
   setSplitViewOpen: (open: boolean) => void;
+  /** Update OCR enabled state (drives toolbar button active state). */
+  setOcrEnabled: (enabled: boolean) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -156,6 +158,10 @@ export interface SubtitlePanelsProps {
   onEditCard?: () => void;
   /** Update the card matching the current subtitle line. */
   onUpdateCurrentCard?: () => void;
+  /** Toggle OCR on/off for current site (replaces onUpdateCurrentCard in toolbar). */
+  onToggleOcr?: () => void;
+  /** Whether OCR is currently enabled (controls toolbar button active state). */
+  ocrEnabled?: boolean;
   /** Generate a native subtitle from the current target cues. */
   onGenerateNative?: () => void;
   /** Open/close the Chrome side panel. */
@@ -183,10 +189,16 @@ export interface SubtitlePanelsProps {
    *  Needed because the manager panel portals to document.body to escape the
    *  video container's stacking context (e.g. YouTube #movie_player z-index:0). */
   managerShadowCss?: string[];
-  /** Content rendered in the "Playlist" tab of the Split View panel (local-player only). */
+  /** Content rendered in the "Playlist" tab of the Split View panel (local-player only).
+   *  The playlist content (LibraryView) owns its own footer with add-file / add-folder
+   *  buttons — SubtitlePanels no longer renders them. */
   playlistContent?: ReactNode;
-  /** Open file picker (local-player only, rendered in Playlist tab footer). */
-  onOpenFile?: () => void;
-  /** Open folder picker (local-player only, rendered in Playlist tab footer). */
-  onOpenFolder?: () => void;
+  /** Video filename shown in the Split View panel header (local-player only). */
+  filename?: string;
+  /** Fallback player container ref when no <video> is present (local-player
+   *  empty state only). findPlayerContainer() needs a <video>; this ref lets
+   *  Split View open before any video is loaded so the playlist tab is
+   *  accessible. RefObject (not HTMLElement) so it's stable across renders
+   *  and doesn't trigger effect re-runs. Other host pages never pass this. */
+  fallbackPlayerContainerRef?: RefObject<HTMLElement | null>;
 }

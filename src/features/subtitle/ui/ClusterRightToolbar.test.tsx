@@ -4,7 +4,7 @@ import { ClusterRightToolbar } from './ClusterRightToolbar';
 const overlayHandlers = {
   onQuickAdd: jest.fn(),
   onEditCard: jest.fn(),
-  onUpdateCurrentCard: jest.fn(),
+  onToggleOcr: jest.fn(),
   onToggleManager: jest.fn(),
   onGenerateNative: jest.fn(),
   onToggleSidePanel: jest.fn(),
@@ -15,7 +15,7 @@ const overlayHandlers = {
 const playerHandlers = {
   onQuickAdd: jest.fn(),
   onEditCard: jest.fn(),
-  onUpdateCurrentCard: jest.fn(),
+  onToggleOcr: jest.fn(),
   onToggleManager: jest.fn(),
   onGenerateNative: jest.fn(),
   onToggleSidePanel: jest.fn(),
@@ -45,7 +45,7 @@ describe('ClusterRightToolbar', () => {
     expect(screen.getByTestId('panel-toggle-btn')).toBeInTheDocument();
     expect(screen.getByTestId('generate-native-btn')).toBeInTheDocument();
     expect(screen.getByTestId('tools-toggle-btn')).toBeInTheDocument();
-    expect(screen.getByTestId('update-current-card-btn')).toBeInTheDocument();
+    expect(screen.getByTestId('ocr-toggle-btn')).toBeInTheDocument();
     expect(screen.getByTestId('manager-toggle-btn')).toBeInTheDocument();
     expect(screen.getByTestId('player-mode-btn')).toBeInTheDocument();
     expect(screen.queryByTestId('player-mode-exit-btn')).not.toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('ClusterRightToolbar', () => {
     expect(screen.queryByTestId('edit-card-btn')).not.toBeInTheDocument();
     expect(screen.queryByTestId('panel-toggle-btn')).not.toBeInTheDocument();
     expect(screen.queryByTestId('generate-native-btn')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('update-current-card-btn')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ocr-toggle-btn')).not.toBeInTheDocument();
     expect(screen.queryByTestId('manager-toggle-btn')).not.toBeInTheDocument();
     // tools-toggle + player-mode-btn always render
     expect(screen.getByTestId('tools-toggle-btn')).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('ClusterRightToolbar', () => {
     fireEvent.click(screen.getByTestId('panel-toggle-btn'));
     fireEvent.click(screen.getByTestId('generate-native-btn'));
     fireEvent.click(screen.getByTestId('tools-toggle-btn'));
-    fireEvent.click(screen.getByTestId('update-current-card-btn'));
+    fireEvent.click(screen.getByTestId('ocr-toggle-btn'));
     fireEvent.click(screen.getByTestId('manager-toggle-btn'));
     fireEvent.click(screen.getByTestId('player-mode-btn'));
 
@@ -112,7 +112,7 @@ describe('ClusterRightToolbar', () => {
     expect(overlayHandlers.onToggleSidePanel).toHaveBeenCalledTimes(1);
     expect(overlayHandlers.onGenerateNative).toHaveBeenCalledTimes(1);
     expect(overlayHandlers.onToggleTools).toHaveBeenCalledTimes(1);
-    expect(overlayHandlers.onUpdateCurrentCard).toHaveBeenCalledTimes(1);
+    expect(overlayHandlers.onToggleOcr).toHaveBeenCalledTimes(1);
     expect(overlayHandlers.onToggleManager).toHaveBeenCalledTimes(1);
     expect(overlayHandlers.onTogglePlayerMode).toHaveBeenCalledTimes(1);
   });

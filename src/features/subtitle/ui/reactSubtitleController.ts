@@ -48,7 +48,6 @@ export class ReactSubtitleController {
   private destroyed = false;
   private readonly onGenerateNative: () => void;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
-  private readonly onUpdateCurrentCard: () => void;
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private yOffsetPersistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -79,6 +78,10 @@ export class ReactSubtitleController {
   public onImportFiles?: (role: 'target' | 'native', files: FileList) => void;
   /** Called when the user toggles the Chrome side panel. */
   public onToggleSidePanel?: () => void;
+  /** Called when the user clicks the OCR toggle button in the toolbar. */
+  public onToggleOcr?: () => void;
+  /** Whether OCR is currently enabled (drives toolbar button active state). */
+  public ocrEnabled = false;
   /** Called when active cue indices change (for subtitle tokenize rendering). */
   public onCuesUpdated?: () => void;
   /** Called when the user selects a search result to download + load. Delegates
@@ -107,7 +110,6 @@ export class ReactSubtitleController {
     nativeStyle: OverlayStyleConfig = DEFAULT_OVERLAY_STYLE_NATIVE,
     clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS,
     onCardCreatorAction: (action: CardCreatorAction) => void = () => undefined,
-    onUpdateCurrentCard: () => void = () => undefined,
     onGenerateNative: () => void = () => undefined,
   ) {
     this.video = video;
@@ -121,7 +123,6 @@ export class ReactSubtitleController {
     this.url = window.location?.href ?? '';
     this.offsetKey = this.resolveOffsetKey(this.url);
     this.onCardCreatorAction = onCardCreatorAction;
-    this.onUpdateCurrentCard = onUpdateCurrentCard;
     this.onGenerateNative = onGenerateNative;
 
     this.loadPersistedOffset();
@@ -170,7 +171,8 @@ export class ReactSubtitleController {
       onToggleCollapsed: () => this.handleToggleCollapsed(),
       onQuickAdd: () => this.onCardCreatorAction('quick-update'),
       onEditCard: () => this.onCardCreatorAction('edit-card'),
-      onUpdateCurrentCard: () => this.onUpdateCurrentCard(),
+      onToggleOcr: () => this.onToggleOcr?.(),
+      ocrEnabled: this.ocrEnabled,
       onGenerateNative: () => this.onGenerateNative(),
       onToggleSidePanel: () => this.onToggleSidePanel?.(),
       onToggleManager: () => this.openManager(),
@@ -482,6 +484,12 @@ export class ReactSubtitleController {
   private applyGenerateNativeEnabled(enabled: boolean): void {
     this.generateNativeEnabled = enabled;
     this.mount.setGenerateNativeEnabled(enabled);
+  }
+
+  /** Update OCR enabled state → toolbar button active state. */
+  setOcrEnabled(enabled: boolean): void {
+    this.ocrEnabled = enabled;
+    this.mount.setOcrEnabled(enabled);
   }
 
   private handleRepeat(): void {

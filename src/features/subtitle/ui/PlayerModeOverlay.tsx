@@ -46,7 +46,8 @@ export interface PlayerModeOverlayProps {
   /** Existing right-side subtitle actions. */
   onQuickAdd?: () => void;
   onEditCard?: () => void;
-  onUpdateCurrentCard?: () => void;
+  onToggleOcr?: () => void;
+  ocrEnabled?: boolean;
   onGenerateNative?: () => void;
   onToggleSidePanel?: () => void;
   onToggleManager?: () => void;
@@ -92,7 +93,8 @@ function PlayerModeOverlayInner({
   videoAspectRatio,
   onQuickAdd,
   onEditCard,
-  onUpdateCurrentCard,
+  onToggleOcr,
+  ocrEnabled,
   onGenerateNative,
   onToggleSidePanel,
   onToggleManager,
@@ -462,7 +464,8 @@ function PlayerModeOverlayInner({
           wrapperClassName={styles.actionArea}
           onQuickAdd={onQuickAdd}
           onEditCard={onEditCard}
-          onUpdateCurrentCard={onUpdateCurrentCard}
+          onToggleOcr={onToggleOcr}
+          ocrEnabled={ocrEnabled}
           onToggleManager={onToggleManager}
           onGenerateNative={onGenerateNative}
           generateNativeEnabled={generateNativeEnabled}

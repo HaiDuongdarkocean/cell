@@ -10,7 +10,10 @@ export interface ClusterRightToolbarProps {
   wrapperClassName?: string;
   onQuickAdd?: () => void;
   onEditCard?: () => void;
-  onUpdateCurrentCard?: () => void;
+  /** Toggle OCR on/off for current site. Replaces onUpdateCurrentCard. */
+  onToggleOcr?: () => void;
+  /** Whether OCR is currently enabled (controls button active state). */
+  ocrEnabled?: boolean;
   onToggleManager?: () => void;
   onGenerateNative?: () => void;
   generateNativeEnabled?: boolean;
@@ -37,7 +40,8 @@ export function ClusterRightToolbar({
   wrapperClassName,
   onQuickAdd,
   onEditCard,
-  onUpdateCurrentCard,
+  onToggleOcr,
+  ocrEnabled,
   onToggleManager,
   onGenerateNative,
   generateNativeEnabled,
@@ -123,16 +127,17 @@ export function ClusterRightToolbar({
         </div>
       </div>
       <div className={sharedStyles.secondaryCol}>
-        {onUpdateCurrentCard && (
+        {onToggleOcr && (
           <IconButton
             variant="transparent"
-            aria-label="Update current card"
-            title="Update current card (U)"
-            data-cell-id="update-current-card-btn"
+            aria-label={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
+            title={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
+            data-cell-id="ocr-toggle-btn"
             size="sm"
-            onClick={onUpdateCurrentCard}
+            onClick={onToggleOcr}
+            active={ocrEnabled}
           >
-            <Icon name="rotateCcw" />
+            <Icon name="scanText" />
           </IconButton>
         )}
         {onToggleManager && (
