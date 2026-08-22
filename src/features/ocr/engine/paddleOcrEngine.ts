@@ -5,6 +5,8 @@
 
 import type { OcrEngine } from './ocrEngine';
 import type { ImageSource, OcrResult, OcrResultItem, OcrConfig, OcrOptions, OcrBackend, Quad } from './types';
+import { OCR_DEFAULT_ENGINE_KEY } from './types';
+import { ENGINE_KEY_FOR_LANG } from './paddleOcrLanguages';
 import { getURL } from '@/shared/lib/chrome-apis';
 // OpenCV is dynamically imported inside initialize() — NOT at top level.
 // A static import loads 9.9MB WASM immediately on script load; if it fails
@@ -16,15 +18,6 @@ import { getURL } from '@/shared/lib/chrome-apis';
 type PaddleOCRModule = typeof import('@paddleocr/paddleocr-js');
 type PaddleOCRInstance = Awaited<ReturnType<PaddleOCRModule['PaddleOCR']['create']>>;
 type PaddleOcrResult = Awaited<ReturnType<PaddleOCRInstance['predict']>>;
-
-/** Map languageMode → PaddleOCR.js lang param. 'zh'/'ja' = legacy stored values
- *  (pre-catalog states in chrome.storage) — kept so old data still resolves. */
-const LANG_MAP: Readonly<Record<string, string>> = {
-  auto: 'ch',  // PP-OCRv5 'ch' model covers CN+EN+JA (mixed-language).
-  zh: 'ch',
-  en: 'ch',    // Same model — 'ch' handles English too.
-  ja: 'ch',    // Same model — 'ch' handles Japanese kanji+kana.
-};
 
 /** Convert PaddleOCR.js result → OcrResult[]. */
 function adaptResult(result: PaddleOcrResult, imageWidth: number, imageHeight: number): OcrResult[] {
@@ -86,7 +79,12 @@ export class PaddleOcrEngine implements OcrEngine {
         ])).default
       : (await import('@techstark/opencv-js')).default;
 
-    const lang = LANG_MAP[config.languageMode] ?? 'ch';
+    // Model resolution (spec ocr-split-dual-stream, ADR-082): ENGINE_KEY_FOR_LANG
+    // is SSOT — accepts catalog abbr or ISO; legacy 'zh'/'ja' and unknown values
+    // resolve via the catalog; 'auto' → default model (PP-OCRv5 'ch' covers CN+EN+JA).
+    const engineKey = ENGINE_KEY_FOR_LANG(config.languageMode === 'auto' ? OCR_DEFAULT_ENGINE_KEY : config.languageMode);
+    const isDefaultModel = engineKey === OCR_DEFAULT_ENGINE_KEY;
+    const lang = isDefaultModel ? OCR_DEFAULT_ENGINE_KEY : config.languageMode;
     this.currentBackend = config.backend;
 
     // Pre-initialize OpenCV — wait for Emscripten's then() to resolve
@@ -138,7 +136,9 @@ export class PaddleOcrEngine implements OcrEngine {
         textDetectionModelName: 'PP-OCRv5_mobile_det',
         textDetectionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_det_onnx_infer.tar' },
         textRecognitionModelName: 'PP-OCRv5_mobile_rec',
-        textRecognitionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_rec_onnx_infer.tar' },
+        // Default model is bundled (MV3-friendly); non-default models omit the
+        // asset so paddleocr-js resolves the URL by lang (CDN → IndexedDB, ADR-082).
+        ...(isDefaultModel ? { textRecognitionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_rec_onnx_infer.tar' } } : {}),
         ortOptions: {
           backend: config.backend,
           // wasmPaths is a directory prefix — ORT appends filenames to it.

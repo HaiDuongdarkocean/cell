@@ -178,6 +178,44 @@ describe('PaddleOcrEngine (T4)', () => {
     );
   });
 
+  // ─── Model resolution (spec ocr-split-dual-stream, ADR-082) ───
+
+  it('default model (auto) keeps bundled recognition asset', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize(config); // languageMode 'auto'
+    expect(mockCreate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        lang: 'ch',
+        textRecognitionModelAsset: { url: expect.stringContaining('PP-OCRv5_mobile_rec_onnx_infer.tar') },
+      }),
+    );
+  });
+
+  it('japan (catalog: shares default model) keeps bundled asset, lang ch', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize({ ...config, languageMode: 'japan' });
+    expect(mockCreate).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        lang: 'ch',
+        textRecognitionModelAsset: { url: expect.stringContaining('PP-OCRv5_mobile_rec_onnx_infer.tar') },
+      }),
+    );
+  });
+
+  it('non-default model (vi → latin) omits recognition asset — CDN resolves by lang', async () => {
+    const engine = new PaddleOcrEngine();
+    await engine.initialize({ ...config, languageMode: 'vi' });
+    const createOptions = mockCreate.mock.lastCall?.[0] as Record<string, unknown> | undefined;
+    expect(createOptions).toMatchObject({
+      lang: 'vi',
+      ocrVersion: 'PP-OCRv5',
+      textRecognitionModelName: 'PP-OCRv5_mobile_rec',
+      // Detection model stays bundled for every lang.
+      textDetectionModelAsset: { url: expect.stringContaining('PP-OCRv5_mobile_det_onnx_infer.tar') },
+    });
+    expect(createOptions?.textRecognitionModelAsset).toBeUndefined();
+  });
+
   it('wasmPaths passed to ortOptions (MV3 bundle requirement)', async () => {
     const engine = new PaddleOcrEngine();
     const customPaths = 'chrome-extension://abc/dist/wasm/';
