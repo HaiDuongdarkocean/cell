@@ -208,7 +208,7 @@ describe('RegionSelector', () => {
     sel2.detach();
   });
 
-  it('split: divider + halves hidden outside view mode; setSplit(false) removes nodes', () => {
+  it('split: divider + halves visible in view+edit, hidden in select; setSplit(false) removes nodes', () => {
     const sel2 = new RegionSelector({ onRegionChange: () => {}, onApply: () => {}, onCancel: () => {} });
     sel2.attach(video, FULL_HEIGHT, 'view');
     sel2.setSplit(true, 0.5, 'Target', 'Native');
@@ -216,12 +216,15 @@ describe('RegionSelector', () => {
     const halves = [...parent.querySelectorAll('.cell-ocr-split-half')] as HTMLDivElement[];
     expect(divider.style.display).not.toBe('none');
 
-    // select/edit: user is adjusting the parent region — divider must not fight them.
+    // edit mode: split stays visible so user can see target/native while adjusting.
     sel2.setMode('edit');
-    expect(divider.style.display).toBe('none');
-    for (const h of halves) expect(h.style.display).toBe('none');
+    expect(divider.style.display).not.toBe('none');
+    for (const h of halves) expect(h.style.display).not.toBe('none');
+
+    // select mode: user is drawing a brand-new region — split hidden.
     sel2.setMode('select');
     expect(divider.style.display).toBe('none');
+    for (const h of halves) expect(h.style.display).toBe('none');
 
     sel2.setMode('view');
     expect(divider.style.display).not.toBe('none');
