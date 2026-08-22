@@ -726,10 +726,18 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   });
 
   // Dev debug hook: page can request OCR init via postMessage (used by MCP browser tests).
-  // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto' }, '*')
+  // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto', splitEnabled: true, splitRatio: 0.5, splitTopIsTarget: true, customRegion: {xPct,yPct,widthPct,heightPct} }, '*')
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
-    const data = e.data as { type?: string; origin?: string; languageMode?: string };
+    const data = e.data as {
+      type?: string;
+      origin?: string;
+      languageMode?: string;
+      splitEnabled?: boolean;
+      splitRatio?: number;
+      splitTopIsTarget?: boolean;
+      customRegion?: { xPct: number; yPct: number; widthPct: number; heightPct: number };
+    };
     if (data?.type !== '__CELL_OCR_DEBUG_INIT' || !data.origin) return;
     void (async () => {
       try {
@@ -746,6 +754,10 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
           ...DEFAULT_OCR_ORIGIN_STATE,
           ocrEnabled: true,
           languageMode: (data.languageMode ?? 'auto') as OcrOriginState['languageMode'],
+          splitEnabled: data.splitEnabled ?? false,
+          splitRatio: data.splitRatio ?? 0.5,
+          splitTopIsTarget: data.splitTopIsTarget ?? true,
+          customRegion: data.customRegion ?? null,
         };
         activeSession = new OcrSession();
         const tc = getTriggerController?.() ?? null;

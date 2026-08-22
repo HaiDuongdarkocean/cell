@@ -59,6 +59,18 @@ const PAGES = [
     distHtml: resolve(DIST, 'src/entrypoints/mock-hardsub-page/index.html'),
     outDir: resolve(TMP, 'mock-hardsub'),
   },
+  {
+    name: 'YouTubeHardsub',
+    id: 'mock-youtube-hardsub',
+    port: 4326,
+    distHtml: resolve(DIST, 'src/entrypoints/mock-youtube-hardsub/index.html'),
+    outDir: resolve(TMP, 'mock-youtube-hardsub'),
+    // The 82MB test video + SRT live outside the bundle (would bloat every build).
+    // Copy them straight from the data folder into the mock output assets dir.
+    extraAssets: [
+      { from: resolve(ROOT, 'data/resource/media/video subtitle test ocr/How Have You Been.mp4'), to: 'HowHaveYouBeen.mp4' },
+    ],
+  },
 ];
 
 const args = process.argv.slice(2);
@@ -101,6 +113,19 @@ function preparePage(page) {
   const distAssets = resolve(DIST, 'assets');
   if (existsSync(distAssets)) {
     cpSync(distAssets, resolve(page.outDir, 'assets'), { recursive: true });
+  }
+
+  // Copy extra out-of-bundle assets (e.g. the 82MB test video) straight from
+  // their source into the mock output assets dir — keeps them out of the build.
+  if (page.extraAssets) {
+    for (const asset of page.extraAssets) {
+      if (!existsSync(asset.from)) {
+        console.error(`✗ ${page.name}: extra asset not found at ${asset.from}`);
+        continue;
+      }
+      cpSync(asset.from, resolve(page.outDir, 'assets', asset.to));
+      console.log(`  ↳ copied ${asset.to}`);
+    }
   }
 
   console.log(`✓ ${page.name}: prepared at ${page.outDir}`);
