@@ -12,6 +12,7 @@
 import { STATIC_TOKENS } from '@/shared/lib/tokens';
 import { checkIcon, xIcon } from '@/shared/icons';
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
+import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';
 
@@ -120,7 +121,11 @@ export class RegionSelector {
     this.video = video;
     this.currentRegion = region;
     this.mode = mode;
-    const parent = video.parentElement;
+    // Use the same container-finding algorithm as the subtitle/drag-drop layer:
+    // walk up from video to the farthest ancestor within 10% size tolerance.
+    // This avoids attaching to a thin wrapper (e.g. YouTube .html5-video-container)
+    // and instead attaches to the real player shell that owns the controls.
+    const parent = findFarthestSameSizeContainer(video);
     if (!parent) return;
     parent.style.position = 'relative';
 
