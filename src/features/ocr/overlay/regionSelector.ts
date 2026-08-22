@@ -172,7 +172,11 @@ export class RegionSelector {
   /** Update region from external source (e.g. slider). */
   updateRegion(region: CustomRegion): void {
     this.currentRegion = region;
-    if (this.mode === 'view') {
+    // In interactive modes, sync pendingRegion too so slider updates are visible
+    // (render uses pendingRegion when set, falling back to currentRegion).
+    if (this.mode !== 'view') {
+      this.pendingRegion = region;
+    } else {
       this.pendingRegion = null;
     }
     this.render();
