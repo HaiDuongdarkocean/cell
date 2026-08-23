@@ -6,6 +6,7 @@
 import { writeTtsFile, hasTtsFile, deleteTtsFile } from './ttsModelStorage';
 
 const HF_BASE = 'https://huggingface.co/Supertone/supertonic-3/resolve/main/onnx';
+const HF_VOICE_STYLE_BASE = 'https://huggingface.co/Supertone/supertonic-3/resolve/main/voice_styles';
 
 const SUPERONIC_FILES = [
   'duration_predictor.onnx',
@@ -14,6 +15,7 @@ const SUPERONIC_FILES = [
   'unicode_indexer.json',
   'vector_estimator.onnx',
   'vocoder.onnx',
+  'M1.json',
 ] as const;
 
 export interface TtsDownloadProgress {
@@ -24,7 +26,7 @@ export interface TtsDownloadProgress {
 export type DownloadProgressCallback = (progress: TtsDownloadProgress) => void;
 
 function buildFileUrl(name: string): string {
-  return `${HF_BASE}/${name}`;
+  return name === 'M1.json' ? `${HF_VOICE_STYLE_BASE}/${name}` : `${HF_BASE}/${name}`;
 }
 
 async function getContentLength(url: string): Promise<number | undefined> {

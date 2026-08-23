@@ -1,9 +1,12 @@
 // supertonicTtsEngine — local TTS engine for Supertonic v3.
 //
-// MVP stub: synthesizes a tiny dummy AudioBuffer.
-// Next step: replace the stub synthesizer with an offscreen ONNX inference call.
+// Loads Supertonic ONNX assets from OPFS (via ttsModelStorage) and runs
+// inference with onnxruntime-web/webgpu in the offscreen document. Falls back
+// to a stub beep when AudioContext exists but the voice pack is unavailable
+// (unit-test / unsupported browser path).
 
 import { createTtsAudioQueue, type TtsAudioQueue } from './ttsQueue';
+import { synthesizeSupertonic } from './supertonicInference';
 import type { TtsEngine, TtsSpeakOptions, TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
 
 const DEFAULT_VOICE: TtsVoiceInfo = {
@@ -18,7 +21,6 @@ const MAX_CHARS_PER_CHUNK = 500;
 
 function chunkText(text: string): readonly string[] {
   if (text.length <= MAX_CHARS_PER_CHUNK) return [text];
-  // Sentence-based split for natural pauses.
   const sentences = text.split(/(?<=[.!?]\s+)/).filter(Boolean);
   const chunks: string[] = [];
   let current = '';
@@ -29,7 +31,6 @@ function chunkText(text: string): readonly string[] {
     }
     if (current) chunks.push(current);
     if (sentence.length > MAX_CHARS_PER_CHUNK) {
-      // Fallback: hard-cut the oversized sentence.
       for (let i = 0; i < sentence.length; i += MAX_CHARS_PER_CHUNK) {
         chunks.push(sentence.slice(i, i + MAX_CHARS_PER_CHUNK));
       }
@@ -42,17 +43,18 @@ function chunkText(text: string): readonly string[] {
   return chunks;
 }
 
-// ponytail: stub synthesizer. Replace with offscreen Supertonic v3 inference.
-// Ceiling: only generates a short beep, no real voice. Upgrade path: ttsDownloadManager + offscreen runner.
-async function stubSynthesize(_text: string): Promise<AudioBuffer> {
-  const Ctx = globalThis.AudioContext as unknown as new () => AudioContext;
+function getAudioContext(): AudioContext {
+  const Ctx = globalThis.AudioContext as unknown as (new () => AudioContext) | undefined;
   if (!Ctx) {
-    throw new Error('AudioContext is not available');
+    throw new Error('AudioContext is not available in this environment');
   }
-  const ctx = new Ctx();
-  if (!ctx) {
-    throw new Error('AudioContext is not available');
-  }
+  return new Ctx();
+}
+
+// ponytail: stub beep for unit tests / browsers without storage. Upgrade path:
+// download voice pack in settings; OPFS inference runs on real Chrome.
+async function stubSynthesize(): Promise<AudioBuffer> {
+  const ctx = getAudioContext();
   const durationSeconds = 0.1;
   const sampleRate = ctx.sampleRate;
   const frameCount = Math.floor(durationSeconds * sampleRate);
@@ -62,6 +64,18 @@ async function stubSynthesize(_text: string): Promise<AudioBuffer> {
     data[i] = Math.sin(i * 0.1) * 0.1;
   }
   return buffer;
+}
+
+async function synthesizeOneChunk(text: string, lang: string): Promise<AudioBuffer> {
+  const ctx = getAudioContext();
+
+  if (typeof navigator?.storage?.getDirectory !== 'function') {
+    // Unit test / non-browser path: do not attempt to load ONNX.
+    return stubSynthesize();
+  }
+
+  const wavBuffer = await synthesizeSupertonic(text, lang);
+  return ctx.decodeAudioData(wavBuffer);
 }
 
 export function createSupertonicTtsEngine(): TtsEngine {
@@ -77,9 +91,10 @@ export function createSupertonicTtsEngine(): TtsEngine {
   }
 
   return {
-    async speak(text, _opts: TtsSpeakOptions) {
+    async speak(text, opts: TtsSpeakOptions) {
       cancelCurrentSpeak(new Error('TTS interrupted by new speak'));
 
+      const lang = opts.langCode ?? DEFAULT_VOICE.lang;
       const myToken = (activeToken += 1);
       return new Promise<void>((resolve, reject) => {
         speakReject = reject;
@@ -87,7 +102,7 @@ export function createSupertonicTtsEngine(): TtsEngine {
 
         for (let i = 0; i < chunks.length; i++) {
           const isLast = i === chunks.length - 1;
-          void stubSynthesize(chunks[i])
+          void synthesizeOneChunk(chunks[i], lang)
             .then((audioBuffer) => {
               if (myToken !== activeToken) return;
               queue.enqueue({

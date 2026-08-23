@@ -78,6 +78,7 @@ describe('createSupertonicTtsEngine', () => {
 
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
 
     expect(sources).toHaveLength(1);
     sources[0].onended?.();

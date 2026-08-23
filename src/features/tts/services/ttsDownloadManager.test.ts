@@ -53,20 +53,20 @@ describe('ttsDownloadManager', () => {
     const onProgress = jest.fn();
     await downloadVoicePack('en', onProgress);
 
-    expect((globalThis as Record<string, unknown>).fetch).toHaveBeenCalledTimes(12); // 6 HEAD + 6 GET
-    expect(mockWriteTtsFile).toHaveBeenCalledTimes(6);
-    expect(onProgress).toHaveBeenLastCalledWith({ loaded: 600, total: 600 });
+    expect((globalThis as Record<string, unknown>).fetch).toHaveBeenCalledTimes(14); // 7 HEAD + 7 GET
+    expect(mockWriteTtsFile).toHaveBeenCalledTimes(7);
+    expect(onProgress).toHaveBeenLastCalledWith({ loaded: 700, total: 700 });
   });
 
   it('reports whether all voice pack files are present', async () => {
     mockHasTtsFile.mockResolvedValue(true);
     const downloaded = await isVoicePackDownloaded();
     expect(downloaded).toBe(true);
-    expect(mockHasTtsFile).toHaveBeenCalledTimes(6);
+    expect(mockHasTtsFile).toHaveBeenCalledTimes(7);
   });
 
   it('deletes all voice pack files', async () => {
     await deleteVoicePack();
-    expect(mockDeleteTtsFile).toHaveBeenCalledTimes(6);
+    expect(mockDeleteTtsFile).toHaveBeenCalledTimes(7);
   });
 });
