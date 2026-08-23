@@ -447,7 +447,7 @@ export async function loadSettings(): Promise<Settings> {
   if (!raw) {
     const resolved = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
     resolveSettingsFlatFields(resolved);
-    return resolved as Settings;
+    return resolved as unknown as Settings;
   }
 
   const storedVersion = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 0;
@@ -484,6 +484,8 @@ export async function loadSettings(): Promise<Settings> {
   // Forward-compat: ensure nested overlay style objects carry fontWeight.
   migrated.subtitleOverlayTargetStyle = normalizeOverlayStyle(migrated.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
   migrated.subtitleOverlayNativeStyle = normalizeOverlayStyle(migrated.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
+  validateNavClusterFields(migrated);
+  validateLocalPlayerSettings(migrated);
   resolveSettingsFlatFields(migrated);
 
   // Persist migrated settings back to storage. Write directly via setStorage

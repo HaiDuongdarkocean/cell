@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
+import type { Settings, CardCreatorSettings } from '@/entities/settings';
+import { getActiveProfileSettings } from '@/entities/settings';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,
   MAX_CONVERT_BYTES,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
 } from '@/shared/config/config';
+import { LanguageProfilePanel } from './LanguageProfilePanel';
 // ADR-029: language dropdown lists now come from the single-source-of-truth
 // registry. The hardcoded SUBTITLE_LANGUAGES + OVERLAY_LANGUAGE_OPTIONS arrays
 // that used to live here (~200 lines) have been removed.
@@ -177,6 +179,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
   const sidebarItems: { id: string; label: string }[] = [
     { id: 'media', label: 'Media' },
     { id: 'block', label: 'Block' },
+    { id: 'languageProfile', label: 'Language Profile' },
     { id: 'shortcuts', label: 'Shortcuts' },
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
@@ -357,6 +360,21 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <div className={styles.divider} />
 
                 {/* ADR-025: Block position/scale/opacity moved to Subtitle Manager appearance view */}
+              </div>
+            </section>
+
+            {/* === Card: Language Profile (schema v23) === */}
+            <section
+              ref={(el) => { sectionRefs.current.languageProfile = el; }}
+              className={styles.section}
+              data-section="languageProfile"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Language Profile</h4>
+              </div>
+              <p className={styles.sectionDescription}>Manage language pairs and per-profile dictionary resources.</p>
+              <div className={styles.sectionBody}>
+                <LanguageProfilePanel settings={settings} onChange={onChange} />
               </div>
             </section>
 
@@ -636,7 +654,10 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               </div>
               <p className={styles.sectionDescription}>Import and manage dictionaries and frequency lists.</p>
               <div className={styles.sectionBody}>
-                <ResourcesPanel langCode={settings.subtitleOverlayTargetLanguage || 'en'} />
+                <ResourcesPanel
+                  langCode={settings.subtitleOverlayTargetLanguage || 'en'}
+                  resourceIds={getActiveProfileSettings(settings)?.resourceIds}
+                />
               </div>
             </section>
 

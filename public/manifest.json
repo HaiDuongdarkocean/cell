@@ -68,6 +68,7 @@
       "all_frames": false
     }
   ],
+  "options_page": "public/options.html",
   "side_panel": {
     "default_path": "src/entrypoints/sidepanel/index.html"
   },

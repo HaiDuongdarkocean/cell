@@ -20,6 +20,12 @@ export interface UniversalPanelProps {
   readonly tokenizeState: TokenizePanelState;
   /** Toggle one of the tokenize keys from the universal header. */
   readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
+  /** Language profiles for quick switch. */
+  readonly languageProfiles?: { readonly id: string; readonly name: string }[];
+  /** Active profile id. */
+  readonly activeProfileId?: string | null;
+  /** Called when user switches active profile. */
+  readonly onProfileChange?: (profileId: string) => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
   /** Content for the Settings tab. */
@@ -44,6 +50,9 @@ export function UniversalPanel({
   onClose,
   tokenizeState,
   onToggleTokenize,
+  languageProfiles = [],
+  activeProfileId = null,
+  onProfileChange = () => {},
   dictionaryPanel,
   settingsPanel,
 }: UniversalPanelProps): ReactElement | null {
@@ -138,6 +147,9 @@ export function UniversalPanel({
             tokenizeState={tokenizeState}
             onToggleTokenize={onToggleTokenize}
             onClose={onClose}
+            languageProfiles={languageProfiles}
+            activeProfileId={activeProfileId}
+            onProfileChange={onProfileChange}
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>

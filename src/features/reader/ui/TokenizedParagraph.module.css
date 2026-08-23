@@ -1,0 +1,27 @@
+.paragraph {
+  margin: 0 0 var(--spacing-md, 1rem);
+  line-height: 1.8;
+  font-size: var(--font-size-lg, 1.125rem);
+  color: var(--color-text);
+}
+
+.separator {
+  color: var(--color-text-tertiary);
+}
+
+.token {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 0.25rem);
+  padding: 0 0.125rem;
+  transition: background 120ms ease;
+}
+
+.token:hover {
+  background: var(--color-surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+.token:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}

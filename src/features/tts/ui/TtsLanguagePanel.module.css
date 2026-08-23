@@ -1,0 +1,102 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cell-gap-sm, 8px);
+  padding-block: var(--cell-padding-sm, 8px);
+}
+
+.row {
+  align-items: center;
+}
+
+.rowLabel {
+  flex: 1;
+  font: var(--cell-text-body, 14px / 1.5 sans-serif);
+  color: var(--cell-color-text-primary, #111);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  margin-block-start: var(--cell-gap-md, 12px);
+}
+
+.sectionTitle {
+  font: var(--cell-text-label, 12px / 1.4 sans-serif);
+  font-weight: 600;
+  color: var(--cell-color-text-secondary, #555);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.empty {
+  font: var(--cell-text-body, 14px / 1.5 sans-serif);
+  color: var(--cell-color-text-tertiary, #777);
+  margin: 0;
+}
+
+.languageRow {
+  align-items: center;
+  gap: var(--cell-gap-sm, 8px);
+}
+
+.languageInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--cell-gap-sm, 8px);
+  flex: 1;
+  min-width: 0;
+}
+
+.languageName {
+  font: var(--cell-text-body, 14px / 1.5 sans-serif);
+  color: var(--cell-color-text-primary, #111);
+  text-transform: uppercase;
+}
+
+.hiddenBadge,
+.downloadingBadge {
+  font: var(--cell-text-caption, 11px / 1.4 sans-serif);
+  padding: 2px 6px;
+  border-radius: var(--cell-radius-sm, 4px);
+  background: var(--cell-color-surface-tertiary, #eee);
+  color: var(--cell-color-text-secondary, #555);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cell-gap-xs, 4px);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cell-gap-sm, 8px);
+  padding-block: var(--cell-padding-xs, 4px);
+}
+
+.progressText {
+  font: var(--cell-text-caption, 11px / 1.4 sans-serif);
+  color: var(--cell-color-text-secondary, #555);
+  min-width: 3ch;
+  text-align: right;
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: var(--cell-gap-sm, 8px);
+  margin-block-start: var(--cell-gap-sm, 8px);
+}
+
+.addSelect {
+  flex: 1;
+  min-width: 0;
+}
+
+.error {
+  font: var(--cell-text-caption, 11px / 1.4 sans-serif);
+  color: var(--cell-color-danger, #d32f2f);
+  margin: 0;
+}

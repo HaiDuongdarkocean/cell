@@ -21,7 +21,8 @@ src/
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
-│   └── design-system-showcase/  #   Design system showcase page — App.tsx + preview components + mock data for offline component demos
+│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + preview components + mock data for offline component demos
+│   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
 │   │   └── subtitleDiscovery/  # Generic subtitle-list discovery pipeline (T1-T12 E2E): signals, adapters, schema, pipeline, candidate/identity helpers
@@ -520,6 +521,7 @@ tests/
 | `entrypoints/content/ocrController.ts` | ocrRunner (sendMessage OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE), ocrEngine types | ocrContentScript.ts | **Orca T9**: OcrController — proxy to offscreen OCR engine via chrome.runtime messaging. `init(languageMode, backend)` → OCR_INIT message → background creates offscreen document + forwards to ocrRunner. `recognize(image, minScore)` → OCR_RECOGNIZE → returns OcrResult[]. `dispose()` → OCR_DISPOSE. State machine: UNINIT → INITIALIZING → READY → DISPOSED |
 | `entrypoints/offscreen/ocrRunner.ts` | paddleOcrEngine (PaddleOcrEngine), ocrEngine types | background/handlers/ocr.ts | **Orca T9**: Offscreen document OCR runner — owns PaddleOcrEngine instance. Receives OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE messages from background. PaddleOcrEngine lazy-loads @paddleocr/paddleocr-js (WebGPU preferred, WASM fallback). **T21**: WebGPU shader JIT warmup — runs dummy predict() on 64×32 black canvas after init to trigger shader compilation (hides 5s first-run stall) |
 | `entrypoints/background/handlers/ocr.ts` | offscreen (createOffscreenDocument, closeOffscreenDocument), messages (OCR_INIT/OCR_RECOGNIZE/OCR_DISPOSE) | background/index.ts | **Orca T9**: Background OCR handler — bridges content-script ↔ offscreen document. Creates offscreen document on first OCR_INIT, forwards messages, closes on OCR_DISPOSE |
+| `entrypoints/background/handlers/reader.ts` | MESSAGE_TYPES.OPEN_READER, OpenReaderPayloadSchema, chrome.tabs.create | background/index.ts | Reader background handler — opens reader page via chrome.tabs.create with optional bookId |
 | `features/ocr/engine/paddleOcrEngine.ts` | @paddleocr/paddleocr-js, ocrEngine (OcrEngine), ocrEngine types | offscreen/ocrRunner.ts | **Orca T1-T3**: PaddleOcrEngine — wraps PaddleOCR.js PP-OCRv5 mobile. `initialize(config)` → PaddleOCR.create({lang, ocrVersion, ortOptions}). `recognize(image, options)` → OffscreenCanvas + predict() → adaptResult → OcrResult[]. `dispose()` releases instance. **T21**: `warmupShaderJit()` private method — dummy predict on 64×32 black canvas. LANG_MAP: auto/zh/en/ja → 'ch' (PP-OCRv5 'ch' model covers CN+EN+JA mixed) |
 | `features/ocr/engine/ocrEngine.ts` | ocrEngine types | paddleOcrEngine.ts | **Orca T1**: OcrEngine interface — initialize(config), recognize(image, options), dispose(), getBackend() |
 | `features/ocr/engine/types.ts` | — | paddleOcrEngine, ocrPipeline, ocrOverlay, ocrController | **Orca T1**: OCR type definitions — ImageSource (RGBA Uint8ClampedArray), OcrResult, OcrResultItem (poly + text + score), OcrConfig, OcrOptions, OcrBackend, Quad |
@@ -1398,3 +1400,44 @@ Mục tiêu: nhận diện danh sách phụ đề từ 9 site families (cinesrc,
 - `fetchText` dùng `offscreenFetch` để tránh SW idle eviction (M15); kèm DNR referer rewrite.
 - Bảo mật: content script gửi `signal.origin`, background validate qua Zod; `MessageBus` inject `tabId`/`frameId` từ sender.
 - Giới hạn: onflix cần test HLS server-variant thực tế.
+
+## Language Profile (schema v23)
+
+Tính năng cho phép người dùng tạo nhiều cặp target/native language, mỗi profile có bộ overlay style, auto-load, dictionary popup và resource allow-list riêng. Active profile quyết định cấu hình flat subtitle/dictionary hiện hành.
+
+### Model & resolution (`@/entities/settings`)
+
+| File | Vai trò | Public API |
+|------|---------|------------|
+| `src/entities/settings/types.ts` | `LanguageProfile`, `ResolvedProfile`, `Settings` v23 fields | `universalNativeLanguage`, `languageProfiles`, `activeProfileId` |
+| `src/entities/settings/lib/profileResolution.ts` | Resolve active profile; migrate flat settings to v23 profile | `getActiveProfileSettings`, `resolveProfile`, `buildProfileName`, `validateLanguageProfile`, `generateProfileId`, `resolveSettingsFlatFields` |
+| `src/entities/settings/lib/profileResolution.test.ts` | Unit tests cho resolution + validation | — |
+
+### Storage migration
+
+| File | Vai trò |
+|------|---------|
+| `src/shared/lib/storage/settingsStore.ts` | `CURRENT_SCHEMA_VERSION = 23`; migration v22→v23 tạo default profile từ `subtitleOverlayTargetLanguage`/`subtitleOverlayNativeLanguage`; `validateLocalPlayerSettings` + `validateNavClusterFields` chạy sau mọi migration; `resolveSettingsFlatFields` trong `loadSettings` |
+| `tests/unit/shared/lib/storage/settingsMigration.test.ts` | V23 schema assertions |
+| `tests/unit/shared/lib/storage/settingsStore*.test.ts` | v23 schema version tests |
+
+### UI
+
+| File | Vai trò | Dependencies |
+|------|---------|--------------|
+| `src/features/settings/ui/LanguageProfilePanel.tsx` | Quản lý profiles (add/edit/delete/reorder, universal native, duplicate from active) | `SettingsRow`, `SearchableSelect`, `Dialog`, `Toggle`, `Alert`, `Button`, `IconButton`, `HStack`, `VStack`, `Icon` |
+| `src/features/settings/ui/SettingsDialogContent.tsx` | Nhúng `LanguageProfilePanel` section + truyền `resourceIds` active profile cho `ResourcesPanel` | `getActiveProfileSettings` |
+| `src/features/settings/ui/SettingsDialog.module.css` | `.profileList`, `.profileItem`, `.profileDialogBody`, `.rowLabel`, … | — |
+
+### Universal panel quick switch
+
+| File | Vai trò |
+|------|---------|
+| `src/features/universalPanel/UniversalPanelHeader.tsx` | Dropdown `Select` chuyển active profile |
+| `src/features/universalPanel/UniversalPanel.tsx` | Truyền `languageProfiles`, `activeProfileId`, `onProfileChange` xuống header |
+| `src/features/universalPanel/mountUniversalPanel.ts` | `loadSettings` lấy profiles; `saveSettings({ activeProfileId })` khi chuyển |
+
+### Dictionary resource filter
+
+- `src/features/dictionary/ui/ResourcesPanel.tsx` nhận `resourceIds?: readonly number[]`; chỉ hiển thị resource có `id` trong allow-list.
+- `SettingsDialogContent` truyền `getActiveProfileSettings(settings)?.resourceIds`.

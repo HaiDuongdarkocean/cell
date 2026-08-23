@@ -2,7 +2,10 @@ import type { ReactElement } from 'react';
 import { HStack } from '@/shared/ui';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
+import { Select } from '@/shared/ui/Select';
 import { Icon } from '@/shared/icons/Icon';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './UniversalPanelHeader.module.css';
 
@@ -13,6 +16,12 @@ export interface UniversalPanelHeaderProps {
   readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
   /** Called when the close button is clicked. */
   readonly onClose: () => void;
+  /** Language profiles for quick switch. */
+  readonly languageProfiles?: { readonly id: string; readonly name: string }[];
+  /** Active profile id. */
+  readonly activeProfileId?: string | null;
+  /** Called when user switches active profile. */
+  readonly onProfileChange?: (profileId: string) => void;
 }
 
 type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled';
@@ -44,11 +53,29 @@ export function UniversalPanelHeader({
   tokenizeState,
   onToggleTokenize,
   onClose,
+  languageProfiles = [],
+  activeProfileId = null,
+  onProfileChange = () => {},
 }: UniversalPanelHeaderProps): ReactElement {
   const tokenizeOff = !tokenizeState.enabled;
+  const profileOptions = languageProfiles.map((p) => ({ value: p.id, label: p.name }));
+  const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
+  const placeholder = activeProfile?.name ?? 'Select profile';
 
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
+      {languageProfiles.length > 0 && (
+        <Select
+          className={styles.profileSelect}
+          value={activeProfileId ?? ''}
+          options={profileOptions}
+          placeholder={placeholder}
+          onChange={onProfileChange}
+          aria-label="Switch language profile"
+          data-cell-id="universal-panel-profile-switch"
+          menuAlign="right"
+        />
+      )}
       <HStack align="center" gap="3" className={styles.toggleCluster} role="group" aria-label="Tokenize controls">
         {TOGGLE_ITEMS.map((item) => {
           const checked = tokenizeState[item.key];
@@ -70,6 +97,21 @@ export function UniversalPanelHeader({
           );
         })}
       </HStack>
+
+      <IconButton
+        size="sm"
+        variant="ghost"
+        aria-label="Open Reader"
+        onClick={() =>
+          void sendMessage({
+            type: MESSAGE_TYPES.OPEN_READER,
+            payload: {},
+          })
+        }
+        data-cell-id="universal-panel-reader"
+      >
+        <Icon name="bookOpen" />
+      </IconButton>
 
       <IconButton
         size="sm"
