@@ -1,0 +1,86 @@
+/* === LabelGroup — icon + label/sublabel + trailing for settings rows ===
+   Consumes tokens only — no raw hex/radius. */
+
+.labelGroup {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
+/* ─── Leading icon — 20px slot, secondary color ─── */
+.icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ─── Text column — label + sublabel stacked vertically ─── */
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+/* ─── Label row — label + hint icon inline ─── */
+.labelRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-tight);
+  user-select: none;
+}
+
+/* ─── Hint icon — info icon next to label, hover → info color ─── */
+.hintIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  cursor: help;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.hintIcon:hover {
+  color: var(--color-info);
+}
+.hintIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sublabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Trailing — info button, badge, etc. ─── */
+.trailing {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}

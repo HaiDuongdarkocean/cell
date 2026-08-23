@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Reader Mockup</title>
+  <link rel="stylesheet" href="../../src/shared/styles/tokens.css" />
+  <link rel="stylesheet" href="../../src/shared/styles/components.css" />
+  <link rel="stylesheet" href="../../src/shared/ui/Card.module.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; }
+    html {
+      font-family: var(--font-family-body);
+      font-size: var(--font-size-base);
+      color: var(--color-text-primary);
+      background: var(--color-background);
+    }
+    body { min-height: 100vh; min-height: 100dvh; }
+    a { color: inherit; text-decoration: none; }
+    h1, h2, h3, p { margin: 0; }
+    ul, ol { margin: 0; padding: 0; list-style: none; }
+
+    .screen { display: none; }
+    .screen--active { display: block; }
+
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-surface);
+      border-bottom: var(--border-width-hairline) solid var(--color-border);
+    }
+    .top-bar__title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .page { padding: var(--space-4); }
+    .container {
+      width: 100%;
+      max-width: min(100%, 1024px);
+      margin: 0 auto;
+    }
+
+    .icon { display: inline-flex; width: var(--iconbutton-icon-sm); height: var(--iconbutton-icon-sm); flex-shrink: 0; }
+    .icon svg { width: 100%; height: 100%; }
+    .btn--with-icon { gap: var(--space-1-5); }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+      gap: var(--space-4);
+    }
+    .panel-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-6) var(--space-4);
+      text-align: center;
+      border-radius: var(--radius-card);
+    }
+    .panel-card .icon { width: var(--iconbutton-icon-md); height: var(--iconbutton-icon-md); color: var(--color-primary); }
+    .panel-card span { font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .section-header h2 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
+
+    .import-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-6);
+      border: var(--border-width-hairline) dashed var(--color-border);
+      border-radius: var(--radius-card);
+      background: var(--color-surface);
+      text-align: center;
+      margin-bottom: var(--space-6);
+    }
+    .import-card .icon { width: var(--iconbutton-icon-md); height: var(--iconbutton-icon-md); color: var(--color-text-secondary); }
+    .import-card p { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+
+    .book-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+    .book-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .book-card__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+    .book-card__title { font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
+    .book-card__meta { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+    .book-card__stats {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .progress { width: 100%; height: var(--space-2); background: var(--color-track); border-radius: var(--radius-full); overflow: hidden; }
+    .progress__bar { height: 100%; background: var(--color-primary); border-radius: var(--radius-full); }
+
+    .read-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+    .read-header h1 {
+      flex: 1 1 auto;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+    }
+    .read-header__meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .reader-text {
+      max-width: min(100%, 70ch);
+      margin: 0 auto;
+      line-height: var(--leading-relaxed);
+      padding-bottom: calc(var(--space-4) + 80px);
+    }
+    .token {
+      display: inline-block;
+      border-radius: var(--radius-sm);
+      padding: 0.05em var(--space-1);
+      margin: 0 var(--space-0-5);
+      cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+    }
+    .token:hover { outline: var(--border-width-hairline) solid var(--color-primary); }
+    .tok-core { background: var(--color-token-freq-core-bg); color: var(--color-token-freq-core-fg); }
+    .tok-common { background: var(--color-token-freq-common-bg); color: var(--color-token-freq-common-fg); }
+    .tok-general { background: var(--color-token-freq-general-bg); color: var(--color-token-freq-general-fg); }
+    .tok-advanced { background: var(--color-token-freq-advanced-bg); color: var(--color-token-freq-advanced-fg); }
+    .tok-rare { background: var(--color-token-freq-rare-bg); color: var(--color-token-freq-rare-fg); }
+    .tok-known { background: var(--color-token-status-known-bg); color: var(--color-token-status-known); }
+    .tok-tracking { background: var(--color-token-status-tracking-bg); color: var(--color-token-status-tracking); }
+    .tok-ignore { background: var(--color-token-status-ignore-bg); color: var(--color-token-status-ignore); }
+
+    .tts-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: var(--z-sticky);
+      background: var(--color-surface);
+      border-top: var(--border-width-hairline) solid var(--color-border);
+      padding: var(--space-3) var(--space-4);
+    }
+    .tts-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+    .tts-timer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+    .play-btn { width: var(--space-12); height: var(--space-12); }
+    .play-btn svg { width: var(--iconbutton-icon-md); height: var(--iconbutton-icon-md); }
+
+    .hidden { display: none; }
+
+    @media (min-width: 768px) {
+      .page { padding: var(--space-6); }
+      .book-grid { grid-template-columns: repeat(2, 1fr); }
+      .reader-text { font-size: var(--font-size-lg); }
+      .tts-bar { padding: var(--space-4) var(--space-6); }
+    }
+
+    @media (min-width: 1280px) {
+      .page { padding: var(--space-8); }
+      .book-grid { grid-template-columns: repeat(3, 1fr); }
+      .reader-text { max-width: min(100%, 80ch); }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-bar">
+    <span class="top-bar__title">Cell Reader Mockup</span>
+    <button id="themeToggle" class="icon-btn" aria-label="Đổi theme"></button>
+  </header>
+
+  <main class="page">
+    <!-- 1. Universal Panel -->
+    <section id="panel" class="screen">
+      <div class="container">
+        <div class="section-header">
+          <h2>Universal Panel</h2>
+        </div>
+        <div class="panel-grid">
+          <a href="#home" class="card panel-card">
+            <span class="icon">
+              <svg class="lucide lucide-book-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>
+            </span>
+            <span>Reader</span>
+          </a>
+          <div class="card panel-card" style="opacity: 0.6;">
+            <span class="icon">
+              <svg class="lucide lucide-video" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+            </span>
+            <span>Video</span>
+          </div>
+          <div class="card panel-card" style="opacity: 0.6;">
+            <span class="icon">
+              <svg class="lucide lucide-settings" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span>Settings</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Reader Home -->
+    <section id="home" class="screen">
+      <div class="container">
+        <div class="section-header">
+          <a href="#panel" class="icon-btn" aria-label="Quay lại panel"><svg class="lucide lucide-chevron-left" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg></a>
+          <h2>Reader Home</h2>
+        </div>
+
+        <div class="card import-card">
+          <span class="icon">
+            <svg class="lucide lucide-folder-open" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" /></svg>
+          </span>
+          <p>Kéo thả EPUB / PDF / TXT / HTML hoặc nhấn để chọn tệp.</p>
+          <button class="btn btn--secondary btn--with-icon"><span class="icon"><svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg></span> Chọn tệp</button>
+        </div>
+
+        <div class="book-grid">
+          <a href="#read" class="card interactive book-card">
+            <div class="book-card__row">
+              <div>
+                <div class="book-card__title">1984</div>
+                <div class="book-card__meta">George Orwell</div>
+              </div>
+              <span class="icon"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg></span>
+            </div>
+            <div class="progress"><div class="progress__bar" style="width: 34%;"></div></div>
+            <div class="book-card__stats">
+              <span class="icon" style="width: 14px; height: 14px;"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></span>
+              <span>2h 15m</span>
+              <span>34% hoàn thành</span>
+            </div>
+          </a>
+
+          <a href="#read" class="card interactive book-card">
+            <div class="book-card__row">
+              <div>
+                <div class="book-card__title">Animal Farm</div>
+                <div class="book-card__meta">George Orwell</div>
+              </div>
+              <span class="icon"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg></span>
+            </div>
+            <div class="progress"><div class="progress__bar" style="width: 12%;"></div></div>
+            <div class="book-card__stats">
+              <span class="icon" style="width: 14px; height: 14px;"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></span>
+              <span>20 phút</span>
+              <span>12% hoàn thành</span>
+            </div>
+          </a>
+
+          <a href="#read" class="card interactive book-card">
+            <div class="book-card__row">
+              <div>
+                <div class="book-card__title">A Brief History of Time</div>
+                <div class="book-card__meta">Stephen Hawking</div>
+              </div>
+              <span class="icon"><svg class="lucide lucide-chevron-right" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg></span>
+            </div>
+            <div class="progress"><div class="progress__bar" style="width: 67%;"></div></div>
+            <div class="book-card__stats">
+              <span class="icon" style="width: 14px; height: 14px;"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></span>
+              <span>5h 40m</span>
+              <span>67% hoàn thành</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Reading View -->
+    <section id="read" class="screen">
+      <div class="container">
+        <div class="read-header">
+          <a href="#home" class="icon-btn" aria-label="Quay lại thư viện"><svg class="lucide lucide-chevron-left" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg></a>
+          <h1>1984</h1>
+          <div class="read-header__meta">
+            <span class="icon"><svg class="lucide lucide-clock" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></span>
+            <span>2h 15m</span>
+          </div>
+          <button class="btn btn--primary btn--sm btn--with-icon"><span class="icon"><svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14" /><path d="M5 12h14" /></svg></span> Lưu Anki</button>
+        </div>
+
+        <article class="reader-text">
+          <p>
+            <span class="token tok-rare">Design</span>
+            <span class="token tok-core">is</span>
+            <span class="token tok-core">not</span>
+            <span class="token tok-core">just</span>
+            <span class="token tok-common">what</span>
+            <span class="token tok-core">it</span>
+            <span class="token tok-core tok-known">looks</span>
+            <span class="token tok-core tok-known">like</span>
+            <span class="token tok-core">and</span>
+            <span class="token tok-core tok-known">feels</span>
+            <span class="token tok-core">like</span>.
+            <span class="token tok-rare">Design</span>
+            <span class="token tok-core">is</span>
+            <span class="token tok-common">how</span>
+            <span class="token tok-core tok-known">it</span>
+            <span class="token tok-common">works</span>.
+          </p>
+          <p>
+            <span class="token tok-common tok-known">Good</span>
+            <span class="token tok-rare">design</span>
+            <span class="token tok-core">is</span>
+            <span class="token tok-core">as</span>
+            <span class="token tok-common">little</span>
+            <span class="token tok-rare">design</span>
+            <span class="token tok-core">as</span>
+            <span class="token tok-common tok-known">possible</span>.
+            <span class="token tok-rare">Simplicity</span>
+            <span class="token tok-core">is</span>
+            <span class="token tok-core">the</span>
+            <span class="token tok-common tok-tracking">ultimate</span>
+            <span class="token tok-rare tok-tracking">sophistication</span>.
+          </p>
+          <p>
+            <span class="token tok-core">You</span>
+            <span class="token tok-core">can</span>
+            <span class="token tok-core tok-known">not</span>
+            <span class="token tok-common">connect</span>
+            <span class="token tok-core">the</span>
+            <span class="token tok-common">dots</span>
+            <span class="token tok-core">looking</span>
+            <span class="token tok-core">forward</span>;
+            <span class="token tok-core">you</span>
+            <span class="token tok-core">can</span>
+            <span class="token tok-core">only</span>
+            <span class="token tok-common">connect</span>
+            <span class="token tok-core">them</span>
+            <span class="token tok-common">looking</span>
+            <span class="token tok-advanced">backwards</span>.
+          </p>
+        </article>
+
+        <div class="tts-bar">
+          <div class="tts-controls">
+            <button class="icon-btn" aria-label="Câu trước"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M13.5 9L10.5 12L13.5 15" /></svg></button>
+            <button class="icon-btn icon-btn--filled play-btn" id="playPause" aria-label="Phát / tạm dừng"><svg id="playIcon" class="lucide lucide-play" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z" /></svg><svg id="pauseIcon" class="lucide lucide-pause hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6z" /><path d="M14 4h4v16h-4z" /></svg></button>
+            <button class="icon-btn" aria-label="Câu sau"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M10.5 9L13.5 12L10.5 15" /></svg></button>
+            <button class="icon-btn" aria-label="Lặp lại"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" /></svg></button>
+          </div>
+          <div class="tts-timer">
+            <span>0:18</span>
+            <div class="progress" style="flex: 1 1 auto; margin: 0 var(--space-3);"><div class="progress__bar" style="width: 34%;"></div></div>
+            <span>1:45</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const screens = document.querySelectorAll('.screen');
+      function showScreen() {
+        const id = location.hash.slice(1) || 'panel';
+        screens.forEach(s => s.classList.toggle('screen--active', s.id === id));
+      }
+      window.addEventListener('hashchange', showScreen);
+      showScreen();
+
+      const themeBtn = document.getElementById('themeToggle');
+      const sunIcon = '<svg class="lucide lucide-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+      const moonIcon = '<svg class="lucide lucide-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+      function setTheme(t) {
+        document.documentElement.dataset.theme = t;
+        themeBtn.innerHTML = t === 'dark' ? sunIcon : moonIcon;
+        themeBtn.setAttribute('aria-label', t === 'dark' ? 'Bật chế độ sáng' : 'Bật chế độ tối');
+      }
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+      themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+      const playPause = document.getElementById('playPause');
+      const playIcon = document.getElementById('playIcon');
+      const pauseIcon = document.getElementById('pauseIcon');
+      playPause.addEventListener('click', () => {
+        playIcon.classList.toggle('hidden');
+        pauseIcon.classList.toggle('hidden');
+      });
+    })();
+  </script>
+</body>
+</html>
