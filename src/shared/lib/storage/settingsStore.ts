@@ -13,10 +13,11 @@
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS } from '@/shared/config/config';
-import type { Settings, NavClusterButtonSize } from '@/entities/settings';
+import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '@/entities/settings';
+import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 22;
+export const CURRENT_SCHEMA_VERSION = 23;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -393,6 +394,44 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     }
     return merged;
   },
+  // v22 → v23: Language Profile system (spec profile-language.md).
+  // Migrate flat language fields into the first default profile.
+  22: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 23 } as Record<string, unknown>;
+    const oldTarget =
+      (s.subtitleOverlayTargetLanguage as string | undefined) ??
+      DEFAULT_SETTINGS.subtitleOverlayTargetLanguage;
+    const oldNative =
+      (s.subtitleOverlayNativeLanguage as string | undefined) ??
+      DEFAULT_SETTINGS.subtitleOverlayNativeLanguage;
+    const universalNative = oldNative;
+
+    const defaultProfile: LanguageProfile = {
+      id: generateProfileId(),
+      target: oldTarget,
+      native: '',
+      name: buildProfileName('', universalNative, oldTarget, []),
+      order: 1,
+      subtitleOverlayTargetStyle: (merged.subtitleOverlayTargetStyle ??
+        DEFAULT_OVERLAY_STYLE_TARGET) as LanguageProfile['subtitleOverlayTargetStyle'],
+      subtitleOverlayNativeStyle: (merged.subtitleOverlayNativeStyle ??
+        DEFAULT_OVERLAY_STYLE_NATIVE) as LanguageProfile['subtitleOverlayNativeStyle'],
+      subtitleOverlayAutoLoad: (merged.subtitleOverlayAutoLoad ??
+        DEFAULT_SETTINGS.subtitleOverlayAutoLoad) as boolean,
+      subtitleOverlayAutoLoadAsr: (merged.subtitleOverlayAutoLoadAsr ??
+        DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr) as boolean,
+      subtitleOverlayAutoTranslate: (merged.subtitleOverlayAutoTranslate ??
+        DEFAULT_SETTINGS.subtitleOverlayAutoTranslate) as boolean,
+      dictionaryPopup: (merged.dictionaryPopup ??
+        DEFAULT_DICTIONARY_POPUP_SETTINGS) as LanguageProfile['dictionaryPopup'],
+      resourceIds: [],
+    };
+
+    merged.universalNativeLanguage = universalNative;
+    merged.languageProfiles = [defaultProfile];
+    merged.activeProfileId = defaultProfile.id;
+    return merged;
+  },
 };
 
 /**
@@ -406,7 +445,9 @@ export async function loadSettings(): Promise<Settings> {
   const raw = data[STORAGE_KEYS.SETTINGS] as Record<string, unknown> | undefined;
 
   if (!raw) {
-    return DEFAULT_SETTINGS;
+    const resolved = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
+    resolveSettingsFlatFields(resolved);
+    return resolved as Settings;
   }
 
   const storedVersion = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 0;
@@ -424,6 +465,7 @@ export async function loadSettings(): Promise<Settings> {
     validateLocalPlayerSettings(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
     merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
+    resolveSettingsFlatFields(merged);
     return merged as unknown as Settings;
   }
 
@@ -442,6 +484,7 @@ export async function loadSettings(): Promise<Settings> {
   // Forward-compat: ensure nested overlay style objects carry fontWeight.
   migrated.subtitleOverlayTargetStyle = normalizeOverlayStyle(migrated.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
   migrated.subtitleOverlayNativeStyle = normalizeOverlayStyle(migrated.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
+  resolveSettingsFlatFields(migrated);
 
   // Persist migrated settings back to storage. Write directly via setStorage
   // (NOT via saveSettings) — saveSettings now does read-modify-write and calls
@@ -469,6 +512,7 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
     ...settings,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   } as StoredSettings;
+  resolveSettingsFlatFields(toStore as unknown as Record<string, unknown>);
   await setStorage({ [STORAGE_KEYS.SETTINGS]: toStore });
 }
 

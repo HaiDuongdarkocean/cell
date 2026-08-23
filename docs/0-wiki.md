@@ -20,7 +20,8 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 │   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
 │   ├── orca-ocr-layer.md               # Spec: OCR layer (PaddleOCR.js PP-OCRv5) — hard-sub video + image OCR, per-origin persistence, mixed CN+EN+JA, Manager Panel toggle + context menu
-│   └── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
+│   ├── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
+│   └── fnc_tts.md                      # Spec: local offline TTS với Supertonic v3 cho popup từ điển + nền reader
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)

@@ -227,6 +227,9 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  universalNativeLanguage: 'vi',
+  languageProfiles: [],
+  activeProfileId: null,
   concurrentDownloads: DEFAULT_CONCURRENT_DOWNLOADS,
   defaultQuality: DEFAULT_QUALITY,
   defaultSubtitleLanguage: DEFAULT_SUBTITLE_LANGUAGE,
