@@ -8,7 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { OffscreenManager } from '../offscreenManager';
-import { TtsSpeakPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsSpeakLocalPayloadSchema } from '@/features/dictionaryPopup/schema';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 
@@ -16,7 +16,7 @@ const offscreen = new OffscreenManager();
 
 export function registerLocalTtsHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TTS_SPEAK_LOCAL, async (request): Promise<MessageResponse<null>> => {
-    const parsed = TtsSpeakPayloadSchema.safeParse(request.payload);
+    const parsed = TtsSpeakLocalPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid TTS_SPEAK_LOCAL payload: ${parsed.error.message}` };
     }
