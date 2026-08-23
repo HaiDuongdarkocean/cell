@@ -129,6 +129,12 @@ export interface TtsSettings {
   readonly autoplayCount: number;
   /** Preferred accent for Forvo scoring: 'US' | 'UK'. Default 'US'. */
   readonly preferredAccent: 'US' | 'UK';
+  /** Enable local Supertonic v3 TTS. Default false. */
+  readonly localTtsEnabled: boolean;
+  /** Selected local TTS language (ISO 639-1). Default 'en'. */
+  readonly localTtsLanguage: string;
+  /** Languages whose voice packs are downloaded. */
+  readonly downloadedLanguages: readonly string[];
 }
 
 /** Dictionary Popup settings slice (spec §9.3 — schema v14). */
