@@ -1,0 +1,43 @@
+/* === SettingsRow — horizontal row for settings cards ===
+   Distributes children into N parts with space-between.
+   `stacked` mode: vertical flex (slider rows: header on top, slider below).
+   Consumes tokens only — no raw hex/radius. */
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-width: 0;
+}
+
+/* ─── Stacked — vertical flex for slider rows ─── */
+.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+/* ─── Divider — top hairline between rows ─── */
+.divider {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* ─── Flush — remove padding for nested rows ─── */
+.flush {
+  padding: 0;
+}
+
+/* ─── Compact — dense grids (pairRow). Reduces within-group spacing per Gestalt proximity. ─── */
+.compact {
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+}
+
+/* ─── Dense — padding 0 vertical, parent gap owns spacing. M3 Box Contract. ─── */
+.dense {
+  padding: 0 var(--space-4);
+  min-height: var(--touch-target);
+}

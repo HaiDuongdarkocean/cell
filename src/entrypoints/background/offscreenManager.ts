@@ -45,6 +45,8 @@ export class OffscreenManager {
   // ping handshake. Multiple callers sharing one handshake avoids duplicate
   // ping storms.
   private readyPromise: Promise<void> | null = null;
+  // Cache the successful ping handshake result so repeated calls are no-ops.
+  private isReady = false;
 
   /**
    * Ensure the offscreen document exists, creating it if necessary.
@@ -77,7 +79,8 @@ export class OffscreenManager {
     if (typeof offscreen?.hasDocument === 'function') {
       try {
         const hasDocument = await hasOffscreenDocument();
-        if (hasDocument && this.documentExists) {
+        if (hasDocument) {
+          this.documentExists = true;
           return;
         }
       } catch {
@@ -119,6 +122,9 @@ export class OffscreenManager {
     // Always ping — hasOffscreenDocument() can return stale true after the
     // document was closed (Chrome caches the flag). Ping is the only reliable
     // way to verify the listener is alive.
+    if (this.isReady) {
+      return;
+    }
     if (this.readyPromise) {
       return this.readyPromise;
     }
@@ -139,6 +145,7 @@ export class OffscreenManager {
           type: MESSAGE_TYPES.OFFSCREEN_PING,
         });
         if (response?.success) {
+          this.isReady = true;
           return;
         }
       } catch {
@@ -165,6 +172,7 @@ export class OffscreenManager {
 
     await closeOffscreenDocument();
     this.documentExists = false;
+    this.isReady = false;
   }
 
   /**

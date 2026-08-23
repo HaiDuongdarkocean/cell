@@ -27,6 +27,11 @@
   margin-left: auto;
 }
 
+.profileSelect {
+  min-width: 160px;
+  max-width: 220px;
+}
+
 @media (max-width: 768px) {
   .header {
     padding: var(--space-2);

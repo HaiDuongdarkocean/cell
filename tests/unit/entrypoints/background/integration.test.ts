@@ -654,14 +654,17 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→...→v22 which stamps schemaVersion: 22
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang, V17 remove orbital badge pointer trigger, V18 popupSheetHeightVh per-mode size persistence, V19 play-pause shortcut, V20 generate-native, V21 subtitleApiKeys, V22 localPlayerSettings).
+    // loadSettings() runs migration v0→v1→...→v23 which stamps schemaVersion: 23
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang, V17 remove orbital badge pointer trigger, V18 popupSheetHeightVh per-mode size persistence, V19 play-pause shortcut, V20 generate-native, V21 subtitleApiKeys, V22 localPlayerSettings, V23 Language Profile).
     // V9 migration rebuilds subtitleBlockSettings from legacy layer yOffsetPercent (defaults 18/6 → 12).
-    expect(response.data).toEqual({
+    expect(response.data).toMatchObject({
       ...storedSettings,
-      schemaVersion: 22,
+      schemaVersion: 23,
       subtitleBlockSettings: { yOffsetPercent: 12, globalScale: 1, bgOpacity: 0.7 },
       localPlayerSettings: { subtitleMatchEnabled: true, resumePromptEnabled: true, lastDirectoryId: null },
+      universalNativeLanguage: 'vi',
+      activeProfileId: expect.any(String),
+      languageProfiles: expect.any(Array),
     });
   });
 

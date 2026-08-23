@@ -1398,3 +1398,44 @@ Mục tiêu: nhận diện danh sách phụ đề từ 9 site families (cinesrc,
 - `fetchText` dùng `offscreenFetch` để tránh SW idle eviction (M15); kèm DNR referer rewrite.
 - Bảo mật: content script gửi `signal.origin`, background validate qua Zod; `MessageBus` inject `tabId`/`frameId` từ sender.
 - Giới hạn: onflix cần test HLS server-variant thực tế.
+
+## Language Profile (schema v23)
+
+Tính năng cho phép người dùng tạo nhiều cặp target/native language, mỗi profile có bộ overlay style, auto-load, dictionary popup và resource allow-list riêng. Active profile quyết định cấu hình flat subtitle/dictionary hiện hành.
+
+### Model & resolution (`@/entities/settings`)
+
+| File | Vai trò | Public API |
+|------|---------|------------|
+| `src/entities/settings/types.ts` | `LanguageProfile`, `ResolvedProfile`, `Settings` v23 fields | `universalNativeLanguage`, `languageProfiles`, `activeProfileId` |
+| `src/entities/settings/lib/profileResolution.ts` | Resolve active profile; migrate flat settings to v23 profile | `getActiveProfileSettings`, `resolveProfile`, `buildProfileName`, `validateLanguageProfile`, `generateProfileId`, `resolveSettingsFlatFields` |
+| `src/entities/settings/lib/profileResolution.test.ts` | Unit tests cho resolution + validation | — |
+
+### Storage migration
+
+| File | Vai trò |
+|------|---------|
+| `src/shared/lib/storage/settingsStore.ts` | `CURRENT_SCHEMA_VERSION = 23`; migration v22→v23 tạo default profile từ `subtitleOverlayTargetLanguage`/`subtitleOverlayNativeLanguage`; `validateLocalPlayerSettings` + `validateNavClusterFields` chạy sau mọi migration; `resolveSettingsFlatFields` trong `loadSettings` |
+| `tests/unit/shared/lib/storage/settingsMigration.test.ts` | V23 schema assertions |
+| `tests/unit/shared/lib/storage/settingsStore*.test.ts` | v23 schema version tests |
+
+### UI
+
+| File | Vai trò | Dependencies |
+|------|---------|--------------|
+| `src/features/settings/ui/LanguageProfilePanel.tsx` | Quản lý profiles (add/edit/delete/reorder, universal native, duplicate from active) | `SettingsRow`, `SearchableSelect`, `Dialog`, `Toggle`, `Alert`, `Button`, `IconButton`, `HStack`, `VStack`, `Icon` |
+| `src/features/settings/ui/SettingsDialogContent.tsx` | Nhúng `LanguageProfilePanel` section + truyền `resourceIds` active profile cho `ResourcesPanel` | `getActiveProfileSettings` |
+| `src/features/settings/ui/SettingsDialog.module.css` | `.profileList`, `.profileItem`, `.profileDialogBody`, `.rowLabel`, … | — |
+
+### Universal panel quick switch
+
+| File | Vai trò |
+|------|---------|
+| `src/features/universalPanel/UniversalPanelHeader.tsx` | Dropdown `Select` chuyển active profile |
+| `src/features/universalPanel/UniversalPanel.tsx` | Truyền `languageProfiles`, `activeProfileId`, `onProfileChange` xuống header |
+| `src/features/universalPanel/mountUniversalPanel.ts` | `loadSettings` lấy profiles; `saveSettings({ activeProfileId })` khi chuyển |
+
+### Dictionary resource filter
+
+- `src/features/dictionary/ui/ResourcesPanel.tsx` nhận `resourceIds?: readonly number[]`; chỉ hiển thị resource có `id` trong allow-list.
+- `SettingsDialogContent` truyền `getActiveProfileSettings(settings)?.resourceIds`.
