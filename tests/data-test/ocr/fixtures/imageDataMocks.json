@@ -1,0 +1,72 @@
+{
+  "comment": "Mock ImageData fixtures for drmGuard (black-frame detect) + frameSampler (luma-diff). Small 4x4 RGBA for unit tests. data = RGBA bytes [r,g,b,a, r,g,b,a, ...].",
+  "cases": [
+    {
+      "id": "all-black",
+      "width": 4,
+      "height": 4,
+      "data": [0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255, 0,0,0,255],
+      "expectedMeanLuma": 0,
+      "expectedIsBlackFrame": true
+    },
+    {
+      "id": "all-white",
+      "width": 4,
+      "height": 4,
+      "data": [255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255],
+      "expectedMeanLuma": 255,
+      "expectedIsBlackFrame": false
+    },
+    {
+      "id": "near-black-drm",
+      "width": 4,
+      "height": 4,
+      "data": [3,3,3,255, 2,2,2,255, 4,1,2,255, 1,3,2,255, 2,2,4,255, 3,1,3,255, 1,4,2,255, 2,3,1,255, 4,2,3,255, 1,1,2,255, 3,3,1,255, 2,4,2,255, 1,2,3,255, 4,1,1,255, 2,3,2,255, 3,2,1,255],
+      "expectedMeanLuma": 2.4,
+      "expectedIsBlackFrame": true,
+      "comment": "DRM black frame — near-black noise, mean luma < 5"
+    },
+    {
+      "id": "subtitle-frame",
+      "width": 4,
+      "height": 4,
+      "data": [20,20,20,255, 20,20,20,255, 20,20,20,255, 20,20,20,255, 20,20,20,255, 20,20,20,255, 20,20,20,255, 20,20,20,255, 240,240,240,255, 240,240,240,255, 240,240,240,255, 240,240,240,255, 240,240,240,255, 240,240,240,255, 240,240,240,255, 240,240,240,255],
+      "expectedMeanLuma": 130,
+      "expectedIsBlackFrame": false,
+      "comment": "Top half dark (video bg), bottom half white (subtitle text)"
+    },
+    {
+      "id": "gradient",
+      "width": 4,
+      "height": 4,
+      "data": [0,0,0,255, 64,64,64,255, 128,128,128,255, 192,192,192,255, 0,0,0,255, 64,64,64,255, 128,128,128,255, 192,192,192,255, 0,0,0,255, 64,64,64,255, 128,128,128,255, 192,192,192,255, 0,0,0,255, 64,64,64,255, 128,128,128,255, 192,192,192,255],
+      "expectedMeanLuma": 96,
+      "expectedIsBlackFrame": false,
+      "comment": "Horizontal gradient 0→192, for luma-diff testing"
+    }
+  ],
+  "lumaDiffCases": [
+    {
+      "id": "identical-frames",
+      "comment": "Same ImageData → diff = 0",
+      "expectedDiff": 0
+    },
+    {
+      "id": "subtitle-appeared",
+      "comment": "Dark frame → subtitle frame → diff > 0 (large)",
+      "expectedDiffGt": 100
+    },
+    {
+      "id": "subtitle-changed",
+      "comment": "Subtitle frame A → subtitle frame B (different text) → diff > 0 (small)",
+      "expectedDiffGt": 10,
+      "expectedDiffLt": 100
+    },
+    {
+      "id": "background-motion",
+      "comment": "Same subtitle, different background → diff > 0 (medium) — false positive risk",
+      "expectedDiffGt": 5,
+      "comment2": "Text-level dedup should catch this: OCR text same → skip"
+    }
+  ]
+}

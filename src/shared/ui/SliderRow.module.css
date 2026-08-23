@@ -1,0 +1,101 @@
+/* === SliderRow — LabelGroup (header) + Slider (content) ===
+   Two variants: 'end' (value at end of track) | 'bubble' (value above thumb).
+   Label/header styling delegated to LabelGroup.
+   Consumes tokens only — no raw hex/radius. */
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-4);
+  min-width: 0;
+}
+
+/* ─── Divider — top hairline between rows ─── */
+.divider {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* ─── Disabled — mờ, không tương tác được ─── */
+.disabled {
+  opacity: 0.55;
+}
+
+.disabledNote {
+  margin: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-subtle);
+  font-weight: var(--font-weight-normal);
+}
+
+/* ─── Slider row: bar + value at end (variant='end') ─── */
+.sliderRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2-5);
+}
+
+.slider {
+  flex: 1 1 auto;
+}
+
+.valueEnd {
+  flex: 0 0 auto;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ─── Slider container (variant='bubble') — no padding-top, bubble overflows above ─── */
+.sliderContainer {
+  position: relative;
+}
+
+/* ─── Bubble — above thumb, follows position ─── */
+.bubble {
+  position: absolute;
+  bottom: calc(var(--touch-target) / 2 + var(--space-1));
+  transform: translateX(-50%);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary, #ffffff);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: var(--shadow-floating);
+  animation: bubbleIn var(--duration-fast) var(--ease-out);
+}
+
+/* Pointer triangle below bubble */
+.bubble::after {
+  content: '';
+  position: absolute;
+  bottom: calc(-1 * var(--space-1));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: var(--space-1) solid transparent;
+  border-right: var(--space-1) solid transparent;
+  border-top: var(--space-1) solid var(--color-primary);
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(var(--space-0-5)); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble { animation: none; }
+}

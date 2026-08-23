@@ -1,0 +1,10 @@
+/* === HostManagerSheet — backdrop for host-page subtitle manager sheet ===
+   The sheet itself is rendered by the shared Sheet atom (Sheet.module.css SSOT).
+   Only the backdrop remains here — dim overlay above host page content. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.4));
+  z-index: 2147483646;
+}

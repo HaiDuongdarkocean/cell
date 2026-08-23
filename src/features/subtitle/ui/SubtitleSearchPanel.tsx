@@ -4,19 +4,22 @@
  * Renders as a dedicated view inside SubtitleManagerPanel (with back button).
  * Search triggers only on Enter or Search button click — no auto-search.
  * Language is read-only from settings (target → native), no language select.
- * API status chip (green=OK, red=missing) replaces manage-keys toggle.
- * Background owns all network calls (SEARCH_SUBTITLES message).
  *
- * Two tabs (Target / Native) filter results by the tab's language.
- * Clicking a result loads it directly into the overlay — no preview step.
+ * Mobile-first layout:
+ * - Search input full-width with leading search icon + clear button
+ * - Season/Episode collapsed under "Advanced" toggle (progressive disclosure)
+ * - API key hint replaces status chip (actionable empty state)
+ * - Target/Native tabs filter results, shown only after search
+ * - Clicking a result loads it directly into the overlay
  *
  * Spec: docs/specs/subtitle-search.md — UI Design section.
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { Icon } from '@/shared/ui/Icon';
+import { Icon } from '@/shared/icons/Icon';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -31,6 +34,8 @@ export interface SubtitleSearchPanelProps {
   readonly apiKeys: readonly SubtitleApiKey[];
   readonly onApiKeysChange: (keys: SubtitleApiKey[]) => void;
   readonly onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
+  /** Showcase-only: bypasses sendMessage with mock results for testing. */
+  readonly mockResults?: readonly SubtitleSearchResult[];
 }
 
 type SubtitleRole = 'target' | 'native';
@@ -96,7 +101,7 @@ function SearchResultRow({ result, index, onClick }: {
   );
 }
 
-export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect }: SubtitleSearchPanelProps): React.JSX.Element {
+export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, onSearchResultSelect, mockResults }: SubtitleSearchPanelProps): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [targetLang, setTargetLang] = useState('');
   const [nativeLang, setNativeLang] = useState('');
@@ -106,9 +111,9 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [manageKeysOpen, setManageKeysOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SubtitleRole>('target');
-  const [loadingResultId, setLoadingResultId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // Load target + native languages from settings on mount.
@@ -155,6 +160,13 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     };
 
     try {
+      if (mockResults) {
+        await new Promise((r) => setTimeout(r, 600));
+        if (controller.signal.aborted) return;
+        setResults(mockResults);
+        setError(null);
+        return;
+      }
       const response = await sendMessage<{ success?: boolean; data?: SearchResponse; error?: string }>({
         type: MESSAGE_TYPES.SEARCH_SUBTITLES,
         payload: searchQuery,
@@ -195,11 +207,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   }, [query, season, episode, doSearch, searchLanguages]);
 
   const handleResultClick = useCallback((result: SubtitleSearchResult): void => {
-    setLoadingResultId(result.id);
     onSearchResultSelect(result, activeTab);
-    // Clear loading state after a short delay — controller handles the actual
-    // load + toast. This gives visual feedback that the click was registered.
-    setTimeout(() => setLoadingResultId(null), 1500);
   }, [activeTab, onSearchResultSelect]);
 
   const handleRetry = useCallback((): void => {
@@ -216,8 +224,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
     [query, season, episode, doSearch, searchLanguages],
   );
 
+  const handleClearQuery = useCallback((): void => {
+    setQuery('');
+    setResults([]);
+    setError(null);
+    setHasSearched(false);
+  }, []);
+
   const formDisabled = !hasSearchKeys;
-  const keyCount = apiKeys.length;
 
   // Filter results by active tab's language.
   const tabLang = activeTab === 'target' ? targetLang : nativeLang;
@@ -230,48 +244,76 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const targetLabel = targetLang ? languageShortLabel(targetLang) : 'Target';
   const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : 'Native';
 
+  const hasAdvancedValues = Boolean(season || episode);
+
   return (
     <section className={styles.section} data-cell-id="search-section">
-      <div className={styles.sectionHead} data-cell-id="search-section-header">
-        <span className={styles.sectionTitle}>Search subtitles</span>
-        <button
-          type="button"
-          className={`${styles.apiChip} ${hasSearchKeys ? styles.apiChipOk : styles.apiChipError}`}
-          onClick={() => setManageKeysOpen((v) => !v)}
-          aria-expanded={manageKeysOpen}
-          aria-controls="search-manage-keys"
-          data-cell-id="search-api-chip"
-        >
-          <Icon name="settings" size="xs" />
-          <span>{hasSearchKeys ? `${keyCount} ${keyCount === 1 ? 'key' : 'keys'}` : 'No API key'}</span>
-          <Icon
-            name="chevronDown"
-            size="xs"
-            className={manageKeysOpen ? styles.chevronOpen : styles.chevronClosed}
+      {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
+      <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
+        {hasSearchKeys && (
+          <IconButton
+            variant="ghost"
+            size="md"
+            active={manageKeysOpen}
+            onClick={() => setManageKeysOpen((v) => !v)}
+            aria-expanded={manageKeysOpen}
+            aria-label="Manage API keys"
+            data-cell-id="search-manage-keys-toggle"
+          >
+            <Icon name="wrench" />
+          </IconButton>
+        )}
+        <div className={styles.searchBar} data-cell-id="search-bar">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Movie or series title…"
+            aria-label="Search subtitles by title"
+            className={styles.searchInput}
+            disabled={formDisabled}
+            data-cell-id="search-query-input"
           />
-        </button>
+          <div className={styles.searchActions}>
+            {query && (
+              <IconButton
+                variant="ghost"
+                size="md"
+                onClick={handleClearQuery}
+                aria-label="Clear search"
+                data-cell-id="search-clear"
+              >
+                <Icon name="x" />
+              </IconButton>
+            )}
+            <IconButton
+              variant="ghost"
+              size="md"
+              onClick={handleSearchClick}
+              disabled={formDisabled || !query.trim() || loading}
+              aria-label="Search subtitles"
+              data-cell-id="search-button"
+            >
+              <Icon name="search" />
+            </IconButton>
+          </div>
+        </div>
+        <IconButton
+          variant="ghost"
+          size="md"
+          active={advancedOpen}
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          aria-label="Advanced search options (season, episode)"
+          data-cell-id="search-advanced-toggle"
+        >
+          <Icon name="slidersHorizontal" />
+        </IconButton>
       </div>
 
-      {manageKeysOpen && (
-        <div className={styles.manageKeysPanel} data-cell-id="search-manage-keys">
-          <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
-        </div>
-      )}
-
-      <div className={styles.searchForm} data-cell-id="search-form">
-        <Input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Movie or series title…"
-          aria-label="Search subtitles by title"
-          className={styles.queryInput}
-          disabled={formDisabled}
-          data-cell-id="search-query-input"
-        />
-
-        <div className={styles.seasonRow}>
+      {advancedOpen && (
+        <div className={styles.advancedBody} data-cell-id="search-advanced-body">
           <label className={styles.numberField}>
             <span className={styles.numberLabel}>Season</span>
             <Input
@@ -298,21 +340,33 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               data-cell-id="search-episode-input"
             />
           </label>
-          <Button
-            variant="primary"
-            size="md"
-            loading={loading}
-            onClick={handleSearchClick}
-            disabled={formDisabled || !query.trim()}
-            className={styles.searchButton}
-            data-cell-id="search-button"
-          >
-            Search
-          </Button>
         </div>
-      </div>
+      )}
 
-      {/* Target / Native tabs — filter results by language */}
+      {/* API key hint — replaces status chip, actionable when no keys */}
+      {!hasSearchKeys && (
+        <div className={styles.apiHint} data-cell-id="search-api-hint">
+          <Icon name="wrench" className={styles.apiHintIcon} />
+          <span className={styles.apiHintText}>Add an API key to start searching</span>
+          <button
+            type="button"
+            className={styles.apiHintBtn}
+            onClick={() => setManageKeysOpen((v) => !v)}
+            aria-expanded={manageKeysOpen}
+            data-cell-id="search-manage-keys-toggle"
+          >
+            {manageKeysOpen ? 'Hide' : 'Add key'}
+          </button>
+        </div>
+      )}
+
+      {manageKeysOpen && (
+        <div className={styles.manageKeysPanel} data-cell-id="search-manage-keys">
+          <ApiKeyManager keys={[...apiKeys]} onChange={onApiKeysChange} />
+        </div>
+      )}
+
+      {/* Target / Native tabs — filter results by language, only after search */}
       {hasSearched && !loading && !error && (
         <div className={styles.tabBar} role="tablist" data-cell-id="search-tabs">
           <button
@@ -323,7 +377,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             onClick={() => setActiveTab('target')}
             data-cell-id="search-tab-target"
           >
-            <Icon name="flag" size="xs" />
             <span>{targetLabel}</span>
             {activeTab === 'target' && filteredResults.length > 0 && (
               <span className={styles.tabCount}>{filteredResults.length}</span>
@@ -337,7 +390,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             onClick={() => setActiveTab('native')}
             data-cell-id="search-tab-native"
           >
-            <Icon name="flag" size="xs" />
             <span>{nativeLabel}</span>
             {activeTab === 'native' && filteredResults.length > 0 && (
               <span className={styles.tabCount}>{filteredResults.length}</span>
@@ -347,6 +399,14 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       )}
 
       <div className={styles.resultsArea} data-cell-id="search-results-area">
+        {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
+        {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
+          <div className={styles.hintState} data-cell-id="search-hint">
+            <Icon name="captions" className={styles.hintIcon} />
+            <span className={styles.hintText}>Search for subtitles by movie or series title</span>
+          </div>
+        )}
+
         {loading && (
           <ul className={styles.skeletonList} aria-hidden="true">
             {Array.from({ length: SKELETON_COUNT }, (_, i) => (
@@ -372,12 +432,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             {results.length > 0
               ? `No ${languageLabel(tabLang)} subtitles found. Try the other tab.`
               : 'No results found'}
-          </div>
-        )}
-
-        {!loading && !error && !hasSearched && !hasSearchKeys && (
-          <div className={styles.emptyState} data-cell-id="search-no-keys-hint">
-            Add an API key to start searching subtitles.
           </div>
         )}
 

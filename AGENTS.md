@@ -172,6 +172,8 @@ ALWAYS commit: chỉ commit khi build pass và verify pass dùng skill `git-work
 
 Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, navigator.webdriver=false), chrome-devtools (fallback — cần performance trace/a11y), hoặc edge-devtools. Cài thêm: [uBOLite extension](data/extension/uBOLite) để chặn quảng cáo.
 
+**Mock site (YouTube clone)**: khởi động bằng `npm run mock` (KHÔNG `npm run mock -- --youtube`) để phục vụ TẤT CẢ mock site cùng lúc. Nếu chỉ `--youtube` thì các mock site khác (streaming, iframe) bị kill, gây ảnh hưởng tiến trình khác. URL YouTube: `http://127.0.0.1:4322/index.html`.
+
 **Mở profile + load extension đúng (SSOT)**: dùng skill `testing-extension-browser` — Chrome 137+ blocks `--load-extension`, stealth MCP không hỗ trợ Extensions CDP domain. Script nodriver chỉ launch Chrome + load extension rồi close (không navigate): `uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --keep-profile`. Sau đó MCP `spawn_browser(user_data_dir=<clone path>, headless=false)` + `navigate(url=<test url>)` — extension auto-load từ profile Preferences. Clone từ master, auto-cleanup, 20+ agent song song.
 
 ### trang web để test

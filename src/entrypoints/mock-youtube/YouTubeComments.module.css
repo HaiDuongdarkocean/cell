@@ -1,0 +1,433 @@
+.commentsSection {
+  margin-top: 24px;
+}
+
+.commentsHeader {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.commentsTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+.sortButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #f1f1f1;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 18px;
+  transition: background 0.15s ease;
+}
+
+.sortButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sortDropdown {
+  position: absolute;
+  top: 100%;
+  left: 200px;
+  background: #212121;
+  border-radius: 12px;
+  padding: 8px 0;
+  min-width: 180px;
+  z-index: 100;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.5);
+  animation: sortFadeIn 0.2s ease;
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #f1f1f1;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sortRow:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sortActive {
+  color: #f1f1f1;
+}
+
+/* Add comment */
+.addCommentRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.commentAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.commentInputWrap {
+  flex: 1;
+}
+
+.commentInput {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f1f1;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 8px 0;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  min-height: 24px;
+  line-height: 20px;
+  transition: border-color 0.2s ease;
+}
+
+.commentInputFocused {
+  border-bottom-color: #f1f1f1;
+}
+
+.commentButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.commentCancelBtn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 8px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.commentCancelBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.commentSubmitBtn {
+  background: #065fd4;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 8px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.commentSubmitBtn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: #717171;
+  cursor: not-allowed;
+}
+
+.commentSubmitBtn:not(:disabled):hover {
+  background: #0556c0;
+}
+
+/* Comment item */
+.commentItem {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 8px;
+  border-radius: 12px;
+  opacity: 0;
+  animation: commentFadeIn 0.3s ease forwards;
+  transition: background 0.15s ease;
+}
+
+.commentItem:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.commentBody {
+  flex: 1;
+}
+
+.pinnedLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #aaa;
+  font-family: Roboto, Arial, sans-serif;
+  margin-bottom: 4px;
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.commentAuthor {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+.commentTime {
+  font-size: 12px;
+  color: #aaa;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+.commentText {
+  font-size: 14px;
+  line-height: 20px;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, sans-serif;
+  margin: 0 0 8px;
+}
+
+.commentActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.commentActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 12px;
+  font-family: Roboto, Arial, sans-serif;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 18px;
+  transition: background 0.15s ease;
+}
+
+.commentActionBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.commentActionBtn:active {
+  transform: scale(0.97);
+}
+
+.commentLikeActive {
+  color: #3ea6ff;
+}
+
+.commentDislikeActive {
+  color: #3ea6ff;
+}
+
+/* Like button wrapper + creator heart overlay */
+.likeBtnWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.creatorHeart {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.likeBounce {
+  animation: commentLikeBounce 0.3s ease;
+}
+
+/* Replies */
+.repliesToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: Roboto, Arial, sans-serif;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-top: 4px;
+}
+
+.repliesToggle:hover {
+  color: #f1f1f1;
+}
+
+.repliesList {
+  margin-top: 16px;
+  padding-left: 0;
+}
+
+.replyItem {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.replyAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.replyHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.replyAuthor {
+  font-size: 13px;
+  font-weight: 500;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+.replyTime {
+  font-size: 12px;
+  color: #aaa;
+  font-family: Roboto, Arial, sans-serif;
+}
+
+.replyText {
+  font-size: 14px;
+  line-height: 20px;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, sans-serif;
+  margin: 0;
+}
+
+/* Reply input */
+.replyInputRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  align-items: flex-start;
+}
+
+.replyInput {
+  font-size: 13px;
+}
+
+/* Show more */
+.showMoreBtn {
+  background: none;
+  border: none;
+  color: #3ea6ff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: Roboto, Arial, sans-serif;
+  cursor: pointer;
+  padding: 12px;
+  width: 100%;
+  text-align: center;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.showMoreBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Skeleton loading */
+.skeletonItem {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 8px;
+}
+
+.skeletonBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.skeletonBlock {
+  background: #212121;
+  border-radius: 4px;
+  animation: skeletonPulse 1.2s ease-in-out infinite;
+}
+
+.skeletonAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeletonLine {
+  height: 12px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes commentFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sortFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes commentLikeBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

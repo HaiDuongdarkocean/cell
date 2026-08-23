@@ -90,39 +90,43 @@ Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 
 **Loop back:** Build fails → fix build errors first. Do not launch with a stale build — you will test old code and chase ghosts.
 
-## Step 2: Launch (nodriver)
+## Step 2: Pack .crx + Setup Clone Profile
 
-**Purpose:** Create a clone profile with Cell + uBlock loaded via CDP `loadUnpacked`. The script ONLY launches Chrome, loads extensions, then exits — it does NOT navigate, reload, or verify. MCP handles all page interaction.
+**Purpose:** Pack Cell (and uBlock) into a .crx, clone master profile, and write External Extensions JSON so MCP `spawn_browser` auto-loads the extension on launch. No nodriver, no debugging port — MCP stealth handles anti-bot.
 
-**Always headless:** The nodriver phase runs headless — no visible window, no machine slowdown. It only reloads extensions into the profile. The MCP `spawn_browser` phase (Step 3) is headed (`headless=false`) so the user sees the browser UI for testing.
+**Chrome 137+ root cause (verified on Chrome 151):** All unpacked-extension load methods are blocked or session-only:
+- CDP `loadUnpacked`: session-only (close = lost, NOT persisted to Preferences).
+- `--load-extension` flag: completely blocked (doesn't load at all).
+- Preferences `location=4` (unpacked): stripped on launch.
+- MCP `execute_cdp_command`: no Extensions CDP domain.
 
-**Actions:**
-- Clean old clones: `Remove-Item C:\stealth-mcp-browser-sessions\sessions\cell-* -Recurse -Force -ErrorAction SilentlyContinue`
-- Launch:
+**Solution: packed .crx + External Extensions JSON.** Chrome 151 still accepts a packed .crx referenced by `<profile>/Default/External Extensions/<id>.json`. Chrome installs the .crx on launch, the extension persists across spawns, and MCP `spawn_browser` auto-loads it — no debugging port needed.
 
 ```powershell
-uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --keep-profile
+python .agents\skills\testing-extension-browser\script\setup-cell-profile.py
 ```
 
-**Flags:** `--no-ublock` `--keep-profile`
+**Flags:** `--rebuild` (force re-pack .crx after `npm run build`) · `--no-ublock` · `--keep-profile`
 
-**Guard:** Script prints `[OK] Cell (Video Downloader) loaded` → `[OK] Chrome closed. Profile ready for MCP.` + `Clone: C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>`.
+**Guard:** script prints `[OK] Packed cell.crx` → `[OK] Cloned master → <clone>` → `[OK] External Extensions JSON` → `CLONE_PATH=C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>`.
 
-**Loop back:** `Extensions.loadUnpacked` error → `dist/` missing → back to Step 1.
+**Loop back:** `Pack failed` → `dist/` missing or `openssl` not in PATH → back to Step 1. `cell-key.pem` missing → script auto-generates it (one-time).
 
-**Critical:** `--keep-profile` keeps the clone on disk so MCP can reuse it. The script closes Chrome after loading extensions — `loadUnpacked` writes to the profile's Preferences, so when MCP spawns a new Chrome with the same `user_data_dir`, extensions auto-load.
+**One-time setup:** `cell-key.pem` and `ublock-key.pem` are generated on first run. The .crx ID is derived from the key (stable across re-packs). After each `npm run build`, run `setup-cell-profile.py --rebuild` to re-pack the .crx with the new code.
+
+**Verify probe contract (Step 4):** `fetchPatched: true` is the strongest signal — `fetchInterceptor` runs at `document_start` in the MAIN world on every `<all_urls>` page and patches `window.fetch` before page JS. `panelHost: true` confirms the universal panel mounted. `subtitleRoot`/`subtitleShadow` are only present on pages with a video, so `false` there is not a failure.
 
 ## Step 3: Connect (MCP)
 
-**Purpose:** Spawn a stealth-chrome-devtools browser instance reusing the clone profile. Extensions auto-load from the profile's Preferences (written by Step 2's `loadUnpacked`).
+**Purpose:** Spawn a stealth-chrome-devtools browser instance reusing the clone profile. Extensions auto-load from the External Extensions JSON (written in Step 2).
 
 **Actions:**
-- `mcp_call_tool stealth-chrome-devtools spawn_browser` with `user_data_dir = "C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>"` (the clone path from Step 2) and `headless = false`.
+- `mcp_call_tool stealth-chrome-devtools spawn_browser` with `user_data_dir = "C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>"` (the CLONE_PATH from Step 2) and `headless = false`.
 - Save the returned `instance_id` — all subsequent MCP calls use it.
 
-**Guard:** `state: "ready"` in spawn response.
+**Guard:** `state: "ready"` in spawn response. Then navigate to `chrome://extensions/` and verify Cell is listed (count should be 4: Cell + 3 base extensions). Or navigate to any URL and check `fetchPatched: true` via `execute_script`.
 
-**Loop back:** Spawn fails (profile locked) → Step 2 Chrome didn't close cleanly → wait 3s and retry, or re-run Step 2.
+**Loop back:** Spawn fails (profile locked) → a previous MCP instance didn't close → `close_instance` on the old instance, wait 3s, retry. Cell not listed → External Extensions JSON missing or .crx path wrong → re-run Step 2.
 
 ## Step 4: Navigate (MCP)
 
@@ -241,8 +245,8 @@ Cell subtitle overlay lives in `#cell-subtitle-root` shadow root. `execute_scrip
 |---|---|---|---|
 | 0. Contract | Test goal | Given/When/Then | Names concrete DOM/count/text |
 | 1. Build | Source code | `dist/` updated | Build exits 0 + manifest exists |
-| 2. Launch | `dist/` + URL | Clone profile with extension | `[PASS]` printed + clone path |
-| 3. Connect | Clone path | MCP instance_id | `state: "ready"` |
+| 2. Pack + Setup | `dist/` | `.crx` + clone with External Extensions JSON | `CLONE_PATH=...` printed |
+| 3. Connect | Clone path | MCP instance_id | `state: "ready"` + Cell in `chrome://extensions` |
 | 4. Navigate | instance_id + URL | Page loaded + element visible | Target element found |
 | 5. Trigger | Page state | Feature action fired | Dispatch returns `dispatched: true` |
 | 6. Verify | Triggered state | Contract pass/fail | DOM evidence matches "Then" clause |
@@ -252,10 +256,12 @@ Cell subtitle overlay lives in `#cell-subtitle-root` shadow root. `execute_scrip
 
 | Symptom | Likely cause | Falsify by |
 |---|---|---|
-| `[PASS]` but feature not found | Stale `dist/` — built before code change | Rebuild + re-launch |
-| `Extensions.loadUnpacked` error | `dist/` missing or corrupt | Run `npx vite build` |
-| MCP spawn fails (profile locked) | Chrome from Step 2 still running | Re-run Step 2 with `--exit-after-verify` |
-| Marker not found | Content script didn't inject | Re-run script (it reloads page) |
+| `[PASS]` but feature not found | Stale `dist/` — built before code change | Rebuild + `setup-cell-profile.py --rebuild` |
+| MCP `spawn_browser` shows no Cell in `chrome://extensions` | External Extensions JSON missing or .crx path wrong | Re-run `setup-cell-profile.py`; check `<clone>/Default/External Extensions/<id>.json` exists |
+| `Pack failed` in setup-cell-profile.py | `openssl` not in PATH or `dist/` missing | Run `npm run build`; verify `openssl version` works |
+| Clone `Preferences` `extensions.settings` empty after launch | Chrome strips hand-written `location=4` unpacked entries — use .crx + External Extensions instead | Don't pre-install unpacked via Preferences; use `setup-cell-profile.py` |
+| MCP spawn fails (profile locked) | Previous MCP instance didn't close | `close_instance` on old instance, wait 3s, retry |
+| Marker not found | Content script didn't inject | Re-run setup; check `fetchPatched: true` via `execute_script` |
 | `execute_script` returns null | Async code — MCP doesn't await promises | Use sync IIFE, not `async` |
 | `chrome.storage` undefined | Page world has no `chrome.runtime` | Inspect DOM attributes instead |
 | Click on shadow element no effect | Event not `composed: true` | Add `composed: true` to MouseEvent |
@@ -282,14 +288,13 @@ Cell subtitle overlay lives in `#cell-subtitle-root` shadow root. `execute_scrip
 Forbidden unless justified with evidence:
 
 - Launching without building first.
-- Using Python 3.14 (nodriver encoding bug — use 3.11).
-- Omitting `-u` flag (output hangs without unbuffered).
-- Passing `user_data_dir` into the script (let it clone automatically).
-- Using `--load-extension` flag (Chrome 137+ blocks it).
+- Using `--load-extension` flag (Chrome 137+ blocks it completely — doesn't load).
 - Using MCP `execute_cdp_command` to load extension (no Extensions domain).
 - Killing Chrome with `Stop-Process` (no cleanup → clone leak).
 - Editing `dist/` directly (edit `src/` then build).
-- Spawning MCP while Chrome from Step 2 is still open (profile lock).
+- Spawning MCP while another MCP instance is still open on the same clone (profile lock).
+- On Chrome 137+: using CDP `loadUnpacked` + close + MCP `spawn_browser` handoff (session-only — extension is lost; use packed .crx + External Extensions via `setup-cell-profile.py`).
+- Pre-installing unpacked extensions by writing `extensions.settings` `location=4` entries into `Preferences` (Chrome 137+ strips them on launch).
 - Copying `dist/` to another path (load from SSOT path).
 - Guessing `chrome.storage` from page world (no `chrome.runtime` access).
 - Using `caretRangeFromPoint` for shadow DOM (doesn't pierce).
@@ -332,8 +337,11 @@ If the last answer is no, the test is not complete.
 
 | Key | Value |
 |---|---|
-| Cell ext | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist` (run build first) |
+| Cell ext (unpacked) | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist` (run build first) |
+| Cell .crx (packed) | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\cell.crx` (run `setup-cell-profile.py --rebuild` after build) |
+| Cell key | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\cell-key.pem` (auto-generated on first run) |
 | uBlock ext | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite` |
+| uBlock .crx | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\ublock.crx` |
 | Master profile | `C:\stealth-mcp-browser-sessions\master` (clone source) |
 | Clones | `C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>` |
 | Python | 3.11 via `uv run` (3.14 has nodriver encoding bug) |
@@ -357,9 +365,9 @@ Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 ```
 
 **Step 1:** `npx vite build`
-**Step 2:** `uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --url "https://themoviebox.org/..." --keep-profile --exit-after-verify`
-**Step 3:** `mcp spawn_browser user_data_dir="C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>"`
-**Step 4:** `mcp navigate` → `mcp click_element selector=".art-control-playAndPause"` → `mcp execute_script: video.currentTime = 190`
+**Step 2:** `python .agents\skills\testing-extension-browser\script\setup-cell-profile.py --rebuild` → prints `CLONE_PATH=...`
+**Step 3:** `mcp spawn_browser(user_data_dir="<CLONE_PATH>", headless=false)` → `state: "ready"`
+**Step 4:** `mcp navigate(url="https://themoviebox.org/...")` → `mcp click_element selector=".art-control-playAndPause"` → `mcp execute_script: video.currentTime = 190`
 **Step 5:** `mcp execute_script: dispatch mouseup composed:true at target span coords`
 **Step 6:** `mcp execute_script: inspect #cell-universal-panel-host shadow → totalEls > 2 = PASS`
 **Step 7:** `mcp close_instance` → `Remove-Item sessions\cell-* -Recurse -Force`

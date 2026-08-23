@@ -34,7 +34,6 @@ const PING_RETRY_DELAY_MS = 100;
  */
 export class OffscreenManager {
   private documentExists = false;
-  private listenerReady = false;
   // In-flight promise for `ensureOffscreenDocument` — when multiple callers
   // request the document concurrently (e.g. several
   // `resolveUnknownSubtitleLanguages` fetches running in parallel), they all
@@ -71,24 +70,36 @@ export class OffscreenManager {
 
   private async doEnsureOffscreenDocument(): Promise<void> {
     // `hasDocument` may not exist in older Chrome versions; guard accordingly.
+    // Note: hasDocument() can return stale `true` after browser restart
+    // (Chrome caches the flag in the profile but the document is gone).
+    // We always try createDocument and catch "already exists" error.
     const offscreen = chrome.offscreen;
     if (typeof offscreen?.hasDocument === 'function') {
-      const hasDocument = await hasOffscreenDocument();
-      if (hasDocument) {
-        this.documentExists = true;
-        return;
+      try {
+        const hasDocument = await hasOffscreenDocument();
+        if (hasDocument && this.documentExists) {
+          return;
+        }
+      } catch {
+        // hasDocument threw — fall through to create.
       }
     }
 
     const reasons = getOffscreenReasons();
-    await createOffscreenDocument(
-      OFFSCREEN_DOCUMENT_URL,
-      [
-        reasons.WORKERS,
-        reasons.BLOBS,
-      ],
-      JUSTIFICATION,
-    );
+    try {
+      await createOffscreenDocument(
+        OFFSCREEN_DOCUMENT_URL,
+        [
+          reasons.WORKERS,
+          reasons.BLOBS,
+        ],
+        JUSTIFICATION,
+      );
+    } catch (e) {
+      // "Only a single offscreen document may be created" — document already exists.
+      // This is fine — we just need to ensure it's there.
+      if (!String(e).includes('single offscreen document')) throw e;
+    }
 
     this.documentExists = true;
   }
@@ -105,9 +116,9 @@ export class OffscreenManager {
    * until the offscreen responds, confirming the listener is registered.
    */
   async ensureOffscreenReady(): Promise<void> {
-    if (this.listenerReady) {
-      return;
-    }
+    // Always ping — hasOffscreenDocument() can return stale true after the
+    // document was closed (Chrome caches the flag). Ping is the only reliable
+    // way to verify the listener is alive.
     if (this.readyPromise) {
       return this.readyPromise;
     }
@@ -128,7 +139,6 @@ export class OffscreenManager {
           type: MESSAGE_TYPES.OFFSCREEN_PING,
         });
         if (response?.success) {
-          this.listenerReady = true;
           return;
         }
       } catch {
@@ -155,7 +165,6 @@ export class OffscreenManager {
 
     await closeOffscreenDocument();
     this.documentExists = false;
-    this.listenerReady = false;
   }
 
   /**

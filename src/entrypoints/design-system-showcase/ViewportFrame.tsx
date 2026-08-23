@@ -27,10 +27,12 @@ export const VIEWPORT_PRESETS: readonly ViewportPreset[] = [
 export function ViewportFrame({
   width,
   height,
+  theme,
   children,
 }: {
   width: ViewportWidth;
   height?: number;
+  theme?: string;
   children: ReactNode;
 }): React.JSX.Element {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -79,6 +81,15 @@ export function ViewportFrame({
 
     return () => iframe.removeEventListener('load', setup);
   }, []);
+
+  // Sync theme attribute to iframe when mode changes (without remounting)
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe || !theme) return;
+    const doc = iframe.contentDocument;
+    if (!doc) return;
+    doc.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Reset scroll inside iframe after content is portal'd in
   useEffect(() => {

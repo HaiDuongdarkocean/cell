@@ -1,7 +1,9 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
+import { useCuesStore } from '@/stores/cuesStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, USE_LEGACY_SUBTITLE } from '@/shared/config/config';
@@ -37,17 +39,11 @@ import type { SubtitleTokenizeController } from '@/features/tokenize/controller/
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import { buildCardCreatorContext, type CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
-import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
-import { getWordStatuses } from '@/features/dictionaryPopup/services/wordStatusClient';
+import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
+import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
+import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
 
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
-import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
@@ -103,28 +99,6 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   return DEFAULT_KEYBOARD_SHORTCUTS;
 }
 
-/**
- * Find the overlay container for a video — ADR-008 D2.
- *
- * Starts at `video.parentElement` and walks up to the first ancestor whose
- * height is at least 50% of the video's height. This handles sites where
- * `video.parentElement` has zero height (e.g. YouTube's `.html5-video-container`
- * has `height:0` with the `<video>` absolutely positioned inside it, while the
- * real sized container is `#movie_player` — the grandparent). On normal sites
- * the parent already matches the video height, so the walk-up stops immediately.
- * Falls back to `document.body` if no suitable ancestor is found.
- */
-function findVideoContainer(video: HTMLVideoElement): HTMLElement {
-  const videoHeight = video.getBoundingClientRect().height;
-  let el: HTMLElement | null = video.parentElement;
-  while (el && el !== document.body) {
-    const h = el.getBoundingClientRect().height;
-    if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
-    el = el.parentElement;
-  }
-  return video.parentElement ?? document.body;
-}
-
 // ADR-032 cue-seek dedupe — module-level so multiple init() instances
 // (Netflix SPA re-init leaks onMessage listeners, see cleanup ponytail)
 // share the same dedupe state. Without this, each instance has its own
@@ -141,79 +115,6 @@ const shouldDedupeCueSeek = (action: string): boolean => {
   lastCueSeekTs = now;
   return false;
 };
-
-/** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
- *  timeout. Used before screenshot capture — the user may have just seeked
- *  or paused, leaving the video in a transient state where drawImage would
- *  throw "Video not ready". */
-async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Promise<void> {
-  if (video.readyState >= 2 && video.videoWidth > 0) return;
-  const start = Date.now();
-  await new Promise<void>((resolve) => {
-    const check = (): void => {
-      if (video.readyState >= 2 && video.videoWidth > 0) {
-        resolve();
-        return;
-      }
-      if (Date.now() - start >= timeoutMs) {
-        resolve(); // give up — captureScreenshot will throw a clear error
-        return;
-      }
-      setTimeout(check, 100);
-    };
-    check();
-  });
-}
-
-/** Split a subtitle line into unique lowercase word terms (letters only).
- *  Used by batch quick-add to find unknown/tracking words. */
-function tokenizeSubtitleWords(text: string): string[] {
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const raw of text.split(/[^a-zA-Z]+/)) {
-    const w = raw.toLowerCase();
-    if (w.length >= 2 && !seen.has(w)) {
-      seen.add(w);
-      result.push(w);
-    }
-  }
-  return result;
-}
-
-/** Build a Card Creator queue from the current subtitle line: tokenize →
- *  filter unknown/tracking → lookup each in dictionary → return queue items.
- *  Used by edit-card action for the I+N review flow. */
-async function buildSubtitleQueue(targetText: string, sourceLang: string): Promise<CardCreatorQueueItem[]> {
-  const words = tokenizeSubtitleWords(targetText);
-  if (words.length === 0) return [];
-  const statusMap = await getWordStatuses(sourceLang, words);
-  const learnWords = words.filter((w) => {
-    const s = statusMap.get(w);
-    return s === 'unknown' || s === 'tracking';
-  });
-  if (learnWords.length === 0) return [];
-  // Look up each word in the dictionary (parallel for speed).
-  const results = await Promise.all(learnWords.map(async (term) => {
-    try {
-      const response = await sendMessage({
-        type: MESSAGE_TYPES.LOOKUP_REQUEST,
-        payload: {
-          requestId: `queue-${Date.now()}-${term}`,
-          request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-        },
-      }) as { success: boolean; data?: LookupResult[] };
-      const definitions = response.success && response.data && response.data.length > 0
-        ? response.data.flatMap((r) => r.definitions).map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text)).join('\n')
-        : '';
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions, status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    } catch {
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    }
-  }));
-  return results;
-}
 
 /** Load target/native language codes from settings.
  *  Used by import file role assignment + panel selection. */
@@ -301,9 +202,26 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     nativeStyle,
     clusterSettings,
     (action) => { void handleCardCreatorAction(action); },
-    () => { void handleCardCreatorAction('update-current'); },
     () => { void handleGenerateNative(); },
   );
+
+  /** Build SubtitleActionContext from current controller state — shared action
+   *  functions (cardActions.ts) use this to access video, cues, settings, etc.
+   *  Built lazily on each call so it always reflects current state. */
+  function buildActionContext(): SubtitleActionContext {
+    return {
+      video,
+      container,
+      webTextCtrl: sharedWebTextCtrl,
+      getTargetCues: () => blockController.getTargetCues(),
+      getNativeCues: () => blockController.getNativeCues(),
+      getCurrentTargetText: () => blockController.getCurrentTargetText(),
+      getCurrentNativeText: () => blockController.getCurrentNativeText(),
+      getOffsetMs: () => offsetController?.getOffsetMs() ?? 0,
+      showToast: (message, options) => { showToast(message, container, options); },
+      loadSettingsOrToast: (c) => loadSettingsOrToast(c),
+    };
+  }
 
   // Subtitle tokenize controller — injects token spans into subtitle line elements.
   // Independent from web tokenize: toggled via `subtitleUrls` in TokenizeSettings.
@@ -384,224 +302,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
   }
 
-  /** ADR-026: Handle Card Creator action (quick-update or edit-card).
-   *  quick-update → batch quick-add all unknown/tracking words in the current
-   *    subtitle line directly to Anki (no dialog). I+1 = 1 word → 1 card,
-   *    I+N = N words → N cards.
-   *  edit-card → open the Card Creator dialog pre-filled. */
+  /** ADR-026: Handle Card Creator action — delegates to shared cardActions module. */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
-    if (!sharedWebTextCtrl) return;
-    if (action === 'quick-update') {
-      await handleClusterQuickAdd();
-      return;
-    }
-    // edit-card + update-current: open dialog (flow below).
-    // ADR-027: update-current → initialAction='quick-update' (focus Update button).
-    // edit-card → initialAction='edit-card' (neutral).
-    const initialAction = action === 'update-current' ? 'quick-update' : 'edit-card';
-    // Load settings fresh (URL/deck/noteType/lang may have changed since init).
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    sharedWebTextCtrl.updateCardCreatorSettings(settings.cardCreator);
-
-    // ADR-026: prefetch AnkiConnect decks + models NOW (on click) so the
-    // network round-trip overlaps with media capture (screenshot + sentence
-    // audio, 2-5s). When the dialog mounts and loadData runs, it reuses the
-    // cached promise — resolving instantly if capture finished first.
-    void prefetchAnkiConnectData(settings.cardCreator.ankiConnectUrl).catch(() => {
-      // Prefetch failure is non-fatal — loadData will retry with a fresh
-      // promise and surface the error via toast.
-    });
-
-    // Build context from current subtitle state + actual subtitle languages.
-    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
-    const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
-    const ctx = buildCardCreatorContext(
-      video,
-      blockController.getTargetCues(),
-      blockController.getNativeCues(),
-      offsetController?.getOffsetMs() ?? 0,
-      sourceLang,
-      targetLang,
-    );
-    if (!ctx) {
-      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
-      return;
-    }
-
-    // ADR-026 / spec §3 + §4: capture screenshot + sentence audio BEFORE
-    // opening the dialog. The screenshot must reflect the frame the user saw
-    // when they clicked (before any UI changes). Audio capture seeks the video
-    // to cue.start and plays until cue.end — doing this before the dialog opens
-    // avoids the overlay interfering with playback. Show a brief "capturing"
-    // toast so the user knows why there's a short delay.
-    showToast('Capturing media…', container, { variant: 'info' });
-    // Wait for the video to be ready (readyState ≥ 2) before capturing — the
-    // user may have just seeked/paused, leaving the video in a transient state.
-    await waitForVideoReady(video);
-    const initialMedia: MediaFile[] = [];
-    try {
-      const screenshot = await captureScreenshot(video);
-      initialMedia.push(screenshot);
-    } catch {
-      // Screenshot failure is non-fatal — the user can re-capture manually.
-    }
-    try {
-      const cue = ctx.cue!;
-      const audioR = await captureSentenceAudio(video, { start: cue.start, end: cue.end });
-      if (audioR.ok) initialMedia.push(audioR.file);
-    } catch {
-      // Audio failure is non-fatal — screenshot + text fields still work.
-    }
-
-    // Build queue: find unknown/tracking words in the current subtitle line,
-    // look up each in the dictionary. The full queue is sent to the integrated
-    // panel; `useCardCreatorState` shows the sidebar when N ≥ 2 and pre-fills
-    // the first item even when N = 1.
-    const targetText = ctx.cue?.targetText ?? '';
-    const queue = await buildSubtitleQueue(targetText, sourceLang);
-
-    sharedWebTextCtrl.sendToCard({ ...ctx, initialMedia, queue }, initialAction);
-  }
-
-  /** Batch quick-add: find all unknown/tracking words in the current subtitle
-   *  line, look up each in the dictionary, and add a card for each directly to
-   *  Anki (no dialog). I+1 = 1 unknown word → 1 card. I+N = N unknown words →
-   *  N cards. Media (screenshot + sentence audio) is captured once and shared
-   *  across all cards in the same sentence. */
-  async function handleClusterQuickAdd(): Promise<void> {
-    const targetText = blockController.getCurrentTargetText();
-    if (!targetText) {
-      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
-      return;
-    }
-    const nativeText = blockController.getCurrentNativeText();
-
-    // Load settings + draft config.
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    const cc = settings.cardCreator;
-    const autosaver = new DraftAutosaver();
-    const restored = await autosaver.load();
-    const deck = restored?.deck ?? cc.defaultDeck;
-    const noteType = restored?.noteType ?? cc.defaultNoteType;
-    const fieldMapping = restored?.fieldMapping ?? {};
-    const tags = restored?.tags ?? cc.defaultTags;
-    if (!deck || !noteType) {
-      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-    if (Object.keys(fieldMapping).length === 0) {
-      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-
-    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
-
-    // Tokenize the subtitle into unique lowercase word terms.
-    const words = tokenizeSubtitleWords(targetText);
-    if (words.length === 0) {
-      showToast('No words found in the current subtitle.', container, { variant: 'info' });
-      return;
-    }
-
-    // Get word statuses and filter to unknown/tracking.
-    const statusMap = await getWordStatuses(sourceLang, words);
-    const learnWords = words.filter((w) => {
-      const s = statusMap.get(w);
-      return s === 'unknown' || s === 'tracking';
-    });
-    if (learnWords.length === 0) {
-      showToast('No unknown/tracking words in this subtitle line.', container, { variant: 'info' });
-      return;
-    }
-
-    showToast(`Quick Add — looking up ${learnWords.length} word${learnWords.length > 1 ? 's' : ''}…`, container, { variant: 'info' });
-
-    // Capture media once (shared across all cards).
-    const images: MediaFile[] = [];
-    const sentenceAudios: MediaFile[] = [];
-    if (video && video.videoWidth > 0) {
-      await waitForVideoReady(video);
-      try {
-        const screenshot = await captureScreenshot(video);
-        images.push(screenshot);
-      } catch { /* non-fatal */ }
-      try {
-        const cues = blockController.getTargetCues();
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) sentenceAudios.push(audioR.file);
-        }
-      } catch { /* non-fatal */ }
-    }
-
-    // Look up each word + add a card.
-    let added = 0;
-    let skipped = 0;
-    const errors: string[] = [];
-    for (const term of learnWords) {
-      // Dictionary lookup via background service worker.
-      let definitions = '';
-      try {
-        const response = await sendMessage({
-          type: MESSAGE_TYPES.LOOKUP_REQUEST,
-          payload: {
-            requestId: `cluster-qa-${Date.now()}-${term}`,
-            request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-          },
-        }) as { success: boolean; data?: LookupResult[] };
-        if (response.success && response.data && response.data.length > 0) {
-          definitions = response.data
-            .flatMap((r) => r.definitions)
-            .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-            .join('\n');
-        }
-      } catch {
-        // Lookup failure is non-fatal — card is added with empty definitions.
-      }
-
-      const result = await quickAddNote(
-        cc.ankiConnectUrl,
-        deck,
-        noteType,
-        fieldMapping,
-        tags,
-        {
-          targetWord: term,
-          sentence: targetText,
-          sentenceTranslation: nativeText,
-          definitions,
-          note: '',
-          moreExample: '',
-        },
-        { images, sentenceAudios, wordAudios: [] },
-        (msg) => errors.push(`${term}: ${msg}`),
-      );
-
-      if (result.ok && result.noteId !== null) {
-        added++;
-      } else if (result.ok && result.noteId === null) {
-        skipped++;
-      } else if (!result.ok) {
-        errors.push(`${term}: ${result.error}`);
-      }
-    }
-
-    // Summary toast.
-    if (added > 0) {
-      showToast(`Added ${added} card${added > 1 ? 's' : ''} to "${deck}"${skipped > 0 ? `, ${skipped} duplicate${skipped > 1 ? 's' : ''} skipped` : ''}.`, container, { variant: 'success' });
-    } else if (skipped > 0) {
-      showToast(`All ${skipped} card${skipped > 1 ? 's' : ''} already exist (duplicates).`, container, { variant: 'warning' });
-    } else {
-      showToast(`Quick Add failed: ${errors.join('; ')}`, container, { variant: 'error' });
-    }
+    await sharedHandleCardCreatorAction(buildActionContext(), action);
   }
 
   /** Generate native subtitle by translating the active target cues into the
-   *  configured native language. Reuses BackgroundPrefillController and creates
+   *  configured native language. Reuses shared startGenerateNative core + creates
    *  a single in-memory translated manager entry (virtual replacement). */
   async function handleGenerateNative(): Promise<void> {
     const runId = nextGenerateRunId++;
@@ -634,53 +341,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const targetInfo = mergedPanelItems('target');
     const targetItem = targetInfo.items[targetInfo.activeIndex];
 
-    const settings = await loadSettings();
-    currentSettings = settings;
-    const sl = settings.subtitleOverlayTargetLanguage ?? '';
-    const tl = settings.subtitleOverlayNativeLanguage ?? '';
-
-    // Abort if a newer run has superseded this one while loading settings.
-    if (activeGenerateRunId !== runId) return;
-
-    if (!sl || !tl || sl === tl) {
-      showToast('Target and native languages must differ', container, { variant: 'info' });
-      updateGenerateNativeEnabled();
-      return;
-    }
-
-    if (latestTargetCues.length === 0) {
-      showToast('No target subtitle to translate', container, { variant: 'info' });
-      updateGenerateNativeEnabled();
-      return;
-    }
-
+    // Snapshot target cues before async gap (latestTargetCues may change).
     const targetCues = [...latestTargetCues];
     const targetFormat = targetItem?.format ?? 'srt';
     const targetSize = targetItem?.size;
-    const nativeLabel = isoCodeToLabel(tl) ?? tl;
-    const translatedItem: SubtitlePanelItem = {
-      id: 'translated-native',
-      name: `${nativeLabel} (translated)`,
-      format: targetFormat,
-      size: targetSize,
-      source: 'translated',
-      role: 'native',
-      index: 0,
-    };
-    translatedNativeSlot = {
-      replacedSource,
-      replacedIndex,
-      item: translatedItem,
-      cues: [],
-      runId,
-    };
-    activeNativeSource = 'translated';
-    refreshPanel('native');
-    showToast('Generating native subtitle…', container, { variant: 'info' });
-    blockController.setGenerateNativeEnabled(false);
 
-    translatePrefill = new BackgroundPrefillController({
-      translate: createTranslateFunction(sl, tl),
+    // Create the translated manager entry upfront (shown as "translating…").
+    // The actual cues arrive via onChunkTranslated callback.
+    const result = await startGenerateNative(targetCues, {
       onChunkTranslated: (translatedCues: SrtCue[]) => {
         if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
         translatedNativeSlot.cues = translatedCues;
@@ -701,7 +369,49 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         updateGenerateNativeEnabled();
       },
     });
-    translatePrefill.start(targetCues, sl, tl);
+
+    // Abort if a newer run has superseded this one while loading settings.
+    if (activeGenerateRunId !== runId) return;
+
+    if (!result) {
+      // Validation failed — show error + re-enable button.
+      const settings = await loadSettings();
+      currentSettings = settings;
+      const sl = settings.subtitleOverlayTargetLanguage ?? '';
+      const tl = settings.subtitleOverlayNativeLanguage ?? '';
+      const error = !sl || !tl || sl === tl
+        ? 'Target and native languages must differ'
+        : 'No target subtitle to translate';
+      showToast(error, container, { variant: 'info' });
+      updateGenerateNativeEnabled();
+      return;
+    }
+
+    // Create the translated manager entry now that validation passed.
+    const translatedItem: SubtitlePanelItem = {
+      id: 'translated-native',
+      name: `${result.nativeLabel} (translated)`,
+      format: targetFormat,
+      size: targetSize,
+      source: 'translated',
+      role: 'native',
+      index: 0,
+    };
+    translatedNativeSlot = {
+      replacedSource,
+      replacedIndex,
+      item: translatedItem,
+      cues: [],
+      runId,
+    };
+    activeNativeSource = 'translated';
+    refreshPanel('native');
+    showToast('Generating native subtitle…', container, { variant: 'info' });
+    blockController.setGenerateNativeEnabled(false);
+
+    // Store the prefill controller (already started by startGenerateNative).
+    translatePrefill = result.prefill;
+    currentSettings = await loadSettings();
   }
 
   loadOverlaySettings().then(async ({ target, native, block, cluster, settings }) => {
@@ -762,6 +472,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
     blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     blockController.onToggleSidePanel = toggleSidePanel;
+    // OCR toggle: post message to OCR content script (same page) to toggle
+    // ocrEnabled for current origin. OCR content script handles storage save.
+    blockController.onToggleOcr = () => {
+      window.postMessage({ type: '__CELL_OCR_TOGGLE' }, '*');
+    };
     blockController.onSearchResultSelect = (result, role) => { void handleSearchResultSelect(result, role); };
     blockController.setHasSearchKeys(hasSearchKeys());
     blockController.setSearchApiKeys(currentSettings?.subtitleApiKeys ?? []);
@@ -769,6 +484,15 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Force re-render with the new callbacks.
     blockController.refreshManagerState();
     // ADR-025: offset provider already wired in ReactSubtitleController constructor.
+
+    // Listen for OCR state changes from ocrContentScript → update toolbar button.
+    window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      const d = e.data as { type?: string; enabled?: boolean };
+      if (d?.type === '__CELL_OCR_STATE' && typeof d.enabled === 'boolean') {
+        blockController?.setOcrEnabled(d.enabled);
+      }
+    });
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
     onStorageChanged((changes, area) => {
@@ -935,8 +659,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let autoNativeItems: SubtitlePanelItem[] = [];
   // Track which source is currently active per role (so merged panel highlights
   // the correct item when both auto + imported exist).
-  let activeTargetSource: 'auto' | 'imported' | 'searched' = 'auto';
-  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' = 'auto';
+  let activeTargetSource: 'auto' | 'imported' | 'searched' | 'ocr' = 'auto';
+  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr' = 'auto';
   // Generate-native: virtual replacement slot in the native manager panel.
   // Underlying auto/imported arrays are not mutated; this slot replaces the
   // active native item in the merged panel display and provides translated cues.
@@ -948,6 +672,30 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     readonly runId: number;
   }
   let translatedNativeSlot: TranslatedNativeSlot | null = null;
+  // OCR split dual-stream (spec ocr-split-dual-stream): two virtual slots fed by
+  // the OCR content script via window.postMessage('__CELL_OCR_TRACKS'). Like the
+  // translated slot, underlying auto/imported/searched arrays are not mutated —
+  // the OCR items are appended to the merged panel and replace the active source.
+  interface OcrTrackSlot {
+    readonly item: SubtitlePanelItem;
+    cues: SrtCue[];
+  }
+  let ocrTargetSlot: OcrTrackSlot | null = null;
+  let ocrNativeSlot: OcrTrackSlot | null = null;
+  // Active sources before the first OCR tracks message — restored on END.
+  type PreOcrSources = {
+    target: 'auto' | 'imported' | 'searched' | 'ocr';
+    native: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr';
+  };
+  let preOcrSources: PreOcrSources | null = null;
+  const makeOcrPanelItem = (id: string, name: string, role: 'target' | 'native'): SubtitlePanelItem => ({
+    id,
+    name,
+    format: 'live',
+    source: 'ocr',
+    role,
+    index: 0,
+  });
 
   /**
    * Build merged panel items for a role: auto items first, then imported items.
@@ -957,6 +705,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * switch between auto-detected and imported subtitles freely.
    */
   const mergedPanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
+    const base = basePanelItems(role);
+    // OCR dual-stream: append the live OCR item at the end (existing indices
+    // unchanged) and highlight it while the OCR source is active.
+    const ocrSlot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
+    if (!ocrSlot) return base;
+    const source = role === 'target' ? activeTargetSource : activeNativeSource;
+    const items = [...base.items, ocrSlot.item];
+    return { items, activeIndex: source === 'ocr' ? items.length - 1 : base.activeIndex };
+  };
+
+  const basePanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
     const autoItems = role === 'target' ? autoTargetItems : autoNativeItems;
     const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
     const searchedItems = role === 'target' ? searchedTargetItems : searchedNativeItems;
@@ -1510,6 +1269,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         offsetController?.loadCues(false);
         // updateCues([], []);
         latestTargetCues = [];
+        // Reset inline load status so stale messages from the previous video
+        // don't persist into the new one (auto-load will set 'loading' or 'none').
+        useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
+        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
       }
       lastAutoLoadUrl = currentUrl;
       if (!payload?.target && !payload?.native) {
@@ -1525,7 +1288,21 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         clearTranslatedNativeState();
         activeNativeSource = 'auto';
         updateGenerateNativeEnabled();
-        showToast('No subtitles detected', container, { variant: 'warning' });
+        useCuesStore.getState().setLoadStatus('target', { state: 'none' });
+        useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
+        // Clear auto-detected track list + manager panel so stale tracks from
+        // the previous video don't persist in the panel UI. onSpaNav may have
+        // already cleared these (proactive clear on yt-navigate-finish), but
+        // if onSpaNav didn't fire (lastAutoLoadUrl was undefined) this is the
+        // only clear path.
+        autoTargetItems = [];
+        autoNativeItems = [];
+        targetMatches = [];
+        nativeMatches = [];
+        activeTargetIndex = 0;
+        activeNativeIndex = 0;
+        refreshPanel('target');
+        refreshPanel('native');
       }
       // ADR-021: clear translate prefill on SPA nav (URL changed)
       if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
@@ -1566,7 +1343,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           // Send cues to Side Panel
           broadcastCues(bilingualCues);
         },
-        onToast: (message, variant) => showToast(message, container, { variant }),
+        onLoadStatus: (role, status) => useCuesStore.getState().setLoadStatus(role, status),
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
         onStartTranslatePrefill: (targetCues: SrtCue[]) => {
           // ADR-021: start background prefill to translate target→native.
@@ -1577,6 +1354,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           // If a manual generate-native is already active, don't overwrite it with
           // auto-translate. Manual generate is the user's explicit choice.
           if (translatedNativeSlot && activeNativeSource === 'translated') return;
+          // Inline load status: native language label for the translating state.
+          const nativeLabel = isoCodeToLabel(tl);
+          const label = nativeLabel ? nativeLabel.charAt(0).toUpperCase() + nativeLabel.slice(1) : tl;
           // Clear any previous prefill (SPA nav or re-trigger)
           translatePrefill?.clear();
           translatePrefill = new BackgroundPrefillController({
@@ -1590,11 +1370,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
               latestTargetCues = targetCues;
               // updateCues(targetCues, translatedCues);
               broadcastCues(bilingualCues);
+              useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: translatePrefill?.cacheSize ?? 0, total: targetCues.length } });
             },
             onError: (msg: string) => {
-              showToast(msg, container, { variant: 'error' });
+              console.error('[onStartTranslatePrefill] translation error', msg);
+              useCuesStore.getState().setLoadStatus('native', { state: 'error', languageLabel: label, source: 'translated', errorType: 'unknown' });
+            },
+            onComplete: () => {
+              useCuesStore.getState().setLoadStatus('native', { state: 'loaded', languageLabel: label, source: 'translated' });
             },
           });
+          useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: 0, total: targetCues.length } });
           translatePrefill.start(targetCues, sl, tl);
         },
         onSubtitleMatches: (targetM, nativeM) => {
@@ -1709,8 +1495,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     activeImportNativeIndex = existingNativeCount;
     // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
     // Mark active source as imported for roles that got new (non-duplicate) files.
-    if (newTarget.length > 0) activeTargetSource = 'imported';
-    if (newNative.length > 0) activeNativeSource = 'imported';
+    if (newTarget.length > 0) { activeTargetSource = 'imported'; useCuesStore.getState().setLoadStatus('target', { state: 'loaded', source: 'imported' }); }
+    if (newNative.length > 0) { activeNativeSource = 'imported'; useCuesStore.getState().setLoadStatus('native', { state: 'loaded', source: 'imported' }); }
     // Import resets the translated native slot (new target/native sources).
     clearTranslatedNativeState();
     refreshPanel('target');
@@ -1782,6 +1568,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'imported' });
     debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
@@ -1823,6 +1610,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     if (item.source === 'searched') {
       await onSearchedSelect(role, item.index);
+      return;
+    }
+    if (item.source === 'ocr') {
+      // OCR dual-stream: re-activate the live OCR track for this role.
+      const slot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
+      if (slot) {
+        if (role === 'target') activeTargetSource = 'ocr';
+        else activeNativeSource = 'ocr';
+        refreshPanel(role);
+        // D1 merge: empty other side keeps the existing side (onSubtitleSelect pattern).
+        blockController?.loadBilingualCues(role === 'target' ? slot.cues : [], role === 'native' ? slot.cues : []);
+        showOverlay();
+        syncSidePanelFromBlock();
+      }
       return;
     }
     if (item.source === 'translated') {
@@ -1881,6 +1682,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
       showOverlay();
       syncSidePanelFromBlock();
+      useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: formatSubtitleName('auto', sub.language, index, undefined, sub.displayName), source: 'auto' });
       showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1974,6 +1776,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    const searchLabel = (() => { const l = isoCodeToLabel(result.isoLanguage); return l ? l.charAt(0).toUpperCase() + l.slice(1) : result.isoLanguage; })();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', languageLabel: searchLabel, source: 'search' });
     debouncedToast(`Loaded ${result.name}`, container, { variant: 'success' });
   }
 
@@ -2007,6 +1811,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     showOverlay();
     syncSidePanelFromBlock();
+    useCuesStore.getState().setLoadStatus(role, { state: 'loaded', source: 'search' });
     debouncedToast(`Switched to ${item.name}`, container, { variant: 'success' });
   }
 
@@ -2063,9 +1868,65 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     updateGenerateNativeEnabled();
     lastAutoLoadKey = undefined;
     lastAutoLoadUrl = undefined;
+    // Clear auto-detected track list + manager panel so stale tracks from the
+    // previous video don't persist. Without this, the SubtitleManagerPanel
+    // keeps showing the old video's tracks after SPA nav to a video with no
+    // subtitles (onSpaNav cleared overlay cues but not the panel items).
+    autoTargetItems = [];
+    autoNativeItems = [];
+    targetMatches = [];
+    nativeMatches = [];
+    activeTargetIndex = 0;
+    activeNativeIndex = 0;
+    refreshPanel('target');
+    refreshPanel('native');
+    useCuesStore.getState().setLoadStatus('target', { state: 'none' });
+    useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
   };
   window.addEventListener('yt-navigate-finish', onSpaNav);
   window.addEventListener('popstate', onSpaNav);
+
+  // OCR dual-stream bridge (spec ocr-split-dual-stream): the OCR content script
+  // (same isolated world) posts '__CELL_OCR_TRACKS' with growing target/native cue
+  // lists and '__CELL_OCR_TRACKS_END' when the split session stops or split turns
+  // off. First message snapshots the active sources (restored on END), creates the
+  // two virtual slots and auto-switches both roles to the OCR source.
+  const onOcrTracksMessage = (e: MessageEvent): void => {
+    if (e.source !== window) return;
+    const d = e.data as { type?: string; targetCues?: SrtCue[]; nativeCues?: SrtCue[] };
+    if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
+      if (!ocrTargetSlot || !ocrNativeSlot) {
+        preOcrSources = { target: activeTargetSource, native: activeNativeSource };
+        ocrTargetSlot = { item: makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
+        ocrNativeSlot = { item: makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
+      }
+      ocrTargetSlot.cues = d.targetCues;
+      ocrNativeSlot.cues = d.nativeCues;
+      activeTargetSource = 'ocr';
+      activeNativeSource = 'ocr';
+      blockController?.loadBilingualCues(d.targetCues, d.nativeCues);
+      showOverlay();
+      latestTargetCues = d.targetCues;
+      offsetController?.loadCues(true);
+      bilingualCues = mergeCuesForPanel(d.targetCues, d.nativeCues);
+      broadcastCues(bilingualCues);
+      refreshPanel('target');
+      refreshPanel('native');
+      return;
+    }
+    if (d?.type === '__CELL_OCR_TRACKS_END') {
+      ocrTargetSlot = null;
+      ocrNativeSlot = null;
+      if (preOcrSources) {
+        activeTargetSource = preOcrSources.target;
+        activeNativeSource = preOcrSources.native;
+        preOcrSources = null;
+      }
+      refreshPanel('target');
+      refreshPanel('native');
+    }
+  };
+  window.addEventListener('message', onOcrTracksMessage);
 
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
@@ -2073,6 +1934,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // ponytail: document keydown + onMessage listeners leak — ceiling: memory
   // leak after many episode switches. Upgrade path: track + remove all listeners.
   return () => {
+    window.removeEventListener('message', onOcrTracksMessage);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);

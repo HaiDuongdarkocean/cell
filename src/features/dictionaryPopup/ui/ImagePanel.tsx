@@ -43,8 +43,8 @@ export function ImagePanel({
     return (
       <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
         <EmptyState
-          size="sm"
-          icon={<Icon name="image" size={24} />}
+          size="md"
+          icon={<Icon name="image"  />}
           title="No images"
           action={
             <a
@@ -83,7 +83,7 @@ export function ImagePanel({
                 onError={(): void => onImageError(item.id)}
               />
               <span className={styles.cellDefCheckBox} aria-hidden="true">
-                <Icon name="check" size={16} />
+                <Icon name="check"  />
               </span>
             </button>
           );

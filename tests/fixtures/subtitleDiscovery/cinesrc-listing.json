@@ -1,0 +1,35 @@
+[
+  {
+    "url": "https://example-cdn.st/cinesrc/en.srt",
+    "r2Url": "",
+    "format": "srt",
+    "display": "English",
+    "language": "en",
+    "isHearingImpaired": false,
+    "isForced": false,
+    "isDefault": true,
+    "source": "cinesrc"
+  },
+  {
+    "url": "https://example-cdn.st/cinesrc/pb.srt",
+    "r2Url": "",
+    "format": "srt",
+    "display": "Portuguese (BR)",
+    "language": "pb",
+    "isHearingImpaired": false,
+    "isForced": false,
+    "isDefault": false,
+    "source": "cinesrc"
+  },
+  {
+    "url": "https://example-cdn.st/cinesrc/vi.srt",
+    "r2Url": "",
+    "format": "srt",
+    "display": "Vietnamese",
+    "language": "vi",
+    "isHearingImpaired": false,
+    "isForced": false,
+    "isDefault": false,
+    "source": "cinesrc"
+  }
+]

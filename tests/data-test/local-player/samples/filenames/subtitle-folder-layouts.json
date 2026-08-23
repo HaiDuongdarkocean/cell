@@ -1,0 +1,240 @@
+[
+  {
+    "scenario": "target+native+fallback",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "Movie.en.srt",
+      "Movie.vi.srt",
+      "Movie.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": "Movie.vi.srt",
+      "others": [
+        "Movie.srt"
+      ]
+    }
+  },
+  {
+    "scenario": "only fallback",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "Movie.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.srt",
+      "native": "Movie.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "no match at all",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "OtherMovie.en.srt",
+      "OtherMovie.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    }
+  },
+  {
+    "scenario": "multiple same lang — sort alphabetically",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.en-2.srt",
+      "Movie.en.srt",
+      "Movie.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": "Movie.vi.srt",
+      "others": [
+        "Movie.en-2.srt"
+      ]
+    }
+  },
+  {
+    "scenario": "ISO 639-2 three-letter codes",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.eng.srt",
+      "Movie.vie.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.eng.srt",
+      "native": "Movie.vie.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "BCP 47 with region and script subtags",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.en-US.srt",
+      "Movie.zh-Hans.srt",
+      "Movie.pt-BR.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en-US.srt",
+      "native": null,
+      "others": [
+        "Movie.zh-Hans.srt",
+        "Movie.pt-BR.srt"
+      ]
+    }
+  },
+  {
+    "scenario": "case-insensitive matching",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.EN.srt",
+      "Movie.VI.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.EN.srt",
+      "native": "Movie.VI.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "multi-resolution — subtitle has different resolution than video",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "Movie_1080p.en.srt",
+      "Movie_1080p.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie_1080p.en.srt",
+      "native": "Movie_1080p.vi.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "forced and sdh tags present",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.en.forced.srt",
+      "Movie.en.sdh.srt",
+      "Movie.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.sdh.srt",
+      "native": "Movie.vi.srt",
+      "others": [
+        "Movie.en.forced.srt"
+      ]
+    }
+  },
+  {
+    "scenario": "year in name — both video and subtitle have year",
+    "videoFile": "Movie.2023.1080p.mp4",
+    "subtitleFiles": [
+      "Movie.2023.en.srt",
+      "Movie.2023.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.2023.en.srt",
+      "native": "Movie.2023.vi.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "CJK title — Chinese",
+    "videoFile": "蜘蛛侠.2002.1080p.mp4",
+    "subtitleFiles": [
+      "蜘蛛侠.2002.zh-Hans.srt",
+      "蜘蛛侠.2002.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "蜘蛛侠.2002.en.srt",
+      "native": null,
+      "others": [
+        "蜘蛛侠.2002.zh-Hans.srt"
+      ]
+    }
+  },
+  {
+    "scenario": "complex dot-separated scene naming",
+    "videoFile": "Game.of.Thrones.S01E01.1080p.BluRay.x264-RAiNDEER.mkv",
+    "subtitleFiles": [
+      "Game.of.Thrones.S01E01.en.srt",
+      "Game.of.Thrones.S01E01.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Game.of.Thrones.S01E01.en.srt",
+      "native": "Game.of.Thrones.S01E01.vi.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "mismatch base name — no match",
+    "videoFile": "Movie_720p.mp4",
+    "subtitleFiles": [
+      "DifferentMovie.en.srt",
+      "AnotherShow.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": null,
+      "native": null,
+      "others": []
+    }
+  },
+  {
+    "scenario": "full language name instead of code",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.English.srt",
+      "Movie.vi.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.English.srt",
+      "native": "Movie.vi.srt",
+      "others": []
+    }
+  },
+  {
+    "scenario": "target only — no native or fallback",
+    "videoFile": "Movie_1080p.mp4",
+    "subtitleFiles": [
+      "Movie.en.srt"
+    ],
+    "targetLang": "en",
+    "nativeLang": "vi",
+    "expected": {
+      "target": "Movie.en.srt",
+      "native": null,
+      "others": []
+    }
+  }
+]

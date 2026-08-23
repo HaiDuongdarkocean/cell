@@ -18,6 +18,9 @@ html, body {
   font-size: var(--font-size-base);
 }
 
+/* Disable mobile browser default tap highlight — product uses its own :active/hover states */
+*, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+
 /* Center a lone Icon/SVG inside any <button>.
    Low specificity (:where) so component/module styles can override. */
 :where(button:has(> span:only-child svg), button:has(> svg:only-child)) {

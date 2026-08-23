@@ -69,7 +69,7 @@ function NavClusterInner({
           data-cell-id="nav-expand"
           onClick={onToggleCollapsed}
         >
-          <Icon name="navRepeat" size={20} />
+          <Icon name="navRepeat"  />
         </IconButton>
       </div>
     );
@@ -79,7 +79,7 @@ function NavClusterInner({
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
       <div className={styles.main} data-cell-id="nav-main">
         <IconButton variant="transparent" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
-          <Icon name="navPrev" size={20} />
+          <Icon name="navPrev"  />
         </IconButton>
         <IconButton variant="transparent"
           aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
@@ -87,21 +87,21 @@ function NavClusterInner({
           onClick={onRepeat}
           active={repeatActive}
         >
-          <Icon name={repeatIcon} size={20} />
+          <Icon name={repeatIcon}  />
         </IconButton>
         <IconButton variant="transparent" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
-          <Icon name="navNext" size={20} />
+          <Icon name="navNext"  />
         </IconButton>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
         <IconButton variant="transparent" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
-          <Icon name="navRewind" size={18} />
+          <Icon name="navRewind"  />
         </IconButton>
         <IconButton variant="transparent" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
-          <Icon name={isPlaying ? 'navPause' : 'navPlay'} size={18} />
+          <Icon name={isPlaying ? 'navPause' : 'navPlay'}  />
         </IconButton>
         <IconButton variant="transparent" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
-          <Icon name="navForward" size={18} />
+          <Icon name="navForward"  />
         </IconButton>
       </div>
     </div>

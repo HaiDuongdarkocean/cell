@@ -28,7 +28,6 @@
 
 .trigger:hover {
   color: var(--color-text-primary);
-  transform: translateY(-1px);
 }
 
 .trigger:focus-visible {

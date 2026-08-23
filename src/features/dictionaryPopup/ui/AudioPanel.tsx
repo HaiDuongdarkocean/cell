@@ -98,7 +98,7 @@ export function AudioPanel({
                     void audio.play().catch(() => { /* best-effort */ });
                   }}
                 >
-                  <Icon name="audioWave" size={20} />
+                  <Icon name="audioWave"  />
                 </button>
                 <button
                   type="button"
@@ -112,7 +112,7 @@ export function AudioPanel({
                   )}
                 </button>
                 <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
-                  <Icon name="check" size={16} />
+                  <Icon name="check"  />
                 </span>
               </div>
             );

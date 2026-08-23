@@ -127,6 +127,15 @@
 /* 20. Root stacking context — isolate from host page z-index wars */
 :where(:host) { isolation: isolate; }
 
+/* 21. Tap highlight — disable mobile browser default gray/blue flash on tap.
+   The product uses its own :active/hover states (tokens.css --color-surface-hover,
+   --color-primary-subtle); the UA tap highlight is a redundant visual that
+   flickers on every touchstart and clashes with the design system. Applied to
+   every element + pseudo-element so no component leaks the default. */
+:where(:host, :host *, :host *::before, :host *::after) {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* === Base button reset — center a lone Icon/SVG inside any <button> ===
    Low specificity (:where) so component/module styles can override.
    Targets icon-only buttons where the only child is an Icon wrapper span or a raw svg. */

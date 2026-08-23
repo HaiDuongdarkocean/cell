@@ -26,7 +26,7 @@ export function CloseButton({
 
   return (
     <button type="button" className={cls} aria-label={ariaLabel} {...rest}>
-      <Icon name="x" size={16} />
+      <Icon name="x"  />
     </button>
   );
 }

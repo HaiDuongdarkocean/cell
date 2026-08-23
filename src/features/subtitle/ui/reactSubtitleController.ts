@@ -41,9 +41,13 @@ export class ReactSubtitleController {
   private playerModeHost: PlayerModeHostController | null = null;
   private readonly videoAspectRatio: number;
   private readonly url: string;
+  /** Storage key for subtitle offset — site origin (not full URL) so the
+   *  latency persists across episodes on SPAs like kisskh where each episode
+   *  has a different URL but the same origin. ADR-019 amendment (per-site). */
+  private readonly offsetKey: string;
+  private destroyed = false;
   private readonly onGenerateNative: () => void;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
-  private readonly onUpdateCurrentCard: () => void;
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private yOffsetPersistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -74,6 +78,10 @@ export class ReactSubtitleController {
   public onImportFiles?: (role: 'target' | 'native', files: FileList) => void;
   /** Called when the user toggles the Chrome side panel. */
   public onToggleSidePanel?: () => void;
+  /** Called when the user clicks the OCR toggle button in the toolbar. */
+  public onToggleOcr?: () => void;
+  /** Whether OCR is currently enabled (drives toolbar button active state). */
+  public ocrEnabled = false;
   /** Called when active cue indices change (for subtitle tokenize rendering). */
   public onCuesUpdated?: () => void;
   /** Called when the user selects a search result to download + load. Delegates
@@ -102,7 +110,6 @@ export class ReactSubtitleController {
     nativeStyle: OverlayStyleConfig = DEFAULT_OVERLAY_STYLE_NATIVE,
     clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS,
     onCardCreatorAction: (action: CardCreatorAction) => void = () => undefined,
-    onUpdateCurrentCard: () => void = () => undefined,
     onGenerateNative: () => void = () => undefined,
   ) {
     this.video = video;
@@ -114,8 +121,8 @@ export class ReactSubtitleController {
       resolveVideoAspectRatio(videoRect.width, videoRect.height),
     );
     this.url = window.location?.href ?? '';
+    this.offsetKey = this.resolveOffsetKey(this.url);
     this.onCardCreatorAction = onCardCreatorAction;
-    this.onUpdateCurrentCard = onUpdateCurrentCard;
     this.onGenerateNative = onGenerateNative;
 
     this.loadPersistedOffset();
@@ -164,7 +171,8 @@ export class ReactSubtitleController {
       onToggleCollapsed: () => this.handleToggleCollapsed(),
       onQuickAdd: () => this.onCardCreatorAction('quick-update'),
       onEditCard: () => this.onCardCreatorAction('edit-card'),
-      onUpdateCurrentCard: () => this.onUpdateCurrentCard(),
+      onToggleOcr: () => this.onToggleOcr?.(),
+      ocrEnabled: this.ocrEnabled,
       onGenerateNative: () => this.onGenerateNative(),
       onToggleSidePanel: () => this.onToggleSidePanel?.(),
       onToggleManager: () => this.openManager(),
@@ -184,12 +192,35 @@ export class ReactSubtitleController {
     });
   }
 
+  /** Resolve the storage key for subtitle offset. Prefer the site origin so
+   *  latency persists across episodes on SPAs (kisskh) where the URL changes
+   *  per episode but the origin stays constant. Fall back to the full URL when
+   *  the origin cannot be parsed (e.g. non-standard schemes). */
+  private resolveOffsetKey(url: string): string {
+    try {
+      const origin = new URL(url).origin;
+      return origin === 'null' ? url : origin;
+    } catch {
+      return url;
+    }
+  }
+
   private loadPersistedOffset(): void {
     try {
       loadSettings().then((settings) => {
-        const persisted = settings.subtitleOffset?.[this.url];
+        if (this.destroyed) return;
+        const persisted = settings.subtitleOffset?.[this.offsetKey];
         if (typeof persisted === 'number' && !Number.isNaN(persisted)) {
           this.offsetMs = clampOffsetMs(persisted);
+          // Apply the loaded offset to the already-constructed mount + engine.
+          // The constructor builds these with offsetMs=0; the async load
+          // resolves later, so by now mount/engine exist. Without this, the
+          // OffsetLayer display + manager panel show 0 after a controller
+          // re-init (SPA episode switch) even though the engine's offset
+          // provider would eventually pick up the new value.
+          this.mount.setOffset(this.buildOffsetState());
+          this.mount.setManager(this.buildManagerState());
+          this.engine.onTimeUpdate();
         }
         if (typeof settings.subtitlePreviewTargetText === 'string' && settings.subtitlePreviewTargetText) {
           this.previewTargetText = settings.subtitlePreviewTargetText;
@@ -207,7 +238,16 @@ export class ReactSubtitleController {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
-      saveSettings({ [OFFSET_SETTINGS_KEY]: { [this.url]: this.offsetMs } } as Partial<Settings>).catch(() => undefined);
+      // Read-modify-write the subtitleOffset map: saveSettings shallow-merges
+      // top-level keys, so passing `{ [key]: ms }` alone would wipe every
+      // other site's persisted offset. Merge with the existing map first.
+      loadSettings()
+        .then((s) => {
+          if (this.destroyed) return;
+          const merged = { ...(s.subtitleOffset ?? {}), [this.offsetKey]: this.offsetMs };
+          saveSettings({ [OFFSET_SETTINGS_KEY]: merged } as Partial<Settings>).catch(() => undefined);
+        })
+        .catch(() => undefined);
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }
 
@@ -233,6 +273,7 @@ export class ReactSubtitleController {
       onImport: this.onImportFiles ? (role) => this.openImportFileInput(role) : undefined,
       onGenerateNative: () => this.onGenerateNative(),
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
+      offsetMs: this.offsetMs,
       appearance: this.buildAppearanceState(),
       hasSearchKeys: this.hasSearchKeys,
       apiKeys: this.searchApiKeys,
@@ -340,6 +381,9 @@ export class ReactSubtitleController {
     const current = this.engine.getBlockSettings();
     const merged = { ...current, ...partial };
     this.engine.updateSettings({ blockSettings: merged });
+    if (partial.yOffsetPercent !== undefined) {
+      this.mount.setYOffsetPercent(partial.yOffsetPercent);
+    }
     this.updateStylesFromEngine();
     this.mount.setManager(this.buildManagerState());
 
@@ -442,6 +486,12 @@ export class ReactSubtitleController {
     this.mount.setGenerateNativeEnabled(enabled);
   }
 
+  /** Update OCR enabled state → toolbar button active state. */
+  setOcrEnabled(enabled: boolean): void {
+    this.ocrEnabled = enabled;
+    this.mount.setOcrEnabled(enabled);
+  }
+
   private handleRepeat(): void {
     if (this.engine.hasSubtitles()) {
       this.engine.repeatOnce();
@@ -525,6 +575,11 @@ export class ReactSubtitleController {
     this.offsetMs = clampOffsetMs(ms);
     this.persistOffset();
     this.mount.setOffset(this.buildOffsetState());
+    // Refresh manager state so the panel's offsetMs prop stays current —
+    // the panel mounts fresh on each open and reads this prop as its initial
+    // Latency value. Without this, reopening after a change shows the stale
+    // pre-change value.
+    this.mount.setManager(this.buildManagerState());
     // Re-render current cue with new offset.
     this.engine.onTimeUpdate();
   }
@@ -727,6 +782,7 @@ export class ReactSubtitleController {
   }
 
   destroy(): void {
+    this.destroyed = true;
     if (this.playerModeResizeHandler) {
       window.removeEventListener('resize', this.playerModeResizeHandler);
       this.playerModeResizeHandler = null;

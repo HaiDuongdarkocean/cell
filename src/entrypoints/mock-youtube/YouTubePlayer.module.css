@@ -1,0 +1,211 @@
+.playerContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.playerContainer.fullscreen {
+  border-radius: 0;
+}
+
+.playerVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* Center play button */
+.centerPlayBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+.centerPlayBtn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Control bar */
+.controlBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  padding: 8px 12px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  z-index: 20;
+  transition: opacity 0.3s ease;
+}
+
+.controlsVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.controlsHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Seekbar */
+.seekbar {
+  width: 100%;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+
+.seekTrack {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  transition: height 0.15s ease;
+}
+
+.seekbar:hover .seekTrack {
+  height: 6px;
+}
+
+.seekBuffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+}
+
+.seekPlayed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #ff0000;
+  border-radius: 2px;
+}
+
+/* Left + right control groups */
+.controlsLeft,
+.controlsRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.controlsRight {
+  margin-left: auto;
+}
+
+.controlBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.controlBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.controlBtn:active {
+  transform: scale(0.97);
+}
+
+.ccActive {
+  border-bottom: 2px solid #fff;
+}
+
+/* Time display */
+.timeDisplay {
+  color: #fff;
+  font-size: 13px;
+  font-family: Roboto, Arial, sans-serif;
+  margin: 0 4px;
+  user-select: none;
+}
+
+/* Settings menu */
+.settingsWrap {
+  position: relative;
+}
+
+.settingsMenu {
+  position: absolute;
+  bottom: 40px;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  padding: 8px 0;
+  min-width: 180px;
+  z-index: 30;
+  animation: fadeIn 0.2s ease;
+}
+
+.settingsHeader {
+  color: #aaa;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 4px 16px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  color: #f1f1f1;
+  font-size: 14px;
+  font-family: Roboto, Arial, sans-serif;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.settingsRow:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.settingsCheck {
+  color: #f1f1f1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

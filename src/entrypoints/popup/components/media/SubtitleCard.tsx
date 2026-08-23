@@ -95,7 +95,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
         >
           {/* Icon — subtitle (amber) */}
           <Center className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-            <Icon name="flag" size={16} />
+            <Icon name="flag"  />
           </Center>
 
           {/* Body */}
@@ -136,7 +136,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                   aria-label="Download"
                   data-cell-id="subtitle-download"
                 >
-                  <Icon name="download" size={16} />
+                  <Icon name="download"  />
                 </IconButton>
               )}
             </div>
@@ -153,7 +153,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               data-cell-id="subtitle-url"
               title="Click to copy URL"
             >
-              <Icon name="copy" size={14} />
+              <Icon name="copy"  />
               <span className={styles.urlText}>{subtitle.url}</span>
             </button>
             {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}

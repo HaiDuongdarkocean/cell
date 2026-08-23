@@ -1,0 +1,177 @@
+/* === OcrSettingsPanel — iOS Settings card style ===
+   Row layout delegated to SettingsRow + LabelGroup components.
+   Tokens from design system (no hardcoded values). */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* ─── Card — rounded, hairline border, grouped rows ─── */
+.card,
+.configCard {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  overflow: hidden;
+}
+
+/* Config card — reveal animation when OCR enabled */
+.configCard {
+  animation: configReveal var(--duration-300) var(--ease-standard);
+  transform-origin: top;
+}
+
+@keyframes configReveal {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Info button — compact, hover/focus → info color ─── */
+.infoBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.infoBtn:hover {
+  color: var(--color-info);
+}
+.infoBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+.infoBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Inline expandable hint — grid 0fr→1fr, attached to card ─── */
+.hintRow {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-300) var(--ease-standard);
+}
+.hintRow[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+.hintInner {
+  overflow: hidden;
+}
+.hintContent {
+  margin: 0;
+  padding: var(--space-2-5) var(--space-4) var(--space-3) var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.hintStrong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ─── Slider value — right-aligned, primary color, tabular nums ─── */
+.sliderValue {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+/* ─── Language rows — Select + inline reset button ─── */
+.langRow {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Select — compact width + height in row.
+   The shared Select trigger sets `min-height: var(--touch-target)` (40px)
+   which overrides its `height: var(--input-height)` (32px), making the
+   language row ~8px taller than the toggle row. Override the trigger's
+   min-height here so the row matches the compact toggle-row height.
+   NOTE: scoped via .langSelect (applied to Select root) — using
+   [class*='select'] would also match .cell-ocr-region-selector
+   (contains 'select'), breaking the region overlay's width. */
+.langSelect {
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 160px;
+}
+.langSelect :global([class*='trigger']) {
+  min-height: var(--input-height);
+}
+
+/* Reset-to-system-default icon button — visible only when an override is set */
+.resetBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.resetBtn:hover {
+  color: var(--color-primary);
+}
+.resetBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+.resetBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Split section — Top/Bottom assignment segment buttons ─── */
+.segmentButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Low-RAM hint under split controls */
+.sliderHint {
+  margin: 0;
+  padding: var(--space-2-5) var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+/* ─── Region action buttons — flex row, wrap on small screens ─── */
+.regionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  container-type: inline-size;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .configCard,
+  .hintRow {
+    animation: none;
+    transition: none;
+  }
+}

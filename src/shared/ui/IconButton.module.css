@@ -15,7 +15,7 @@
   border-radius: var(--iconbutton-radius);
   cursor: pointer;
   color: var(--iconbutton-fg);
-  transition: background var(--transition), color var(--transition), transform var(--transition);
+  transition: background var(--transition), color var(--transition);
   padding: 0;
   flex-shrink: 0;
   width: var(--iconbutton-size-md);
@@ -23,10 +23,23 @@
 }
 
 /* === Sizes — DS spec §2 Icon Button: default 40×40 (md) === */
-.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); }
-.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); }
-.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); }
-.lg { width: var(--space-12); height: var(--space-12); }
+.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); min-width: var(--iconbutton-size-xs); min-height: var(--iconbutton-size-xs); }
+.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); min-width: var(--iconbutton-size-sm); min-height: var(--iconbutton-size-sm); }
+.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); min-width: var(--iconbutton-size-md); min-height: var(--iconbutton-size-md); }
+.lg { width: var(--space-12); height: var(--space-12); min-width: var(--space-12); min-height: var(--space-12); }
+
+/* Icon size — SSOT, controlled by button not by Icon prop */
+.iconBtn > svg,
+.iconBtn > * svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+}
+
+.xs > svg,
+.xs > * svg {
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
+}
 
 /* === Variants === */
 
@@ -43,13 +56,13 @@
 /* Outline — hairline border, transparent background (mirrors Button.outline) */
 .outline {
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   border: var(--border-width-hairline) solid var(--color-border);
 }
 
 .outline:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
+  background: var(--iconbutton-hover-bg);
+  color: var(--color-text);
 }
 
 /* Ghost — transparent, surface-hover background on hover */
@@ -86,7 +99,6 @@
 }
 
 /* === States — match components.css .icon-btn === */
-.iconBtn:active { transform: scale(0.96); }
 .iconBtn:disabled { opacity: 0.5; pointer-events: none; }
 
 /* === Loading (spec §5.1 — Spinner replaces icon + aria-busy) === */

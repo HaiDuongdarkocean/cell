@@ -1,4 +1,5 @@
-﻿import type { ReactElement, CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import styles from './ColorScale.showcase.module.css';
 
 interface Swatch {
   token: string;
@@ -6,63 +7,70 @@ interface Swatch {
   on?: string;
 }
 
-const swatchStyle: CSSProperties = {
-  width: 48,
-  height: 48,
-  borderRadius: 'var(--radius-sm)',
-  border: '1px solid var(--color-border)',
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 'var(--font-size-2xs)',
-  fontFamily: 'var(--font-family-code)',
-};
+/** Resolve a CSS custom property to a hex string. Returns the raw value if conversion fails. */
+function resolveHex(token: string, el: HTMLElement): string {
+  const value = getComputedStyle(el).getPropertyValue(token.trim()).trim();
+  if (!value) return token;
+  // rgb(r, g, b) or rgba(r, g, b, a) → #hex
+  const m = value.match(/rgba?\(([^)]+)\)/i);
+  if (!m) return value.startsWith('#') ? value.toUpperCase() : value;
+  const parts = m[1].split(',').map((p) => parseFloat(p.trim()));
+  const [r, g, b] = parts;
+  const toHex = (n: number) => Math.round(n).toString(16).padStart(2, '0').toUpperCase();
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
 
-const rowStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-};
+function SwatchCircle({ s }: { s: Swatch }): ReactElement {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [hex, setHex] = useState<string>('');
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-const labelStyle: CSSProperties = {
-  fontFamily: 'var(--font-family-code)',
-  fontSize: 'var(--font-size-xs)',
-  color: 'var(--color-text-secondary)',
-  minWidth: 200,
-};
+  useEffect(() => {
+    if (ref.current) setHex(resolveHex(s.token, ref.current));
+  }, [s.token]);
 
-const groupTitleStyle: CSSProperties = {
-  fontWeight: 600,
-  fontSize: 'var(--font-size-sm)',
-  marginBottom: 4,
-};
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-const gridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-  gap: 8,
-};
+  const handleClick = useCallback(async () => {
+    if (!hex) return;
+    try {
+      await navigator.clipboard.writeText(hex);
+      setCopied(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard unavailable */ }
+  }, [hex]);
 
-function SwatchRow({ s }: { s: Swatch }): ReactElement {
-  const bg: CSSProperties = { ...swatchStyle, background: `var(${s.token})` };
   return (
-    <div style={rowStyle}>
-      <div style={bg}>
-        {s.on ? <span style={{ color: `var(${s.on})` }}>Aa</span> : null}
-      </div>
-      <span style={labelStyle}>{s.token}</span>
-    </div>
+    <button
+      ref={ref}
+      type="button"
+      className={styles.swatch}
+      onClick={handleClick}
+      aria-label={`Copy ${hex || s.token}`}
+      title={s.token}
+    >
+      <span
+        className={styles.circle}
+        style={{ background: `var(${s.token})` }}
+      >
+        {s.on ? <span className={styles.contrastText} style={{ color: `var(${s.on})` }}>Aa</span> : null}
+      </span>
+      <span className={`${styles.hex} ${copied ? styles.copiedHex : ''}`}>
+        {copied ? 'Copied!' : hex || '—'}
+      </span>
+    </button>
   );
 }
 
 function Group({ title, items }: { title: string; items: readonly Swatch[] }): ReactElement {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span style={groupTitleStyle}>{title}</span>
-      <div style={gridStyle}>
+    <div className={styles.group}>
+      <span className={styles.groupTitle}>{title}</span>
+      <div className={styles.grid}>
         {items.map((s) => (
-          <SwatchRow key={s.token} s={s} />
+          <SwatchCircle key={s.token} s={s} />
         ))}
       </div>
     </div>
@@ -219,7 +227,7 @@ const SYNTAX: readonly Swatch[] = [
 
 export function Showcase(): ReactElement {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className={styles.colorScale}>
       <Group title="Core (9)" items={CORE} />
       <Group title="Semantic — Palette" items={SEMANTIC_PALETTE} />
       <Group title="Semantic — Text / Icon / Border" items={SEMANTIC_TEXT} />
@@ -236,7 +244,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Color Scale',
-  description: 'All --color-* tokens: Core (9), Semantic (~50), Tint (40), Data viz (11), Syntax (14). Swatches with Aa show foreground-on-background contrast.',
+  description: 'All --color-* tokens: Core (9), Semantic (~50), Tint (40), Data viz (11), Syntax (14). Click any swatch to copy its hex value. Swatches with Aa show foreground-on-background contrast.',
   level: 'foundations',
   category: 'Color',
   group: 'Tokens',

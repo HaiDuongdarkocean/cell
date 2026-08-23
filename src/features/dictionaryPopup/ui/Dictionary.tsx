@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { usePopupPosition } from './usePopupPosition';
+import { Sheet } from '@/shared/ui/Sheet';
 import styles from './PopupDictionary.module.css';
 import type { ComponentProps } from 'react';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
@@ -46,8 +47,6 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
       isSheet,
       popupRef,
       onPointerDownResize,
-      onPointerDownSheet,
-      onPointerDownContent,
     } = usePopupPosition({
       anchor,
       pointer,
@@ -62,10 +61,26 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
       popupRef.current?.focus();
     }, [popupRef]);
 
+    // Sheet mode (mobile) — use shared Sheet atom (SSOT).
+    if (isSheet) {
+      return (
+        <Sheet
+          open
+          onClose={onClose}
+          initialHeight={initialSheetHeight}
+          onHeightChange={(h) => onSizeChange?.({ width: 0, maxHeight: 0 }, h)}
+          data-cell-id="popup-dictionary"
+        >
+          <DictionaryPanelView {...panelProps} isOpen variant="popup" />
+        </Sheet>
+      );
+    }
+
+    // Popup mode (desktop) — absolute positioned near selection.
     return (
       <div
         ref={popupRef}
-        className={`${styles.popup} ${isSheet ? styles.isSheet : ''}`}
+        className={styles.popup}
         role="dialog"
         aria-modal="true"
         aria-label="Dictionary popup"
@@ -80,16 +95,8 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
         }}
       >
         <div
-          className={styles.sheetHandle}
-          aria-hidden="true"
-          data-cell-id="popup-dictionary-sheet-handle"
-          onPointerDown={onPointerDownSheet}
-        />
-
-        <div
           className={styles.content}
           data-cell-id="popup-dictionary-content"
-          onPointerDown={onPointerDownContent}
         >
           <DictionaryPanelView {...panelProps} isOpen variant="popup" />
         </div>

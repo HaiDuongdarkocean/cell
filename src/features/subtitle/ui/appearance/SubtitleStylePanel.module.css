@@ -1,103 +1,84 @@
-/* === SubtitleStylePanel — appearance controls === */
+/* === SubtitleStylePanel — iOS Settings card style === */
 
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
 }
 
-.sectionLabel {
+/* ─── Section header — sentence case, secondary color ─── */
+.sectionHeader {
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: var(--space-2) 0 0;
+  letter-spacing: var(--tracking-normal);
+  padding: 0 var(--space-4);
+  margin: 0;
+  text-transform: none;
 }
 
-.sectionLabel:first-child {
-  margin-top: 0;
+/* ─── Card section — rounded, hairline border, grouped rows ─── */
+.card {
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  overflow: hidden;
 }
 
-.field {
+/* ─── Row inside card ─── */
+.row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
+  padding: var(--space-3) var(--space-4);
   min-width: 0;
 }
 
-.fieldRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-3);
-  align-items: start;
+.row + .row {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
-.fieldRow > .field {
-  min-width: 0;
-}
-
-@media (min-width: 520px) {
-  .fieldRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Custom shadow has 4 compact fields; allow 2x2 on narrow, 4 across on desktop. */
-.customShadowRow {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (min-width: 768px) {
-  .customShadowRow {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-/* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
+/* ─── Two-column row (color pickers, opacity sliders) ─── */
 .pairRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: start;
+  gap: 0;
 }
 
-.pairRow > .field {
-  min-width: 0;
-}
-
-@media (min-width: 480px) {
+@media (min-width: 420px) {
   .pairRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
+  }
+
+  .pairRow > .row + .row {
+    border-top: none;
+    border-left: var(--border-width-hairline) solid var(--color-border-subtle);
   }
 }
 
+/* ─── Slider header — label left, value right ─── */
 .label {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+  color: var(--color-text-primary);
+  user-select: none;
 }
 
 .valueBadge {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  font-weight: var(--font-weight-normal);
-  padding: var(--space-0-5) var(--space-1-5);
-  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
 }
 
+/* ─── Slider — compact, token-based ─── */
 .slider {
   width: 100%;
-  /* Compact slider: no min-height; track stays var(--space-1) while the
-   * touch area is just large enough for the thumb. Ponytail: below the
-   * design-system --touch-target (40/44px); if tap issues arise, wrap the
-   * slider in a larger hit area or bump height back to --touch-target. */
   height: var(--space-3-5);
   padding: calc((var(--space-3-5) - var(--space-1)) / 2) 0;
   box-sizing: border-box;
@@ -137,6 +118,15 @@
   cursor: pointer;
   border: var(--space-0-5) solid var(--color-background);
   margin-top: calc((var(--space-1) - var(--space-3-5)) / 2);
+  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.slider:active::-webkit-slider-thumb {
+  transform: scale(1.25);
 }
 
 .slider::-moz-range-track {
@@ -155,14 +145,22 @@
   border: var(--space-0-5) solid var(--color-background);
 }
 
+/* ─── Color input — compact, rounded ─── */
 .colorInput {
   width: 100%;
-  height: var(--space-8);
+  height: var(--space-7);
   padding: var(--space-0-5);
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   cursor: pointer;
+  transition: border-color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.colorInput:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+  border-color: var(--color-primary);
 }
 
 .colorInput::-webkit-color-swatch-wrapper {
@@ -171,69 +169,122 @@
 
 .colorInput::-webkit-color-swatch {
   border: none;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
 }
 
-.numberInput,
+/* ─── Select + text input ─── */
+.select,
 .textInput,
-.select {
+.numberInput {
   width: 100%;
   padding: var(--space-1-5) var(--space-2);
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   min-width: 0;
+  transition: border-color var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
-.numberInput:focus-visible,
+.select:focus-visible,
 .textInput:focus-visible,
-.select:focus-visible {
+.numberInput:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
   border-color: var(--color-primary);
 }
 
-.radioRow {
+/* ─── Segmented control — Apple HIG style ─── */
+.segmented {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: center;
+  gap: 0;
   width: 100%;
-  gap: var(--space-1);
-  padding: 0 var(--space-1);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-md);
+  padding: var(--space-0-5);
 }
 
-.radioLabel {
+.segment {
+  flex: 1 1 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  flex: 1 1 auto;
-  min-width: min-content;
-  font-size: var(--font-size-xs);
-  color: var(--color-text);
+  padding: var(--space-1-5) var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  white-space: nowrap;
+  user-select: none;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              color var(--duration-fast, 150ms) var(--ease-out, ease-out),
+              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
+.segment:hover {
+  color: var(--color-text-primary);
+}
+
+.segment:active {
+  transform: scale(0.97);
+}
+
+.segmentActive {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+.segmentActive:active {
+  transform: scale(0.97);
+}
+
+/* ─── Custom shadow grid ─── */
+.customShadowRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .customShadowRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .customShadowRow > .row + .row:nth-child(n+3) {
+    border-top: none;
+  }
+
+  .customShadowRow > .row + .row {
+    border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+
+  .customShadowRow > .row:nth-child(3) {
+    border-left: none;
+  }
+}
+
+/* ─── Reset row ─── */
 .resetRow {
   display: flex;
-  justify-content: flex-end;
-  padding-top: var(--space-1);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-}
-
-.capitalize {
-  text-transform: capitalize;
+  justify-content: center;
+  padding-top: var(--space-2);
 }
 
 .confirmRow {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.capitalize {
+  text-transform: capitalize;
 }

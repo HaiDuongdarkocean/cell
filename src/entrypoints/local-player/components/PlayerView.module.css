@@ -1,0 +1,121 @@
+/* === PlayerView — top-level layout of the local player page ===
+   Stack: PlayerMenuBar (top) → video stage (center, flex-fill) → PlayerControls (bottom).
+   LibraryView slides in from the right as an overlay panel.
+   Consumes tokens only — no raw hex/radius. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: var(--color-background);
+  font-family: var(--font-family);
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-background);
+  overflow: hidden;
+}
+
+.videoWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--overlay-background);
+}
+
+.subtitleOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+  pointer-events: none;
+  container-type: inline-size;
+}
+
+/* Controls overlay — sits inside videoWrapper, absolute bottom, fades in/out.
+   Gradient backdrop for legibility without a solid bar background. */
+.controlsOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-popover);
+  padding: var(--space-4) var(--space-2) var(--space-3);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--overlay-background) 70%, transparent),
+    transparent
+  );
+  transition: opacity var(--duration-medium) var(--ease-standard);
+}
+
+.noSubtitleBanner {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  z-index: var(--z-popover);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Library panel — slides in from the right as an overlay. */
+.libraryPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--space-96);
+  max-width: 100%;
+  background: var(--color-surface);
+  border-left: var(--border-width-hairline) solid var(--color-border);
+  z-index: var(--z-popover);
+  overflow: hidden;
+}
+
+/* === Responsive — mobile / narrow viewport === */
+@media (max-width: 480px) {
+  .libraryPanel {
+    width: 100%;
+    border-left: none;
+  }
+
+  .subtitleOverlay {
+    padding: var(--space-4) var(--space-2) var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controlsOverlay {
+    transition: none;
+  }
+}

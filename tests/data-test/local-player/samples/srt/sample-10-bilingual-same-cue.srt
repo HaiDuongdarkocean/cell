@@ -1,0 +1,24 @@
+1
+00:00:01,000 --> 00:00:04,000
+Hello, how are you?
+Xin chào, bạn khỏe không?
+
+2
+00:00:05,000 --> 00:00:08,000
+I am fine, thank you.
+Tôi khỏe, cảm ơn bạn.
+
+3
+00:00:09,000 --> 00:00:12,000
+What is your name?
+Bạn tên là gì?
+
+4
+00:00:13,000 --> 00:00:16,000
+My name is John.
+Tên tôi là John.
+
+5
+00:00:17,000 --> 00:00:20,000
+Nice to meet you.
+Rất vui được gặp bạn.

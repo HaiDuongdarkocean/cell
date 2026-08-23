@@ -12,11 +12,11 @@
  * V1 reads on every call (settings are small + infrequent — no perf concern).
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 21;
+export const CURRENT_SCHEMA_VERSION = 22;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -62,6 +62,20 @@ function validateNavClusterFields(s: Record<string, unknown>): void {
   } else {
     s.subtitleBlockSettings = DEFAULT_SETTINGS.subtitleBlockSettings;
   }
+}
+
+/** Validate localPlayerSettings fields (schema v22). Booleans coerced, lastDirectoryId string|null. */
+function validateLocalPlayerSettings(s: Record<string, unknown>): void {
+  const lp = s.localPlayerSettings as Record<string, unknown> | undefined;
+  if (!lp || typeof lp !== 'object') {
+    s.localPlayerSettings = { ...DEFAULT_LOCAL_PLAYER_SETTINGS };
+    return;
+  }
+  s.localPlayerSettings = {
+    subtitleMatchEnabled: coerceBoolean(lp.subtitleMatchEnabled, DEFAULT_LOCAL_PLAYER_SETTINGS.subtitleMatchEnabled),
+    resumePromptEnabled: coerceBoolean(lp.resumePromptEnabled, DEFAULT_LOCAL_PLAYER_SETTINGS.resumePromptEnabled),
+    lastDirectoryId: typeof lp.lastDirectoryId === 'string' ? lp.lastDirectoryId : null,
+  };
 }
 
 /** Forward-compat normalization: ensure overlay style objects have fontWeight. */
@@ -368,6 +382,17 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     merged.subtitleApiKeys = Array.isArray(merged.subtitleApiKeys) ? merged.subtitleApiKeys : [];
     return merged;
   },
+  // v21 → v22: add localPlayerSettings (spec local-video-player.md). Additive —
+  // existing users get defaults (subtitle match + resume prompt ON, no directory).
+  21: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 22 } as Record<string, unknown>;
+    if (!merged.localPlayerSettings) {
+      merged.localPlayerSettings = { ...DEFAULT_LOCAL_PLAYER_SETTINGS };
+    } else {
+      validateLocalPlayerSettings(merged);
+    }
+    return merged;
+  },
 };
 
 /**
@@ -396,6 +421,7 @@ export async function loadSettings(): Promise<Settings> {
     const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
     validateNavClusterFields(merged);
+    validateLocalPlayerSettings(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
     merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
     return merged as unknown as Settings;

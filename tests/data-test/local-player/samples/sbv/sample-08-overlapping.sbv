@@ -1,0 +1,17 @@
+0:00:00.000,0:00:05.000
+First cue starts here and ends at five seconds.
+
+0:00:03.000,0:00:08.000
+This cue overlaps with the previous one, starting at three seconds.
+
+0:00:06.000,0:00:12.000
+Another overlapping cue, starting before the previous one ends.
+
+0:00:10.000,0:00:15.000
+Yet another overlap — this starts at ten while the previous goes to twelve.
+
+0:00:13.000,0:00:18.000
+Multiple cues are active simultaneously in this file.
+
+0:00:16.000,0:00:20.000
+The last overlapping cue ends at twenty seconds.

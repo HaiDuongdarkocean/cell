@@ -1,0 +1,37 @@
+{
+  "id": "ux-mobile-padding-compact-hig-material3",
+  "title": "Mobile-first padding: áp dụng iOS HIG + Material 3 compact specs — không padding thừa",
+  "category": ["ux", "css"],
+  "tags": ["padding", "mobile-first", "ios-hig", "material-3", "compact", "navigation-bar", "tab-bar", "list-item", "touch-target", "responsive"],
+  "trigger": "Mobile UI panel có padding/dimension quá dày — chiếm không gian vertical lãng phí, không tuân theo iOS HIG hoặc Material 3 compact specs",
+  "principle": "Mobile-first UI phải tuân theo specs compact từ iOS HIG + Material 3. KHÔNG dùng padding 'thoải mái' cho mobile — mỗi pixel quý. Specs reference:\n\n**iOS HIG (UITabBar):** height 49pt, icon 25×25pt, label SF 10pt Medium.\n**iOS HIG (UINavigationBar):** height 44pt.\n**Material 3 (NavigationBar):** height 80px default, 64px compact; per-item: 24px icon + 4dp gap + label; item horizontal padding 8dp.\n**Material 3 (List item):** one-line 56px, two-line 72px, three-line 88px.\n\nRules:\n1. Header/nav bar mobile: 40-44px (HIG nav bar 44pt)\n2. Tab trigger mobile: 36px (M3 compact)\n3. List row two-line mobile: 56-64px (M3 two-line 72px, compact ~56px)\n4. List gap: 2px (compact) thay 4-8px\n5. Footer/tab bar mobile: 49-50px (HIG tab bar 49pt)\n6. Touch target: vẫn 44px minimum (accessibility), nhưng padding вокруг có thể = 0\n7. Desktop (≥480px) có thể tăng 4-8px cho thoải hơn, nhưng mobile phải compact tối đa\n\nAudit: vision-reader screenshot → estimate pixel height mỗi region → so sánh với spec → giảm padding token xuống mức compact.",
+  "cases": [
+    {
+      "context": "Header bar mobile: min-height 44px + padding 8px×2 = 60px (HIG: 44pt)",
+      "bad": ".header { min-height: 44px; padding: var(--space-2) var(--space-3); }",
+      "good": ".header { min-height: 40px; padding: var(--space-1) var(--space-2); }"
+    },
+    {
+      "context": "Tab trigger mobile: min-height 40px + padding 8px×2 = 56px (M3 compact: 36px)",
+      "bad": ".tabTrigger { min-height: 40px; padding: var(--space-2) var(--space-3); }",
+      "good": ".tabTrigger { min-height: 36px; padding: var(--space-1) var(--space-2); }"
+    },
+    {
+      "context": "List row mobile: min-height 44px + padding 8px×2 + 2 lines = ~80px (M3 two-line: 56-64px)",
+      "bad": ".track { min-height: 44px; padding: var(--space-2); gap: var(--space-2-5); }\n.trackList { gap: var(--space-1); }",
+      "good": ".track { min-height: 40px; padding: var(--space-1-5); gap: var(--space-2); }\n.trackList { gap: var(--space-0-5); }"
+    },
+    {
+      "context": "Footer mobile: ~100px với 20px padding top + 22px bottom (HIG: 49pt)",
+      "bad": ".footer { padding: var(--space-2-5) var(--space-3) var(--space-3); }",
+      "good": ".footer { padding: var(--space-0); } /* height = button content only */"
+    }
+  ],
+  "applyFor": [
+    "Mobile-first panel/sheet — audit padding theo HIG/M3 specs",
+    "Responsive design: mobile compact, desktop thoải hơn",
+    "Bottom sheet / floating panel trên mobile",
+    "Extension popup với không gian hạn chế",
+    "Any UI cần tối đa vertical space cho content"
+  ]
+}

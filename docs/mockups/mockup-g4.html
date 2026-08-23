@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subtitle Manager — Variant G4 (Asymmetric Arc)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0a0a; color:#fff; font-family:-apple-system,sans-serif; padding:24px; }
+  h3 { color:#fff; margin-bottom:12px; font-size:16px; }
+
+  .stage {
+    position:relative;
+    width:100%;
+    max-width:780px;
+    aspect-ratio:1568/883;
+    background:url('mockup-bg.png') center/cover no-repeat;
+    overflow:hidden;
+    border-radius:12px;
+  }
+
+  .panel {
+    position:absolute;
+    top:0; right:0; bottom:0;
+    width:min(100%,360px);
+    display:flex;
+    flex-direction:column;
+    color:#fff;
+    font-size:13px;
+    isolation:isolate;
+    overflow:visible;
+  }
+
+  .panel::before,
+  .panel::after {
+    content:"";
+    position:absolute;
+    pointer-events:none;
+  }
+
+  .panel::before {
+    top:-18px;
+    right:-16px;
+    bottom:-18px;
+    left:-148px;
+    z-index:0;
+    background:radial-gradient(
+      ellipse 72% 116% at 100% 50%,
+      rgba(0,0,0,0.20) 0%,
+      rgba(0,0,0,0.12) 52%,
+      rgba(0,0,0,0.04) 78%,
+      rgba(0,0,0,0) 100%
+    );
+    filter:blur(0px);
+  }
+
+  .panel::after {
+    top:0;
+    right:0;
+    bottom:0;
+    left:-128px;
+    z-index:1;
+    background:radial-gradient(ellipse 100% 200% at 100% 50%,
+      rgba(0,0,0,0.24) 0%,
+      rgba(0,0,0,0.24) 90%,
+      rgba(0,0,0,0.216) 91.0%,
+      rgba(0,0,0,0.192) 92.0%,
+      rgba(0,0,0,0.168) 93.0%,
+      rgba(0,0,0,0.144) 94.0%,
+      rgba(0,0,0,0.120) 95.0%,
+      rgba(0,0,0,0.096) 96.0%,
+      rgba(0,0,0,0.072) 97.0%,
+      rgba(0,0,0,0.048) 98.0%,
+      rgba(0,0,0,0.024) 99.0%,
+      rgba(0,0,0,0) 100.0%);
+    -webkit-mask-image:radial-gradient(ellipse 65% 147% at 0% 50%,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0.000) 0.0%,
+      rgba(0,0,0,0.008) 6.3%,
+      rgba(0,0,0,0.031) 12.5%,
+      rgba(0,0,0,0.070) 18.8%,
+      rgba(0,0,0,0.125) 25.0%,
+      rgba(0,0,0,0.195) 31.3%,
+      rgba(0,0,0,0.281) 37.5%,
+      rgba(0,0,0,0.383) 43.8%,
+      rgba(0,0,0,0.500) 50.0%,
+      rgba(0,0,0,0.617) 56.3%,
+      rgba(0,0,0,0.719) 62.5%,
+      rgba(0,0,0,0.805) 68.8%,
+      rgba(0,0,0,0.875) 75.0%,
+      rgba(0,0,0,0.930) 81.3%,
+      rgba(0,0,0,0.969) 87.5%,
+      rgba(0,0,0,0.992) 93.8%,
+      #000 100.0%);
+    mask-image:radial-gradient(ellipse 65% 147% at 0% 50%,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0.000) 0.0%,
+      rgba(0,0,0,0.008) 6.3%,
+      rgba(0,0,0,0.031) 12.5%,
+      rgba(0,0,0,0.070) 18.8%,
+      rgba(0,0,0,0.125) 25.0%,
+      rgba(0,0,0,0.195) 31.3%,
+      rgba(0,0,0,0.281) 37.5%,
+      rgba(0,0,0,0.383) 43.8%,
+      rgba(0,0,0,0.500) 50.0%,
+      rgba(0,0,0,0.617) 56.3%,
+      rgba(0,0,0,0.719) 62.5%,
+      rgba(0,0,0,0.805) 68.8%,
+      rgba(0,0,0,0.875) 75.0%,
+      rgba(0,0,0,0.930) 81.3%,
+      rgba(0,0,0,0.969) 87.5%,
+      rgba(0,0,0,0.992) 93.8%,
+      #000 100.0%);
+  }
+
+  .panel > * { position:relative; z-index:2; }
+
+  .panel-header {
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px 10px;
+    font-weight:600;
+    font-size:15px;
+  }
+
+  .panel-tabs {
+    display:flex;
+    gap:16px;
+    padding:4px 16px 8px;
+  }
+  .panel-tab {
+    font-size:12px;
+    color:rgba(255,255,255,0.45);
+    padding:4px 0;
+  }
+  .panel-tab.active {
+    color:#fff;
+    border-bottom:2px solid rgba(255,255,255,0.8);
+  }
+
+  .panel-body {
+    flex:1 1 auto;
+    padding:4px 16px;
+    overflow:hidden;
+  }
+
+  .track-row {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 0;
+  }
+  .track-radio {
+    width:16px;
+    height:16px;
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:50%;
+    flex:0 0 auto;
+  }
+  .track-radio.on {
+    border-color:#6ab0ff;
+    background:#6ab0ff;
+    box-shadow:inset 0 0 0 3px rgba(0,0,0,0.7);
+  }
+  .track-name {
+    flex:1 1 auto;
+    font-size:13px;
+  }
+  .track-badge {
+    font-size:10px;
+    padding:2px 6px;
+    border-radius:4px;
+    background:rgba(255,255,255,0.1);
+    color:rgba(255,255,255,0.6);
+  }
+
+  .panel-footer {
+    flex:0 0 auto;
+    display:flex;
+    gap:8px;
+    padding:10px 16px 14px;
+  }
+  .footer-btn {
+    flex:1;
+    padding:8px;
+    text-align:center;
+    font-size:12px;
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:8px;
+    color:rgba(255,255,255,0.8);
+  }
+
+  .close-icon {
+    cursor:pointer;
+    color:rgba(255,255,255,0.6);
+    font-size:16px;
+    line-height:1;
+  }
+</style>
+</head>
+<body>
+  <h3>Variant G4 — Asymmetric Arc</h3>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Subtitle Manager</span>
+        <span class="close-icon">✕</span>
+      </div>
+
+      <div class="panel-tabs">
+        <div class="panel-tab active">Target 1</div>
+        <div class="panel-tab">Native 0</div>
+      </div>
+
+      <div class="panel-body">
+        <div class="track-row">
+          <div class="track-radio on"></div>
+          <div class="track-name">Off</div>
+        </div>
+        <div class="track-row">
+          <div class="track-radio"></div>
+          <div class="track-name">English #1</div>
+          <div class="track-badge">SRT</div>
+        </div>
+        <div class="track-row">
+          <div class="track-radio"></div>
+          <div class="track-name">Vietnamese</div>
+          <div class="track-badge">VTT</div>
+        </div>
+        <div class="track-row">
+          <div class="track-radio"></div>
+          <div class="track-name">Japanese</div>
+          <div class="track-badge">SRT</div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <div class="footer-btn">Search</div>
+        <div class="footer-btn">Customize</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

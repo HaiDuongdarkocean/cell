@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HardSub Test — OCR Mock Player</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: #111; color: #eee; font-family: sans-serif; }
+      .player { position: relative; width: 1280px; max-width: 100%; margin: 20px auto; }
+      .player video, .player canvas { width: 100%; display: block; }
+      .player canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+      .controls { padding: 12px; display: flex; gap: 12px; align-items: center; }
+      .controls button { padding: 6px 14px; cursor: pointer; }
+      .info { padding: 12px; color: #888; font-size: 13px; }
+    </style>
+    <script>
+      // Minimal chrome.runtime mock so content script can run outside extension context.
+      if (!window.chrome) window.chrome = {};
+      if (!window.chrome.runtime) {
+        window.chrome.runtime = {
+          id: 'mock-hardsub-page',
+          getURL: (p) => `chrome-extension://mock/${p}`,
+          sendMessage: () => Promise.resolve(),
+          onMessage: { addListener: () => {}, removeListener: () => {} },
+        };
+      }
+    </script>
+  </head>
+  <body>
+    <div class="player">
+      <video id="video" crossorigin="anonymous" playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+    <div class="controls">
+      <button id="play">Play</button>
+      <button id="pause">Pause</button>
+      <span id="time">0.0s</span>
+    </div>
+    <div class="info">
+      Hard-sub mock page for OCR testing. Subtitles are burned into the canvas overlay.
+      Use rVFC + canvas capture to get frames with subtitle text.
+    </div>
+    <script type="module" src="./hardSubMockMain.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "id": "ux-footer-no-padding-height-equals-content",
+  "title": "Footer navigation height = content height — bỏ padding container, để button tự quyết định",
+  "category": ["ux", "css"],
+  "tags": ["footer", "navigation-bar", "padding", "mobile-first", "zalo-pay", "tab-bar", "compact", "content-height"],
+  "trigger": "Footer navigation bar có padding container thừa làm footer cao hơn cần thiết — padding top/bottom cộng thêm vào button height, lãng phí vertical space trên mobile",
+  "principle": "Footer navigation (ZaloPay/iOS tab bar pattern) phải có height = đúng content height (icon + label + button internal padding). KHÔNG thêm padding container top/bottom — để button atom tự quyết định padding nội bộ. Lý do: (1) mobile-first mỗi pixel quý — footer 100px với 40px padding = 40% lãng phí; (2) iOS UITabBar 49pt, Material 3 NavigationBar 80px đều compact, không padding thừa; (3) padding container tạo khoảng trống giữa button và border/shadow separator, mất cảm giác 'dính' vào footer. Chỉ giữ: border-top hoặc shadow separator + gap giữa buttons (có thể = 0 cho edge-to-edge).",
+  "cases": [
+    {
+      "context": "Footer có 4 button vertical (icon top, label bottom), button tự có padding 4px top/bottom",
+      "bad": ".footer {\n  padding: var(--space-2) var(--space-3) var(--space-3);\n  gap: var(--space-2);\n}\n/* Footer height = 8px + 8px padding + 44px button + 8px gap = ~68px — lãng phí 16px */",
+      "good": ".footer {\n  padding: var(--space-0);\n  gap: var(--space-0);\n}\n/* Footer height = 44px button (icon 20 + gap 2 + label 12 + padding 4×2) — đúng content height */"
+    },
+    {
+      "context": "Desktop footer có padding cho 'thoải mái hơn' nhưng thực ra lãng phí",
+      "bad": "@media (min-width: 480px) {\n  .footer { padding: var(--space-2) var(--space-3); }\n}",
+      "good": "/* Bỏ media query padding — footer height = content height ở mọi breakpoint */"
+    }
+  ],
+  "applyFor": [
+    "Footer navigation bar (ZaloPay, iOS tab bar, Material 3 navigation bar pattern)",
+    "Bottom sheet action bar trên mobile",
+    "Any fixed/sticky bottom bar cần compact tối đa",
+    "Panel footer trong extension/widget có không gian hạn chế"
+  ]
+}

@@ -1,31 +1,31 @@
 """
 test-cell-browser.py — Cell extension loader via nodriver (stealth) + clone from master.
 
-Workflow: clone master → spawn nodriver (anti-bot) → CDP loadUnpacked (Cell + uBlock)
-→ close Chrome → MCP spawn_browser reuses profile (extensions auto-load from Preferences).
+LEGACY / FALLBACK: This script uses CDP `loadUnpacked` which is session-only on
+Chrome 137+ (closing Chrome drops the extension). The PRIMARY workflow is
+`setup-cell-profile.py` (packs .crx + External Extensions JSON → MCP spawn
+auto-loads, no debugging port). Use this script only when you need nodriver's
+in-session CDP access for quick load verification.
 
-The script ONLY launches Chrome and loads extensions, then exits. Navigation, page
-reload, and verification are handled by the MCP browser (stealth-chrome-devtools) which
-spawns a new Chrome with the same user_data_dir — extensions auto-load from the profile.
+Two modes:
 
-Parallel-safe: each run gets unique clone dir. Auto-cleanup on exit.
+1. `--url URL` (keep-alive): launch Chrome HEADED with extensions loaded via
+   CDP `loadUnpacked`, navigate to URL, run a verify probe. Chrome stays open
+   until Ctrl+C (or `--exit-after-verify`). WARNING: nodriver opens
+   `--remote-debugging-port` — anti-bot sites may detect it. For anti-bot
+   testing, use `setup-cell-profile.py` + MCP spawn instead.
 
-The nodriver phase is ALWAYS headless — it only reloads extensions into the
-profile, no visible window, no machine slowdown. The MCP spawn_browser phase
-is headed (headless=false) so the user sees the browser UI for testing.
+2. Default (no --url): headless load-then-close. BROKEN on Chrome 137+ for
+   MCP handoff (session-only extension is lost on close).
 
 Usage:
-  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py
-  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --no-ublock
-
-After this script exits, use MCP with the printed Clone path:
-  spawn_browser(user_data_dir="<Clone path>", headless=false, viewport_width=..., viewport_height=...)
-  navigate(url="https://...")
+  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --url https://example.com --exit-after-verify
 """
 
 import argparse
 import asyncio
 import atexit
+import json
 import os
 import shutil
 import signal
@@ -80,7 +80,9 @@ def clone_master() -> Path:
         for item in src_default.iterdir():
             if item.name in KEEP_PATTERNS["Default"]:
                 if item.is_dir():
-                    shutil.copytree(item, dst_default / item.name, dirs_exist_ok=True)
+                    # Ignore LevelDB LOCK files — held by a running Chrome on the
+                    # master profile (Permission denied) and never meaningful to clone.
+                    shutil.copytree(item, dst_default / item.name, dirs_exist_ok=True, ignore=shutil.ignore_patterns("LOCK"))
                 else:
                     shutil.copy2(item, dst_default / item.name)
 
@@ -147,13 +149,14 @@ async def load_extension(browser: uc.Browser, ext_path: str, name: str) -> str:
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Cell extension loader (nodriver + clone). Launches Chrome with extensions loaded — MCP handles navigation.")
-    # Nodriver phase is always headless — it only reloads extensions into the
-    # profile, no visible window, no machine slowdown. MCP spawn_browser is
-    # headed so the user sees the browser UI for testing.
+    parser = argparse.ArgumentParser(description="Cell extension loader + tester (nodriver + clone). Launches Chrome with extensions loaded.")
     parser.add_argument("--no-ublock", action="store_true", help="Skip loading uBlock")
     parser.add_argument("--keep-profile", action="store_true", help="Don't delete clone on exit")
     parser.add_argument("--dev-build", action="store_true", help="Run `npx vite build --mode development` before launch (copies dictionary/frequency seed into dist/seed)")
+    parser.add_argument("--url", default=None, help="Keep-alive mode: navigate to this URL and verify the extension is active in the live session (Chrome 137+ only working mode). Chrome stays open until Ctrl+C.")
+    parser.add_argument("--headed", action="store_true", help="Force headed Chrome in legacy (no --url) mode. With --url, Chrome is always headed.")
+    parser.add_argument("--exit-after-verify", action="store_true", help="With --url: close Chrome immediately after the verify probe prints (default: keep open until Ctrl+C).")
+    parser.add_argument("--probe-deep", action="store_true", help="With --url: after the load probe, poll for <video> + #cell-subtitle-root shadow DOM (up to 40s) to verify the subtitle overlay mounted.")
     args = parser.parse_args()
 
     # --- 0. Build (optional) and verify extension paths ---
@@ -190,11 +193,16 @@ async def main() -> None:
             cleanup_clone(clone_dir)
     atexit.register(_cleanup)
 
-    # --- 2. Spawn browser with clone profile + anti-bot (always headless) ---
-    print(f"[..] Launching Chrome (headless): profile={clone_dir}", flush=True)
+    # --- 2. Spawn browser with clone profile + anti-bot ---
+    # --url mode is HEADED so the user sees the live session we keep open.
+    # Legacy (no --url) stays headless unless --headed (it only loads then closes).
+    keep_alive = args.url is not None
+    headless = not (keep_alive or args.headed)
+    mode = "headed" if not headless else "headless"
+    print(f"[..] Launching Chrome ({mode}): profile={clone_dir}", flush=True)
     config = uc.Config(
         user_data_dir=str(clone_dir),
-        headless=True,
+        headless=headless,
         lang="en-US",
         browser_executable_path=CHROME_EXE,
     )
@@ -213,19 +221,149 @@ async def main() -> None:
             cleanup_clone(clone_dir)
         sys.exit(1)
 
-    # --- 4. Close Chrome so MCP can reuse the profile without lock conflict ---
-    # loadUnpacked writes extension to profile Preferences, so a new Chrome
-    # launched by MCP spawn_browser with the same user_data_dir will auto-load
-    # the extension. MCP handles all navigation + page interaction.
+    # --- 4. Branch: keep-alive verify (--url) vs legacy close (no --url) ---
     print(flush=True)
     print(f"Clone:  {clone_dir}", flush=True)
     print(f"Cell:   {CELL_EXT}", flush=True)
     if load_ublock:
         print(f"uBlock: {UBLOCK_EXT}", flush=True)
     print(flush=True)
+
+    if keep_alive:
+        # Keep-alive: navigate + verify IN this live session. The extension
+        # is loaded only for this Chrome process (loadUnpacked is session-only
+        # on Chrome 137+), so we must drive the SAME Chrome — no close+respawn.
+        print(f"[..] Navigating to {args.url}", flush=True)
+        tab = await browser.get(args.url, new_tab=False)
+        # Wait for document.readyState 'complete' (content scripts inject at
+        # document_start; fetchInterceptor patches window.fetch before page JS).
+        try:
+            await tab.wait_for("document.readyState === 'complete'", timeout=30)
+        except Exception:
+            pass
+        probe = (
+            "(() => {"
+            " const f = window.fetch.toString();"
+            " const fetchPatched = !f.includes('[native code]');"
+            " const sub = document.querySelector('#cell-subtitle-root');"
+            " const panel = document.querySelector('#cell-universal-panel-host');"
+            " return JSON.stringify({"
+            "  url: location.href,"
+            "  readyState: document.readyState,"
+            "  fetchPatched: fetchPatched,"
+            "  fetchSource: f.slice(0, 120),"
+            "  subtitleRoot: !!sub,"
+            "  panelHost: !!panel"
+            " });"
+            "})()"
+        )
+        try:
+            raw = await tab.evaluate(probe, await_promise=False)
+        except Exception as e:
+            print(f"[FAIL] verify probe threw: {e}", flush=True)
+            raw = None
+        # nodriver may return the string directly or as a CDP-serialized
+        # {type,value} pair / list-of-pairs. Normalize to a plain string.
+        res: dict | None = None
+        if isinstance(raw, str):
+            res = json.loads(raw)
+        elif isinstance(raw, list):
+            # list of [key, {type, value}] pairs -> decode
+            decoded = {}
+            for pair in raw:
+                if isinstance(pair, list) and len(pair) == 2:
+                    k, v = pair
+                    decoded[k] = v.get("value") if isinstance(v, dict) else v
+            res = decoded
+        elif isinstance(raw, dict) and "value" in raw:
+            res = json.loads(raw["value"])
+        print(flush=True)
+        print(f"[VERIFY] {res}", flush=True)
+        # PASS contract: fetchInterceptor injected (MAIN-world content script ran)
+        # OR a Cell shadow host is present. fetchPatched is the strongest signal
+        # because fetchInterceptor runs at document_start on every <all_urls> page.
+        if res and (res.get("fetchPatched") or res.get("subtitleRoot") or res.get("panelHost")):
+            print("[PASS] Cell extension is active in the live session.", flush=True)
+        else:
+            print("[FAIL] Cell extension NOT active — content script did not inject.", flush=True)
+        print(flush=True)
+
+        # Deep probe: wait for <video> + #cell-subtitle-root shadow, then report
+        # subtitle overlay state. Skipped on non-video pages (subtitleRoot false
+        # is not a failure there). On video pages, the overlay mounts after the
+        # video element is detected + a subtitle track is found.
+        if args.probe_deep:
+            print("[..] Deep probe: waiting for <video> + subtitle overlay (up to 40s)...", flush=True)
+            deep_probe = (
+                "(() => {"
+                " const v = document.querySelector('video');"
+                " const root = document.querySelector('#cell-subtitle-root');"
+                " const sr = root?.shadowRoot;"
+                " const target = sr?.querySelector('[data-role=target] span');"
+                " const blocks = sr?.querySelectorAll('[data-role=cue-block]');"
+                " return JSON.stringify({"
+                "  hasVideo: !!v,"
+                "  videoSrc: v?.currentSrc?.slice(0,80) || null,"
+                "  videoReadyState: v?.readyState ?? null,"
+                "  subtitleRoot: !!root,"
+                "  subtitleShadow: !!sr,"
+                "  shadowChildCount: sr?.children?.length ?? 0,"
+                "  cueBlocks: blocks?.length ?? 0,"
+                "  targetText: target?.textContent?.slice(0,60) || null"
+                " });"
+                "})()"
+            )
+            for attempt in range(8):
+                await asyncio.sleep(5)
+                try:
+                    draw = await tab.evaluate(deep_probe, await_promise=False)
+                except Exception as e:
+                    print(f"[..] deep probe attempt {attempt+1} threw: {e}", flush=True)
+                    continue
+                dres: dict | None = None
+                if isinstance(draw, str):
+                    try: dres = json.loads(draw)
+                    except Exception: dres = None
+                elif isinstance(draw, list):
+                    decoded = {}
+                    for pair in draw:
+                        if isinstance(pair, list) and len(pair) == 2:
+                            k, v = pair
+                            decoded[k] = v.get("value") if isinstance(v, dict) else v
+                    dres = decoded
+                elif isinstance(draw, dict) and "value" in draw:
+                    try: dres = json.loads(draw["value"])
+                    except Exception: dres = None
+                print(f"[DEEP {attempt+1}/8] {dres}", flush=True)
+                if dres and dres.get("subtitleShadow"):
+                    print("[PASS] Subtitle overlay mounted in shadow DOM.", flush=True)
+                    break
+                if dres and not dres.get("hasVideo") and attempt >= 3:
+                    print("[INFO] No <video> on this page — subtitle overlay not expected.", flush=True)
+                    break
+            else:
+                print("[INFO] Subtitle overlay did not mount within 40s (may need play/seek).", flush=True)
+            print(flush=True)
+        if args.exit_after_verify:
+            await _close_browser(browser)
+        else:
+            print("[..] Chrome kept open. Press Ctrl+C to close + cleanup clone.", flush=True)
+            try:
+                await asyncio.Event().wait()
+            except (KeyboardInterrupt, asyncio.CancelledError):
+                pass
+            await _close_browser(browser)
+        if not args.keep_profile:
+            cleanup_clone(clone_dir)
+        print("[OK] Done.", flush=True)
+        return
+
+    # Legacy: close Chrome so MCP can reuse the profile. NOTE: broken on Chrome
+    # 137+ — loadUnpacked is session-only, closing Chrome drops the extension,
+    # and MCP spawn_browser cannot re-load it (Preferences is not persisted).
+    # Prefer `--url`. Kept for backward compatibility.
     print("[..] Closing Chrome so MCP can reuse the profile...", flush=True)
-    browser.stop()
-    time.sleep(2)
+    await _close_browser(browser)
     print("[OK] Chrome closed. Profile ready for MCP.", flush=True)
     print(flush=True)
     print("Next: MCP spawn_browser + navigate.", flush=True)
@@ -235,6 +373,22 @@ async def main() -> None:
     if not args.keep_profile:
         cleanup_clone(clone_dir)
     print("[OK] Done.", flush=True)
+
+
+async def _close_browser(browser: uc.Browser) -> None:
+    """Graceful Chrome shutdown: cdp.browser.close() lets Chrome flush state
+    before exit. browser.stop() alone calls terminate() right after aclose(),
+    racing the flush. Falls back to stop() if the CDP close fails."""
+    try:
+        await browser.send(uc.cdp.browser.close())
+        for _ in range(10):
+            if browser.stopped:
+                break
+            await asyncio.sleep(1)
+    except Exception as e:
+        print(f"[WARN] browser.close() failed: {e}, falling back to stop()", flush=True)
+        browser.stop()
+    time.sleep(2)
 
 
 if __name__ == "__main__":

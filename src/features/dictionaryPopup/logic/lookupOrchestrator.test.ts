@@ -1,7 +1,7 @@
 // lookupOrchestrator tests — spec §4.6.3/§9.4.
 
 import 'fake-indexeddb/auto';
-import { lookupOrchestrator, lookupOrchestratorMulti, createDictionaryProbeAsync } from './lookupOrchestrator';
+import { lookupOrchestrator, lookupOrchestratorMulti, createDictionaryProbeAsync, clearDictionaryProbeCache } from './lookupOrchestrator';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
@@ -37,6 +37,7 @@ beforeEach(() => {
   storageLocalGetMock.mockReset();
   storageLocalGetMock.mockResolvedValue({});
   closeAllDBs();
+  clearDictionaryProbeCache(); // T23: clear probe cache between tests.
 });
 
 beforeEach(async () => {

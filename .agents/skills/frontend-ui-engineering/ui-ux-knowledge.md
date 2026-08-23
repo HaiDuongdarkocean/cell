@@ -161,3 +161,76 @@ Popup dictionary dùng container queries (popup width = container width). 4 tier
 - Madegood Designs — Web Font Size Guide (16px minimum, type scale 1.25)
 - Modern CSS Tools — Fluid Typography with clamp() (clamp(MIN, PREFERRED, MAX) pattern)
 - DeveloperUX — Best Practices for Responsive Typography (rem + clamp + modular scale)
+
+## Footer & Navigation Bar Design (ZaloPay / iOS HIG / Material 3)
+
+### Specs reference
+
+| Spec | Height | Icon | Label | Gap icon→label |
+|------|--------|------|-------|----------------|
+| iOS HIG UITabBar | 49pt (regular), 32pt (compact landscape) | 25×25pt regular, 18×18pt compact | SF 10pt Medium | tight |
+| Material 3 NavigationBar | 80px default, 64px compact, 96px comfortable (incl. safe-area) | 24px | label-medium | 4dp (IndicatorToLabelPadding) |
+| Material 3 NavigationBarItem | — | 24px | — | item horizontal padding 8dp |
+
+### Nguyên tắc cốt lõi
+
+1. **Footer height = content height** — KHÔNG thêm padding container top/bottom. Để button atom tự quyết định padding nội bộ. Padding container tạo khoảng trống giữa button và separator, mất cảm giác "dính" vào footer.
+
+2. **Button variant: ghost, không outline** — Navigation/footer button dùng ghost (transparent, no border). Outline tạo "card feel" — button trông như object nổi, không phải nav slot. ZaloPay/iOS/Material 3 đều không border quanh nav item. Exception: primary action (CTA) dùng primarySubtle (bold text, no bg) hoặc primary (filled) — vẫn không outline.
+
+3. **Button flat — không bo góc** — Footer nav button `border-radius: var(--radius-none)` ở MỌI breakpoint, kể cả desktop. Bo góc tạo khoảng trống视觉 giữa buttons, phá edge-to-edge continuity. iOS UITabBar + Material 3 NavigationBar đều flat.
+
+4. **Label luôn hiển thị** — KHÔNG ẩn label bằng media query `display: none` ở màn hình nhỏ. Icon-only button mất accessibility — screen reader + user không nhận biết function. iOS HIG + Material 3 require label cho navigation item. Nếu footer quá cao, giảm padding/icon size thay vì ẩn label.
+
+5. **Label font-weight regular (400)** — Navigation/footer label mặc định regular, không in đậm. Nếu mọi button đều bold, không có hierarchy — primary action không nổi bật. Bold dành cho PRIMARY action only (filled button, CTA, featured nav). Medium (500) dành cho data/metadata.
+
+6. **Separator: shadow nhẹ thay border cứng** — Separator giữa footer/body dùng `box-shadow` hướng lên (upward) thay `border-top`. Shadow tản dần tạo gradient → chuyển tiếp mềm. Border là đường gạch rõ ràng — "cắt" visual. Pattern: `box-shadow: 0 calc(-1 * var(--space-0-5)) var(--space-1) calc(-1 * var(--space-0-5)) var(--color-border)`.
+
+7. **Giá trị 0 phải dùng token** — `gap: 0`, `padding: 0`, `border-radius: 0` phải dùng `var(--space-0)`, `var(--radius-none)`. Hardcode `0` là convention violation — phá SSOT, review audit bắt cùng loại với `padding: 16px` hardcoded.
+
+### Mobile-first padding compact specs
+
+| Region | Mobile (≤479px) | Desktop (≥480px) | Spec reference |
+|--------|-----------------|-------------------|----------------|
+| Header/nav bar | 40-44px | 44-48px | HIG nav bar 44pt |
+| Tab trigger | 36px | 40px | M3 compact |
+| Tab content padding | 4px 8px | 8px 12px | — |
+| List row (two-line) | 56-64px | 64-72px | M3 two-line 72px |
+| List gap | 2px | 4px | compact |
+| Footer/tab bar | 49-50px | 50-56px | HIG tab bar 49pt |
+| Touch target | 44px minimum | 44px minimum | WCAG AAA |
+
+### Anti-patterns
+
+| Sai | Đúng | Lý do |
+|-----|------|-------|
+| Footer padding 20px top + 22px bottom | Footer padding 0 — height = button content | 42px lãng phí trên mobile |
+| Footer button `variant="outline"` | Footer button `variant="ghost"` | Outline = card feel, không phải nav slot |
+| Footer button `border-radius: pill` desktop | Footer button `border-radius: none` mọi breakpoint | Bo góc phá edge-to-edge |
+| `@media (max-width: 359px) { .label { display: none } }` | Label luôn hiển thị | Mất accessibility + affordance |
+| Label `font-weight: medium (500)` | Label `font-weight: regular (400)` | Bold = visual noise, mất hierarchy |
+| `border-top: 1px solid var(--color-border)` | `box-shadow: 0 -2px 4px -2px var(--color-border)` | Border cứng, shadow mềm |
+| `gap: 0`, `padding: 0` | `gap: var(--space-0)`, `padding: var(--space-0)` | Hardcode 0 = convention violation |
+
+### Guard
+
+- Footer CSS không có `padding` top/bottom (chỉ `padding: var(--space-0)`)
+- Footer button không có `border-radius` khác `var(--radius-none)`
+- Footer CSS không có `border-top` — dùng `box-shadow` upward
+- Không có media query `display: none` cho label
+- Button label `font-weight: var(--font-weight-regular)` (không medium/bold)
+- Không có giá trị `0` hardcoded — dùng token
+
+### Loop back
+
+- Vision-reader screenshot → estimate footer height → so sánh với spec 49-50px mobile
+- Grep CSS: `padding: 0`, `gap: 0`, `border-radius: 0`, `border-top` trong footer → refactor
+- Grep `font-weight` trong footer button → verify regular
+
+### Nguồn
+
+- Apple Human Interface Guidelines — Tab Bars (UITabBar 49pt, icon 25×25pt, label SF 10pt)
+- Material 3 — NavigationBar specs (80px height, 24px icon, 4dp gap, 8dp item padding)
+- Material 3 — NavigationBarItem (alwaysShowLabel, active item always shows label)
+- ZaloPay footer pattern (5 evenly divided slots, icon-on-top, pale-blue active, flat white bg, no dividers)
+- WCAG 2.5.5 Target Size (Enhanced) — 44×44 CSS px (AAA)

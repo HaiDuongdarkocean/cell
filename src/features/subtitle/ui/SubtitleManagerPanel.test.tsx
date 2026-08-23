@@ -266,6 +266,36 @@ describe('SubtitleManagerPanel', () => {
     expect(input).toHaveValue('+1.5');
   });
 
+  it('initializes the Latency stepper from the offsetMs prop (persisted offset)', () => {
+    render(
+      <SubtitleManagerPanel
+        targetItems={targetItems}
+        nativeItems={nativeItems}
+        targetActiveIndex={0}
+        nativeActiveIndex={0}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+        hasSearchKeys={false}
+        apiKeys={[]}
+        onApiKeysChange={jest.fn()}
+        onSearchResultSelect={jest.fn()}
+        onOffsetChange={jest.fn()}
+        offsetMs={-3000}
+      />,
+    );
+
+    // The input reflects the persisted -3s instead of resetting to 0.
+    const input = screen.getByTestId('manager-offset-input-target');
+    expect(input).toHaveValue('-3');
+
+    // lastValid is also initialized from the prop: entering invalid input
+    // restores to -3 (not 0), proving the stepper's baseline came from the
+    // persisted offset. Uses the synchronous blur path.
+    fireEvent.change(input, { target: { value: 'abc' } });
+    fireEvent.blur(input);
+    expect(input).toHaveValue('-3');
+  });
+
   it('calls onImport when import icon button is clicked', () => {
     const onImport = jest.fn();
     render(

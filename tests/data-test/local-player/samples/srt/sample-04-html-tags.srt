@@ -1,0 +1,27 @@
+1
+00:00:01,000 --> 00:00:04,000
+<b>Bold text here</b>
+
+2
+00:00:05,000 --> 00:00:08,000
+<i>Italic text here</i>
+
+3
+00:00:09,000 --> 00:00:12,000
+<u>Underlined text here</u>
+
+4
+00:00:13,000 --> 00:00:16,000
+<font color="#FF0000">Red text</font> and <font color="#0000FF">blue text</font>
+
+5
+00:00:17,000 --> 00:00:20,000
+<b>Bold</b> and <i>italic</i> and <u>underline</u> combined
+
+6
+00:00:21,000 --> 00:00:24,000
+<font color="#00FF00" size="16">Green large text</font>
+
+7
+00:00:25,000 --> 00:00:28,000
+<b><i><u>All three tags nested</u></i></b>
