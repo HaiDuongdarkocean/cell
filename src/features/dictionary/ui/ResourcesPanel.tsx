@@ -17,6 +17,8 @@ import styles from './ResourcesPanel.module.css';
 
 interface ResourcesPanelProps {
   readonly langCode: string;
+  /** Optional allow-list of resource IDs to display for the active language profile. */
+  readonly resourceIds?: readonly number[];
 }
 
 /** Per-section import state — dictionary + frequency are independent. */
@@ -36,7 +38,7 @@ const IDLE_IMPORT: ImportState = {
   success: null,
 };
 
-export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement {
+export function ResourcesPanel({ langCode, resourceIds }: ResourcesPanelProps): ReactElement {
   const [resources, setResources] = useState<ResourceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [importStates, setImportStates] = useState<Record<ResourceType, ImportState>>({
@@ -49,7 +51,10 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
     setLoading(true);
     try {
       const list = await listResources(langCode);
-      setResources(list);
+      const filtered = resourceIds && resourceIds.length > 0
+        ? list.filter((r) => r.id != null && resourceIds.includes(r.id))
+        : list;
+      setResources(filtered);
     } catch (e) {
       setImportStates((prev) => ({
         ...prev,
@@ -58,7 +63,7 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
     } finally {
       setLoading(false);
     }
-  }, [langCode]);
+  }, [langCode, resourceIds]);
 
   useEffect(() => {
     void refresh();

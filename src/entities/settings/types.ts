@@ -168,6 +168,38 @@ export interface LocalPlayerSettings {
   readonly lastDirectoryId: string | null;
 }
 
+// === Language Profile (schema v23) ===
+
+/** A single language learning profile. */
+export interface LanguageProfile {
+  /** Stable unique id. */
+  readonly id: string;
+  /** Target language code (ISO 639-1 or BCP-47 variant). */
+  readonly target: string;
+  /** Native override; empty string means inherit from `universalNativeLanguage`. */
+  readonly native: string;
+  /** Auto-generated display name, e.g. "Tiếng Việt → English". */
+  readonly name: string;
+  /** 1-based display order, recomputed after drag/drop. */
+  readonly order: number;
+  readonly subtitleOverlayTargetStyle: OverlayStyleConfig;
+  readonly subtitleOverlayNativeStyle: OverlayStyleConfig;
+  readonly subtitleOverlayAutoLoad: boolean;
+  readonly subtitleOverlayAutoLoadAsr: boolean;
+  readonly subtitleOverlayAutoTranslate: boolean;
+  readonly dictionaryPopup: DictionaryPopupSettings;
+  /** Active dictionary/frequency resource ids for this profile's target language. */
+  readonly resourceIds: number[];
+}
+
+/** Active profile with inheritance resolved. */
+export interface ResolvedProfile extends Omit<LanguageProfile, 'native'> {
+  /** Resolved native (profile override or universal). */
+  readonly native: string;
+  /** ISO 639-1 base of `target`; used for dictionary/frequency resource lookup. */
+  readonly resourceLangCode: string;
+}
+
 // === Settings Types ===
 
 /** Conversion behavior for M3U8 downloads. */
@@ -208,6 +240,12 @@ export type FilenameSource = 'title-fallback' | 'title-only' | 'url-only';
 export interface Settings {
   /** Schema version for migration (ADR-017 D8). Current: 1. */
   readonly schemaVersion?: number;
+  /** Global native language. Used when a profile's `native === ''`. Default: 'vi'. */
+  readonly universalNativeLanguage: string;
+  /** All language profiles, sorted by `order`. */
+  readonly languageProfiles: LanguageProfile[];
+  /** `id` of the currently active profile, or `null` if none selected. */
+  readonly activeProfileId: string | null;
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
   /** @deprecated Use `selectedSubtitleLanguages` instead. Migrated on load. */
