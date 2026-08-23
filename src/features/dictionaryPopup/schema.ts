@@ -253,6 +253,24 @@ export const TtsSpeakPayloadSchema = z.object({
   voiceName: z.string().optional(),
 });
 
+export const TtsSpeakLocalPayloadSchema = z.object({
+  text: z.string().min(1).max(2000),
+  langCode: z.string().length(2),
+  rate: z.number().min(0.1).max(10).optional(),
+  pitch: z.number().min(0).max(2).optional(),
+  voiceName: z.string().optional(),
+});
+
+export const TtsDownloadVoicePayloadSchema = z.object({
+  language: z.string().length(2),
+});
+
+export const TtsDownloadProgressPayloadSchema = z.object({
+  language: z.string().length(2),
+  loaded: z.number().int().min(0),
+  total: z.number().int().min(0),
+});
+
 // === TTS settings (spec popup-dictionary-4tab-logic) ===
 
 // === Translate (spec §9.4 B — TRANSLATE, ADR-021 D2) ===
