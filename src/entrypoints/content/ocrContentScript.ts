@@ -104,6 +104,9 @@ export class OcrSession {
   /** Bound listeners (for removal on stop). */
   private onSeeked: (() => void) | null = null;
   private onEnded: (() => void) | null = null;
+  /** Time ranges already OCR'd — prevents re-OCR when seeking backward, and
+   *  tracks gaps so OCR resumes when user seeks back into un-OCR'd territory. */
+  private processedRanges: Array<{ start: number; end: number }> = [];
 
   constructor() {
     this.controller = new OcrController();
@@ -161,6 +164,7 @@ export class OcrSession {
       ? { target: new OcrPipelineState(), native: new OcrPipelineState() }
       : null;
     this.splitDetections = { target: [], native: [] };
+    this.processedRanges = [];
 
     // Init OCR engine in offscreen document.
     try {
@@ -190,13 +194,17 @@ export class OcrSession {
 
     this.running = true;
 
-    // Clear stale hitboxes + reset pipeline on seek (different scene).
+    // On seek: reset visual overlay + pipeline state, but PRESERVE detections.
+    // Detections are the accumulated OCR data — wiping them on seek causes
+    // all subtitles to disappear when the user clicks a cue (which seeks the
+    // video). Seek-forward marks new territory for OCR; seek-backward skips
+    // OCR since cues already exist for that time range.
     this.onSeeked = () => {
       this.overlay.clear();
       this.pipelineState.reset();
       this.splitPipelineStates?.target.reset();
       this.splitPipelineStates?.native.reset();
-      this.splitDetections = { target: [], native: [] };
+      // DO NOT clear splitDetections — they are the user's accumulated subtitles.
     };
     this.onEnded = () => {
       this.overlay.clear();
@@ -211,6 +219,14 @@ export class OcrSession {
   private loop(): void {
     if (!this.running || !this.video) return;
     if (this.video.paused || this.video.ended) {
+      scheduleNextFrame(this.video, () => this.loop());
+      return;
+    }
+    // Skip OCR if this time range was already processed (seek-backward or
+    // re-visiting processed territory). Existing cues cover this time — no
+    // need to re-OCR, just keep looping for when the user moves forward.
+    const timeMs = this.video.currentTime * 1000;
+    if (this.isProcessed(timeMs)) {
       scheduleNextFrame(this.video, () => this.loop());
       return;
     }
@@ -296,12 +312,15 @@ export class OcrSession {
         this.overlay.clear();
         // Close the currently open cue (ocrToCues contract: empty text closes).
         if (this.video) {
-          this.splitDetections.target.push({ text: '', timeMs: this.video.currentTime * 1000 });
+          const timeMs = this.video.currentTime * 1000;
+          this.splitDetections.target.push({ text: '', timeMs });
+          this.markProcessed(timeMs);
           this.postOcrTracks();
         }
       }
 
       if (result.status === 'ocr' && this.video) {
+        const timeMs = this.video.currentTime * 1000;
         const hitboxes = createHitboxes(result.results, result.scriptRuns);
         console.log(`[OCR] t=${this.video.currentTime.toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
         this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
@@ -312,7 +331,8 @@ export class OcrSession {
         }
         // Push detection to subtitle block (same as split mode — single stream
         // is target-only, native stays empty).
-        this.splitDetections.target.push({ text: result.results.map(r => r.text).join(' '), timeMs: this.video.currentTime * 1000 });
+        this.splitDetections.target.push({ text: result.results.map(r => r.text).join(' '), timeMs });
+        this.markProcessed(timeMs);
         this.postOcrTracks();
       }
     } catch (e) {
@@ -363,10 +383,12 @@ export class OcrSession {
         }
         if (result.status === 'ocr') {
           this.splitDetections[track].push({ text: result.results.map(r => r.text).join(' '), timeMs });
+          this.markProcessed(timeMs);
           hasUpdate = true;
         } else if (result.status === 'subtitle_gone') {
           // Empty text closes the currently open cue (ocrToCues contract).
           this.splitDetections[track].push({ text: '', timeMs });
+          this.markProcessed(timeMs);
           hasUpdate = true;
         } else if (result.status === 'error') {
           document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
@@ -399,6 +421,30 @@ export class OcrSession {
       }
     }
     this.splitEngineKeys = { target: plan.targetKey, native: plan.nativeKey };
+  }
+
+  /** Check if a time (ms) falls within an already-OCR'd range. O(n) where n =
+   *  number of ranges — typically 1-5 after a viewing session, so negligible. */
+  private isProcessed(timeMs: number): boolean {
+    return this.processedRanges.some(r => timeMs >= r.start && timeMs <= r.end);
+  }
+
+  /** Mark a time as OCR'd, merging with adjacent/overlapping ranges (2s tolerance
+   *  for frame-rate gaps). Keeps processedRanges sorted + merged — O(n log n)
+   *  but n is tiny. */
+  private markProcessed(timeMs: number): void {
+    const TOLERANCE_MS = 2000;
+    this.processedRanges.push({ start: timeMs, end: timeMs });
+    this.processedRanges.sort((a, b) => a.start - b.start);
+    this.processedRanges = this.processedRanges.reduce((acc, r) => {
+      const last = acc[acc.length - 1];
+      if (last && r.start <= last.end + TOLERANCE_MS) {
+        last.end = Math.max(last.end, r.end);
+      } else {
+        acc.push(r);
+      }
+      return acc;
+    }, [] as Array<{ start: number; end: number }>);
   }
 
   /** Push the current dual-stream cue tracks to the subtitle controller.
@@ -442,6 +488,7 @@ export class OcrSession {
     this.splitPipelineStates = null;
     this.splitEngineKeys = null;
     this.splitDetections = { target: [], native: [] };
+    this.processedRanges = [];
   }
 
   /** Light update of region config without full restart. Called when slider changes. */
@@ -475,6 +522,7 @@ export class OcrSession {
         this.splitPipelineStates = null;
         this.splitEngineKeys = null;
         this.splitDetections = { target: [], native: [] };
+        this.processedRanges = [];
         this.regionSelector.setSplit(false, 0);
         this.endOcrTracks();
       }
