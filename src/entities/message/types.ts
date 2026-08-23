@@ -78,6 +78,7 @@ export type MessageType =
   | 'FETCH_IMAGES'
   | 'TTS_SPEAK'
   | 'TTS_FETCH_AUDIO'
+  | 'TTS_SPEAK_LOCAL'
   | 'FETCH_MEDIA_URL'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
