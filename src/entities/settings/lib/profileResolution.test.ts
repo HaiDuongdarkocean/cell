@@ -12,7 +12,7 @@ const mockProfile = (overrides: Partial<LanguageProfile> = {}): LanguageProfile 
   subtitleOverlayAutoLoad: true,
   subtitleOverlayAutoLoadAsr: false,
   subtitleOverlayAutoTranslate: true,
-  dictionaryPopup: { enabled: true, triggerMode: 'click', defaultActiveTab: null, popupWidthPx: 560, popupMaxHeightPx: 480, popupSheetHeightVh: 75, tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US', localTtsEnabled: false, localTtsLanguage: 'en', downloadedLanguages: [] }, externalDictLinks: [], srsDestination: 'anki', badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 } },
+  dictionaryPopup: { enabled: true, triggerMode: 'click', defaultActiveTab: null, popupWidthPx: 560, popupMaxHeightPx: 480, popupSheetHeightVh: 75, tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US', localTtsEnabled: false, localTtsLanguage: 'en', downloadedLanguages: [], hiddenLanguages: [] }, externalDictLinks: [], srsDestination: 'anki', badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 } },
   resourceIds: [1, 2],
   ...overrides,
 });

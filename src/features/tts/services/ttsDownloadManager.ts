@@ -59,7 +59,9 @@ export async function isVoicePackDownloaded(): Promise<boolean> {
   return results.every(Boolean);
 }
 
-export async function deleteVoicePack(): Promise<void> {
+export async function deleteVoicePack(_language?: string): Promise<void> {
+  // ponytail: language-specific asset cleanup is a future layer; for MVP all
+  // Supertonic ONNX assets are shared across languages.
   await Promise.all(SUPERONIC_FILES.map((name) => deleteTtsFile(name)));
 }
 
