@@ -21,11 +21,11 @@ export interface UniversalPanelProps {
   /** Toggle one of the tokenize keys from the universal header. */
   readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
   /** Language profiles for quick switch. */
-  readonly languageProfiles: { readonly id: string; readonly name: string }[];
+  readonly languageProfiles?: { readonly id: string; readonly name: string }[];
   /** Active profile id. */
-  readonly activeProfileId: string | null;
+  readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
-  readonly onProfileChange: (profileId: string) => void;
+  readonly onProfileChange?: (profileId: string) => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
   /** Content for the Settings tab. */

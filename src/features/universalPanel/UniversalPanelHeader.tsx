@@ -15,11 +15,11 @@ export interface UniversalPanelHeaderProps {
   /** Called when the close button is clicked. */
   readonly onClose: () => void;
   /** Language profiles for quick switch. */
-  readonly languageProfiles: { readonly id: string; readonly name: string }[];
+  readonly languageProfiles?: { readonly id: string; readonly name: string }[];
   /** Active profile id. */
-  readonly activeProfileId: string | null;
+  readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
-  readonly onProfileChange: (profileId: string) => void;
+  readonly onProfileChange?: (profileId: string) => void;
 }
 
 type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled';
