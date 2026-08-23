@@ -127,7 +127,7 @@ export function UniversalPanel({
                 onClick={() => onTabChange(tab.key)}
                 data-cell-id={`universal-panel-tab-${tab.key}`}
               >
-                <Icon name={tab.icon} size={20} />
+                <Icon name={tab.icon}  />
               </IconButton>
             ))}
           </div>

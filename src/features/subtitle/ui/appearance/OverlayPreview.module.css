@@ -1,6 +1,6 @@
-/* Layout matches SubtitlePanels.module.css production patterns.
-   Reuses SubtitleBlock + NavCluster + IconButton components — only the
-   16:9 frame wrapper and 3-zone layout CSS live here. */
+/* Preview overlay for appearance customization — reuses SubtitleBlock +
+   NavCluster + IconButton components. Only the 16:9 frame wrapper and
+   3-zone layout CSS live here; toolbar base comes from shared CSS. */
 
 .frame {
   position: relative;
@@ -8,18 +8,33 @@
   height: 160px;
   overflow: hidden;
   border-radius: var(--radius-element);
-  background: var(--overlay-background);
+  /* Glass container — translucent surface + blur, auto dark/light via tokens.
+     Replaces the old hardcoded --overlay-background (#000) which only matched
+     the dark video player and ignored light mode. */
+  background: var(--color-glass-surface);
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
   padding: var(--space-2);
   container-type: inline-size;
+  margin-inline: auto;
 }
 
-/* 3-zone horizontal layout — matches .root in SubtitlePanels.module.css */
+/* 3-zone horizontal layout for the preview overlay.
+   --sb-y maps 0% = top edge, 100% = bottom edge of the frame.
+   translateY scales proportionally so the subtitle block stays fully
+   visible at both extremes instead of being half-clipped.
+   Width = 300cqw (3× frame) to emulate real overlay container width
+   (~1000px video), so cqw-based font-size in SubtitleBlock resolves
+   correctly instead of clamping to minimum. Scale 1/3 brings it back
+   to frame width. */
 .overlayRoot {
   position: absolute;
-  left: 0;
-  right: 0;
   top: calc(var(--sb-y, 75) * 1%);
-  transform: translateY(-50%);
+  left: 0;
+  width: 300cqw;
+  transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.3333);
+  transform-origin: top left;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -65,31 +80,21 @@
   border-radius: var(--radius-sm);
 }
 
+/* Preview toolbar — base layout from shared CSS, preview-specific overrides
+   for non-interactive display (pointer-events: none on children). */
 .clusterRight {
-  pointer-events: none;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-1);
-  flex: 0 0 auto;
-  position: relative;
+  composes: clusterRight from '../subtitlePanelsShared.module.css';
 }
 
 .clusterRight > * {
   pointer-events: none;
 }
 
-.clusterRight button {
-  pointer-events: none;
-  width: var(--cluster-btn-size);
-  height: var(--cluster-btn-size);
-  min-width: var(--cluster-btn-size);
-  min-height: var(--cluster-btn-size);
-  opacity: var(--cluster-text-opacity);
-  color: var(--color-overlay-text);
-  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
-  border: none;
-  border-radius: var(--radius-full);
+/* Restore icon default size — shared CSS forces --cluster-icon-size with
+   !important on button spans; preview keeps design-system default. */
+.clusterRight button span {
+  width: var(--icon-default-size) !important;
+  height: var(--icon-default-size) !important;
 }
 
 .primaryCol,

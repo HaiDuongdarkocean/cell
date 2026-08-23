@@ -1,0 +1,94 @@
+.colorScale {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  min-width: 0;
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-card);
+}
+
+.groupTitle {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: var(--space-3);
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-subtle);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-150) var(--ease-standard),
+    box-shadow var(--duration-150) var(--ease-standard);
+}
+
+.swatch:hover .circle {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--color-surface-hover);
+}
+
+.swatch:active .circle {
+  transform: scale(0.95);
+}
+
+.contrastText {
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-body);
+}
+
+.hex {
+  font-family: var(--font-family-code);
+  font-size: 8px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-align: center;
+  transition: color var(--duration-150) var(--ease-standard);
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.swatch:hover .hex {
+  color: var(--color-text);
+}
+
+.copiedHex {
+  color: var(--color-success);
+}

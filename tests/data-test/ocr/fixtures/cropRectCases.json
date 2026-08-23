@@ -1,0 +1,127 @@
+{
+  "comment": "Subtitle region detector test cases — video dimensions + region % + position → expected crop rect { x, y, width, height }.",
+  "cases": [
+    {
+      "id": "1920x1080-bottom-15",
+      "videoWidth": 1920,
+      "videoHeight": 1080,
+      "regionPct": 15,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 918, "width": 1920, "height": 162 }
+    },
+    {
+      "id": "1920x1080-top-15",
+      "videoWidth": 1920,
+      "videoHeight": 1080,
+      "regionPct": 15,
+      "position": "top",
+      "expected": { "x": 0, "y": 0, "width": 1920, "height": 162 }
+    },
+    {
+      "id": "1920x1080-bottom-20",
+      "videoWidth": 1920,
+      "videoHeight": 1080,
+      "regionPct": 20,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 864, "width": 1920, "height": 216 }
+    },
+    {
+      "id": "1280x720-bottom-15",
+      "videoWidth": 1280,
+      "videoHeight": 720,
+      "regionPct": 15,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 612, "width": 1280, "height": 108 }
+    },
+    {
+      "id": "640x360-bottom-10",
+      "videoWidth": 640,
+      "videoHeight": 360,
+      "regionPct": 10,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 324, "width": 640, "height": 36 }
+    },
+    {
+      "id": "3840x2160-bottom-15",
+      "videoWidth": 3840,
+      "videoHeight": 2160,
+      "regionPct": 15,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 1836, "width": 3840, "height": 324 }
+    },
+    {
+      "id": "1920x1080-bottom-100-full",
+      "videoWidth": 1920,
+      "videoHeight": 1080,
+      "regionPct": 100,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 0, "width": 1920, "height": 1080 }
+    },
+    {
+      "id": "1920x1080-bottom-0-empty",
+      "videoWidth": 1920,
+      "videoHeight": 1080,
+      "regionPct": 0,
+      "position": "bottom",
+      "expected": { "x": 0, "y": 1080, "width": 1920, "height": 0 }
+    }
+  ],
+  "cacheKeyCases": [
+    {
+      "id": "basic-bucket",
+      "videoId": "abc123",
+      "timeMs": 5000,
+      "bucketMs": 1000,
+      "expectedKey": "abc123:5000"
+    },
+    {
+      "id": "round-down-bucket",
+      "videoId": "abc123",
+      "timeMs": 5999,
+      "bucketMs": 1000,
+      "expectedKey": "abc123:5000",
+      "comment": "5999ms rounds down to 5000ms bucket"
+    },
+    {
+      "id": "different-bucket-size",
+      "videoId": "abc123",
+      "timeMs": 5500,
+      "bucketMs": 2000,
+      "expectedKey": "abc123:4000"
+    },
+    {
+      "id": "zero-time",
+      "videoId": "abc123",
+      "timeMs": 0,
+      "bucketMs": 1000,
+      "expectedKey": "abc123:0"
+    },
+    {
+      "id": "different-video-same-time",
+      "videoId": "xyz789",
+      "timeMs": 5000,
+      "bucketMs": 1000,
+      "expectedKey": "xyz789:5000"
+    }
+  ],
+  "videoIdCases": [
+    {
+      "id": "youtube-url",
+      "input": { "src": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "duration": 212 },
+      "comment": "YouTube — extract videoId from URL",
+      "expectedContains": "dQw4w9WgXcQ"
+    },
+    {
+      "id": "blob-url",
+      "input": { "src": "blob:https://themoviebox.xyz/abc-def-123", "duration": 3600 },
+      "comment": "Blob URL — hash(src + duration)",
+      "expectedLength": 16
+    },
+    {
+      "id": "direct-url",
+      "input": { "src": "https://cdn.example.com/video.mp4", "duration": 1800 },
+      "comment": "Direct URL — hash(src + duration)",
+      "expectedLength": 16
+    }
+  ]
+}

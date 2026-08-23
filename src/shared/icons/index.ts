@@ -42,6 +42,7 @@ import loaderSvg from './svg/loader.svg?raw';
 import playSvg from './svg/play.svg?raw';
 import pauseSvg from './svg/pause.svg?raw';
 import plusSvg from './svg/plus.svg?raw';
+import minusSvg from './svg/minus.svg?raw';
 import checkSvg from './svg/check.svg?raw';
 import infoSvg from './svg/info.svg?raw';
 import alertCircleSvg from './svg/alert-circle.svg?raw';
@@ -67,6 +68,12 @@ import circleInfoSvg from './svg/circle-info.svg?raw';
 import messageSquareSvg from './svg/message-square.svg?raw';
 import bookOpenSvg from './svg/book-open.svg?raw';
 
+// === Local player icons ===
+import folderOpenSvg from './svg/folder-open.svg?raw';
+import librarySvg from './svg/library.svg?raw';
+import fileVideoSvg from './svg/file-video.svg?raw';
+import playRoundedRectSvg from './svg/play-rounded-rect.svg?raw';
+
 // === Media / window control icons ===
 import externalLinkSvg from './svg/external-link.svg?raw';
 import checkDoubleSvg from './svg/check-double.svg?raw';
@@ -81,6 +88,20 @@ import minimizeSvg from './svg/minimize.svg?raw';
 import pipSvg from './svg/pip.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
+import gaugeSvg from './svg/gauge.svg?raw';
+import cropSvg from './svg/crop.svg?raw';
+import moveSvg from './svg/move.svg?raw';
+import moveVerticalSvg from './svg/move-vertical.svg?raw';
+import moveHorizontalSvg from './svg/move-horizontal.svg?raw';
+import scanTextSvg from './svg/scan-text.svg?raw';
+
+// === Design system showcase — atomic design level icons ===
+import layersSvg from './svg/layers.svg?raw';
+import atomSvg from './svg/atom.svg?raw';
+import moleculeSvg from './svg/molecule.svg?raw';
+import organismSvg from './svg/organism.svg?raw';
+import wireframeSvg from './svg/wireframe.svg?raw';
+import windowPageSvg from './svg/window-page.svg?raw';
 
 // === Nav cluster icons ===
 import navPrevSvg from './svg/nav-prev.svg?raw';
@@ -99,6 +120,7 @@ import generateNativeSvg from './svg/generate-native.svg?raw';
 import sidePanelSvg from './svg/side-panel.svg?raw';
 import subtitleManagerSvg from './svg/subtitle-manager.svg?raw';
 import resetOffsetSvg from './svg/reset-offset.svg?raw';
+import slidersHorizontalSvg from './svg/sliders-horizontal.svg?raw';
 
 // Re-export individual icons for backward compat (existing imports).
 export { default as settingsIcon } from './svg/settings.svg?raw';
@@ -119,6 +141,7 @@ export { default as loaderIcon } from './svg/loader.svg?raw';
 export { default as playIcon } from './svg/play.svg?raw';
 export { default as pauseIcon } from './svg/pause.svg?raw';
 export { default as plusIcon } from './svg/plus.svg?raw';
+export { default as minusIcon } from './svg/minus.svg?raw';
 export { default as checkIcon } from './svg/check.svg?raw';
 export { default as infoIcon } from './svg/info.svg?raw';
 export { default as alertCircleIcon } from './svg/alert-circle.svg?raw';
@@ -143,6 +166,10 @@ export { default as circleXIcon } from './svg/circle-x.svg?raw';
 export { default as circleInfoIcon } from './svg/circle-info.svg?raw';
 export { default as messageSquareIcon } from './svg/message-square.svg?raw';
 export { default as bookOpenIcon } from './svg/book-open.svg?raw';
+export { default as folderOpenIcon } from './svg/folder-open.svg?raw';
+export { default as libraryIcon } from './svg/library.svg?raw';
+export { default as fileVideoIcon } from './svg/file-video.svg?raw';
+export { default as playRoundedRectIcon } from './svg/play-rounded-rect.svg?raw';
 export { default as navPrevIcon } from './svg/nav-prev.svg?raw';
 export { default as navNextIcon } from './svg/nav-next.svg?raw';
 export { default as navRepeatIcon } from './svg/nav-repeat.svg?raw';
@@ -170,6 +197,16 @@ export { default as minimizeIcon } from './svg/minimize.svg?raw';
 export { default as pipIcon } from './svg/pip.svg?raw';
 export { default as pinIcon } from './svg/pin.svg?raw';
 export { default as pinOffIcon } from './svg/pin-off.svg?raw';
+export { default as gaugeIcon } from './svg/gauge.svg?raw';
+export { default as layersIcon } from './svg/layers.svg?raw';
+export { default as atomIcon } from './svg/atom.svg?raw';
+export { default as moleculeIcon } from './svg/molecule.svg?raw';
+export { default as organismIcon } from './svg/organism.svg?raw';
+export { default as wireframeIcon } from './svg/wireframe.svg?raw';
+export { default as cropIcon } from './svg/crop.svg?raw';
+export { default as moveVerticalIcon } from './svg/move-vertical.svg?raw';
+export { default as scanTextIcon } from './svg/scan-text.svg?raw';
+export { default as windowPageIcon } from './svg/window-page.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
 export interface IconEntry {
@@ -218,6 +255,7 @@ export const ICON_CATALOG = {
   play:        { svg: playSvg,        source: 'lucide/play',        tags: ['play','start','media','video','resume'] } as IconEntry,
   pause:       { svg: pauseSvg,       source: 'lucide/pause',       tags: ['pause','hold','media'] } as IconEntry,
   plus:        { svg: plusSvg,        source: 'lucide/plus',        tags: ['add','plus','new','create'] } as IconEntry,
+  minus:       { svg: minusSvg,       source: 'lucide/minus',       tags: ['minus','subtract','decrease','remove'] } as IconEntry,
   check:       { svg: checkSvg,       source: 'lucide/check',       tags: ['check','confirm','selected','done','tick'] } as IconEntry,
   info:        { svg: infoSvg,        source: 'lucide/info',        tags: ['info','information','hint','help'] } as IconEntry,
   alertCircle: { svg: alertCircleSvg, source: 'lucide/alert-circle', tags: ['alert','error','warning','exclamation','circle'] } as IconEntry,
@@ -245,6 +283,12 @@ export const ICON_CATALOG = {
   messageSquare: { svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message','sentence','text','speech','bubble','chat','audio-sentence'] } as IconEntry,
   bookOpen:    { svg: bookOpenSvg,    source: 'lucide/book-open',    tags: ['dictionary','book','lexicon'] } as IconEntry,
 
+  // === Local player ===
+  folderOpen:  { svg: folderOpenSvg,  source: 'lucide/folder-open',  tags: ['folder','open','file','directory','browse'] } as IconEntry,
+  library:     { svg: librarySvg,     source: 'lucide/library',      tags: ['library','collection','history','list','book-stack'] } as IconEntry,
+  fileVideo:   { svg: fileVideoSvg,   source: 'lucide/file-video',   tags: ['file','video','media','document','filename'] } as IconEntry,
+  playRoundedRect: { svg: playRoundedRectSvg, source: 'custom/play-rounded-rect', tags: ['play','video','media','player','local-player','rounded','rectangle'] } as IconEntry,
+
   // === Nav cluster ===
   navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,
   navNext:         { svg: navNextSvg,         source: 'svgrepo/round-alt-arrow-right', tags: ['nav','next','forward','sentence','chevron-right','circle'] } as IconEntry,
@@ -262,6 +306,7 @@ export const ICON_CATALOG = {
   sidePanel:       { svg: sidePanelSvg,       source: 'custom/subtitle-panel',      tags: ['side','panel','toggle','split','rect'] } as IconEntry,
   subtitleManager: { svg: subtitleManagerSvg, source: 'custom/subtitle-manager',    tags: ['subtitle','manager','list','panel','lines'] } as IconEntry,
   resetOffset:     { svg: resetOffsetSvg,     source: 'custom/subtitle-offset',     tags: ['reset','offset','circular-arrow','hook','undo'] } as IconEntry,
+  slidersHorizontal: { svg: slidersHorizontalSvg, source: 'lucide/sliders-horizontal', tags: ['sliders','customize','appearance','settings','adjust','tune','levels'] } as IconEntry,
 
   // === Media / window control ===
   externalLink: { svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external','link','open','new-tab','outbound'] } as IconEntry,
@@ -273,10 +318,24 @@ export const ICON_CATALOG = {
   volumeMute:   { svg: volumeMuteSvg,   source: 'lucide/volume-x',      tags: ['volume','mute','silent','off','sound','audio','speaker'] } as IconEntry,
   captions:     { svg: captionsSvg,     source: 'lucide/captions',      tags: ['captions','subtitle','cc','closed-caption','text','accessibility'] } as IconEntry,
   maximize:     { svg: maximizeSvg,     source: 'lucide/maximize',      tags: ['maximize','expand','fullscreen','enlarge','scale-up'] } as IconEntry,
+  crop:         { svg: cropSvg,         source: 'lucide/crop',          tags: ['crop','select-region','area','frame','capture','marquee'] } as IconEntry,
+  move:         { svg: moveSvg,         source: 'lucide/move',          tags: ['move','drag','reposition','pan','all-directions'] } as IconEntry,
+  moveVertical: { svg: moveVerticalSvg, source: 'lucide/move-vertical', tags: ['move','vertical','height','resize-vertical','up-down'] } as IconEntry,
+  moveHorizontal: { svg: moveHorizontalSvg, source: 'lucide/move-horizontal', tags: ['move','horizontal','width','resize-horizontal','left-right'] } as IconEntry,
+  scanText:     { svg: scanTextSvg,     source: 'lucide/scan-text',     tags: ['scan','text','ocr','detect-text','frame-text','recognize'] } as IconEntry,
   minimize:     { svg: minimizeSvg,     source: 'lucide/minimize',      tags: ['minimize','collapse','shrink','scale-down','reduce'] } as IconEntry,
   pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
   pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,
   pinOff:       { svg: pinOffSvg,       source: 'lucide/pin-off',       tags: ['pin','off','unpin','detach','release','unlock-position'] } as IconEntry,
+  gauge:        { svg: gaugeSvg,        source: 'lucide/gauge',         tags: ['gauge','speed','meter','playback-speed','rate','fast','slow'] } as IconEntry,
+
+  // === Design system showcase — atomic design level icons ===
+  layers:       { svg: layersSvg,       source: 'custom/design-system', tags: ['layers','stack','foundation','design-tokens','base','tier'] } as IconEntry,
+  atom:         { svg: atomSvg,         source: 'lucide/atom',           tags: ['atom','orbital','electron','nucleus','particle','smallest-unit'] } as IconEntry,
+  molecule:     { svg: moleculeSvg,     source: 'custom/design-system',  tags: ['molecule','bond','triangle','atoms-combined','compound'] } as IconEntry,
+  organism:     { svg: organismSvg,     source: 'custom/design-system',  tags: ['organism','cell','organelles','complex-unit','biological'] } as IconEntry,
+  wireframe:    { svg: wireframeSvg,    source: 'custom/design-system',  tags: ['wireframe','template','layout','scaffold','blueprint','sections'] } as IconEntry,
+  windowPage:   { svg: windowPageSvg,   source: 'custom/design-system',  tags: ['page','window','browser','document','final','complete'] } as IconEntry,
 } as const;
 
 /** Find icon entries by tag (fuzzy semantic search). */

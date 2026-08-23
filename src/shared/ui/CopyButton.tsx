@@ -58,7 +58,7 @@ export function CopyButton({
   return (
     <button type="button" className={cls} aria-label={ariaLabel} onClick={handleClick} {...rest}>
       <span className={styles.icon}>
-        <Icon name={copied ? 'checkDouble' : 'copy'} size={16} />
+        <Icon name={copied ? 'checkDouble' : 'copy'}  />
       </span>
       {label && <span className={styles.label}>{label}</span>}
       <span className={styles.srOnly} aria-live="polite">

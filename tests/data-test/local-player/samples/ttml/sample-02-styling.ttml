@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <head>
+    <styling>
+      <style xml:id="s1" tts:color="white" tts:backgroundColor="black" tts:fontSize="24px"/>
+      <style xml:id="s2" tts:color="red" tts:fontWeight="bold"/>
+      <style xml:id="s3" tts:color="yellow" tts:fontStyle="italic"/>
+    </styling>
+    <layout>
+      <region xml:id="r1" tts:origin="10% 80%" tts:extent="80% 15%"/>
+      <region xml:id="r2" tts:origin="10% 10%" tts:extent="80% 15%"/>
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p begin="1s" end="4s" region="r1" style="s1">White text on black background</p>
+      <p begin="5s" end="8s" region="r1" style="s2">Bold red text</p>
+      <p begin="9s" end="12s" region="r2" style="s3">Italic yellow text at top</p>
+    </div>
+  </body>
+</tt>

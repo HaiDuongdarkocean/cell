@@ -70,7 +70,7 @@ function renderPlayerMode(): HTMLElement {
       toolsExpanded={false}
       onQuickAdd={noop}
       onEditCard={noop}
-      onUpdateCurrentCard={noop}
+      onToggleOcr={noop}
       onGenerateNative={noop}
       onToggleSidePanel={noop}
       onToggleManager={noop}
@@ -104,7 +104,7 @@ function renderPlayerModeWithCues(cues?: BilingualCue[]): HTMLElement {
       toolsExpanded={false}
       onQuickAdd={noop}
       onEditCard={noop}
-      onUpdateCurrentCard={noop}
+      onToggleOcr={noop}
       onGenerateNative={noop}
       onToggleSidePanel={noop}
       onToggleManager={noop}

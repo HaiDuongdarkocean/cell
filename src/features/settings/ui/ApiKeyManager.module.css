@@ -1,6 +1,6 @@
-/* === ApiKeyManager — subtitle search API key CRUD (spec subtitle-search.md) ===
-   Uses design tokens only (no hardcoded colors/sizes). 1 column, key cards
-   stack vertically (responsive spec §Responsive). */
+/* === ApiKeyManager — product-ready, mobile-first, Apple HIG style ===
+   Uses design tokens only (no hardcoded colors/sizes). Single column,
+   key cards stack vertically. Collapsible add form with slide-down. */
 
 .root {
   display: flex;
@@ -9,15 +9,107 @@
   min-width: 0;
 }
 
+/* === Header row — count + add toggle === */
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.headerCount {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.addToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2-5);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1),
+              transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.addToggle:hover {
+  background: var(--color-primary-subtle-hover, var(--color-primary-subtle));
+}
+
+.addToggle:active {
+  transform: scale(0.97);
+}
+
+.addToggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* === Add-key form — collapsible card with slide-down animation === */
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  min-width: 0;
+  animation: slideDown 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.addFormRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* Help link — get API key */
+.helpLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  padding: var(--space-0-5) 0;
+  transition: opacity 150ms ease;
+}
+
+.helpLink:hover {
+  opacity: 0.8;
+}
+
+.addBtn {
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
 /* === Provider group === */
 .providerGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
   min-width: 0;
 }
 
 .providerHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
@@ -26,24 +118,45 @@
   padding: 0 var(--space-0-5);
 }
 
-/* === Key card === */
+.providerCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* === Key card — compact, two-row layout === */
 .keyCard {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   min-width: 0;
+  transition: border-color 150ms ease;
 }
 
-.keyCardRow {
+.keyCard:hover {
+  border-color: var(--color-border-focus, var(--color-border));
+}
+
+.keyCardInfo {
+  flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
   min-width: 0;
-  flex-wrap: wrap;
 }
 
 .keyLabel {
@@ -56,6 +169,13 @@
   white-space: nowrap;
 }
 
+.keyCardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .keyMasked {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
@@ -63,92 +183,158 @@
   letter-spacing: var(--tracking-wide);
 }
 
-.keyMeta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
+/* Status dot — Apple-style subtle indicator, same size as meta text */
+.statusDot {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+}
+
+.statusDot_active {
+  background: var(--color-success);
+}
+
+.statusDot_rate-limited {
+  background: var(--color-warning);
+}
+
+.statusDot_invalid {
+  background: var(--color-error);
+}
+
+.statusDot_unverified {
+  background: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.5;
+}
+
+.statusText {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-tight);
+}
+
+.keyQuota {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
+/* === Key actions — icon buttons, right-aligned === */
 .keyActions {
-  display: inline-flex;
+  flex: 0 0 auto;
+  display: flex;
   align-items: center;
   gap: var(--space-1);
-  margin-left: auto;
 }
 
-/* === Status badge color overrides (spec: active=green, rate-limited=amber,
-   invalid=red, unverified=gray). Badge variants: success/warning/destructive/default. === */
-.statusActive {
-  /* uses Badge variant="success" */
-}
-
-.statusRateLimited {
-  /* uses Badge variant="warning" */
-}
-
-.statusInvalid {
-  /* uses Badge variant="destructive" */
-}
-
-.statusUnverified {
-  /* uses Badge variant="default" */
-}
-
-/* === Add-key form === */
-.addForm {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  background: var(--color-background);
-  min-width: 0;
-}
-
-.addFormRow {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.addFormLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+.iconAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--iconbutton-size-sm, 32px);
+  height: var(--iconbutton-size-sm, 32px);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
   color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1),
+              color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+              transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.addFormActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
+.iconAction:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 
-/* === Inline edit row === */
+.iconAction:active {
+  transform: scale(0.92);
+}
+
+.iconAction:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.iconActionDanger:hover {
+  background: var(--color-error-subtle, rgba(239, 68, 68, 0.1));
+  color: var(--color-error);
+}
+
+/* === Inline edit === */
 .editRow {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  flex: 1 1 auto;
   min-width: 0;
 }
 
 .editActions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 
-/* === Empty state === */
-.emptyHint {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  padding: var(--space-1) var(--space-0-5);
+/* === Empty state — per provider === */
+.emptyState {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-background);
 }
 
-/* === Confirm dialog body === */
+.emptyIcon {
+  flex: 0 0 auto;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* === Full empty state — no keys at all === */
+.fullEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  animation: fadeIn 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fullEmptyIcon {
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.4;
+}
+
+.fullEmptyTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.fullEmptyHint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+/* === Confirm dialog === */
 .confirmBody {
   font-size: var(--font-size-sm);
   color: var(--color-text);
@@ -159,4 +345,11 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addForm,
+  .fullEmpty {
+    animation: none;
+  }
 }

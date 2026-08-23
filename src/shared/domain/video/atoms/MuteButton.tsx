@@ -46,7 +46,7 @@ export function MuteButton({
       aria-pressed={muted}
       {...rest}
     >
-      <Icon name={iconName} size={20} className={styles.icon} />
+      <Icon name={iconName} className={styles.icon} />
     </button>
   );
 }

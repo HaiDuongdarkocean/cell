@@ -1,0 +1,81 @@
+[
+  {
+    "scenario": "resume from 2 minutes",
+    "savedPositionMs": 120000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 2:00?"
+  },
+  {
+    "scenario": "position < 10s — no prompt",
+    "savedPositionMs": 5000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": false
+  },
+  {
+    "scenario": "position near end (>95%) — no prompt, treat as finished",
+    "savedPositionMs": 3430000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": false
+  },
+  {
+    "scenario": "position at 0 — no prompt",
+    "savedPositionMs": 0,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": false
+  },
+  {
+    "scenario": "position > duration — no prompt, clamp/ignore",
+    "savedPositionMs": 4000000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": false
+  },
+  {
+    "scenario": "hours format — 1:23:45",
+    "savedPositionMs": 5025000,
+    "videoDurationMs": 10800000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 1:23:45?"
+  },
+  {
+    "scenario": "seconds only — 45 seconds",
+    "savedPositionMs": 45000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 0:45?"
+  },
+  {
+    "scenario": "position exactly 10s boundary — prompt (>=10s triggers)",
+    "savedPositionMs": 10000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 0:10?"
+  },
+  {
+    "scenario": "very long video (3h) — resume at 1h30m",
+    "savedPositionMs": 5400000,
+    "videoDurationMs": 10800000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 1:30:00?"
+  },
+  {
+    "scenario": "very short video (5min) — resume at 2min",
+    "savedPositionMs": 120000,
+    "videoDurationMs": 300000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 2:00?"
+  },
+  {
+    "scenario": "minutes format — 12:34",
+    "savedPositionMs": 754000,
+    "videoDurationMs": 7200000,
+    "shouldPrompt": true,
+    "expectedPromptText": "Continue from 12:34?"
+  },
+  {
+    "scenario": "position at exactly 95% boundary — no prompt (treated as finished)",
+    "savedPositionMs": 3420000,
+    "videoDurationMs": 3600000,
+    "shouldPrompt": false
+  }
+]

@@ -181,6 +181,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
     { id: 'dictionaryPopup', label: 'Dictionary Popup' },
+    { id: 'localPlayer', label: 'Local Player' },
     { id: 'theme', label: 'Theme' },
     { id: 'tts', label: 'TTS Voices' },
     { id: 'resources', label: 'Resources' },
@@ -537,6 +538,57 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                   settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
                 />
+              </div>
+            </section>
+
+            {/* === Local Player (spec local-video-player.md — schema v22) === */}
+            <section
+              ref={(el) => { sectionRefs.current.localPlayer = el; }}
+              className={styles.section}
+              data-section="localPlayer"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Local Player</h4>
+              </div>
+              <p className={styles.sectionDescription}>Configure the local video player: subtitle auto-match and resume prompt.</p>
+              <div className={styles.sectionBody}>
+                {/* Subtitle auto-match toggle */}
+                <div className={styles.field}>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Subtitle auto-match
+                      <HintIcon
+                        hint="Khi bật, mở video → tự tìm phụ đề cùng tên trong cùng folder."
+                        ariaLabel="Show hint for Subtitle auto-match"
+                      />
+                    </span>
+                    <Toggle
+                      checked={settings.localPlayerSettings.subtitleMatchEnabled}
+                      onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, subtitleMatchEnabled: next } })}
+                      ariaLabel="Toggle subtitle auto-match"
+                      title={`Subtitle auto-match: ${settings.localPlayerSettings.subtitleMatchEnabled ? 'ON' : 'OFF'}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Resume prompt toggle */}
+                <div className={styles.field}>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Resume prompt
+                      <HintIcon
+                        hint="Khi bật, mở lại video → hỏi 'Continue from X?' nếu đã xem trước đó."
+                        ariaLabel="Show hint for Resume prompt"
+                      />
+                    </span>
+                    <Toggle
+                      checked={settings.localPlayerSettings.resumePromptEnabled}
+                      onChange={(next) => onChange({ ...settings, localPlayerSettings: { ...settings.localPlayerSettings, resumePromptEnabled: next } })}
+                      ariaLabel="Toggle resume prompt"
+                      title={`Resume prompt: ${settings.localPlayerSettings.resumePromptEnabled ? 'ON' : 'OFF'}`}
+                    />
+                  </div>
+                </div>
               </div>
             </section>
 

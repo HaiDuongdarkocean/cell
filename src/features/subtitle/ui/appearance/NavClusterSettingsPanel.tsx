@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 import type { NavClusterSettings } from '@/entities/settings';
 import { Slider } from '@/shared/ui/Slider';
-import { Button } from '@/shared/ui/Button';
 import styles from './NavClusterSettingsPanel.module.css';
 
 interface NavClusterSettingsPanelProps {
@@ -25,111 +24,95 @@ const PRESETS: ReadonlyArray<{ label: string; textOpacity: number; bgOpacity: nu
 
 /**
  * Nav cluster settings panel (ADR-018 D2, ADR-025).
- * Button size + text opacity + bg opacity (overlay appearance refactor).
- * 4 presets: Frosted / Glass / Muted / Solid.
- * Each control calls onChange(partial) → parent persists → storage.onChanged
- * → content-script updateSettings (realtime).
- *
- * Accessibility: label htmlFor, aria-label, keyboard-navigable sliders.
+ * iOS Settings card style — grouped rows + preset pills.
  */
 export function NavClusterSettingsPanel({
   settings,
   onChange,
 }: NavClusterSettingsPanelProps): ReactElement {
-  const handleButtonSizeChange = (raw: number): void => {
-    onChange({ buttonSize: raw });
-  };
-
-  const handleTextOpacityChange = (v: number): void => {
-    onChange({ textOpacity: v });
-  };
-
-  const handleBgOpacityChange = (v: number): void => {
-    onChange({ bgOpacity: v });
-  };
-
   const handlePreset = (preset: { textOpacity: number; bgOpacity: number }): void => {
     onChange({ textOpacity: preset.textOpacity, bgOpacity: preset.bgOpacity });
   };
 
   return (
     <div className={styles.container} data-cell-id="nav-cluster-settings-panel">
-      {/* Button size */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-button-size">Button size</label>
-          <span className={styles.value}>{settings.buttonSize}px</span>
+      {/* ─── Controls card ─── */}
+      <div className={styles.card}>
+        {/* Button size */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="nav-cluster-button-size">Button Size</label>
+            <span className={styles.value}>{settings.buttonSize}px</span>
+          </div>
+          <Slider
+            id="nav-cluster-button-size"
+            value={settings.buttonSize}
+            min={BUTTON_SIZE_MIN}
+            max={BUTTON_SIZE_MAX}
+            step={1}
+            onChange={(v) => onChange({ buttonSize: v })}
+            aria-label="Button size"
+            data-cell-id="nav-cluster-button-size"
+          />
         </div>
-        <Slider
-          id="nav-cluster-button-size"
-          value={settings.buttonSize}
-          min={BUTTON_SIZE_MIN}
-          max={BUTTON_SIZE_MAX}
-          step={1}
-          onChange={handleButtonSizeChange}
-          aria-label="Button size"
-          data-cell-id="nav-cluster-button-size"
-        />
+
+        {/* Icon opacity */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="nav-cluster-text-opacity">Icon</label>
+            <span className={styles.value}>{Math.round(settings.textOpacity * 100)}%</span>
+          </div>
+          <Slider
+            id="nav-cluster-text-opacity"
+            value={settings.textOpacity}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onChange({ textOpacity: v })}
+            aria-label="Icon opacity"
+            data-cell-id="nav-cluster-text-opacity"
+          />
+        </div>
+
+        {/* Button opacity */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Background</label>
+            <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
+          </div>
+          <Slider
+            id="nav-cluster-bg-opacity"
+            value={settings.bgOpacity}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onChange({ bgOpacity: v })}
+            aria-label="Button opacity"
+            data-cell-id="nav-cluster-bg-opacity"
+          />
+        </div>
       </div>
 
-      {/* Icon opacity */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-text-opacity">Icon opacity</label>
-          <span className={styles.value}>{Math.round(settings.textOpacity * 100)}%</span>
-        </div>
-        <Slider
-          id="nav-cluster-text-opacity"
-          value={settings.textOpacity}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={handleTextOpacityChange}
-          aria-label="Icon opacity"
-          data-cell-id="nav-cluster-text-opacity"
-        />
-      </div>
-
-      {/* Button opacity */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Button opacity</label>
-          <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
-        </div>
-        <Slider
-          id="nav-cluster-bg-opacity"
-          value={settings.bgOpacity}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={handleBgOpacityChange}
-          aria-label="Button opacity"
-          data-cell-id="nav-cluster-bg-opacity"
-        />
-      </div>
-
-      {/* Presets */}
-      <div className={styles.field}>
-        <span className={styles.label}>Presets</span>
-        <div className={styles.presetRow} role="group" aria-label="Overlay appearance presets">
-          {PRESETS.map((preset) => {
-            const isActive =
-              settings.textOpacity === preset.textOpacity &&
-              settings.bgOpacity === preset.bgOpacity;
-            return (
-              <Button
-                key={preset.label}
-                variant={isActive ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => handlePreset(preset)}
-                aria-pressed={isActive}
-                data-cell-id={`nav-cluster-preset-${preset.label.toLowerCase()}`}
-              >
-                {preset.label}
-              </Button>
-            );
-          })}
-        </div>
+      {/* ─── Style presets ─── */}
+      <span className={styles.sectionHeader}>Style</span>
+      <div className={styles.presetRow} role="group" aria-label="Overlay appearance presets">
+        {PRESETS.map((preset) => {
+          const isActive =
+            settings.textOpacity === preset.textOpacity &&
+            settings.bgOpacity === preset.bgOpacity;
+          return (
+            <button
+              key={preset.label}
+              type="button"
+              className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ''}`}
+              onClick={() => handlePreset(preset)}
+              aria-pressed={isActive}
+              data-cell-id={`nav-cluster-preset-${preset.label.toLowerCase()}`}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

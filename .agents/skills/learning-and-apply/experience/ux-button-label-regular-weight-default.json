@@ -1,0 +1,27 @@
+{
+  "id": "ux-button-label-regular-weight-default",
+  "title": "Button label dùng font-weight regular (400) mặc định — không in đậm trừ khi là primary action",
+  "category": ["ux", "css"],
+  "tags": ["button", "label", "font-weight", "regular", "navigation", "footer", "typography", "hierarchy"],
+  "trigger": "Button label (navigation, footer, secondary action) dùng font-weight medium/bold mặc định — tạo visual noise khi mọi button đều 'nặng'",
+  "principle": "Button label mặc định dùng font-weight regular (400) — không in đậm. Lý do: (1) visual hierarchy — nếu mọi button đều bold, không có hierarchy, primary action không nổi bật; (2) iOS HIG: tab bar label dùng SF 10pt Regular; (3) Material 3: navigation item label dùng label-medium (regular); (4) bold dành cho PRIMARY action only (filled button, CTA) — navigation/secondary dùng regular. Exception: primarySubtle variant (featured nav action) có thể dùng bold để tạo accent. Token: --font-weight-regular (400) cho default, --font-weight-bold (700) cho primary/featured only. KHÔNG dùng medium (500) cho navigation label — medium dành cho data/metadata.",
+  "cases": [
+    {
+      "context": "Footer navigation button label dùng medium (500)",
+      "bad": "\"vertical-label-weight\": \"var(--font-weight-medium)\"",
+      "good": "\"vertical-label-weight\": \"var(--font-weight-regular)\""
+    },
+    {
+      "context": "Navigation item label bold — tạo visual noise",
+      "bad": ".navItem .label { font-weight: var(--font-weight-semibold); }",
+      "good": ".navItem .label { font-weight: var(--font-weight-regular); }\n/* Bold chỉ cho primary action button */\n.primaryButton .label { font-weight: var(--font-weight-bold); }"
+    }
+  ],
+  "applyFor": [
+    "Navigation bar item label — regular weight",
+    "Footer button label — regular weight",
+    "Secondary/ghost button label — regular weight",
+    "Tab bar label (iOS/Material 3 pattern)",
+    "Any button không phải primary CTA"
+  ]
+}

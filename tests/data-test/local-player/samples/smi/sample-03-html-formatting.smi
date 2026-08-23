@@ -1,0 +1,38 @@
+<SAMI>
+<HEAD>
+<TITLE>HTML Formatting SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC><B>Welcome</B> to the <I>amazing</I> world of SAMI!</P>
+
+<SYNC Start=3000>
+<P Class=ENUSCC>This text has <B>bold</B> and <I>italic</I> formatting.</P>
+
+<SYNC Start=6000>
+<P Class=ENUSCC><FONT COLOR="red">Red text</FONT> using font color tags.</P>
+
+<SYNC Start=9000>
+<P Class=ENUSCC><U>Underlined text</U> is also supported.</P>
+
+<SYNC Start=12000>
+<P Class=ENUSCC><B><I>Bold and italic combined</I></B> in one line.</P>
+
+<SYNC Start=15000>
+<P Class=ENUSCC><FONT COLOR="#00FF00">Green text</FONT> with hex color.</P>
+
+<SYNC Start=18000>
+<P Class=ENUSCC><B>Line one is bold</B><BR><I>Line two is italic</I></P>
+
+<SYNC Start=21000>
+<P Class=ENUSCC>Normal <B>then bold</B> then <I>then italic</I> then normal.</P>
+
+</BODY>
+</SAMI>

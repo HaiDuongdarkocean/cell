@@ -1,0 +1,19 @@
+[Script Info]
+Title: Positioning ASS Sample
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,48,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,1,2,40,40,60,1
+
+[Events]
+Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0000,0000,0000,,{\pos(960,100)}Top center position
+Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0000,0000,0000,,{\pos(100,540)}Left middle position
+Dialogue: 0,0:00:09.00,0:00:12.00,Default,,0000,0000,0000,,{\pos(1820,540)}Right middle position
+Dialogue: 0,0:00:13.00,0:00:16.00,Default,,0000,0000,0000,,{\pos(960,1000)}Bottom center position
+Dialogue: 0,0:00:17.00,0:00:20.00,Default,,0000,0000,0000,,{\pos(480,270)}Upper-left quadrant

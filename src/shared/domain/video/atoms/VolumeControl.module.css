@@ -104,3 +104,27 @@
     transition: none;
   }
 }
+
+/* === Collapsible mode (YouTube-style) ===
+   Slider collapses to 0 width; expands on container hover/focus.
+   Ponytail: width transition may jank on low-end mobile — if so, swap to
+   display:none/flex (no animation) via a prefers-reduced-motion guard. */
+.collapsible .slider {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: width var(--duration-medium) var(--ease-spring),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+.collapsible:hover .slider,
+.collapsible:focus-within .slider {
+  width: var(--space-12);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible .slider {
+    transition: none;
+  }
+}

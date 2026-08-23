@@ -86,7 +86,7 @@ export function mountReactShadow(
   };
 }
 
-function attachFullscreenReparenting(
+export function attachFullscreenReparenting(
   host: HTMLElement,
   parent: HTMLElement,
 ): () => void {

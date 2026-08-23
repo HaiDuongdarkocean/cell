@@ -13,7 +13,7 @@
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
 .button:focus-visible {
@@ -61,7 +61,6 @@
 
 .primary:active {
   background: var(--button-active-bg);
-  transform: scale(0.97);
 }
 
 /* Secondary */
@@ -76,7 +75,6 @@
 
 .secondary:active {
   background: var(--button-secondary-hover-bg);
-  transform: scale(0.97);
 }
 
 /* Outline */
@@ -93,7 +91,6 @@
 
 .outline:active {
   background: var(--color-surface-hover);
-  transform: scale(0.97);
 }
 
 /* Ghost */
@@ -108,7 +105,6 @@
 
 .ghost:active {
   background: var(--color-surface-hover);
-  transform: scale(0.97);
 }
 
 /* Destructive */
@@ -123,7 +119,6 @@
 
 .destructive:active {
   background: var(--button-destructive-hover-bg);
-  transform: scale(0.97);
 }
 
 /* Link */
@@ -143,6 +138,60 @@
   color: var(--color-primary-hover);
 }
 
+/* PrimarySubtle — bold primary text, no background (ZaloPay featured nav action) */
+.primarySubtle {
+  background: var(--button-primary-subtle-bg);
+  color: var(--button-primary-subtle-fg);
+  font-weight: var(--button-primary-subtle-font-weight);
+}
+
+.primarySubtle:hover {
+  background: var(--button-primary-subtle-hover-bg);
+}
+
+.primarySubtle:active {
+  background: var(--button-primary-subtle-hover-bg);
+}
+
+/* === Active state — persistent toggle (pale-blue subtle bg + primary color) === */
+.active,
+.active:hover {
+  background: var(--button-toggle-active-bg);
+  color: var(--button-toggle-active-fg);
+  border-color: transparent;
+}
+
+/* === Active flat — color only, no background, no animation (footer/tab bar) === */
+.activeFlat,
+.activeFlat:hover {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+/* === Orientation: vertical (ZaloPay pattern — icon top, label bottom) === */
+.vertical {
+  flex-direction: column;
+  gap: var(--button-vertical-gap);
+  padding: var(--button-vertical-padding-y) var(--button-vertical-padding-x);
+  height: auto;
+  min-height: var(--touch-target);
+}
+
+.vertical .label {
+  font-size: var(--button-vertical-label-size);
+  font-weight: var(--button-vertical-label-weight);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vertical .leadingIcon,
+.vertical .trailingIcon {
+  width: var(--button-vertical-icon-size);
+  height: var(--button-vertical-icon-size);
+}
+
 /* === Icons === */
 .leadingIcon,
 .trailingIcon {
@@ -150,8 +199,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--iconbutton-icon-xs);
-  height: var(--iconbutton-icon-xs);
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
 }
 
 .leadingIcon svg,
@@ -165,6 +214,48 @@
     transition: none;
     animation: none;
   }
+  .ripple {
+    display: none;
+  }
+}
+
+/* === Ripple effect — water-like splash from pointer position === */
+.rippleHost {
+  position: relative;
+  overflow: hidden;
+  transition: color var(--ripple-color-duration) var(--ripple-ease);
+}
+
+/* Disable hover bg when ripple is enabled */
+.rippleHost:hover {
+  background: transparent;
+}
+
+.rippleHost.ghost:hover,
+.rippleHost.ghost:active {
+  background: transparent;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: ripple var(--ripple-duration) var(--ripple-ease);
+  pointer-events: none;
+  opacity: var(--ripple-opacity);
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* === Ripple pulse — one-shot color flash while ripple spreads === */
+.ripplePulsing {
+  color: var(--color-primary);
 }
 
 .label {

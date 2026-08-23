@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings } from '@/entities/settings';
 import tokensJson from '@/shared/styles/tokens.json';
 
 // === Default Configuration ===
@@ -201,6 +201,13 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   audioFallback: 'community-then-tts',
 };
 
+/** Default Local Player settings (spec local-video-player.md — schema v22). */
+export const DEFAULT_LOCAL_PLAYER_SETTINGS: LocalPlayerSettings = {
+  subtitleMatchEnabled: true,
+  resumePromptEnabled: true,
+  lastDirectoryId: null,
+};
+
 /** Default Dictionary Popup settings (spec §9.3 — schema v14). */
 export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   enabled: true,
@@ -263,6 +270,8 @@ export const DEFAULT_SETTINGS: Settings = {
   dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   // === Subtitle Search (spec subtitle-search.md) — schema v21 ===
   subtitleApiKeys: [],
+  // === Local Player (spec local-video-player.md) — schema v22 ===
+  localPlayerSettings: DEFAULT_LOCAL_PLAYER_SETTINGS,
 };
 
 /**
@@ -306,9 +315,17 @@ export const STORAGE_KEYS = {
   PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
   /** Split View CueList panel width % (20-60). Survives reload + re-toggle. */
   SPLIT_VIEW_PCT: 'splitViewPct',
+  /** Subtitle manager mobile sheet height % of viewport (20-95). Survives close/reopen. */
+  SUBTITLE_MANAGER_SHEET_HEIGHT_VH: 'subtitleManagerSheetHeightVh',
   /** Per-key subtitle quota ledger in session storage (spec subtitle-search.md).
    *  Session-only: per-profile, not synced, survives SW restart. */
   SUBTITLE_KEY_LEDGER: 'subtitleKeyLedger',
+  /** Local player library metadata cache (spec local-video-player.md). */
+  LOCAL_PLAYER_LIBRARY: 'localPlayerLibrary',
+  /** Local player subtitle-panel (Split View CueList) enable state — survives reload. */
+  LOCAL_PLAYER_SUBTITLE_PANEL_OPEN: 'localPlayerSubtitlePanelOpen',
+  /** Per-origin OCR preference (spec orca-ocr-layer.md). Map origin → OcrOriginState. */
+  OCR_SETTINGS: 'ocrSettings',
 } as const;
 
 // === Popup Dimensions ===

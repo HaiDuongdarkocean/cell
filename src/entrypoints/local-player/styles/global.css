@@ -1,0 +1,21 @@
+@import '../../../shared/styles/tokens.css';
+@import '../../../shared/styles/scrollbars-document.css';
+
+:root { --scrollbar-track: transparent; }
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+#root {
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,22 @@
+{
+  "id": "ux-button-variant-ghost-for-navigation-footer",
+  "title": "Navigation/footer button dùng ghost variant (transparent, no border) — không outline",
+  "category": ["ux", "css"],
+  "tags": ["button", "ghost", "outline", "navigation", "footer", "zalo-pay", "transparent", "no-border", "variant"],
+  "trigger": "Navigation/footer button dùng outline variant (border) tạo cảm giác 'nút action' thay vì 'navigation slot' dính vào surface",
+  "principle": "Navigation/footer button phải dùng ghost variant (transparent background, no border) — KHÔNG outline. Lý do: (1) ZaloPay/iOS tab bar/Material 3 navigation bar đều không có border quanh item; (2) outline tạo 'card' feel — button trông như object nổi, không phải nav slot; (3) ghost + hover surface-hover + active primary-subtle đủ cho state feedback; (4) border làm footer 'nặng'视觉, phá flat aesthetic. Exception: primary action (Generate, CTA) dùng primarySubtle (bold text, no bg) hoặc primary (filled) — vẫn không outline. Outline dành cho form action, dialog button — KHÔNG navigation.",
+  "cases": [
+    {
+      "context": "Footer 4 button: Search, Customize, Hide, Generate — dùng outline",
+      "bad": "{ icon: 'search', label: 'Search', variant: 'outline' }\n{ icon: 'eyeOff', label: 'Hide', variant: 'outline', active: true }\n{ icon: 'generateNative', label: 'Generate', variant: 'primarySubtle' }",
+      "good": "{ icon: 'search', label: 'Search', variant: 'ghost' }\n{ icon: 'eyeOff', label: 'Hide', variant: 'ghost', active: true }\n{ icon: 'generateNative', label: 'Generate', variant: 'primarySubtle' }\n/* Ghost = transparent + no border. Active state = primary-subtle bg. PrimarySubtle = bold text, no bg. */"
+    }
+  ],
+  "applyFor": [
+    "Footer navigation bar — ghost variant",
+    "Tab bar / segment control — ghost",
+    "Toolbar button — ghost",
+    "Any navigation slot không phải form action",
+    "ZaloPay/iOS/Material 3 navigation pattern"
+  ]
+}

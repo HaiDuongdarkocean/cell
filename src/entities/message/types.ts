@@ -91,7 +91,21 @@ export type MessageType =
   | 'SUBTITLE_DISCOVERY_SIGNAL'
   | 'SEARCH_SUBTITLES'
   | 'RESOLVE_SUBTITLE_DOWNLOAD'
-  | 'GET_KEY_QUOTA';
+  | 'GET_KEY_QUOTA'
+  // Local Player (spec: local-video-player.md)
+  | 'OPEN_LOCAL_PLAYER'
+  | 'SAVE_RESUME_POSITION'
+  | 'GET_RESUME_POSITION'
+  | 'GET_HISTORY'
+  | 'SAVE_HISTORY'
+  | 'GET_LIBRARY'
+  | 'LOCAL_PLAYER_VIDEO_OPENED'
+  // OCR (spec: orca-ocr-layer.md)
+  | 'OCR_INIT'
+  | 'OCR_RECOGNIZE'
+  | 'OCR_DISPOSE'
+  | 'OCR_GET_STATE'
+  | 'OCR_SET_STATE';
 
 // === Message Request ===
 
@@ -703,4 +717,81 @@ export interface GetKeyQuotaPayload {
 /** Background → content-script: key quota info. */
 export interface GetKeyQuotaResult {
   readonly quotas: KeyQuotaInfo[];
+}
+
+// === Local Player messages (spec: local-video-player.md) ===
+//
+// Player page ↔ background service worker. The player page is a standalone
+// extension page (src/entrypoints/local-player) that uses the background as a
+// persistence/coordination layer for IndexedDB library + history + resume.
+
+/** Popup/background → background: open the local player page.
+ *  Background calls chrome.tabs.create with the player HTML. `videoId` is
+ *  optional — when present, the player opens straight to that video. */
+export interface OpenLocalPlayerPayload {
+  readonly videoId?: string;
+}
+
+/** Player → background: save current playback position for resume.
+ *  Spec: `{ videoId, timeMs, durationMs }` → `{ success }`. */
+export interface SaveResumePositionPayload {
+  readonly videoId: string;
+  readonly timeMs: number;
+  readonly durationMs: number;
+}
+
+/** Player → background: retrieve saved resume position for a video. */
+export interface GetResumePositionPayload {
+  readonly videoId: string;
+}
+
+/** Background → player: saved resume position (all null if never watched). */
+export interface GetResumePositionResult {
+  readonly resumePositionMs: number | null;
+  readonly durationMs: number | null;
+  readonly lastWatchedAt: number | null;
+}
+
+/** Player → background: get watch history list (sorted by watchedAt desc). */
+export interface GetHistoryPayload {
+  readonly limit?: number;
+}
+
+/** Background → player: history entries.
+ *  `history` is `HistoryEntry[]` — typed at consumer via
+ *  mediaLibraryRepository (T9); kept as `unknown[]` at the MV3 message
+ *  boundary, same convention as FetchCommunityAudioResult. */
+export interface GetHistoryResult {
+  readonly history: readonly unknown[];
+}
+
+/** Player → background: save a history entry.
+ *  Spec history schema: `{ id, videoId, watchedAt, durationWatchedMs }`. */
+export interface SaveHistoryPayload {
+  readonly videoId: string;
+  readonly watchedAt: number;
+  readonly durationWatchedMs: number;
+}
+
+/** Player → background: get all library videos.
+ *  Spec: `{ sortBy? }` → `{ videos: VideoMeta[] }`. */
+export interface GetLibraryPayload {
+  readonly sortBy?: 'recent' | 'title' | 'added';
+}
+
+/** Background → player: library videos.
+ *  `videos` is `VideoMeta[]` — typed at consumer via
+ *  mediaLibraryRepository (T9); kept as `unknown[]` at the MV3 message
+ *  boundary, same convention as FetchImagesResult. */
+export interface GetLibraryResult {
+  readonly videos: readonly unknown[];
+}
+
+/** Player → background: notify that a video was opened (for history/tracking).
+ *  Background upserts the library entry + records a history open event. */
+export interface LocalPlayerVideoOpenedPayload {
+  readonly videoId: string;
+  readonly filename: string;
+  readonly title: string;
+  readonly durationMs: number;
 }

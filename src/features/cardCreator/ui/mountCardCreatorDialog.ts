@@ -8,6 +8,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
 import type { CardCreatorSettings } from '@/entities/settings';
@@ -102,7 +103,7 @@ export function mountCardCreatorDialog(
 
   const isMobile = (): boolean => {
     if (typeof window === 'undefined') return false;
-    return window.matchMedia('(max-width: 768px)').matches;
+    return window.matchMedia(`(max-width: ${BREAKPOINTS.tablet - 1}px)`).matches;
   };
 
   function handleOpenChange(next: boolean): void {

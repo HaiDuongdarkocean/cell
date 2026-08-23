@@ -15,6 +15,8 @@ describe('cuesStore', () => {
       nativeCues: [],
       targetActiveIndex: -1,
       nativeActiveIndex: -1,
+      targetLoadStatus: { state: 'idle' },
+      nativeLoadStatus: { state: 'idle' },
     });
   });
 
@@ -61,5 +63,38 @@ describe('cuesStore', () => {
     expect(state.nativeCues).toEqual(nativeCues);
     expect(state.targetActiveIndex).toBe(0);
     expect(state.nativeActiveIndex).toBe(0);
+  });
+
+  it('setCues transitions loading→loaded (preserves languageLabel + source)', () => {
+    useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'English', source: 'auto' });
+    useCuesStore.getState().setCues([makeCue(0, 'hi')], []);
+    const status = useCuesStore.getState().targetLoadStatus;
+    expect(status.state).toBe('loaded');
+    expect(status.languageLabel).toBe('English');
+    expect(status.source).toBe('auto');
+  });
+
+  it('setCues does NOT re-trigger loaded when already idle (no status flicker on cue gaps)', () => {
+    // Simulate: loading → loaded (cues arrive) → auto-clear 5s → idle
+    useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'English' });
+    useCuesStore.getState().setCues([makeCue(0, 'hi')], []);
+    expect(useCuesStore.getState().targetLoadStatus.state).toBe('loaded');
+    // Auto-clear (SubtitleBlock useEffect fires after 5s)
+    useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
+    // setCues fires again on next timeupdate (cue gap) — must stay idle
+    useCuesStore.getState().setCues([makeCue(0, 'hi')], []);
+    expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
+  });
+
+  it('setCues does NOT re-trigger loaded when already loaded', () => {
+    useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'English' });
+    useCuesStore.getState().setCues([makeCue(0, 'hi')], []);
+    const firstStatus = useCuesStore.getState().targetLoadStatus;
+    // setCues fires again on timeupdate — should not create a NEW loaded status
+    useCuesStore.getState().setCues([makeCue(0, 'hi')], []);
+    const secondStatus = useCuesStore.getState().targetLoadStatus;
+    expect(secondStatus.state).toBe('loaded');
+    // Same object reference (no new object created) — prevents useEffect re-trigger
+    expect(secondStatus).toBe(firstStatus);
   });
 });

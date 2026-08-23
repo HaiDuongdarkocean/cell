@@ -117,3 +117,29 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
 
   return videos[0] ?? null;
 }
+
+/**
+ * Find the overlay container for a video — ADR-008 D2.
+ *
+ * Starts at `video.parentElement` and walks up to the first ancestor whose
+ * height is at least 50% of the video's height. This handles sites where
+ * `video.parentElement` has zero height (e.g. YouTube's `.html5-video-container`
+ * has `height:0` with the `<video>` absolutely positioned inside it, while the
+ * real sized container is `#movie_player` — the grandparent). On normal sites
+ * the parent already matches the video height, so the walk-up stops immediately.
+ * Falls back to `video.parentElement` (or `document.body`) if no suitable ancestor.
+ *
+ * This is the SSOT container-finding algorithm for subtitle overlay + OCR region
+ * selector — both must attach to the SAME container so the region rect aligns
+ * with the subtitle block's coordinate space.
+ */
+export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
+  const videoHeight = video.getBoundingClientRect().height;
+  let el: HTMLElement | null = video.parentElement;
+  while (el && el !== document.body) {
+    const h = el.getBoundingClientRect().height;
+    if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
+    el = el.parentElement;
+  }
+  return video.parentElement ?? document.body;
+}

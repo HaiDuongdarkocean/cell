@@ -5,11 +5,11 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
-import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPanel';
-import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
+import { ClusterRightToolbar } from './ClusterRightToolbar';
+import { ManagerLayer } from './ManagerLayer';
+import { OffsetLayer } from './OffsetLayer';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
-import { SubtitlePanelItem } from './subtitlePanelModel';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
@@ -25,6 +25,10 @@ import {
   isYoutubePage,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -33,12 +37,36 @@ import subtitlePanelCss from './SubtitlePanel.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
-import { ICON_CATALOG } from '@/shared/icons';
-import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
+import tabsCss from '@/shared/ui/Tabs.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import libraryViewCss from '@/entrypoints/local-player/components/LibraryView.module.css?inline';
+import libraryCardCss from '@/entrypoints/local-player/components/LibraryCard.module.css?inline';
 import styles from './SubtitlePanels.module.css';
+import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
+import {
+  requestManagerOpenOnHost,
+  sendManagerStateUpdate,
+  confirmManagerClosed,
+  onManagerAction,
+  onManagerCloseFromHost,
+} from '@/features/subtitle/logic/iframeManagerBridgeChild';
+import type {
+  ManagerState,
+  OffsetState,
+  SubtitlePanelsRef,
+  SubtitlePanelsProps,
+  IconCatalogKey,
+} from './subtitlePanelsTypes';
 
-type IconCatalogKey = keyof typeof ICON_CATALOG;
+// Re-export for backward compatibility — SSOT lives in subtitlePanelsTypes.ts
+export type {
+  ManagerState,
+  OffsetState,
+  SubtitlePanelsRef,
+  SubtitlePanelsProps,
+  AppearanceState,
+} from './subtitlePanelsTypes';
 
 // --- Split View diagnostic logging (temporary — remove after fix) ---
 // Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
@@ -73,141 +101,6 @@ function rectLog(el: Element | null | undefined): Record<string, number> | null 
   return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) };
 }
 
-export interface ManagerState {
-  targetItems: SubtitlePanelItem[];
-  nativeItems: SubtitlePanelItem[];
-  targetActiveIndex: number;
-  nativeActiveIndex: number;
-  onSelect: (role: 'target' | 'native', index: number) => void;
-  onImport?: (role: 'target' | 'native') => void;
-  onGenerateNative?: () => void;
-  onOffsetChange?: (role: 'target' | 'native', ms: number) => void;
-  /** Appearance view props — when provided, "Customize appearance" button shows in footer. */
-  appearance?: AppearanceState;
-  /** Whether subtitle search API keys are configured (controls search UI availability). */
-  hasSearchKeys: boolean;
-  /** API keys for subtitle search (for inline ApiKeyManager in search view). */
-  apiKeys: readonly SubtitleApiKey[];
-  /** Persist API key changes to settings storage. */
-  onApiKeysChange: (keys: SubtitleApiKey[]) => void;
-  /** User selected a search result to download + load (delegated to contentScriptController). */
-  onSearchResultSelect: (result: SubtitleSearchResult, role: 'target' | 'native') => void;
-  /** Download a specific subtitle item to the user's machine. */
-  onDownload?: (role: 'target' | 'native', index: number) => void;
-  /** Toggle hide/show for a section's subtitle in the overlay. */
-  onHideSection?: (role: 'target' | 'native') => void;
-  /** Toggle hide/show for both target + native subtitles in the overlay. */
-  onHideBoth?: () => void;
-  /** Whether target subtitle is currently hidden in the overlay. */
-  targetHidden?: boolean;
-  /** Whether native subtitle is currently hidden in the overlay. */
-  nativeHidden?: boolean;
-  /** Whether both subtitles are currently hidden in the overlay. */
-  bothHidden?: boolean;
-}
-
-export interface OffsetState {
-  targetMs: number;
-  nativeMs: number;
-  onTargetChange: (ms: number) => void;
-  onNativeChange: (ms: number) => void;
-}
-
-export interface SubtitlePanelsRef {
-  /** Update target + native overlay styles. */
-  setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
-  /** Update nav cluster settings (buttonSize, textOpacity, bgOpacity, enabled). */
-  setClusterSettings: (settings: NavClusterSettings) => void;
-  /** Update subtitle block settings (bgOpacity, globalScale, yOffsetPercent). */
-  setBlockSettings: (settings: SubtitleBlockSettings) => void;
-  /** Replace the manager items and callbacks. */
-  setManager: (manager: ManagerState) => void;
-  /** Replace the offset state and callbacks. */
-  setOffset: (offset: OffsetState) => void;
-  /** Show or hide the subtitle manager panel. */
-  setManagerOpen: (open: boolean) => void;
-  /** Show or hide the offset panel. */
-  setOffsetOpen: (open: boolean) => void;
-  /** Show or hide the drag/drop hint. */
-  setHintOpen: (open: boolean) => void;
-  /** Add a toast notification. */
-  addToast: (message: string, variant?: ToastVariant) => void;
-  /** Clear all toasts. */
-  clearToasts: () => void;
-  /** Update whether the video is playing. */
-  setIsPlaying: (playing: boolean) => void;
-  /** Update the repeat AB-loop active state. */
-  setRepeatActive: (active: boolean) => void;
-  /** Update the repeat button icon and label. */
-  setRepeatIcon: (icon: IconCatalogKey, label?: string) => void;
-  /** Enable or disable the manager-panel generate-native button. */
-  setGenerateNativeEnabled: (enabled: boolean) => void;
-  /** Collapse or expand the nav cluster. */
-  setCollapsed: (collapsed: boolean) => void;
-  /** Update the block vertical position (percent 0-95). */
-  setYOffsetPercent: (yOffsetPercent: number) => void;
-  /** Update bilingual cues for CueList in Player Mode. */
-  setCues: (cues: BilingualCue[]) => void;
-  /** Update current video time (ms) for CueList highlight. */
-  setCurrentTimeMs: (timeMs: number) => void;
-  /** Toggle Player Mode (same as clicking the Player Mode button). */
-  togglePlayerMode: () => void;
-  /** Toggle Split View — CueList panel beside video container (page thường only). */
-  toggleSplitView: () => void;
-}
-
-export interface SubtitlePanelsProps {
-  targetStyle: OverlayStyleConfig;
-  nativeStyle: OverlayStyleConfig;
-  collapsed: boolean;
-  isPlaying: boolean;
-  repeatActive: boolean;
-  repeatIcon?: IconCatalogKey;
-  repeatLabel?: string;
-  /** Nav cluster settings from extension popup. */
-  clusterSettings?: NavClusterSettings;
-  /** Subtitle block settings from extension popup. */
-  blockSettings?: SubtitleBlockSettings;
-  /** Block vertical position as percent of video height (0-95, center of block). ADR-025. */
-  yOffsetPercent: number;
-  /** Called when user drags the block to a new Y position (percent 0-95, snapped). */
-  onDragReposition?: (yOffsetPercent: number) => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onRepeat: () => void;
-  onRewind: () => void;
-  onForward: () => void;
-  onPlayPause: () => void;
-  onToggleCollapsed: () => void;
-  /** Quick-add all unknown/tracking words in the current subtitle line. */
-  onQuickAdd?: () => void;
-  /** Open the Card Creator dialog pre-filled for the current line. */
-  onEditCard?: () => void;
-  /** Update the card matching the current subtitle line. */
-  onUpdateCurrentCard?: () => void;
-  /** Generate a native subtitle from the current target cues. */
-  onGenerateNative?: () => void;
-  /** Open/close the Chrome side panel. */
-  onToggleSidePanel?: () => void;
-  /** Open the subtitle manager panel. */
-  onToggleManager?: () => void;
-  manager?: ManagerState;
-  offset?: OffsetState;
-  generateNativeEnabled?: boolean;
-  /** Intrinsic video width/height ratio used by Player Mode layout. */
-  videoAspectRatio?: number;
-  /** Called when user toggles Player Mode. */
-  onTogglePlayerMode?: (active: boolean) => void;
-  /** Bilingual cues for CueList in Player Mode. */
-  cues?: BilingualCue[];
-  /** Current video time in ms (for CueList highlight). */
-  currentTimeMs?: number;
-  /** Subtitle offset in ms (ADR-019 sync). */
-  offsetMs?: number;
-  /** Seek video to timeMs when user clicks a cue. */
-  onSeek?: (timeMs: number) => void;
-}
-
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
   function SubtitlePanels(
     {
@@ -231,7 +124,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onToggleCollapsed,
       onQuickAdd,
       onEditCard,
-      onUpdateCurrentCard,
+      onToggleOcr,
+      ocrEnabled,
       onGenerateNative,
       onToggleSidePanel,
       onToggleManager,
@@ -244,6 +138,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       currentTimeMs: initialCurrentTimeMs,
       offsetMs,
       onSeek,
+      onSplitViewChange,
+      managerShadowCss,
+      playlistContent,
+      filename,
+      fallbackPlayerContainerRef,
     },
     ref,
   ): React.JSX.Element {
@@ -259,17 +158,49 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [blockSettings, setBlockSettingsState] = useState<SubtitleBlockSettings | undefined>(initialBlockSettings);
     const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
+    // Sync manager prop → state when parent rebuilds it (e.g. local-player
+    // rebuilds ManagerState when subtitles change). useState(initialManager)
+    // only sets the first render; without this effect, track switching + import
+    // callbacks stay stale.
+    useEffect(() => { setManager(initialManager); }, [initialManager]);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
+    const [managerExiting, setManagerExiting] = useState(false);
+    const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
+    const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isMobile = useIsMobile(BREAKPOINTS.mobileLg);
+    // Desktop: trigger slide-out animation, then unmount after 280ms.
+    // Mobile: unmount immediately (Sheet handles its own exit animation).
+    const closeManager = useCallback(() => {
+      if (!isMobile) {
+        setManagerExiting(true);
+        if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = setTimeout(() => {
+          setManagerOpen(false);
+          setManagerExiting(false);
+          exitTimerRef.current = null;
+        }, 280);
+      } else {
+        setManagerOpen(false);
+      }
+    }, [isMobile]);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
+    const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
     const [toolsExpanded, setToolsExpanded] = useState(false);
-    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+    const [, setPortalTarget] = useState<HTMLElement | null>(null);
+    // Body-level shadow host for the manager panel — escapes video container
+    // stacking context (e.g. YouTube #movie_player z-index:0 + position:relative)
+    const [managerPortalTarget, setManagerPortalTarget] = useState<HTMLElement | null>(null);
+    const managerPortalRef = useRef<{ host: HTMLElement; cleanup: () => void } | null>(null);
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
+    // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
+    useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
+    useEffect(() => { setCurrentTimeMs(initialCurrentTimeMs ?? 0); }, [initialCurrentTimeMs]);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
     const [splitViewPct, setSplitViewPct] = useState(30);
     const cleanupRef = useRef<(() => void) | null>(null);
@@ -348,6 +279,135 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, []);
 
+    // Manager panel shadow host — mounted in the video player container
+    // (same parent as #cell-subtitle-root) so it shares the overlay's
+    // positioning strategy: absolute within the container, no body-level
+    // portal, no videoRect tracking. Fullscreen reparenting reuses the
+    // same attachFullscreenReparenting helper as the overlay shadow host.
+    // Local-player fallback: #cell-subtitle-root doesn't exist (only
+    // mountSubtitle creates it for content-script). Use rootRef's parent
+    // (.subtitleOverlay div, position:absolute+inset:0 inside .videoWrapper)
+    // so the manager overlays the video stage, not document.body.
+    //
+    // Mobile (Sheet mode): ALWAYS mount on document.body. The Sheet atom uses
+    // position:fixed which must be relative to the viewport. If the portal host
+    // is inside a container-type:inline-size ancestor (e.g. .subtitleOverlay in
+    // the local player), contain:layout creates a containing block for
+    // position:fixed, breaking the Sheet's viewport-relative positioning — the
+    // resize handle gets clipped by .stage's overflow:hidden.
+    useEffect(() => {
+      if (!managerShadowCss || managerShadowCss.length === 0) return;
+      const overlayHost = document.getElementById('cell-subtitle-root');
+      const container = isMobile
+        ? document.body
+        : (overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body);
+      const host = document.createElement('div');
+      host.id = 'cell-manager-portal';
+      host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2147483647;';
+      container.appendChild(host);
+      const shadow = host.attachShadow({ mode: 'open' });
+      const cleanupCss = injectShadowCss(shadow, { css: managerShadowCss });
+      const inner = document.createElement('div');
+      inner.style.display = 'contents';
+      shadow.appendChild(inner);
+      setManagerPortalTarget(inner);
+      const cleanupFullscreen = attachFullscreenReparenting(host, container);
+      managerPortalRef.current = { host, cleanup: () => { cleanupFullscreen(); cleanupCss(); host.remove(); } };
+      return () => {
+        setManagerPortalTarget(null);
+        managerPortalRef.current?.cleanup();
+        managerPortalRef.current = null;
+      };
+    }, [managerShadowCss, isMobile]);
+
+    // Child-iframe mobile: delegate manager panel rendering to the host frame.
+    // Serialize state + ask host to mount the panel; on success skip the
+    // in-iframe portal so we don't render two copies. On failure, fall back to
+    // rendering in-iframe as normal (managerOpenOnHost stays false).
+    // Re-runs when isMobile changes → viewport-responsive reparenting:
+    //   desktop→mobile: delegate to host (sheet escapes iframe bounds).
+    //   mobile→desktop: handled by the host-close effect below.
+    useEffect(() => {
+      if (!managerOpen || !isChildFrame() || !isMobile) return;
+      if (!manager) return;
+
+      let cancelled = false;
+      const serialized = serializeManagerState(manager, offset, !generateNativeEnabled);
+      requestManagerOpenOnHost(serialized).then((ok) => {
+        if (cancelled) return;
+        if (ok) setManagerOpenOnHost(true);
+        // If !ok, fallback: don't set managerOpenOnHost, render in-iframe as normal
+      });
+
+      return () => { cancelled = true; };
+    }, [managerOpen, manager, offset, generateNativeEnabled, isMobile]);
+
+    // Viewport-responsive reparenting: when viewport grows to desktop while
+    // the sheet is on the host page, close the host sheet so the in-iframe
+    // portal (inside the video container) can resume rendering.
+    useEffect(() => {
+      if (!managerOpenOnHost || isMobile) return;
+      confirmManagerClosed();
+      setManagerOpenOnHost(false);
+    }, [managerOpenOnHost, isMobile]);
+
+    // Map host-forwarded manager actions to the local manager callbacks.
+    // Guard: ignore actions after close (managerOpen false).
+    useEffect(() => {
+      if (!managerOpenOnHost || !manager) return;
+      const cleanup = onManagerAction((action, args) => {
+        if (!managerOpen) return;
+        const role = args.role as 'target' | 'native';
+        const index = args.index as number;
+        const ms = args.ms as number;
+        switch (action) {
+          case 'select': manager.onSelect(role, index); break;
+          case 'import': manager.onImport?.(role); break;
+          case 'generateNative': manager.onGenerateNative?.(); break;
+          case 'offsetChange': manager.onOffsetChange?.(role, ms); break;
+          case 'download': manager.onDownload?.(role, index); break;
+          case 'hideSection': manager.onHideSection?.(role); break;
+          case 'hideBoth': manager.onHideBoth?.(); break;
+          case 'apiKeysChange': manager.onApiKeysChange(args.keys as SubtitleApiKey[]); break;
+          case 'searchResultSelect': manager.onSearchResultSelect(args.result as SubtitleSearchResult, role); break;
+          case 'styleChange': manager.appearance?.onStyleChange(role, args.partial as Partial<OverlayStyleConfig>); break;
+          case 'blockSettingsChange': manager.appearance?.onBlockSettingsChange(args.partial as Partial<SubtitleBlockSettings>); break;
+          case 'clusterSettingsChange': manager.appearance?.onClusterSettingsChange(args.partial as Partial<NavClusterSettings>); break;
+          case 'resetStyle': manager.appearance?.onResetStyle(role); break;
+          case 'previewTextChange': manager.appearance?.onPreviewTextChange(role, args.text as string); break;
+        }
+      });
+      return cleanup;
+    }, [managerOpenOnHost, manager, managerOpen]);
+
+    // Host requested close (user pressed close button on the host-rendered panel).
+    useEffect(() => {
+      if (!managerOpenOnHost) return;
+      const cleanup = onManagerCloseFromHost(() => {
+        closeManager();
+      });
+      return cleanup;
+    }, [managerOpenOnHost]);
+
+    // State sync: push serialized state to host on change (throttled 100ms).
+    const stateSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+      if (!managerOpenOnHost || !manager) return;
+      if (stateSyncRef.current) clearTimeout(stateSyncRef.current);
+      stateSyncRef.current = setTimeout(() => {
+        sendManagerStateUpdate(serializeManagerState(manager, offset, !generateNativeEnabled));
+      }, 100);
+      return () => { if (stateSyncRef.current) clearTimeout(stateSyncRef.current); };
+    }, [managerOpenOnHost, manager?.targetItems, manager?.nativeItems, manager?.targetActiveIndex, manager?.nativeActiveIndex, manager?.targetHidden, manager?.nativeHidden, manager?.bothHidden, manager?.appearance, offset?.targetMs, offset?.nativeMs]);
+
+    // Cleanup on close: notify host the child closed the manager + reset flag.
+    useEffect(() => {
+      if (!managerOpen && managerOpenOnHost) {
+        confirmManagerClosed();
+        setManagerOpenOnHost(false);
+      }
+    }, [managerOpen, managerOpenOnHost]);
+
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       setToasts((prev) => [...prev, { id, message, variant }]);
@@ -409,8 +469,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (playerMode) { svLog('toggle BLOCKED by playerMode'); return; }
       const childFrame = isChildFrame();
       svLog('toggle', { from: splitViewOpen, to: !splitViewOpen, playerMode, isFullscreen, childFrame, url: location.href });
-      setSplitViewOpen((v) => !v);
-    }, [playerMode, splitViewOpen, isFullscreen]);
+      const next = !splitViewOpen;
+      setSplitViewOpen(next);
+      onSplitViewChange?.(next);
+    }, [playerMode, splitViewOpen, isFullscreen, onSplitViewChange]);
 
     useImperativeHandle(
       ref,
@@ -436,6 +498,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setCurrentTimeMs,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
+        setSplitViewOpen: (open: boolean) => { setSplitViewOpen(open); },
+        setOcrEnabled: (enabled: boolean) => { setOcrEnabledState(enabled); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView],
     );
@@ -576,6 +640,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       const childFrame = isChildFrame();
       svLog('effect ENTER', { splitViewOpen, playerMode, isFullscreen, childFrame, splitViewPct, url: location.href });
       let playerShell = findPlayerContainer();
+      if (!playerShell && fallbackPlayerContainerRef?.current) {
+        playerShell = fallbackPlayerContainerRef.current;
+        svLog('using fallbackPlayerContainer', { tag: playerShell.tagName, id: playerShell.id || null });
+      }
       if (!playerShell) { svLog('effect EXIT — no playerShell'); return; }
       svLog('playerShell found', {
         tag: playerShell.tagName,
@@ -684,7 +752,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
       const panel = document.createElement('div');
       panel.setAttribute('data-cell-split-view', 'panel');
-      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;`;
+      // Apple §7: enter from right, exit to right — symmetric path.
+      // §4: critically damped spring feel (no overshoot).
+      // flex-basis animates so the video expands smoothly as the panel slides out.
+      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-medium) var(--ease-standard),opacity var(--duration-medium) var(--ease-standard),flex-basis var(--duration-medium) var(--ease-standard);transform:translateX(100%);opacity:0.3;`;
 
       // Attach a shadow root to the panel so the design-system tokens
       // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
@@ -693,7 +764,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // undefined → colors fall back to browser defaults.
       const panelShadow = panel.attachShadow({ mode: 'open' });
       injectShadowCss(panelShadow, {
-        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss],
+        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss, tabsCss, selectCss, buttonCss, libraryViewCss, libraryCardCss],
       });
       const panelInner = document.createElement('div');
       panelInner.setAttribute('data-theme', 'dark');
@@ -930,10 +1001,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       }
 
       setSplitViewPortalTarget(panelInner);
+      // Apple §1: respond instantly — slide panel in from right on next frame.
+      // rAF ensures the initial translateX(100%) is painted before animating to 0.
+      requestAnimationFrame(() => {
+        panel.style.transform = 'translateX(0)';
+        panel.style.opacity = '1';
+      });
       // CSS handles all YouTube player sizing now (height:100%!important,
       // object-fit:contain). No setSize bridge needed — it set hardcoded
       // pixel sizes that froze on resize.
-      const restoreYoutubeSplitView = (): void => undefined;
       window.dispatchEvent(new Event('resize'));
 
       // Drag resize: measure the flex container (wrapper or playerShell).
@@ -969,10 +1045,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       return () => {
         svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
         handle.removeEventListener('pointerdown', onPointerDown);
-        setSplitViewPortalTarget(null);
         handle.removeEventListener('pointermove', onPointerMove);
         handle.removeEventListener('pointerup', onPointerUp);
         handle.removeEventListener('pointercancel', onPointerUp);
+        // Apple §7: exit along the same path as entry — slide out to right.
+        // §8: hint in the direction of the gesture — rotate chevron to point right.
+        // §1: start the animation immediately, defer DOM removal until it settles.
+        const subtitlePanelEl = panelInner.querySelector('[data-cell-id="subtitle-panel"]') as HTMLElement | null;
+        if (subtitlePanelEl) subtitlePanelEl.setAttribute('data-closing', 'true');
+        panel.style.transform = 'translateX(100%)';
+        panel.style.opacity = '0.3';
+        panel.style.flexBasis = '0%';
+        panel.style.minWidth = '0';
+        const ANIM_MS = 410;
+        setTimeout(() => {
         if (isPlayerFullscreen) {
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
@@ -1065,6 +1151,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // Dispatch resize so YouTube re-measures and updates <video> px.
         window.dispatchEvent(new Event('resize'));
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
+        setSplitViewPortalTarget(null);
+        }, ANIM_MS);
       };
     }, [splitViewOpen, playerMode, isFullscreen]);
 
@@ -1167,7 +1255,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             videoAspectRatio={videoAspectRatio}
             onQuickAdd={onQuickAdd}
             onEditCard={onEditCard}
-            onUpdateCurrentCard={onUpdateCurrentCard}
+            onToggleOcr={onToggleOcr}
+            ocrEnabled={ocrEnabledState}
             onGenerateNative={onGenerateNative}
             onToggleSidePanel={onToggleSidePanel}
             onToggleManager={onToggleManager}
@@ -1225,155 +1314,40 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         {!collapsed && (
-          <div className={styles.clusterRight} style={clusterRightStyle} data-cell-id="nav-cluster-right">
-            <div className={styles.primaryCol}>
-              {onQuickAdd && (
-                <IconButton variant="transparent"
-                  aria-label="Quick add card"
-                  title="Quick add (Q)"
-                  data-cell-id="quick-add-btn"
-                  size="sm"
-                  onClick={onQuickAdd}
-                >
-                  <Icon name="zap" size={18} />
-                </IconButton>
-              )}
-              {onEditCard && (
-                <IconButton variant="transparent"
-                  aria-label="Edit card"
-                  title="Edit card (E)"
-                  data-cell-id="edit-card-btn"
-                  size="sm"
-                  onClick={onEditCard}
-                >
-                  <Icon name="pencil" size={18} />
-                </IconButton>
-              )}
-              <div className={styles.toggleWrap}>
-                <div
-                  className={`${styles.extraCol} ${toolsExpanded ? styles.expanded : ''}`}
-                  data-cell-id="subtitle-tools-extra"
-                >
-                  {onToggleSidePanel && (
-                    <IconButton variant="transparent"
-                      aria-label={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
-                      title="Toggle subtitle list (T)"
-                      data-cell-id="panel-toggle-btn"
-                      size="sm"
-                      onClick={handleToggleSplitView}
-                    >
-                      <Icon name="sidePanel" size={18} />
-                    </IconButton>
-                  )}
-                  {onGenerateNative && (
-                    <IconButton variant="transparent"
-                      aria-label="Generate native subtitle"
-                      title="Generate native (H)"
-                      data-cell-id="generate-native-btn"
-                      size="sm"
-                      onClick={onGenerateNative}
-                      disabled={!generateNativeEnabled}
-                    >
-                      <Icon name="languages" size={18} />
-                    </IconButton>
-                  )}
-                </div>
-                <IconButton variant="transparent"
-                  aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-                  title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-                  data-cell-id="tools-toggle-btn"
-                  size="sm"
-                  onClick={() => setToolsExpanded((v) => !v)}
-                >
-                  <Icon name="chevronLeft" size={18} />
-                </IconButton>
-              </div>
-            </div>
-            <div className={styles.secondaryCol}>
-              {onUpdateCurrentCard && (
-                <IconButton variant="transparent"
-                  aria-label="Update current card"
-                  title="Update current card (U)"
-                  data-cell-id="update-current-card-btn"
-                  size="sm"
-                  onClick={onUpdateCurrentCard}
-                >
-                  <Icon name="rotateCcw" size={18} />
-                </IconButton>
-              )}
-              {onToggleManager && (
-                <IconButton variant="transparent"
-                  aria-label="Open subtitle manager"
-                  title="Open subtitle manager"
-                  data-cell-id="manager-toggle-btn"
-                  size="sm"
-                  onClick={onToggleManager}
-                >
-                  <Icon name="subtitleManager" size={18} />
-                </IconButton>
-              )}
-              <IconButton variant="transparent"
-                aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
-                title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
-                data-cell-id="player-mode-btn"
-                size="sm"
-                onClick={handleTogglePlayerMode}
-                active={playerMode}
-              >
-                <Icon name={playerMode ? 'minimize' : 'maximize'} size={18} />
-              </IconButton>
-            </div>
-          </div>
+          <ClusterRightToolbar
+            mode="overlay"
+            clusterRightStyle={clusterRightStyle}
+            onQuickAdd={onQuickAdd}
+            onEditCard={onEditCard}
+            onToggleOcr={onToggleOcr}
+            ocrEnabled={ocrEnabledState}
+            onToggleManager={onToggleManager}
+            onGenerateNative={onGenerateNative}
+            generateNativeEnabled={generateNativeEnabled}
+            onToggleSidePanel={onToggleSidePanel ? handleToggleSplitView : undefined}
+            sidePanelLabel={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
+            toolsExpanded={toolsExpanded}
+            onToggleTools={() => setToolsExpanded((v) => !v)}
+            onTogglePlayerMode={handleTogglePlayerMode}
+            playerMode={playerMode}
+          />
         )}
 
-        {managerOpen && manager && portalTarget && createPortal(
-          <div
-            className={styles.panelLayer}
-            data-cell-id="subtitle-manager-layer"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setManagerOpen(false);
-            }}
-          >
-            <SubtitleManagerPanel
-              targetItems={manager.targetItems}
-              nativeItems={manager.nativeItems}
-              targetActiveIndex={manager.targetActiveIndex}
-              nativeActiveIndex={manager.nativeActiveIndex}
-              onSelect={manager.onSelect}
-              onClose={() => setManagerOpen(false)}
-              onImport={manager.onImport}
-              onGenerateNative={manager.onGenerateNative}
-              onOffsetChange={manager.onOffsetChange}
-              generateNativeDisabled={!generateNativeEnabled}
-              appearance={manager.appearance}
-              hasSearchKeys={manager.hasSearchKeys}
-              apiKeys={manager.apiKeys}
-              onApiKeysChange={manager.onApiKeysChange}
-              onSearchResultSelect={manager.onSearchResultSelect}
-              onDownload={manager.onDownload}
-              onHideSection={manager.onHideSection}
-              onHideBoth={manager.onHideBoth}
-              targetHidden={manager.targetHidden}
-              nativeHidden={manager.nativeHidden}
-              bothHidden={manager.bothHidden}
+        {managerOpen && manager && managerPortalTarget && !managerOpenOnHost && createPortal(
+          <ShadowThemeProvider container={managerPortalTarget}>
+            <ManagerLayer
+              manager={manager}
+              isMobile={isMobile}
+              exiting={managerExiting}
+              onClose={closeManager}
+              generateNativeEnabled={generateNativeEnabled}
             />
-          </div>,
-          portalTarget,
+          </ShadowThemeProvider>,
+          managerPortalTarget,
         )}
 
         {offsetOpen && offset && (
-          <div className={styles.panelLayer} data-cell-id="subtitle-offset-layer">
-            <div className={styles.offsetRow}>
-              <SubtitleOffsetPanel
-                offsetMs={offset.targetMs}
-                onOffsetChange={offset.onTargetChange}
-              />
-              <SubtitleOffsetPanel
-                offsetMs={offset.nativeMs}
-                onOffsetChange={offset.onNativeChange}
-              />
-            </div>
-          </div>
+          <OffsetLayer offset={offset} />
         )}
 
         <div className={styles.toastLayer}>
@@ -1386,13 +1360,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {splitViewOpen && splitViewPortalTarget && cues.length > 0 && onSeek && createPortal(
+        {splitViewOpen && splitViewPortalTarget && (cues.length > 0 || playlistContent) && onSeek && createPortal(
           <SubtitlePanel
             cues={[...cues]}
             currentTimeMs={currentTimeMs}
             offsetMs={offsetMs}
             onSeek={onSeek}
             onClose={handleToggleSplitView}
+            playlistContent={playlistContent}
+            filename={filename}
           />,
           splitViewPortalTarget,
         )}

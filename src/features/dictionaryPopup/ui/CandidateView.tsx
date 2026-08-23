@@ -78,7 +78,7 @@ export function CandidateView({
               onClick={panel.sendToCard}
               data-cell-id="dictionary-send-to-card"
             >
-              <Icon name="pencil" size={20} />
+              <Icon name="pencil"  />
             </button>
             {onQuickAdd && (
               <button
@@ -89,7 +89,7 @@ export function CandidateView({
                 onClick={panel.quickAdd}
                 data-cell-id="dictionary-quick-add"
               >
-                <Icon name="zap" size={20} />
+                <Icon name="zap"  />
               </button>
             )}
           </div>
@@ -112,7 +112,7 @@ export function CandidateView({
               onClick={panel.playTerm}
               data-cell-id="dictionary-play-term"
             >
-              <Icon name="audioWave" size={16} />
+              <Icon name="audioWave"  />
             </button>
             <button
               type="button"
@@ -121,7 +121,7 @@ export function CandidateView({
               title="Play sentence audio"
               onClick={panel.playSentence}
             >
-              <Icon name="messageSquare" size={16} />
+              <Icon name="messageSquare"  />
             </button>
           </span>
         </div>
@@ -195,8 +195,8 @@ export function CandidateView({
         <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <EmptyState
-            size="sm"
-            icon={<Icon name="info" size={24} />}
+            size="md"
+            icon={<Icon name="info"  />}
             description="No definitions found. Import a dictionary in Settings → Resources."
             data-cell-id="dictionary-definitions-empty"
           />
@@ -245,7 +245,7 @@ function DefinitionItem({
         />
         <span className={styles.cellDefCheckDot} aria-hidden="true" />
         <span className={styles.cellDefCheckBox} aria-hidden="true">
-          <Icon name="check" size={14} />
+          <Icon name="check"  />
         </span>
       </label>
       <div className={styles.cellDefText}>

@@ -423,6 +423,39 @@ function useToggleTask() {
 }
 ```
 
+## Panel Typography Standard (3-tier)
+
+Trong popup/panel/overlay UI (như SubtitleManagerPanel, dictionary popup, settings panel), chỉ dùng **3 cấp font-size** — không hơn. Panel hẹp, nhiều cấp tạo inconsistency và khó đọc.
+
+| Cấp | Token | px | Dùng cho |
+|---|---|---|---|
+| **Title** | `--font-size-base` | 16px | Panel title, section title — duy nhất, không responsive |
+| **Body** | `--font-size-sm` | 14px | Tab labels, track names, field labels, button labels, inputs, back button, error/empty states — mọi text chính |
+| **Meta** | `--font-size-xs` | 12px | Count badges, meta tags, value badges, hints, status text, radio labels, section sub-labels — mọi text phụ |
+
+### Quy tắc
+
+1. **Không dùng** `--font-size-2xs` (10px) — quá nhỏ, không đọc được trên mobile
+2. **Không dùng** `--font-size-lg` (17px) — chỉ jump 1px, không tạo khác biệt thị giác, waste a tier
+3. **Không responsive font-size** — panel width cố định/hẹp, jump 2px giữa breakpoints tạo inconsistency. Title = 16px trên mọi viewport.
+4. **Tab label = Body (14px)** — không nhỏ hơn title, không nhỏ hơn track name. Tab là navigation chính, phải dễ đọc.
+5. **Field label = Body (14px)** — trong settings panel, label là text chính user đọc. Value/hint = Meta (12px).
+6. **Count badge = Meta (12px)** — badge phụ, không cạnh tranh với label.
+7. **Status text (Saved, Saving…) = Meta (12px)** — phụ, không cần nổi bật.
+
+### Anti-patterns
+
+| Sai | Đúng | Lý do |
+|---|---|---|
+| Tab = 12px, Title = 16px | Tab = 14px, Title = 16px | Tab quá nhỏ so với title, mất cân bằng |
+| Tab customize = 12px, Tab tracks = 14px | Cả 2 = 14px | Cùng là tab, phải cùng size |
+| Track name mobile = 14px, desktop = 16px | Track name = 14px | Jump 2px không cần thiết trong panel hẹp |
+| Block label = 16px, NavCluster label = 12px | Cả 2 = 14px | Cùng là setting label, phải cùng size |
+| Latency save = 10px | Latency save = 12px | 10px không đọc được trên mobile |
+
+**Guard:** Đếm số cấp font-size trong 1 panel. Nếu >3 cấp → giảm xuống 3. Nếu có responsive font-size → bỏ, dùng 1 size duy nhất.
+**Loop back:** Audit lại sau khi apply — grep `font-size` trong tất cả CSS module của panel, verify chỉ có 3 token.
+
 ## See Also
 
 For detailed accessibility requirements and testing tools, see `references/accessibility-checklist.md`.

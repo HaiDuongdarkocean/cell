@@ -1,0 +1,97 @@
+.wrap {
+  max-width: 1280px;
+  margin: 24px auto;
+  padding: 0 16px;
+  font-family: Roboto, Arial, sans-serif;
+  color: #eee;
+  background: #0f0f0f;
+  min-height: 100vh;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+}
+
+.btn {
+  padding: 6px 14px;
+  border: 1px solid #303030;
+  background: #212121;
+  color: #eee;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn:hover { background: #303030; }
+
+.arActive {
+  background: #3ea6ff;
+  border-color: #3ea6ff;
+  color: #000;
+  font-weight: 600;
+}
+
+.seekActive {
+  background: #ff8c00;
+  border-color: #ff8c00;
+  color: #000;
+  font-weight: 600;
+}
+
+.time {
+  font-size: 13px;
+  color: #aaa;
+  min-width: 56px;
+}
+
+.arLabel {
+  font-size: 13px;
+  color: #aaa;
+  margin-left: 8px;
+}
+
+.hint {
+  font-size: 12px;
+  color: #717171;
+  margin-left: 8px;
+}
+
+/* Player container — configurable aspect-ratio forces object-fit letterbox. */
+.player {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* Hardsub canvas — sibling of video, overlays it, pointer-events none so the
+ * region selector overlay receives drags. Intrinsic size = video.videoWidth/Height
+ * (set in JS); CSS size fills the container. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.info {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.5;
+  padding: 12px 0;
+}

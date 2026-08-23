@@ -267,7 +267,7 @@ export function DictionaryPanelView({
             onClick={handleClearHistory}
             data-cell-id="dictionary-search-history-clear"
           >
-            <Icon name="trash" size={16} />
+            <Icon name="trash"  />
           </button>
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => (
@@ -289,7 +289,7 @@ export function DictionaryPanelView({
                   title={`Remove ${term}`}
                   onClick={() => handleRemoveHistory(term)}
                 >
-                  <Icon name="x" size={10} />
+                  <Icon name="x"  />
                 </button>
               </li>
             ))}
@@ -309,7 +309,7 @@ export function DictionaryPanelView({
       {panel.error && (
         <Alert
           variant="error"
-          icon={<Icon name="alertCircle" size={20} />}
+          icon={<Icon name="alertCircle"  />}
           description={panel.error}
           role="alert"
           data-cell-id="dictionary-error"
@@ -320,7 +320,7 @@ export function DictionaryPanelView({
         <EmptyState
           size="compact"
           className={styles.dictionaryEmpty}
-          icon={<Icon name="bookOpen" size={36} />}
+          icon={<Icon name="bookOpen"  />}
           title="Ready when you are"
           description="Search for a word to explore its meaning."
           data-cell-id="dictionary-empty"

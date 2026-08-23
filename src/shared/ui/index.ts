@@ -53,6 +53,7 @@ export { Container } from './Container';
 export { CopyButton } from './CopyButton';
 export { DragHandle } from './DragHandle';
 export { Flex } from './Flex';
+export { FooterBar } from './FooterBar';
 export { Grid } from './Grid';
 export { Heading } from './Heading';
 export { Icon } from './Icon';

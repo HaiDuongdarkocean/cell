@@ -1,0 +1,19 @@
+[Script Info]
+Title: Fade Effects ASS Sample
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,48,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,1,2,40,40,60,1
+
+[Events]
+Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0000,0000,0000,,{\fad(500,500)}Fade in and fade out (500ms each)
+Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0000,0000,0000,,{\fad(1000,0)}Fade in only (1000ms)
+Dialogue: 0,0:00:09.00,0:00:12.00,Default,,0000,0000,0000,,{\fad(0,1000)}Fade out only (1000ms)
+Dialogue: 0,0:00:13.00,0:00:16.00,Default,,0000,0000,0000,,{\fad(200,200)}Quick fade in and out
+Dialogue: 0,0:00:17.00,0:00:20.00,Default,,0000,0000,0000,,{\fade(255,0,255,0,1000,2000,3000)}Complex fade with intermediate state

@@ -1,0 +1,18 @@
+[Script Info]
+Title: Movement ASS Sample
+ScriptType: v4.00+
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+PlayResX: 1920
+PlayResY: 1080
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,48,&H00FFFFFF,&H0000FFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,1,2,40,40,60,1
+
+[Events]
+Format: Layer, Start, End, Style, Actor, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0000,0000,0000,,{\move(100,540,1820,540)}Moving left to right
+Dialogue: 0,0:00:05.00,0:00:08.00,Default,,0000,0000,0000,,{\move(960,100,960,1000)}Moving top to bottom
+Dialogue: 0,0:00:09.00,0:00:12.00,Default,,0000,0000,0000,,{\move(100,100,1820,1000,0,2000)}Diagonal movement with timing
+Dialogue: 0,0:00:13.00,0:00:16.00,Default,,0000,0000,0000,,{\move(960,540,960,540)}No movement (same start/end)

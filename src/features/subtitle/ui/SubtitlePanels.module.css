@@ -3,7 +3,7 @@
   left: 0;
   right: 0;
   top: calc(var(--sb-y, 75) * 1%);
-  transform: translateY(-50%);
+  transform: translateY(calc(var(--sb-y, 75) * -1%));
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -50,115 +50,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: clamp(var(--space-1), 0.8cqw, var(--space-2));
+  /* Don't contribute height to .root flex row — SubtitleBlock overflows
+     freely without stretching the root (and shifting translateY position).
+     justify-content:center centers the block around the 0-height point
+     (which sits at .root's vertical center via align-items:center). */
+  height: 0;
+  overflow: visible;
 }
 
 .blockLayer > * {
   pointer-events: auto;
-}
-
-.clusterRight {
-  pointer-events: none;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-1);
-  flex: 0 0 auto;
-  position: relative;
-  --cluster-btn-size: clamp(22px, 5cqw, 34px);
-  --cluster-icon-size: clamp(12px, 2.8cqw, 20px);
-  --cluster-text-opacity: 1;
-  --cluster-bg-opacity: 0.2;
-}
-
-.clusterRight > * {
-  pointer-events: auto;
-}
-
-.clusterRight :global(button),
-.clusterRight :global([role='button']) {
-  width: var(--cluster-btn-size);
-  height: var(--cluster-btn-size);
-  min-width: var(--cluster-btn-size);
-  min-height: var(--cluster-btn-size);
-  opacity: var(--cluster-text-opacity);
-  color: var(--color-overlay-text);
-  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
-  border: none;
-  border-radius: var(--radius-full);
-}
-
-.clusterRight :global(button) :global(span),
-.clusterRight :global([role='button']) :global(span) {
-  width: var(--cluster-icon-size) !important;
-  height: var(--cluster-icon-size) !important;
-}
-
-.clusterRight .primaryCol,
-.clusterRight .secondaryCol {
-  background: transparent;
-}
-
-.primaryCol {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(2px, 0.4cqw, var(--space-1));
-}
-
-.secondaryCol {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(2px, 0.4cqw, var(--space-1));
-}
-
-.toggleWrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.extraCol {
-  position: absolute;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%) translateX(var(--space-2));
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-1);
-  background: transparent;
-  border-radius: var(--radius-full);
-  padding: var(--space-1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
-}
-
-.extraCol.expanded {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-  pointer-events: auto;
-}
-
-.panelLayer {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-4);
-  box-sizing: border-box;
-  pointer-events: auto;
-  z-index: 2147483647;
-}
-
-.offsetRow {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
 }
 
 .toastLayer {

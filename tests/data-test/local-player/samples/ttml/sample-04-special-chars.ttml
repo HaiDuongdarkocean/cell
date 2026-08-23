@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <body>
+    <div>
+      <p begin="1s" end="4s">Café résumé naïve façade</p>
+      <p begin="5s" end="8s">中文 TTML subtitle 你好世界</p>
+      <p begin="9s" end="12s">日本語のテスト こんにちは</p>
+      <p begin="13s" end="16s">한국어 자막 테스트 안녕하세요</p>
+      <p begin="17s" end="20s">Mixed: Überstraße — Øresund — naïveté</p>
+      <p begin="21s" end="24s">XML entities: &amp; &lt; &gt; &quot; &apos;</p>
+    </div>
+  </body>
+</tt>

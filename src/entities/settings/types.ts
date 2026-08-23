@@ -158,6 +158,16 @@ export interface DictionaryPopupSettings {
   readonly badgePointerTrigger: BadgePointerTriggerSettings;
 }
 
+/** Local Player settings slice (spec local-video-player.md — schema v22). */
+export interface LocalPlayerSettings {
+  /** Auto-match subtitle files to video by filename similarity. Default true. */
+  readonly subtitleMatchEnabled: boolean;
+  /** Prompt to resume from last watched position on reopen. Default true. */
+  readonly resumePromptEnabled: boolean;
+  /** Last opened directory id (FileSystemDirectoryHandle persist key). Default null. */
+  readonly lastDirectoryId: string | null;
+}
+
 // === Settings Types ===
 
 /** Conversion behavior for M3U8 downloads. */
@@ -302,6 +312,9 @@ export interface Settings {
   // === Subtitle Search (spec subtitle-search.md) — schema v21 ===
   /** API keys for subtitle search providers (SubDL, OpenSubtitles). */
   readonly subtitleApiKeys?: SubtitleApiKey[];
+  // === Local Player (spec local-video-player.md) — schema v22 ===
+  /** Local player settings (subtitle match, resume prompt, last directory). */
+  readonly localPlayerSettings: LocalPlayerSettings;
 }
 
 // === Subtitle Search API Key (schema v21) ===

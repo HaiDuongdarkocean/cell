@@ -13,6 +13,7 @@ import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
 import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
 import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
+import footerBarCss from '@/shared/ui/FooterBar.module.css?inline';
 import inputCss from '@/shared/ui/Input.module.css?inline';
 import selectCss from '@/shared/ui/Select.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
@@ -20,10 +21,20 @@ import tabsCss from '@/shared/ui/Tabs.module.css?inline';
 import subtitleToastCss from './SubtitleToast.module.css?inline';
 import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
+import subtitlePanelsSharedCss from './subtitlePanelsShared.module.css?inline';
 import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
+import uiIconCss from '@/shared/ui/Icon.module.css?inline';
+import labelGroupCss from '@/shared/ui/LabelGroup.module.css?inline';
+import settingsRowCss from '@/shared/ui/SettingsRow.module.css?inline';
+import sliderRowCss from '@/shared/ui/SliderRow.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import sheetCss from '@/shared/ui/Sheet.module.css?inline';
+import toggleCss from '@/shared/ui/Toggle.module.css?inline';
+import sliderCss from '@/shared/ui/Slider.module.css?inline';
+import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
+import ocrSettingsPanelCss from '@/features/ocr/ui/OcrSettingsPanel.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 import { ICON_CATALOG } from '@/shared/icons';
@@ -58,7 +69,8 @@ export interface MountSubtitleOptions {
   onToggleCollapsed: () => void;
   onQuickAdd?: () => void;
   onEditCard?: () => void;
-  onUpdateCurrentCard?: () => void;
+  onToggleOcr?: () => void;
+  ocrEnabled?: boolean;
   onGenerateNative?: () => void;
   onToggleSidePanel?: () => void;
   onToggleManager?: () => void;
@@ -99,6 +111,8 @@ export interface MountSubtitleResult {
   togglePlayerMode: () => void;
   /** Toggle Split View — CueList panel beside video container (page thường only). */
   toggleSplitView: () => void;
+  /** Update OCR enabled state (drives toolbar button active state). */
+  setOcrEnabled: (enabled: boolean) => void;
 }
 
 export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResult {
@@ -127,7 +141,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     onToggleCollapsed,
     onQuickAdd,
     onEditCard,
-    onUpdateCurrentCard,
+    onToggleOcr,
+    ocrEnabled,
     onGenerateNative,
     onToggleSidePanel,
     onToggleManager,
@@ -165,7 +180,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       onToggleCollapsed={onToggleCollapsed}
       onQuickAdd={onQuickAdd}
       onEditCard={onEditCard}
-      onUpdateCurrentCard={onUpdateCurrentCard}
+      onToggleOcr={onToggleOcr}
+      ocrEnabled={ocrEnabled}
       onGenerateNative={onGenerateNative}
       onToggleSidePanel={onToggleSidePanel}
       onToggleManager={onToggleManager}
@@ -173,6 +189,33 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       currentTimeMs={currentTimeMs}
       offsetMs={offsetMs}
       onSeek={onSeek}
+      managerShadowCss={[
+        sheetCss,
+        subtitleManagerCss,
+        subtitleSearchCss,
+        apiKeyManagerCss,
+        subtitleOffsetCss,
+        buttonCss,
+        footerBarCss,
+        inputCss,
+        selectCss,
+        skeletonCss,
+        tabsCss,
+        subtitlePanelsCss,
+        subtitlePanelsSharedCss,
+        iconCss,
+        uiIconCss,
+        labelGroupCss,
+        settingsRowCss,
+        sliderRowCss,
+        iconButtonCss,
+        toggleCss,
+        sliderCss,
+        tooltipCss,
+        ocrSettingsPanelCss,
+        buildTokenSpanCssForShadow(),
+        ...appearanceShadowCss,
+      ]}
     />
   );
 
@@ -198,10 +241,19 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitleToastCss,
         subtitleHintCss,
         subtitlePanelsCss,
+        subtitlePanelsSharedCss,
         playerModeOverlayCss,
         cueListCss,
         iconCss,
+        uiIconCss,
+        labelGroupCss,
+        settingsRowCss,
+        sliderRowCss,
         iconButtonCss,
+        toggleCss,
+        sliderCss,
+        tooltipCss,
+        ocrSettingsPanelCss,
         buildTokenSpanCssForShadow(),
         ...appearanceShadowCss,
       ],
@@ -245,5 +297,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),
     toggleSplitView: () => controllerRef?.toggleSplitView(),
+    setOcrEnabled: (enabled) => controllerRef?.setOcrEnabled(enabled),
   };
 }

@@ -1,0 +1,41 @@
+<SAMI>
+<HEAD>
+<TITLE>Multiple P Classes per SYNC SAMI Subtitle</TITLE>
+<STYLE TYPE="text/css">
+<!--
+P { font-family: Arial; font-size: 14pt; color: white; background-color: black; text-align: center; }
+.ENUSCC { Name: English; lang: en-US; SAMIType: CC; }
+.KRCC { Name: Korean; lang: ko-KR; SAMIType: CC; }
+.JPCC { Name: Japanese; lang: ja-JP; SAMIType: CC; }
+#Source { color: red; font-size: 12pt; text-align: left; }
+-->
+</STYLE>
+</HEAD>
+<BODY>
+
+<SYNC Start=0>
+<P Class=ENUSCC ID=Source>Narrator</P>
+<P Class=ENUSCC>In a world far away...</P>
+<P Class=KRCC ID=Source>나레이터</P>
+<P Class=KRCC>아주 먼 세계에서...</P>
+<P Class=JPCC ID=Source>語り手</P>
+<P Class=JPCC>遠く離れた世界で...</P>
+
+<SYNC Start=4000>
+<P Class=ENUSCC ID=Source>Hero</P>
+<P Class=ENUSCC>I must save the kingdom!</P>
+<P Class=KRCC ID=Source>영웅</P>
+<P Class=KRCC>내가 왕국을 구해야 해!</P>
+<P Class=JPCC ID=Source>英雄</P>
+<P Class=JPCC>王国を救わなければ！</P>
+
+<SYNC Start=8000>
+<P Class=ENUSCC ID=Source>Villain</P>
+<P Class=ENUSCC>Not if I can help it.</P>
+<P Class=KRCC ID=Source>악당</P>
+<P Class=KRCC>내가 막을 테니까.</P>
+<P Class=JPCC ID=Source>悪役</P>
+<P Class=JPCC>私が阻止してみせる。</P>
+
+</BODY>
+</SAMI>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xmlns:ttp="http://www.w3.org/ns/ttml#parameter"
+    ttp:profile="http://www.w3.org/ns/ttml/profile/dfxp-presentation"
+    xml:lang="en">
+  <head>
+    <styling>
+      <style xml:id="s1" tts:color="white" tts:backgroundColor="black" tts:fontSize="20px" tts:fontFamily="Arial"/>
+    </styling>
+    <layout>
+      <region xml:id="r1" tts:origin="10% 80%" tts:extent="80% 10%" tts:displayAlign="after" tts:textAlign="center"/>
+    </layout>
+  </head>
+  <body>
+    <div>
+      <p begin="0.76s" end="3.45s" region="r1" style="s1">DFXP format subtitle (older TTML namespace)</p>
+      <p begin="5.0s" end="10.0s" region="r1" style="s1">This uses the DFXP presentation profile</p>
+      <p begin="10.0s" end="16.0s" region="r1" style="s1">Commonly used by Netflix and streaming platforms</p>
+    </div>
+  </body>
+</tt>

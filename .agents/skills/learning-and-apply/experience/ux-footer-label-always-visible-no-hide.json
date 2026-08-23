@@ -1,0 +1,21 @@
+{
+  "id": "ux-footer-label-always-visible-no-hide",
+  "title": "Footer navigation label luôn hiển thị — không ẩn label ở màn hình nhỏ",
+  "category": ["ux", "css"],
+  "tags": ["footer", "label", "mobile-first", "accessibility", "navigation-bar", "always-visible", "no-hide", "media-query"],
+  "trigger": "Footer navigation button ẩn label ở màn hình nhỏ (max-width media query display:none) để 'tiết kiệm space' nhưng làm mất affordance text",
+  "principle": "Footer navigation label phải LUÔN hiển thị ở mọi màn hình — không ẩn label bằng media query. Lý do: (1) icon-only button mất accessibility — screen reader + user không nhận biết function; (2) iOS HIG + Material 3 đều require label cho navigation item (Material 3: 'active item always shows label'); (3) tiết kiệm 12px label height không đáng so với mất usability; (4) nếu footer quá cao, giảm padding/icon size thay vì ẩn label. Label là identity của action — ẩn = ẩn function.",
+  "cases": [
+    {
+      "context": "Vertical button ẩn label khi <360px để icon-only",
+      "bad": "@media (max-width: 359px) {\n  .vertical .label { display: none; }\n  .vertical { gap: 0; }\n}",
+      "good": "/* Không có media query ẩn label — label luôn hiển thị */\n.vertical .label {\n  font-size: var(--font-size-xs);\n  font-weight: var(--font-weight-regular);\n}"
+    }
+  ],
+  "applyFor": [
+    "Footer navigation bar — label luôn hiển thị",
+    "Bottom tab bar — iOS/Material 3 require label",
+    "Any navigation item có icon + label",
+    "Accessibility: icon-only button cần aria-label thay thế nếu thực sự không có space"
+  ]
+}

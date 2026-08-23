@@ -1,0 +1,268 @@
+[
+  {
+    "filename": "Movie.en.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "Standard 2-letter English subtitle. Most common format per Plex/Emby/Jellyfin conventions."
+  },
+  {
+    "filename": "Movie.eng.srt",
+    "languageCode": "eng",
+    "languageFormat": "ISO 639-2/B (3-letter)",
+    "baseName": "Movie",
+    "notes": "3-letter English subtitle. Also supported by Plex (ISO 639-2/B)."
+  },
+  {
+    "filename": "Movie.en-US.srt",
+    "languageCode": "en-US",
+    "languageFormat": "BCP 47 with region (2-letter + region)",
+    "baseName": "Movie",
+    "notes": "BCP 47 tag with US region. American English variant."
+  },
+  {
+    "filename": "Movie.en-GB.srt",
+    "languageCode": "en-GB",
+    "languageFormat": "BCP 47 with region",
+    "baseName": "Movie",
+    "notes": "British English variant. Region subtag distinguishes from en-US."
+  },
+  {
+    "filename": "Movie.zh-Hans.srt",
+    "languageCode": "zh-Hans",
+    "languageFormat": "BCP 47 with script subtag",
+    "baseName": "Movie",
+    "notes": "Simplified Chinese. Script subtag 'Hans' per BCP 47. Recommended by Jellyfin over zh-CN."
+  },
+  {
+    "filename": "Movie.zh-Hant.srt",
+    "languageCode": "zh-Hant",
+    "languageFormat": "BCP 47 with script subtag",
+    "baseName": "Movie",
+    "notes": "Traditional Chinese. Script subtag 'Hant' per BCP 47."
+  },
+  {
+    "filename": "Movie.pt-BR.srt",
+    "languageCode": "pt-BR",
+    "languageFormat": "BCP 47 with region",
+    "baseName": "Movie",
+    "notes": "Brazilian Portuguese. Very common in subtitle communities."
+  },
+  {
+    "filename": "Movie.es-419.srt",
+    "languageCode": "es-419",
+    "languageFormat": "BCP 47 with UN region code",
+    "baseName": "Movie",
+    "notes": "Latin American Spanish. 419 is UN M.49 region code for Latin America."
+  },
+  {
+    "filename": "Movie.vi.srt",
+    "languageCode": "vi",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "Vietnamese 2-letter code. Primary native language for this extension's target users."
+  },
+  {
+    "filename": "Movie.vie.srt",
+    "languageCode": "vie",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "Vietnamese 3-letter code. Less common but valid per ISO 639-2."
+  },
+  {
+    "filename": "Movie.ja.srt",
+    "languageCode": "ja",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "Japanese 2-letter code."
+  },
+  {
+    "filename": "Movie.jpn.srt",
+    "languageCode": "jpn",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "Japanese 3-letter code."
+  },
+  {
+    "filename": "Movie.ko.srt",
+    "languageCode": "ko",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "Korean 2-letter code."
+  },
+  {
+    "filename": "Movie.kor.srt",
+    "languageCode": "kor",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "Korean 3-letter code."
+  },
+  {
+    "filename": "Movie.fr.srt",
+    "languageCode": "fr",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "French 2-letter code."
+  },
+  {
+    "filename": "Movie.fra.srt",
+    "languageCode": "fra",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "French 3-letter code (ISO 639-2/T terminologic)."
+  },
+  {
+    "filename": "Movie.de.srt",
+    "languageCode": "de",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie",
+    "notes": "German 2-letter code."
+  },
+  {
+    "filename": "Movie.deu.srt",
+    "languageCode": "deu",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "German 3-letter code."
+  },
+  {
+    "filename": "Movie.EN.srt",
+    "languageCode": "EN",
+    "languageFormat": "ISO 639-1 uppercase",
+    "baseName": "Movie",
+    "notes": "Uppercase language code. Algorithm must match case-insensitively."
+  },
+  {
+    "filename": "Movie.En.srt",
+    "languageCode": "En",
+    "languageFormat": "ISO 639-1 mixed case",
+    "baseName": "Movie",
+    "notes": "Mixed case language code. Case-insensitive matching required."
+  },
+  {
+    "filename": "Movie.English.srt",
+    "languageCode": "English",
+    "languageFormat": "Full language name (capitalized)",
+    "baseName": "Movie",
+    "notes": "Full language name. Supported by Emby (e.g., Home Alone.spanish.srt). Must map 'English' -> 'en'."
+  },
+  {
+    "filename": "Movie.english.srt",
+    "languageCode": "english",
+    "languageFormat": "Full language name (lowercase)",
+    "baseName": "Movie",
+    "notes": "Lowercase full language name. Must map 'english' -> 'en' case-insensitively."
+  },
+  {
+    "filename": "Movie.srt",
+    "languageCode": null,
+    "languageFormat": "No language code (fallback)",
+    "baseName": "Movie",
+    "notes": "No language code. Fallback subtitle — used when no language-specific match found. Per Emby/Plex convention, bare .srt is treated as default/unknown language."
+  },
+  {
+    "filename": "Movie_1080p.en.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie_1080p",
+    "notes": "Subtitle with resolution in filename. Base name includes _1080p — must match video whose base is 'Movie' after resolution strip. Subtitle base should also be stripped of resolution for matching."
+  },
+  {
+    "filename": "Movie_1080p.srt",
+    "languageCode": null,
+    "languageFormat": "No language code (fallback)",
+    "baseName": "Movie_1080p",
+    "notes": "Fallback subtitle with resolution in name. Resolution must be stripped from subtitle base name too for matching."
+  },
+  {
+    "filename": "Movie.forced.srt",
+    "languageCode": null,
+    "languageFormat": "No language + forced tag",
+    "baseName": "Movie",
+    "notes": "Forced subtitle with no language code. 'forced' tag indicates foreign-language dialogue only. Per Emby convention: .forced or .foreign suffix."
+  },
+  {
+    "filename": "Movie.sdh.srt",
+    "languageCode": null,
+    "languageFormat": "No language + SDH tag",
+    "baseName": "Movie",
+    "notes": "SDH (Subtitles for Deaf and Hard of Hearing) with no language code. Per Emby convention: .sdh suffix."
+  },
+  {
+    "filename": "Movie.en.forced.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 + forced tag",
+    "baseName": "Movie",
+    "notes": "English forced subtitles. Language code before tag. Pattern: base.lang.forced.ext"
+  },
+  {
+    "filename": "Movie.en.sdh.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 + SDH tag",
+    "baseName": "Movie",
+    "notes": "English SDH subtitles. Pattern: base.lang.sdh.ext"
+  },
+  {
+    "filename": "Movie.vi.forced.srt",
+    "languageCode": "vi",
+    "languageFormat": "ISO 639-1 + forced tag",
+    "baseName": "Movie",
+    "notes": "Vietnamese forced subtitles."
+  },
+  {
+    "filename": "Movie.Title.2023.en.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie.Title.2023",
+    "notes": "Subtitle with year in base name. Matches video 'Movie.Title.2023.1080p.*' after resolution strip."
+  },
+  {
+    "filename": "Movie.Title.2023.vi.srt",
+    "languageCode": "vi",
+    "languageFormat": "ISO 639-1 (2-letter)",
+    "baseName": "Movie.Title.2023",
+    "notes": "Vietnamese subtitle with year in base name."
+  },
+  {
+    "filename": "Movie.en-2.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 + version suffix",
+    "baseName": "Movie",
+    "notes": "Multiple English subtitles disambiguated by -2 suffix. Per FileBot convention: eng-1, eng-2 etc. Algorithm should treat -2 as non-language suffix and still match 'en'."
+  },
+  {
+    "filename": "Movie.eng-SDH.srt",
+    "languageCode": "eng",
+    "languageFormat": "ISO 639-2 + SDH tag (mixed case)",
+    "baseName": "Movie",
+    "notes": "3-letter code with SDH tag in mixed case. Per FileBot {subt} output format: .eng-SDH.srt"
+  },
+  {
+    "filename": "Movie.de.hi.srt",
+    "languageCode": "de",
+    "languageFormat": "ISO 639-1 + HI tag",
+    "baseName": "Movie",
+    "notes": "German hearing-impaired subtitle. 'hi' = hearing impaired (alternative to 'sdh'). Per Sublarr convention."
+  },
+  {
+    "filename": "Movie.spa.srt",
+    "languageCode": "spa",
+    "languageFormat": "ISO 639-2 (3-letter)",
+    "baseName": "Movie",
+    "notes": "Spanish 3-letter code. Successfully recognized by Jellyfin (unlike 'chi' for Chinese)."
+  },
+  {
+    "filename": "Movie.zh-CN.srt",
+    "languageCode": "zh-CN",
+    "languageFormat": "BCP 47 with region (deprecated style)",
+    "baseName": "Movie",
+    "notes": "Chinese with CN region. Problematic in Jellyfin — resolves to generic 'Chinese' instead of 'Simplified'. zh-Hans is preferred. Algorithm should still match this."
+  },
+  {
+    "filename": "Movie.default.en.srt",
+    "languageCode": "en",
+    "languageFormat": "ISO 639-1 + default tag (prefix)",
+    "baseName": "Movie",
+    "notes": "Default flag before language code. Per Emby: .default marks subtitle as default. Non-standard ordering — algorithm must handle tag before or after language."
+  }
+]

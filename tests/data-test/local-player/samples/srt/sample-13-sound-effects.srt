@@ -1,0 +1,39 @@
+1
+00:00:01,000 --> 00:00:04,000
+[MUSIC] Intro theme plays
+
+2
+00:00:05,000 --> 00:00:08,000
+[LAUGHTER] Audience laughing
+
+3
+00:00:09,000 --> 00:00:12,000
+(applause) The crowd cheers
+
+4
+00:00:13,000 --> 00:00:16,000
+[DOOR CREAKS] Someone enters
+
+5
+00:00:17,000 --> 00:00:20,000
+[THUNDER RUMBLING] Storm approaches
+
+6
+00:00:21,000 --> 00:00:24,000
+(soft music playing in background)
+
+7
+00:00:25,000 --> 00:00:28,000
+[PHONE RINGING] Someone's phone rings
+
+8
+00:00:29,000 --> 00:00:32,000
+[EXPLOSION] Loud blast heard
+
+9
+00:00:33,000 --> 00:00:36,000
+(indistinct chatter)
+
+10
+00:00:37,000 --> 00:00:40,000
+[ALARM BEEPING] Time's up!

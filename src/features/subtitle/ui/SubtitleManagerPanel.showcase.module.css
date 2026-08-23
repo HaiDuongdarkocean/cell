@@ -40,18 +40,3 @@
   flex: 1 1 auto;
   min-height: 0;
 }
-
-/* Force mobile footer (icon-only) inside narrow viewports.
-   @media checks iframe viewport width, triggered by showcase viewport selector. */
-@media (max-width: 479px) {
-  .stage [class*='footerLabel'] {
-    display: none;
-  }
-
-  .stage [class*='footerCustomize'],
-  .stage [class*='footerGenerate'] {
-    flex: 1 1 0;
-    min-width: 0;
-    justify-content: center;
-  }
-}

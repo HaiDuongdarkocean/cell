@@ -1,117 +1,90 @@
-/* Search section — dedicated view inside SubtitleManagerPanel */
+/* Search section — mobile-first, compact, progressive disclosure.
+   3-tier typography: Title=base(16px), Body=sm(14px), Meta=xs(12px). */
 .section {
-  padding-block: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.sectionHead {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
-  padding: var(--space-1) var(--space-4);
-}
-
-.sectionTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
-/* === API status chip — green=OK, red=missing/expired (pulsing) === */
-.apiChip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  margin-left: auto;
-  padding: var(--space-1) var(--space-2-5);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
-}
-
-.apiChip:hover {
-  background: var(--color-surface-hover);
-}
-
-.apiChip:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.apiChipOk {
-  background: var(--color-success-subtle, rgba(159, 229, 155, 0.15));
-  color: var(--color-success);
-  border-color: rgba(159, 229, 155, 0.2);
-}
-
-.apiChipError {
-  background: var(--color-error-subtle, rgba(255, 198, 193, 0.15));
-  color: var(--color-error);
-  border-color: rgba(255, 198, 193, 0.25);
-  animation: pulse-red 2s ease-in-out infinite;
-}
-
-@keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 198, 193, 0.3); }
-  50% { box-shadow: 0 0 0 3px rgba(255, 198, 193, 0); }
-}
-
-.chevronClosed {
-  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
-}
-
-.chevronOpen {
-  transform: rotate(180deg);
-  transition: transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
-}
-
-/* Manage-keys panel — collapsible container for ApiKeyManager */
-.manageKeysPanel {
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* Form — stacked: query input on top, season/episode + button below */
-.searchForm {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
 }
 
-/* Layout-only override for shared Input component */
-.queryInput {
+/* ─── Search row — Manage keys (left) + input + Search + Advanced ─── */
+.searchInputWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: 100%;
+}
+
+/* ─── Search bar — 40px height, rounded, input + inner buttons ─── */
+.searchBar {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: var(--iconbutton-size-md);
+  padding: 0 var(--space-1);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--input-bg, var(--color-surface));
+  transition: border-color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.searchBar:focus-within {
+  border-color: var(--color-primary);
+}
+
+.searchInput {
   flex: 1 1 auto;
   min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--input-fg, var(--color-text));
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-1-5);
+  outline: none;
 }
 
-.seasonRow {
+.searchInput::placeholder {
+  color: var(--input-placeholder, var(--color-text-secondary));
+}
+
+.searchInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchActions {
+  flex: 0 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
   align-items: center;
+  gap: var(--space-0-5);
+}
+
+/* Advanced body — inline row, Season + Episode side-by-side */
+.advancedBody {
+  display: flex;
+  gap: var(--space-2);
 }
 
 .numberField {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .numberLabel {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 .numberInput {
-  width: 56px;
+  width: 100%;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -122,24 +95,87 @@
   margin: 0;
 }
 
-.searchButton {
-  flex: 0 0 auto;
-  margin-left: auto;
+/* ─── API key hint — replaces status chip ─── */
+.apiHint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-subtle, rgba(234, 179, 8, 0.1));
+  color: var(--color-text-secondary);
 }
 
-/* === Target / Native tabs — filter results by language === */
+.apiHintIcon {
+  flex: 0 0 auto;
+  color: var(--color-warning, #eab308);
+}
+
+.apiHintText {
+  flex: 1 1 auto;
+  font-size: var(--font-size-sm);
+  min-width: 0;
+}
+
+.apiHintBtn {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-2-5);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-element);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.apiHintBtn:hover {
+  background: var(--color-primary-subtle);
+}
+
+.apiHintBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Manage keys link — shown when keys exist + panel open */
+.manageKeysLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: color var(--duration-fast, 150ms) var(--ease-out, ease-out);
+}
+
+.manageKeysLink:hover {
+  color: var(--color-text-primary);
+}
+
+.manageKeysPanel {
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+/* ─── Target / Native tabs — filter results by language ─── */
 .tabBar {
   display: flex;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-4) 0;
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .tab {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1-5);
-  padding: var(--space-1-5) var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -175,29 +211,49 @@
   border-radius: var(--radius-pill);
   background: var(--color-primary-subtle);
   color: var(--color-primary);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
 }
 
-/* Results area wrapper */
+/* ─── Results area ─── */
 .resultsArea {
-  margin-top: var(--space-2);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-/* Results — role="listbox" container, scroll within section */
+/* Hint state — fills empty space before search */
+.hintState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-3);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.hintIcon {
+  opacity: 0.3;
+}
+
+.hintText {
+  font-size: var(--font-size-sm);
+  max-width: 240px;
+}
+
+/* Results list — parent (.appearanceBody) handles scroll */
 .resultsList {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  max-height: 40vh;
-  padding: 0 var(--space-4);
-  overflow-y: auto;
   list-style: none;
   margin: 0;
+  padding: 0;
 }
 
-/* Each result row — single button, click = load directly */
+/* Result row — 44px touch target */
 .resultItem {
   display: flex;
   flex-direction: column;
@@ -211,8 +267,8 @@
   flex-direction: column;
   gap: var(--space-1);
   width: 100%;
-  min-height: 52px;
-  padding: var(--space-2-5) var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-2-5);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -241,7 +297,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--color-text-primary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   line-height: var(--leading-tight);
   text-overflow: ellipsis;
@@ -252,11 +308,11 @@
   color: var(--color-primary);
 }
 
-/* Meta — language · source · format · badges (small, muted) */
+/* Meta — language · source · format · badges */
 .resultMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
   align-items: center;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
@@ -264,7 +320,7 @@
 
 .resultMeta > span + span::before {
   content: '·';
-  margin-right: var(--space-2);
+  margin-right: var(--space-1-5);
   color: var(--color-border-emphasized);
 }
 
@@ -272,7 +328,7 @@
   padding: 0 var(--space-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
@@ -281,17 +337,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: 0 var(--space-4);
   list-style: none;
   margin: 0;
+  padding: 0;
 }
 
 .skeletonItem {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  min-height: 52px;
-  padding: var(--space-2-5) var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-2-5);
   border-radius: var(--radius-sm);
   background: var(--color-skeleton, rgba(255,255,255,0.06));
   opacity: 0.6;
@@ -302,7 +358,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: var(--space-2) var(--space-4) 0;
   padding: var(--space-2-5) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--color-error-subtle, rgba(239,68,68,0.1));
@@ -317,48 +372,15 @@
 
 /* Empty state */
 .emptyState {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-2);
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+  text-align: center;
 }
 
-/* Mobile (≤479px) — form wraps to column, full-width controls */
-@media (max-width: 479px) {
-  .sectionHead,
-  .searchForm,
-  .resultsList,
-  .skeletonList,
-  .emptyState,
-  .manageKeysPanel,
-  .tabBar {
-    padding-inline: var(--space-3);
-  }
-
-  .queryInput {
-    width: 100%;
-    flex-basis: 100%;
-  }
-
-  .seasonRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .numberInput {
-    width: 100%;
-  }
-
-  .searchButton {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .errorState {
-    margin-inline: var(--space-3);
-  }
-
-  .tab {
-    flex: 1;
-    justify-content: center;
+/* ─── Desktop ≥480px: inline season/episode ─── */
+@media (min-width: 480px) {
+  .section {
+    padding: var(--space-3) var(--space-4);
   }
 }

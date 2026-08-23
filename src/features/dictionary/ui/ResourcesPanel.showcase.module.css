@@ -1,0 +1,17 @@
+.wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.panelFrame {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  background: var(--color-surface);
+  padding: var(--space-4);
+}

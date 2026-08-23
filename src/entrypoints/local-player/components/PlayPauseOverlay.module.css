@@ -1,0 +1,49 @@
+/* Play/pause center flash — pop-in + fade-out. tokens only. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: var(--z-popover);
+  animation: cell-flash var(--duration-medium) var(--ease-standard) forwards;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  background: var(--color-overlay);
+  color: var(--color-overlay-text);
+  opacity: 0;
+  transform: scale(0.6);
+  animation: cell-flash-icon var(--duration-medium) var(--ease-spring) forwards;
+}
+
+@keyframes cell-flash {
+  0%   { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cell-flash-icon {
+  0%   { opacity: 0; transform: scale(0.6); }
+  30%  { opacity: 1; transform: scale(1.1); }
+  60%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .iconWrap {
+    animation-duration: var(--duration-fast);
+  }
+  .iconWrap {
+    transform: scale(1);
+  }
+}

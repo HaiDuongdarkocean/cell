@@ -80,34 +80,34 @@ export function OverlayPreview({
         <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
             <IconButton variant="transparent" aria-label="Quick add card" size="sm" onClick={noop}>
-              <Icon name="zap" size={18} />
+              <Icon name="zap"  />
             </IconButton>
             <IconButton variant="transparent" aria-label="Edit card" size="sm" onClick={noop}>
-              <Icon name="pencil" size={18} />
+              <Icon name="pencil"  />
             </IconButton>
             <div className={styles.toggleWrap}>
               <div className={styles.extraCol}>
                 <IconButton variant="transparent" aria-label="Open subtitle list" size="sm" onClick={noop}>
-                  <Icon name="sidePanel" size={18} />
+                  <Icon name="sidePanel"  />
                 </IconButton>
                 <IconButton variant="transparent" aria-label="Generate native subtitle" size="sm" onClick={noop}>
-                  <Icon name="languages" size={18} />
+                  <Icon name="languages"  />
                 </IconButton>
               </div>
               <IconButton variant="transparent" aria-label="Expand tools" size="sm" onClick={noop}>
-                <Icon name="chevronLeft" size={18} />
+                <Icon name="chevronLeft"  />
               </IconButton>
             </div>
           </div>
           <div className={styles.secondaryCol}>
             <IconButton variant="transparent" aria-label="Update current card" size="sm" onClick={noop}>
-              <Icon name="rotateCcw" size={18} />
+              <Icon name="rotateCcw"  />
             </IconButton>
             <IconButton variant="transparent" aria-label="Open subtitle manager" size="sm" onClick={noop}>
-              <Icon name="subtitleManager" size={18} />
+              <Icon name="subtitleManager"  />
             </IconButton>
             <IconButton variant="transparent" aria-label="Enter player mode" size="sm" onClick={noop}>
-              <Icon name="maximize" size={18} />
+              <Icon name="maximize"  />
             </IconButton>
           </div>
         </div>

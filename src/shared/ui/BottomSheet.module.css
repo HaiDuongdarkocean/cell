@@ -1,4 +1,7 @@
-/* === BottomSheet — slide-up panel for mobile (Card Creator) === */
+/* === BottomSheet — shared slide-up sheet atom (SSOT for mobile sheets) ===
+   Used by: CardCreator, SubtitleManager (mobile), Dictionary popup (mobile).
+   AC: slide-up from bottom, 94% width centered on main axis,
+   close via X button + click outside + ESC. */
 
 .overlay {
   position: fixed;
@@ -8,12 +11,18 @@
 }
 
 .sheet {
-  width: 100%;
+  width: 94%;
   max-height: 75vh;
   background: var(--color-background);
-  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+  border-radius: var(--radius-element);
   padding: var(--space-3) var(--space-4) var(--space-4);
   overflow: auto;
+  animation: bottomSheetSlideUp var(--duration-300) var(--ease-standard);
+}
+
+@keyframes bottomSheetSlideUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .dragHandle {

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Button Atom Redesign — ZaloPay Pattern + Atomic Design</title>
+<style>
+/* === Tokens (copy từ tokens.css — generated, không sửa ở mockup) === */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-rgb: 37, 99, 235;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary-foreground: #ffffff;
+  --color-background: #f1f1f1;
+  --color-surface: #ffffff;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-surface-hover: #f1f5f9;
+  --color-border-subtle: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-focus: #2563eb;
+  --color-error: #dc2626;
+  --color-error-subtle: rgba(220, 38, 38, 0.1);
+  --border-width-hairline: 1px;
+  --radius-pill: 12px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --font-size-xs: 12px;
+  --font-size-base: 16px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --duration-fast: 175ms;
+  --transition: var(--duration-fast) ease-out;
+  --touch-target: 44px;
+  --button-radius: var(--radius-pill);
+  --button-height-sm: 32px;
+  --button-height: 40px;
+  --button-height-lg: 48px;
+  --button-padding-y: 8px;
+  --button-padding-x: 16px;
+  --button-font-size: 14px;
+  --button-font-weight: 500;
+}
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-primary-rgb: 96, 165, 250;
+  --color-primary-hover: #3b82f6;
+  --color-primary-active: #2563eb;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-primary-foreground: #171717;
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #ebebeb;
+  --color-text-secondary: #94a3b8;
+  --color-surface-hover: #334155;
+  --color-border-subtle: #1e293b;
+  --color-border: #334155;
+  --color-border-focus: #60a5fa;
+  --color-error: #f87171;
+  --color-error-subtle: rgba(248, 113, 113, 0.15);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+body { padding: var(--space-6) var(--space-4) var(--space-12); max-width: 900px; margin: 0 auto; }
+
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 var(--space-2); }
+h2 {
+  font-size: 13px; font-weight: 600; color: var(--color-text-secondary);
+  margin: var(--space-8) 0 var(--space-3); text-transform: uppercase; letter-spacing: 0.06em;
+  padding-bottom: var(--space-2); border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+h3 { font-size: 14px; font-weight: 600; margin: var(--space-5) 0 var(--space-2); }
+.note { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--space-2); line-height: 1.6; }
+.tag-new {
+  display: inline-block; padding: 1px var(--space-1-5); margin-left: var(--space-1-5);
+  background: var(--color-primary-subtle); color: var(--color-primary);
+  border-radius: var(--radius-full); font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; vertical-align: middle;
+}
+
+.themeToggle {
+  position: fixed; top: var(--space-4); right: var(--space-4);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--color-surface); color: var(--color-text);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs); cursor: pointer; z-index: 10;
+}
+
+/* === Showcase grid === */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+.grid-vertical {
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+.cell {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-1-5);
+  padding: var(--space-3); background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+}
+.cellLabel { font-size: 10px; color: var(--color-text-secondary); text-align: center; }
+
+/* ============================================================
+   Button atom — REDESIGN
+   8 variants × 2 orientations × 3 sizes × active state
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: none;
+  border-radius: var(--button-radius);
+  font-family: var(--font-family);
+  font-weight: var(--button-font-weight);
+  font-size: var(--button-font-size);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+  padding: var(--button-padding-y) var(--button-padding-x);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+.btn:disabled, .btn.loading {
+  opacity: 0.5; pointer-events: none; cursor: not-allowed;
+}
+.btn:active { transform: scale(0.97); }
+.btn .icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 18px; height: 18px;
+}
+.btn .icon svg { width: 100%; height: 100%; }
+.btn .label { display: inline-flex; align-items: center; min-width: 0; }
+
+/* === Orientation: vertical (ZaloPay pattern) === */
+.btn.vertical {
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-1);
+  min-height: var(--touch-target);
+  font-size: 11px;
+}
+.btn.vertical .icon { width: 22px; height: 22px; }
+.btn.vertical .label {
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.01em;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.btn.vertical.fullWidth { width: 100%; }
+
+/* === Sizes === */
+.btn.sm { height: var(--button-height-sm); font-size: 13px; padding: 6px 12px; }
+.btn.lg { height: var(--button-height-lg); font-size: 16px; padding: 12px 24px; }
+
+/* === Variants === */
+
+/* primary — blue fill, white text (CTA) */
+.btn.primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+.btn.primary:hover { background: var(--color-primary-hover); }
+.btn.primary:active { background: var(--color-primary-active); }
+
+/* primarySubtle ⭐ NEW — bold primary text, no bg (featured nav action, vertical) */
+.btn.primarySubtle { background: transparent; color: var(--color-primary); font-weight: 600; }
+.btn.primarySubtle .label { font-weight: 600; }
+.btn.primarySubtle:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+/* secondary — neutral fill */
+.btn.secondary { background: var(--color-surface-hover); color: var(--color-text); }
+.btn.secondary:hover { background: var(--color-border); }
+
+/* outline — hairline border */
+.btn.outline { background: transparent; color: var(--color-text); border: var(--border-width-hairline) solid var(--color-border); }
+.btn.outline:hover { background: var(--color-surface-hover); border-color: var(--color-border-focus); }
+
+/* ghost — transparent, hover bg */
+.btn.ghost { background: transparent; color: var(--color-text); }
+.btn.ghost:hover { background: var(--color-surface-hover); }
+
+/* destructive — error fill */
+.btn.destructive { background: var(--color-error); color: #fff; }
+.btn.destructive:hover { filter: brightness(0.9); }
+
+/* link — transparent, underline hover */
+.btn.link { background: transparent; color: var(--color-primary); padding: var(--space-1) var(--space-2); height: auto; min-height: auto; }
+.btn.link:hover { text-decoration: underline; background: var(--color-primary-subtle); }
+
+/* === Active state ⭐ NEW — persistent toggle (pale-blue bg) === */
+.btn.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+.btn.active:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+/* === fullWidth === */
+.btn.fullWidth { width: 100%; }
+
+/* === Mobile: vertical icon-only <360px === */
+@media (max-width: 359px) {
+  .btn.vertical .label { display: none; }
+  .btn.vertical { gap: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; animation: none; }
+  .btn:active { transform: none; }
+}
+
+/* === Footer context (organism preview) === */
+.panel {
+  max-width: 420px; margin: var(--space-4) auto 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.panelBody { padding: var(--space-4); min-height: 120px; font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+.footer {
+  display: flex; gap: 0;
+  padding: var(--space-1-5) var(--space-1) var(--space-2);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.footer .btn.vertical { flex: 1 1 0; min-width: 0; }
+</style>
+</head>
+<body>
+
+<button class="themeToggle" onclick="toggleTheme()">Toggle dark/light</button>
+
+<h1>Button Atom Redesign — ZaloPay Pattern</h1>
+<p class="note">
+  Theo <strong>Tri thức Design System</strong> section 5: Button là ATOM (9/9 nguồn, wrapper <code>&lt;button&gt;</code>).<br>
+  Redesign thêm: <code>orientation</code> prop (rule 9.4 — neutral layout) + <code>active</code> state + <code>primarySubtle</code> variant.<br>
+  8 variants × 2 orientations × 3 sizes. Token-driven, theme-agnostic, touch-target compliant.
+</p>
+
+<!-- === Section 1: All 8 variants (horizontal) === -->
+<h2>1. Variants — horizontal (existing + new)</h2>
+<div class="grid">
+  <div class="cell">
+    <button class="btn primary"><span class="label">Primary</span></button>
+    <span class="cellLabel">primary</span>
+  </div>
+  <div class="cell">
+    <button class="btn primarySubtle"><span class="label">Primary Subtle</span></button>
+    <span class="cellLabel">primarySubtle <span class="tag-new">NEW</span></span>
+  </div>
+  <div class="cell">
+    <button class="btn secondary"><span class="label">Secondary</span></button>
+    <span class="cellLabel">secondary</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline"><span class="label">Outline</span></button>
+    <span class="cellLabel">outline</span>
+  </div>
+  <div class="cell">
+    <button class="btn ghost"><span class="label">Ghost</span></button>
+    <span class="cellLabel">ghost</span>
+  </div>
+  <div class="cell">
+    <button class="btn destructive"><span class="label">Destructive</span></button>
+    <span class="cellLabel">destructive</span>
+  </div>
+  <div class="cell">
+    <button class="btn link"><span class="label">Link</span></button>
+    <span class="cellLabel">link</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline active"><span class="label">Active</span></button>
+    <span class="cellLabel">outline + active <span class="tag-new">NEW</span></span>
+  </div>
+</div>
+
+<!-- === Section 2: Vertical orientation (ZaloPay pattern) === -->
+<h2>2. Orientation: vertical — ZaloPay pattern <span class="tag-new">NEW</span></h2>
+<p class="note">
+  <code>orientation="vertical"</code> — icon top, label bottom. Flex-direction column, center aligned.<br>
+  Theo rule 9.4: atom layout neutral — orientation là composition prop, không opinionated về content.
+</p>
+<div class="grid grid-vertical">
+  <div class="cell">
+    <button class="btn vertical outline">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span>
+      <span class="label">Search</span>
+    </button>
+    <span class="cellLabel">outline vertical</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical outline active" aria-pressed="true">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Hide</span>
+    </button>
+    <span class="cellLabel">outline + active vertical</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical primarySubtle">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+    <span class="cellLabel">primarySubtle vertical</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical ghost">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4" /><line x1="10" x2="3" y1="4" y2="4" /><line x1="21" x2="12" y1="12" y2="12" /><line x1="8" x2="3" y1="12" y2="12" /><line x1="21" x2="16" y1="20" y2="20" /><line x1="12" x2="3" y1="20" y2="20" /><line x1="14" x2="14" y1="2" y2="6" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="16" x2="16" y1="18" y2="22" /></svg></span>
+      <span class="label">Customize</span>
+    </button>
+    <span class="cellLabel">ghost vertical</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical primary">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+    <span class="cellLabel">primary vertical</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical primarySubtle" disabled>
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+    <span class="cellLabel">primarySubtle disabled</span>
+  </div>
+</div>
+
+<!-- === Section 3: Active state comparison === -->
+<h2>3. Active state — toggle comparison <span class="tag-new">NEW</span></h2>
+<p class="note">
+  <code>active</code> prop — persistent toggle state (pale-blue bg, primary color). Không đổi on hover.<br>
+  Áp dụng cho mọi variant — đặc biệt outline + active (Hide button), ghost + active (filter toggle).
+</p>
+<div class="grid">
+  <div class="cell">
+    <button class="btn outline"><span class="label">Show</span></button>
+    <span class="cellLabel">outline (inactive)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline active" aria-pressed="true"><span class="label">Hide</span></button>
+    <span class="cellLabel">outline + active</span>
+  </div>
+  <div class="cell">
+    <button class="btn ghost"><span class="label">Filter</span></button>
+    <span class="cellLabel">ghost (inactive)</span>
+  </div>
+  <div class="cell">
+    <button class="btn ghost active" aria-pressed="true"><span class="label">Filter</span></button>
+    <span class="cellLabel">ghost + active</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline"><span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span><span class="label">Show</span></button>
+    <span class="cellLabel">outline+icon (inactive)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline active" aria-pressed="true"><span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span><span class="label">Hide</span></button>
+    <span class="cellLabel">outline+icon + active</span>
+  </div>
+</div>
+
+<!-- === Section 4: Sizes === -->
+<h2>4. Sizes — sm / md / lg</h2>
+<div class="grid">
+  <div class="cell"><button class="btn primary sm"><span class="label">Small</span></button><span class="cellLabel">sm (32px)</span></div>
+  <div class="cell"><button class="btn primary"><span class="label">Medium</span></button><span class="cellLabel">md (40px)</span></div>
+  <div class="cell"><button class="btn primary lg"><span class="label">Large</span></button><span class="cellLabel">lg (48px)</span></div>
+</div>
+
+<!-- === Section 5: Footer context (organism) === -->
+<h2>5. Footer context — SubtitleManagerPanel (organism)</h2>
+<p class="note">
+  4 Button atoms với <code>orientation="vertical"</code> + <code>fullWidth</code> + <code>flex: 1 1 0</code>.<br>
+  Search + Customize = outline. Hide = outline + active (toggled). Generate = primarySubtle (featured).
+</p>
+<div class="panel">
+  <div class="panelBody">Track list + offset stepper (placeholder)</div>
+  <div class="footer">
+    <button class="btn vertical outline fullWidth" aria-label="Search subtitles">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span>
+      <span class="label">Search</span>
+    </button>
+    <button class="btn vertical outline fullWidth" aria-label="Customize appearance">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4" /><line x1="10" x2="3" y1="4" y2="4" /><line x1="21" x2="12" y1="12" y2="12" /><line x1="8" x2="3" y1="12" y2="12" /><line x1="21" x2="16" y1="20" y2="20" /><line x1="12" x2="3" y1="20" y2="20" /><line x1="14" x2="14" y1="2" y2="6" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="16" x2="16" y1="18" y2="22" /></svg></span>
+      <span class="label">Customize</span>
+    </button>
+    <button class="btn vertical outline active fullWidth" aria-pressed="true" aria-label="Hide both subtitles">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg></span>
+      <span class="label">Hide</span>
+    </button>
+    <button class="btn vertical primarySubtle fullWidth" aria-label="Generate native subtitle">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" /><path d="M20 15 L6 15 M9 12 L6 15 L9 18" /></svg></span>
+      <span class="label">Generate</span>
+    </button>
+  </div>
+</div>
+
+<!-- === Section 6: Dictionary popup buttons === -->
+<h2>6. Dictionary popup buttons — scan findings (from screenshot)</h2>
+<p class="note">
+  Dictionary popup thực tế (ảnh msedge_A9eE1o44mb.png): dark flat surface, không footer strip riêng.<br>
+  <strong>DictionaryToolbar = icon-only circular buttons</strong> (không phải vertical icon+label). Label ẩn mặc định (<code>.cellLabel { display: none }</code>).<br>
+  Nhiều button dùng CSS class cũ <code>icon-btn</code>/<code>btn</code> — vi phạm SSOT (AGENTS.md).
+</p>
+
+<h3>6a. DictionaryToolbar tabs — HIỆN TẠI: icon-only circular</h3>
+<p class="note">
+  4 tabs (Audio/Image/Translate/Links) — icon-only, circular, đều nhau trái-phải. Active = primary fill, inactive = surface-hover bg.<br>
+  Hiện dùng <code>btn btn--primary</code>/<code>btn btn--ghost</code> + <code>cellToolbarTab</code> CSS. Label ẩn.
+</p>
+<div class="grid">
+  <div class="cell">
+    <button class="btn outline" aria-label="Audio" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full);background:var(--color-surface-hover);border:none">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2l2 6 4-12 2 6h2" /></svg></span>
+    </button>
+    <span class="cellLabel">audio (inactive)</span>
+  </div>
+  <div class="cell">
+    <button class="btn primary" aria-label="Image" aria-pressed="true" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full);position:relative">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.5-3.5L12 17" /></svg></span>
+      <span style="position:absolute;top:-2px;right:-2px;background:var(--color-primary-foreground);color:var(--color-primary);border-radius:var(--radius-full);font-size:9px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center;border:1.5px solid var(--color-primary)">8</span>
+    </button>
+    <span class="cellLabel">image (active + badge)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline" aria-label="Translate" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full);background:var(--color-surface-hover);border:none">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6" /></svg></span>
+    </button>
+    <span class="cellLabel">translate (inactive)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline" aria-label="Links" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full);background:var(--color-surface-hover);border:none">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span>
+    </button>
+    <span class="cellLabel">links (inactive)</span>
+  </div>
+</div>
+
+<h3>6a-redesign. DictionaryToolbar — ĐỀ XUẤT redesign (ZaloPay vertical)</h3>
+<p class="note">
+  Áp dụng ZaloPay pattern: vertical icon+label, slots đều nhau, active = pale-blue subtle (không phải primary fill).<br>
+  <code>Button outline vertical + active</code> + Badge atom cho count. Label hiện (không ẩn).
+</p>
+<div class="grid grid-vertical">
+  <div class="cell">
+    <button class="btn vertical outline" aria-label="Audio">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2l2 6 4-12 2 6h2" /></svg></span>
+      <span class="label">Audio</span>
+    </button>
+    <span class="cellLabel">inactive</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical outline active" aria-pressed="true" aria-label="Image" style="position:relative">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.5-3.5L12 17" /></svg></span>
+      <span class="label">Image</span>
+      <span style="position:absolute;top:-4px;right:-4px;background:var(--color-primary);color:var(--color-primary-foreground);border-radius:var(--radius-full);font-size:9px;font-weight:600;padding:1px 5px;min-width:16px;text-align:center;">8</span>
+    </button>
+    <span class="cellLabel">active + badge</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical outline" aria-label="Translate">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6" /></svg></span>
+      <span class="label">Translate</span>
+    </button>
+    <span class="cellLabel">inactive</span>
+  </div>
+  <div class="cell">
+    <button class="btn vertical outline" aria-label="Links">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span>
+      <span class="label">Links</span>
+    </button>
+    <span class="cellLabel">inactive</span>
+  </div>
+</div>
+
+<h3>6b. CandidateView header actions — IconButton patterns</h3>
+<p class="note">
+  Send to Card (outline pencil) + Quick Add (filled lightning). Hiện dùng <code>icon-btn icon-btn--sm icon-btn--outlined/filled</code> CSS class cũ.<br>
+  Redesign: <code>IconButton outline sm</code> + <code>IconButton solid sm</code> (migrate to shared atom).
+</p>
+<div class="grid">
+  <div class="cell">
+    <button class="btn outline sm" aria-label="Send to Card Creator" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full)">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg></span>
+    </button>
+    <span class="cellLabel">Send to Card (outline)</span>
+  </div>
+  <div class="cell">
+    <button class="btn primary sm" aria-label="Quick Add to Anki" style="width:40px;height:40px;padding:0;border-radius:var(--radius-full)">
+      <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span>
+    </button>
+    <span class="cellLabel">Quick Add (solid)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm" aria-label="Play word audio" style="width:32px;height:32px;padding:0;min-width:32px;min-height:32px;border-radius:var(--radius-full)">
+      <span class="icon" style="width:16px;height:16px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h2l2 6 4-12 2 6h2" /></svg></span>
+    </button>
+    <span class="cellLabel">Play audio (xs)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm" aria-label="Play sentence audio" style="width:32px;height:32px;padding:0;min-width:32px;min-height:32px;border-radius:var(--radius-full)">
+      <span class="icon" style="width:16px;height:16px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></span>
+    </button>
+    <span class="cellLabel">Play sentence (xs)</span>
+  </div>
+</div>
+
+<h3>6c. Status cycle button — multi-state toggle</h3>
+<p class="note">
+  Click to cycle: new → learning → known → mastered. Hiện là custom <code>cellHeaderStatus--{status}</code>.<br>
+  Ảnh thực tế: "unknown" = red badge. Redesign: <code>Button outline sm + active</code> với color variant per status (semantic tokens).
+</p>
+<div class="grid">
+  <div class="cell">
+    <button class="btn outline sm" style="background:rgba(220,38,38,0.1);color:var(--color-error);border-color:transparent"><span class="label">unknown</span></button>
+    <span class="cellLabel">unknown (error)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm"><span class="label">new</span></button>
+    <span class="cellLabel">new (default)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm" style="background:rgba(245,158,11,0.1);color:#d97706;border-color:transparent"><span class="label">learning</span></button>
+    <span class="cellLabel">learning (warning)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm" style="background:rgba(34,197,94,0.1);color:#16a34a;border-color:transparent"><span class="label">known</span></button>
+    <span class="cellLabel">known (success)</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline sm" style="background:rgba(37,99,235,0.1);color:var(--color-primary);border-color:transparent"><span class="label">mastered</span></button>
+    <span class="cellLabel">mastered (primary)</span>
+  </div>
+</div>
+
+<h3>6d. Audio subtab — segmented control</h3>
+<p class="note">
+  Word / Sentence toggle. Hiện là custom <code>cellAudioSubtab</code>.<br>
+  Redesign: <code>Button ghost sm + active</code> trong segmented group (Tabs pattern).
+</p>
+<div class="cell" style="flex-direction:row;gap:var(--space-1);padding:var(--space-2);background:var(--color-surface-hover);border-radius:var(--radius-pill);width:fit-content;margin:var(--space-2) auto">
+  <button class="btn ghost sm active"><span class="label">Play word</span></button>
+  <button class="btn ghost sm"><span class="label">Play sentence</span></button>
+</div>
+
+<h3>6e. Image card toggle — checkbox-like button</h3>
+<p class="note">
+  Click to select/deselect image. Hiện là custom <code>cellImageCard</code> với checkbox overlay.<br>
+  Redesign: giữ custom (domain-specific) nhưng dùng token cho selected state.
+</p>
+<div class="grid">
+  <div class="cell">
+    <button class="btn outline" style="width:84px;height:84px;padding:0;border-radius:var(--radius-card);position:relative;overflow:hidden" aria-pressed="false">
+      <span style="font-size:10px;color:var(--color-text-secondary)">image</span>
+    </button>
+    <span class="cellLabel">unselected</span>
+  </div>
+  <div class="cell">
+    <button class="btn outline active" style="width:84px;height:84px;padding:0;border-radius:var(--radius-card);position:relative;overflow:hidden" aria-pressed="true">
+      <span style="font-size:10px">image</span>
+      <span style="position:absolute;top:4px;right:4px;background:var(--color-primary);color:var(--color-primary-foreground);border-radius:var(--radius-full);width:18px;height:18px;display:flex;align-items:center;justify-content:center">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><path d="M20 6 9 17l-5-5" /></svg>
+      </span>
+    </button>
+    <span class="cellLabel">selected</span>
+  </div>
+</div>
+
+<!-- === Section 7: Migration map === -->
+<h2>7. Migration map — existing → redesigned</h2>
+<table style="width:100%; font-size:12px; border-collapse:collapse; margin-top:var(--space-3);">
+  <thead>
+    <tr style="text-align:left; color:var(--color-text-secondary); border-bottom:1px solid var(--color-border);">
+      <th style="padding:8px 4px;">Vị trí</th>
+      <th style="padding:8px 4px;">Hiện tại</th>
+      <th style="padding:8px 4px;">Redesign</th>
+    </tr>
+  </thead>
+  <tbody style="color:var(--color-text);">
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Footer Search</td><td style="padding:8px 4px;"><code>Button outline + leadingIcon</code></td><td style="padding:8px 4px;"><code>Button outline vertical</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Footer Customize</td><td style="padding:8px 4px;"><code>Button outline + leadingIcon</code></td><td style="padding:8px 4px;"><code>Button outline vertical</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Footer Hide</td><td style="padding:8px 4px;"><code>Button outline + footerBtnActive</code></td><td style="padding:8px 4px;"><code>Button outline vertical + active</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Footer Generate</td><td style="padding:8px 4px;"><code>Button primary + leadingIcon</code></td><td style="padding:8px 4px;"><code>Button primarySubtle vertical</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Dialog close</td><td style="padding:8px 4px;"><code>Button ghost</code></td><td style="padding:8px 4px;"><code>Button ghost</code> (no change)</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">ApiKey delete</td><td style="padding:8px 4px;"><code>Button destructive</code></td><td style="padding:8px 4px;"><code>Button destructive</code> (no change)</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">TrackList download</td><td style="padding:8px 4px;"><code>IconButton ghost</code></td><td style="padding:8px 4px;"><code>IconButton ghost</code> (no change)</td></tr>
+    <tr><td style="padding:8px 4px;">Offset stepper</td><td style="padding:8px 4px;"><code>.stepBtn</code> (custom)</td><td style="padding:8px 4px;"><code>Button outline sm</code> (migrate)</td></tr>
+    <tr style="border-top:2px solid var(--color-border);"><td style="padding:8px 4px;font-weight:600" colspan="3">Dictionary popup</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">DictToolbar tabs (4)</td><td style="padding:8px 4px;"><code>btn btn--primary/ghost</code> + cellToolbarTab</td><td style="padding:8px 4px;"><code>Button outline vertical + active</code> + Badge</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Send to Card</td><td style="padding:8px 4px;"><code>icon-btn icon-btn--sm icon-btn--outlined</code></td><td style="padding:8px 4px;"><code>IconButton outline sm</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Quick Add</td><td style="padding:8px 4px;"><code>icon-btn icon-btn--sm icon-btn--filled</code></td><td style="padding:8px 4px;"><code>IconButton solid sm</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Play audio (word/sentence)</td><td style="padding:8px 4px;"><code>icon-btn icon-btn--xs</code></td><td style="padding:8px 4px;"><code>IconButton outline xs</code></td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Status cycle</td><td style="padding:8px 4px;"><code>cellHeaderStatus--{status}</code></td><td style="padding:8px 4px;"><code>Button outline sm + active</code> + color variant</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Audio subtab (word/sentence)</td><td style="padding:8px 4px;"><code>cellAudioSubtab</code></td><td style="padding:8px 4px;"><code>Button ghost sm + active</code> (segmented)</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Image card toggle</td><td style="padding:8px 4px;"><code>cellImageCard</code></td><td style="padding:8px 4px;">giữ custom + <code>active</code> token</td></tr>
+    <tr style="border-bottom:1px solid var(--color-border-subtle);"><td style="padding:8px 4px;">Search history clear</td><td style="padding:8px 4px;"><code>icon-btn icon-btn--xs</code></td><td style="padding:8px 4px;"><code>IconButton ghost xs</code></td></tr>
+    <tr><td style="padding:8px 4px;">Search history term/remove</td><td style="padding:8px 4px;"><code>searchHistoryTerm/searchHistoryRemove</code></td><td style="padding:8px 4px;"><code>Button ghost sm</code> + <code>IconButton ghost xs</code></td></tr>
+  </tbody>
+</table>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+}
+</script>
+</body>
+</html>

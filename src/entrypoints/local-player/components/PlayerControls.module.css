@@ -1,0 +1,116 @@
+/* === PlayerControls — bottom control bar of the local player ===
+   Two-row layout: seek bar (full-width) on top, pill clusters below.
+   Bar is transparent — pills carry their own subtle background.
+   Consumes tokens only — no raw hex/radius. */
+
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: 0 var(--space-1);
+  background: transparent;
+  min-height: 0;
+}
+
+/* Row 1: seek bar — same inset as controls row (bar padding only). */
+.seekRow {
+  width: 100%;
+  padding: 0;
+}
+
+/* Row 2: controls — two pill clusters, space-between so they hug edges. */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+/* Pill cluster — subtle background, fully rounded, groups same-language buttons. */
+.pillLeft,
+.pillRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  flex-shrink: 0;
+}
+
+.pillLeft {
+  gap: var(--space-1);
+}
+
+/* === Settings popover === */
+.settingsWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.settingsMenu {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  right: 0;
+  min-width: var(--space-10);
+  padding: var(--space-1-5);
+  border-radius: var(--radius-element);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  z-index: var(--z-popover);
+}
+
+.settingsItem {
+  display: flex;
+  align-items: center;
+}
+
+.settingsMenuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1-5) var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: background var(--transition);
+}
+
+.settingsMenuItem:hover {
+  background: var(--color-surface-hover);
+}
+
+.settingsMenuIcon {
+  flex-shrink: 0;
+}
+
+/* === Responsive — mobile / narrow viewport ===
+   Two-row layout already prevents overflow; just tighten gaps on small screens. */
+@media (max-width: 480px) {
+  .bar {
+    padding: 0 var(--space-1) var(--space-1);
+  }
+
+  .pillLeft,
+  .pillRight {
+    gap: var(--space-0-5);
+    padding: var(--space-0-5) var(--space-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}

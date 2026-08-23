@@ -78,6 +78,8 @@ import { registerImageSearchHandlers } from './handlers/images';
 import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
 import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
+import { registerLocalPlayerHandlers } from './handlers/localPlayer';
+import { registerOcrHandlers } from './handlers/ocr';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -268,6 +270,8 @@ export class BackgroundService implements BackgroundContext {
     registerFetchMediaUrlHandlers(this);
     registerScreenshotHandlers(this);
     registerSubtitleDiscoveryHandlers(this);
+    registerLocalPlayerHandlers(this);
+    registerOcrHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

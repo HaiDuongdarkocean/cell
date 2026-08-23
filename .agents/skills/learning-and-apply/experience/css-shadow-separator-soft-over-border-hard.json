@@ -1,0 +1,27 @@
+{
+  "id": "css-shadow-separator-soft-over-border-hard",
+  "title": "Separator giữa regions: shadow nhẹ thay border cứng — cảm giác mềm mại",
+  "category": ["css", "ux"],
+  "tags": ["shadow", "border", "separator", "soft", "divider", "footer", "region", "elevation", "visual-hierarchy"],
+  "trigger": "Separator giữa 2 region (footer/body, header/body, section/section) dùng border-top cứng — muốn cảm giác mềm mại hơn",
+  "principle": "Khi separator giữa regions cần cảm giác mềm mại, dùng box-shadow hướng lên (upward) thay border-top. Lý do: (1) border là đường gạch rõ ràng — tạo ranh giới cứng, 'cắt' visual; (2) shadow tản dần tạo gradient → chuyển tiếp mềm; (3) shadow có thể che nhẹ content bên dưới (z-index tự nhiên) → cảm giác layer; (4) iOS + Material 3 dùng shadow cho navigation bar separator, không border. Pattern: box-shadow: 0 calc(-1 * offset) blur calc(-1 * spread) color. Dùng token: --shadow-floating (low) hoặc custom với --space-* cho offset/blur + --color-border cho color. KHÔNG hardcode px — dùng calc(-1 * var(--space-N)).",
+  "cases": [
+    {
+      "context": "Footer separator với body — border-top cứng",
+      "bad": ".footer {\n  border-top: var(--border-width-hairline) solid var(--color-border-subtle);\n}",
+      "good": ".footer {\n  box-shadow: 0 calc(-1 * var(--space-0-5)) var(--space-1) calc(-1 * var(--space-0-5)) var(--color-border);\n}"
+    },
+    {
+      "context": "Header separator với content — muốn mềm hơn border-bottom",
+      "bad": ".header {\n  border-bottom: 1px solid var(--color-border);\n}",
+      "good": ".header {\n  box-shadow: 0 var(--space-0-5) var(--space-1) calc(-1 * var(--space-0-5)) var(--color-border);\n}"
+    }
+  ],
+  "applyFor": [
+    "Footer/body separator — shadow upward",
+    "Header/body separator — shadow downward",
+    "Sticky element separator (tab bar, toolbar)",
+    "Any region boundary cần soft transition thay vì hard line",
+    "Mobile UI cần cảm giác 'floating' cho fixed bar"
+  ]
+}

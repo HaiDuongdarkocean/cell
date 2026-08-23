@@ -30,7 +30,8 @@ import type {
   SubtitleForOverlayResult,
 } from '@/entities/message';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import type { ToastVariant } from '@/features/subtitle/ui/subtitleUI';
+import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
+import type { LoadStatus, LoadErrorType } from '@/stores/cuesStore';
 
 /**
  * Decide whether auto-load should trigger.
@@ -70,6 +71,9 @@ export function validateOverride(config: OverrideConfig): OverrideResult {
 }
 
 // --- Bilingual auto-load: cache + fetch + parse + load (ADR-007 D1, spec F4/F7/F8) ---
+
+/** Fetch timeout (ms) for content-script + background fetch (spec F8, Case 1). */
+const FETCH_TIMEOUT_MS = 15_000;
 
 /** Per-URL cache: { cues, format }. Cleared on tab navigate (content-script re-inject). */
 const subtitleCache = new Map<string, { cues: SrtCue[]; format: string }>();
@@ -143,7 +147,20 @@ export async function fetchAndParseSubtitle(
 
   let content: string;
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } catch (err) {
+      clearTimeout(timeoutId);
+      // AbortError = our 15s timeout → return immediately (no background retry).
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return { success: false, cues: [], format, error: 'Fetch timeout (15s)' };
+      }
+      throw err;
+    }
+    clearTimeout(timeoutId);
     if (!response.ok) {
       // Non-ok (403/404) → try background fallback before giving up.
       content = await fetchViaBackground(url, tabUrl, initiator);
@@ -181,10 +198,16 @@ export async function fetchAndParseSubtitle(
  * Throws on failure (caller catches + reports).
  */
 async function fetchViaBackground(url: string, tabUrl?: string, initiator?: string): Promise<string> {
-  const response = await sendMessage<{ content?: string; error?: string }>({
-    type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
-    payload: { url, tabUrl, initiator },
-  }) as { success?: boolean; data?: FetchSubtitleContentResult; error?: string } | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Fetch timeout (15s)')), FETCH_TIMEOUT_MS);
+  });
+  const response = await Promise.race([
+    sendMessage<{ content?: string; error?: string }>({
+      type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+      payload: { url, tabUrl, initiator },
+    }),
+    timeoutPromise,
+  ]) as { success?: boolean; data?: FetchSubtitleContentResult; error?: string } | undefined;
   if (!response?.success || !response.data?.content) {
     throw new Error(response?.error ?? 'background fetch returned no content');
   }
@@ -202,7 +225,10 @@ export interface AutoLoadController {
 export interface AutoLoadDeps {
   readonly controller: AutoLoadController;
   readonly onPanelRender?: (targetCues: SrtCue[], nativeCues: SrtCue[]) => void;
-  readonly onToast?: (message: string, variant?: ToastVariant) => void;
+  /** Inline load status per role — replaces toast for auto-load notifications.
+   *  The controller updates cuesStore; SubtitleBlock shows the status inline
+   *  when no active cue is visible (subtitle appearing = success). */
+  readonly onLoadStatus?: (role: 'target' | 'native', status: LoadStatus) => void;
   /** Page URL for resolving relative subtitle URLs (CORS fallback, spec F9). */
   readonly tabUrl?: string;
   /**
@@ -221,13 +247,40 @@ export interface AutoLoadDeps {
 }
 
 /**
+ * Resolve a subtitle display name — SSOT with the manager panel.
+ * Uses `formatSubtitleName` (same function the panel uses) so the inline
+ * status shows the exact same name the user sees in the track list.
+ * Auto-load picks the first match → index 0 → "English #1" or
+ * "English (auto-generated) #1" (YouTube displayName) or "Sub #1" (fallback).
+ */
+function resolveSubtitleName(sub: SubtitleForOverlayResult): string {
+  return formatSubtitleName('auto', sub.language, 0, undefined, sub.displayName);
+}
+
+/**
+ * Detect a user-friendly error type from a fetch/parse error message.
+ * Order: timeout → offline → not-found → invalid → unknown (spec F8).
+ */
+function detectErrorType(error: string | undefined): LoadErrorType {
+  if (error && error.toLowerCase().includes('timeout')) return 'timeout';
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
+  if (error) {
+    const lower = error.toLowerCase();
+    if (lower.includes('404') || lower.includes('not found')) return 'not-found';
+    if (lower.includes('parse') || lower.includes('invalid') || lower.includes('conversion')) return 'invalid';
+  }
+  return 'unknown';
+}
+
+/**
  * Handle `AUTO_LOAD_SUBTITLES` payload: fetch + parse target + native (cache
  * by URL), then load bilingual cues into the overlay controller + re-render
  * the panel. Re-renders fully each time (no accumulation across pushes —
  * spec F7). Partial load: either target or native may be null.
  *
- * Never throws — fetch/parse failures are reported via `onToast` and the
- * failing side is treated as empty cues (spec F8).
+ * Never throws — fetch/parse failures are reported via `onLoadStatus` and the
+ * failing side is treated as empty cues (spec F8). Success needs no
+ * notification: the subtitle appearing in the block IS the success feedback.
  */
 export async function handleAutoLoadSubtitles(
   payload: AutoLoadSubtitlesPayload,
@@ -238,6 +291,11 @@ export async function handleAutoLoadSubtitles(
     return;
   }
 
+  // Signal loading state for each role that has a subtitle to fetch.
+  // AC1: native null → no 'native' status call (stays idle in store).
+  if (target) deps.onLoadStatus?.('target', { state: 'loading', languageLabel: resolveSubtitleName(target), source: 'auto' });
+  if (native) deps.onLoadStatus?.('native', { state: 'loading', languageLabel: resolveSubtitleName(native), source: 'auto' });
+
   const [targetResult, nativeResult] = await Promise.all([
     target ? fetchAndParseSubtitle(target.url, resolveFormat(target.format, target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
     native ? fetchAndParseSubtitle(native.url, resolveFormat(native.format, native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
@@ -245,30 +303,34 @@ export async function handleAutoLoadSubtitles(
   const targetCues = targetResult?.success ? targetResult.cues : [];
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
 
-  // Toast on fetch/parse failure (spec F8). Never log full URL (ADR-007 D8).
-  // Keep technical details in console; user-facing toast is concise and product-oriented.
+  // Report fetch/parse failure via inline status (spec F8). Never log full
+  // URL (ADR-007 D8). Technical details stay in console; the inline status
+  // in the subtitle block area shows a concise, human-readable message.
   if (target && targetResult && !targetResult.success) {
     console.error('[handleAutoLoadSubtitles] target failed', targetResult.error);
-    deps.onToast?.('Could not load target subtitle', 'error');
+    deps.onLoadStatus?.('target', { state: 'error', languageLabel: resolveSubtitleName(target), errorType: detectErrorType(targetResult.error) });
   }
   if (native && nativeResult && !nativeResult.success) {
     console.error('[handleAutoLoadSubtitles] native failed', nativeResult.error);
-    deps.onToast?.('Could not load native subtitle', 'error');
+    deps.onLoadStatus?.('native', { state: 'error', languageLabel: resolveSubtitleName(native), errorType: detectErrorType(nativeResult.error) });
+  }
+
+  // AC4 (Case 9): parse succeeded but produced 0 cues (empty file).
+  if (target && targetResult?.success && targetCues.length === 0) {
+    deps.onLoadStatus?.('target', { state: 'error', languageLabel: resolveSubtitleName(target), errorType: 'empty' });
+  }
+  if (native && nativeResult?.success && nativeCues.length === 0) {
+    deps.onLoadStatus?.('native', { state: 'error', languageLabel: resolveSubtitleName(native), errorType: 'empty' });
   }
 
   // Both empty (both failed or both null) → nothing to load.
   if (targetCues.length === 0 && nativeCues.length === 0) {
-    deps.onToast?.('Could not load subtitles', 'error');
     return;
   }
 
-  // Toast success — concise, product-oriented message. — anh yêu cần nhìn thấy kết quả auto-load để debug.
-  const parts: string[] = [];
-  if (targetCues.length > 0) parts.push('target');
-  if (nativeCues.length > 0) parts.push('native');
-  const sideLabel = parts.length > 1 ? 'Subtitles loaded' : 'Subtitle loaded';
-  deps.onToast?.(`${sideLabel} (${parts.join(' + ')})`, 'success');
-
+  // Success: load cues into the overlay. setCues clears the load status for
+  // any role that received non-empty cues — the subtitle text appearing in
+  // the block IS the success indicator, no toast needed.
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);
 

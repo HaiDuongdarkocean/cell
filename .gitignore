@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+.mock-servers/
 
 # Test coverage
 coverage/
@@ -105,4 +106,20 @@ dist.zip
 /prototype/
 /seed/
 /tmp
+
+# Private keys & CRX binaries (test signing artifacts — NEVER commit secrets).
+*-key.pem
+*.crx
+
+# Windows reserved-name junk file.
+/nul
+
+# Python bytecode cache.
+__pycache__/
+
+# Backup files.
+*.md.bak
+
+# Local test media (210MB+, not part of extension source).
+data/resource/media/
 

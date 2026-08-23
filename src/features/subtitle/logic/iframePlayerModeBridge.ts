@@ -28,6 +28,16 @@ const EXIT_MSG = '__CELL_PLAYER_MODE_EXIT';
 const ENTERED_MSG = '__CELL_PLAYER_MODE_ENTERED';
 const EXITED_MSG = '__CELL_PLAYER_MODE_EXITED';
 
+// Manager sheet — child iframe requests host page to render a bottom sheet.
+// The host page creates a portal on document.body and the child sends manager
+// state + receives actions via postMessage.
+const MGR_OPEN_MSG = '__CELL_MANAGER_OPEN';
+const MGR_CLOSE_MSG = '__CELL_MANAGER_CLOSE';
+const MGR_STATE_MSG = '__CELL_MANAGER_STATE';
+const MGR_ACTION_MSG = '__CELL_MANAGER_ACTION';
+const MGR_OPENED_MSG = '__CELL_MANAGER_OPENED';
+const MGR_CLOSED_MSG = '__CELL_MANAGER_CLOSED';
+
 interface TopFrameState {
   host: HTMLElement;
   fillStyle: HTMLStyleElement;

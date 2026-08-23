@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:tts="http://www.w3.org/ns/ttml#styling"
+    xml:lang="en">
+  <head>
+    <styling>
+      <style xml:id="red" tts:color="red"/>
+      <style xml:id="bold" tts:fontWeight="bold"/>
+      <style xml:id="italic" tts:fontStyle="italic"/>
+    </styling>
+  </head>
+  <body>
+    <div>
+      <p begin="1s" end="4s">This has <span style="red">red text</span> inside.</p>
+      <p begin="5s" end="8s">This has <span style="bold">bold text</span> and <span style="italic">italic text</span>.</p>
+      <p begin="9s" end="12s">Nested: <span style="bold"><span style="red">bold red</span></span> text.</p>
+      <p begin="13s" end="16s">Mixed <span tts:color="blue">inline blue</span> and <span style="italic">styled italic</span>.</p>
+      <p begin="17s" end="20s">Deep nesting: <span style="bold">bold <span style="italic">bold-italic <span tts:color="green">bold-italic-green</span></span></span>.</p>
+    </div>
+  </body>
+</tt>

@@ -1,0 +1,21 @@
+{
+  "id": "chrome-storage-silent-failure-offscreen",
+  "title": "chrome.storage.local.set silently fails in offscreen documents",
+  "category": ["state", "messaging"],
+  "tags": ["chrome-storage", "offscreen", "silent-failure", "debug", "chrome-runtime", "sendmessage"],
+  "trigger": "Debug logging or state persistence via chrome.storage.local in offscreen document — data never appears",
+  "principle": "chrome.storage.local.set() in offscreen documents can silently fail without throwing or rejecting. The Promise resolves but data doesn't persist. For debug logging from offscreen, use chrome.runtime.sendMessage to background (which CAN write to chrome.storage.local) instead of writing directly.",
+  "cases": [
+    {
+      "context": "Offscreen document tries to write debug state to chrome.storage.local for content script to read — data is always undefined",
+      "bad": "// offscreen: write debug info directly — silently fails\nchrome.storage.local.set({ __ocrScriptLoaded: true, __ocrStep: 'init' });\n// content script reads — always undefined\nchrome.storage.local.get('__ocrScriptLoaded', (r) => {\n  console.log(r.__ocrScriptLoaded); // undefined\n});",
+      "good": "// offscreen: send debug via sendMessage to background\nchrome.runtime.sendMessage({\n  type: 'OFFSCREEN_DEBUG_LOG',\n  data: { kind: 'script-loaded', step: 'init', time: Date.now() }\n}).catch(() => {});\n// background: receives and writes to chrome.storage.local (works in SW context)\nchrome.runtime.onMessage.addListener((msg) => {\n  if (msg.type === 'OFFSCREEN_DEBUG_LOG') {\n    chrome.storage.local.set({ __offscreenDebugLog: msg.data });\n  }\n});"
+    }
+  ],
+  "applyFor": [
+    "Debug logging from Chrome extension offscreen documents",
+    "State persistence from offscreen contexts",
+    "Any chrome.storage.local usage in offscreen documents",
+    "Diagnosing 'data is undefined' issues in extension offscreen contexts"
+  ]
+}

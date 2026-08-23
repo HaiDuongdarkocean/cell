@@ -1,0 +1,37 @@
+.wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* PlayerModeOverlay uses position:fixed + 100vw/100dvh. Contain it in a
+   relative frame with a fixed height. The overlayMount uses transform to
+   create a containing block for position:fixed, and we override the
+   overlay's 100vw/100dvh to 100%/100% so it fills the frame, not the page. */
+.frame {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  background: #000;
+}
+
+.overlayMount {
+  position: absolute;
+  inset: 0;
+  transform: translate(0, 0);
+  contain: strict;
+}
+
+/* Override fixed positioning + viewport units to fill the frame */
+.overlayMount > div {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}

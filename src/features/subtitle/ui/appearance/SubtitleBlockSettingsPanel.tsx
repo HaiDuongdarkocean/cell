@@ -13,6 +13,7 @@ interface SubtitleBlockSettingsPanelProps {
 /**
  * Subtitle block settings panel (ADR-025).
  * Shared position, global scale, and background opacity for the unified block.
+ * iOS Settings card style — grouped rows in a rounded card.
  */
 export function SubtitleBlockSettingsPanel({
   settings,
@@ -20,65 +21,67 @@ export function SubtitleBlockSettingsPanel({
 }: SubtitleBlockSettingsPanelProps): ReactElement {
   return (
     <div className={styles.container} data-cell-id="subtitle-block-settings-panel">
-      {/* Vertical position */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="block-y-offset">
-            Vertical position
-          </label>
-          <span className={styles.value}>{settings.yOffsetPercent}%</span>
+      <div className={styles.card}>
+        {/* Position */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="block-y-offset">
+              Position
+            </label>
+            <span className={styles.value}>{settings.yOffsetPercent}%</span>
+          </div>
+          <Slider
+            id="block-y-offset"
+            value={settings.yOffsetPercent}
+            min={0}
+            max={95}
+            step={1}
+            onChange={(v) => onChange({ yOffsetPercent: v })}
+            aria-label="Vertical position"
+            data-cell-id="block-y-offset"
+          />
+          <p className={styles.hint}>0% = top, 95% = bottom. Drag the block on video to reposition.</p>
         </div>
-        <Slider
-          id="block-y-offset"
-          value={settings.yOffsetPercent}
-          min={0}
-          max={95}
-          step={1}
-          onChange={(v) => onChange({ yOffsetPercent: v })}
-          aria-label="Vertical position"
-          data-cell-id="block-y-offset"
-        />
-        <p className={styles.hint}>0% = top, 95% = bottom. Drag the block on video also sets this.</p>
-      </div>
 
-      {/* Scale */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="block-global-scale">
-            Scale
-          </label>
-          <span className={styles.value}>{settings.globalScale.toFixed(1)}×</span>
+        {/* Size */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="block-global-scale">
+              Size
+            </label>
+            <span className={styles.value}>{settings.globalScale.toFixed(1)}×</span>
+          </div>
+          <Slider
+            id="block-global-scale"
+            value={settings.globalScale}
+            min={0.5}
+            max={2}
+            step={0.1}
+            onChange={(v) => onChange({ globalScale: v })}
+            aria-label="Scale"
+            data-cell-id="block-global-scale"
+          />
         </div>
-        <Slider
-          id="block-global-scale"
-          value={settings.globalScale}
-          min={0.5}
-          max={2}
-          step={0.1}
-          onChange={(v) => onChange({ globalScale: v })}
-          aria-label="Scale"
-          data-cell-id="block-global-scale"
-        />
-      </div>
 
-      {/* Background opacity */}
-      <div className={styles.field}>
-        <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="block-bg-opacity">
-            Background opacity
-          </label>
-          <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
+        {/* Background */}
+        <div className={styles.row}>
+          <div className={styles.sliderHeader}>
+            <label className={styles.label} htmlFor="block-bg-opacity">
+              Background
+            </label>
+            <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
+          </div>
+          <Slider
+            id="block-bg-opacity"
+            value={settings.bgOpacity}
+            min={0}
+            max={1}
+            step={0.1}
+            onChange={(v) => onChange({ bgOpacity: v })}
+            aria-label="Block background opacity"
+            data-cell-id="block-bg-opacity"
+          />
         </div>
-        <Slider
-          id="block-bg-opacity"
-          value={settings.bgOpacity}
-          min={0}
-          max={1}
-          step={0.1}
-          onChange={(v) => onChange({ bgOpacity: v })}
-          aria-label="Block background opacity"
-          data-cell-id="block-bg-opacity"
-        />
       </div>
     </div>
   );

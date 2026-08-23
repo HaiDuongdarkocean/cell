@@ -25,7 +25,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         aria-label="Clear selection"
         data-cell-id="selection-clear-btn"
       >
-        <Icon name="x" size={16} />
+        <Icon name="x"  />
       </IconButton>
       <span className={styles.count} data-cell-id="selection-count">
         {selectionCount} selected
@@ -35,7 +35,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         size="sm"
         onClick={onDownload}
         data-cell-id="selection-download-btn"
-        leadingIcon={<Icon name="download" size={14} className={styles.downloadIcon} />}
+        leadingIcon={<Icon name="download" className={styles.downloadIcon} />}
       >
         Download
       </Button>

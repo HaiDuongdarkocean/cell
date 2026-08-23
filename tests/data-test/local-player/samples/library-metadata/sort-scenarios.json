@@ -1,0 +1,121 @@
+[
+  {
+    "scenario": "sort by recent — mixed watched/unwatched",
+    "input": [
+      { "id": "a", "title": "Alpha", "addedAt": "2026-01-01T00:00:00.000Z", "lastWatchedAt": null },
+      { "id": "b", "title": "Bravo", "addedAt": "2026-01-02T00:00:00.000Z", "lastWatchedAt": "2026-07-10T00:00:00.000Z" },
+      { "id": "c", "title": "Charlie", "addedAt": "2026-01-03T00:00:00.000Z", "lastWatchedAt": "2026-07-11T00:00:00.000Z" },
+      { "id": "d", "title": "Delta", "addedAt": "2026-01-04T00:00:00.000Z", "lastWatchedAt": null }
+    ],
+    "sortBy": "recent",
+    "expected": ["c", "b", "d", "a"]
+  },
+  {
+    "scenario": "sort by title — case insensitive",
+    "input": [
+      { "id": "a", "title": "apple" },
+      { "id": "b", "title": "Banana" },
+      { "id": "c", "title": "cherry" },
+      { "id": "d", "title": "Date" }
+    ],
+    "sortBy": "title",
+    "expected": ["a", "b", "c", "d"]
+  },
+  {
+    "scenario": "sort by added — newest first",
+    "input": [
+      { "id": "a", "title": "A", "addedAt": "2026-01-01T00:00:00.000Z" },
+      { "id": "b", "title": "B", "addedAt": "2026-03-01T00:00:00.000Z" },
+      { "id": "c", "title": "C", "addedAt": "2026-02-01T00:00:00.000Z" }
+    ],
+    "sortBy": "added",
+    "expected": ["b", "c", "a"]
+  },
+  {
+    "scenario": "empty list — returns empty",
+    "input": [],
+    "sortBy": "recent",
+    "expected": []
+  },
+  {
+    "scenario": "all unwatched — sort by added desc as fallback",
+    "input": [
+      { "id": "a", "title": "A", "addedAt": "2026-01-01T00:00:00.000Z", "lastWatchedAt": null },
+      { "id": "b", "title": "B", "addedAt": "2026-03-01T00:00:00.000Z", "lastWatchedAt": null },
+      { "id": "c", "title": "C", "addedAt": "2026-02-01T00:00:00.000Z", "lastWatchedAt": null }
+    ],
+    "sortBy": "recent",
+    "expected": ["b", "c", "a"]
+  },
+  {
+    "scenario": "all watched — sort by lastWatchedAt desc",
+    "input": [
+      { "id": "a", "title": "A", "lastWatchedAt": "2026-06-01T00:00:00.000Z" },
+      { "id": "b", "title": "B", "lastWatchedAt": "2026-07-01T00:00:00.000Z" },
+      { "id": "c", "title": "C", "lastWatchedAt": "2026-05-01T00:00:00.000Z" }
+    ],
+    "sortBy": "recent",
+    "expected": ["b", "a", "c"]
+  },
+  {
+    "scenario": "same-date tiebreaker — lastWatchedAt equal, fallback to addedAt desc",
+    "input": [
+      { "id": "a", "title": "A", "addedAt": "2026-01-01T00:00:00.000Z", "lastWatchedAt": "2026-07-11T00:00:00.000Z" },
+      { "id": "b", "title": "B", "addedAt": "2026-02-01T00:00:00.000Z", "lastWatchedAt": "2026-07-11T00:00:00.000Z" },
+      { "id": "c", "title": "C", "addedAt": "2026-01-15T00:00:00.000Z", "lastWatchedAt": "2026-07-11T00:00:00.000Z" }
+    ],
+    "sortBy": "recent",
+    "expected": ["b", "c", "a"]
+  },
+  {
+    "scenario": "null lastWatchedAt handling — unwatched sorted after watched in recent sort",
+    "input": [
+      { "id": "a", "title": "A", "addedAt": "2026-01-01T00:00:00.000Z", "lastWatchedAt": null },
+      { "id": "b", "title": "B", "addedAt": "2026-01-02T00:00:00.000Z", "lastWatchedAt": "2026-06-01T00:00:00.000Z" },
+      { "id": "c", "title": "C", "addedAt": "2026-01-03T00:00:00.000Z", "lastWatchedAt": null }
+    ],
+    "sortBy": "recent",
+    "expected": ["b", "c", "a"]
+  },
+  {
+    "scenario": "CJK titles sort — lexicographic by Unicode code point",
+    "input": [
+      { "id": "a", "title": "流浪地球" },
+      { "id": "b", "title": "君の名は。" },
+      { "id": "c", "title": "사랑의 불시착" },
+      { "id": "d", "title": "Amélie" }
+    ],
+    "sortBy": "title",
+    "expected": ["d", "b", "a", "c"]
+  },
+  {
+    "scenario": "numbers in titles — natural sort (Movie 2 before Movie 10)",
+    "input": [
+      { "id": "a", "title": "Movie 10" },
+      { "id": "b", "title": "Movie 2" },
+      { "id": "c", "title": "Movie 1" },
+      { "id": "d", "title": "Movie 20" }
+    ],
+    "sortBy": "title",
+    "expected": ["c", "b", "a", "d"]
+  },
+  {
+    "scenario": "sort by duration — shortest first",
+    "input": [
+      { "id": "a", "title": "A", "durationMs": 9134400 },
+      { "id": "b", "title": "B", "durationMs": 300000 },
+      { "id": "c", "title": "C", "durationMs": 7200000 }
+    ],
+    "sortBy": "duration",
+    "expected": ["b", "c", "a"]
+  },
+  {
+    "scenario": "sort by title — identical titles with different years stay stable",
+    "input": [
+      { "id": "a", "title": "Dune", "addedAt": "2026-02-10T09:05:00.000Z" },
+      { "id": "b", "title": "Dune", "addedAt": "2026-02-10T09:00:00.000Z" }
+    ],
+    "sortBy": "title",
+    "expected": ["b", "a"]
+  }
+]
