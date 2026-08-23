@@ -21,7 +21,9 @@ docs/           # Tài liệu dự án
 │   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
 │   ├── orca-ocr-layer.md               # Spec: OCR layer (PaddleOCR.js PP-OCRv5) — hard-sub video + image OCR, per-origin persistence, mixed CN+EN+JA, Manager Panel toggle + context menu
 │   ├── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
-│   └── fnc_tts.md                      # Spec: local offline TTS với Supertonic v3 cho popup từ điển + nền reader
+│   ├── fnc_tts.md                      # Spec: local offline TTS với Supertonic v3 cho popup từ điển + nền reader
+│   ├── reader-requirements.md          # Reader feature requirements (subagent output)
+│   └── reader.md                       # Reader technical spec (SSOT)
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
@@ -35,13 +37,22 @@ docs/           # Tài liệu dự án
 ├── mockup/                            # UI mockup (HTML + README) — prototype trước khi implement
 │   ├── subtitle-manager-redesign.html # Subtitle Manager Quiet List concept, interactive dark/light + responsive widths
 │   ├── cue-item-redesign.html         # 3 biến thể cue item mới (timestamp trái, text phải, format human-friendly)
-│   └── README.md                      # Rationale + so sánh các mockup + token dùng
+│   ├── README.md                      # Rationale + so sánh các mockup + token dùng
+│   ├── reader.html                    # Reader UI mockup
+│   └── reader-README.md               # Reader mockup notes
 ├── ideas/                             # Refined idea one-pagers (idea-refine output)
 │   └── orca-ocr-layer.md              # OCR layer cho Cell (hard-sub video + image + screenshot) — PaddleOCR.js PP-OCRv5 primary, evidence-grounded
+├── intent/                            # Confirmed user intent (interview-me output)
+│   └── reader.md                      # Reader feature intent
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   └── learning-algorithms-summary.md # Learning algorithms summary
 ├── memory/                            # Agent memory — long-term context
 │   └── algorithm-tokenize.md          # Tokenize algorithm notes
+├── research/                          # Subagent research reports
+│   └── reader-technical.md            # Reader technical research
+├── reviews/                           # Adversarial review outputs
+│   ├── reader-adversarial-1.md        # Architecture/MV3/performance review
+│   └── reader-adversarial-2.md        # UX/security/accessibility/scope review
 └── shortcut-for-tw/                   # Cheatsheet phím tắt Devin Terminal workflow
     └── cheatsheet.md                  # Win+Shift+Q launcher + WT pane nav/swap/swap/resize + workflow giao việc
 

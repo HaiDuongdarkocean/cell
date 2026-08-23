@@ -1,0 +1,17 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 0.5rem);
+  padding: var(--spacing-sm, 0.5rem) 0;
+  flex-wrap: wrap;
+}
+
+.sentence {
+  flex: 1;
+  min-width: 12rem;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm, 0.875rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

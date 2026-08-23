@@ -82,6 +82,7 @@ import { registerScreenshotHandlers } from './handlers/screenshot';
 import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
 import { registerLocalPlayerHandlers } from './handlers/localPlayer';
 import { registerOcrHandlers } from './handlers/ocr';
+import { registerReaderHandlers } from './handlers/reader';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -275,6 +276,7 @@ export class BackgroundService implements BackgroundContext {
     registerScreenshotHandlers(this);
     registerSubtitleDiscoveryHandlers(this);
     registerLocalPlayerHandlers(this);
+    registerReaderHandlers(this);
     registerOcrHandlers(this);
   }
 

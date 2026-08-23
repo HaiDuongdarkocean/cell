@@ -108,7 +108,8 @@ export type MessageType =
   | 'OCR_RECOGNIZE'
   | 'OCR_DISPOSE'
   | 'OCR_GET_STATE'
-  | 'OCR_SET_STATE';
+  | 'OCR_SET_STATE'
+  | 'OPEN_READER';
 
 // === Message Request ===
 
@@ -733,6 +734,11 @@ export interface GetKeyQuotaResult {
  *  optional — when present, the player opens straight to that video. */
 export interface OpenLocalPlayerPayload {
   readonly videoId?: string;
+}
+
+/** Background: open the Reader page. `bookId` optional — when present, open that book. */
+export interface OpenReaderPayload {
+  readonly bookId?: string;
 }
 
 /** Player → background: save current playback position for resume.

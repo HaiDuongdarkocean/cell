@@ -4,6 +4,8 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Select } from '@/shared/ui/Select';
 import { Icon } from '@/shared/icons/Icon';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './UniversalPanelHeader.module.css';
 
@@ -95,6 +97,21 @@ export function UniversalPanelHeader({
           );
         })}
       </HStack>
+
+      <IconButton
+        size="sm"
+        variant="ghost"
+        aria-label="Open Reader"
+        onClick={() =>
+          void sendMessage({
+            type: MESSAGE_TYPES.OPEN_READER,
+            payload: {},
+          })
+        }
+        data-cell-id="universal-panel-reader"
+      >
+        <Icon name="bookOpen" />
+      </IconButton>
 
       <IconButton
         size="sm"

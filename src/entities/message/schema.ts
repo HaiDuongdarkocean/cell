@@ -202,3 +202,7 @@ export const ResolveSubtitleDownloadPayloadSchema = z.object({
 export const GetKeyQuotaPayloadSchema = z.object({
   provider: z.enum(['subdl', 'opensubtitles']).optional(),
 }).optional();
+
+export const OpenReaderPayloadSchema = z.object({
+  bookId: z.string().optional(),
+}).optional();
