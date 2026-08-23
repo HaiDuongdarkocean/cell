@@ -525,16 +525,17 @@ async function loadSessions(): Promise<SessionMap> {
     executionProviders: ['webgpu'],
   };
 
-  const [dp, textEnc, vectorEst, vocoder] = await Promise.all(
-    ONNX_FILES.map(async (name) => {
-      const file = await readTtsFile(name);
-      if (!file) throw new Error(`Missing ${name}`);
-      const buffer = await file.arrayBuffer();
-      return ort.InferenceSession.create(buffer, options);
-    }),
-  );
+  const sessions: SessionMap = {} as SessionMap;
+  const keys: (keyof SessionMap)[] = ['dp', 'textEnc', 'vectorEst', 'vocoder'];
+  for (let i = 0; i < ONNX_FILES.length; i++) {
+    const name = ONNX_FILES[i];
+    const file = await readTtsFile(name);
+    if (!file) throw new Error(`Missing ${name}`);
+    const buffer = await file.arrayBuffer();
+    (sessions as Record<keyof SessionMap, InferenceSession>)[keys[i]] = await ort.InferenceSession.create(buffer, options);
+  }
 
-  return { dp, textEnc, vectorEst, vocoder };
+  return sessions;
 }
 
 async function ensureLoaded(): Promise<TextToSpeech> {
@@ -587,7 +588,8 @@ async function ensureLoaded(): Promise<TextToSpeech> {
 export async function synthesizeSupertonic(text: string, lang: string): Promise<ArrayBuffer> {
   const tts = await ensureLoaded();
   const { wav, duration } = await tts.call(text, lang, cache.style as Style);
-  return writeWavBuffer(wav, tts.sampleRate, duration);
+  const durationSeconds = Array.isArray(duration) ? (duration[0] ?? 0) : duration;
+  return writeWavBuffer(wav, tts.sampleRate, durationSeconds);
 }
 
 export function writeWavBuffer(audioData: readonly number[], sampleRate: number, duration: number): ArrayBuffer {

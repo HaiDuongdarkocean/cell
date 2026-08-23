@@ -17,9 +17,16 @@ interface MessageLike {
   readonly payload?: unknown;
 }
 
-onMessage((message, _sender, sendResponse) => {
+onMessage((message, sender, sendResponse) => {
   const msg = message as MessageLike;
+  // Offscreen is driven by the service worker only; ignore direct fan-out from
+  // options/popup/sidepanel pages to avoid duplicate (interrupted) TTS runs.
+  const isFromBackground = !sender?.tab;
+
   if (msg.type === MESSAGE_TYPES.TTS_SPEAK_LOCAL) {
+    if (!isFromBackground) {
+      return false;
+    }
     const parsed = TtsSpeakLocalPayloadSchema.safeParse(msg.payload);
     if (!parsed.success) {
       sendResponse({ success: false, error: `Invalid TTS_SPEAK_LOCAL payload: ${parsed.error.message}` } as MessageResponse<null>);
@@ -42,6 +49,9 @@ onMessage((message, _sender, sendResponse) => {
   }
 
   if (msg.type === MESSAGE_TYPES.TTS_DOWNLOAD_VOICE) {
+    if (!isFromBackground) {
+      return false;
+    }
     const parsed = TtsDownloadVoicePayloadSchema.safeParse(msg.payload);
     if (!parsed.success) {
       sendResponse({ success: false, error: `Invalid TTS_DOWNLOAD_VOICE payload: ${parsed.error.message}` } as MessageResponse<null>);

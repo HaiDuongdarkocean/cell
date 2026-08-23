@@ -205,6 +205,8 @@ export default defineConfig(({ mode }) => ({
         mockHardSubPage: resolve(__dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
         mockYouTubeHardsub: resolve(__dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
         localPlayer: resolve(__dirname, 'src/entrypoints/local-player/index.html'),
+        reader: resolve(__dirname, 'src/entrypoints/reader/index.html'),
+        mockupLanguageProfile: resolve(__dirname, 'src/entrypoints/mockup-language-profile/index.html'),
       },
       output: {
         manualChunks(id) {
