@@ -37,6 +37,7 @@ export function onMessage(
     sendResponse: (response?: unknown) => void,
   ) => boolean | Promise<unknown> | void,
 ): void {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
   chrome.runtime.onMessage.addListener(callback);
 }
 
@@ -64,5 +65,6 @@ export function onInstalled(
 export function removeOnMessageListener(
   callback: Parameters<typeof chrome.runtime.onMessage.addListener>[0],
 ): void {
+  if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
   chrome.runtime.onMessage.removeListener(callback);
 }

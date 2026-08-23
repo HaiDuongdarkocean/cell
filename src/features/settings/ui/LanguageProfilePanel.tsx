@@ -59,7 +59,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   const [validationMessages, setValidationMessages] = useState<string[]>([]);
 
   const profiles = useMemo(
-    () => [...settings.languageProfiles].sort((a, b) => a.order - b.order),
+    () => [...(settings.languageProfiles ?? [])].sort((a, b) => a.order - b.order),
     [settings.languageProfiles],
   );
   const active = useMemo(() => getActiveProfileSettings(settings), [settings]);

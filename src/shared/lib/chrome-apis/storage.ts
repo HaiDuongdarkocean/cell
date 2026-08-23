@@ -49,6 +49,7 @@ export async function removeSessionStorage(keys: string | string[]): Promise<voi
 export function onStorageChanged(
   callback: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void,
 ): void {
+  if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
   chrome.storage.onChanged.addListener(callback);
 }
 
@@ -56,5 +57,6 @@ export function onStorageChanged(
 export function removeOnStorageChangedListener(
   callback: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void,
 ): void {
+  if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
   chrome.storage.onChanged.removeListener(callback);
 }

@@ -42,7 +42,7 @@ export function resolveProfile(profile: LanguageProfile, universalNativeLanguage
 export function getActiveProfileSettings(
   settings: Pick<Settings, 'universalNativeLanguage' | 'languageProfiles' | 'activeProfileId'>,
 ): ResolvedProfile | null {
-  if (!settings.activeProfileId) return null;
+  if (!settings.activeProfileId || !settings.languageProfiles?.length) return null;
   const profile = settings.languageProfiles.find((p) => p.id === settings.activeProfileId);
   if (!profile) return null;
   return resolveProfile(profile, settings.universalNativeLanguage);
