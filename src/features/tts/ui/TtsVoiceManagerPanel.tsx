@@ -13,6 +13,7 @@ import { Button, Card, IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
 import type { TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
+import { TtsLanguagePanel } from './TtsLanguagePanel';
 import styles from './TtsVoiceManagerPanel.module.css';
 
 /** Default TTS settings — used when settings.tts is absent (schema defaults). */
@@ -26,6 +27,7 @@ export const DEFAULT_TTS_SETTINGS: TtsSettings = {
   localTtsEnabled: false,
   localTtsLanguage: 'en',
   downloadedLanguages: [],
+  hiddenLanguages: [],
 };
 
 interface TtsVoiceManagerPanelProps {
@@ -470,6 +472,9 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             </div>
           </div>
         </div>
+      </Card>
+      <Card className={styles.localTtsCard} data-cell-id="local-tts-languages-card">
+        <TtsLanguagePanel settings={settings} onSave={onSave} />
       </Card>
     </div>
   );

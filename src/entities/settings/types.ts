@@ -135,6 +135,8 @@ export interface TtsSettings {
   readonly localTtsLanguage: string;
   /** Languages whose voice packs are downloaded. */
   readonly downloadedLanguages: readonly string[];
+  /** Downloaded languages hidden from the popup language list. */
+  readonly hiddenLanguages: readonly string[];
 }
 
 /** Dictionary Popup settings slice (spec §9.3 — schema v14). */

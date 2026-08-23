@@ -249,3 +249,7 @@
     align-items: stretch;
   }
 }
+
+.localTtsCard {
+  margin-block-start: var(--space-4, 16px);
+}
