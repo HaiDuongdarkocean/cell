@@ -3,7 +3,7 @@ import { SettingsDialogContent } from '@/features/settings/ui/SettingsDialogCont
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
-import type { Settings } from '@/entities/media';
+import type { Settings } from '@/entities/settings';
 import styles from './SettingsTab.module.css';
 
 const FOCUSABLE_SELECTOR =
