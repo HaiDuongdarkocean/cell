@@ -34,7 +34,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   // Progress fan-out from offscreen → any listening popups.
-  ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS, async (request): Promise<MessageResponse<null>> => {
+  ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS, async (_request): Promise<MessageResponse<null>> => {
     return { success: true, data: null };
   });
 }

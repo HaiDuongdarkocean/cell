@@ -23,6 +23,9 @@ export const DEFAULT_TTS_SETTINGS: TtsSettings = {
   maxDisplay: 3,
   autoplayCount: 0,
   preferredAccent: 'US',
+  localTtsEnabled: false,
+  localTtsLanguage: 'en',
+  downloadedLanguages: [],
 };
 
 interface TtsVoiceManagerPanelProps {
