@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { nextStatus } from '../services/wordStatusStore';
 import { setWordStatus } from '../services/wordStatusClient';
 import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
@@ -101,19 +102,31 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   }, []);
 
   const playTerm = useCallback((): void => {
-    void sendMessage({
-      type: MESSAGE_TYPES.TTS_SPEAK,
-      payload: { text: candidate.term, langCode: candidate.langCode },
-    });
+    const text = candidate.term;
+    const langCode = candidate.langCode;
+    void (async (): Promise<void> => {
+      const settings = await loadSettings();
+      const localTts = settings.dictionaryPopup?.tts?.localTtsEnabled ?? false;
+      const type = localTts ? MESSAGE_TYPES.TTS_SPEAK_LOCAL : MESSAGE_TYPES.TTS_SPEAK;
+      void sendMessage({
+        type,
+        payload: { text, langCode },
+      });
+    })();
   }, [candidate.langCode, candidate.term]);
 
   const playSentence = useCallback((): void => {
-    const sentence = contextSentence.trim() || candidate.term;
-    if (!sentence) return;
-    void sendMessage({
-      type: MESSAGE_TYPES.TTS_SPEAK,
-      payload: { text: sentence, langCode: candidate.langCode },
-    });
+    const text = contextSentence.trim() || candidate.term;
+    if (!text) return;
+    void (async (): Promise<void> => {
+      const settings = await loadSettings();
+      const localTts = settings.dictionaryPopup?.tts?.localTtsEnabled ?? false;
+      const type = localTts ? MESSAGE_TYPES.TTS_SPEAK_LOCAL : MESSAGE_TYPES.TTS_SPEAK;
+      void sendMessage({
+        type,
+        payload: { text, langCode: candidate.langCode },
+      });
+    })();
   }, [candidate.langCode, candidate.term, contextSentence]);
 
   const sendToCard = useCallback(async (): Promise<void> => {

@@ -77,17 +77,12 @@ export function validateLanguageProfile(
   return { valid: true, emptyTarget: false, duplicate: false, messages };
 }
 
-const FLAT_FIELD_KEYS: (keyof Settings)[] = [
-  'subtitleOverlayTargetLanguage',
-  'subtitleOverlayNativeLanguage',
+const FLAT_FIELD_KEYS: (keyof ResolvedProfile & keyof Settings)[] = [
   'subtitleOverlayAutoLoad',
   'subtitleOverlayAutoLoadAsr',
   'subtitleOverlayAutoTranslate',
   'subtitleOverlayTargetStyle',
   'subtitleOverlayNativeStyle',
-  'subtitleOverlayParallelMode',
-  'subtitleOverlayBilingual',
-  'subtitleOverlayShowRomanization',
   'dictionaryPopup',
 ];
 
@@ -97,7 +92,7 @@ export function resolveSettingsFlatFields(settings: Record<string, unknown>): Re
   if (active) {
     FLAT_FIELD_KEYS.forEach((key) => {
       if (key in active) {
-        settings[key] = active[key] as unknown;
+        settings[key as string] = active[key] as unknown;
       }
     });
     settings.subtitleOverlayTargetLanguage = active.target;

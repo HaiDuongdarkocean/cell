@@ -72,6 +72,8 @@ import { registerLookupHandlers } from './handlers/lookup';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
 import { registerFrequencyHandlers } from './handlers/frequency';
 import { registerTtsHandlers } from './handlers/tts';
+import { registerLocalTtsHandlers } from './handlers/localTts';
+import { registerTtsDownloadHandlers } from './handlers/ttsDownload';
 import { registerTtsFetchAudioHandlers } from './handlers/ttsFetchAudio';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
@@ -80,6 +82,7 @@ import { registerScreenshotHandlers } from './handlers/screenshot';
 import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
 import { registerLocalPlayerHandlers } from './handlers/localPlayer';
 import { registerOcrHandlers } from './handlers/ocr';
+import { registerReaderHandlers } from './handlers/reader';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -264,6 +267,8 @@ export class BackgroundService implements BackgroundContext {
     registerWordStatusHandlers(this);
     registerFrequencyHandlers(this);
     registerTtsHandlers(this);
+    registerLocalTtsHandlers(this);
+    registerTtsDownloadHandlers(this);
     registerTtsFetchAudioHandlers(this);
     registerForvoAudioHandlers(this);
     registerImageSearchHandlers(this);
@@ -271,6 +276,7 @@ export class BackgroundService implements BackgroundContext {
     registerScreenshotHandlers(this);
     registerSubtitleDiscoveryHandlers(this);
     registerLocalPlayerHandlers(this);
+    registerReaderHandlers(this);
     registerOcrHandlers(this);
   }
 

@@ -64,6 +64,7 @@
     "@paddleocr/paddleocr-js": "^0.4.2",
     "fflate": "^0.8.3",
     "mux.js": "^6.3.0",
+    "onnxruntime-web": "^1.26.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sql.js": "^1.14.1",

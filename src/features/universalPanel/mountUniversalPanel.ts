@@ -15,7 +15,7 @@ import { DictionaryTab } from './tabs/DictionaryTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
@@ -285,12 +285,16 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let dictionaryLangCode = 'en';
   let dictionarySourceLang = 'en';
   let dictionaryTargetLang = 'vi';
+  let languageProfiles: { readonly id: string; readonly name: string }[] = [];
+  let activeProfileId: string | null = null;
 
   void loadSettings().then((settings) => {
     if (isUnmounted) return;
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = dictionarySourceLang;
+    languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name }));
+    activeProfileId = settings.activeProfileId;
     if (!isUnmounted) render();
   });
 
@@ -335,6 +339,13 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
             tokenizeState,
             onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
               options.panel?.onToggle(key);
+            },
+            languageProfiles,
+            activeProfileId,
+            onProfileChange: (id: string) => {
+              activeProfileId = id;
+              if (!isUnmounted) render();
+              void saveSettings({ activeProfileId: id });
             },
             dictionaryPanel: renderDictionaryPanel(open),
             settingsPanel,
