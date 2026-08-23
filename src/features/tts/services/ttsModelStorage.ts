@@ -24,7 +24,7 @@ export async function writeTtsFile(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      await writer.write(value);
+      await writer.write(value as unknown as ArrayBuffer);
       onChunk?.(value.byteLength);
     }
   } finally {

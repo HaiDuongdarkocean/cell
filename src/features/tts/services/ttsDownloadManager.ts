@@ -68,7 +68,7 @@ export async function downloadVoicePack(
   onProgress?: DownloadProgressCallback,
 ): Promise<void> {
   const totals = await Promise.all(SUPERONIC_FILES.map((name) => getContentLength(buildFileUrl(name))));
-  const total = totals.reduce((sum, t) => sum + (t ?? 0), 0);
+  const total = totals.reduce<number>((sum, t) => sum + (t ?? 0), 0);
   let loaded = 0;
 
   for (let i = 0; i < SUPERONIC_FILES.length; i++) {

@@ -45,11 +45,14 @@ function chunkText(text: string): readonly string[] {
 // ponytail: stub synthesizer. Replace with offscreen Supertonic v3 inference.
 // Ceiling: only generates a short beep, no real voice. Upgrade path: ttsDownloadManager + offscreen runner.
 async function stubSynthesize(_text: string): Promise<AudioBuffer> {
-  const Ctx = globalThis.AudioContext as unknown as new () => AudioContext | undefined;
+  const Ctx = globalThis.AudioContext as unknown as new () => AudioContext;
   if (!Ctx) {
     throw new Error('AudioContext is not available');
   }
   const ctx = new Ctx();
+  if (!ctx) {
+    throw new Error('AudioContext is not available');
+  }
   const durationSeconds = 0.1;
   const sampleRate = ctx.sampleRate;
   const frameCount = Math.floor(durationSeconds * sampleRate);
