@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 23;
+export const CURRENT_SCHEMA_VERSION = 24;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -432,7 +432,41 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     merged.activeProfileId = defaultProfile.id;
     return merged;
   },
+  // v23 → v24: one-level deep merge for all nested setting objects. Prevents
+  // partially persisted nested objects (e.g. old `tts` without `downloadedLanguages`)
+  // from breaking downstream UI that expects the latest default fields.
+  23: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 24 } as Record<string, unknown>;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
 };
+
+/**
+ * One-level shallow merge of nested object fields with their current defaults.
+ * Keeps stored user values while ensuring any new nested fields added in later
+ * defaults are present (forward-compat for incomplete persisted objects).
+ */
+function mergeNestedObjectDefaults(
+  settings: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...settings };
+  for (const key of Object.keys(defaults)) {
+    const defaultValue = defaults[key];
+    const value = merged[key];
+    if (
+      defaultValue !== null &&
+      typeof defaultValue === 'object' &&
+      !Array.isArray(defaultValue) &&
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value)
+    ) {
+      merged[key] = { ...(defaultValue as Record<string, unknown>), ...(value as Record<string, unknown>) };
+    }
+  }
+  return merged;
+}
 
 /**
  * Load settings from chrome.storage.local with schema version check + migration.
@@ -461,6 +495,7 @@ export async function loadSettings(): Promise<Settings> {
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
     const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
+    mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
     validateNavClusterFields(merged);
     validateLocalPlayerSettings(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
@@ -481,7 +516,9 @@ export async function loadSettings(): Promise<Settings> {
     }
   }
 
-  // Forward-compat: ensure nested overlay style objects carry fontWeight.
+  // Forward-compat: ensure nested overlay style objects carry fontWeight and
+  // all nested objects carry the latest default fields (e.g. tts, local player).
+  migrated = mergeNestedObjectDefaults(migrated, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   migrated.subtitleOverlayTargetStyle = normalizeOverlayStyle(migrated.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
   migrated.subtitleOverlayNativeStyle = normalizeOverlayStyle(migrated.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
   validateNavClusterFields(migrated);
