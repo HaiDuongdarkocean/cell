@@ -1,41 +1,222 @@
+/* === Sidebar — responsive navigation container ===
+   320-479px: horizontal scrollable chip bar at TOP (icon + label).
+   480-767px: bottom tab bar (icon-only, 48px touch target).
+   768px+:    vertical sidebar on left, collapsible to icon-only.
+   Consumes tokens only — no raw hex/radius. */
+
+/* ─── Mobile base (320-479px): horizontal chip bar at TOP ─── */
 .sidebar {
   display: flex;
-  flex-direction: column;
-  width: calc(var(--space-5) * 11);
-  height: 100%;
+  flex-direction: row;
+  flex-shrink: 0;
   background: var(--color-surface);
-  border-right: var(--border-width-hairline) solid var(--color-border);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  transition: width var(--duration-normal) var(--ease-out);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   overflow: hidden;
 }
 
-.collapsed {
-  width: var(--space-16);
-}
-
-.header {
-  padding: var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
-}
-
-.toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--space-2);
+.topbar {
+  display: none;
 }
 
 .nav {
   flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  overflow-y: auto;
+  flex-direction: row;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5) var(--space-2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
 }
 
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Chip-style items: icon + label compact, touch-target height */
+.nav :global(button) {
+  height: var(--touch-target);
+  min-height: var(--touch-target);
+  width: auto;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  gap: var(--space-1);
+  justify-content: flex-start;
+  flex-shrink: 0;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.nav :global(button[aria-current="true"]) {
+  background: var(--color-surface-hover);
+}
+
+/* ─── 480-767px: bottom tab bar (icon-only) ─── */
+@media (min-width: 480px) and (max-width: 767px) {
+  .sidebar {
+    border-bottom: none;
+    border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+
+  .nav {
+    justify-content: space-around;
+    padding: var(--space-1);
+  }
+
+  .nav :global(button) {
+    width: var(--touch-target);
+    min-width: var(--touch-target);
+    padding: 0;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+  }
+
+  .nav :global([class*="label"]) {
+    display: none;
+  }
+}
+
+/* ─── Desktop: vertical sidebar ─── */
+@media (min-width: 768px) {
+  .sidebar {
+    flex-direction: column;
+    width: calc(var(--space-5) * 8);
+    height: 100%;
+    border-top: none;
+    border-bottom: none;
+    border-right: var(--border-width-hairline) solid var(--color-border-subtle);
+    transition: width var(--duration-normal) ease-in-out;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+
+  .header {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav {
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-0-5);
+    padding: var(--space-2);
+    overflow-x: visible;
+    overflow-y: auto;
+    touch-action: auto;
+    scroll-behavior: smooth;
+    scroll-padding: var(--space-2);
+    position: relative;
+    /* Nav is container — button circle morph + floating bg morph
+       driven by nav width, not .collapsed class. */
+    container-type: inline-size;
+  }
+
+  /* Floating active bg — slides between items like water flow.
+     JS-driven (rAF) for click; CSS transition for scroll-driven (observer). */
+  .nav::before {
+    content: '';
+    position: absolute;
+    left: var(--space-2);
+    right: var(--space-2);
+    top: 0;
+    height: var(--active-h, 0px);
+    transform: translateY(var(--active-y, 0px));
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-xs);
+    transition: transform var(--duration-normal) ease-in-out,
+                height var(--duration-normal) ease-in-out,
+                border-radius var(--duration-normal) ease-in-out,
+                left var(--duration-normal) ease-in-out,
+                right var(--duration-normal) ease-in-out,
+                width var(--duration-normal) ease-in-out;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* JS-driven animation — disable CSS transition, rAF handles it */
+  .nav[data-animating]::before {
+    transition: none;
+  }
+
+  /* Items above floating bg */
+  .nav :global(button) {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  /* === Container query: circle morph (threshold 2) ===
+     Triggers AFTER NavItem label retract (threshold 1 at <=80px button).
+     Nav width <=64px → button ~48px → circle morph.
+     Sequence: label retracts first → then circle morph = water flow. */
+  @container (width <= 64px) {
+    .nav::before {
+      left: 50%;
+      right: auto;
+      width: var(--touch-target);
+      height: var(--touch-target);
+      transform: translateX(-50%) translateY(var(--active-y, 0px));
+      border-radius: 50%;
+    }
+
+    .nav :global(button) {
+      height: var(--touch-target);
+      min-height: var(--touch-target);
+      padding: 0 calc((var(--space-16) - var(--space-2) * 2 - var(--space-5)) / 2);
+      border-radius: 50%;
+      gap: 0;
+    }
+  }
+}
+
+/* ─── Collapsed (desktop only) — hide header text, keep icon ─── */
+.collapsed .header {
+  display: none;
+}
+
+.collapsed .topbar {
+  justify-content: center;
+}
+
+/* Flip collapse icon — chevron points outward when collapsed. */
+.collapsed .topbar :global(svg) {
+  transform: scaleX(-1);
+}
+
+.topbar :global(svg) {
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+/* ─── Collapsed (desktop only) — icon-only width ─── */
+.collapsed {
+  width: var(--space-16);
+}
+
+@media (max-width: 767px) {
+  .collapsed {
+    width: auto;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar { transition: none; animation: none; }
+  .sidebar,
+  .topbar :global(svg),
+  .nav :global(button),
+  .nav :global([class*="label"]) {
+    transition: none;
+    animation: none;
+  }
+  .nav { scroll-behavior: auto; }
 }

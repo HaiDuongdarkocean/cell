@@ -1,9 +1,9 @@
 /* === SettingsDialog content — responsive mobile-first (320→1280px+) ===
-   ADR-061: Complete responsive refactor. Mobile-first base styles, then
-   progressive enhancement at 480/768/1024/1280px breakpoints.
-   Knowledge atoms: css-flex-min-width-zero-shrink, css-hardcoded-px-to-token. */
+   Redesign: SSOT Sidebar + Card + SettingsRow + NavItem + Icon.
+   iOS Settings card pattern. Apple design: response, progressive disclosure,
+   visual hierarchy by spacing. Animation: subtle card enter, reduced-motion safe. */
 
-/* === Popover body — mobile: column (tabs on top, content below) === */
+/* === Popover body — mobile-first column (sidebar + content stack) === */
 .popoverBody {
   flex: 1;
   display: flex;
@@ -11,138 +11,94 @@
   min-height: 0;
 }
 
-/* === Sidebar — mobile: horizontal scrollable tab bar === */
-.sidebar {
-  composes: hide from '@/shared/ui/Scrollable.module.css';
-  display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-  padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-surface);
-  gap: var(--space-0-5);
-  flex-shrink: 0;
+/* 320-479px: sidebar chip bar at TOP — natural DOM order (sidebar first).
+   480-767px: sidebar bottom tab bar — flip order so content is on top. */
+@media (min-width: 480px) and (max-width: 767px) {
+  .popoverBody > :first-child {
+    order: 2;
+  }
+  .mainCol {
+    order: 1;
+  }
 }
 
-.sidebarLabel {
-  display: none;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  padding: var(--space-1) var(--space-2);
-  margin-bottom: var(--space-1);
-  white-space: nowrap;
-}
-
-.sidebarItem {
-  display: block;
-  flex-shrink: 0;
-  white-space: nowrap;
-  /* WCAG 2.5.5: 44px touch target on mobile / 40px desktop */
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-family: var(--font-family);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-}
-
-.sidebarItem:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.sidebarItem.active {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-/* === Main column — mobile: compact padding === */
+/* === Main column — mobile-first: M3 Compact margin 12px (compromise for extension popup) === */
 .mainCol {
   composes: themed from '@/shared/ui/Scrollable.module.css';
   flex: 1;
-  padding: var(--space-2);
+  padding: var(--space-3);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-width: 0;
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--space-3);
 }
 
-/* === Section card === */
-.section {
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
+/* === Section card — SSOT Card wrapper.
+   Card base has --card-padding: 16px, but sectionCard uses cardHeader/cardBody
+   for inner padding → override --card-padding to 0 (avoids double padding, saves 32px horizontal). === */
+.sectionCard {
+  --card-padding: 0;
   overflow: hidden;
-  scroll-margin-top: var(--space-2);
+  scroll-margin-top: var(--space-3);
   flex-shrink: 0;
+  animation: cardEnter var(--duration-short4) var(--ease-emphasized-decelerate) both;
 }
 
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-1-5) var(--space-2);
+/* === Card header (title + description grouped) — mobile: 12px vertical, 16px horizontal === */
+.cardHeader {
+  padding: var(--space-3) var(--space-4);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-surface);
 }
 
-.sectionTitle {
+.cardTitle {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin: 0;
   letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-tight);
 }
 
-.sectionDescription {
-  margin: 0;
-  padding: var(--space-1) var(--space-2);
+.cardDesc {
+  margin: var(--space-1) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  line-height: var(--leading-normal);
-  background: var(--color-surface);
+  line-height: var(--leading-snug);
 }
 
-.sectionBody {
-  padding: var(--space-2);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  background: var(--color-background);
-}
+/* === Card body — VStack manages flex/gap. cardBody class kept for scroll-margin
+   and any cardBody-specific overrides. === */
 
-/* === Setting field === */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* === Row label (inside SettingsRow) === */
+.rowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-normal);
+  user-select: none;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* === Pair row — mobile: 1 column (stack) === */
-.pairRow {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2);
-  align-items: start;
-}
-
-.pairRow > * {
-  min-width: 0;
+/* === Group label (uppercase section divider inside card).
+   margin-top: visual gap between groups (Gestalt proximity — between > within).
+   padding: 8px 16px 4px — top > bottom (heading closer to content below, not previous group). === */
+.groupLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  margin-top: var(--space-2);
 }
 
 /* === Child field — indented under a parent toggle === */
@@ -159,190 +115,126 @@
   }
 }
 
-/* === Divider === */
-.divider {
-  height: var(--border-width-hairline);
-  background: var(--color-border-subtle);
-  margin: var(--space-1) 0;
+/* === Shortcut section — container query context for responsive grouping.
+   Gestalt Proximity: 4 groups (Navigation, Toggle, Generate, Card Creator).
+   within-group gap 8px < between-group margin 16px (ratio 0.50). === */
+.shortcutSection {
+  container-type: inline-size;
 }
 
-/* === Shortcut grid — mobile: 1 column, 480px+: 2 columns === */
-.shortcutGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2);
+/* Between-group spacing — VStack manages within-group flex/gap. */
+.shortcutGroupWrap + .shortcutGroupWrap {
+  margin-top: var(--space-4);
 }
 
-@media (min-width: 480px) {
-  .shortcutGrid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-normal);
-  user-select: none;
-}
-
-.shortcutField .label {
-  flex: 0 0 auto;
-}
-
-/* === Auto select toggle row === */
-.asRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.asLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-normal);
-  user-select: none;
-  min-width: 0;
-}
-
-/* === Shortcut field === */
+/* === Shortcut field — padding vertical 0 (group gap owns spacing).
+   M3: component padding fixed, layout spacing responsive. === */
 .shortcutField {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-m3-small);
+  min-width: 0;
 }
 
-.shortcutField:hover {
-  background: var(--color-surface-hover);
+@container (min-width: 480px) {
+  .shortcutField {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+  }
 }
 
-/* === 480px+: pair row becomes 2 columns === */
+.shortcutField .rowLabel {
+  flex: 1 1 auto;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Mobile: pill stretches full width (stack layout). 480px+: pill auto width. */
+.shortcutField > :global([role="button"]) {
+  width: 100%;
+  min-width: 0;
+}
+
+@container (min-width: 480px) {
+  .shortcutField > :global([role="button"]) {
+    width: auto;
+    min-width: calc(var(--space-5) * 7);
+  }
+}
+
+/* === Card enter animation (Apple — subtle, from current position) === */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === 480px+: slightly more breathing room === */
 @media (min-width: 480px) {
-
-
   .mainCol {
-    padding: var(--space-3);
+    padding: var(--space-4);
     gap: var(--space-3);
   }
 
-  .sectionBody {
-    padding: var(--space-3);
-    gap: var(--space-3);
-  }
-
-  .sectionHeader {
-    padding: var(--space-2);
-  }
-
-  .sectionTitle {
-    font-size: var(--font-size-base);
-  }
-
-  .pairRow {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
+  .cardHeader {
+    padding: var(--space-4) var(--space-5);
   }
 }
 
-/* === 768px+: sidebar switches to vertical left, body becomes row === */
+/* === 768px+: sidebar switches to vertical left (Sidebar component handles),
+   body becomes row === */
 @media (min-width: 768px) {
 
   .popoverBody {
     flex-direction: row;
   }
 
-  .sidebar {
-    flex-direction: column;
-    overflow-x: visible;
-    overflow-y: auto;
-    touch-action: auto;
-    width: calc(var(--space-5) * 6);
-    flex-shrink: 0;
-    padding: var(--space-3) var(--space-2);
-    border-bottom: none;
-    border-right: var(--border-width-hairline) solid var(--color-border-subtle);
-    gap: var(--space-0-5);
-  }
-
-  .sidebarLabel {
-    display: block;
-  }
-
-  .sidebarItem {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    white-space: normal;
-  }
-
   .mainCol {
     padding: var(--space-4);
     gap: var(--space-4);
   }
-
-  .sectionBody {
-    padding: var(--space-3);
-    gap: var(--space-3);
-  }
-
-  .shortcutGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
-  }
 }
 
-/* === 1024px+: wider popover + sidebar === */
+/* === Sidebar width overrides (Sidebar component base = 160px at 768px+) ===
+   Collapsed width always wins over responsive width via [data-collapsed]. === */
+.sidebarWidth {}
+
+/* === 1024px+: wider sidebar === */
 @media (min-width: 1024px) {
-
-  .sidebar {
-    width: calc(var(--space-5) * 7);
+  .sidebarWidth {
+    width: calc(var(--space-5) * 9);
+  }
+  .sidebarWidth[data-collapsed] {
+    width: var(--space-16);
   }
 }
 
-/* === 1280px+: widest popover + sidebar === */
+/* === 1280px+: widest sidebar === */
 @media (min-width: 1280px) {
-
-  .sidebar {
-    width: calc(var(--space-5) * 8);
+  .sidebarWidth {
+    width: calc(var(--space-5) * 10);
+  }
+  .sidebarWidth[data-collapsed] {
+    width: var(--space-16);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebarItem {
+  .sidebarItem,
+  .sectionCard {
     transition: none;
+    animation: none;
   }
+  .mainCol { scroll-behavior: auto; }
 }
 
-/* === Language Profile section === */
-.rowLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  letter-spacing: var(--tracking-normal);
-  user-select: none;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* === Language Profile panel === */
 .profileList {
   display: flex;
   flex-direction: column;

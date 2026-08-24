@@ -8,16 +8,34 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-family: var(--font-family);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-in-out),
-              background-color var(--duration-fast) var(--ease-in-out);
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: var(--radius-xs);
+  /* NavItem is self-aware: container query detects own width.
+     Label retracts at <=80px, before circle morph at <=48px. */
+  container-type: inline-size;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              transform var(--duration-fast) var(--ease-standard),
+              height var(--duration-normal) ease-in-out,
+              padding var(--duration-normal) ease-in-out,
+              border-radius var(--duration-normal) ease-in-out,
+              gap var(--duration-normal) ease-in-out;
 }
 
 .item:hover:not(:disabled) {
   background: var(--color-surface-hover);
   color: var(--color-text);
+}
+
+.item:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .item:focus-visible {
@@ -26,8 +44,8 @@
 }
 
 .active {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
 }
 
 .disabled {
@@ -38,7 +56,10 @@
 .horizontal {
   flex-direction: row;
   padding: var(--space-1-5) var(--space-3);
-  border-radius: var(--radius-card);
+}
+
+.horizontal .label {
+  flex: 1 1 auto;
 }
 
 .vertical {
@@ -46,7 +67,6 @@
   justify-content: center;
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-card);
 }
 
 .icon {
@@ -55,13 +75,29 @@
   justify-content: center;
   width: var(--space-5);
   height: var(--space-5);
+  flex-shrink: 0;
 }
 
 .label {
   line-height: var(--leading-tight);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity var(--duration-normal) ease-in-out;
 }
 
+/* === Container query: NavItem self-collapse ===
+   Threshold 1 (<=80px): label retracts toward icon, fades out.
+   This triggers BEFORE circle morph (threshold 2 in Sidebar.module.css). */
+@container (width <= 80px) {
+  .label {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .item { transition: none; animation: none; }
+  .label { transition: none; }
 }
