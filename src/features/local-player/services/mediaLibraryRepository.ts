@@ -41,6 +41,10 @@ export type VideoRecord = {
   height?: number;
   codec?: string;
   fileHandle?: FileSystemFileHandle;
+  /** Parent directory handle — enables subtitle auto-match by scanning the
+   *  video's folder when the video is reopened from the library.
+   *  FileSystemDirectoryHandle is structured-cloneable → persists in IndexedDB. */
+  dirHandle?: FileSystemDirectoryHandle;
   /** Whether a matching subtitle was found during folder scan. */
   hasSubtitle?: boolean;
 };
@@ -216,6 +220,14 @@ export async function clearHistory(): Promise<void> {
   await txDone(tx);
 }
 
+/** Delete all video records (library bulk clear). */
+export async function clearAllVideos(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(STORES.VIDEOS, 'readwrite');
+  tx.objectStore(STORES.VIDEOS).clear();
+  await txDone(tx);
+}
+
 // ─── Subtitle CRUD ───────────────────────────────────────────────────────────
 
 /** Upsert a subtitle record (put by keyPath id). */
@@ -249,5 +261,13 @@ export async function deleteSubtitle(id: string): Promise<void> {
   const db = await getDB();
   const tx = db.transaction(STORES.SUBTITLES, 'readwrite');
   tx.objectStore(STORES.SUBTITLES).delete(id);
+  await txDone(tx);
+}
+
+/** Delete all subtitle records (library bulk clear). */
+export async function clearAllSubtitles(): Promise<void> {
+  const db = await getDB();
+  const tx = db.transaction(STORES.SUBTITLES, 'readwrite');
+  tx.objectStore(STORES.SUBTITLES).clear();
   await txDone(tx);
 }

@@ -2,9 +2,12 @@ import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LibraryView } from './LibraryView';
 import type { VideoRecord } from '@/features/local-player/services/mediaLibraryRepository';
+import type { SubtitlesState } from '@/entrypoints/local-player/hooks/useLocalPlayerStore';
 import videoEntries from '../../../../tests/data-test/local-player/samples/library-metadata/video-entries.json';
 
 const typedEntries = videoEntries as VideoRecord[];
+
+const emptySubs: SubtitlesState = { target: null, native: null, others: [] };
 
 describe('LibraryView — real sample data (26 entries)', () => {
   beforeEach(() => {
@@ -16,113 +19,83 @@ describe('LibraryView — real sample data (26 entries)', () => {
     jest.useRealTimers();
   });
 
-  it('renders 26 LibraryCard components for the full sample library', () => {
-    render(
+  function renderView(overrides: Partial<{
+    onSortChange: jest.Mock;
+    onVideoSelect: jest.Mock;
+    onSelectTrack: jest.Mock;
+    onOpenFile: jest.Mock;
+    onOpenFolder: jest.Mock;
+    currentVideoId: string | null;
+    currentSubtitles: SubtitlesState;
+  }> = {}) {
+    const onSortChange = overrides.onSortChange ?? jest.fn();
+    const onVideoSelect = overrides.onVideoSelect ?? jest.fn();
+    const onSelectTrack = overrides.onSelectTrack ?? jest.fn();
+    const onOpenFile = overrides.onOpenFile ?? jest.fn();
+    const onOpenFolder = overrides.onOpenFolder ?? jest.fn();
+    return render(
       <LibraryView
         videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={jest.fn()}
         subtitles={[]}
+        sortBy="recent"
+        onSortChange={onSortChange}
+        onVideoSelect={onVideoSelect}
         onSubtitleSelect={jest.fn()}
+        onSelectTrack={onSelectTrack}
+        onOpenFile={onOpenFile}
+        onOpenFolder={onOpenFolder}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
+        currentVideoId={overrides.currentVideoId ?? null}
+        currentSubtitles={overrides.currentSubtitles ?? emptySubs}
       />,
     );
+  }
+
+  it('renders 26 LibraryCard components for the full sample library', () => {
+    renderView();
     expect(screen.getAllByTestId('library-card')).toHaveLength(26);
   });
 
-  it('renders CJK titles correctly (vid-006: 君の名は。, vid-007: 사랑의 불시착, vid-008: 流浪地球)', () => {
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
+  it('renders CJK titles correctly (vid-006, vid-007, vid-008)', () => {
+    renderView();
     expect(screen.getByText('君の名は。 (Your Name)')).toBeInTheDocument();
     expect(screen.getByText('사랑의 불시착 (Crash Landing on You) E01')).toBeInTheDocument();
     expect(screen.getByText('流浪地球 (The Wandering Earth)')).toBeInTheDocument();
   });
 
   it('renders special char title correctly (vid-017: Amélie)', () => {
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
+    renderView();
     expect(screen.getByText('Amélie')).toBeInTheDocument();
   });
 
   it('shows "Not watched" for entries with null lastWatchedAt (vid-003, vid-015, vid-016)', () => {
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
+    renderView();
     const unwatched = screen.getAllByText('Not watched');
-    // vid-003, vid-015, vid-016 have null lastWatchedAt
     expect(unwatched).toHaveLength(3);
   });
 
-  it('shows resume % for entries with resumePositionMs > 0 (vid-002, vid-007, vid-011, vid-019, vid-020)', () => {
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
+  it('shows resume % in ring for entries with resumePositionMs > 0 (4 entries with pct > 0)', () => {
+    renderView();
+    const resumeRings = screen.getAllByTestId('library-card-resume').filter(
+      (el) => el.getAttribute('data-pct') !== '0',
     );
-    const resumeBadges = screen.getAllByTestId('library-card-resume');
-    // 5 entries have resumePositionMs > 0
-    expect(resumeBadges).toHaveLength(5);
+    // 4 entries have pct > 0: vid-002 (41%), vid-007 (45%), vid-011 (69%), vid-019 (74%)
+    // vid-020 has resumePositionMs=5000 but pct rounds to 0
+    expect(resumeRings).toHaveLength(4);
   });
 
   it('calls onSortChange when sort dropdown changes to "title"', () => {
     const onSortChange = jest.fn();
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={onSortChange}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
-    // Open the sort dropdown by clicking the trigger button.
+    renderView({ onSortChange });
     fireEvent.click(screen.getByRole('button', { name: 'Sort library' }));
-    // Click the "Title" option
     fireEvent.click(screen.getByRole('option', { name: 'Title' }));
     expect(onSortChange).toHaveBeenCalledWith('title');
   });
 
   it('calls onSortChange when sort dropdown changes to "added"', () => {
     const onSortChange = jest.fn();
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={onSortChange}
-        onVideoSelect={jest.fn()}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
+    renderView({ onSortChange });
     fireEvent.click(screen.getByRole('button', { name: 'Sort library' }));
     fireEvent.click(screen.getByRole('option', { name: 'Date added' }));
     expect(onSortChange).toHaveBeenCalledWith('added');
@@ -132,11 +105,18 @@ describe('LibraryView — real sample data (26 entries)', () => {
     render(
       <LibraryView
         videos={[]}
+        subtitles={[]}
         sortBy="recent"
         onSortChange={jest.fn()}
         onVideoSelect={jest.fn()}
-        subtitles={[]}
         onSubtitleSelect={jest.fn()}
+        onSelectTrack={jest.fn()}
+        onOpenFile={jest.fn()}
+        onOpenFolder={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
+        currentVideoId={null}
+        currentSubtitles={emptySubs}
       />,
     );
     expect(screen.getByTestId('library-empty')).toBeInTheDocument();
@@ -145,20 +125,39 @@ describe('LibraryView — real sample data (26 entries)', () => {
 
   it('calls onVideoSelect with videoId when a card is clicked', () => {
     const onVideoSelect = jest.fn();
-    render(
-      <LibraryView
-        videos={typedEntries}
-        sortBy="recent"
-        onSortChange={jest.fn()}
-        onVideoSelect={onVideoSelect}
-        subtitles={[]}
-        onSubtitleSelect={jest.fn()}
-      />,
-    );
+    renderView({ onVideoSelect });
     const cards = screen.getAllByTestId('library-card');
     fireEvent.click(cards[0]);
     expect(onVideoSelect).toHaveBeenCalledTimes(1);
-    // The first card in "recent" sort — onSortChange not involved, just verify an id was passed.
     expect(onVideoSelect.mock.calls[0][0]).toEqual(expect.any(String));
+  });
+
+  it('renders footer with sort select and add buttons', () => {
+    renderView();
+    expect(screen.getByTestId('library-sort-select')).toBeInTheDocument();
+    expect(screen.getByTestId('playlist-add-files')).toBeInTheDocument();
+    expect(screen.getByTestId('playlist-add-folder')).toBeInTheDocument();
+  });
+
+  it('calls onOpenFile when Add files button is clicked', () => {
+    const onOpenFile = jest.fn();
+    renderView({ onOpenFile });
+    fireEvent.click(screen.getByTestId('playlist-add-files'));
+    expect(onOpenFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onOpenFolder when Add folder button is clicked', () => {
+    const onOpenFolder = jest.fn();
+    renderView({ onOpenFolder });
+    fireEvent.click(screen.getByTestId('playlist-add-folder'));
+    expect(onOpenFolder).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks the current video as active', () => {
+    renderView({ currentVideoId: 'vid-001' });
+    const cards = screen.getAllByTestId('library-card');
+    // The active card's parent .item should have the active class
+    const activeCard = cards.find((c) => c.parentElement?.className.includes('active'));
+    expect(activeCard).toBeTruthy();
   });
 });

@@ -37,22 +37,6 @@ jest.mock('@/entrypoints/local-player/hooks/useLocalVideo', () => ({
   })),
 }));
 
-jest.mock('./PlayerMenuBar', () => ({
-  PlayerMenuBar: (props: {
-    onOpenFile: () => void;
-    onToggleLibrary: () => void;
-  }) => (
-    <div data-cell-id="player-menu-bar">
-      <button data-cell-id="menu-open-file" onClick={props.onOpenFile}>
-        Open
-      </button>
-      <button data-cell-id="menu-toggle-library" onClick={props.onToggleLibrary}>
-        Library
-      </button>
-    </div>
-  ),
-}));
-
 jest.mock('./PlayerControls', () => ({
   PlayerControls: () => <div data-cell-id="player-controls" />,
 }));
@@ -126,22 +110,11 @@ const baseStyle: OverlayStyleConfig = {
   visible: true,
 };
 
-const sampleVideo: VideoRecord = {
-  id: 'v1',
-  filename: 'movie.mp4',
-  title: 'Movie',
-  durationMs: 120000,
-  addedAt: '2026-01-01T00:00:00.000Z',
-  lastWatchedAt: null,
-  resumePositionMs: 0,
-};
-
 interface RenderOpts {
   videoFile?: File | null;
   subtitleStatus?: SubtitleStatus;
   library?: VideoRecord[];
   subtitles?: SubtitlesState;
-  showLibrary?: boolean;
 }
 
 const mockSubtitleEngine = {
@@ -191,13 +164,13 @@ const mockSubtitleActions = {
 };
 
 function renderPlayerView(opts: RenderOpts = {}): {
-  mocks: { onOpenFile: jest.Mock; onFilesDrop: jest.Mock; onVideoSelect: jest.Mock; onSortChange: jest.Mock; onOpenSubtitle: jest.Mock; onOpenFolder: jest.Mock; onToggleLibrary: jest.Mock };
+  mocks: { onOpenFile: jest.Mock; onFilesDrop: jest.Mock; onVideoSelect: jest.Mock; onSortChange: jest.Mock; onOpenSubtitle: jest.Mock; onOpenFolder: jest.Mock };
 } {
   return renderPlayerViewWithContainer(opts);
 }
 
 function renderPlayerViewWithContainer(opts: RenderOpts = {}): {
-  mocks: { onOpenFile: jest.Mock; onFilesDrop: jest.Mock; onVideoSelect: jest.Mock; onSortChange: jest.Mock; onOpenSubtitle: jest.Mock; onOpenFolder: jest.Mock; onToggleLibrary: jest.Mock };
+  mocks: { onOpenFile: jest.Mock; onFilesDrop: jest.Mock; onVideoSelect: jest.Mock; onSortChange: jest.Mock; onOpenSubtitle: jest.Mock; onOpenFolder: jest.Mock };
   container: HTMLElement;
 } {
   const videoRef = createRef<HTMLVideoElement>();
@@ -207,7 +180,6 @@ function renderPlayerViewWithContainer(opts: RenderOpts = {}): {
   const onSortChange = jest.fn();
   const onOpenSubtitle = jest.fn();
   const onOpenFolder = jest.fn();
-  const onToggleLibrary = jest.fn();
   const onSelectTrack = jest.fn();
   const { container } = render(
     <PlayerView
@@ -218,7 +190,6 @@ function renderPlayerViewWithContainer(opts: RenderOpts = {}): {
       subtitleStatus={opts.subtitleStatus ?? 'idle'}
       library={opts.library ?? []}
       librarySort="recent"
-      showLibrary={opts.showLibrary ?? false}
       targetStyle={baseStyle}
       nativeStyle={baseStyle}
       onOpenFile={onOpenFile}
@@ -228,15 +199,17 @@ function renderPlayerViewWithContainer(opts: RenderOpts = {}): {
       onFilesDrop={onFilesDrop}
       onVideoSelect={onVideoSelect}
       onSortChange={onSortChange}
-      onToggleLibrary={onToggleLibrary}
+      currentVideoId={null}
       subtitleEngine={mockSubtitleEngine}
       manager={mockManager}
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
     />,
   ) as unknown as { container: HTMLElement };
-  return { mocks: { onOpenFile, onFilesDrop, onVideoSelect, onSortChange, onOpenSubtitle, onOpenFolder, onToggleLibrary }, container };
+  return { mocks: { onOpenFile, onFilesDrop, onVideoSelect, onSortChange, onOpenSubtitle, onOpenFolder }, container };
 }
 
 describe('PlayerView', () => {
@@ -244,21 +217,6 @@ describe('PlayerView', () => {
 
   beforeEach(() => {
     mockedUseLocalVideo.mockClear();
-  });
-
-  it('renders the PlayerMenuBar at the top', () => {
-    renderPlayerView();
-    expect(screen.getByTestId('player-menu-bar')).toBeInTheDocument();
-  });
-
-  it('renders the LibraryView when showLibrary=true', () => {
-    renderPlayerView({ showLibrary: true, library: [sampleVideo] });
-    expect(screen.getByTestId('library-view')).toBeInTheDocument();
-  });
-
-  it('does not render the LibraryView when showLibrary=false', () => {
-    renderPlayerView({ showLibrary: false });
-    expect(screen.queryByTestId('library-view')).not.toBeInTheDocument();
   });
 
   it('renders the PlayerControls at the bottom', () => {
@@ -282,8 +240,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -292,6 +249,8 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     ) as unknown as { container: HTMLElement };
     expect(screen.getByTestId('empty-state')).toBeInTheDocument();
@@ -314,8 +273,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -324,6 +282,8 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     ) as unknown as { container: HTMLElement };
     expect(container.querySelector('video')).not.toBeNull();
@@ -345,8 +305,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -355,6 +314,8 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     );
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
@@ -378,8 +339,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -388,6 +348,8 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     );
     expect(screen.getByTestId('subtitle-panels-root')).toBeInTheDocument();
@@ -411,8 +373,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -421,6 +382,8 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     );
     // SubtitlePanels now renders whenever a video is loaded so the overlay
@@ -445,8 +408,7 @@ describe('PlayerView', () => {
         onFilesDrop={jest.fn()}
         onVideoSelect={jest.fn()}
         onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
         onOpenSubtitle={jest.fn()}
         onSelectTrack={jest.fn()}
         subtitles={{ target: null, native: null, others: [] }}
@@ -455,22 +417,12 @@ describe('PlayerView', () => {
       subtitleActions={mockSubtitleActions}
       subtitlesLibrary={[]}
       onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
       />,
     );
     expect(mockedUseLocalVideo).toHaveBeenCalled();
     expect(mockedUseLocalVideo.mock.calls[0][0]).toBe(videoRef);
-  });
-
-  it('wires onOpenFile from PlayerMenuBar', () => {
-    const { mocks } = renderPlayerView();
-    fireEvent.click(screen.getByTestId('menu-open-file'));
-    expect(mocks.onOpenFile).toHaveBeenCalledTimes(1);
-  });
-
-  it('wires onToggleLibrary from PlayerMenuBar', () => {
-    const { mocks } = renderPlayerView();
-    fireEvent.click(screen.getByTestId('menu-toggle-library'));
-    expect(mocks.onToggleLibrary).toHaveBeenCalledTimes(1);
   });
 
   it('wires onOpenFile from EmptyState', () => {
@@ -519,18 +471,6 @@ describe('PlayerView', () => {
     expect(container.querySelector('[data-cell-id="drop-overlay"]')).toBeNull();
   });
 
-  it('wires onVideoSelect from LibraryView', () => {
-    const { mocks } = renderPlayerView({ showLibrary: true, library: [sampleVideo] });
-    fireEvent.click(screen.getByTestId('library-select'));
-    expect(mocks.onVideoSelect).toHaveBeenCalledWith('v1');
-  });
-
-  it('wires onSortChange from LibraryView', () => {
-    const { mocks } = renderPlayerView({ showLibrary: true, library: [sampleVideo] });
-    fireEvent.click(screen.getByTestId('library-sort'));
-    expect(mocks.onSortChange).toHaveBeenCalledWith('title');
-  });
-
   // ─── Bug 1: click on the video toggles play/pause ──────────────────────
   describe('video click → play/pause toggle', () => {
     it('click on <video> calls pause() when isPlaying=true', () => {
@@ -555,8 +495,7 @@ describe('PlayerView', () => {
           onFilesDrop={jest.fn()}
             onVideoSelect={jest.fn()}
           onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
           onOpenSubtitle={jest.fn()}
           onSelectTrack={jest.fn()}
           subtitles={{ target: null, native: null, others: [] }}
@@ -565,6 +504,8 @@ describe('PlayerView', () => {
           subtitleActions={mockSubtitleActions}
         subtitlesLibrary={[]}
         onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
         />,
       ) as unknown as { container: HTMLElement };
       const video = container.querySelector('video');
@@ -599,8 +540,7 @@ describe('PlayerView', () => {
           onFilesDrop={jest.fn()}
             onVideoSelect={jest.fn()}
           onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
           onOpenSubtitle={jest.fn()}
           onSelectTrack={jest.fn()}
           subtitles={{ target: null, native: null, others: [] }}
@@ -609,6 +549,8 @@ describe('PlayerView', () => {
           subtitleActions={mockSubtitleActions}
         subtitlesLibrary={[]}
         onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
         />,
       ) as unknown as { container: HTMLElement };
       const video = container.querySelector('video');
@@ -658,8 +600,7 @@ describe('PlayerView', () => {
           onFilesDrop={jest.fn()}
             onVideoSelect={jest.fn()}
           onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
           onOpenSubtitle={jest.fn()}
           onSelectTrack={jest.fn()}
           subtitles={{ target: null, native: null, others: [] }}
@@ -668,6 +609,8 @@ describe('PlayerView', () => {
           subtitleActions={mockSubtitleActions}
         subtitlesLibrary={[]}
         onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
         />,
       ) as unknown as { container: HTMLElement };
       return result;
@@ -762,8 +705,7 @@ describe('PlayerView', () => {
           onFilesDrop={jest.fn()}
             onVideoSelect={jest.fn()}
           onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
           onOpenSubtitle={jest.fn()}
           onSelectTrack={jest.fn()}
           subtitles={{ target: null, native: null, others: [] }}
@@ -772,6 +714,8 @@ describe('PlayerView', () => {
           subtitleActions={mockSubtitleActions}
         subtitlesLibrary={[]}
         onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
         />,
       );
       expect(screen.queryByTestId('play-pause-flash')).not.toBeInTheDocument();
@@ -798,8 +742,7 @@ describe('PlayerView', () => {
             onFilesDrop={jest.fn()}
                 onVideoSelect={jest.fn()}
             onSortChange={jest.fn()}
-        showLibrary={false}
-        onToggleLibrary={jest.fn()}
+        currentVideoId={null}
             onOpenSubtitle={jest.fn()}
             onSelectTrack={jest.fn()}
             subtitles={{ target: null, native: null, others: [] }}
@@ -808,6 +751,8 @@ describe('PlayerView', () => {
             subtitleActions={mockSubtitleActions}
             subtitlesLibrary={[]}
             onSubtitleSelect={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
           />,
         );
       });

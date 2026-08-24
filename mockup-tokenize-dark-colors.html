@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tokenize Header — 5 New Styles (Dark + Light)</title>
+<style>
+:root {
+  --font-family-body: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-2xs: 10px; --font-size-xs: 12px; --font-size-sm: 14px;
+  --font-size-base: 16px; --font-size-lg: 17px; --font-size-xl: 20px;
+  --font-weight-normal: 400; --font-weight-medium: 500;
+  --font-weight-semibold: 600; --font-weight-bold: 700;
+  --space-0-5: 2px; --space-1: 4px; --space-1-5: 6px; --space-2: 8px;
+  --space-2-5: 10px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+  --space-6: 24px; --space-8: 32px;
+  --radius-2xs: 4px; --radius-sm: 6px; --radius-md: 8px;
+  --radius-element: 12px; --radius-full: 9999px;
+  --border-width-hairline: 1px;
+  --transition: 150ms ease;
+}
+
+/* === Dark mode tokens === */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-primary: #3b82f6; --color-primary-hover: #60a5fa;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-primary-foreground: #171717;
+  --color-background: #0a0a0a;
+  --color-surface: #262626;
+  --color-surface-hover: #334155;
+  --color-text: #fafafa; --color-text-primary: var(--color-text);
+  --color-text-secondary: #a3a3a3; --color-text-disabled: rgba(163,163,163,0.5);
+  --color-text-inverse: #171717;
+  --color-border: #ffffff14; --color-border-subtle: #262626;
+  --color-border-emphasized: #525252;
+  --color-secondary: #334155; --color-secondary-hover: #475569;
+  --color-secondary-foreground: #f1f5f9;
+  --color-accent: #ebebeb; --color-accent-foreground: #171717;
+  --color-muted: #334155; --color-muted-foreground: var(--color-text-secondary);
+}
+
+/* === Light mode tokens === */
+[data-theme="light"] {
+  color-scheme: light;
+  --color-primary: #2563eb; --color-primary-hover: #1d4ed8;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary-foreground: #ffffff;
+  --color-background: #f1f1f1;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-text: #171717; --color-text-primary: var(--color-text);
+  --color-text-secondary: #737373; --color-text-disabled: rgba(115,115,115,0.7);
+  --color-text-inverse: #ffffff;
+  --color-border: #00000014; --color-border-subtle: #f1f5f9;
+  --color-border-emphasized: #d4d4d8;
+  --color-secondary: #e2e8f0; --color-secondary-hover: #cbd5e1;
+  --color-secondary-foreground: #0f172a;
+  --color-accent: #262626; --color-accent-foreground: #ffffff;
+  --color-muted: #f1f5f9; --color-muted-foreground: var(--color-text-secondary);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-family-body);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-base); line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--transition), color var(--transition);
+}
+
+.page { max-width: 760px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-12); }
+.page h1 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); margin: 0 0 var(--space-1); }
+.subtitle { color: var(--color-text-secondary); font-size: var(--font-size-sm); margin: 0 0 var(--space-5); line-height: 1.6; }
+
+.theme-toggle {
+  position: fixed; top: var(--space-4); right: var(--space-4);
+  display: inline-flex; align-items: center; gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-text);
+  font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
+  cursor: pointer; font-family: inherit;
+  transition: background var(--transition); z-index: 10;
+}
+.theme-toggle:hover { background: var(--color-surface-hover); }
+.theme-toggle svg { width: 14px; height: 14px; }
+
+/* === Variant card === */
+.variant {
+  margin-bottom: var(--space-5);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-element);
+  overflow: hidden;
+  background: var(--color-surface);
+  transition: background var(--transition), border-color var(--transition);
+}
+.variant-header {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+.variant-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: var(--radius-full);
+  background: var(--color-primary); color: var(--color-primary-foreground);
+  font-size: var(--font-size-xs); font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+.variant-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); flex: 1; line-height: 1.4; }
+.variant-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin-top: var(--space-0-5); }
+
+/* === Color swatches === */
+.swatches {
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  font-size: var(--font-size-2xs);
+}
+.swatch {
+  display: inline-flex; align-items: center; gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+}
+.swatch-chip {
+  width: 14px; height: 14px;
+  border-radius: var(--radius-2xs);
+  border: var(--border-width-hairline) solid var(--color-border);
+  flex-shrink: 0;
+}
+.swatch-label { color: var(--color-text-secondary); font-family: monospace; }
+
+/* === Header base === */
+.header {
+  display: flex; align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface);
+}
+.pillGroup {
+  display: inline-flex;
+  border-radius: var(--radius-full);
+  padding: var(--space-0-5);
+  gap: var(--space-0-5);
+}
+.pill {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: var(--space-1) var(--space-2-5);
+  border: none; border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.pill:hover { color: var(--color-text-primary); }
+.pill.on { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); }
+.pillDot {
+  width: 6px; height: 6px; border-radius: var(--radius-full);
+  background: var(--color-border-emphasized);
+  flex-shrink: 0; transition: background var(--transition);
+}
+.pill.on .pillDot { background: var(--color-primary); }
+.groupDivider {
+  width: var(--border-width-hairline); height: 16px;
+  background: var(--color-border); flex-shrink: 0;
+}
+.close-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--color-text-secondary);
+  cursor: pointer; flex-shrink: 0; margin-left: auto;
+}
+.close-btn svg { width: 16px; height: 16px; }
+
+/* === Panel body demo === */
+.panel-frame {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs); color: var(--color-text-secondary);
+  display: flex; align-items: center; gap: var(--space-2); min-height: 28px;
+}
+.token-demo { display: inline-flex; gap: var(--space-0-5); align-items: baseline; }
+.token { padding: 0 var(--space-0-5); border-radius: var(--radius-2xs); }
+.token.freq-core { background: rgba(34,197,94,0.15); color: #86efac; }
+.token.freq-common { background: rgba(96,165,250,0.15); color: #93c5fd; }
+.token.status-unknown { border-bottom: 2px solid #ef4444; }
+.token.status-known { border-bottom: 2px solid #22c55e; }
+[data-theme="light"] .token.freq-core { background: rgba(220,252,231,0.6); color: #166534; }
+[data-theme="light"] .token.freq-common { background: rgba(224,242,254,0.6); color: #0c4a6e; }
+.source-label { font-size: var(--font-size-2xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); }
+
+/* ============================================================
+   VARIANT 4 — Glassmorphism
+   Container = semi-transparent blur, pill = solid surface
+   ============================================================ */
+.variant-4 .pillGroup {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.variant-4 .pill.on {
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px var(--color-border);
+}
+[data-theme="light"] .variant-4 .pill.on {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px var(--color-border);
+}
+
+/* ============================================================
+   VARIANT 5 — Outlined (no fill, border-only active)
+   Container = transparent, pill off = transparent, pill on = border + subtle bg
+   ============================================================ */
+.variant-5 .pillGroup { background: transparent; }
+.variant-5 .pill.on {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+.variant-5 .pill.on .pillDot { background: var(--color-primary); }
+[data-theme="light"] .variant-5 .pill.on { color: var(--color-primary); }
+
+/* ============================================================
+   VARIANT 6 — Filled solid (no container, pill = solid color block)
+   Container = transparent, pill off = surface-hover, pill on = primary
+   ============================================================ */
+.variant-6 .pillGroup { background: transparent; gap: var(--space-1); }
+.variant-6 .pill {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+}
+.variant-6 .pill:hover { background: var(--color-border-emphasized); color: var(--color-text-primary); }
+.variant-6 .pill.on {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: none;
+}
+.variant-6 .pill.on .pillDot { background: var(--color-primary-foreground); }
+.variant-6 .pillDot { background: var(--color-text-disabled); }
+
+/* ============================================================
+   VARIANT 7 — Neumorphic soft (soft shadow, no border)
+   Container = same as header, pill = embossed shadow
+   ============================================================ */
+.variant-7 .pillGroup {
+  background: var(--color-surface);
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(255,255,255,0.03);
+}
+[data-theme="light"] .variant-7 .pillGroup {
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.08), inset -2px -2px 5px rgba(255,255,255,0.8);
+}
+.variant-7 .pill.on {
+  background: var(--color-surface);
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3), -2px -2px 5px rgba(255,255,255,0.03);
+}
+[data-theme="light"] .variant-7 .pill.on {
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -2px -2px 5px rgba(255,255,255,0.8);
+}
+
+/* ============================================================
+   VARIANT 8 — Minimal underline (no container, active = bottom bar)
+   Container = transparent, pill off = transparent, pill on = underline + primary text
+   ============================================================ */
+.variant-8 .pillGroup { background: transparent; gap: var(--space-1); }
+.variant-8 .pill {
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  position: relative;
+}
+.variant-8 .pill.on {
+  background: transparent;
+  color: var(--color-primary);
+  box-shadow: none;
+}
+.variant-8 .pill.on::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: var(--space-1); right: var(--space-1);
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+.variant-8 .pill.on .pillDot { background: var(--color-primary); }
+.variant-8 .groupDivider { display: none; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  <span id="theme-label">Light</span>
+</button>
+
+<div class="page">
+  <h1>Tokenize Header — 5 phong cách mới</h1>
+  <p class="subtitle">5 phối màu hoàn toàn khác phong cách. Toggle Dark/Light góc trên phải để xem cả 2 mode.</p>
+
+  <!-- ========== VARIANT 4: Glassmorphism ========== -->
+  <div class="variant variant-4">
+    <div class="variant-header">
+      <span class="variant-num">4</span>
+      <div style="flex:1">
+        <div class="variant-title">Glassmorphism — container mờ kính, pill đặc</div>
+        <div class="variant-desc">Container = semi-transparent + backdrop-blur (text 6% opacity). Active pill = solid surface + ring border. Hiệu ứng "frosted glass" — pill nổi lên khỏi container mờ.</div>
+      </div>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><span class="swatch-chip" style="background:color-mix(in srgb, var(--color-text) 6%, transparent)"></span><span class="swatch-label">container glass</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-surface)"></span><span class="swatch-label">pill surface</span></span>
+    </div>
+    <header class="header">
+      <div class="pillGroup" role="group" aria-label="Tokenize sources">
+        <button class="pill on" type="button"><span class="pillDot"></span>Page</button>
+        <button class="pill on" type="button"><span class="pillDot"></span>Subtitle</button>
+      </div>
+      <span class="groupDivider"></span>
+      <div class="pillGroup" role="group" aria-label="Tokenize display">
+        <button class="pill on" type="button"><span class="pillDot"></span>Status</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Frequency</button>
+      </div>
+      <button class="close-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="panel-frame"><span class="source-label">Page</span><span class="token-demo"><span class="token freq-core status-unknown">serendipity</span><span class="token freq-common status-known">happen</span></span></div>
+  </div>
+
+  <!-- ========== VARIANT 5: Outlined ========== -->
+  <div class="variant variant-5">
+    <div class="variant-header">
+      <span class="variant-num">5</span>
+      <div style="flex:1">
+        <div class="variant-title">Outlined — không fill, chỉ border + tint</div>
+        <div class="variant-desc">Container = transparent. Active pill = primary-subtle bg + inset border primary + text primary. Minimal, "ghost button" style — không có container box.</div>
+      </div>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><span class="swatch-chip" style="background:transparent;border:1px dashed var(--color-border-emphasized)"></span><span class="swatch-label">container none</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-primary-subtle);border:1px solid var(--color-primary)"></span><span class="swatch-label">pill primary-tint</span></span>
+    </div>
+    <header class="header">
+      <div class="pillGroup" role="group" aria-label="Tokenize sources">
+        <button class="pill on" type="button"><span class="pillDot"></span>Page</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Subtitle</button>
+      </div>
+      <span class="groupDivider"></span>
+      <div class="pillGroup" role="group" aria-label="Tokenize display">
+        <button class="pill on" type="button"><span class="pillDot"></span>Status</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Frequency</button>
+      </div>
+      <button class="close-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="panel-frame"><span class="source-label">Page</span><span class="token-demo"><span class="token freq-core status-unknown">serendipity</span><span class="token freq-common status-known">happen</span></span></div>
+  </div>
+
+  <!-- ========== VARIANT 6: Filled solid ========== -->
+  <div class="variant variant-6">
+    <div class="variant-header">
+      <span class="variant-num">6</span>
+      <div style="flex:1">
+        <div class="variant-title">Filled solid — không container, pill = color block</div>
+        <div class="variant-desc">Container = transparent. Pill off = surface-hover (gray block). Pill on = primary (blue solid block) + white text. Bold, high-contrast — "toggle chip" style.</div>
+      </div>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><span class="swatch-chip" style="background:transparent;border:1px dashed var(--color-border-emphasized)"></span><span class="swatch-label">container none</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-surface-hover)"></span><span class="swatch-label">pill off surface-hover</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-primary)"></span><span class="swatch-label">pill on primary</span></span>
+    </div>
+    <header class="header">
+      <div class="pillGroup" role="group" aria-label="Tokenize sources">
+        <button class="pill on" type="button"><span class="pillDot"></span>Page</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Subtitle</button>
+      </div>
+      <span class="groupDivider"></span>
+      <div class="pillGroup" role="group" aria-label="Tokenize display">
+        <button class="pill on" type="button"><span class="pillDot"></span>Status</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Frequency</button>
+      </div>
+      <button class="close-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="panel-frame"><span class="source-label">Page</span><span class="token-demo"><span class="token freq-core status-unknown">serendipity</span><span class="token freq-common status-known">happen</span></span></div>
+  </div>
+
+  <!-- ========== VARIANT 7: Neumorphic soft ========== -->
+  <div class="variant variant-7">
+    <div class="variant-header">
+      <span class="variant-num">7</span>
+      <div style="flex:1">
+        <div class="variant-title">Neumorphic soft — shadow embossed, không border</div>
+        <div class="variant-desc">Container = same as header bg + inset shadow (chìm xuống). Active pill = same bg + outset shadow (nổi lên). Soft 3D — "clay" UI. Không dùng color, chỉ dùng shadow tạo depth.</div>
+      </div>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-surface);box-shadow:inset 2px 2px 4px rgba(0,0,0,0.3),inset -2px -2px 4px rgba(255,255,255,0.03)"></span><span class="swatch-label">container inset</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:var(--color-surface);box-shadow:2px 2px 4px rgba(0,0,0,0.3),-2px -2px 4px rgba(255,255,255,0.03)"></span><span class="swatch-label">pill outset</span></span>
+    </div>
+    <header class="header">
+      <div class="pillGroup" role="group" aria-label="Tokenize sources">
+        <button class="pill on" type="button"><span class="pillDot"></span>Page</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Subtitle</button>
+      </div>
+      <span class="groupDivider"></span>
+      <div class="pillGroup" role="group" aria-label="Tokenize display">
+        <button class="pill on" type="button"><span class="pillDot"></span>Status</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Frequency</button>
+      </div>
+      <button class="close-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="panel-frame"><span class="source-label">Page</span><span class="token-demo"><span class="token freq-core status-unknown">serendipity</span><span class="token freq-common status-known">happen</span></span></div>
+  </div>
+
+  <!-- ========== VARIANT 8: Minimal underline ========== -->
+  <div class="variant variant-8">
+    <div class="variant-header">
+      <span class="variant-num">8</span>
+      <div style="flex:1">
+        <div class="variant-title">Minimal underline — không container, active = bottom bar</div>
+        <div class="variant-desc">Container = transparent. Pill off = transparent. Pill on = primary text + underline bar 2px. Ultra-minimal, "tab indicator" style — không box, không fill, chỉ đường gạch chân.</div>
+      </div>
+    </div>
+    <div class="swatches">
+      <span class="swatch"><span class="swatch-chip" style="background:transparent;border:1px dashed var(--color-border-emphasized)"></span><span class="swatch-label">container none</span></span>
+      <span class="swatch"><span class="swatch-chip" style="background:transparent;border-bottom:2px solid var(--color-primary)"></span><span class="swatch-label">pill underline</span></span>
+    </div>
+    <header class="header">
+      <div class="pillGroup" role="group" aria-label="Tokenize sources">
+        <button class="pill on" type="button"><span class="pillDot"></span>Page</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Subtitle</button>
+      </div>
+      <span class="groupDivider"></span>
+      <div class="pillGroup" role="group" aria-label="Tokenize display">
+        <button class="pill on" type="button"><span class="pillDot"></span>Status</button>
+        <button class="pill" type="button"><span class="pillDot"></span>Frequency</button>
+      </div>
+      <button class="close-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="panel-frame"><span class="source-label">Page</span><span class="token-demo"><span class="token freq-core status-unknown">serendipity</span><span class="token freq-common status-known">happen</span></span></div>
+  </div>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+  html.dataset.theme = next;
+  document.getElementById('theme-label').textContent = next === 'dark' ? 'Light' : 'Dark';
+}
+</script>
+</body>
+</html>

@@ -28,12 +28,12 @@ export interface SubtitlePanelProps {
   /** Optional close button (Split View). Player Mode handles close via 't'. */
   onClose?: () => void;
   /** Optional Playlist tab content (local-player only). When provided, the
-   *  panel renders Tabs (Subtitles | Playlist) instead of just CueList. */
+   *  panel renders Tabs (Subtitles | Playlist) instead of just CueList.
+   *  The playlist content (LibraryView) owns its own footer with add-file /
+   *  add-folder buttons — SubtitlePanel no longer renders them. */
   playlistContent?: ReactNode;
-  /** Open file picker — rendered in Playlist tab footer (local-player only). */
-  onOpenFile?: () => void;
-  /** Open folder picker — rendered in Playlist tab footer (local-player only). */
-  onOpenFolder?: () => void;
+  /** Video filename shown in the panel header (local-player only). */
+  filename?: string;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -45,26 +45,27 @@ function SubtitlePanelImpl({
   onSeek,
   onClose,
   playlistContent,
-  onOpenFile,
-  onOpenFolder,
+  filename,
 }: SubtitlePanelProps): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<PanelTab>('subtitles');
   const hasPlaylist = playlistContent !== undefined;
+  // Default to 'playlist' when no cues (e.g. local player just opened, no video
+  // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
+  const [activeTab, setActiveTab] = useState<PanelTab>(cues.length > 0 ? 'subtitles' : 'playlist');
 
   return (
     <div className={styles.panel} data-cell-id="subtitle-panel">
       {onClose && (
         <div className={styles.header}>
-          <span className={styles.title}>Subtitles</span>
           <IconButton variant="transparent"
-            aria-label="Close subtitle list"
-            title="Close (T)"
+            aria-label="Collapse subtitle list"
+            title="Collapse (T)"
             data-cell-id="subtitle-panel-close"
             size="sm"
             onClick={onClose}
           >
-            <Icon name="x"  />
+            <Icon name="chevronRight" />
           </IconButton>
+          <span className={styles.title}>{filename ?? 'Subtitles'}</span>
         </div>
       )}
 
@@ -72,11 +73,9 @@ function SubtitlePanelImpl({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PanelTab)}>
           <Tabs.List className={styles.tabList}>
             <Tabs.Trigger value="subtitles" data-cell-id="subtitle-panel-tab-subtitles">
-              <Icon name="captions" size={14} />
               Subtitles
             </Tabs.Trigger>
             <Tabs.Trigger value="playlist" data-cell-id="subtitle-panel-tab-playlist">
-              <Icon name="video" size={14} />
               Playlist
             </Tabs.Trigger>
           </Tabs.List>
@@ -94,35 +93,6 @@ function SubtitlePanelImpl({
 
           <Tabs.Content value="playlist" className={styles.tabContent}>
             {playlistContent}
-            {(onOpenFile || onOpenFolder) && (
-              <footer className={styles.footer}>
-                <div className={styles.buttonRow}>
-                  {onOpenFile && (
-                    <button
-                      type="button"
-                      className={styles.addFilesBtn}
-                      onClick={onOpenFile}
-                      aria-label="Add files"
-                    >
-                      <Icon name="plus" size={16} />
-                      <span>Add files</span>
-                    </button>
-                  )}
-                  {onOpenFolder && (
-                    <button
-                      type="button"
-                      className={styles.addFolderBtn}
-                      onClick={onOpenFolder}
-                      aria-label="Add folder"
-                    >
-                      <Icon name="folderOpen" size={16} />
-                      <span>Add folder</span>
-                    </button>
-                  )}
-                </div>
-                <p className={styles.dragHint}>You can also drag-and-drop</p>
-              </footer>
-            )}
           </Tabs.Content>
         </Tabs>
       ) : (

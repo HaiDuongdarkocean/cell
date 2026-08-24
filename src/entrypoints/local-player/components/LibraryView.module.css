@@ -1,51 +1,24 @@
+/* === LibraryView — playlist panel: list + footer === */
+
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  font-family: var(--font-family);
   height: 100%;
   min-height: 0;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  flex-shrink: 0;
-}
-
-.title {
-  font-size: var(--text-heading-3-font-size);
-  font-weight: var(--text-heading-3-font-weight);
-  line-height: var(--text-heading-3-line-height);
-  color: var(--color-text);
-  margin: 0;
-}
-
-.sortLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.tabList {
-  flex-shrink: 0;
+  font-family: var(--font-family);
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  padding-right: var(--space-1);
+  padding: var(--space-2);
 }
 
+/* === Empty state === */
 .empty {
   display: flex;
   flex-direction: column;
@@ -77,25 +50,48 @@
   line-height: var(--leading-normal);
 }
 
+/* === Footer === */
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.sortSelect {
+  min-width: 8rem;
+}
+
+.buttonRow {
+  display: flex;
+  gap: var(--space-2);
+}
+
 /* === Responsive — mobile === */
 @media (max-width: 480px) {
   .root {
-    padding: var(--space-3);
     gap: var(--space-2);
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-  }
-
-  .title {
-    font-size: var(--font-size-base);
   }
 
   .list {
-    gap: var(--space-1-5);
+    padding: var(--space-1);
+    gap: var(--space-0-5);
+  }
+
+  .footer {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-1);
+  }
+
+  .btnLabel {
+    display: none;
+  }
+
+  .sortSelect {
+    min-width: auto;
   }
 }
 

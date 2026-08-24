@@ -5,7 +5,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import type { OcrBackend, OcrLanguageMode, ImageSource, OcrResult } from '@/features/ocr/engine/types';
+import type { OcrBackend, OcrLanguageMode, OcrResult } from '@/features/ocr/engine/types';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 
 /** OCR init result from offscreen. */
@@ -101,7 +101,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     async (request): Promise<MessageResponse<OcrRecognizeResult>> => {
       try {
         await ctx.offscreenManager.ensureOffscreenReady();
-        const payload = request.payload as { image: ImageSource; minScore?: number; engineKey?: string };
+        const payload = request.payload as { image: { data: Uint8ClampedArray | number[] | string; width: number; height: number }; minScore?: number; engineKey?: string };
         const response = await sendMessage<{ results: OcrResult[]; error?: string }>({
           type: '_OFFSCREEN_OCR_RECOGNIZE' as unknown as typeof MESSAGE_TYPES.OCR_RECOGNIZE,
           payload,

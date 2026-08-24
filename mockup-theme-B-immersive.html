@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cell — Theme Card · Immersive Preview (Mockup B)</title>
+<style>
+/* ============================================================
+   M3 tokens — Cell design system (subset, verbatim values)
+   ============================================================ */
+:root {
+  --color-primary: #2563eb;
+  --color-primary-rgb: 37, 99, 235;
+  --color-background: #f1f1f1;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-border: #00000014;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e2e8f0;
+  --color-secondary-foreground: #0f172a;
+  --color-error: #a50c25;
+  --color-success: #007004;
+
+  --radius-pill: 18px;
+  --radius-card: 8px;
+  --radius-full: 9999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 25px;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --duration-fast: 150ms;
+  --ease-out: ease-out;
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.2, 0, 0, 1);
+
+  --font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-primary-rgb: 96, 165, 250;
+  --color-background: #1b1b1b;
+  --color-surface: #262626;
+  --color-surface-hover: #334155;
+  --color-text: #fafafa;
+  --color-text-secondary: #a3a3a3;
+  --color-border: #FFFFFF1A;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-primary-foreground: #171717;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #f1f5f9;
+  --color-error: #ffc6c1;
+  --color-success: #9fe59b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+
+.page {
+  min-height: 100vh;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.theme-switch {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-spring);
+}
+.theme-switch:hover { background: var(--color-surface-hover); transform: scale(1.1); }
+.theme-switch:active { transform: scale(0.92); }
+.theme-switch svg { width: 22px; height: 22px; }
+.theme-switch .icon-moon { display: none; }
+[data-theme="dark"] .theme-switch .icon-sun { display: none; }
+[data-theme="dark"] .theme-switch .icon-moon { display: block; }
+
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  animation: cardEnter 420ms var(--ease-emphasized-decelerate) both;
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.card__heading { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+.card__desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+}
+.toggle__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+.toggle__switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-secondary);
+  transition: background var(--duration-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  transition: transform 280ms var(--ease-spring),
+              width 280ms var(--ease-spring);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+}
+.toggle__thumb svg { width: 13px; height: 13px; opacity: 0; transition: opacity var(--duration-fast) var(--ease-out); }
+.toggle.is-on .toggle__switch { background: var(--color-primary); }
+.toggle.is-on .toggle__thumb { transform: translateX(18px); }
+.toggle.is-on .toggle__thumb svg { opacity: 1; color: var(--color-primary); }
+.toggle.is-on .toggle__label { color: var(--color-text); }
+.toggle:active .toggle__thumb { width: 26px; }
+
+.preview {
+  position: relative;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  padding: var(--space-4);
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow: hidden;
+  animation: previewEnter 520ms var(--ease-emphasized-decelerate) 60ms both;
+}
+@keyframes previewEnter {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.preview__eyebrow {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.preview__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+.preview__body {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.preview__mini {
+  background: var(--color-background);
+  border-radius: 6px;
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.preview__mini-icon {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.preview__mini-icon svg { width: 18px; height: 18px; }
+.preview__mini-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.preview__mini-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text); }
+.preview__mini-sub { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+.preview__input {
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text);
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  outline: none;
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+.preview__input::placeholder { color: var(--color-text-secondary); }
+.preview__input:focus { box-shadow: 0 0 0 2px var(--color-primary); }
+
+.preview__btn {
+  align-self: flex-start;
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              filter var(--duration-fast) var(--ease-out);
+}
+.preview__btn:hover { filter: brightness(1.08); }
+.preview__btn:active { transform: scale(0.95); }
+.preview__btn svg { width: 16px; height: 16px; }
+
+.preview__toast {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+.preview__toast svg { width: 14px; height: 14px; }
+
+.modes {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.mode-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-spring);
+}
+.mode-chip svg { width: 16px; height: 16px; flex-shrink: 0; }
+.mode-chip:hover { background: var(--color-surface-hover); transform: scale(1.04); }
+.mode-chip:active { transform: scale(0.94); }
+.mode-chip.is-selected {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  animation: chipBounce 320ms var(--ease-spring);
+}
+@keyframes chipBounce {
+  0%   { transform: scale(0.9); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.colors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.colors__tabs {
+  display: inline-flex;
+  gap: var(--space-1);
+  background: var(--color-background);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1);
+  align-self: flex-start;
+}
+.color-tab {
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+.color-tab svg { width: 14px; height: 14px; }
+.color-tab.is-active { background: var(--color-surface); color: var(--color-text); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+.swatches {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+}
+.swatches::-webkit-scrollbar { height: 4px; }
+.swatches::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+
+.swatch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+.swatch:hover { transform: scale(1.15); }
+.swatch:active { transform: scale(0.95); }
+.swatch.is-active::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 2px var(--color-primary);
+  animation: ringPulse 320ms var(--ease-spring);
+}
+@keyframes ringPulse {
+  from { box-shadow: 0 0 0 0 var(--color-primary); }
+  to   { box-shadow: 0 0 0 2px var(--color-primary); }
+}
+.swatch input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.action-btn {
+  flex: 1 1 0;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-spring);
+}
+.action-btn svg { width: 16px; height: 16px; }
+.action-btn:active { transform: scale(0.96); }
+.action-btn--secondary {
+  background: var(--color-background);
+  color: var(--color-text);
+}
+.action-btn--secondary:hover { background: var(--color-surface-hover); }
+.action-btn--danger {
+  background: transparent;
+  color: var(--color-error);
+}
+.action-btn--danger:hover { background: color-mix(in srgb, var(--color-error) 12%, transparent); }
+
+@media (min-width: 480px) {
+  .page { padding: var(--space-6); }
+  .card { max-width: 440px; padding: var(--space-5); gap: var(--space-6); }
+  .preview { min-height: 280px; padding: var(--space-5); }
+  .preview__title { font-size: var(--font-size-2xl); }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    overflow: visible;
+  }
+  .swatch { width: 100%; aspect-ratio: 1; height: auto; }
+}
+
+@media (min-width: 768px) {
+  .card { max-width: 520px; padding: var(--space-6); }
+  .preview { min-height: 320px; }
+  .card__title { font-size: var(--font-size-xl); }
+  .modes .mode-chip { height: 40px; font-size: var(--font-size-sm); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .card, .preview { animation: none; }
+}
+</style>
+</head>
+<body>
+  <button class="theme-switch" id="themeSwitch" aria-label="Đổi theme sáng/tối" type="button">
+    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+  </button>
+
+  <main class="page">
+    <section class="card" aria-label="Theme card">
+      <header class="card__header">
+        <div class="card__heading">
+          <h2 class="card__title">Theme</h2>
+          <p class="card__desc">Xem trước giao diện thật, đổi màu tức thì.</p>
+        </div>
+        <label class="toggle is-on" id="ttsToggle">
+          <span class="toggle__label">Enable TTS</span>
+          <span class="toggle__switch">
+            <span class="toggle__thumb">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            </span>
+          </span>
+        </label>
+      </header>
+
+      <div class="preview" aria-label="Live theme preview">
+        <span class="preview__eyebrow">Live preview</span>
+        <h3 class="preview__title">Học ngoại ngữ mọi lúc</h3>
+        <p class="preview__body">Cell đi kèm video + phụ đề song ngữ, tra từ nhanh và phát âm chuẩn.</p>
+
+        <div class="preview__mini">
+          <span class="preview__mini-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></svg>
+          </span>
+          <span class="preview__mini-text">
+            <span class="preview__mini-title">Phát âm từ vựng</span>
+            <span class="preview__mini-sub">Nhấn để nghe lại</span>
+          </span>
+        </div>
+
+        <input class="preview__input" type="text" placeholder="Tìm từ cần tra…" />
+
+        <button class="preview__btn" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10" /><path d="M18.4 6.6a9 9 0 1 1-12.77.04" /></svg>
+          Bắt đầu
+        </button>
+
+        <span class="preview__toast">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+          Đã lưu cài đặt
+        </span>
+      </div>
+
+      <div class="modes" role="radiogroup" aria-label="Chế độ theme">
+        <button class="mode-chip is-selected" data-mode="light" type="button" role="radio" aria-checked="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+          Light
+        </button>
+        <button class="mode-chip" data-mode="dark" type="button" role="radio" aria-checked="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+          Dark
+        </button>
+        <button class="mode-chip" data-mode="system" type="button" role="radio" aria-checked="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          System
+        </button>
+      </div>
+
+      <div class="colors">
+        <div class="colors__tabs" role="tablist" aria-label="Chỉnh màu theo chế độ">
+          <button class="color-tab is-active" data-tab="light" type="button" role="tab" aria-selected="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+            Light
+          </button>
+          <button class="color-tab" data-tab="dark" type="button" role="tab" aria-selected="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+            Dark
+          </button>
+        </div>
+        <div class="swatches" id="swatches">
+          <span class="swatch is-active" style="background: var(--color-primary)"><input type="color" value="#2563eb" aria-label="Primary" /></span>
+          <span class="swatch" style="background: var(--color-background)"><input type="color" value="#f1f1f1" aria-label="Background" /></span>
+          <span class="swatch" style="background: var(--color-surface)"><input type="color" value="#ffffff" aria-label="Surface" /></span>
+          <span class="swatch" style="background: var(--color-surface-hover)"><input type="color" value="#f1f5f9" aria-label="Surface hover" /></span>
+          <span class="swatch" style="background: var(--color-text)"><input type="color" value="#171717" aria-label="Text" /></span>
+          <span class="swatch" style="background: var(--color-text-secondary)"><input type="color" value="#737373" aria-label="Text secondary" /></span>
+          <span class="swatch" style="background: var(--color-border)"><input type="color" value="#cccccc" aria-label="Border" /></span>
+          <span class="swatch" style="background: var(--color-primary-subtle)"><input type="color" value="#dbeafe" aria-label="Primary subtle" /></span>
+          <span class="swatch" style="background: var(--color-secondary)"><input type="color" value="#e2e8f0" aria-label="Secondary" /></span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn action-btn--secondary" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+          Export
+        </button>
+        <button class="action-btn action-btn--danger" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+          Reset
+        </button>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function () {
+  var html = document.documentElement;
+
+  var themeSwitch = document.getElementById('themeSwitch');
+  themeSwitch.addEventListener('click', function () {
+    var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+  });
+
+  var tts = document.getElementById('ttsToggle');
+  tts.addEventListener('click', function () {
+    tts.classList.toggle('is-on');
+  });
+
+  var chips = document.querySelectorAll('.mode-chip');
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      chips.forEach(function (c) {
+        c.classList.remove('is-selected');
+        c.setAttribute('aria-checked', 'false');
+      });
+      chip.classList.add('is-selected');
+      chip.setAttribute('aria-checked', 'true');
+      var mode = chip.getAttribute('data-mode');
+      if (mode === 'light') html.setAttribute('data-theme', 'light');
+      else if (mode === 'dark') html.setAttribute('data-theme', 'dark');
+    });
+  });
+
+  var tabs = document.querySelectorAll('.color-tab');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) {
+        t.classList.remove('is-active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('is-active');
+      tab.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  var swatches = document.querySelectorAll('.swatch');
+  swatches.forEach(function (sw) {
+    sw.addEventListener('click', function (e) {
+      if (e.target.tagName === 'INPUT') return;
+      swatches.forEach(function (s) { s.classList.remove('is-active'); });
+      sw.classList.add('is-active');
+      var input = sw.querySelector('input[type="color"]');
+      if (input) input.click();
+    });
+  });
+})();
+</script>
+
+<!--
+  ============================================================
+  MOCKUP — Theme Card · Hướng "Immersive Preview" (Mockup B)
+  ============================================================
+  Hướng design: Immersive Preview (Apple / Emil Kowalski style)
+    - Preview tile lớn là focal point (~45% card height), translucent
+      material (backdrop-filter blur + saturate), render live sample
+      (button primary, typography 3 cấp, mini card, input, toast) —
+      tất cả dùng var(--color-*) nên auto-update khi đổi color token.
+    - Mode chips + color controls compact xung quanh preview, cảm
+      giác "đang xem theme thật".
+    - Gestalt Proximity: KHÔNG dividers (no border-bottom/hr), dùng
+      gap-based grouping — within-group gap nhỏ (space-2), between-
+      group gap lớn (space-5/6).
+
+  M3 tokens (Cell design system, src/shared/styles/tokens.css):
+    --color-primary, --color-background, --color-surface,
+    --color-surface-hover, --color-text, --color-text-secondary,
+    --color-border, --color-primary-subtle, --color-secondary,
+    --color-primary-foreground, --color-error,
+    --radius-pill (18px), --radius-card (8px), --radius-full,
+    --space-1..6, --font-size-xs/sm/base/lg/xl/2xl,
+    --duration-fast (150ms), --ease-out, --ease-emphasized-decelerate,
+    --ease-spring (cubic-bezier(0.34, 1.56, 0.64, 1)).
+    Light: :root. Dark: [data-theme="dark"].
+
+  Icon source (verbatim inline SVG, 24×24, stroke 1.5, currentColor,
+  round caps — src/shared/icons/svg/):
+    - sun.svg         → theme switch + Light mode chip + Light color tab
+    - moon.svg        → theme switch (dark) + Dark mode chip + Dark color tab
+    - power.svg       → preview primary button "Bắt đầu"
+    - volume-high.svg → preview mini card icon
+    - check.svg       → TTS toggle thumb + preview toast
+    - copy.svg        → System mode chip + Export action button
+    - rotate-ccw.svg  → Reset action button
+
+  Animation spec (M3 motion + Apple feel):
+    - Card enter: fade + scale 0.98→1, 420ms ease-emphasized-decelerate.
+    - Preview tile enter: scale 0.96→1 + fade, 520ms, delay 60ms.
+    - Mode chip select: scale bounce 0.9→1.08→1, 320ms ease-spring
+      (cubic-bezier(0.34, 1.56, 0.64, 1)).
+    - Color swatch hover: scale 1.15; active: glow ring pulse 320ms.
+    - Toggle thumb slide: 280ms ease-spring, width stretch on active.
+    - Icon hover scale 1.1, click scale 0.92 (theme switch).
+    - @media (prefers-reduced-motion: reduce): tắt mọi animation/transition.
+
+  Responsive:
+    - Mobile-first 320px (card max 360, swatches horizontal scroll).
+    - @media (min-width: 480px): card 440, swatches grid 9 cột.
+    - @media (min-width: 768px): card 520, mode chip 40px, title xl.
+
+  Header action toggle pattern: "Enable TTS" (VÍ DỤ) — M3 pill switch
+  thumb trượt, spring easing, check icon khi ON. Pattern dùng cho mọi
+  card header có action toggle.
+  ============================================================
+-->
+</body>
+</html>

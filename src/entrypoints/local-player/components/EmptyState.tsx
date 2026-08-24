@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui';
 import styles from './EmptyState.module.css';
 
 export interface EmptyStateProps {
@@ -24,24 +25,24 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
       <p className={styles.primaryHint}>Drop your video and subtitles here</p>
       <p className={styles.noteHint}>You can add multiple subtitle files, but only one video</p>
       <div className={styles.buttonRow}>
-        <button
-          type="button"
-          className={styles.addFilesBtn}
+        <Button
+          variant="primary"
+          size="md"
           onClick={onOpenFile}
-          aria-label="Add files"
+          leadingIcon={<Icon name="plus" size={18} />}
+          data-cell-id="empty-open-file"
         >
-          <Icon name="plus" size={18} />
-          <span>Add files</span>
-        </button>
-        <button
-          type="button"
-          className={styles.addFolderBtn}
+          Add files
+        </Button>
+        <Button
+          variant="secondary"
+          size="md"
           onClick={onOpenFolder}
-          aria-label="Add folder"
+          leadingIcon={<Icon name="folderOpen" size={18} />}
+          data-cell-id="empty-open-folder"
         >
-          <Icon name="folderOpen" size={18} />
-          <span>Add folder</span>
-        </button>
+          Add folder
+        </Button>
       </div>
     </div>
   );

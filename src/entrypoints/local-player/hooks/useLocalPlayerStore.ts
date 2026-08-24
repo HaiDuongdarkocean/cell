@@ -37,7 +37,7 @@ export interface LocalPlayerState {
   librarySort: LibrarySort;
   showLibrary: boolean;
 
-  setVideo: (video: VideoRecord, file: File) => void;
+  setVideo: (video: VideoRecord | null, file: File | null) => void;
   setSubtitles: (subs: SubtitlesState) => void;
   setSubtitleStatus: (status: SubtitleStatus) => void;
   updatePlayback: (patch: PlaybackPatch) => void;

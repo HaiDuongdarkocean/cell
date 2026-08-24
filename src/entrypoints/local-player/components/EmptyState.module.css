@@ -55,69 +55,6 @@
   margin-top: var(--space-2);
 }
 
-/* Add files — primary CTA (filled, accent color). */
-.addFilesBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: var(--space-2-5) var(--space-5);
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-on-accent);
-  font: inherit;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard);
-}
-
-.addFilesBtn:hover {
-  background: var(--color-primary-hover);
-}
-
-.addFilesBtn:active {
-  transform: scale(0.98);
-}
-
-.addFilesBtn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
-/* Add folder — secondary (dark pill, thin border). */
-.addFolderBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: var(--space-2-5) var(--space-5);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-}
-
-.addFolderBtn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-emphasized);
-}
-
-.addFolderBtn:active {
-  transform: scale(0.98);
-}
-
-.addFolderBtn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
 /* === Responsive — tighten padding on small screens === */
 @media (max-width: 480px) {
   .dropzone {
@@ -134,8 +71,7 @@
     width: 100%;
   }
 
-  .addFilesBtn,
-  .addFolderBtn {
+  .buttonRow > * {
     width: 100%;
     justify-content: center;
   }

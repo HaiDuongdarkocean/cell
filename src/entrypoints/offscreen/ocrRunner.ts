@@ -28,7 +28,7 @@ interface OcrInitPayload {
 }
 
 interface OcrRecognizePayload {
-  readonly image: ImageSource;
+  readonly image: { data: Uint8ClampedArray | number[] | string; width: number; height: number };
   readonly minScore?: number;
   readonly engineKey?: string;
 }
@@ -161,10 +161,20 @@ async function handleOcrInit(payload: OcrInitPayload): Promise<OcrInitResult> {
 
 async function handleOcrRecognize(payload: OcrRecognizePayload): Promise<OcrRecognizeResult> {
   const engineKey = payload.engineKey ?? OCR_DEFAULT_ENGINE_KEY;
-  // Engine not resident (LRU-evicted or never inited) — auto-init with the model's representative lang.
   const entry = await getOrInitEngine(engineKey, MODEL_DEFAULT_LANG.get(engineKey) ?? OCR_DEFAULT_ENGINE_KEY);
-  const results = await entry.engine.recognize(payload.image, { minScore: payload.minScore });
+  const img = payload.image;
+  const image: ImageSource = typeof img.data === 'string'
+    ? { data: decodeBase64ToUint8Clamped(img.data), width: img.width, height: img.height }
+    : img as ImageSource;
+  const results = await entry.engine.recognize(image, { minScore: payload.minScore });
   return { results };
+}
+
+function decodeBase64ToUint8Clamped(base64: string): Uint8ClampedArray {
+  const binary = atob(base64);
+  const bytes = new Uint8ClampedArray(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 async function handleOcrDispose(payload: OcrDisposePayload): Promise<{ ok: true }> {

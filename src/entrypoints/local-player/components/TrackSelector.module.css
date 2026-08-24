@@ -19,7 +19,7 @@
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
 }
 
@@ -54,7 +54,8 @@
 }
 
 .item.active {
-  background: var(--color-accent-muted);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .filename {

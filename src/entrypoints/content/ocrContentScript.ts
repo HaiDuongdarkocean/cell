@@ -14,6 +14,7 @@ import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCa
 import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
 import { computeSplitHalves, type SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { ocrTextToCues, type OcrDetection } from '@/features/ocr/pipeline/ocrToCues';
+import type { SrtCue } from '@/entities/media/types';
 import { resolveOcrLang, ENGINE_KEY_FOR_LANG, type ResolvedOcrLang } from '@/features/ocr/engine/paddleOcrLanguages';
 import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -242,18 +243,27 @@ export class OcrSession {
     document.body.dataset.ocrLoopCount = String(this.loopCount);
 
     try {
+      const captureStart = performance.now();
       const frame = captureFrame(this.video, this.canvas ?? undefined);
       if (!this.canvas && typeof OffscreenCanvas !== 'undefined') {
         this.canvas = new OffscreenCanvas(frame.width, frame.height);
       }
 
-      // Debug: log ACTUAL crop region coords (customRegion if set, else default).
+      const frameTimeMs = this.video.currentTime * 1000;
+
       const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct, this.config.customRegion);
       document.body.dataset.ocrCropRegion = JSON.stringify(region);
 
       this.processing = true;
-      void this.processFrame(frame).finally(() => {
+      void this.processFrame(frame, frameTimeMs).finally(() => {
         this.processing = false;
+        const totalMs = performance.now() - captureStart;
+        const prev = (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog ?? [];
+        prev.push(totalMs);
+        (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog = prev.slice(-50);
+        document.body.dataset.ocrLatencyMs = totalMs.toFixed(0);
+        document.body.dataset.ocrLatencyAvg = (prev.reduce((a, b) => a + b, 0) / prev.length).toFixed(0);
+        document.body.dataset.ocrLatencyMax = Math.max(...prev).toFixed(0);
       });
     } catch (e) {
       document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
@@ -264,10 +274,12 @@ export class OcrSession {
   }
 
   /** Process a single frame through the pipeline. Split dual-stream runs its
-   *  own two-region path; otherwise the single-stream path is unchanged. */
-  private async processFrame(frame: ImageSource): Promise<void> {
+   *  own two-region path; otherwise the single-stream path is unchanged.
+   *  frameTimeMs = video.currentTime at capture time (NOT at OCR completion) —
+   *  used as cue.start so seeking back lands on the correct frame. */
+  private async processFrame(frame: ImageSource, frameTimeMs: number): Promise<void> {
     if (this.config.splitEnabled && this.splitPipelineStates) {
-      await this.processSplitFrame(frame);
+      await this.processSplitFrame(frame, frameTimeMs);
       return;
     }
     if (this.pipelineState.isDrmDetected()) return;
@@ -296,6 +308,10 @@ export class OcrSession {
       if (result.status === 'ocr') {
         document.body.dataset.ocrLastResult = JSON.stringify(result.results.map(r => r.text)).slice(0, 200);
       }
+      const stepTimings = (globalThis as { __ocrStepTimings?: string }).__ocrStepTimings;
+      if (stepTimings) document.body.dataset.ocrStepTimings = stepTimings;
+      const ctrlTimings = (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings;
+      if (ctrlTimings) document.body.dataset.ocrCtrlTimings = ctrlTimings;
       if (result.status === 'error') {
         document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
       }
@@ -312,17 +328,15 @@ export class OcrSession {
         this.overlay.clear();
         // Close the currently open cue (ocrToCues contract: empty text closes).
         if (this.video) {
-          const timeMs = this.video.currentTime * 1000;
-          this.splitDetections.target.push({ text: '', timeMs });
-          this.markProcessed(timeMs);
+          this.splitDetections.target.push({ text: '', timeMs: frameTimeMs });
+          this.markProcessed(frameTimeMs);
           this.postOcrTracks();
         }
       }
 
       if (result.status === 'ocr' && this.video) {
-        const timeMs = this.video.currentTime * 1000;
         const hitboxes = createHitboxes(result.results, result.scriptRuns);
-        console.log(`[OCR] t=${this.video.currentTime.toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
+        console.log(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
         this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
 
         // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
@@ -331,8 +345,8 @@ export class OcrSession {
         }
         // Push detection to subtitle block (same as split mode — single stream
         // is target-only, native stays empty).
-        this.splitDetections.target.push({ text: result.results.map(r => r.text).join(' '), timeMs });
-        this.markProcessed(timeMs);
+        this.splitDetections.target.push({ text: result.results.map(r => r.text).join(' '), timeMs: frameTimeMs });
+        this.markProcessed(frameTimeMs);
         this.postOcrTracks();
       }
     } catch (e) {
@@ -345,8 +359,9 @@ export class OcrSession {
 
   /** Split dual-stream: OCR the top + bottom halves with their own pipeline
    *  states + engines, accumulate detections, and push cue tracks to the
-   *  subtitle controller bridge. DRM on either stream stops the session. */
-  private async processSplitFrame(frame: ImageSource): Promise<void> {
+   *  subtitle controller bridge. DRM on either stream stops the session.
+   *  frameTimeMs = video.currentTime at capture time (NOT at OCR completion). */
+  private async processSplitFrame(frame: ImageSource, frameTimeMs: number): Promise<void> {
     const states = this.splitPipelineStates;
     const keys = this.splitEngineKeys;
     if (!states || !keys || !this.video) return; // engines still initializing
@@ -360,7 +375,6 @@ export class OcrSession {
       { half: bottom, state: topIsTarget ? states.native : states.target, key: topIsTarget ? keys.native : keys.target, track: topIsTarget ? 'native' : 'target' },
     ];
 
-    const timeMs = this.video.currentTime * 1000;
     let hasUpdate = false;
     for (const { half, state, key, track } of streams) {
       try {
@@ -382,13 +396,13 @@ export class OcrSession {
           return;
         }
         if (result.status === 'ocr') {
-          this.splitDetections[track].push({ text: result.results.map(r => r.text).join(' '), timeMs });
-          this.markProcessed(timeMs);
+          this.splitDetections[track].push({ text: result.results.map(r => r.text).join(' '), timeMs: frameTimeMs });
+          this.markProcessed(frameTimeMs);
           hasUpdate = true;
         } else if (result.status === 'subtitle_gone') {
           // Empty text closes the currently open cue (ocrToCues contract).
-          this.splitDetections[track].push({ text: '', timeMs });
-          this.markProcessed(timeMs);
+          this.splitDetections[track].push({ text: '', timeMs: frameTimeMs });
+          this.markProcessed(frameTimeMs);
           hasUpdate = true;
         } else if (result.status === 'error') {
           document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
@@ -455,7 +469,14 @@ export class OcrSession {
   private postOcrTracks(): void {
     const targetCues = ocrTextToCues(this.splitDetections.target);
     const nativeCues = ocrTextToCues(this.splitDetections.native);
-    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues, nativeCues }, '*');
+    const nowMs = (this.video?.currentTime ?? 0) * 1000;
+    const extendLastCue = (cues: SrtCue[]): SrtCue[] => {
+      if (cues.length === 0) return cues;
+      const last = cues.at(-1)!;
+      cues[cues.length - 1] = { ...last, end: Math.max(last.end, nowMs + 30000) };
+      return cues;
+    };
+    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues: extendLastCue(targetCues), nativeCues: extendLastCue(nativeCues) }, '*');
     this.splitTracksPosted = true;
   }
 

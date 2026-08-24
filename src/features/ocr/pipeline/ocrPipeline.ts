@@ -202,18 +202,15 @@ export async function runPipelineStep(
   frameTimeMs: number = performance.now(),
   explicitRegion?: SplitHalf | null,
 ): Promise<PipelineStepResult> {
-  // 1. Time gate — skip if too soon since last OCR.
   if (!shouldRunByTimeGate(frameTimeMs, state.getLastOcrTimeMs(), config.minFrameIntervalMs)) {
     return { status: 'skip_time_gate' };
   }
 
   state.incrementFrameCount();
 
-  // 2. DRM guard — check full frame. Require 3 consecutive dark frames
-  //    after a 60-frame warmup to avoid false positives from transitional/black
-  //    frames at video start. ponytail: ceiling = 10s black intro, upgrade to
-  //    content-aware DRM fingerprinting if real DRM content is encountered.
+  const t0 = performance.now();
   const drmCheck = checkDrmGuard(image);
+  const tDrm = performance.now();
   if (drmCheck.isDrm) {
     if (state.getFrameCount() >= 60) {
       state.incrementDrmCount();
@@ -226,7 +223,6 @@ export async function runPipelineStep(
     state.resetDrmCount();
   }
 
-  // 3. Crop subtitle region. explicitRegion (split dual-stream) overrides config-based region.
   const region = explicitRegion
     ? {
         x: Math.round((explicitRegion.xPct / 100) * image.width),
@@ -236,8 +232,8 @@ export async function runPipelineStep(
       }
     : computeSubtitleRegion(image.width, image.height, config.subtitleRegionPct, config.subtitleRegionWidthPct, config.customRegion);
   const cropped = cropImage(image, region);
+  const tCrop = performance.now();
 
-  // 4. OCR with retry. T22.
   let ocrResults: OcrResult[] | null = null;
   let lastError: string | null = null;
   for (let attempt = 1; attempt <= config.maxRetries; attempt++) {
@@ -249,9 +245,20 @@ export async function runPipelineStep(
       if (attempt === config.maxRetries) break;
     }
   }
+  const tOcr = performance.now();
   if (ocrResults === null) {
     return { status: 'error', error: lastError ?? 'unknown', attempts: config.maxRetries };
   }
+
+  const ocrMetrics = ocrResults[0]?.metrics;
+  (globalThis as { __ocrStepTimings?: string }).__ocrStepTimings = JSON.stringify({
+    drmMs: Math.round(tDrm - t0),
+    cropMs: Math.round(tCrop - tDrm),
+    ocrMs: Math.round(tOcr - tCrop),
+    ocrDetMs: ocrMetrics?.detMs ?? 0,
+    ocrRecMs: ocrMetrics?.recMs ?? 0,
+    ocrTotalMs: ocrMetrics?.totalMs ?? 0,
+  });
 
   // 5. Script-run segment each OCR item's text (with space restoration).
   const allItems: OcrResultItem[] = [];

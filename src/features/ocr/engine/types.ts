@@ -1,13 +1,10 @@
 // OcrEngine types — spec §AD1, §Architecture.
 // ImageSource = ImageData shape, transferable via chrome.runtime.sendMessage.
-// Note: chrome.runtime.sendMessage uses JSON serialization, so Uint8ClampedArray
-// becomes {} (data lost). Callers must convert to number[] before sending.
-// Receivers handle both Uint8ClampedArray (direct) and number[] (via message).
+// chrome.runtime.sendMessage uses JSON serialization — typed arrays become {}.
+// Callers encode data as base64 string; receivers decode to Uint8ClampedArray.
 
 import type { PaddleLangAbbr } from './paddleOcrLanguages';
 
-/** Transferable image data — matches canvas.getImageData() shape.
- *  data: Uint8ClampedArray when called directly, number[] when received via sendMessage. */
 export interface ImageSource {
   readonly data: Uint8ClampedArray | number[];
   readonly width: number;

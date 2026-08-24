@@ -1,5 +1,5 @@
 // PaddleOcrEngine — primary OCR engine (spec §AD1, §AD3, §AD7).
-// Wraps @paddleocr/paddleocr-js PP-OCRv5 mobile. WebGPU preferred, WASM fallback.
+// Wraps @paddleocr/paddleocr-js PP-OCRv6 small. WebGPU preferred, WASM fallback.
 // .wasm files bundled in extension (MV3 cấm remotely-hosted code) — wasmPaths set internally.
 // Model weights (.onnx) lazy-load from CDN → IndexedDB cache (data, not code).
 
@@ -7,7 +7,6 @@ import type { OcrEngine } from './ocrEngine';
 import type { ImageSource, OcrResult, OcrResultItem, OcrConfig, OcrOptions, OcrBackend, Quad } from './types';
 import { OCR_DEFAULT_ENGINE_KEY } from './types';
 import { ENGINE_KEY_FOR_LANG } from './paddleOcrLanguages';
-import { getURL } from '@/shared/lib/chrome-apis';
 // OpenCV is dynamically imported inside initialize() — NOT at top level.
 // A static import loads 9.9MB WASM immediately on script load; if it fails
 // in the offscreen document, the entire ocrRunner.ts script throws and
@@ -81,7 +80,7 @@ export class PaddleOcrEngine implements OcrEngine {
 
     // Model resolution (spec ocr-split-dual-stream, ADR-082): ENGINE_KEY_FOR_LANG
     // is SSOT — accepts catalog abbr or ISO; legacy 'zh'/'ja' and unknown values
-    // resolve via the catalog; 'auto' → default model (PP-OCRv5 'ch' covers CN+EN+JA).
+    // resolve via the catalog; 'auto' → default model (PP-OCRv6 'ch' covers CN+EN+JA).
     const engineKey = ENGINE_KEY_FOR_LANG(config.languageMode === 'auto' ? OCR_DEFAULT_ENGINE_KEY : config.languageMode);
     const isDefaultModel = engineKey === OCR_DEFAULT_ENGINE_KEY;
     const lang = isDefaultModel ? OCR_DEFAULT_ENGINE_KEY : config.languageMode;
@@ -128,17 +127,13 @@ export class PaddleOcrEngine implements OcrEngine {
       }
     }
 
-    const modelBase = getURL('models/');
     this.instance = await Promise.race([
       PaddleOCR.create({
         lang,
-        ocrVersion: 'PP-OCRv5',
-        textDetectionModelName: 'PP-OCRv5_mobile_det',
-        textDetectionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_det_onnx_infer.tar' },
-        textRecognitionModelName: 'PP-OCRv5_mobile_rec',
-        // Default model is bundled (MV3-friendly); non-default models omit the
-        // asset so paddleocr-js resolves the URL by lang (CDN → IndexedDB, ADR-082).
-        ...(isDefaultModel ? { textRecognitionModelAsset: { url: modelBase + 'PP-OCRv5_mobile_rec_onnx_infer.tar' } } : {}),
+        ocrVersion: 'PP-OCRv6',
+        // PP-OCRv6: paddleocr-js auto-resolves PP-OCRv6_small_det/rec by lang+ocrVersion
+        // from CDN → IndexedDB cache (ADR-082). Bundled PP-OCRv5 assets removed —
+        // ponytail: re-bundle PP-OCRv6_small for offline-first default model after verify.
         ortOptions: {
           backend: config.backend,
           // wasmPaths is a directory prefix — ORT appends filenames to it.

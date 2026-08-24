@@ -66,23 +66,36 @@ export class OcrController {
   async recognize(image: ImageSource, minScore?: number, engineKey?: string): Promise<OcrResult[]> {
     if (this.initializedKeys.size === 0) throw new Error('OCR not initialized — call init() first.');
     try {
-      // chrome.runtime.sendMessage uses JSON serialization — Uint8ClampedArray becomes {}.
-      // Convert to regular Array to preserve pixel data through the message channel.
-      const serializableImage = {
-        data: Array.from(image.data),
-        width: image.width,
-        height: image.height,
-      };
+      const t0 = performance.now();
+      const bytes = image.data instanceof Uint8ClampedArray
+        ? new Uint8Array(image.data.buffer)
+        : new Uint8Array(image.data as number[]);
+      const CHUNK = 0x8000;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]);
+      }
+      const base64 = btoa(binary);
+      const tSerialize = performance.now();
       const response = await Promise.race([
         sendMessage<{ success: boolean; data?: { results: OcrResult[] }; error?: string; results?: OcrResult[] }>({
           type: MESSAGE_TYPES.OCR_RECOGNIZE,
-          payload: { image: serializableImage, minScore, ...(engineKey !== undefined ? { engineKey } : {}) },
+          payload: { image: { data: base64, width: image.width, height: image.height }, minScore, ...(engineKey !== undefined ? { engineKey } : {}) },
         }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_RECOGNIZE timeout (30s)')), 30000)),
       ]);
-      // Handle both response formats (background wrapper vs direct offscreen).
+      const tRoundtrip = performance.now();
       if (!response?.success && response?.error) throw new Error(response.error);
-      return response?.data?.results ?? response?.results ?? [];
+      const results = response?.data?.results ?? response?.results ?? [];
+      const tDone = performance.now();
+      (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings = JSON.stringify({
+        pixels: image.width * image.height,
+        serializeMs: Math.round(tSerialize - t0),
+        roundtripMs: Math.round(tRoundtrip - tSerialize),
+        parseMs: Math.round(tDone - tRoundtrip),
+        totalMs: Math.round(tDone - t0),
+      });
+      return results;
     } catch (e) {
       document.body.dataset.ocrRecognizeError = String(e)?.slice(0, 200);
       throw e;

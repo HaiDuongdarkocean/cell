@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTS Voices — iOS Settings Style B</title>
+<style>
+:root {
+  --font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-xs: 12px; --font-size-sm: 14px; --font-size-base: 16px; --font-size-lg: 17px; --font-size-xl: 20px;
+  --font-weight-regular: 400; --font-weight-medium: 500; --font-weight-semibold: 600;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 6px; --radius-md: 8px; --radius-card: 12px; --radius-pill: 9999px; --radius-full: 9999px;
+  --color-primary: #2563eb; --color-primary-rgb: 37,99,235; --color-primary-hover: #1d4ed8; --color-primary-subtle: rgba(37,99,235,0.1); --color-primary-foreground: #fff;
+  --color-background: #f1f1f1; --color-surface: #fff; --color-text: #171717; --color-text-secondary: #737373;
+  --color-border: #00000014; --color-border-subtle: #f1f5f9; --color-surface-hover: #f1f5f9; --color-muted: #f1f5f9;
+  --color-success: #007004; --color-error: #a50c25;
+  --border-width-hairline: 1px; --duration-short3: 150ms; --ease-standard: cubic-bezier(0.2,0,0,1);
+}
+[data-theme="dark"] {
+  --color-primary: #60a5fa; --color-primary-rgb: 96,165,250; --color-primary-hover: #93c5fd; --color-primary-subtle: rgba(96,165,250,0.15);
+  --color-background: #0a0a0a; --color-surface: #171717; --color-text: #f1f1f1; --color-text-secondary: #a3a3a3;
+  --color-border: #ffffff14; --color-border-subtle: #262626; --color-surface-hover: #262626; --color-muted: #262626;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-background);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.35;
+}
+
+.page {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  padding-top: calc(var(--space-6) + var(--space-4));
+}
+
+/* Viewport label */
+.vp-label {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-hairline) solid var(--color-border);
+  z-index: 100;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Theme toggle */
+.theme-toggle {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  z-index: 100;
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+.theme-toggle:hover { background: var(--color-surface-hover); }
+.theme-toggle svg { width: 16px; height: 16px; }
+
+/* Card */
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+}
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.card__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  flex: 1;
+}
+.card__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+.card__body { padding: 0 var(--space-4) var(--space-4); }
+
+/* Section grouping by proximity */
+.section { margin-bottom: var(--space-6); }
+.section:last-child { margin-bottom: 0; }
+.section__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
+}
+.section__group {
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* iOS list rows — no dividers, tight 4px spacing */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  min-height: 44px;
+  margin-bottom: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+.row:last-child { margin-bottom: 0; }
+.row:active, .row.is-active { background: var(--color-surface-hover); }
+.row__label {
+  flex: 1;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+}
+.row__value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+/* iOS toggle */
+.toggle {
+  position: relative;
+  width: 44px; height: 26px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.toggle__input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle__track {
+  position: absolute; inset: 0;
+  background: var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+.toggle__thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 22px; height: 22px;
+  background: #fff;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform var(--duration-short3) var(--ease-standard);
+}
+.toggle__input:checked + .toggle__track { background: var(--color-primary); }
+.toggle__input:checked + .toggle__track .toggle__thumb { transform: translateX(18px); }
+
+/* Play button circular 30px */
+.play-btn {
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--duration-short3) var(--ease-standard), color var(--duration-short3) var(--ease-standard);
+}
+.play-btn:hover { background: rgba(var(--color-primary-rgb), 0.2); }
+.play-btn.is-playing { background: var(--color-primary); color: var(--color-primary-foreground); }
+.play-btn svg { width: 14px; height: 14px; }
+
+/* Voice row */
+.voice-row { padding: var(--space-2) var(--space-3); }
+.voice-row__main {
+  display: flex; align-items: center; gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+.voice-row__name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.lang-badge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-muted);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmented control */
+.segmented {
+  display: flex;
+  background: var(--color-muted);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+.segmented__seg {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-short3) var(--ease-standard), color var(--duration-short3) var(--ease-standard);
+  white-space: nowrap;
+}
+.segmented__seg.is-selected {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Select */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-muted);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-2);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: 14px;
+}
+
+/* Save button */
+.btn {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+.btn--primary:hover { background: var(--color-primary-hover); }
+.btn--ghost {
+  background: var(--color-muted);
+  color: var(--color-text);
+}
+.btn--ghost:hover { background: var(--color-surface-hover); }
+
+/* Textarea */
+.textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-muted);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.4;
+}
+.textarea:focus { outline: 2px solid var(--color-primary); }
+
+/* Action bar */
+.action-bar {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.action-bar .btn { flex: 1; padding: var(--space-2) var(--space-3); font-size: var(--font-size-sm); }
+
+/* Tester voice row */
+.tester-row { padding: var(--space-2) var(--space-3); }
+.drag-handle {
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  color: var(--color-text-secondary);
+  cursor: grab;
+  touch-action: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle svg { width: 16px; height: 16px; }
+
+.order-badge {
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  border-radius: var(--radius-full);
+  font-variant-numeric: tabular-nums;
+}
+
+/* iOS checkbox */
+.checkbox {
+  position: relative;
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.checkbox__input { position: absolute; opacity: 0; pointer-events: none; }
+.checkbox__box {
+  position: absolute; inset: 0;
+  border: 2px solid var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-short3) var(--ease-standard), border-color var(--duration-short3) var(--ease-standard);
+}
+.checkbox__box svg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  padding: 2px;
+  color: var(--color-primary-foreground);
+  opacity: 0;
+  transition: opacity var(--duration-short3) var(--ease-standard);
+}
+.checkbox__input:checked + .checkbox__box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.checkbox__input:checked + .checkbox__box svg { opacity: 1; }
+
+/* Responsive */
+@media (min-width: 480px) {
+  .page { padding: var(--space-6); padding-top: calc(var(--space-6) + var(--space-4)); }
+  .voice-row { flex-wrap: wrap; }
+  .voice-row__slots { width: 100%; margin-top: var(--space-1); }
+}
+@media (min-width: 768px) {
+  .page { padding: var(--space-8); padding-top: calc(var(--space-6) + var(--space-4)); }
+  .voice-row { flex-wrap: nowrap; }
+  .voice-row__slots { width: auto; margin-top: 0; }
+}
+
+/* Dragging state */
+.tester-row.is-dragging { opacity: 0.4; }
+.tester-row.drag-over { border-top: 2px solid var(--color-primary); }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+</button>
+<div class="vp-label" id="vpLabel">320px</div>
+
+<div class="page">
+
+  <!-- CARD 1: TTS Voices -->
+  <section class="card">
+    <header class="card__header">
+      <h2 class="card__title">TTS Voices</h2>
+      <span class="card__hint">Read example</span>
+      <label class="toggle">
+        <input type="checkbox" class="toggle__input" id="enableTts" checked>
+        <span class="toggle__track"><span class="toggle__thumb"></span></span>
+      </label>
+    </header>
+    <div class="card__body">
+
+      <!-- Section: Show buttons -->
+      <div class="section">
+        <div class="section__label">Show buttons</div>
+        <div class="section__group">
+          <div class="row">
+            <span class="row__label">Number of buttons</span>
+            <div class="segmented" data-segmented="showButtons">
+              <button class="segmented__seg" data-value="1">1</button>
+              <button class="segmented__seg" data-value="2">2</button>
+              <button class="segmented__seg is-selected" data-value="3">3</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Voice selection -->
+      <div class="section">
+        <div class="section__label">Voice selection</div>
+        <div class="section__group" id="voiceList">
+          <!-- voices injected by JS -->
+        </div>
+      </div>
+
+      <!-- Section: Autoplay -->
+      <div class="section">
+        <div class="section__label">Autoplay</div>
+        <div class="section__group">
+          <div class="row">
+            <span class="row__label">Start delay</span>
+            <select class="select" id="autoplaySelect">
+              <option value="0">Off</option>
+              <option value="1">1 slot</option>
+              <option value="2" selected>2 slots</option>
+              <option value="3">3 slots</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn--primary" id="saveVoices">Save</button>
+    </div>
+  </section>
+
+  <!-- CARD 2: Voice Tester -->
+  <section class="card">
+    <header class="card__header">
+      <h2 class="card__title">Voice Tester</h2>
+    </header>
+    <div class="card__body">
+
+      <div class="section">
+        <div class="section__label">Sentence</div>
+        <textarea class="textarea" id="testerSentence" placeholder="Type a sentence to test voices…">The quick brown fox jumps over the lazy dog.</textarea>
+      </div>
+
+      <div class="section">
+        <div class="section__label">Country filter</div>
+        <div class="section__group">
+          <div class="row">
+            <span class="row__label">Country</span>
+            <select class="select" id="countryFilter">
+              <option value="all">All countries</option>
+              <option value="us">United States</option>
+              <option value="uk">United Kingdom</option>
+              <option value="au">Australia</option>
+              <option value="jp">Japan</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn--ghost" id="clearTester">Clear</button>
+        <button class="btn btn--primary" id="playAllTester">Play all</button>
+        <button class="btn btn--ghost" id="saveTester">Save</button>
+      </div>
+
+      <div class="section" style="margin-top: var(--space-6);">
+        <div class="section__label">Voices (drag to reorder)</div>
+        <div class="section__group" id="testerList">
+          <!-- tester voices injected by JS -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+const SVG = {
+  play: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>',
+  move: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14"/><path d="M5 15h14"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+};
+
+const voices = [
+  { id: 'v1', name: 'Samantha', lang: 'en-US' },
+  { id: 'v2', name: 'Daniel', lang: 'en-GB' },
+  { id: 'v3', name: 'Karen', lang: 'en-AU' },
+  { id: 'v4', name: 'Yuki', lang: 'ja-JP' },
+  { id: 'v5', name: 'Amelie', lang: 'fr-FR' }
+];
+
+const testerVoices = [
+  { id: 't1', name: 'Samantha', lang: 'en-US', checked: true },
+  { id: 't2', name: 'Daniel', lang: 'en-GB', checked: true },
+  { id: 't3', name: 'Karen', lang: 'en-AU', checked: false },
+  { id: 't4', name: 'Yuki', lang: 'ja-JP', checked: false }
+];
+
+// Render voice list (card 1)
+function renderVoices() {
+  const list = document.getElementById('voiceList');
+  list.innerHTML = '';
+  voices.forEach((v, i) => {
+    const row = document.createElement('div');
+    row.className = 'row voice-row';
+    row.innerHTML = `
+      <button class="play-btn" aria-label="Play ${v.name}">${SVG.play}</button>
+      <div class="voice-row__main">
+        <span class="voice-row__name">${v.name}</span>
+        <span class="lang-badge">${v.lang}</span>
+      </div>
+      <div class="segmented voice-row__slots" data-segmented="voice-${v.id}">
+        <button class="segmented__seg ${i===0?'is-selected':''}" data-value="1">1</button>
+        <button class="segmented__seg ${i===1?'is-selected':''}" data-value="2">2</button>
+        <button class="segmented__seg ${i===2?'is-selected':''}" data-value="3">3</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  bindPlayButtons(list);
+  bindSegmented(list);
+}
+
+// Render tester list (card 2)
+function renderTester() {
+  const list = document.getElementById('testerList');
+  list.innerHTML = '';
+  testerVoices.forEach((v, i) => {
+    const row = document.createElement('div');
+    row.className = 'row tester-row';
+    row.draggable = true;
+    row.dataset.id = v.id;
+    row.innerHTML = `
+      <span class="drag-handle" aria-label="Drag to reorder">${SVG.move}</span>
+      <span class="order-badge">${i+1}</span>
+      <button class="play-btn" aria-label="Play ${v.name}">${SVG.play}</button>
+      <label class="checkbox">
+        <input type="checkbox" class="checkbox__input" ${v.checked?'checked':''}>
+        <span class="checkbox__box">${SVG.check}</span>
+      </label>
+      <div class="voice-row__main">
+        <span class="voice-row__name">${v.name}</span>
+        <span class="lang-badge">${v.lang}</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  bindPlayButtons(list);
+  bindDrag(list);
+  bindCheckbox(list);
+}
+
+function bindPlayButtons(scope) {
+  scope.querySelectorAll('.play-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const playing = btn.classList.toggle('is-playing');
+      if (playing) {
+        btn.innerHTML = SVG.play;
+        setTimeout(() => {
+          btn.classList.remove('is-playing');
+        }, 1200);
+      } else {
+        btn.innerHTML = SVG.play;
+      });
+    });
+  });
+}
+
+function bindSegmented(scope) {
+  scope.querySelectorAll('.segmented').forEach(seg => {
+    seg.querySelectorAll('.segmented__seg').forEach(s => {
+      s.addEventListener('click', () => {
+        seg.querySelectorAll('.segmented__seg').forEach(x => x.classList.remove('is-selected'));
+        s.classList.add('is-selected');
+      });
+    });
+  });
+}
+
+function bindCheckbox(scope) {
+  scope.querySelectorAll('.checkbox__input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const id = inp.closest('.tester-row').dataset.id;
+      const v = testerVoices.find(x => x.id === id);
+      if (v) v.checked = inp.checked;
+    });
+  });
+}
+
+// Drag & drop reorder
+let dragSrc = null;
+function bindDrag(scope) {
+  scope.querySelectorAll('.tester-row').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      dragSrc = row;
+      row.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('is-dragging');
+      scope.querySelectorAll('.tester-row').forEach(r => r.classList.remove('drag-over'));
+      reorderTester(scope);
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      scope.querySelectorAll('.tester-row').forEach(r => r.classList.remove('drag-over'));
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== row) {
+        const list = [...scope.querySelectorAll('.tester-row')];
+        const srcIdx = list.indexOf(dragSrc);
+        const tgtIdx = list.indexOf(row);
+        if (srcIdx < tgtIdx) row.parentNode.insertBefore(dragSrc, row.nextSibling);
+        else row.parentNode.insertBefore(dragSrc, row);
+      }
+    });
+  });
+}
+
+function reorderTester(scope) {
+  scope.querySelectorAll('.tester-row').forEach((row, i) => {
+    row.querySelector('.order-badge').textContent = i + 1;
+  });
+}
+
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const themeIcon = document.getElementById('themeIcon');
+const sunIcon = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+const moonIcon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  themeIcon.innerHTML = t === 'dark' ? moonIcon : sunIcon;
+}
+themeToggle.addEventListener('click', () => {
+  const cur = document.documentElement.dataset.theme;
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+// Viewport label
+function updateVp() {
+  document.getElementById('vpLabel').textContent = window.innerWidth + 'px';
+}
+window.addEventListener('resize', updateVp);
+
+// Init
+renderVoices();
+renderTester();
+updateVp();
+</script>
+</body>
+</html>
