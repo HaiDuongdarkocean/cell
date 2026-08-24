@@ -1,32 +1,96 @@
-.card {
+/* === LibraryCard — playlist video entry with ring progress + accordion === */
+
+.item {
+  position: relative;
   display: flex;
   flex-direction: column;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.item:hover { background: var(--color-surface-hover); }
+.item.active { background: var(--color-primary-subtle); }
+.item.expanded { z-index: 10; }
+
+.row {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-in-out),
-              border-color var(--duration-fast) var(--ease-in-out);
-  font-family: var(--font-family);
-  text-align: left;
   width: 100%;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  cursor: pointer;
 }
 
-.card:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-emphasized);
+.row:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
-.card:focus-visible {
-  outline: 2px solid var(--color-ring);
-  outline-offset: 2px;
+/* === Progress ring === */
+.leading {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
 }
 
-.title {
-  font-size: var(--font-size-base);
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 2.5;
+}
+
+.ringProgress {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--duration-base) var(--ease-in-out);
+}
+
+.active .ringProgress { stroke: var(--color-on-accent); }
+.active .ringTrack { stroke: var(--color-primary-foreground-soft); }
+
+.pct {
+  position: relative;
+  font-size: 11px;
   font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.active .pct { color: var(--color-on-accent); }
+
+.leading[data-pct="0"] .ringProgress { display: none; }
+.leading[data-pct="0"] .pct { color: var(--color-text-secondary); }
+.active .leading[data-pct="0"] .pct { color: var(--color-on-accent); }
+
+/* === Body === */
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
   line-height: var(--leading-snug);
   color: var(--color-text);
   overflow: hidden;
@@ -39,53 +103,195 @@
   align-items: center;
   gap: var(--space-2);
   flex-wrap: wrap;
-}
-
-.metaItem {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
 }
 
-.metaIcon {
+.active .meta { color: var(--color-on-accent); }
+
+.metaItem {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  gap: var(--space-0-5);
 }
 
-.resume {
+/* === Expand button (IconButton ghost — only rotate override) === */
+.expandBtn {
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+}
+
+.expandBtn[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.deleteBtn {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+.item:hover .deleteBtn { opacity: 1; }
+.deleteBtn:focus-visible {
+  opacity: 1;
+}
+
+/* === Subtitle dropdowns (accordion content) === */
+.subs {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1) var(--space-3) var(--space-3) calc(var(--space-3) + 40px + var(--space-2));
+  gap: var(--space-2);
+}
+
+.subField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.subLabel {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-0-5) var(--space-2);
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* === Responsive — mobile stacked === */
+/* === Inline select === */
+.inlineSelect {
+  position: relative;
+  width: 100%;
+}
+
+.selectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.selectTrigger:hover { border-color: var(--color-border-emphasized); background: var(--color-surface-hover); }
+.selectTrigger:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.selectValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder { color: var(--color-text-secondary); }
+
+.selectChev {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform var(--duration-fast) var(--ease-in-out);
+}
+
+.selectTrigger[aria-expanded="true"] .selectChev { transform: rotate(180deg); }
+
+.selectMenu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-element);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.selectOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.selectOption:hover { background: var(--color-surface-hover); }
+.selectOption:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.selectOptionSelected {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.optionName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionLang {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.selectOptionSelected .optionLang { color: var(--color-primary); }
+
+.optionCheck {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.selectEmpty {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* === Responsive — mobile === */
 @media (max-width: 480px) {
-  .card {
-    padding: var(--space-3);
-    gap: var(--space-1-5);
-  }
-
-  .title {
-    font-size: var(--font-size-sm);
-  }
-
-  .meta {
-    gap: var(--space-1-5);
-  }
+  .leading { width: 36px; height: 36px; }
+  .pct { font-size: 10px; }
+  .name { font-size: var(--font-size-sm); }
+  .meta { gap: var(--space-1-5); }
+  .subs { padding-left: calc(var(--space-3) + 36px + var(--space-2)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card { transition: none; animation: none; }
+  .item, .expandBtn, .selectTrigger, .selectOption, .ringProgress, .selectChev {
+    transition: none;
+  }
 }

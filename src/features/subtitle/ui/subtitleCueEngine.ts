@@ -86,7 +86,6 @@ export class SubtitleCueEngine {
 
   readonly onTimeUpdate = (): void => {
     if (this.loopState === 'looping' && this.video.currentTime >= this.loopEnd) {
-      // ADR-030: route through seekVideo to avoid Netflix M7375.
       seekVideo(this.video, this.loopStart);
     }
     if (this.targetCues.length === 0 && this.nativeCues.length === 0) return;

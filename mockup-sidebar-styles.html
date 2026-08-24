@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sidebar Nav Styles — 4 Minimalist Approaches</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-hover: #f4f4f5;
+    --surface-active: #e4e4e7;
+    --text: #18181b;
+    --text-secondary: #71717a;
+    --text-muted: #a1a1aa;
+    --primary: #2563eb;
+    --primary-subtle: rgba(37, 99, 235, 0.1);
+    --border: #e4e4e7;
+    --radius: 8px;
+    --radius-pill: 9999px;
+    --transition: 150ms ease;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-hover: #27272a;
+      --surface-active: #3f3f46;
+      --text: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --primary: #3b82f6;
+      --primary-subtle: rgba(59, 130, 246, 0.15);
+      --border: #27272a;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    min-height: 100vh;
+  }
+
+  .panel {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-header .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+  }
+
+  .panel-desc {
+    padding: 12px 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    border-radius: var(--radius);
+    transition: var(--transition);
+  }
+
+  .nav-item .icon {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-item .icon svg {
+    width: 18px; height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .nav-item .label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* === Style 1: Apple HIG — Selection Pill === */
+  .style-apple .nav-item {
+    transition: transform 100ms var(--ease-out), color 150ms var(--ease-in-out, var(--ease-out));
+    border-radius: var(--radius);
+  }
+  .style-apple .nav-item:hover {
+    background: transparent;
+    color: var(--text);
+  }
+  .style-apple .nav-item:active {
+    transform: scale(0.97);
+  }
+  .style-apple .nav-item.active {
+    background: var(--primary-subtle);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* === Style 2: Linear — Ghost Hover + Density === */
+  .style-linear .nav-item {
+    transition: background-color 150ms ease, color 150ms ease;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    gap: 10px;
+  }
+  .style-linear .nav-item:hover {
+    background: color-mix(in oklab, var(--text) 6%, transparent);
+    color: var(--text);
+  }
+  .style-linear .nav-item:active {
+    background: color-mix(in oklab, var(--text) 16%, transparent);
+  }
+  .style-linear .nav-item.active {
+    background: color-mix(in oklab, var(--text) 12%, transparent);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* === Style 3: Notion — Fill/Unfill + Subtle Bg === */
+  .style-notion .nav-item {
+    transition: background-color 200ms ease, transform 100ms var(--ease-out);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .style-notion .nav-item:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .style-notion .nav-item:active {
+    transform: scale(0.98);
+  }
+  .style-notion .nav-item.active {
+    background: var(--surface-hover);
+    color: var(--text);
+    font-weight: 600;
+  }
+  /* Icon fill transition */
+  .style-notion .nav-item .icon svg {
+    transition: fill 200ms ease, stroke 200ms ease;
+  }
+  .style-notion .nav-item.active .icon svg {
+    fill: currentColor;
+    stroke: currentColor;
+    stroke-width: 1;
+  }
+
+  /* === Style 4: Shadcn — Sliding Indicator Bar === */
+  .style-shadcn {
+    position: relative;
+  }
+  .style-shadcn .indicator {
+    position: absolute;
+    left: 4px;
+    width: 3px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--primary);
+    box-shadow: 0 0 12px color-mix(in oklab, var(--primary) 55%, transparent);
+    transition: transform 320ms cubic-bezier(0.5, 0, 0.2, 1.15);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .style-shadcn .nav-item {
+    transition: color 150ms ease;
+    background: transparent;
+    position: relative;
+  }
+  .style-shadcn .nav-item:hover {
+    background: transparent;
+    color: var(--text);
+  }
+  .style-shadcn .nav-item.active {
+    color: var(--primary);
+    background: transparent;
+    font-weight: 600;
+  }
+
+  /* === Collapse toggle === */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .collapse-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .collapse-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .collapse-btn svg {
+    width: 20px; height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* === Collapsed state === */
+  .panel.collapsed .sidebar { align-items: center; }
+  .panel.collapsed .nav-item {
+    width: 40px; height: 40px;
+    min-width: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .panel.collapsed .nav-item .label { display: none; }
+  .panel.collapsed .topbar-title { display: none; }
+  .panel.collapsed .topbar { justify-content: center; }
+  .panel.collapsed .style-shadcn .indicator { display: none; }
+
+  /* === Responsive === */
+  @media (max-width: 768px) {
+    body { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- === Style 1: Apple HIG === -->
+<div class="panel style-apple" id="panel1">
+  <div class="topbar">
+    <span class="topbar-title">Settings</span>
+    <button class="collapse-btn" onclick="toggleCollapse('panel1')" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+    </button>
+  </div>
+  <div class="panel-header"><span class="num">1</span> Apple HIG — Selection Pill</div>
+  <div class="panel-desc">No hover bg. Active = pill subtle. Press = scale 0.97, 100ms ease-out. Critically damped.</div>
+  <nav class="sidebar" id="nav1">
+    <button class="nav-item active" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg></span>
+      <span class="label">Media</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15v-4M11 15v-4M15 15v-4"/></svg></span>
+      <span class="label">Block</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="8" cy="18" r="2" fill="currentColor"/></svg></span>
+      <span class="label">Shortcuts</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+      <span class="label">Download</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+      <span class="label">Card Creator</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="label">Dictionary</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span>
+      <span class="label">Local Player</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+      <span class="label">Theme</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+      <span class="label">TTS Voices</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav1')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg></span>
+      <span class="label">Resources</span>
+    </button>
+  </nav>
+</div>
+
+<!-- === Style 2: Linear === -->
+<div class="panel style-linear" id="panel2">
+  <div class="topbar">
+    <span class="topbar-title">Settings</span>
+    <button class="collapse-btn" onclick="toggleCollapse('panel2')" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+    </button>
+  </div>
+  <div class="panel-header"><span class="num">2</span> Linear — Ghost Hover + Density</div>
+  <div class="panel-desc">Hover = 6% opacity bg. Active = 12% bg + text. No scale, no bounce. Density-first.</div>
+  <nav class="sidebar" id="nav2">
+    <button class="nav-item active" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg></span>
+      <span class="label">Media</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15v-4M11 15v-4M15 15v-4"/></svg></span>
+      <span class="label">Block</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="8" cy="18" r="2" fill="currentColor"/></svg></span>
+      <span class="label">Shortcuts</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+      <span class="label">Download</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+      <span class="label">Card Creator</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="label">Dictionary</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span>
+      <span class="label">Local Player</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+      <span class="label">Theme</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+      <span class="label">TTS Voices</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav2')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg></span>
+      <span class="label">Resources</span>
+    </button>
+  </nav>
+</div>
+
+<!-- === Style 3: Notion === -->
+<div class="panel style-notion" id="panel3">
+  <div class="topbar">
+    <span class="topbar-title">Settings</span>
+    <button class="collapse-btn" onclick="toggleCollapse('panel3')" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+    </button>
+  </div>
+  <div class="panel-header"><span class="num">3</span> Notion — Fill/Unfill + Subtle Bg</div>
+  <div class="panel-desc">Hover = bg subtle + icon fill. Active = icon filled + font-weight 600. Press = scale 0.98.</div>
+  <nav class="sidebar" id="nav3">
+    <button class="nav-item active" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg></span>
+      <span class="label">Media</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15v-4M11 15v-4M15 15v-4"/></svg></span>
+      <span class="label">Block</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="8" cy="18" r="2" fill="currentColor"/></svg></span>
+      <span class="label">Shortcuts</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+      <span class="label">Download</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+      <span class="label">Card Creator</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="label">Dictionary</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span>
+      <span class="label">Local Player</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+      <span class="label">Theme</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+      <span class="label">TTS Voices</span>
+    </button>
+    <button class="nav-item" onclick="setActive(this, 'nav3')">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg></span>
+      <span class="label">Resources</span>
+    </button>
+  </nav>
+</div>
+
+<!-- === Style 4: Shadcn — Sliding Indicator === -->
+<div class="panel style-shadcn" id="panel4">
+  <div class="topbar">
+    <span class="topbar-title">Settings</span>
+    <button class="collapse-btn" onclick="toggleCollapse('panel4')" aria-label="Collapse sidebar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+    </button>
+  </div>
+  <div class="panel-header"><span class="num">4</span> Shadcn — Sliding Indicator Bar</div>
+  <div class="panel-desc">No hover bg. Active = 3px bar trượt spring 320ms. Box-shadow glow. Text color only.</div>
+  <nav class="sidebar" id="nav4" style="position: relative;">
+    <div class="indicator" id="indicator4" style="transform: translateY(4px);"></div>
+    <button class="nav-item active" onclick="setActiveBar(this, 'nav4', 'indicator4', 0)">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg></span>
+      <span class="label">Media</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 1)">
+      <span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15v-4M11 15v-4M15 15v-4"/></svg></span>
+      <span class="label">Block</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 2)">
+      <span class="icon"><svg viewBox="0 0 24 24"><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="8" cy="18" r="2" fill="currentColor"/></svg></span>
+      <span class="label">Shortcuts</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 3)">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+      <span class="label">Download</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 4)">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></span>
+      <span class="label">Card Creator</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 5)">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="label">Dictionary</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 6)">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></span>
+      <span class="label">Local Player</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 7)">
+      <span class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></span>
+      <span class="label">Theme</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 8)">
+      <span class="icon"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></span>
+      <span class="label">TTS Voices</span>
+    </button>
+    <button class="nav-item" onclick="setActiveBar(this, 'nav4', 'indicator4', 9)">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg></span>
+      <span class="label">Resources</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+  function setActive(el, navId) {
+    const nav = document.getElementById(navId);
+    nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function setActiveBar(el, navId, indicatorId, index) {
+    const nav = document.getElementById(navId);
+    nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    el.classList.add('active');
+    const indicator = document.getElementById(indicatorId);
+    const itemHeight = 42; // padding 10px*2 + content 22px approx
+    const gap = 2;
+    indicator.style.transform = `translateY(${4 + index * (itemHeight + gap)}px)`;
+  }
+
+  function toggleCollapse(panelId) {
+    const panel = document.getElementById(panelId);
+    panel.classList.toggle('collapsed');
+    const btn = panel.querySelector('.collapse-btn');
+    const isCollapsed = panel.classList.contains('collapsed');
+    btn.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    btn.querySelector('svg').innerHTML = isCollapsed
+      ? '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 9-3 3 3 3"/>'
+      : '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/>';
+  }
+</script>
+
+</body>
+</html>

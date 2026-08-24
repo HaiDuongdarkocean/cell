@@ -12,6 +12,9 @@ import { mountUniversalPanel, type UniversalPanelMountController } from '@/featu
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { initOcrContentScript } from './ocrContentScript';
+import { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
+import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -44,16 +47,15 @@ function renderHostSheet(): void {
   if (!hostSheetRoot || !currentState || !hostSheetInner) return;
   const frameSrc = currentFrameSrc;
   hostSheetRoot.render(
-    createElement(
-      ShadowThemeProvider,
-      { container: hostSheetInner },
-      createElement(HostManagerSheet, {
+    createElement(ShadowThemeProvider, {
+      container: hostSheetInner,
+      children: createElement(HostManagerSheet, {
         state: currentState,
         onAction: (action: ManagerAction, args: Record<string, unknown>) =>
           sendManagerActionToChild(frameSrc, action, args),
         onClose: () => sendManagerCloseToChild(frameSrc),
       }),
-    ),
+    }),
   );
 }
 
@@ -1141,3 +1143,30 @@ onStorageChanged((changes, area) => {
     void initWebTextDictionary();
   }
 });
+
+// === OCR (Orca) — T18/T19/T20: init content script with trigger controller ===
+// Lazily creates a SubtitleTriggerController wired to webTextCtrl so OCR
+// hitbox clicks dispatch dictionary lookups (T16). initOcrContentScript
+// registers chrome.storage.onChanged (toggle ON/OFF) + SPA nav listeners.
+function createOcrTriggerController(): SubtitleTriggerController | null {
+  if (!isTopFrame) return null;
+  const ctrl = ensureWebTextCtrl();
+  return new SubtitleTriggerController({
+    triggerMode: 'click',
+    onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => {
+      const range = document.createRange();
+      range.selectNodeContents(highlightTarget);
+      ctrl.handleLookup(request, requestId, anchorRect, range);
+    },
+    onCancel: (requestId: string) => { ctrl.cancelLookup(requestId); },
+    onClear: () => { ctrl.dismissLookup(); },
+  });
+}
+
+if (isTopFrame) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initOcrContentScript(createOcrTriggerController));
+  } else {
+    initOcrContentScript(createOcrTriggerController);
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "async-observer-unlock-on-scrollend-not-animation-end",
+  "title": "IntersectionObserver unlock phải align với slowest async op (scrollend), không phải fastest (rAF)",
+  "category": ["async", "state", "ux"],
+  "tags": ["intersectionobserver", "scrollintoview", "requestanimationframe", "race-condition", "scrollend", "active-indicator", "sidebar", "unlock-timing"],
+  "trigger": "Khi suppress IntersectionObserver trong click-driven scroll + rAF animation chạy song song scrollIntoView smooth",
+  "principle": "Hai async op song song (rAF bg slide ~400ms, scrollIntoView smooth ~2000ms) có duration khác nhau. Unlock observer phải chờ slowest op (scrollend event), không phải fastest (rAF end). Unlock sớm → observer fire cho intermediate sections → active indicator nhảy sang section sai giữa chừng.",
+  "cases": [
+    {
+      "context": "Sidebar nav: click Resources → rAF animate bg từ Media→Resources (400ms) + scrollIntoView content (2000ms). Observer bị suppress để tránh fire cho Block (section giữa).",
+      "bad": "const animate = (now) => {\n  if (t < 1) { requestAnimationFrame(animate); }\n  else {\n    setActiveSection(sectionId);\n    clickScrollingRef.current = false; // ❌ unlock ở cuối rAF (400ms)\n  }\n};\n// scrollIntoView vẫn đang scroll 1600ms nữa → observer unlock → fire cho Block → bg nhảy",
+      "good": "const animate = (now) => {\n  if (t < 1) { requestAnimationFrame(animate); }\n  else { setActiveSection(sectionId); } // ✅ không unlock ở đây\n};\nrequestAnimationFrame(animate);\ntarget.scrollIntoView({ behavior: 'smooth', block: 'start' });\nconst unlock = () => { clickScrollingRef.current = false; };\nmainCol.addEventListener('scrollend', unlock, { once: true }); // ✅ unlock khi content thực sự dừng"
+    }
+  ],
+  "applyFor": ["IntersectionObserver + scrollIntoView smooth", "rAF + scroll animation race", "Active indicator sliding sync với content scroll", "Any suppress-observer pattern với multiple async ops"]
+}

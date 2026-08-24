@@ -1,4 +1,4 @@
-/* === OcrSettingsPanel — iOS Settings card style ===
+/* === OcrSettingsPanel — iOS Settings card style (4-card redesign) ===
    Row layout delegated to SettingsRow + LabelGroup components.
    Tokens from design system (no hardcoded values). */
 
@@ -27,6 +27,22 @@
 @keyframes configReveal {
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Section header — uppercase + tracking (iOS Settings group label) ─── */
+.sectionHeader {
+  padding: var(--space-2-5) var(--space-4) var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-snug);
+}
+
+/* ─── Divider — top hairline between fields ─── */
+.divider {
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 /* ─── Info button — compact, hover/focus → info color ─── */
@@ -82,38 +98,27 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* ─── Slider value — right-aligned, primary color, tabular nums ─── */
-.sliderValue {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-  font-variant-numeric: tabular-nums;
-  flex: 0 0 auto;
+/* ─── Language field — stacked: label row on top, select full-width below ─── */
+.langField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-4);
 }
 
-/* ─── Language rows — Select + inline reset button ─── */
-.langRow {
-  flex: 0 0 auto;
-  display: inline-flex;
+.langLabelRow {
+  display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2-5);
 }
 
-/* Select — compact width + height in row.
-   The shared Select trigger sets `min-height: var(--touch-target)` (40px)
-   which overrides its `height: var(--input-height)` (32px), making the
-   language row ~8px taller than the toggle row. Override the trigger's
-   min-height here so the row matches the compact toggle-row height.
-   NOTE: scoped via .langSelect (applied to Select root) — using
-   [class*='select'] would also match .cell-ocr-region-selector
-   (contains 'select'), breaking the region overlay's width. */
+/* Select — full width in stacked layout.
+   No background/border override: the trigger uses --input-bg which the
+   glass scope (subtitlePanelsShared.module.css) remaps to
+   --color-glass-input-bg automatically. Overriding here with --color-muted
+   would break glass compatibility (solid color on translucent surface). */
 .langSelect {
-  flex: 0 0 auto;
-  min-width: 120px;
-  max-width: 160px;
-}
-.langSelect :global([class*='trigger']) {
-  min-height: var(--input-height);
+  width: 100%;
 }
 
 /* Reset-to-system-default icon button — visible only when an override is set */
@@ -130,10 +135,18 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   padding: 0;
+  margin-left: auto;
   transition: color var(--duration-fast) var(--ease-out);
 }
 .resetBtn:hover {
   color: var(--color-primary);
+}
+.resetBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.resetBtn:disabled:hover {
+  color: var(--color-text-secondary);
 }
 .resetBtn:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
@@ -144,23 +157,31 @@
   height: 16px;
 }
 
-/* ─── Split section — Top/Bottom assignment segment buttons ─── */
+/* ─── Split section — Top/Bottom assignment segment buttons ───
+   Each Button has fullWidth → flex: 1 makes them share the row equally. */
 .segmentButtons {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  width: 100%;
+}
+.segmentButtons > button {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
-/* Low-RAM hint under split controls */
-.sliderHint {
+/* ─── Hint text — small, below controls ─── */
+.hintText {
   margin: 0;
-  padding: var(--space-2-5) var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-2-5);
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
 }
 
-/* ─── Region action buttons — flex row, wrap on small screens ─── */
+/* ─── Region action buttons — horizontal (icon + label inline) ───
+   container-type: inline-size enables Button collapseLabel
+   (hides label when container < 380px → icon-only on narrow panels). */
 .regionButtons {
   display: flex;
   flex-wrap: wrap;

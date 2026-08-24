@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyboard Shortcuts Redesign — Gestalt Proximity</title>
+<style>
+  :root {
+    --font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-none: 1;
+    --space-0: 0;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-0-5: 2px;
+    --space-1-5: 6px;
+    --space-2-5: 10px;
+    --radius-full: 9999px;
+    --radius-card: 12px;
+    --radius-m3-small: 8px;
+    --border-width-hairline: 1px;
+    --touch-target: 40px;
+    --duration-short3: 150ms;
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  }
+  :root[data-theme="light"] {
+    --color-primary: #2563eb;
+    --color-surface: #ffffff;
+    --color-text: #171717;
+    --color-text-secondary: #737373;
+    --color-border: #00000014;
+    --color-border-subtle: #f1f5f9;
+    --color-surface-hover: #f1f5f9;
+    --color-text-inverse: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --color-primary: #60a5fa;
+    --color-surface: #262626;
+    --color-text: #fafafa;
+    --color-text-secondary: #a3a3a3;
+    --color-border: #FFFFFF1A;
+    --color-border-subtle: #1e293b;
+    --color-surface-hover: #334155;
+    --color-text-inverse: #0f172a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-family);
+    background: #f1f1f1;
+    color: var(--color-text);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-height: 100vh;
+  }
+  :root[data-theme="dark"] body { background: #1b1b1b; }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .toolbar button {
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+  .toolbar button.active { background: var(--color-primary); color: var(--color-text-inverse); }
+  .viewport-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* === Card — matches production sectionCard === */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    width: 100%;
+    max-width: 720px;
+    border: 1px solid var(--color-border);
+  }
+
+  .cardHeader {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+  .cardTitle {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    letter-spacing: var(--tracking-normal);
+    line-height: var(--leading-tight);
+  }
+  .cardDesc {
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-snug);
+  }
+
+  .cardBody {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* === Group label — uppercase section divider (Gestalt: between > within) === */
+  .groupLabel {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    padding: var(--space-3) var(--space-4) var(--space-1);
+    margin-top: var(--space-3);
+  }
+  .groupLabel:first-child { margin-top: 0; }
+
+  /* === Shortcut group — within-group grid (tight gap = proximity) === */
+  .shortcutGroup {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+  }
+  @container (min-width: 480px) {
+    .shortcutGroup { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* === Shortcut field — mobile: stack column (label top, pill bottom).
+     480px+: row (label left, pill right). Prevents overflow at 320px. === */
+  .shortcutField {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-m3-small);
+    transition: background var(--duration-short3) var(--ease-standard);
+    min-width: 0;
+  }
+  @container (min-width: 480px) {
+    .shortcutField {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-2);
+    }
+  }
+  .shortcutField:hover { background: var(--color-surface-hover); }
+
+  .rowLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    letter-spacing: var(--tracking-normal);
+    user-select: none;
+    min-width: 0;
+    flex: 1 1 auto;
+    word-break: break-word;
+  }
+
+  /* === ShortcutInput pill — replicate production === */
+  .shortcutPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: calc(var(--space-5) * 7);
+    min-height: var(--touch-target);
+    padding: var(--space-1) var(--space-2-5);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    border: var(--border-width-hairline) solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    user-select: none;
+  }
+  @container (max-width: 479px) {
+    .shortcutPill {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+  .kbdSingle {
+    text-transform: uppercase;
+    text-align: center;
+    line-height: var(--leading-snug);
+  }
+  .kbdModifier {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--space-5);
+    height: var(--space-5);
+    padding: 0 var(--space-1-5);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    line-height: var(--leading-none);
+  }
+  .kbdKey {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--space-5);
+    height: var(--space-5);
+    padding: 0 var(--space-1-5);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    border-radius: var(--radius-full);
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    line-height: var(--leading-none);
+  }
+
+  /* === Viewport simulator === */
+  .viewportFrame {
+    border: 2px dashed var(--color-border);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--color-surface);
+    transition: max-width 0.3s ease;
+    width: 100%;
+    container-type: inline-size;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="setTheme('light')" id="btn-light">Light</button>
+  <button onclick="setTheme('dark')" id="btn-dark">Dark</button>
+  <span class="viewport-label">|</span>
+  <button onclick="setViewport(320)" id="vp-320">320</button>
+  <button onclick="setViewport(430)" id="vp-430">430</button>
+  <button onclick="setViewport(768)" id="vp-768">768</button>
+  <button onclick="setViewport(1024)" id="vp-1024">1024</button>
+  <span class="viewport-label" id="vp-label">320px</span>
+</div>
+
+<div class="viewportFrame" id="viewportFrame" style="max-width: 320px">
+  <div class="card">
+    <div class="cardHeader">
+      <h4 class="cardTitle">Keyboard Shortcuts</h4>
+      <p class="cardDesc">Remap keys for subtitle panel navigation actions.</p>
+    </div>
+    <div class="cardBody">
+
+      <!-- Group 1: Navigation — prev/next/replay cue + play-pause -->
+      <div class="groupLabel">Navigation</div>
+      <div class="shortcutGroup">
+        <div class="shortcutField">
+          <span class="rowLabel">Previous cue</span>
+          <div class="shortcutPill"><span class="kbdSingle">←</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Next cue</span>
+          <div class="shortcutPill"><span class="kbdSingle">→</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Replay cue</span>
+          <div class="shortcutPill"><span class="kbdSingle">R</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Play / pause video</span>
+          <div class="shortcutPill"><span class="kbdSingle">␣</span></div>
+        </div>
+      </div>
+
+      <!-- Group 2: Toggle — overlay/panel/translate/player-mode -->
+      <div class="groupLabel">Toggle</div>
+      <div class="shortcutGroup">
+        <div class="shortcutField">
+          <span class="rowLabel">Toggle overlay</span>
+          <div class="shortcutPill"><span class="kbdSingle">O</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Toggle panel</span>
+          <div class="shortcutPill"><span class="kbdSingle">P</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Toggle auto-translate</span>
+          <div class="shortcutPill"><span class="kbdSingle">T</span></div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Toggle Player Mode</span>
+          <div class="shortcutPill"><span class="kbdSingle">M</span></div>
+        </div>
+      </div>
+
+      <!-- Group 3: Generate — native subtitle -->
+      <div class="groupLabel">Generate</div>
+      <div class="shortcutGroup">
+        <div class="shortcutField">
+          <span class="rowLabel">Generate native subtitle</span>
+          <div class="shortcutPill"><span class="kbdSingle">G</span></div>
+        </div>
+      </div>
+
+      <!-- Group 4: Card Creator — quick update + edit card -->
+      <div class="groupLabel">Card Creator</div>
+      <div class="shortcutGroup">
+        <div class="shortcutField">
+          <span class="rowLabel">Card Creator: Quick update</span>
+          <div class="shortcutPill">
+            <span class="kbdModifier">Ctrl</span>
+            <span class="kbdKey">Q</span>
+          </div>
+        </div>
+        <div class="shortcutField">
+          <span class="rowLabel">Card Creator: Edit card</span>
+          <div class="shortcutPill">
+            <span class="kbdModifier">Ctrl</span>
+            <span class="kbdKey">E</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('btn-light').classList.toggle('active', t === 'light');
+    document.getElementById('btn-dark').classList.toggle('active', t === 'dark');
+  }
+  function setViewport(px) {
+    document.getElementById('viewportFrame').style.maxWidth = px + 'px';
+    document.getElementById('vp-label').textContent = px + 'px';
+  }
+  setTheme('light');
+</script>
+
+</body>
+</html>
+

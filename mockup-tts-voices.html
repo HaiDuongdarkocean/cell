@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTS Voices — Mockup Redesign</title>
+<style>
+/* === Tokens (inline from tokens.css for mockup self-containment) === */
+:root {
+  --font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-2xs: 10px;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+  --radius-full: 9999px;
+  --radius-m3-small: 8px;
+  --radius-m3-medium: 12px;
+  --radius-m3-large: 16px;
+  --radius-m3-extra-large: 28px;
+  --color-primary: #2563eb;
+  --color-primary-rgb: 37, 99, 235;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-primary-foreground: #ffffff;
+  --color-background: #f1f1f1;
+  --color-surface: #ffffff;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-border: #00000014;
+  --color-border-subtle: #f1f5f9;
+  --color-surface-hover: #f1f5f9;
+  --color-muted: #f1f5f9;
+  --color-success: #007004;
+  --color-error: #a50c25;
+  --color-text-disabled: rgba(115, 115, 115, 0.7);
+  --border-width-hairline: 1px;
+  --duration-fast: 175ms;
+  --duration-short3: 150ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --card-bg: var(--color-surface);
+  --card-fg: var(--color-text);
+  --card-border: var(--color-border);
+  --card-padding: var(--space-4);
+  --card-radius: var(--radius-card);
+  --card-shadow: none;
+  --shadow-focus-primary: inset 0 0 0 2px var(--color-primary);
+  --touch-target-mobile: 44px;
+}
+
+[data-theme="dark"] {
+  --color-primary: #60a5fa;
+  --color-primary-rgb: 96, 165, 250;
+  --color-primary-hover: #93c5fd;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-background: #0a0a0a;
+  --color-surface: #171717;
+  --color-text: #f1f1f1;
+  --color-text-secondary: #a3a3a3;
+  --color-border: #ffffff14;
+  --color-border-subtle: #262626;
+  --color-surface-hover: #262626;
+  --color-muted: #262626;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 100vh;
+}
+
+/* === Viewport indicator === */
+.viewport-label {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* === Theme toggle === */
+.theme-toggle {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  z-index: 9999;
+  color: var(--color-text);
+}
+
+/* === Panel container === */
+.panel {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* === Card (M3 — surface container, hairline border, no shadow) === */
+.card {
+  background: var(--card-bg);
+  color: var(--card-fg);
+  border: var(--border-width-hairline) solid var(--card-border);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.card__header {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.card__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.card__header__action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.card__header__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.card__body {
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  /* Gestalt Proximity: between-row gap > within-row gap.
+     space-4 (16px) between rows vs space-2 (8px) within row.
+     Ratio 0.5 ≤ 0.5 threshold — clear separation without dividers. */
+  gap: var(--space-4);
+}
+
+/* === SettingsRow — M3 list item pattern === */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+.row__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.row__control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* === Toggle (M3 switch) === */
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--color-muted);
+  border: 2px solid var(--color-text-secondary);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-short3) var(--ease-standard),
+              border-color var(--duration-short3) var(--ease-standard);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  transition: transform var(--duration-short3) var(--ease-standard),
+              background var(--duration-short3) var(--ease-standard);
+}
+
+.toggle[aria-checked="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.toggle[aria-checked="true"]::after {
+  transform: translateY(-50%) translateX(20px);
+  background: var(--color-primary-foreground);
+}
+
+/* === Select (M3 outlined dropdown) === */
+.select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  padding-right: var(--space-8);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* === Textarea === */
+.textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  resize: vertical;
+}
+
+.textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* === Button (M3 — filled, tonal, outlined) === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: none;
+  transition: background var(--duration-short3) var(--ease-standard);
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.btn--primary:hover { background: var(--color-primary-hover); }
+
+.btn--tonal {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.btn--tonal:hover { background: rgba(var(--color-primary-rgb), 0.16); }
+
+.btn--outlined {
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-border);
+  color: var(--color-text);
+}
+
+.btn--outlined:hover { background: var(--color-surface-hover); }
+
+.btn--danger {
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-border);
+  color: var(--color-error);
+}
+
+.btn--danger:hover { background: rgba(165, 12, 37, 0.08); }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === IconButton (M3 — 40px touch target) === */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+
+.icon-btn:hover { background: var(--color-surface-hover); }
+
+.icon-btn--primary {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.icon-btn--primary:hover { background: rgba(var(--color-primary-rgb), 0.16); }
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* === Checkbox (M3) === */
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.checkbox__box {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--duration-short3) var(--ease-standard),
+              border-color var(--duration-short3) var(--ease-standard);
+}
+
+.checkbox__box svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-primary-foreground);
+  opacity: 0;
+  transition: opacity var(--duration-short3) var(--ease-standard);
+}
+
+.checkbox[aria-checked="true"] .checkbox__box {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.checkbox[aria-checked="true"] .checkbox__box svg {
+  opacity: 1;
+}
+
+/* === Radio slot (M3 — compact pill) === */
+.slot-group {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.slot {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-short3) var(--ease-standard);
+}
+
+.slot:hover { background: var(--color-surface-hover); }
+
+.slot[aria-checked="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* === Order input (compact number) === */
+.order-input {
+  width: 40px;
+  height: 32px;
+  padding: var(--space-1);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.order-input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* === Voice list (Card 1 — selection) === */
+.voice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.voice-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  min-width: 0;
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+
+.voice-item:hover { background: var(--color-surface-hover); }
+
+/* === Voice item content (name + lang, 2-line truncate) === */
+.voice-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.voice-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.voice-lang {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+/* === Drag handle === */
+.drag-handle {
+  color: var(--color-text-secondary);
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.drag-handle svg { width: 16px; height: 16px; }
+
+.drag-handle:active { cursor: grabbing; }
+
+/* === Tester voice item — mobile 2-line layout === */
+.tester-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  cursor: grab;
+  transition: background var(--duration-short3) var(--ease-standard);
+}
+
+.tester-item:hover { background: var(--color-surface-hover); }
+.tester-item:active { cursor: grabbing; }
+
+.tester-item__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tester-item__trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* === Action bar (tester header) === */
+.action-bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.action-bar__primary {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.action-bar__secondary {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* === Group label === */
+.group-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-top: var(--space-2);
+}
+
+/* === Actions footer === */
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-top: var(--space-2);
+}
+
+/* === Alert === */
+.alert {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.alert--success {
+  background: rgba(0, 112, 4, 0.08);
+  color: var(--color-success);
+  border: var(--border-width-hairline) solid rgba(0, 112, 4, 0.2);
+}
+
+.alert--error {
+  background: rgba(165, 12, 37, 0.08);
+  color: var(--color-error);
+  border: var(--border-width-hairline) solid rgba(165, 12, 37, 0.2);
+}
+
+/* === Muted text === */
+.muted {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2) 0;
+}
+
+/* === Responsive: 480px+ === */
+@media (min-width: 480px) {
+  body { padding: var(--space-4); }
+
+  .card__header { padding: var(--space-4) var(--space-5); }
+  .card__body { padding: var(--space-4) var(--space-5); gap: var(--space-5); }
+
+  .row {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .row__label {
+    flex: 0 0 120px;
+    padding-top: var(--space-1);
+  }
+
+  .select, .textarea { max-width: 320px; }
+
+  .voice-list { max-height: 400px; }
+
+  /* Tester item: 1-line on wider screens */
+  .tester-item {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .tester-item__main { flex: 1 1 auto; }
+  .tester-item__trailing { justify-content: flex-end; }
+
+  .action-bar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .action-bar__primary { flex: 1; }
+  .action-bar__secondary { justify-content: flex-end; }
+}
+
+/* === Responsive: 768px+ === */
+@media (min-width: 768px) {
+  .panel { max-width: 720px; }
+  .row__label { flex: 0 0 140px; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+<div class="viewport-label" id="vpLabel">320px</div>
+
+<div class="panel">
+
+  <!-- === Alert (example) === -->
+  <div class="alert alert--success">Đã lưu cài đặt TTS.</div>
+
+  <!-- === Card 1: TTS Settings === -->
+  <section class="card">
+    <header class="card__header">
+      <h2 class="card__title">Text-to-Speech (TTS)</h2>
+      <div class="card__header__action">
+        <span class="card__header__hint">Read example</span>
+        <div class="toggle" aria-checked="true" role="switch" tabindex="0"></div>
+      </div>
+    </header>
+    <div class="card__body">
+
+      <!-- Show buttons — stacked row -->
+      <div class="row">
+        <span class="row__label">Show buttons</span>
+        <div class="row__control">
+          <select class="select">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Voice selection — list -->
+      <div class="row">
+        <span class="row__label">Voice selection</span>
+        <div class="row__control">
+          <div class="voice-list" role="list">
+
+            <!-- Voice item 1 — slot 1 selected -->
+            <div class="voice-item" role="listitem">
+              <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </button>
+              <div class="voice-content">
+                <span class="voice-name">Google US English</span>
+                <span class="voice-lang">en-US</span>
+              </div>
+              <div class="slot-group" role="radiogroup" aria-label="Priority slot">
+                <button class="slot" aria-checked="true" role="radio" aria-label="Slot 1">1</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 2">2</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 3">3</button>
+              </div>
+            </div>
+
+            <!-- Voice item 2 — slot 2 selected -->
+            <div class="voice-item" role="listitem">
+              <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </button>
+              <div class="voice-content">
+                <span class="voice-name">Microsoft Aria Online (Natural)</span>
+                <span class="voice-lang">en-US</span>
+              </div>
+              <div class="slot-group" role="radiogroup" aria-label="Priority slot">
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 1">1</button>
+                <button class="slot" aria-checked="true" role="radio" aria-label="Slot 2">2</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 3">3</button>
+              </div>
+            </div>
+
+            <!-- Voice item 3 — slot 3 selected -->
+            <div class="voice-item" role="listitem">
+              <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </button>
+              <div class="voice-content">
+                <span class="voice-name">Amazon Polly Joanna</span>
+                <span class="voice-lang">en-US</span>
+              </div>
+              <div class="slot-group" role="radiogroup" aria-label="Priority slot">
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 1">1</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 2">2</button>
+                <button class="slot" aria-checked="true" role="radio" aria-label="Slot 3">3</button>
+              </div>
+            </div>
+
+            <!-- Voice item 4 — no slot -->
+            <div class="voice-item" role="listitem">
+              <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </button>
+              <div class="voice-content">
+                <span class="voice-name">Google UK English Female</span>
+                <span class="voice-lang">en-GB</span>
+              </div>
+              <div class="slot-group" role="radiogroup" aria-label="Priority slot">
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 1">1</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 2">2</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 3">3</button>
+              </div>
+            </div>
+
+            <!-- Voice item 5 — long name test -->
+            <div class="voice-item" role="listitem">
+              <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+              </button>
+              <div class="voice-content">
+                <span class="voice-name">Microsoft Zira Desktop — English (United States) Very Long Name Test</span>
+                <span class="voice-lang">en-US</span>
+              </div>
+              <div class="slot-group" role="radiogroup" aria-label="Priority slot">
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 1">1</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 2">2</button>
+                <button class="slot" aria-checked="false" role="radio" aria-label="Slot 3">3</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Autoplay — stacked row -->
+      <div class="row">
+        <span class="row__label">Autoplay</span>
+        <div class="row__control">
+          <select class="select">
+            <option value="0" selected>0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Save -->
+      <div class="actions">
+        <button class="btn btn--primary">Save settings</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- === Card 2: TTS Tester === -->
+  <section class="card">
+    <header class="card__header">
+      <h2 class="card__title">TTS Tester</h2>
+    </header>
+    <div class="card__body">
+
+      <!-- Sentence -->
+      <div class="row">
+        <span class="row__label">Sentence</span>
+        <div class="row__control">
+          <textarea class="textarea" placeholder="Type a sentence to test">Hello, this is a text-to-speech test.</textarea>
+        </div>
+      </div>
+
+      <!-- Filter by country -->
+      <div class="row">
+        <span class="row__label">Filter by country</span>
+        <div class="row__control">
+          <select class="select">
+            <option value="">All countries</option>
+            <option value="en">en</option>
+            <option value="vi">vi</option>
+            <option value="ja">ja</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Voices -->
+      <div class="row">
+        <span class="row__label">Voices</span>
+        <div class="row__control">
+
+          <!-- Action bar -->
+          <div class="action-bar">
+            <div class="action-bar__secondary">
+              <button class="btn btn--danger">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Clear (2)
+              </button>
+            </div>
+            <div class="action-bar__primary">
+              <button class="btn btn--primary">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Play all
+              </button>
+              <button class="btn btn--tonal">Save voice list</button>
+            </div>
+          </div>
+
+          <!-- Voice list -->
+          <div class="voice-list" role="list" style="max-height:400px;">
+
+            <!-- Tester item 1 — selected, 2-line on mobile -->
+            <div class="tester-item" role="listitem" draggable="true">
+              <div class="tester-item__main">
+                <span class="drag-handle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>
+                </span>
+                <div class="voice-content">
+                  <span class="voice-name">Google US English</span>
+                  <span class="voice-lang">en-US</span>
+                </div>
+                <div class="checkbox" aria-checked="true" role="checkbox" tabindex="0">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="tester-item__trailing">
+                <input class="order-input" type="number" value="1" min="1" aria-label="Order">
+                <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tester item 2 — selected -->
+            <div class="tester-item" role="listitem" draggable="true">
+              <div class="tester-item__main">
+                <span class="drag-handle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>
+                </span>
+                <div class="voice-content">
+                  <span class="voice-name">Microsoft Aria Online (Natural)</span>
+                  <span class="voice-lang">en-US</span>
+                </div>
+                <div class="checkbox" aria-checked="true" role="checkbox" tabindex="0">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="tester-item__trailing">
+                <input class="order-input" type="number" value="2" min="1" aria-label="Order">
+                <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tester item 3 — not selected -->
+            <div class="tester-item" role="listitem" draggable="true">
+              <div class="tester-item__main">
+                <span class="drag-handle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>
+                </span>
+                <div class="voice-content">
+                  <span class="voice-name">Amazon Polly Joanna</span>
+                  <span class="voice-lang">en-US</span>
+                </div>
+                <div class="checkbox" aria-checked="false" role="checkbox" tabindex="0">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="tester-item__trailing">
+                <input class="order-input" type="number" value="3" min="1" aria-label="Order">
+                <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tester item 4 — long name test -->
+            <div class="tester-item" role="listitem" draggable="true">
+              <div class="tester-item__main">
+                <span class="drag-handle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/></svg>
+                </span>
+                <div class="voice-content">
+                  <span class="voice-name">Microsoft Zira Desktop — English (United States) Very Long Name Test For Truncation</span>
+                  <span class="voice-lang">en-US</span>
+                </div>
+                <div class="checkbox" aria-checked="false" role="checkbox" tabindex="0">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                </div>
+              </div>
+              <div class="tester-item__trailing">
+                <input class="order-input" type="number" value="4" min="1" aria-label="Order">
+                <button class="icon-btn icon-btn--primary" aria-label="Play voice">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z"/></svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+}
+
+function updateViewport() {
+  const w = window.innerWidth;
+  document.getElementById('vpLabel').textContent = w + 'px';
+}
+window.addEventListener('resize', updateViewport);
+updateViewport();
+
+// Interactive toggles
+document.querySelectorAll('.toggle').forEach(t => {
+  t.addEventListener('click', () => {
+    const checked = t.getAttribute('aria-checked') === 'true';
+    t.setAttribute('aria-checked', String(!checked));
+  });
+});
+
+document.querySelectorAll('.checkbox').forEach(c => {
+  c.addEventListener('click', () => {
+    const checked = c.getAttribute('aria-checked') === 'true';
+    c.setAttribute('aria-checked', String(!checked));
+  });
+});
+
+document.querySelectorAll('.slot').forEach(s => {
+  s.addEventListener('click', () => {
+    const group = s.parentElement;
+    group.querySelectorAll('.slot').forEach(slot => slot.setAttribute('aria-checked', 'false'));
+    s.setAttribute('aria-checked', 'true');
+  });
+});
+</script>
+
+</body>
+</html>

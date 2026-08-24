@@ -24,7 +24,6 @@ import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
-import { PlayerMenuBar } from './PlayerMenuBar';
 import { PlayerControls } from './PlayerControls';
 import { PlayPauseOverlay } from './PlayPauseOverlay';
 import { DropOverlay } from './DropOverlay';
@@ -43,7 +42,6 @@ export interface PlayerViewProps {
   library: VideoRecord[];
   subtitlesLibrary: SubtitleRecord[];
   librarySort: SortBy;
-  showLibrary: boolean;
   targetStyle: OverlayStyleConfig;
   nativeStyle: OverlayStyleConfig;
   onOpenFile: () => void;
@@ -51,10 +49,13 @@ export interface PlayerViewProps {
   onOpenSubtitle: () => void;
   onSelectTrack: (match: SubtitleMatch) => void;
   onFilesDrop: (files: File[]) => void;
-  onToggleLibrary: () => void;
   onVideoSelect: (videoId: string) => void;
+  onVideoDelete: (videoId: string) => void;
+  onClearAll: () => void;
   onSubtitleSelect: (subtitleId: string) => void;
   onSortChange: (sortBy: SortBy) => void;
+  /** Current video ID (for marking active card in playlist). */
+  currentVideoId: string | null;
   onTimeUpdate?: (currentTime: number) => void;
   subtitleEngine: SubtitleEngineControls;
   /** Manager state for subtitle track switching. Built by main.tsx from SubtitlesState. */
@@ -93,11 +94,11 @@ function buildBilingualCues(target: readonly SrtCue[], native: readonly SrtCue[]
 /**
  * PlayerView — top-level layout of the local player page.
  *
- * Stack: PlayerMenuBar (top) → video stage (center, fills remaining space) →
- * PlayerControls (bottom). The video stage swaps between EmptyState (no file)
- * and the `<video>` element (file loaded). A SubtitleBlock overlay sits on top
- * of the video when target subtitles are matched. The LibraryView slides in
- * from the right as an overlay panel when `showLibrary` is true.
+ * Stack: video stage (fills the page) → PlayerControls (bottom). The video
+ * stage swaps between EmptyState (no file) and the `<video>` element (file
+ * loaded). A SubtitleBlock overlay sits on top of the video when target
+ * subtitles are matched. The LibraryView is accessible via the "Playlist" tab
+ * in the Split View panel (toggled with 'T'), not as a separate overlay.
  *
  * Playback state + imperative controls come from `useLocalVideo`, which is
  * wired to the shared `videoRef` so the parent can drive resume positioning.
@@ -111,7 +112,6 @@ export function PlayerView({
   library,
   subtitlesLibrary,
   librarySort,
-  showLibrary,
   targetStyle,
   nativeStyle,
   onOpenFile,
@@ -119,10 +119,12 @@ export function PlayerView({
   onOpenSubtitle,
   onSelectTrack,
   onFilesDrop,
-  onToggleLibrary,
   onVideoSelect,
+  onVideoDelete,
+  onClearAll,
   onSubtitleSelect,
   onSortChange,
+  currentVideoId,
   onTimeUpdate,
   subtitleEngine,
   manager,
@@ -134,6 +136,7 @@ export function PlayerView({
 }: PlayerViewProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const subtitlePanelsRef = useRef<SubtitlePanelsRef>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const controls = useLocalVideo(videoRef, containerRef, { onTimeUpdate, videoFile, autoPlay: true });
   // Dropzone lives on the video stage so drag-and-drop works whether the
   // stage shows EmptyState (no video) or an active video — decoupled from
@@ -154,9 +157,9 @@ export function PlayerView({
 
   const hasVideo = videoFile !== null;
   const hasSubtitles = subtitleEngine.hasSubtitles && targetCues.length > 0;
-  // SubtitlePanels renders whenever a video is loaded — even without subtitles,
-  // so the overlay panel (split view, manager, tools) stays accessible.
-  const showSubtitlePanels = hasVideo;
+  // SubtitlePanels always renders — even without a video, so the playlist tab
+  // (LibraryView) stays accessible for resuming a previously watched video.
+  const showSubtitlePanels = true;
   const showNoSubtitle = subtitleStatus === 'not-found' && hasVideo && !hasSubtitles;
   const showSubtitleError = subtitleStatus === 'error' && hasVideo && !hasSubtitles;
 
@@ -229,6 +232,8 @@ export function PlayerView({
   }, [controls.isPlaying, showControls]);
 
   // Restore subtitle-panel (Split View) enable state from previous session.
+  // Auto-open on first load when no video — so the playlist tab is visible
+  // for the user to pick a video to resume.
   const restoredPanelPrefRef = useRef(false);
   useEffect(() => {
     if (!showSubtitlePanels || restoredPanelPrefRef.current) return;
@@ -238,15 +243,16 @@ export function PlayerView({
       try {
         const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN);
         if (cancelled) return;
-        if (data[STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN] === true) {
+        if (data[STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN] === true || !hasVideo) {
           subtitlePanelsRef.current?.setSplitViewOpen(true);
         }
       } catch {
-        // Storage unavailable (e.g. test env) — keep default disable.
+        // Storage unavailable (e.g. test env) — auto-open when no video.
+        if (!hasVideo) subtitlePanelsRef.current?.setSplitViewOpen(true);
       }
     })();
     return (): void => { cancelled = true; };
-  }, [showSubtitlePanels]);
+  }, [showSubtitlePanels, hasVideo]);
 
   const handleSplitViewChange = useCallback((open: boolean): void => {
     void setStorage({ [STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN]: open }).catch(() => undefined);
@@ -317,16 +323,9 @@ export function PlayerView({
 
   return (
     <div className={styles.root} ref={containerRef} data-cell-id="player-view">
-      <PlayerMenuBar
-        filename={filename}
-        isLibraryOpen={showLibrary}
-        onOpenFile={onOpenFile}
-        onOpenFolder={onOpenFolder}
-        onToggleLibrary={onToggleLibrary}
-      />
-
       <div
         className={styles.stage}
+        ref={stageRef}
         data-cell-id="video-stage"
         data-dropzone="true"
         data-dragging={dragging}
@@ -336,6 +335,64 @@ export function PlayerView({
         onDrop={dropHandlers.onDrop}
       >
         {dragging && <DropOverlay />}
+
+        {showSubtitlePanels && (
+          <div className={styles.subtitleOverlay}>
+            <SubtitlePanels
+              ref={subtitlePanelsRef}
+              targetStyle={effectiveTargetStyle}
+              nativeStyle={effectiveNativeStyle}
+              collapsed={false}
+              isPlaying={controls.isPlaying}
+              repeatActive={subtitleEngine.repeatActive}
+              repeatIcon={subtitleEngine.repeatIcon as keyof typeof ICON_CATALOG | undefined}
+              repeatLabel={subtitleEngine.repeatLabel}
+              clusterSettings={DEFAULT_NAV_CLUSTER_SETTINGS}
+              blockSettings={DEFAULT_SUBTITLE_BLOCK_SETTINGS}
+              yOffsetPercent={75}
+              onPrev={subtitleEngine.prev}
+              onNext={subtitleEngine.next}
+              onRepeat={subtitleEngine.repeat}
+              onRewind={subtitleEngine.rewind}
+              onForward={subtitleEngine.forward}
+              onPlayPause={subtitleEngine.playPause}
+              onToggleCollapsed={() => {}}
+              onToggleSidePanel={() => subtitlePanelsRef.current?.toggleSplitView()}
+              onQuickAdd={subtitleActions.onQuickAdd}
+              onEditCard={subtitleActions.onEditCard}
+              onUpdateCurrentCard={subtitleActions.onUpdateCurrentCard}
+              onToggleManager={() => subtitlePanelsRef.current?.setManagerOpen(true)}
+              onGenerateNative={subtitleActions.onGenerateNative}
+              generateNativeEnabled={subtitleActions.generateNativeEnabled}
+              manager={manager}
+              cues={buildBilingualCues(targetCues, nativeCues)}
+              currentTimeMs={controls.currentTime * 1000}
+              offsetMs={subtitleEngine.offsetMs}
+              onSeek={(ms) => controls.seek(ms / 1000)}
+              onSplitViewChange={handleSplitViewChange}
+              playlistContent={
+                <LibraryView
+                  videos={library}
+                  subtitles={subtitlesLibrary}
+                  sortBy={librarySort}
+                  onSortChange={onSortChange}
+                  onVideoSelect={onVideoSelect}
+                  onSubtitleSelect={onSubtitleSelect}
+                  onSelectTrack={onSelectTrack}
+                  onOpenFile={onOpenFile}
+                  onOpenFolder={onOpenFolder}
+                  currentVideoId={currentVideoId}
+                  currentSubtitles={subtitles}
+                  onVideoDelete={onVideoDelete}
+                  onClearAll={onClearAll}
+                />
+              }
+              filename={filename ?? undefined}
+              fallbackPlayerContainerRef={stageRef}
+              managerShadowCss={hostManagerSheetShadowCss}
+            />
+          </div>
+        )}
 
         {hasVideo ? (
           <div className={styles.videoWrapper}>
@@ -348,57 +405,6 @@ export function PlayerView({
 
             {flashPulse > 0 && (
               <PlayPauseOverlay icon={flashIcon} pulseKey={flashPulse} />
-            )}
-
-            {showSubtitlePanels && (
-              <div className={styles.subtitleOverlay}>
-                <SubtitlePanels
-                  ref={subtitlePanelsRef}
-                  targetStyle={effectiveTargetStyle}
-                  nativeStyle={effectiveNativeStyle}
-                  collapsed={false}
-                  isPlaying={controls.isPlaying}
-                  repeatActive={subtitleEngine.repeatActive}
-                  repeatIcon={subtitleEngine.repeatIcon as keyof typeof ICON_CATALOG | undefined}
-                  repeatLabel={subtitleEngine.repeatLabel}
-                  clusterSettings={DEFAULT_NAV_CLUSTER_SETTINGS}
-                  blockSettings={DEFAULT_SUBTITLE_BLOCK_SETTINGS}
-                  yOffsetPercent={75}
-                  onPrev={subtitleEngine.prev}
-                  onNext={subtitleEngine.next}
-                  onRepeat={subtitleEngine.repeat}
-                  onRewind={subtitleEngine.rewind}
-                  onForward={subtitleEngine.forward}
-                  onPlayPause={subtitleEngine.playPause}
-                  onToggleCollapsed={() => {}}
-                  onToggleSidePanel={() => subtitlePanelsRef.current?.toggleSplitView()}
-                  onQuickAdd={subtitleActions.onQuickAdd}
-                  onEditCard={subtitleActions.onEditCard}
-                  onUpdateCurrentCard={subtitleActions.onUpdateCurrentCard}
-                  onToggleManager={() => subtitlePanelsRef.current?.setManagerOpen(true)}
-                  onGenerateNative={subtitleActions.onGenerateNative}
-                  generateNativeEnabled={subtitleActions.generateNativeEnabled}
-                  manager={manager}
-                  cues={buildBilingualCues(targetCues, nativeCues)}
-                  currentTimeMs={controls.currentTime * 1000}
-                  offsetMs={subtitleEngine.offsetMs}
-                  onSeek={(ms) => controls.seek(ms / 1000)}
-                  onSplitViewChange={handleSplitViewChange}
-                  playlistContent={
-                    <LibraryView
-                      videos={library}
-                      subtitles={subtitlesLibrary}
-                      sortBy={librarySort}
-                      onSortChange={onSortChange}
-                      onVideoSelect={onVideoSelect}
-                      onSubtitleSelect={onSubtitleSelect}
-                    />
-                  }
-                  onOpenFile={onOpenFile}
-                  onOpenFolder={onOpenFolder}
-                  managerShadowCss={hostManagerSheetShadowCss}
-                />
-              </div>
             )}
 
             {showNoSubtitle && (
@@ -469,19 +475,6 @@ export function PlayerView({
           <EmptyState onOpenFile={onOpenFile} onOpenFolder={onOpenFolder} />
         )}
       </div>
-
-      {showLibrary && (
-        <div className={styles.libraryPanel} data-cell-id="library-panel">
-          <LibraryView
-            videos={library}
-            subtitles={subtitlesLibrary}
-            sortBy={librarySort}
-            onSortChange={onSortChange}
-            onVideoSelect={onVideoSelect}
-            onSubtitleSelect={onSubtitleSelect}
-          />
-        </div>
-      )}
     </div>
   );
 }

@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Cell — Theme Card (Compact List)</title>
+<style>
+  /* ============================================================
+     M3 tokens — Light (:root)
+     ============================================================ */
+  :root {
+    --color-primary: #4f6bed;
+    --color-primary-subtle: rgba(79, 107, 237, 0.10);
+    --color-background: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-surface-hover: rgba(0, 0, 0, 0.045);
+    --color-text: #1a1c1e;
+    --color-text-secondary: #5c6068;
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-destructive: #d33a2c;
+
+    --radius-pill: 18px;
+    --radius-card: 8px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+
+    --font-size-xs: 11px;
+    --font-size-sm: 13px;
+    --font-size-base: 15px;
+
+    --duration-fast: 150ms;
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  }
+
+  /* ============================================================
+     M3 tokens — Dark ([data-theme="dark"])
+     ============================================================ */
+  [data-theme="dark"] {
+    --color-primary: #8ea2ff;
+    --color-primary-subtle: rgba(142, 162, 255, 0.14);
+    --color-background: #14161a;
+    --color-surface: #1e2127;
+    --color-surface-hover: rgba(255, 255, 255, 0.06);
+    --color-text: #e6e8eb;
+    --color-text-secondary: #9aa0a8;
+    --color-border: rgba(255, 255, 255, 0.10);
+    --color-destructive: #ff6b5b;
+  }
+
+  /* ============================================================
+     Base
+     ============================================================ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--color-background);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--font-size-base);
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================================
+     Top-right theme toggle (sun/moon)
+     ============================================================ */
+  .topbar {
+    position: fixed;
+    top: var(--space-3);
+    right: var(--space-3);
+    z-index: 10;
+  }
+  .theme-toggle-btn {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--color-surface);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+  }
+  .theme-toggle-btn:hover { background: var(--color-surface-hover); transform: scale(1.06); }
+  .theme-toggle-btn:active { transform: scale(0.94); }
+  .theme-toggle-btn svg { width: 20px; height: 20px; color: var(--color-text); }
+  .theme-toggle-btn .icon-moon { display: none; }
+  [data-theme="dark"] .theme-toggle-btn .icon-sun { display: none; }
+  [data-theme="dark"] .theme-toggle-btn .icon-moon { display: block; }
+
+  /* ============================================================
+     Page shell
+     ============================================================ */
+  .page {
+    padding: var(--space-4);
+    padding-top: var(--space-6);
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ============================================================
+     Card — Compact List container
+     ============================================================ */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    animation: card-enter 240ms var(--ease-emphasized-decelerate);
+  }
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================================
+     Card header — title + desc + action toggle
+     ============================================================ */
+  .card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-2) var(--space-4);
+  }
+  .card__title-block { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .card__title { font-size: var(--font-size-base); font-weight: 600; }
+  .card__desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+  /* M3 toggle switch (pill thumb) */
+  .toggle {
+    flex-shrink: 0;
+    width: 44px; height: 26px;
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-pill);
+    position: relative;
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out);
+    border: 1px solid var(--color-border);
+  }
+  .toggle__thumb {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    background: var(--color-text-secondary);
+    border-radius: 50%;
+    transition: transform var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+  }
+  .toggle[aria-checked="true"] { background: var(--color-primary); border-color: transparent; }
+  .toggle[aria-checked="true"] .toggle__thumb {
+    transform: translateX(18px);
+    background: #fff;
+  }
+
+  /* ============================================================
+     Group spacing — Gestalt proximity (NO dividers)
+     within-group: small gap; between-group: large gap
+     ============================================================ */
+  .card__body { display: flex; flex-direction: column; gap: var(--space-5); }
+  .group { display: flex; flex-direction: column; gap: var(--space-1); }
+  .group__label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0 var(--space-2);
+    margin-bottom: var(--space-1);
+  }
+
+  /* ============================================================
+     Row — dense iOS-settings style
+     ============================================================ */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-card);
+    cursor: pointer;
+    min-height: 40px;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+  .row:hover { background: var(--color-surface-hover); }
+  .row:active { background: var(--color-primary-subtle); }
+
+  .row__icon {
+    width: 20px; height: 20px;
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .row:hover .row__icon { transform: scale(1.1); }
+  .row__icon svg { width: 20px; height: 20px; }
+
+  .row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .row__title { font-size: var(--font-size-sm); font-weight: 500; }
+  .row__sub { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+  .row__trailing { flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2); }
+
+  /* ============================================================
+     Mode radio rows
+     ============================================================ */
+  .row--radio[aria-checked="true"] {
+    background: var(--color-primary-subtle);
+  }
+  .row--radio[aria-checked="true"]:hover { background: var(--color-primary-subtle); }
+  .row--radio[aria-checked="true"] .row__icon { color: var(--color-primary); }
+
+  .radio-check {
+    width: 20px; height: 20px;
+    color: var(--color-primary);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+  }
+  .row--radio[aria-checked="true"] .radio-check { opacity: 1; transform: scale(1); }
+  .radio-check svg { width: 20px; height: 20px; }
+
+  /* ============================================================
+     Disclosure (collapsible) — chevron rotate + height animate
+     ============================================================ */
+  .disclosure__content {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 260ms var(--ease-emphasized-decelerate),
+                opacity 200ms var(--ease-out);
+  }
+  .disclosure[data-open="true"] .disclosure__content {
+    max-height: 600px;
+    opacity: 1;
+  }
+  .chevron {
+    width: 20px; height: 20px;
+    color: var(--color-text-secondary);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .disclosure[data-open="true"] .row .chevron { transform: rotate(180deg); }
+  .chevron svg { width: 20px; height: 20px; }
+
+  /* ============================================================
+     Color swatches
+     ============================================================ */
+  .swatch-tabs {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3) var(--space-2);
+  }
+  .swatch-tab {
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: background var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+  }
+  .swatch-tab[aria-selected="true"] {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+
+  .swatch-row {
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .swatch {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: transform var(--duration-fast) var(--ease-out);
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 0 0 1px var(--color-border);
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch:active { transform: scale(0.92); }
+  .swatch input[type="color"] {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* ============================================================
+     Preview sample
+     ============================================================ */
+  .preview-sample {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .preview-btn {
+    align-self: flex-start;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .preview-btn:active { transform: scale(0.96); }
+  .preview-typo {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+  }
+  .preview-typo strong { font-weight: 600; }
+  .preview-typo small { color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+  .preview-card {
+    background: var(--color-background);
+    border-radius: var(--radius-card);
+    padding: var(--space-3);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  /* ============================================================
+     Destructive row
+     ============================================================ */
+  .row--destructive .row__icon,
+  .row--destructive .row__title { color: var(--color-destructive); }
+  .row--destructive:hover { background: rgba(211, 58, 44, 0.08); }
+  [data-theme="dark"] .row--destructive:hover { background: rgba(255, 107, 91, 0.12); }
+
+  /* ============================================================
+     Responsive — 480px
+     ============================================================ */
+  @media (min-width: 480px) {
+    .page { max-width: 520px; padding: var(--space-5); padding-top: var(--space-6); }
+    .card { padding: var(--space-4); }
+    .swatch-row {
+      flex-wrap: wrap;
+      overflow-x: visible;
+      gap: var(--space-3);
+    }
+  }
+
+  /* ============================================================
+     Responsive — 768px
+     ============================================================ */
+  @media (min-width: 768px) {
+    .page { max-width: 640px; padding: var(--space-6); }
+    .card { padding: var(--space-5); }
+    .row { min-height: 44px; padding: var(--space-3) var(--space-4); }
+    .card__header { padding: var(--space-3) var(--space-2) var(--space-5); }
+  }
+
+  /* ============================================================
+     Reduced motion
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .card { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Top-right theme toggle -->
+  <div class="topbar">
+    <button class="theme-toggle-btn" id="themeToggle" aria-label="Switch theme">
+      <span class="icon-sun">
+        <svg class="lucide lucide-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5" />
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+        </svg>
+      </span>
+      <span class="icon-moon">
+        <svg class="lucide lucide-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+      </span>
+    </button>
+  </div>
+
+  <div class="page">
+    <!-- ============================================================
+         Theme Card — Compact List
+         ============================================================ -->
+    <section class="card" data-cell-id="theme-card">
+
+      <!-- Header: title + desc + TTS toggle (example action) -->
+      <header class="card__header">
+        <div class="card__title-block">
+          <span class="card__title">Theme</span>
+          <span class="card__desc">Giao diện &amp; màu sắc</span>
+        </div>
+        <div class="toggle" id="ttsToggle" role="switch" aria-checked="false" aria-label="Enable TTS" tabindex="0">
+          <span class="toggle__thumb"></span>
+        </div>
+      </header>
+
+      <div class="card__body">
+
+        <!-- ====================================================
+             Mode — 3 dense radio rows
+             ==================================================== -->
+        <div class="group">
+          <div class="group__label">Mode</div>
+
+          <div class="row row--radio" aria-checked="true" data-mode="light" role="radio" tabindex="0">
+            <span class="row__icon">
+              <svg class="lucide lucide-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              </svg>
+            </span>
+            <div class="row__text">
+              <span class="row__title">Light</span>
+              <span class="row__sub">Sáng — ban ngày</span>
+            </div>
+            <span class="radio-check">
+              <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </span>
+          </div>
+
+          <div class="row row--radio" aria-checked="false" data-mode="dark" role="radio" tabindex="0">
+            <span class="row__icon">
+              <svg class="lucide lucide-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+            <div class="row__text">
+              <span class="row__title">Dark</span>
+              <span class="row__sub">Tối — ban đêm, tiết kiệm pin</span>
+            </div>
+            <span class="radio-check">
+              <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </span>
+          </div>
+
+          <div class="row row--radio" aria-checked="false" data-mode="auto" role="radio" tabindex="0">
+            <span class="row__icon">
+              <svg class="lucide lucide-power" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v10" />
+                <path d="M18.4 6.6a9 9 0 1 1-12.77.04" />
+              </svg>
+            </span>
+            <div class="row__text">
+              <span class="row__title">Auto</span>
+              <span class="row__sub">Theo hệ điều hành</span>
+            </div>
+            <span class="radio-check">
+              <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             Colors — disclosure with swatches
+             ==================================================== -->
+        <div class="group">
+          <div class="group__label">Colors</div>
+          <div class="disclosure" data-open="false">
+            <div class="row" data-disclosure-trigger tabindex="0" role="button" aria-expanded="false">
+              <span class="row__icon">
+                <svg class="lucide lucide-volume-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              </span>
+              <div class="row__text">
+                <span class="row__title">Custom colors</span>
+                <span class="row__sub">9 tokens · Light &amp; Dark</span>
+              </div>
+              <span class="row__trailing">
+                <span class="chevron">
+                  <svg class="lucide lucide-chevron-down" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </span>
+            </div>
+
+            <div class="disclosure__content">
+              <div class="swatch-tabs">
+                <span class="swatch-tab" aria-selected="true" data-tab="light">Light</span>
+                <span class="swatch-tab" aria-selected="false" data-tab="dark">Dark</span>
+              </div>
+              <div class="swatch-row" id="swatchRow">
+                <!-- swatches injected by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             Preview — disclosure with compact sample
+             ==================================================== -->
+        <div class="group">
+          <div class="group__label">Preview</div>
+          <div class="disclosure" data-open="false">
+            <div class="row" data-disclosure-trigger tabindex="0" role="button" aria-expanded="false">
+              <span class="row__icon">
+                <svg class="lucide lucide-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              </span>
+              <div class="row__text">
+                <span class="row__title">Live preview</span>
+                <span class="row__sub">Xem trước giao diện</span>
+              </div>
+              <span class="row__trailing">
+                <span class="chevron">
+                  <svg class="lucide lucide-chevron-down" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </span>
+            </div>
+
+            <div class="disclosure__content">
+              <div class="preview-sample">
+                <button class="preview-btn" type="button">Primary button</button>
+                <div class="preview-typo">
+                  <strong>Typography sample</strong><br />
+                  <small>Secondary text — mô tả phụ, màu nhạt hơn.</small>
+                </div>
+                <div class="preview-card">
+                  Nested card — background token, radius 8px, padding 12px.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             Backup + Reset — 2 final rows
+             ==================================================== -->
+        <div class="group">
+          <div class="group__label">Backup &amp; Reset</div>
+
+          <div class="row" id="exportRow" tabindex="0" role="button">
+            <span class="row__icon">
+              <svg class="lucide lucide-copy" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+            </span>
+            <div class="row__text">
+              <span class="row__title">Export theme</span>
+              <span class="row__sub">Sao chép JSON vào clipboard</span>
+            </div>
+          </div>
+
+          <div class="row row--destructive" id="resetRow" tabindex="0" role="button">
+            <span class="row__icon">
+              <svg class="lucide lucide-rotate-ccw" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </span>
+            <div class="row__text">
+              <span class="row__title">Reset to defaults</span>
+              <span class="row__sub">Khôi phục màu gốc</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---- Theme toggle (top-right) ---- */
+  var themeToggle = document.getElementById("themeToggle");
+  themeToggle.addEventListener("click", function () {
+    var html = document.documentElement;
+    html.setAttribute("data-theme",
+      html.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+
+  /* ---- TTS toggle (header action) ---- */
+  var ttsToggle = document.getElementById("ttsToggle");
+  function flipTts() {
+    var on = ttsToggle.getAttribute("aria-checked") === "true";
+    ttsToggle.setAttribute("aria-checked", on ? "false" : "true");
+  }
+  ttsToggle.addEventListener("click", flipTts);
+  ttsToggle.addEventListener("keydown", function (e) {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); flipTts(); }
+  });
+
+  /* ---- Mode radio rows ---- */
+  var modeRows = document.querySelectorAll(".row--radio");
+  modeRows.forEach(function (row) {
+    function select() {
+      modeRows.forEach(function (r) { r.setAttribute("aria-checked", "false"); });
+      row.setAttribute("aria-checked", "true");
+    }
+    row.addEventListener("click", select);
+    row.addEventListener("keydown", function (e) {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); select(); }
+    });
+  });
+
+  /* ---- Disclosure expand/collapse ---- */
+  document.querySelectorAll("[data-disclosure-trigger]").forEach(function (trigger) {
+    var disclosure = trigger.closest(".disclosure");
+    function toggle() {
+      var open = disclosure.getAttribute("data-open") === "true";
+      disclosure.setAttribute("data-open", open ? "false" : "true");
+      trigger.setAttribute("aria-expanded", open ? "false" : "true");
+    }
+    trigger.addEventListener("click", toggle);
+    trigger.addEventListener("keydown", function (e) {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* ---- Color swatches (9 tokens) ---- */
+  var tokens = [
+    "--color-primary", "--color-background", "--color-surface",
+    "--color-surface-hover", "--color-text", "--color-text-secondary",
+    "--color-border", "--color-primary-subtle", "--color-destructive"
+  ];
+  var swatchRow = document.getElementById("swatchRow");
+  function renderSwatches(theme) {
+    swatchRow.innerHTML = "";
+    var style = getComputedStyle(document.documentElement);
+    tokens.forEach(function (tok) {
+      var val = style.getPropertyValue(tok).trim();
+      var sw = document.createElement("label");
+      sw.className = "swatch";
+      sw.style.background = val || "#ccc";
+      sw.title = tok;
+      var input = document.createElement("input");
+      input.type = "color";
+      input.value = val.startsWith("#") ? val : "#4f6bed";
+      input.addEventListener("input", function () { sw.style.background = input.value; });
+      sw.appendChild(input);
+      swatchRow.appendChild(sw);
+    });
+  }
+  renderSwatches("light");
+
+  /* swatch tab switch */
+  document.querySelectorAll(".swatch-tab").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll(".swatch-tab").forEach(function (t) {
+        t.setAttribute("aria-selected", "false");
+      });
+      tab.setAttribute("aria-selected", "true");
+      renderSwatches(tab.getAttribute("data-tab"));
+    });
+  });
+
+  /* re-render swatches on theme switch so colors match */
+  themeToggle.addEventListener("click", function () {
+    setTimeout(function () {
+      var activeTab = document.querySelector(".swatch-tab[aria-selected='true']");
+      renderSwatches(activeTab ? activeTab.getAttribute("data-tab") : "light");
+    }, 20);
+  });
+
+  /* ---- Export / Reset (demo feedback) ---- */
+  document.getElementById("exportRow").addEventListener("click", function () {
+    var sub = this.querySelector(".row__sub");
+    var prev = sub.textContent;
+    sub.textContent = "Đã sao chép ✓";
+    setTimeout(function () { sub.textContent = prev; }, 1200);
+  });
+  document.getElementById("resetRow").addEventListener("click", function () {
+    var sub = this.querySelector(".row__sub");
+    var prev = sub.textContent;
+    sub.textContent = "Đã reset về mặc định";
+    setTimeout(function () { sub.textContent = prev; }, 1200);
+  });
+})();
+</script>
+
+<!-- ============================================================
+     Mockup: Theme Card — Direction C "Compact List"
+     ------------------------------------------------------------
+     Design direction: Compact List (iOS Settings style)
+       - Dense information-dense list rows, 1 row per option
+       - Mode as inline radio list (1 row/option)
+       - Colors as inline swatch row inside collapsible disclosure
+       - Preview as collapsible disclosure
+       - Backup + Reset as 2 final rows
+       - Maximum information density, scannable, power-user friendly
+       - Opposite of spacious/card-grid directions: minimal whitespace
+
+     M3 tokens (CSS custom properties):
+       --color-primary, --color-background, --color-surface,
+       --color-surface-hover, --color-text, --color-text-secondary,
+       --color-border, --color-primary-subtle, --color-destructive,
+       --radius-pill (18px), --radius-card (8px),
+       --space-1..6, --font-size-xs/sm/base,
+       --duration-fast (150ms), --ease-out, --ease-emphasized-decelerate
+       Light: :root  |  Dark: [data-theme="dark"]
+
+     Icon source (inline SVG, verbatim from codebase):
+       src/shared/icons/svg/sun.svg
+       src/shared/icons/svg/moon.svg
+       src/shared/icons/svg/power.svg
+       src/shared/icons/svg/volume-high.svg
+       src/shared/icons/svg/check.svg
+       src/shared/icons/svg/rotate-ccw.svg
+       src/shared/icons/svg/copy.svg
+       src/shared/icons/svg/chevron-down.svg
+       Convention: 24x24, stroke 1.5, currentColor, round caps.
+       Interactive: hover scale 1.1, click feedback.
+
+     Animation spec (M3 motion):
+       - Card enter: fade + translateY 4px, 240ms, ease-emphasized-decelerate
+       - Row hover: background fade 150ms ease-out
+       - Radio select: check icon fade + scale, 150ms ease-out
+       - Collapsible disclosure: max-height 260ms ease-emphasized-decelerate + opacity 200ms
+       - Chevron rotate 180deg on open, 150ms ease-out
+       - Toggle thumb slide 18px, 150ms ease-out
+       - Swatch hover scale 1.12, active scale 0.92
+       - prefers-reduced-motion: reduce -> all transitions/animations ~0ms
+
+     Gestalt proximity (NO dividers):
+       - No border-bottom, border-top, <hr>, or line separators
+       - Within-group gap: --space-1 (4px) — tight clustering
+       - Between-group gap: --space-5 (20px) — clear separation
+       - Group label uppercase xs provides hierarchy without lines
+
+     Responsive:
+       - Mobile-first 320px (default)
+       - @media (min-width: 480px): swatch row wraps to grid, wider page
+       - @media (min-width: 768px): larger row height (44px), more padding
+     ============================================================ -->
+</body>
+</html>

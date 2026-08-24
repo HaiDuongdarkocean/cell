@@ -27,7 +27,7 @@ export function isSubtitleFile(filename: string): boolean {
 
 export interface VideoScanResult {
   readonly file: File;
-  readonly handle: FileSystemFileHandle;
+  readonly handle?: FileSystemFileHandle;
   readonly filename: string;
 }
 

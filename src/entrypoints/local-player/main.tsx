@@ -34,6 +34,9 @@ import {
   saveSubtitle,
   getAllSubtitles,
   getSubtitle,
+  deleteVideo,
+  clearAllVideos,
+  clearAllSubtitles,
 } from '@/features/local-player/services/mediaLibraryRepository';
 import { openSubtitleFile, openFolder, openMediaFiles, verifyPermission } from './hooks/useFileSystemAccess';
 import { matchSubtitlesForVideo, parseSubtitleFile } from './hooks/useSubtitleMatch';
@@ -64,8 +67,6 @@ import { PlayerView } from './components/PlayerView';
 import {
   DEFAULT_OVERLAY_STYLE_TARGET,
   DEFAULT_OVERLAY_STYLE_NATIVE,
-  DEFAULT_SUBTITLE_BLOCK_SETTINGS,
-  DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
@@ -147,7 +148,6 @@ function LocalPlayerApp(): React.JSX.Element {
   const library = useLocalPlayerStore((s) => s.library);
   const subtitlesLibrary = useLocalPlayerStore((s) => s.subtitlesLibrary);
   const librarySort = useLocalPlayerStore((s) => s.librarySort);
-  const showLibrary = useLocalPlayerStore((s) => s.showLibrary);
 
   const setVideo = useLocalPlayerStore((s) => s.setVideo);
   const setSubtitles = useLocalPlayerStore((s) => s.setSubtitles);
@@ -155,7 +155,6 @@ function LocalPlayerApp(): React.JSX.Element {
   const setLibrary = useLocalPlayerStore((s) => s.setLibrary);
   const setSubtitlesLibrary = useLocalPlayerStore((s) => s.setSubtitlesLibrary);
   const setLibrarySort = useLocalPlayerStore((s) => s.setLibrarySort);
-  const toggleLibrary = useLocalPlayerStore((s) => s.toggleLibrary);
 
   // Subtitle engine — binds SubtitleCueEngine to <video>, drives cuesStore.
   const subtitleEngine = useSubtitleEngine(videoRef, videoFile);
@@ -233,29 +232,19 @@ function LocalPlayerApp(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Open file: multi-select video + subtitle files in one picker ──
-  // User can pick any mix of videos + subtitles (including subtitles with
-  // names that don't match any video base name — the auto-pair logic in
-  // autoMatchSubtitles handles the 1-video + 1-subtitle case).
-  const handleOpenFile = useCallback(async (): Promise<void> => {
-    const picked = await openMediaFiles();
-    if (!picked || picked.length === 0) return;
-
-    // Separate picked files into videos + subtitles.
-    const videoPicks = picked.filter((p) => isVideoFile(p.file.name));
-    const subtitlePicks = picked.filter((p) => isSubtitleFile(p.file.name));
-    if (videoPicks.length === 0 && subtitlePicks.length === 0) return;
-
-    // Cache subtitle files for autoMatchSubtitles + track switching.
-    const subtitleFileMap = new Map<string, File>();
-    for (const s of subtitlePicks) {
-      subtitleFileMap.set(s.file.name, s.file);
-    }
-    subtitleFileMapRef.current = subtitleFileMap;
-
-    // Save subtitles to library (persist for future sessions).
-    for (const s of subtitlePicks) {
-      const subRecord = buildSubtitleRecord(s.file, s.handle);
+  // ── SSOT: save picked/scanned videos + subtitles → refresh libraries ──
+  // Dùng chung cho handleOpenFile + handleOpenFolder + handleFilesDrop.
+  // videos: array of { file, handle, filename }. subtitles: Map<filename, File>.
+  // dirHandle: parent directory (optional — null khi drag-drop).
+  const savePickedMedia = useCallback(async (
+    videos: { file: File; handle?: FileSystemFileHandle; filename: string }[],
+    subtitles: Map<string, File>,
+    dirHandle: FileSystemDirectoryHandle | null,
+  ): Promise<void> => {
+    // Save subtitles to library.
+    for (const [filename, file] of subtitles) {
+      const subRecord = buildSubtitleRecord(file);
+      subRecord.id = filename;
       await saveSubtitle(subRecord).catch(() => {
         const { fileHandle, ...rest } = subRecord;
         void fileHandle;
@@ -263,35 +252,52 @@ function LocalPlayerApp(): React.JSX.Element {
       });
     }
 
-    // Auto-load first video (if any).
+    // Match + save videos.
+    if (videos.length > 0) {
+      const matched = matchVideosWithSubtitles(videos, Array.from(subtitles.keys()), 'en', 'vi');
+      for (const { video, subtitles: subs } of matched) {
+        const record = buildVideoRecord(video.file);
+        record.fileHandle = video.handle;
+        if (dirHandle) record.dirHandle = dirHandle;
+        record.hasSubtitle = subs.target !== null;
+        await saveVideo(record).catch(() => {
+          const { fileHandle, dirHandle, ...rest } = record;
+          void fileHandle;
+          void dirHandle;
+          return saveVideo(rest as VideoRecord);
+        });
+      }
+    }
+
+    const [allVideos, allSubs] = await Promise.all([getAllVideos(), getAllSubtitles()]);
+    setLibrary(allVideos);
+    setSubtitlesLibrary(allSubs);
+  }, [setLibrary, setSubtitlesLibrary]);
+
+  // ── Add files: pick video + subtitle files → match directly ──
+  // User chọn 1 hoặc nhiều file video + subtitle cùng lúc. Match trực tiếp.
+  const handleOpenFile = useCallback(async (): Promise<void> => {
+    const picked = await openMediaFiles();
+    if (!picked || picked.length === 0) return;
+
+    const videoPicks = picked.filter((p) => isVideoFile(p.file.name));
+    const subtitlePicks = picked.filter((p) => isSubtitleFile(p.file.name));
+    if (videoPicks.length === 0 && subtitlePicks.length === 0) return;
+
+    const subtitleFileMap = new Map<string, File>();
+    for (const s of subtitlePicks) subtitleFileMap.set(s.file.name, s.file);
+    subtitleFileMapRef.current = subtitleFileMap;
+
+    await savePickedMedia(
+      videoPicks.map((p) => ({ file: p.file, handle: p.handle, filename: p.file.name })),
+      subtitleFileMap,
+      null,
+    );
+
     if (videoPicks.length > 0) {
       await loadVideo(videoPicks[0].file, videoPicks[0].handle);
     }
-
-    // Save all picked videos to library.
-    const subtitleFilenames = Array.from(subtitleFileMap.keys());
-    const matched = matchVideosWithSubtitles(
-      videoPicks.map((p) => ({ file: p.file, handle: p.handle, filename: p.file.name })),
-      subtitleFilenames,
-      'en',
-      'vi',
-    );
-    for (const { video, subtitles: subs } of matched) {
-      const record = buildVideoRecord(video.file);
-      record.fileHandle = video.handle;
-      record.hasSubtitle = subs.target !== null;
-      await saveVideo(record).catch(() => {
-        const { fileHandle, ...rest } = record;
-        void fileHandle;
-        return saveVideo(rest as VideoRecord);
-      });
-    }
-
-    // Refresh both libraries.
-    const [videos, subs] = await Promise.all([getAllVideos(), getAllSubtitles()]);
-    setLibrary(videos);
-    setSubtitlesLibrary(subs);
-  }, [setLibrary, setSubtitlesLibrary]);
+  }, [savePickedMedia]);
 
   // ── Drag-and-drop: accept video + subtitle files (any mix) ─────────────
   // Split by extension, sort videos by numeric suffix → alphabetical,
@@ -359,9 +365,8 @@ function LocalPlayerApp(): React.JSX.Element {
       }
       const videos = await getAllVideos();
       setLibrary(videos);
-      if (rest.length > 0 && !showLibrary) toggleLibrary();
     })();
-  }, [currentVideo, showLibrary, toggleLibrary, setLibrary, setSubtitlesLibrary]);
+  }, [currentVideo, setLibrary, setSubtitlesLibrary]);
 
   /** Load a video + match it against pending subtitles (no folder scan needed). */
   async function loadVideoWithPendingSubs(file: File): Promise<void> {
@@ -440,77 +445,33 @@ function LocalPlayerApp(): React.JSX.Element {
     void matchPendingSubsForVideo(file);
   }
 
-  // ── Open folder flow: scan folder for videos + subtitles, build library ──
+  // ── Add folder: pick folder → scan → save all (SSOT savePickedMedia) ──
+  // Cùng flow handleOpenFile — 2 nút cùng cơ chế, user chọn folder 1 lần.
   const handleOpenFolder = useCallback(async (): Promise<void> => {
     const dirHandle = await openFolder();
-    if (!dirHandle) return; // user cancelled
+    if (!dirHandle) return;
 
-    // Cache directory handle for subtitle auto-match when user clicks a video.
     dirHandleRef.current = dirHandle;
-
     const scan = await scanFolder(dirHandle);
-
-    // Cache subtitle files for track switching later.
     subtitleFileMapRef.current = scan.subtitleFiles;
 
-    // Save subtitles to library (persist for future sessions).
-    for (const [filename, file] of scan.subtitleFiles) {
-      const subRecord = buildSubtitleRecord(file);
-      subRecord.id = filename;
-      await saveSubtitle(subRecord).catch(() => {
-        const { fileHandle, ...rest } = subRecord;
-        void fileHandle;
-        return saveSubtitle(rest as SubtitleRecord);
-      });
-    }
-
-    if (scan.videos.length === 0) {
-      const subs = await getAllSubtitles();
-      setSubtitlesLibrary(subs);
-      if (!showLibrary) toggleLibrary();
-      return;
-    }
-
-    // Match each video with its subtitles.
-    const matched = matchVideosWithSubtitles(
-      scan.videos,
-      scan.subtitleFilenames,
-      'en',
-      'vi',
-    );
-
-    // Build VideoRecords + save to library (upsert).
-    for (const { video, subtitles: subs } of matched) {
-      const record = buildVideoRecord(video.file);
-      record.fileHandle = video.handle;
-      record.hasSubtitle = subs.target !== null;
-      await saveVideo(record).catch(() => {
-        const { fileHandle, ...rest } = record;
-        void fileHandle;
-        return saveVideo(rest as VideoRecord);
-      });
-    }
-
-    // Refresh both libraries.
-    const [videos, subs] = await Promise.all([getAllVideos(), getAllSubtitles()]);
-    setLibrary(videos);
-    setSubtitlesLibrary(subs);
-
-    // Auto-open library panel so user sees the scanned videos.
-    if (!showLibrary) toggleLibrary();
-  }, [showLibrary, toggleLibrary, setLibrary, setSubtitlesLibrary]);
+    await savePickedMedia(scan.videos, scan.subtitleFiles, dirHandle);
+  }, [savePickedMedia]);
 
   /** Load a video File into the player: create record, save to library, match subs. */
   async function loadVideo(file: File, handle?: FileSystemFileHandle): Promise<void> {
+    console.log('[Cell:autoMatch] loadVideo ENTER', { filename: file.name, hasHandle: !!handle, fileSize: file.size });
     const record = buildVideoRecord(file);
     if (handle) record.fileHandle = handle;
+    if (dirHandleRef.current) record.dirHandle = dirHandleRef.current;
     setVideo(record, file);
 
     // Save to library (upsert) + add history entry.
-    // Fallback: if fileHandle is not structured-cloneable, retry without it.
+    // Fallback: if fileHandle/dirHandle is not structured-cloneable, retry without it.
     await saveVideo(record).catch(() => {
-      const { fileHandle, ...rest } = record;
+      const { fileHandle, dirHandle, ...rest } = record;
       void fileHandle;
+      void dirHandle;
       return saveVideo(rest as VideoRecord);
     });
     await addHistoryEntry({
@@ -528,20 +489,23 @@ function LocalPlayerApp(): React.JSX.Element {
     // Create throttled saver for this video.
     saverRef.current = createThrottledSaver(resumeRepo, record.id, 5000);
 
-    // Auto-match subtitles: prompt user to select the folder containing the video.
-    // The folder is scanned for sibling subtitle files matching the video base name.
-    // If user cancels the folder picker, we show "No subtitle found" + manual open button.
+    // Auto-match subtitles: scan the video's folder for sibling subtitle files.
+    // Pass the file handle so autoMatchSubtitles can resolve the parent dir.
     void autoMatchSubtitles(file);
   }
 
-  /** Attempt subtitle auto-match by scanning the video's folder for sibling subtitle files. */
+  /** Attempt subtitle auto-match by scanning the video's folder for sibling subtitle files.
+   *  If no dirHandle is cached, falls back to matching against subtitles already
+   *  saved in the library (from previous folder scans or manual subtitle loads). */
   async function autoMatchSubtitles(videoFile_: File): Promise<void> {
+    console.log('[Cell:autoMatch] autoMatchSubtitles ENTER', { filename: videoFile_.name });
     setSubtitleStatus('searching');
     const targetLang = 'en';
     const nativeLang = 'vi';
 
     let subtitleFilenames: string[] = [];
     let subtitleFileMap = subtitleFileMapRef.current;
+    console.log('[Cell:autoMatch] cached subtitleFileMap size', subtitleFileMap.size);
 
     // If subtitleFileMap is already cached from handleOpenFile/handleOpenFolder,
     // reuse it — no need to scan the directory again.
@@ -549,18 +513,112 @@ function LocalPlayerApp(): React.JSX.Element {
       subtitleFileMap = new Map();
       // Gap 3: Reuse cached directory handle if permission still granted.
       let dirHandle: FileSystemDirectoryHandle | null = dirHandleRef.current;
+      console.log('[Cell:autoMatch] dirHandle cached?', !!dirHandle);
       if (dirHandle) {
         const granted = await verifyPermission(dirHandle, false);
+        console.log('[Cell:autoMatch] dirHandle permission granted?', granted);
         if (!granted) dirHandle = null;
       }
 
       if (!dirHandle) {
-        // No cached handle — can't scan without prompting. Show not-found.
+        // No cached dirHandle — try matching against subtitles already saved
+        // in the library (from previous folder scans or manual subtitle loads).
+        console.log('[Cell:autoMatch] FALLBACK: matching against library subtitles');
+        const libSubs = await getAllSubtitles();
+        console.log('[Cell:autoMatch] library subtitles count', libSubs.length, libSubs.map(s => s.filename));
+        if (libSubs.length > 0) {
+          const libFilenames = libSubs.map((s) => s.filename);
+          const result = matchSubtitlesForVideo(
+            videoFile_.name,
+            libFilenames,
+            targetLang,
+            nativeLang,
+          );
+          console.log('[Cell:autoMatch] library match result', { target: result.target?.filename, native: result.native?.filename, others: result.others.length });
+
+          if (result.target) {
+            // Resolve File objects from stored handles or in-memory cache.
+            // drag-dropped files have no fileHandle — fall back to subtitleFileMapRef
+            // (cached from a previous handleOpenFile/handleOpenFolder/drag-drop).
+            const subtitleFileMap = new Map<string, File>();
+            const cachedMap = subtitleFileMapRef.current;
+            for (const sub of libSubs) {
+              if (sub.fileHandle) {
+                try {
+                  const granted = await verifyPermission(sub.fileHandle, false);
+                  console.log('[Cell:autoMatch] lib sub permission', sub.filename, granted);
+                  if (granted) {
+                    const f = await sub.fileHandle.getFile();
+                    subtitleFileMap.set(sub.filename, f);
+                    console.log('[Cell:autoMatch] lib sub file resolved', sub.filename, f.size);
+                  }
+                } catch (e) { console.log('[Cell:autoMatch] lib sub permission error', sub.filename, String(e)); }
+              } else {
+                // No fileHandle — try in-memory cache (drag-dropped files).
+                const cached = cachedMap.get(sub.filename);
+                if (cached) {
+                  subtitleFileMap.set(sub.filename, cached);
+                  console.log('[Cell:autoMatch] lib sub file from cache', sub.filename, cached.size);
+                } else {
+                  console.log('[Cell:autoMatch] lib sub no fileHandle + no cache', sub.filename);
+                }
+              }
+            }
+            subtitleFileMapRef.current = subtitleFileMap;
+            console.log('[Cell:autoMatch] lib subtitleFileMap built', subtitleFileMap.size, Array.from(subtitleFileMap.keys()));
+
+            setSubtitles({
+              target: result.target,
+              native: result.native ?? null,
+              others: result.others,
+            });
+            const targetFile = subtitleFileMap.get(result.target.filename);
+            console.log('[Cell:autoMatch] target file from map?', !!targetFile, result.target.filename);
+            if (targetFile) {
+              const nativeFile = result.native?.filename
+                ? subtitleFileMap.get(result.native.filename)
+                : undefined;
+              await loadAndParseSubtitle(targetFile, nativeFile);
+              console.log('[Cell:autoMatch] loadAndParseSubtitle DONE (library match)');
+            }
+            return;
+          }
+
+          // Auto-pair: 1 subtitle in library with different base name.
+          if (libFilenames.length === 1) {
+            const soleSubtitle = libFilenames[0];
+            const subtitleFileMap = new Map<string, File>();
+            const subRecord = libSubs[0];
+            if (subRecord.fileHandle) {
+              try {
+                const granted = await verifyPermission(subRecord.fileHandle, false);
+                if (granted) {
+                  const f = await subRecord.fileHandle.getFile();
+                  subtitleFileMap.set(soleSubtitle, f);
+                }
+              } catch { /* skip */ }
+            }
+            subtitleFileMapRef.current = subtitleFileMap;
+            const autoMatch: SubtitleMatch = {
+              filename: soleSubtitle,
+              languageCode: targetLang,
+              tags: [],
+            };
+            setSubtitles({ target: autoMatch, native: null, others: [] });
+            const targetFile = subtitleFileMap.get(soleSubtitle);
+            if (targetFile) await loadAndParseSubtitle(targetFile);
+            return;
+          }
+        }
+
+        // No library subtitles matched — show not-found.
+        console.log('[Cell:autoMatch] NO MATCH — not-found');
         setSubtitleStatus('not-found');
         setSubtitles({ target: null, native: null, others: [] });
         return;
       }
 
+      console.log('[Cell:autoMatch] scanning dirHandle for subtitles...');
       try {
         for await (const entry of dirHandle.values()) {
           if (entry.kind === 'file' && isSubtitleFile(entry.name)) {
@@ -577,11 +635,13 @@ function LocalPlayerApp(): React.JSX.Element {
     }
 
     subtitleFilenames = Array.from(subtitleFileMap.keys());
+    console.log('[Cell:autoMatch] subtitleFilenames', subtitleFilenames);
 
     // Cache the subtitle file map for track switching.
     subtitleFileMapRef.current = subtitleFileMap;
 
     if (subtitleFilenames.length === 0) {
+      console.log('[Cell:autoMatch] no subtitles found — not-found');
       setSubtitleStatus('not-found');
       setSubtitles({ target: null, native: null, others: [] });
       return;
@@ -593,6 +653,7 @@ function LocalPlayerApp(): React.JSX.Element {
       targetLang,
       nativeLang,
     );
+    console.log('[Cell:autoMatch] dirScan match result', { target: result.target?.filename, native: result.native?.filename, others: result.others.length });
 
     if (result.target) {
       setSubtitles({
@@ -730,21 +791,59 @@ function LocalPlayerApp(): React.JSX.Element {
   // ── Library video select — reopen from stored handle or in-memory cache ─
   const handleVideoSelect = useCallback(
     async (videoId_: string): Promise<void> => {
+      console.log('[Cell:autoMatch] handleVideoSelect ENTER', { videoId_ });
       // Fast path: in-memory cache (drag-dropped videos have no fileHandle).
       const cachedFile = videoFileCacheRef.current.get(videoId_);
       if (cachedFile) {
+        console.log('[Cell:autoMatch] handleVideoSelect: cached file', cachedFile.name);
         await loadVideo(cachedFile);
         return;
       }
       const record = await getVideo(videoId_);
+      console.log('[Cell:autoMatch] handleVideoSelect: record', { found: !!record, hasHandle: !!record?.fileHandle });
       if (!record?.fileHandle) return;
       // Re-request permission for stored handle (reverts to 'prompt' on retrieval).
       const granted = await verifyPermission(record.fileHandle, false);
+      console.log('[Cell:autoMatch] handleVideoSelect: permission', granted);
       if (!granted) return;
       const file = await record.fileHandle.getFile();
+      // Cache the video's parent dirHandle so autoMatchSubtitles can scan
+      // the folder for sibling subtitle files matching this video.
+      if (record.dirHandle) {
+        dirHandleRef.current = record.dirHandle;
+        console.log('[Cell:autoMatch] handleVideoSelect: dirHandle restored from record');
+      }
       await loadVideo(file, record.fileHandle);
     },
     [],
+  );
+
+  // ── Delete single video from library ──────────────────────────────────
+  const handleVideoDelete = useCallback(
+    async (videoId: string): Promise<void> => {
+      await deleteVideo(videoId).catch(() => {});
+      videoFileCacheRef.current.delete(videoId);
+      const [videos, subs] = await Promise.all([getAllVideos(), getAllSubtitles()]);
+      setLibrary(videos);
+      setSubtitlesLibrary(subs);
+    },
+    [setLibrary, setSubtitlesLibrary],
+  );
+
+  // ── Clear all videos + subtitles from library ─────────────────────────
+  const handleClearAll = useCallback(
+    async (): Promise<void> => {
+      await Promise.all([clearAllVideos(), clearAllSubtitles()]).catch(() => {});
+      videoFileCacheRef.current.clear();
+      subtitleFileMapRef.current.clear();
+      pendingSubsRef.current.clear();
+      dirHandleRef.current = null;
+      setLibrary([]);
+      setSubtitlesLibrary([]);
+      setSubtitles({ target: null, native: null, others: [] });
+      setVideo(null, null);
+    },
+    [setLibrary, setSubtitlesLibrary, setSubtitles, setVideo],
   );
 
   // ── Prev/next video navigation (sorted library order) ──────────────────
@@ -982,7 +1081,6 @@ function LocalPlayerApp(): React.JSX.Element {
       library={library}
       subtitlesLibrary={subtitlesLibrary}
       librarySort={librarySort as SortBy}
-      showLibrary={showLibrary}
       targetStyle={subtitleEngine.targetStyle}
       nativeStyle={subtitleEngine.nativeStyle}
       onOpenFile={handleOpenFile}
@@ -990,10 +1088,12 @@ function LocalPlayerApp(): React.JSX.Element {
       onOpenSubtitle={handleOpenSubtitle}
       onSelectTrack={handleSelectTrack}
       onFilesDrop={handleFilesDrop}
-      onToggleLibrary={toggleLibrary}
       onVideoSelect={handleVideoSelect}
+      onVideoDelete={handleVideoDelete}
+      onClearAll={handleClearAll}
       onSubtitleSelect={handleSubtitleSelect}
       onSortChange={handleSortChange}
+      currentVideoId={currentVideo?.id ?? null}
       onTimeUpdate={handleTimeUpdate}
       subtitleEngine={subtitleEngine}
       manager={manager}

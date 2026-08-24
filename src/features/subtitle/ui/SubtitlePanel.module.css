@@ -9,15 +9,43 @@
   flex-direction: column;
   background: var(--color-surface);
   overflow: hidden;
+  /* Slide animation: panel enters from right, exits to right.
+     Apple §7 spatial consistency — symmetric path along the same axis.
+     §4 critically damped (no overshoot) — graceful, non-distracting. */
+  animation: panelSlideIn var(--duration-medium) var(--ease-standard) both;
+}
+
+.panel[data-closing='true'] {
+  animation: panelSlideOut var(--duration-medium) var(--ease-standard) both;
+}
+
+@keyframes panelSlideIn {
+  from { transform: translateX(100%); opacity: 0.3; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes panelSlideOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0.3; }
 }
 
 .header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* Chevron points right (collapse direction = panel slides out to right).
+   On close, rotates 180° to point left — Apple §8: hint reverses with gesture. */
+.header svg {
+  transition: transform var(--duration-medium) var(--ease-standard);
+}
+
+.panel[data-closing='true'] .header svg {
+  transform: rotate(180deg);
 }
 
 .title {
@@ -26,6 +54,11 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  /* Ellipsis when filename is too long — flex item needs min-width:0 to shrink. */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* CueList wrapper — fills remaining space. overflow:hidden clips children
@@ -139,6 +172,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .panel {
-    transition: none;
+    animation: none;
   }
 }

@@ -4,7 +4,7 @@
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { Toggle, Select, SliderRow, Button, Icon, Tooltip, LabelGroup, SettingsRow } from '@/shared/ui';
+import { Toggle, Select, SliderRow, Button, Icon, LabelGroup, SettingsRow } from '@/shared/ui';
 import {
   loadOcrSettings,
   saveOcrSettings,
@@ -194,7 +194,7 @@ export function OcrSettingsPanel({
 
   return (
     <div className={styles.container} data-testid="ocr-settings-panel" data-enabled={enabled}>
-      {/* ─── Toggle card — label group (icon + label + info) + toggle ─── */}
+      {/* ─── Card 1: Toggle — label group (icon + label + info) + toggle ─── */}
       <div className={styles.card}>
         <SettingsRow>
           <LabelGroup
@@ -232,16 +232,28 @@ export function OcrSettingsPanel({
         </div>
       </div>
 
-      {/* ─── Config card — revealed when OCR enabled ─── */}
+      {/* ─── Card 2: Languages — revealed when OCR enabled ─── */}
       {enabled && (
         <div className={styles.configCard}>
-        {/* Target language row — 108-lang select + reset-to-system-default */}
-        <SettingsRow divider>
-          <LabelGroup
-            icon={<Icon name="languages" size="sm" />}
-            label="Target language"
-          />
-          <div className={styles.langRow}>
+          <div className={styles.sectionHeader}>Languages</div>
+          {/* Target language — stacked: label row on top, select full-width below */}
+          <div className={styles.langField}>
+            <div className={styles.langLabelRow}>
+              <LabelGroup
+                icon={<Icon name="languages" size="sm" />}
+                label="Target language"
+              />
+              <button
+                type="button"
+                className={styles.resetBtn}
+                aria-label="Reset target language to system default"
+                data-cell-id="ocr-target-lang-reset"
+                disabled={targetLangOverride == null}
+                onClick={() => handleLangReset('targetLangOverride')}
+              >
+                <Icon name="rotateCcw" size="sm" />
+              </button>
+            </div>
             <Select
               value={resolveOcrLang(targetLangOverride, effectiveTargetLang)}
               options={LANGUAGE_OPTIONS}
@@ -251,27 +263,25 @@ export function OcrSettingsPanel({
               menuAlign="right"
               className={styles.langSelect}
             />
-            {targetLangOverride != null && (
+          </div>
+          {/* Native language — stacked */}
+          <div className={`${styles.langField} ${styles.divider}`}>
+            <div className={styles.langLabelRow}>
+              <LabelGroup
+                icon={<Icon name="languages" size="sm" />}
+                label="Native language"
+              />
               <button
                 type="button"
                 className={styles.resetBtn}
-                aria-label="Reset target language to system default"
-                data-cell-id="ocr-target-lang-reset"
-                onClick={() => handleLangReset('targetLangOverride')}
+                aria-label="Reset native language to system default"
+                data-cell-id="ocr-native-lang-reset"
+                disabled={nativeLangOverride == null}
+                onClick={() => handleLangReset('nativeLangOverride')}
               >
                 <Icon name="rotateCcw" size="sm" />
               </button>
-            )}
-          </div>
-        </SettingsRow>
-
-        {/* Native language row */}
-        <SettingsRow divider>
-          <LabelGroup
-            icon={<Icon name="languages" size="sm" />}
-            label="Native language"
-          />
-          <div className={styles.langRow}>
+            </div>
             <Select
               value={resolveOcrLang(nativeLangOverride, effectiveNativeLang)}
               options={LANGUAGE_OPTIONS}
@@ -281,93 +291,92 @@ export function OcrSettingsPanel({
               menuAlign="right"
               className={styles.langSelect}
             />
-            {nativeLangOverride != null && (
-              <button
-                type="button"
-                className={styles.resetBtn}
-                aria-label="Reset native language to system default"
-                data-cell-id="ocr-native-lang-reset"
-                onClick={() => handleLangReset('nativeLangOverride')}
-              >
-                <Icon name="rotateCcw" size="sm" />
-              </button>
-            )}
           </div>
-        </SettingsRow>
+          {/* Language hints — defaults source + first-use model download (SC#12/SC#16). */}
+          <p className={styles.hintText}>Defaults come from your subtitle settings. Override per-site.</p>
+          {(targetResolvesNonDefaultModel || nativeResolvesNonDefaultModel) && (
+            <p className={styles.hintText}>
+              Non-default languages download their recognition model on first use (a few MB, cached for next time).
+            </p>
+          )}
+        </div>
+      )}
 
-        {/* Language hints — defaults source + first-use model download (SC#12/SC#16). */}
-        <p className={styles.sliderHint}>Defaults come from your subtitle settings. Override per-site.</p>
-        {(targetResolvesNonDefaultModel || nativeResolvesNonDefaultModel) && (
-          <p className={styles.sliderHint}>
-            Non-default languages download their recognition model on first use (a few MB, cached for next time).
-          </p>
-        )}
-
-        {/* ─── Split dual-stream section (spec ocr-split-dual-stream) ─── */}
-        <SettingsRow divider>
-          <LabelGroup
-            icon={<Icon name="crop" size="sm" />}
-            label="Split"
-            hint="Split the capture region into two halves — one per language stream"
-          />
-          <Toggle
-            checked={splitEnabled}
-            onChange={(v) => void patchOcrState({ splitEnabled: v })}
-            ariaLabel="Toggle split dual subtitles"
-            dataTestId="ocr-split-toggle"
-            size="sm"
-          />
-        </SettingsRow>
-        {splitEnabled && (
-          <>
-            <SettingsRow stacked divider>
-              <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
-              <div className={styles.segmentButtons}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  active={splitTopIsTarget}
-                  onClick={() => void patchOcrState({ splitTopIsTarget: true })}
-                  data-cell-id="ocr-split-top-target"
-                >
-                  Top = Target
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  active={!splitTopIsTarget}
-                  onClick={() => void patchOcrState({ splitTopIsTarget: false })}
-                  data-cell-id="ocr-split-top-native"
-                >
-                  Top = Native
-                </Button>
-              </div>
-            </SettingsRow>
-            <SliderRow
-              icon={<Icon name="moveVertical" size="sm" />}
-              label="Split ratio"
-              hint="Height of the top half as % of the capture region"
-              value={Math.round(splitRatio * 100)}
-              min={10}
-              max={90}
-              step={1}
-              onChange={(v) => void patchOcrState({ splitRatio: v / 100 })}
-              aria-label="OCR split ratio"
-              variant="end"
-              divider
-              formatValue={(v) => `${v}%`}
+      {/* ─── Card 3: Split — revealed when OCR enabled ─── */}
+      {enabled && (
+        <div className={styles.configCard}>
+          <div className={styles.sectionHeader}>Split</div>
+          <SettingsRow>
+            <LabelGroup
+              icon={<Icon name="crop" size="sm" />}
+              label="Split"
+              sublabel="Split capture region into two halves — one per language stream"
             />
-            {deviceMemory < 4 && (
+            <Toggle
+              checked={splitEnabled}
+              onChange={(v) => void patchOcrState({ splitEnabled: v })}
+              ariaLabel="Toggle split dual subtitles"
+              dataTestId="ocr-split-toggle"
+              size="sm"
+            />
+          </SettingsRow>
+          {splitEnabled && (
+            <>
               <SettingsRow stacked divider>
-                <p className={styles.sliderHint}>
-                  Low memory mode: both halves use the target model
-                </p>
+                <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
+                <div className={styles.segmentButtons}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    fullWidth
+                    active={splitTopIsTarget}
+                    onClick={() => void patchOcrState({ splitTopIsTarget: true })}
+                    data-cell-id="ocr-split-top-target"
+                  >
+                    Top = Target
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    fullWidth
+                    active={!splitTopIsTarget}
+                    onClick={() => void patchOcrState({ splitTopIsTarget: false })}
+                    data-cell-id="ocr-split-top-native"
+                  >
+                    Top = Native
+                  </Button>
+                </div>
               </SettingsRow>
-            )}
-          </>
-        )}
+              <SliderRow
+                icon={<Icon name="moveVertical" size="sm" />}
+                label="Split ratio"
+                hint="Height of the top half as % of the capture region"
+                value={Math.round(splitRatio * 100)}
+                min={10}
+                max={90}
+                step={1}
+                onChange={(v) => void patchOcrState({ splitRatio: v / 100 })}
+                aria-label="OCR split ratio"
+                variant="end"
+                divider
+                formatValue={(v) => `${v}%`}
+              />
+              {deviceMemory < 4 && (
+                <SettingsRow stacked divider>
+                  <p className={styles.hintText}>
+                    Low memory mode: both halves use the target model
+                  </p>
+                </SettingsRow>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
-          {/* Region sliders — X, Y, W, H in % (always visible) */}
+      {/* ─── Card 4: Capture region — revealed when OCR enabled ─── */}
+      {enabled && (
+        <div className={styles.configCard}>
+          <div className={styles.sectionHeader}>Capture region</div>
           <SliderRow
             icon={<Icon name="moveHorizontal" size="sm" />}
             label="Position X"
@@ -432,48 +441,41 @@ export function OcrSettingsPanel({
             disabledNote="Reduce Position Y to heighten"
             formatValue={(v) => `${formatPct(v)}%`}
           />
-
-          {/* Region action buttons — icon+label, collapse to icon-only on narrow container */}
+          {/* Region action buttons — horizontal (icon + label inline) */}
           <SettingsRow stacked divider>
             <div className={styles.regionButtons}>
-              <Tooltip content="Select Region" placement="top">
+              <Button
+                variant="outline"
+                size="sm"
+                collapseLabel
+                leadingIcon={<Icon name="crop" size="sm" />}
+                onClick={() => sendRegionCommand('select')}
+                data-cell-id="ocr-region-select"
+              >
+                Select
+              </Button>
+              {hasCustomRegion && (
                 <Button
                   variant="outline"
                   size="sm"
                   collapseLabel
-                  leadingIcon={<Icon name="crop" size="sm" />}
-                  onClick={() => sendRegionCommand('select')}
-                  data-cell-id="ocr-region-select"
+                  leadingIcon={<Icon name="move" size="sm" />}
+                  onClick={() => sendRegionCommand('edit')}
+                  data-cell-id="ocr-region-edit"
                 >
-                  Select Region
+                  Edit
                 </Button>
-              </Tooltip>
-              {hasCustomRegion && (
-                <Tooltip content="Edit" placement="top">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    collapseLabel
-                    leadingIcon={<Icon name="move" size="sm" />}
-                    onClick={() => sendRegionCommand('edit')}
-                    data-cell-id="ocr-region-edit"
-                  >
-                    Edit
-                  </Button>
-                </Tooltip>
               )}
-              <Tooltip content="Reset" placement="top">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  collapseLabel
-                  leadingIcon={<Icon name="rotateCcw" size="sm" />}
-                  onClick={() => void handleResetRegion()}
-                  data-cell-id="ocr-region-reset"
-                >
-                  Reset
-                </Button>
-              </Tooltip>
+              <Button
+                variant="ghost"
+                size="sm"
+                collapseLabel
+                leadingIcon={<Icon name="rotateCcw" size="sm" />}
+                onClick={() => void handleResetRegion()}
+                data-cell-id="ocr-region-reset"
+              >
+                Reset
+              </Button>
             </div>
           </SettingsRow>
         </div>

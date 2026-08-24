@@ -3,6 +3,7 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { Icon } from '@/shared/icons/Icon';
 import { UniversalPanelHeader } from './UniversalPanelHeader';
+import { getLocalPlayerUrl } from './localPlayerLink';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanel.module.css';
@@ -139,6 +140,16 @@ export function UniversalPanel({
                 <Icon name={tab.icon}  />
               </IconButton>
             ))}
+            <IconButton
+              size="md"
+              variant="ghost"
+              aria-label="Open local player"
+              title="Open local player"
+              onClick={() => { window.open(getLocalPlayerUrl(), '_blank'); }}
+              data-cell-id="universal-panel-tab-local-player"
+            >
+              <Icon name="playRoundedRect"  />
+            </IconButton>
           </div>
         </nav>
 

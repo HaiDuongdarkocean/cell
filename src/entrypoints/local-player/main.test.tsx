@@ -25,14 +25,12 @@ type StoreState = {
   library: VideoRecord[];
   subtitlesLibrary: SubtitleRecord[];
   librarySort: 'recent' | 'title' | 'added';
-  showLibrary: boolean;
   setVideo: (video: VideoRecord, file: File) => void;
   setSubtitles: (subs: SubtitlesState) => void;
   setSubtitleStatus: (status: 'idle' | 'searching' | 'loaded' | 'not-found' | 'error') => void;
   setLibrary: (videos: VideoRecord[]) => void;
   setSubtitlesLibrary: (subs: SubtitleRecord[]) => void;
   setLibrarySort: (sortBy: 'recent' | 'title' | 'added') => void;
-  toggleLibrary: () => void;
 };
 
 const setVideoSpy = jest.fn<(video: VideoRecord, file: File) => void>();
@@ -41,7 +39,6 @@ const setSubtitleStatusSpy = jest.fn<(status: 'idle' | 'searching' | 'loaded' | 
 const setLibrarySpy = jest.fn<(videos: VideoRecord[]) => void>();
 const setSubtitlesLibrarySpy = jest.fn<(subs: SubtitleRecord[]) => void>();
 const setLibrarySortSpy = jest.fn<(sortBy: 'recent' | 'title' | 'added') => void>();
-const toggleLibrarySpy = jest.fn<() => void>();
 
 const storeState: StoreState = {
   currentVideo: null,
@@ -51,14 +48,12 @@ const storeState: StoreState = {
   library: [],
   subtitlesLibrary: [],
   librarySort: 'recent',
-  showLibrary: false,
   setVideo: setVideoSpy,
   setSubtitles: setSubtitlesSpy,
   setSubtitleStatus: setSubtitleStatusSpy,
   setLibrary: setLibrarySpy,
   setSubtitlesLibrary: setSubtitlesLibrarySpy,
   setLibrarySort: setLibrarySortSpy,
-  toggleLibrary: toggleLibrarySpy,
 };
 
 jest.mock('./hooks/useLocalPlayerStore', () => ({
@@ -219,7 +214,6 @@ interface CapturedProps {
   library: VideoRecord[];
   subtitlesLibrary: SubtitleRecord[];
   librarySort: string;
-  showLibrary: boolean;
   targetStyle: unknown;
   nativeStyle: unknown;
   onOpenFile: () => void;
@@ -227,10 +221,10 @@ interface CapturedProps {
   onOpenSubtitle: () => void;
   onSelectTrack: (match: unknown) => void;
   onFilesDrop: (files: File[]) => void;
-  onToggleLibrary: () => void;
   onVideoSelect: (videoId: string) => void;
   onSubtitleSelect: (subtitleId: string) => void;
   onSortChange: (sortBy: string) => void;
+  currentVideoId: string | null;
   onTimeUpdate?: (currentTime: number) => void;
   manager: unknown;
   subtitleActions: unknown;
@@ -244,7 +238,6 @@ let capturedPlayerViewProps: CapturedProps = {
   library: [],
   subtitlesLibrary: [],
   librarySort: 'recent',
-  showLibrary: false,
   targetStyle: null,
   nativeStyle: null,
   onOpenFile: () => {},
@@ -252,10 +245,10 @@ let capturedPlayerViewProps: CapturedProps = {
   onOpenSubtitle: () => {},
   onSelectTrack: () => {},
   onFilesDrop: () => {},
-  onToggleLibrary: () => {},
   onVideoSelect: () => {},
   onSubtitleSelect: () => {},
   onSortChange: () => {},
+  currentVideoId: null,
   manager: null,
   subtitleActions: null,
 };
@@ -278,12 +271,6 @@ jest.mock('./components/PlayerView', () => ({
           }
         >
           Drop
-        </button>
-        <button
-          data-cell-id="mock-toggle-library"
-          onClick={() => props.onToggleLibrary()}
-        >
-          Library
         </button>
         <button
           data-cell-id="mock-video-select"
@@ -344,7 +331,6 @@ function resetStoreState(): void {
   storeState.subtitleStatus = 'idle';
   storeState.library = [];
   storeState.librarySort = 'recent';
-  storeState.showLibrary = false;
 }
 
 describe('LocalPlayerApp — integration wiring', () => {
@@ -377,8 +363,6 @@ describe('LocalPlayerApp — integration wiring', () => {
     expect(capturedPlayerViewProps.videoFile).toBeNull();
     // library from store is empty array
     expect(capturedPlayerViewProps.library).toEqual([]);
-    // showLibrary from store is false
-    expect(capturedPlayerViewProps.showLibrary).toBe(false);
   });
 
   it('passes targetStyle + nativeStyle from DEFAULT_OVERLAY_STYLE constants', () => {
@@ -424,19 +408,12 @@ describe('LocalPlayerApp — integration wiring', () => {
       fireEvent.click(screen.getByTestId('mock-open-file'));
     });
 
-    // 1. openMediaFiles was called
     expect(openMediaFilesSpy).toHaveBeenCalledTimes(1);
-
-    // 2. setVideo was called with a VideoRecord + the File
     expect(setVideoSpy).toHaveBeenCalledTimes(1);
     const [videoRecord, fileArg] = setVideoSpy.mock.calls[0];
     expect(fileArg).toBe(fakeFile);
     expect(videoRecord.filename).toBe('Movie_720p.mp4');
-
-    // 3. saveVideo was called (library upsert)
     expect(saveVideoSpy).toHaveBeenCalled();
-
-    // 4. addHistoryEntry was called
     expect(addHistoryEntrySpy).toHaveBeenCalledTimes(1);
   });
 
@@ -459,7 +436,6 @@ describe('LocalPlayerApp — integration wiring', () => {
       { file: fakeFile, handle: fakeHandle },
       { file: srtFile, handle: fakeHandle },
     ]);
-    // matchSubtitlesForVideo returns no match (different base names)
     matchSubtitlesForVideoSpy.mockReturnValue({
       target: undefined,
       native: undefined,
@@ -471,9 +447,7 @@ describe('LocalPlayerApp — integration wiring', () => {
       fireEvent.click(screen.getByTestId('mock-open-file'));
     });
 
-    // Video loaded
     expect(setVideoSpy).toHaveBeenCalledTimes(1);
-    // Subtitle auto-paired (1 video + 1 subtitle → auto-pair)
     expect(setSubtitlesSpy).toHaveBeenCalledWith({
       target: expect.objectContaining({ filename: 'random-name.srt' }),
       native: null,
@@ -501,11 +475,7 @@ describe('LocalPlayerApp — integration wiring', () => {
       { file: srtFile, handle: fakeHandle },
     ]);
     matchSubtitlesForVideoSpy.mockReturnValue({
-      target: {
-        filename: 'Movie.en.srt',
-        languageCode: 'en',
-        tags: [],
-      },
+      target: { filename: 'Movie.en.srt', languageCode: 'en', tags: [] },
       native: undefined,
       others: [],
     });
@@ -515,13 +485,10 @@ describe('LocalPlayerApp — integration wiring', () => {
       fireEvent.click(screen.getByTestId('mock-open-file'));
     });
 
-    // matchSubtitlesForVideo was called with the video filename + subtitle filenames
     expect(matchSubtitlesForVideoSpy).toHaveBeenCalledTimes(1);
     const matchArgs = matchSubtitlesForVideoSpy.mock.calls[0];
     expect(matchArgs[0]).toBe('Movie_720p.mp4');
     expect(matchArgs[1]).toContain('Movie.en.srt');
-
-    // setSubtitles should have been called with the match result
     expect(setSubtitlesSpy).toHaveBeenCalledTimes(1);
     const subsArg = setSubtitlesSpy.mock.calls[0][0];
     expect(subsArg.target?.filename).toBe('Movie.en.srt');
@@ -574,14 +541,6 @@ describe('LocalPlayerApp — integration wiring', () => {
     expect(typeof capturedPlayerViewProps.onTimeUpdate).toBe('function');
   });
 
-  it('toggleLibrary: calls store.toggleLibrary', async () => {
-    render(<LocalPlayerApp />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('mock-toggle-library'));
-    });
-    expect(toggleLibrarySpy).toHaveBeenCalledTimes(1);
-  });
-
   it('videoSelect: calls getVideo with the selected id', async () => {
     render(<LocalPlayerApp />);
     await act(async () => {
@@ -625,7 +584,6 @@ describe('LocalPlayerApp — integration wiring', () => {
   });
 
   it('subtitleSelect: calls getSubtitle + loads subtitle into current video', async () => {
-    const srtFile = new File(['1\n00:00:00,500 --> 00:00:02,000\nHello\n'], 'Movie.en.srt');
     getSubtitleSpy.mockResolvedValue({
       id: 'Movie.en.srt',
       filename: 'Movie.en.srt',
