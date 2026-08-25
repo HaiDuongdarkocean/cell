@@ -23,9 +23,11 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-panels-atom-decomposition.md # Spec: tách SubtitlePanels god component thành atom/molecule (SSOT toolbar/manager/offset/types/CSS)
 │   ├── fnc_tts.md                      # Spec: local offline TTS với Supertonic v3 cho popup từ điển + nền reader
 │   ├── reader-requirements.md          # Reader feature requirements (subagent output)
-│   └── reader.md                       # Reader technical spec (SSOT)
+│   ├── reader.md                       # Reader technical spec (SSOT)
+│   └── clipboard-page.md               # Clipboard standalone page spec — orbital entry, CRUD, pagination, token SSOT
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
+│   ├── DESIGN.md                      # Agent-facing SSOT for UI implementation (M3 → Cell token map, component map, audit commands)
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
 │   ├── universal-panel-demo.html      # Universal Panel (Dictionary + Settings) demo applying Meta/Facebook DS
@@ -42,10 +44,14 @@ docs/           # Tài liệu dự án
 │   └── reader-README.md               # Reader mockup notes
 ├── ideas/                             # Refined idea one-pagers (idea-refine output)
 │   └── orca-ocr-layer.md              # OCR layer cho Cell (hard-sub video + image + screenshot) — PaddleOCR.js PP-OCRv5 primary, evidence-grounded
-├── intent/                            # Confirmed user intent (interview-me output)
+├── context/                           # Project context (persistent — skill elicitation load đầu tiên)
+│   └── project-context.md             # Persona + platform + constraints + glossary + design system + existing specs
+├── intent/                            # Confirmed user intent (interview-me / elicitation output)
 │   └── reader.md                      # Reader feature intent
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
-│   └── learning-algorithms-summary.md # Learning algorithms summary
+│   ├── learning-algorithms-summary.md # Learning algorithms summary
+│   ├── sdlc-flow.md                   # SDLC — sơ đồ dòng chảy Idea → Khung quy trình → Sản phẩm (output mỗi pha + ai làm)
+│   └── agentic-sdlc.md                # Agentic SDLC — tài liệu chuẩn (định nghĩa + nguồn gốc + 5 nguyên lý + pipeline 4 ông lớn + guardrail + metric + so sánh truyền thống + takeaway Cell + 10 nguồn)
 ├── memory/                            # Agent memory — long-term context
 │   └── algorithm-tokenize.md          # Tokenize algorithm notes
 ├── research/                          # Subagent research reports
@@ -59,13 +65,12 @@ docs/           # Tài liệu dự án
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
-  skills/         # 25 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship)
+  skills/         # 25 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship) — interview-me đã gộp elicitation mode
                  # browser-testing-with-devtools/SKILL.md: có "Reliable install workflow on Devin CLI"
                  #   (copy dist/ → %TEMP%\cell-ext-dist trước khi install_extension,
                  #    vì Devin MCP client negotiate roots nhưng không gửi workspace D:\...\cell)
                  # testing-extension-browser/: SSOT profile + CDP Extensions.loadUnpacked + script/test-cell-browser.py
                  #   (Chrome 137+ blocks --load-extension; dùng nodriver + CDP loadUnpacked mỗi session; anti-bot bypass)
-  skills-deprecated/  # 4 skill cũ đã deprecate (chrome-extension-mv3-architecture-review, conceptualization, mockup-first, skill-creator)
 .devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 tasks/          # Active plan & task checklist (current sprint)
