@@ -1,0 +1,232 @@
+{
+  "version": "1.0",
+  "generated": "2026-08-25T13:35:26.451Z",
+  "count": 45,
+  "skills": [
+    {
+      "name": "animation-vocabulary",
+      "description": "Reverse-lookup glossary that turns a vague description of a web animation or motion effect into its exact term (\"the bouncy thing when a popover opens\" → Pop in; \"the iOS rubber-band scroll\" → Rubber-banding). Use when the user asks \"what's it called when…\", or describes a motion effect without knowing its name and wants the right word to prompt an AI or designer with. For naming an effect, not designing or building one.",
+      "path": ".agents/skills/animation-vocabulary/SKILL.md"
+    },
+    {
+      "name": "api-and-interface-design",
+      "description": "Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type contracts between modules, or establishing boundaries between frontend and backend.",
+      "path": ".agents/skills/api-and-interface-design/SKILL.md"
+    },
+    {
+      "name": "apple-design",
+      "description": "Apple's approach to interface design and fluid, physical motion, translated for the web. Use when building or reviewing gesture-driven UI, spring animations, drag/swipe/sheet interactions, momentum and interruptible transitions, translucent materials and depth, typography (optical sizing, tracking, leading), reduced-motion, or the design foundations (feedback, spatial consistency, restraint) behind Apple-style interfaces.",
+      "path": ".agents/skills/apple-design/SKILL.md"
+    },
+    {
+      "name": "caveman",
+      "description": "Ultra-compressed communication mode. Cuts output tokens 65% (measured) by speaking like caveman while keeping full technical accuracy. Supports intensity levels: lite, full (default), ultra, wenyan-lite, wenyan-full, wenyan-ultra. Use when user says \"caveman mode\", \"talk like caveman\", \"use caveman\", \"less tokens\", \"be brief\", or invokes /caveman. Also auto-triggers when token efficiency is requested.",
+      "path": ".agents/skills/caveman/SKILL.md"
+    },
+    {
+      "name": "ci-cd-and-automation",
+      "description": "Automates CI/CD pipeline setup. Use when setting up or modifying build and deployment pipelines. Use when you need to automate quality gates, configure test runners in CI, or establish deployment strategies.",
+      "path": ".agents/skills/ci-cd-and-automation/SKILL.md"
+    },
+    {
+      "name": "code-review-and-quality",
+      "description": "Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.",
+      "path": ".agents/skills/code-review-and-quality/SKILL.md"
+    },
+    {
+      "name": "code-simplification",
+      "description": "Simplifies code for clarity. Use when refactoring code for clarity without changing behavior. Use when code works but is harder to read, maintain, or extend than it should be. Use when reviewing code that has accumulated unnecessary complexity.",
+      "path": ".agents/skills/code-simplification/SKILL.md"
+    },
+    {
+      "name": "context-engineering",
+      "description": "Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.",
+      "path": ".agents/skills/context-engineering/SKILL.md"
+    },
+    {
+      "name": "debugging-and-error-recovery",
+      "description": "Guides systematic root-cause debugging using Socratic questioning when tests fail, builds break, runtime behavior mismatches expectations, or an unexpected error appears, and not for quick fixes or feature requests without a reproducible failure.",
+      "path": ".agents/skills/debugging-and-error-recovery/SKILL.md"
+    },
+    {
+      "name": "deprecation-and-migration",
+      "description": "Manages deprecation and migration. Use when removing old systems, APIs, or features. Use when migrating users from one implementation to another. Use when deciding whether to maintain or sunset existing code.",
+      "path": ".agents/skills/deprecation-and-migration/SKILL.md"
+    },
+    {
+      "name": "design-svg",
+      "description": "Design new SVG icons following the Nucleus iconography system (24×24, stroke 1.5, round caps, geometric foundation). Use when the user requests a new icon, wants to redesign an existing icon, or needs custom SVG artwork for the UI. Not for modifying existing SVG code, debugging rendering issues, or creating non-icon illustrations.",
+      "path": ".agents/skills/design-svg/SKILL.md"
+    },
+    {
+      "name": "design-system-guardian",
+      "description": "Audit any UI change against Cell's design system (DESIGN.md). Run before merging a UI task or when the user asks \"is this design correct?\". Checks token usage (no M3), component reuse (src/shared/ui/*), hardcoded values, inline SVG, and z-index. Returns pass/fail with specific fixes.",
+      "path": ".agents/skills/design-system-guardian/SKILL.md"
+    },
+    {
+      "name": "documentation-and-adrs",
+      "description": "Records decisions and documentation. Use when making architectural decisions, changing public APIs, shipping features, or when you need to record context that future engineers and agents will need to understand the codebase.",
+      "path": ".agents/skills/documentation-and-adrs/SKILL.md"
+    },
+    {
+      "name": "doubt-driven-development",
+      "description": "Subjects every non-trivial decision to a fresh-context adversarial review before it stands. Use when correctness matters more than speed, when working in unfamiliar code, when stakes are high (production, security-sensitive logic, irreversible operations), or any time a confident output would be cheaper to verify now than to debug later.",
+      "path": ".agents/skills/doubt-driven-development/SKILL.md"
+    },
+    {
+      "name": "elicitation",
+      "description": "Orchestrate the full elicitation pipeline — transform a vague idea or pain into a confirmed 8-field frame by routing through idea-refine, interview, observation, and doubt-driven validation before handing off to spec-driven development.",
+      "path": ".agents/skills/elicitation/SKILL.md"
+    },
+    {
+      "name": "emil-design-eng",
+      "description": "This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.",
+      "path": ".agents/skills/emil-design-eng/SKILL.md"
+    },
+    {
+      "name": "epub",
+      "description": "Read and extract content from EPUB ebook files. Use this skill when the user wants to read an EPUB file, extract text from an ebook, view EPUB metadata (title, author), list chapters or table of contents, search within EPUB content, or analyze ebook content.",
+      "path": ".agents/skills/epub/SKILL.md"
+    },
+    {
+      "name": "find-animation-opportunities",
+      "description": "Search a codebase or UI for places that don't animate but should, and reject everything that shouldn't. Read-only; it proposes motion with exact values, it does not implement it. Use when the user asks \"what could be animated here?\" or wants to \"make this feel more alive\". For fixing existing animations, use improve-animations or review-animations instead.",
+      "path": ".agents/skills/find-animation-opportunities/SKILL.md"
+    },
+    {
+      "name": "find-skills",
+      "description": "Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.",
+      "path": ".agents/skills/find-skills/SKILL.md"
+    },
+    {
+      "name": "frontend-ui-engineering",
+      "description": "Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, redesigning existing UI through mockup-first user-journey-driven workflow, or when the output needs to look and feel production-quality rather than AI-generated.",
+      "path": ".agents/skills/frontend-ui-engineering/SKILL.md"
+    },
+    {
+      "name": "git-workflow-and-versioning",
+      "description": "Structures git workflow practices. Use when making any code change. Use when committing, branching, resolving conflicts, or when you need to organize work across multiple parallel streams. Use when cutting a release, choosing a semantic version bump, tagging, or writing a changelog.",
+      "path": ".agents/skills/git-workflow-and-versioning/SKILL.md"
+    },
+    {
+      "name": "idea-refine",
+      "description": "Refines raw ideas into sharp, actionable concepts through structured divergent and convergent thinking. Use when an idea is still vague, when you need to stress-test assumptions before committing to a plan, or when you want to expand options before converging on one. Triggers on \"ideate\", \"refine this idea\", or \"stress-test my plan\".",
+      "path": ".agents/skills/idea-refine/SKILL.md"
+    },
+    {
+      "name": "improve-animations",
+      "description": "Survey a codebase's animation and motion code as a senior motion advisor, then produce a prioritized audit and self-contained implementation plans for other agents (or cheaper models) to execute. Read-only on source code — it plans improvements, it does not apply them. Use when the user asks to \"improve the animations\", \"audit the motion\", \"make this app feel better\", or wants a roadmap of animation fixes rather than a review of a single diff.",
+      "path": ".agents/skills/improve-animations/SKILL.md"
+    },
+    {
+      "name": "incremental-implementation",
+      "description": "Delivers changes incrementally. Use when implementing any feature or change that touches more than one file. Use when you're about to write a large amount of code at once, or when a task feels too big to land in one step.",
+      "path": ".agents/skills/incremental-implementation/SKILL.md"
+    },
+    {
+      "name": "interview-me",
+      "description": "Extract what users actually want before any plan, spec, or code exists — interview mode for users who can articulate and elicitation mode with prototype validation for users who cannot; use when an ask is underspecified, the user can't articulate needs, or you catch yourself silently filling in ambiguous requirements; not for unambiguous asks, pure information requests, or when a spec already exists.",
+      "path": ".agents/skills/interview-me/SKILL.md"
+    },
+    {
+      "name": "learning-and-apply",
+      "description": "Prevents recurring mistakes by applying accumulated knowledge before coding and extracting new lessons after fixes. Use this skill in two situations. BEFORE writing code: when the task involves CSS, async, messaging, state management, data parsing, detection logic, build config, testing, or UX patterns — grep index.json to find matching knowledge (style guide rules from books) or experience (bug fix principles from real projects), then check your code against known bad patterns and apply the good patterns. AFTER fixing a bug or completing a feature with a reusable insight: when a root cause is understood and tests pass — extract the principle into an atom JSON with bad/good code examples so future tasks avoid the same mistake. Triggers include: writing CSS for Shadow DOM, handling async races, chrome.runtime messaging, partial save APIs, MutationObserver timing, parser tolerance, fullscreen layout, theme switching, SPA navigation, or any task touching css/async/messaging/state/data/detection/build/ux. Do NOT use for one-off bug fixes with no reusable pattern, business logic errors, or trivial one-liner changes.",
+      "path": ".agents/skills/learning-and-apply/SKILL.md"
+    },
+    {
+      "name": "m3-design-standard",
+      "description": "Material Design 3 standard for building or redesigning UI. Use when designing new components/pages, redesigning existing UI, auditing design system compliance, filling token gaps, or when agent needs M3 rules to make design decisions. Contains verified M3 token specs, atomic design composition rules, responsive breakpoints, and hybrid audit (script + checklist).",
+      "path": ".agents/skills/m3-design-standard/SKILL.md"
+    },
+    {
+      "name": "observability-and-instrumentation",
+      "description": "Instruments code so production behavior is visible and diagnosable. Use when adding logging, metrics, tracing, or alerting. Use when shipping any feature that runs in production and you need evidence it works. Use when production issues are reported but you can't tell what happened from the available data.",
+      "path": ".agents/skills/observability-and-instrumentation/SKILL.md"
+    },
+    {
+      "name": "performance-optimization",
+      "description": "Optimizes application performance across frontend, backend, queries, and databases. Use when performance requirements exist, when you suspect performance regressions, when Core Web Vitals or load times need improvement, when N+1 query patterns need fixing, or when profiling reveals bottlenecks.",
+      "path": ".agents/skills/performance-optimization/SKILL.md"
+    },
+    {
+      "name": "pick-ui-library",
+      "description": "Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.",
+      "path": ".agents/skills/pick-ui-library/SKILL.md"
+    },
+    {
+      "name": "planning-and-task-breakdown",
+      "description": "Breaks work into ordered tasks. Use when you have a spec or clear requirements and need to break work into implementable tasks. Use when a task feels too large to start, when you need to estimate scope, or when parallel work is possible.",
+      "path": ".agents/skills/planning-and-task-breakdown/SKILL.md"
+    },
+    {
+      "name": "pre-commit-gate",
+      "description": "Run deterministic local quality checks before any commit. Use when an agent is about to finish a task and needs to verify build, typecheck, tests, lint, and design-system compliance before the human reviews or before commit.",
+      "path": ".agents/skills/pre-commit-gate/SKILL.md"
+    },
+    {
+      "name": "redesign-in-showcase",
+      "description": "Open a Cell showcase page in real Chrome with URL parameters (showcase, mode, viewport) for redesign and visual verification. Use when redesigning a UI component/page in the design-system showcase, when you need to see the current state of a showcase before editing, or when verifying a UI change visually without building the extension. Not for extension browser testing (use testing-extension-browser), performance traces, or headless CI.",
+      "path": ".agents/skills/redesign-in-showcase/SKILL.md"
+    },
+    {
+      "name": "reprompt",
+      "description": "Reformulate colloquial requests into precise technical prompts. Use when the user says \"prompt lại\", \"nói lại cho dễ hiểu\", \"viết lại yêu cầu\", \"sửa lời anh cho chuẩn\", or when a request contains vague terms that obscure intent. Not for implementing the request — only for rewriting it.",
+      "path": ".agents/skills/reprompt/SKILL.md"
+    },
+    {
+      "name": "review-animations",
+      "description": "Reviews animation and motion code against a high craft bar derived from Emil Kowalski's design engineering philosophy. Default to flagging; approval is earned.",
+      "path": ".agents/skills/review-animations/SKILL.md"
+    },
+    {
+      "name": "security-and-hardening",
+      "description": "Hardens code against vulnerabilities. Use when handling user input, authentication, data storage, or external integrations. Use when building any feature that accepts untrusted data, manages user sessions, or interacts with third-party services.",
+      "path": ".agents/skills/security-and-hardening/SKILL.md"
+    },
+    {
+      "name": "shipping-and-launch",
+      "description": "Prepares production launches. Use when preparing to deploy to production. Use when you need a pre-launch checklist, when setting up monitoring, when planning a staged rollout, or when you need a rollback strategy.",
+      "path": ".agents/skills/shipping-and-launch/SKILL.md"
+    },
+    {
+      "name": "source-driven-development",
+      "description": "Grounds every implementation decision in official documentation. Use when you want authoritative, source-cited code free from outdated patterns. Use when building with any framework or library where correctness matters.",
+      "path": ".agents/skills/source-driven-development/SKILL.md"
+    },
+    {
+      "name": "spec-driven-development",
+      "description": "Creates specs before coding. Use when starting a new project, feature, or significant change and no specification exists yet. Use when requirements are unclear, ambiguous, or only exist as a vague idea.",
+      "path": ".agents/skills/spec-driven-development/SKILL.md"
+    },
+    {
+      "name": "spec-review-stakeholder",
+      "description": "Review spec qua 3 góc nhìn BA/PO/TL, trả về báo cáo trực tiếp dạng plain text. Dùng khi cần sanity-check spec trước khi implement.",
+      "path": ".agents/skills/spec-review-stakeholder/SKILL.md"
+    },
+    {
+      "name": "test-driven-development",
+      "description": "Drives development with tests. Use when implementing any logic, fixing any bug, or changing any behavior. Use when you need to prove that code works, when a bug report arrives, or when you're about to modify existing functionality.",
+      "path": ".agents/skills/test-driven-development/SKILL.md"
+    },
+    {
+      "name": "testing-extension-browser",
+      "description": "Launch stealth Chrome with Cell + uBlock via nodriver, then test features in-browser using stealth-chrome-devtools MCP (navigate, click, inspect shadow DOM, dispatch events, verify popup). Use when starting any Cell browser test, after rebuild, when verifying a fix on a real page, or when a fresh agent needs the test browser. Not for non-extension pages, performance traces, or headless CI without MCP.",
+      "path": ".agents/skills/testing-extension-browser/SKILL.md"
+    },
+    {
+      "name": "using-agent-skills",
+      "description": "Discovers and invokes agent skills. Use when starting a session or when you need to discover which skill applies to the current task. This is the meta-skill that governs how all other skills are discovered and invoked.",
+      "path": ".agents/skills/using-agent-skills/SKILL.md"
+    },
+    {
+      "name": "vision-reader",
+      "description": "Delegates image reading to a vision-capable subagent when the main agent cannot see images. Use when verifying browser screenshots, mockups, or error screenshots requires visual ground truth the coding model lacks. Not for text-only DOM inspection, performance traces, or non-visual decisions.",
+      "path": ".agents/skills/vision-reader/SKILL.md"
+    },
+    {
+      "name": "write-skill",
+      "description": "Guides agents through writing, reviewing, refactoring, and self-correcting agent SKILL.md workflow files. Use when creating a new skill, updating an existing skill, splitting an oversized skill, diagnosing why a skill fails to trigger, or making a skill self-correcting. Not for writing general documentation, one-off prompts, or implementation code.",
+      "path": ".agents/skills/write-skill/SKILL.md"
+    }
+  ]
+}
