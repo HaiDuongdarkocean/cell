@@ -125,3 +125,17 @@ This file records what each loop accomplished, what changed, and how it was veri
 - `npm run build` — pass.
 - `npm run typecheck` — pass (no new errors).
 - Stealth CDP browser preview — paused dark-mode animation shows a visible white water ripple expanding from the Primary button; release spring is active in CSS.
+
+## 2026-08-28 — Ripple visibility tune
+
+**What changed**:
+- `src/shared/styles/tokens.json`
+  - `color-button-liquid-ripple` bumped to 0.55 (dark) and 0.40 (light).
+  - `ripple-start-opacity` bumped to 0.8 so the water-ripple flash is clearly visible on the liquid-glass surface.
+- `src/shared/styles/tokens.css` regenerated.
+- `docs/design-system/` rebuilt with `npm run build`.
+
+**Verification**:
+- `npx jest --selectProjects unit --testPathPatterns=Button` — 120 tests pass.
+- `npm run build` — pass.
+- Stealth CDP on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, paused ripple at 300 ms) — Primary button clearly brightens with a white ripple expanding from the touch point.
