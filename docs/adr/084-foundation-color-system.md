@@ -76,7 +76,7 @@ Linear dùng `#010102` với "faint blue cast, never the unfortunate #000000 tru
 | Primary-hover | oklch(53% 0.17 265) | `#4F5AC4` | Darker 1 bậc L, tăng C nhẹ. |
 | Primary-active | oklch(48% 0.18 265) | `#404CB5` | Nhấn khi press. |
 | Primary-subtle | oklch(58% 0.16 265 / 0.12) | `rgba(94,106,210,0.12)` | Selected, focus-bg. |
-| Primary-foreground | oklch(100% 0 0) | `#FFFFFF` | Text trên primary. |
+| Text on primary | oklch(100% 0 0) | `#FFFFFF` | Text trên primary; token canonical `--color-text-on-primary`. `--color-primary-foreground` là alias cũ. |
 
 Lý do chọn indigo/lavender thay vì blue:
 - Blue thường gắn với corporate/corporate tools (Facebook, LinkedIn, Windows).
@@ -95,6 +95,10 @@ Lý do chọn indigo/lavender thay vì blue:
 ### 7. Tint palette: 9 tints với độ bão hòa thấp
 
 Giữ 9 tints (blue, cyan, gray, green, orange, pink, purple, red, teal, yellow) nhưng điều chỉnh độ bão hòa xuống để phù hợp calm aesthetic. Mỗi tint có 4 roles: background, border, icon, text — tất cả derived từ cùng 1 base hue.
+
+### 8. Theme presets
+
+`dawn`, `forest`, `ocean`, `warmth` là presets (lớp trên foundation) cho phép user cá nhân hóa accent và dark canvas. Chúng override core palette và một số derived token, nhưng vẫn tuân thủ cùng semantic role. Rationale chi tiết cho từng preset nằm ngoài phạm vi foundation.
 
 ## Consequences
 

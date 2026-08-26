@@ -22,7 +22,7 @@ Brand cần: **calm, focused, learnable, đơn giản, thanh lịch**. Typograph
 
 **Lý do:**
 - Inter được thiết kế cho màn hình máy tính, x-height cao, giúp đọc text nhỏ và mixed-case tốt hơn ([rsms.me/inter](https://rsms.me/inter/)).
-- Inter là variable font, hỗ trợ weight 510 — điểm giữa Regular (400) và Semibold (600) mà Linear sử dụng để tạo "emphasis without heaviness" ([nguồn](https://github.com/soulcore-dev/soul-design-md/blob/main/designs/linear/DESIGN.md)).
+- Inter là variable font, hỗ trợ weight tùy ý trong range 100-900; nhưng Cell chỉ dùng 4 weight chuẩn (400, 500, 600, 700). Weight 510 đã thử nghiệm nhưng bị loại để giữ bộ font file đơn giản và type scale rõ ràng.
 - Inter đã được Figma, GitLab, NASA, Unity, và nhiều productivity tools dùng — chứng minh độ ổn định.
 - Figtree (hiện tại) có vẻ "light-hearted" quá, gần với consumer app hơn là "focused learning tool".
 - Geist (Vercel) quá "developer tool / Swiss minimal", không có sự ấm áp cần cho app học ngôn ngữ.
@@ -48,32 +48,36 @@ Tham khảo:
 - Material 3: 5 type roles — display, headline, title, body, label ([nguồn](https://m3.material.io/styles/typography/overview)).
 - Apple HIG: `largeTitle`, `title`, `headline`, `body`, `callout`, `footnote`, `caption` ([nguồn](https://blakecrosley.com/blog/sf-pro-typography-system)).
 
-### 3. Type scale — 16px base, capped range
+### 3. Type scale — 14px UI base, 16px long-form body
 
-| Style | Size | Weight | Line Height | Tracking | Usage |
-|-------|------|--------|-------------|----------|-------|
-| `display-3xl` | 56px | 600 | 1.05 | -1.8px | Rare hero |
-| `display-2xl` | 40px | 600 | 1.10 | -1.2px | Page hero |
-| `display-xl` | 32px | 600 | 1.15 | -0.8px | Dialog title large |
-| `headline-lg` | 28px | 600 | 1.20 | -0.6px | Page title |
-| `headline-md` | 24px | 600 | 1.25 | -0.4px | Section title |
-| `headline-sm` | 20px | 600 | 1.30 | -0.2px | Sub-section |
-| `title-lg` | 18px | 510 | 1.35 | -0.1px | Card title |
-| `title-md` | 16px | 510 | 1.35 | -0.05px | List group header |
-| `title-sm` | 14px | 510 | 1.35 | 0 | Metadata title |
-| `body-lg` | 18px | 400 | 1.55 | -0.05px | Lead paragraph |
-| `body-md` | 16px | 400 | 1.50 | -0.02px | Default body |
+Các giá trị dưới đây là mục tiêu; SSOT chi tiết là `tokens.json` `static.font.sizes` và `composite`.
+
+| Role | Size | Weight | Line Height | Tracking | Usage |
+|------|------|--------|-------------|----------|-------|
+| `display-3xl` | 56px | 600 | 1.05 | -0.03em | Rare hero |
+| `display-2xl` | 40px | 600 | 1.10 | -0.03em | Page hero |
+| `display-xl` | 32px | 600 | 1.15 | -0.03em | Dialog title large |
+| `headline-lg` | 28px | 600 | 1.20 | -0.015em | Page title |
+| `headline-md` | 24px | 600 | 1.25 | -0.015em | Section title |
+| `headline-sm` | 20px | 600 | 1.30 | -0.015em | Sub-section |
+| `title-lg` | 18px | 500 | 1.35 | 0 | Card title |
+| `title-md` | 16px | 500 | 1.35 | 0 | List group header |
+| `title-sm` | 14px | 500 | 1.35 | 0 | Metadata title |
+| `body-lg` | 18px | 400 | 1.55 | 0 | Lead paragraph |
+| `body-md` | 16px | 400 | 1.50 | 0 | Default long-form body |
 | `body-sm` | 14px | 400 | 1.50 | 0 | Secondary body |
-| `body-xs` | 12px | 400 | 1.45 | 0.01em | Caption body |
-| `label-lg` | 16px | 510 | 1.25 | 0 | Large button |
-| `label-md` | 14px | 510 | 1.20 | 0 | Default button, tab |
-| `label-sm` | 12px | 510 | 1.20 | 0.01em | Small button, badge |
-| `label-xs` | 11px | 510 | 1.20 | 0.02em | Caption, tag |
+| `body-xs` | 12px | 400 | 1.50 | 0 | Caption body (tối thiểu 12px) |
+| `label-lg` | 16px | 500 | 1.25 | 0 | Large button |
+| `label-md` | 14px | 500 | 1.20 | 0 | Default button, tab |
+| `label-sm` | 12px | 500 | 1.20 | 0.03em | Small button, badge |
+| `label-xs` | 12px | 500 | 1.20 | 0.03em | Caption, tag (không nhỏ hơn 12px) |
 
 **Nguyên lý:**
-- Display càng lớn, tracking âm càng nhiều — tạo sự chặt chẽ, "engineered" ([Linear display -3.0px tại 80px](https://getdesign.md/design-md/linear.app/preview)).
-- Body giữ tracking gần 0 hoặc rất nhẹ âm — đảm bảo readability khi đọc dài.
-- Label dùng weight 510 để nhấn nhưng không đậm như Semibold — tạo sự "subtle emphasis".
+- `body-md` (long-form body) phải là 16px.
+- UI/control text mặc định là 14px (`--font-size-sm` hoặc `--font-size-base`).
+- Caption/metadata tối thiểu 12px; không dùng 11px/10px cho text cần đọc.
+- Display càng lớn, tracking âm càng nhiều — tạo sự chặt chẽ.
+- Body giữ tracking gần 0 để đọc dài.
 - Line-height body 1.5 là chuẩn WCAG readability.
 
 ### 4. Font stack & loading
@@ -83,7 +87,10 @@ Tham khảo:
 --font-mono: 'SF Mono', 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace;
 ```
 
-Không dùng Google Fonts CDN trong extension vì CSP. `Inter` cần tự host hoặc dùng system stack nếu chưa load. Đề xuất: tải `Inter` vào `public/fonts/` và preconnect local.
+- Primary: **Inter Variable**, self-hosted trong `public/fonts/`, subset Latin + Vietnamese.
+- `font-display: swap` bắt buộc.
+- Không dùng Google Fonts CDN trong MV3 vì CSP.
+- System font stack là fallback cho CJK và khi Inter chưa load.
 
 ### 5. OpenType features (optional, apply khi có font tự host)
 
@@ -105,13 +112,12 @@ Hỗ trợ user font-size preferences bằng `rem` unit. Base `1rem = 16px`. Typ
 **Positive:**
 - Clearer hierarchy: display/headline/title/body/label rõ vai trò.
 - Better readability: x-height cao, line-height 1.5, tracking điều chỉnh theo size.
-- More "engineered" feel với negative tracking display + weight 510 labels.
+- More "engineered" feel với negative tracking display + weight 500 labels.
 - Inter free, open source, wide language support.
 
 **Negative / Risks:**
 - Cần tải Inter vào bundle hoặc public/fonts.
 - Component cũ dùng `font-size: var(--font-size-2xl)` phải map sang style mới.
-- Weight 510 không có trong static font files — cần Inter Variable.
 
 ## Rejected Alternatives
 
