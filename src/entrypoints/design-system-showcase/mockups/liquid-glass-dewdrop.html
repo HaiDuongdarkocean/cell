@@ -22,27 +22,27 @@
       --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
       --dew-primary: #5EA5E9;
       --dew-primary-dark: #4A8FD4;
-      --dew-primary-soft: rgba(94, 165, 233, 0.14);
+      --dew-primary-soft: rgba(94, 165, 233, 0.08);
       --dew-success: #5FD389;
       --dew-success-dark: #3CB371;
-      --dew-success-soft: rgba(95, 211, 137, 0.14);
+      --dew-success-soft: rgba(95, 211, 137, 0.08);
       --dew-error: #C45A5A;
-      --dew-error-soft: rgba(196, 90, 90, 0.12);
+      --dew-error-soft: rgba(196, 90, 90, 0.07);
       --dew-sun: #F5C542;
-      --dew-sun-soft: rgba(245, 197, 66, 0.22);
+      --dew-sun-soft: rgba(245, 197, 66, 0.10);
       --dew-text: #1F2D3D;
       --dew-text-sec: #5A6A7A;
       --dew-leaf-tint: rgba(94, 165, 233, 0.08);
-      --dew-glass-bg: rgba(255, 255, 255, 0.38);
-      --dew-glass-bg-hover: rgba(255, 255, 255, 0.52);
-      --dew-glass-border: rgba(255, 255, 255, 0.50);
-      --dew-glass-border-tint: rgba(94, 165, 233, 0.30);
-      --dew-inner-highlight: rgba(255, 255, 255, 0.28);
+      --dew-glass-bg: rgba(255, 255, 255, 0.30);
+      --dew-glass-bg-hover: rgba(255, 255, 255, 0.40);
+      --dew-glass-border: rgba(255, 255, 255, 0.35);
+      --dew-glass-border-tint: rgba(94, 165, 233, 0.18);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.22);
       /* Soft, diffused surface highlight for light mode.
          In sương mai: ánh sáng không rõ nét, trong suốt, mờ dần radial.
          Two local sources at 135° and 315°, each fading independently. */
-      --dew-surface-glow: rgba(255, 255, 255, 0.18);
-      --dew-edge-glow: rgba(255, 255, 255, 0.35);
+      --dew-surface-glow: rgba(255, 255, 255, 0.14);
+      --dew-edge-glow: rgba(255, 255, 255, 0.30);
       /* Diagonal light reflection — light hits the curved surface at 45°.
          The "edge" is NOT horizontal/vertical — it follows the diagonal.
          Light side (top-left 45°): sunlight reflecting off the curve.
@@ -57,68 +57,62 @@
     [data-preset="forest"] {
       --dew-primary: #5FD389;
       --dew-primary-dark: #3CB371;
-      --dew-primary-soft: rgba(95, 211, 137, 0.14);
+      --dew-primary-soft: rgba(95, 211, 137, 0.08);
       --dew-success: #5FD389;
       --dew-success-dark: #3CB371;
-      --dew-success-soft: rgba(95, 211, 137, 0.14);
+      --dew-success-soft: rgba(95, 211, 137, 0.08);
       --dew-leaf-tint: rgba(95, 211, 137, 0.08);
-      --dew-glass-border-tint: rgba(95, 211, 137, 0.30);
+      --dew-glass-border-tint: rgba(95, 211, 137, 0.18);
       --dew-ambient-glow: rgba(95, 211, 137, 0.18);
       --dew-bg-grad: linear-gradient(135deg, #E8F8EF 0%, #F2FAF5 40%, #E8F5E0 100%);
     }
     [data-preset="ocean"] {
       --dew-primary: #3B82C4;
       --dew-primary-dark: #2B6B7A;
-      --dew-primary-soft: rgba(59, 130, 196, 0.14);
+      --dew-primary-soft: rgba(59, 130, 196, 0.08);
       --dew-leaf-tint: rgba(59, 130, 196, 0.08);
-      --dew-glass-border-tint: rgba(59, 130, 196, 0.30);
+      --dew-glass-border-tint: rgba(59, 130, 196, 0.18);
       --dew-ambient-glow: rgba(59, 130, 196, 0.18);
       --dew-bg-grad: linear-gradient(135deg, #D8EEF5 0%, #E8F4F7 40%, #D0E8F0 100%);
     }
     [data-preset="warmth"] {
       --dew-primary: #E8A34D;
       --dew-primary-dark: #D4943E;
-      --dew-primary-soft: rgba(232, 163, 77, 0.16);
+      --dew-primary-soft: rgba(232, 163, 77, 0.09);
       --dew-leaf-tint: rgba(232, 163, 77, 0.08);
-      --dew-glass-border-tint: rgba(232, 163, 77, 0.30);
-      --dew-ambient-glow: rgba(232, 163, 77, 0.20);
-      --dew-glass-bg: rgba(255, 251, 240, 0.42);
-      --dew-glass-bg-hover: rgba(255, 251, 240, 0.58);
-      --dew-glass-border: rgba(255, 255, 255, 0.55);
-      --dew-inner-highlight: rgba(255, 255, 255, 0.30);
-      --dew-surface-glow: rgba(255, 255, 255, 0.20);
-      --dew-edge-glow: rgba(255, 255, 255, 0.38);
+      --dew-glass-border-tint: rgba(232, 163, 77, 0.18);
+      --dew-ambient-glow: rgba(232, 163, 77, 0.16);
+      --dew-glass-bg: rgba(255, 251, 240, 0.32);
+      --dew-glass-bg-hover: rgba(255, 251, 240, 0.42);
+      --dew-glass-border: rgba(255, 255, 255, 0.40);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.24);
+      --dew-surface-glow: rgba(255, 255, 255, 0.16);
+      --dew-edge-glow: rgba(255, 255, 255, 0.32);
       --dew-bg-grad: linear-gradient(135deg, #FFF6E0 0%, #FFFBF0 40%, #FFF0D8 100%);
     }
     [data-theme="dark"] {
-      /* Dark mode uses DARK vibrancy layer, not white mờ.
-         Apple's approach: dark tint at sufficient opacity ensures text
-         legibility regardless of background behind the glass.
-         White text on dark glass = high contrast, always.
-         Tinted variants use white text too — variant is conveyed through
-         bg tint + edge-light color + ambient glow, NOT text color.
-         This ensures AA contrast even when bright content is behind glass. */
+      /* Dark mode: dark vibrancy layer with R1 limit (< 0.55).
+         Blur must be strong (20px) so refraction (R6) still reads.
+         Text shadow is the primary legibility tool, not an opaque backing (R5). */
       --dew-text: #F7F8F8;
       --dew-text-sec: #B8C0CA;
-      --dew-glass-bg: rgba(18, 28, 38, 0.68);
-      --dew-glass-bg-hover: rgba(24, 36, 48, 0.78);
-      --dew-glass-border: rgba(255, 255, 255, 0.14);
-      --dew-glass-border-tint: rgba(94, 165, 233, 0.30);
-      --dew-inner-highlight: rgba(255, 255, 255, 0.06);
-      --dew-surface-glow: rgba(255, 255, 255, 0.04);
-      --dew-edge-glow: rgba(255, 255, 255, 0.12);
+      --dew-glass-bg: rgba(18, 28, 38, 0.50);
+      --dew-glass-bg-hover: rgba(24, 36, 48, 0.55);
+      --dew-glass-border: rgba(255, 255, 255, 0.10);
+      --dew-glass-border-tint: rgba(94, 165, 233, 0.18);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.05);
+      --dew-surface-glow: rgba(255, 255, 255, 0.03);
+      --dew-edge-glow: rgba(255, 255, 255, 0.10);
       --dew-edge-dark: rgba(0, 0, 0, 0.30);
       --dew-edge-dark-hover: rgba(0, 0, 0, 0.34);
-      --dew-refraction-ring: rgba(255, 255, 255, 0.08);
+      --dew-refraction-ring: rgba(255, 255, 255, 0.06);
       --dew-contact-shadow: rgba(0, 0, 0, 0.35);
-      --dew-ambient-glow: rgba(94, 165, 233, 0.20);
-      /* Tinted variants need more opacity in dark mode so the tint reads
-         through the dark vibrancy layer. */
-      --dew-primary-soft: rgba(94, 165, 233, 0.22);
-      --dew-success-soft: rgba(95, 211, 137, 0.22);
-      --dew-error-soft: rgba(196, 90, 90, 0.20);
-      /* Dark mode: all variant text = white for AA contrast.
-         Variant color conveyed through bg tint + edge-light + glow. */
+      --dew-ambient-glow: rgba(94, 165, 233, 0.16);
+      /* R3: variant tints must be faint (< 0.12) to avoid impure color fill. */
+      --dew-primary-soft: rgba(94, 165, 233, 0.10);
+      --dew-success-soft: rgba(95, 211, 137, 0.10);
+      --dew-error-soft: rgba(196, 90, 90, 0.09);
+      /* R7: all variant text = white; color only in reflected rim. */
       --dew-primary-dark: #F7F8F8;
       --dew-success-dark: #F7F8F8;
       --dew-error: #F7F8F8;
@@ -126,26 +120,26 @@
     }
     [data-theme="dark"][data-preset="forest"] {
       /* Forest dark: dark green glass tint matches bg color family */
-      --dew-glass-bg: rgba(14, 30, 22, 0.68);
-      --dew-glass-bg-hover: rgba(18, 38, 28, 0.78);
-      --dew-glass-border-tint: rgba(95, 211, 137, 0.30);
-      --dew-ambient-glow: rgba(95, 211, 137, 0.20);
+      --dew-glass-bg: rgba(14, 30, 22, 0.50);
+      --dew-glass-bg-hover: rgba(18, 38, 28, 0.55);
+      --dew-glass-border-tint: rgba(95, 211, 137, 0.18);
+      --dew-ambient-glow: rgba(95, 211, 137, 0.16);
       --dew-bg-grad: linear-gradient(135deg, #0E241B 0%, #152F23 40%, #0C1F18 100%);
     }
     [data-theme="dark"][data-preset="ocean"] {
       /* Ocean dark: dark teal glass tint */
-      --dew-glass-bg: rgba(10, 24, 32, 0.68);
-      --dew-glass-bg-hover: rgba(14, 32, 42, 0.78);
-      --dew-glass-border-tint: rgba(91, 163, 232, 0.30);
-      --dew-ambient-glow: rgba(91, 163, 232, 0.20);
+      --dew-glass-bg: rgba(10, 24, 32, 0.50);
+      --dew-glass-bg-hover: rgba(14, 32, 42, 0.55);
+      --dew-glass-border-tint: rgba(91, 163, 232, 0.18);
+      --dew-ambient-glow: rgba(91, 163, 232, 0.16);
       --dew-bg-grad: linear-gradient(135deg, #0C1C25 0%, #122A36 40%, #0A1820 100%);
     }
     [data-theme="dark"][data-preset="warmth"] {
       /* Warmth dark: dark warm brown glass tint */
-      --dew-glass-bg: rgba(38, 28, 14, 0.68);
-      --dew-glass-bg-hover: rgba(48, 36, 18, 0.78);
-      --dew-glass-border-tint: rgba(232, 163, 77, 0.30);
-      --dew-ambient-glow: rgba(232, 163, 77, 0.20);
+      --dew-glass-bg: rgba(38, 28, 14, 0.50);
+      --dew-glass-bg-hover: rgba(48, 36, 18, 0.55);
+      --dew-glass-border-tint: rgba(232, 163, 77, 0.18);
+      --dew-ambient-glow: rgba(232, 163, 77, 0.16);
       --dew-bg-grad: linear-gradient(135deg, #2A1F0E 0%, #3A2A12 40%, #251A0C 100%);
     }
 
@@ -261,8 +255,8 @@
       display: flex; flex-direction: column; gap: var(--space-5);
     }
     [data-theme="dark"] .section {
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
     }
     .section-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
     .section-tag { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--dew-primary-dark); }
@@ -308,16 +302,21 @@
       box-shadow: 0 1px 3px var(--dew-contact-shadow);
       /* Text halo — subtle dark shadow protects text legibility over
          any background, especially in dark mode with bright content behind. */
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.12),
+        0 2px 4px rgba(0, 0, 0, 0.08);
       transition:
         background-color 0.3s var(--ease-out),
         box-shadow 0.3s var(--ease-out),
         transform 0.18s var(--ease-out);
     }
     [data-theme="dark"] .dewdrop {
-      backdrop-filter: blur(16px) saturate(160%);
-      -webkit-backdrop-filter: blur(16px) saturate(160%);
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.45),
+        0 2px 5px rgba(0, 0, 0, 0.40),
+        0 4px 10px rgba(0, 0, 0, 0.25);
     }
 
     /* Sunlight reflection — two LOCAL light sources on the curved surface.
@@ -496,12 +495,12 @@
 
     /* Primary — sky-blue tinted dewdrop (dawn light through the drop) */
     .dewdrop--primary {
-      background: color-mix(in srgb, var(--dew-glass-bg) 60%, var(--dew-primary-soft) 40%);
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-primary-soft) 8%);
       color: var(--dew-primary-dark);
-      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.35) 55%, var(--dew-primary) 45%);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-primary) 15%);
     }
     .dewdrop--primary:hover {
-      background: color-mix(in srgb, var(--dew-glass-bg-hover) 50%, var(--dew-primary-soft) 50%);
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-primary-soft) 10%);
       color: var(--dew-primary-dark);
     }
 
@@ -544,22 +543,22 @@
 
     /* Success — leaf-green tinted dewdrop */
     .dewdrop--success {
-      background: color-mix(in srgb, var(--dew-glass-bg) 60%, var(--dew-success-soft) 40%);
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-success-soft) 8%);
       color: var(--dew-success-dark);
-      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.35) 55%, var(--dew-success) 45%);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-success) 15%);
     }
     .dewdrop--success:hover {
-      background: color-mix(in srgb, var(--dew-glass-bg-hover) 50%, var(--dew-success-soft) 50%);
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-success-soft) 10%);
     }
 
     /* Destructive — error-tinted dewdrop (damaged leaf) */
     .dewdrop--destructive {
-      background: color-mix(in srgb, var(--dew-glass-bg) 70%, var(--dew-error-soft) 30%);
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-error-soft) 8%);
       color: var(--dew-error);
-      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.35) 50%, var(--dew-error) 50%);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 80%, var(--dew-error) 20%);
     }
     .dewdrop--destructive:hover {
-      background: color-mix(in srgb, var(--dew-glass-bg-hover) 60%, var(--dew-error-soft) 40%);
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-error-soft) 10%);
     }
 
     /* === Sizes === */
@@ -589,9 +588,9 @@
     /* Active (toggle) — dewdrop settled, persistent gentle glow */
     .dewdrop--active,
     .dewdrop--active:hover {
-      background: var(--dew-primary-soft);
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-primary-soft) 8%);
       color: var(--dew-primary-dark);
-      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.35) 55%, var(--dew-primary) 45%);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-primary) 15%);
       box-shadow: 0 0 12px var(--dew-ambient-glow);
     }
 
@@ -615,12 +614,12 @@
 
     /* Error — dewdrop with red-tinted rim caustics */
     .dewdrop--error {
-      background: var(--dew-error-soft);
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-error-soft) 8%);
       color: var(--dew-error);
-      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.35) 45%, var(--dew-error) 55%);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 75%, var(--dew-error) 25%);
     }
     .dewdrop--error:hover {
-      background: color-mix(in srgb, var(--dew-error-soft), var(--dew-error) 8%);
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-error-soft) 10%);
     }
 
     /* === Ripple — làn sóng lan ra từ điểm chạm ===
