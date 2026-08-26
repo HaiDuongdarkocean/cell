@@ -22,13 +22,13 @@
   gap: var(--space-1);
   width: 100%;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
-  transition: background var(--duration-150) var(--ease-standard),
-    color var(--duration-150) var(--ease-standard);
+  transition: background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
 }
 
 .node:hover {
@@ -41,21 +41,23 @@
 }
 
 .depth0 {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-normal);
 }
 
 .depth1 {
-  padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-6);
+  padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-5);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
 .depth2 {
-  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-9);
+  padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-8);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
 }
 
@@ -70,12 +72,14 @@
 .active,
 .active:hover {
   background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .depth1.active,
-.depth2.active {
+.depth2.active,
+.branchNode.active {
   font-weight: var(--font-weight-medium);
+  color: var(--color-text);
 }
 
 .chevron {
@@ -84,8 +88,8 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--color-text-secondary);
-  transition: transform var(--duration-150) var(--ease-standard);
+  color: var(--color-text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-default);
 }
 
 .chevron.collapsed {
@@ -98,7 +102,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .label {
