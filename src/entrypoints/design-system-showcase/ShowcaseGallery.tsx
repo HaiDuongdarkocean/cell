@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from 're
 import { Badge, Box, Card, Heading, IconButton, SearchField, Text, Tree } from '@/shared/ui';
 import { type TreeNode } from '@/shared/ui/Tree';
 import { Icon } from '@/shared/icons/Icon';
+import { PresetSwitcher } from '@/features/theme/ui/PresetSwitcher';
 import { MockProviders } from './mockProviders';
 import {
   discoverShowcases,
@@ -11,6 +12,7 @@ import {
   type LibraryLevel,
 } from './autoDiscovery';
 import { ShowcaseNavigationContext } from './ShowcaseNavigationContext';
+import type { PresetName } from '@/entities/theme';
 import styles from './ShowcaseGallery.module.css';
 
 type ThemeMode = 'light' | 'dark';
@@ -24,10 +26,12 @@ export function ShowcaseGallery(): ReactElement | null {
   const [activeShowcaseId, setActiveShowcaseId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [mode, setMode] = useState<ThemeMode>('light');
+  const [preset, setPreset] = useState<PresetName | undefined>('dawn');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
-  }, [mode]);
+    document.documentElement.setAttribute('data-preset', preset ?? '');
+  }, [mode, preset]);
 
   const toggleMode = useCallback(() => {
     setMode((m) => (m === 'light' ? 'dark' : 'light'));
@@ -174,6 +178,9 @@ export function ShowcaseGallery(): ReactElement | null {
         >
           <Icon name={mode === 'light' ? 'moon' : 'sun'} size={20} />
         </IconButton>
+        <div style={{ width: '7.5rem', flexShrink: 0 }}>
+          <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
+        </div>
       </header>
 
       <div className={styles.main}>

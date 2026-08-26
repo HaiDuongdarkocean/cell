@@ -167,8 +167,8 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     injectThemeTokens(container);
     const style = document.getElementById('subtitle-theme-tokens');
     expect(style?.textContent).toContain('[data-theme="dark"]');
-    expect(style?.textContent).toContain('#2563eb'); // default light primary
-    expect(style?.textContent).toContain('#60a5fa'); // default dark primary
+    expect(style?.textContent).toContain('#5EA5E9'); // default Dawn light primary
+    expect(style?.textContent).toContain('#6AB2F5'); // default Dawn dark primary
   });
 
   it('applies custom themeConfig from storage on load', async () => {

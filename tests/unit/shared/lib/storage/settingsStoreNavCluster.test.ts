@@ -27,7 +27,7 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
   });
 
   it('CURRENT_SCHEMA_VERSION is 21 (V21 adds subtitleApiKeys)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(23);
+    expect(CURRENT_SCHEMA_VERSION).toBe(24);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {
@@ -202,7 +202,7 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
   it('saveSettings stamps schemaVersion 22', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(23);
+    expect(stored.schemaVersion).toBe(24);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {

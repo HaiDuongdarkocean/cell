@@ -255,9 +255,9 @@ describe('usePopupStore', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
     const [arg] = storageLocalSetMock.mock.calls[0];
-    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7 / V8 / V9 / V10 / V11 / V12 / V13 / V14 / V15 / V16 / V18 / V19 / V20 / V21) — the persisted
-    // payload includes schemaVersion: 21 in addition to the merged settings.
-    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 21 });
+    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7 / V8 / V9 / V10 / V11 / V12 / V13 / V14 / V15 / V16 / V18 / V19 / V20 / V21 / V24) — the persisted
+    // payload includes schemaVersion: 24 in addition to the merged settings.
+    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 24 });
   });
 
   it('updateSettings persists dictionaryPopup.defaultActiveTab to storage', async () => {

@@ -2,7 +2,7 @@ import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type ReactNode
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link';
 type ButtonSize = 'sm' | 'md' | 'lg';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';

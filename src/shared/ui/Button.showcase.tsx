@@ -68,6 +68,14 @@ export function Showcase(): ReactElement {
       </Section>
 
       <Section
+        title="Liquid Glass"
+        caption="Frosted glass surface that lifts on hover. Ideal for floating toolbars and panels."
+      >
+        <Button variant="glass">Glass</Button>
+        <Button variant="glass" leadingIcon={<Icon name="zap" size={18} />}>Glass icon</Button>
+      </Section>
+
+      <Section
         title="States"
         caption="Disabled, loading, full-width and elevated (shadow) treatments."
       >

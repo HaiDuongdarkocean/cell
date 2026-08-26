@@ -82,7 +82,7 @@ describe('SubtitleStylePanel', () => {
     render(<SubtitleStylePanel {...defaultProps} />);
     const resetBtn = screen.getByTestId('style-target-reset');
     fireEvent.click(resetBtn);
-    const confirmBtn = screen.getByText('Yes, reset');
+    const confirmBtn = screen.getByText('Reset');
     fireEvent.click(confirmBtn);
     expect(defaultProps.onReset).toHaveBeenCalled();
   });

@@ -187,6 +187,15 @@ function getContrastRatio(a, b) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function pickPrimaryForeground(core) {
+  const candidates = [core.background, core.text, '#000000', '#FFFFFF'];
+  for (const candidate of candidates) {
+    const ratio = getContrastRatio(candidate, core.primary);
+    if (ratio >= 4.5) return candidate;
+  }
+  return '#FFFFFF';
+}
+
 function validateContrastPairs(mode, core, derived) {
   // Secondary/muted text pairs use 3:1 (WCAG AA for large text ≥18pt),
   // per Astryx/Meta standard (daft.md) which uses #737373 for text-secondary.
@@ -205,6 +214,7 @@ function validateContrastPairs(mode, core, derived) {
     ['Text Muted / Background', derived['color-text-muted'], core.background],
     ['Text Muted / Surface', derived['color-text-muted'], core.surface],
     ['Primary Foreground / Primary', derived['color-primary-foreground'], core.primary],
+    ['Text on Primary / Primary', derived['color-text-on-primary'], core.primary],
     ['Primary Soft Foreground / Primary', derived['color-primary-foreground-soft'], core.primary],
     ['Secondary Foreground / Secondary', derived['color-secondary-foreground'], derived['color-secondary']],
     ['Accent Foreground / Accent', derived['color-accent-foreground'], derived['color-accent']],
@@ -264,6 +274,12 @@ async function main() {
 
   const tokens = JSON.parse(await readFile(tokensPath, 'utf8'));
 
+  // Compute accessible primary-foreground text color at build time so the
+  // generated tokens.css always ships a WCAG AA --color-text-on-primary.
+  for (const mode of ['light', 'dark']) {
+    tokens.derived[mode]['color-text-on-primary'] = pickPrimaryForeground(tokens.core[mode]);
+  }
+
   const staticBlock = flattenStaticTokens(tokens.static);
   const compositeBlock = flattenCompositeTokens(tokens.composite);
   const componentBlock = flattenComponentTokens(tokens.component);
@@ -274,17 +290,31 @@ async function main() {
     ...validateContrastPairs('light', tokens.core.light, tokens.derived.light),
     ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark),
   ];
+
+  // Per-preset blocks: merge default core/derived with the preset override.
+  const presetBlocks = [];
+  const presets = tokens.presets || {};
+  for (const [name, preset] of Object.entries(presets)) {
+    for (const mode of ['light', 'dark']) {
+      const mergedCore = { ...tokens.core[mode], ...preset.core[mode] };
+      const mergedDerived = { ...tokens.derived[mode], ...preset.derived[mode] };
+      // Ensure the computed --color-text-on-primary matches the merged palette.
+      mergedDerived['color-text-on-primary'] = pickPrimaryForeground(mergedCore);
+      const colorBlock = buildColorBlock(mergedCore, mergedDerived, mode);
+      contrastFailures.push(...validateContrastPairs(mode, mergedCore, mergedDerived));
+      presetBlocks.push(`[data-preset="${name}"][data-theme="${mode}"] {\n${colorBlock}\n${componentBlock}\n}`);
+    }
+  }
+
   if (contrastFailures.length) {
     throw new Error(`WCAG AA contrast failures:\n${contrastFailures.join('\n')}`);
   }
 
   // Static tokens live on :root / :host. Color + component tokens live inside
-  // a [data-theme] boundary because component tokens reference color vars, and
-  // CSS custom properties resolve at the element where they are DECLARED. When
-  // a shadow root sets data-theme on its inner container, the [data-theme]
-  // selector matches that container and component tokens re-resolve against the
-  // correct palette. This also means [data-theme="light"] is explicit, not just
-  // a fallback for the absence of [data-theme="dark"].
+  // a [data-theme] or [data-preset][data-theme] boundary because component
+  // tokens reference color vars, and CSS custom properties resolve at the
+  // element where they are DECLARED. The [data-preset][data-theme] selector has
+  // higher specificity than [data-theme] alone, so a preset overrides defaults.
   const css = `/* ============================================================
    Design System — Theme Tokens
    Auto-generated from tokens.json. DO NOT EDIT MANUALLY.
@@ -311,6 +341,8 @@ ${componentBlock}
 ${darkColorBlock}
 ${componentBlock}
 }
+
+${presetBlocks.join('\n\n')}
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }

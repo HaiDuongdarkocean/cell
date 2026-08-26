@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ColorCustomization } from '@/features/theme/ui/ColorCustomization';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
-import { DEFAULT_LIGHT_COLORS, DEFAULT_DARK_COLORS } from '@/shared/lib/tokens';
 
 jest.useFakeTimers();
 
@@ -28,10 +27,10 @@ describe('ColorCustomization', () => {
   it('switching tab changes visible colors', () => {
     render(<ColorCustomization config={DEFAULT_THEME_CONFIG} onColorChange={jest.fn()} />);
     // Dark tab default
-    expect((screen.getByTestId('color-picker-primary') as HTMLInputElement).value).toBe(DEFAULT_DARK_COLORS.primary);
+    expect((screen.getByTestId('color-picker-primary') as HTMLInputElement).value).toBe(DEFAULT_THEME_CONFIG.customColors.dark.primary.toLowerCase());
     fireEvent.click(screen.getByTestId('color-tab-light'));
     // Light tab
-    expect((screen.getByTestId('color-picker-primary') as HTMLInputElement).value).toBe(DEFAULT_LIGHT_COLORS.primary);
+    expect((screen.getByTestId('color-picker-primary') as HTMLInputElement).value).toBe(DEFAULT_THEME_CONFIG.customColors.light.primary.toLowerCase());
   });
 
   it('debounces onColorChange 300ms', () => {

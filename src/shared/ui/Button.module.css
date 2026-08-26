@@ -158,6 +158,36 @@
   background: var(--button-primary-subtle-hover-bg);
 }
 
+/* Glass — translucent frosted surface using liquid-glass tokens */
+.glass {
+  background: var(--color-glass-surface);
+  color: var(--color-glass-text-primary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: blur(var(--blur-sm));
+  position: relative;
+  overflow: hidden;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.glass:hover {
+  background: var(--color-glass-surface-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.glass:active {
+  background: var(--color-glass-surface-hover);
+  transform: translateY(0) scale(0.98);
+}
+
 /* === Active state — persistent toggle (pale-blue subtle bg + primary color) === */
 .active,
 .active:hover {

@@ -1,6 +1,5 @@
 import { applyTheme, resolveMode, registerSystemModeListener, getPalette } from '@/features/theme/logic/themeManager';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
-import { DEFAULT_DARK_TOKENS } from '@/shared/lib/tokens';
 import type { ThemeConfig } from '@/entities/theme';
 
 // jsdom provides window.matchMedia but cần mock (jsdom default returns false matches).
@@ -63,15 +62,13 @@ describe('themeManager', () => {
     it('derives secondary tokens', () => {
       applyTheme('dark', DEFAULT_THEME_CONFIG);
       const root = document.documentElement;
-      // Default palette uses precomputed derived values from tokens.json
-      expect(root.style.getPropertyValue('--color-primary-hover')).toBe(
-        DEFAULT_DARK_TOKENS['--color-primary-hover'],
-      );
+      // Dawn preset uses hand-tuned derived values from tokens.json
+      expect(root.style.getPropertyValue('--color-primary-hover')).toBe('#5EA5E9');
       expect(root.style.getPropertyValue('--color-border-focus')).toBe(
         DEFAULT_THEME_CONFIG.customColors.dark.primary,
       );
       expect(root.style.getPropertyValue('--color-primary-subtle')).toBe(
-        DEFAULT_DARK_TOKENS['--color-primary-subtle'],
+        'rgba(106,178,245,0.16)',
       );
     });
 

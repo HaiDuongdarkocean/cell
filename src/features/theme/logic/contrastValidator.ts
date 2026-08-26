@@ -4,7 +4,6 @@
 // text/canvas, text-secondary/canvas, white/primary (button text trên primary bg).
 
 import { getLuminance } from '@/features/theme/logic/colorGenerator';
-import tokensJson from '@/shared/styles/tokens.json';
 import type { CoreColorTokens } from '@/entities/theme';
 
 /** WCAG contrast ratio giữa 2 hex color (1-21). */
@@ -61,13 +60,28 @@ export interface ValidationResult {
  * Validate 3 critical contrast pairs cho 1 mode palette:
  * 1. text/canvas — body text readability (AA ≥ 4.5:1)
  * 2. textSecondary/canvas — secondary text readability (AA Large ≥ 3:1, per daft.md)
- * 3. white/primary — button label trên primary bg (AA ≥ 4.5:1)
+ * 3. primary-foreground/primary — button label trên primary bg (AA ≥ 4.5:1)
  */
+export function pickPrimaryForeground(colors: CoreColorTokens): string {
+  // Prefer the canvas, then body text, then black, then white. This mirrors
+  // how the actual --color-text-on-primary is chosen for each preset (canvas
+  // for dark/muted primaries, text for light primaries, the final fallbacks
+  // are the extreme grays to guarantee WCAG AA when nothing else does).
+  const candidates = [colors.background, colors.text, '#000000', '#FFFFFF'];
+  for (const candidate of candidates) {
+    if (meetsAA(getContrastRatio(candidate, colors.primary))) {
+      return candidate;
+    }
+  }
+  return '#FFFFFF';
+}
+
 export function validateTheme(colors: CoreColorTokens): ValidationResult {
+  const primaryForeground = pickPrimaryForeground(colors);
   const pairs: PairResult[] = [
     makePair('Text / Canvas', colors.text, colors.background),
     makePairSecondary('Text Secondary / Canvas', colors.textSecondary, colors.background),
-    makePair('White / Primary', tokensJson.core.light.background, colors.primary),
+    makePair('Primary Foreground / Primary', primaryForeground, colors.primary),
   ];
   return { pairs, allPass: pairs.every((p) => p.rating.pass) };
 }

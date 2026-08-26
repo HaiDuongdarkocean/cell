@@ -35,15 +35,18 @@ const STYLE_ID = THEME_STYLE_ID;
 
 /** Build the full `<style>` text content from a ThemeConfig.
  *  Static tokens live on :root. Color + component tokens apply inside a
- *  [data-theme] boundary. Component tokens reference color vars, and CSS
- *  custom properties resolve where they are DECLARED, not where they are used,
- *  so the component block must be re-declared in each theme selector to
- *  re-resolve against the theme's core colors (critical for Shadow DOM). */
+ *  [data-theme] or [data-preset][data-theme] boundary. Component tokens
+ *  reference color vars, and CSS custom properties resolve where they are
+ *  DECLARED, not where they are used, so the component block must be
+ *  re-declared in each theme selector to re-resolve against the theme's core
+ *  colors (critical for Shadow DOM). */
 function buildStyleContent(config: ThemeConfig): string {
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
-  const lightTokens = buildColorTokenCSS(config.customColors.light, 'light');
-  const darkTokens = buildColorTokenCSS(config.customColors.dark, 'dark');
+  const preset = config.preset;
+  const lightTokens = buildColorTokenCSS(config.customColors.light, 'light', preset);
+  const darkTokens = buildColorTokenCSS(config.customColors.dark, 'dark', preset);
+  const selectorPrefix = preset ? `[data-preset="${preset}"]` : '';
   return `
 :root {
 ${staticTokens}
@@ -57,12 +60,12 @@ ${staticTokens}
   :root { --touch-target: var(--touch-target-mobile); }
 }
 
-[data-theme="light"] {
+${selectorPrefix}[data-theme="light"] {
 ${lightTokens}
 ${componentTokens}
 }
 
-[data-theme="dark"] {
+${selectorPrefix}[data-theme="dark"] {
 ${darkTokens}
 ${componentTokens}
 }
@@ -129,19 +132,25 @@ function resolveMode(mode: ThemeMode): ResolvedMode {
 export function syncElementTheme(element: HTMLElement, container: HTMLElement): () => void {
   const apply = (): void => {
     const theme = container.getAttribute('data-theme') ?? 'dark';
+    const preset = container.getAttribute('data-preset') ?? '';
     element.setAttribute('data-theme', theme);
+    if (preset) {
+      element.setAttribute('data-preset', preset);
+    } else {
+      element.removeAttribute('data-preset');
+    }
   };
   apply();
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+      if (mutation.type === 'attributes' && (mutation.attributeName === 'data-theme' || mutation.attributeName === 'data-preset')) {
         apply();
         break;
       }
     }
   });
-  observer.observe(container, { attributes: true, attributeFilter: ['data-theme'] });
+  observer.observe(container, { attributes: true, attributeFilter: ['data-theme', 'data-preset'] });
 
   return () => observer.disconnect();
 }
@@ -172,6 +181,11 @@ export function injectThemeTokens(container: HTMLElement): () => void {
   const applyResolved = (mode: ThemeMode, config: ThemeConfig): void => {
     const resolved = resolveMode(mode);
     container.setAttribute('data-theme', resolved);
+    if (config.preset) {
+      container.setAttribute('data-preset', config.preset);
+    } else {
+      container.removeAttribute('data-preset');
+    }
     // Re-inject <style> with custom palette (if config != default).
     const style = document.getElementById(STYLE_ID);
     if (style) style.textContent = buildStyleContent(config);

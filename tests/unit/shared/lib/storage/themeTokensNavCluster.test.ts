@@ -18,18 +18,11 @@ function extractTokenValues(cssContent: string, tokenNames: string[]): Record<st
 const kebab = (s: string): string => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 const NAV_CLUSTER_TOKEN_NAMES = [
-  '--nav-cluster-size-sm',
-  '--nav-cluster-size-md',
-  '--nav-cluster-size-lg',
-  '--nav-cluster-icon-size-ratio',
-  '--nav-cluster-btn-size',
-  '--nav-cluster-bg-opacity',
-  '--nav-cluster-btn-opacity',
-  '--nav-cluster-collapse-size',
-  '--nav-cluster-edge-threshold',
-  '--nav-cluster-z-index',
-  '--nav-cluster-repeat-hold-ms',
-  '--nav-cluster-no-sub-window-ms',
+  '--nav-cluster-button-size',
+  '--nav-cluster-button-icon',
+  '--nav-cluster-gap',
+  '--nav-cluster-radius',
+  '--nav-cluster-shadow',
 ];
 
 const tokensJson = JSON.parse(readFileSync(TOKENS_JSON_PATH, 'utf8'));
@@ -42,14 +35,14 @@ for (const [key, value] of Object.entries(tokensJson.static.navCluster)) {
 describe('Nav cluster tokens — tokens.css + tokens.json mirror sync (ADR-018, design-system inventory)', () => {
   const themeCss = readFileSync(THEME_CSS_PATH, 'utf8');
 
-  it('tokens.css :root contains all 12 nav-cluster tokens', () => {
+  it('tokens.css :root contains all nav-cluster tokens', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
       expect(rootBlock).toContain(name);
     }
   });
 
-  it('tokens.json static.navCluster contains all 12 nav-cluster tokens', () => {
+  it('tokens.json static.navCluster contains all nav-cluster tokens', () => {
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
       expect(expectedNavClusterValues[name]).toBeDefined();
     }
@@ -63,27 +56,19 @@ describe('Nav cluster tokens — tokens.css + tokens.json mirror sync (ADR-018, 
     }
   });
 
-  it('nav-cluster-size-sm is 32px (synced with panel-toggle)', () => {
-    expect(expectedNavClusterValues['--nav-cluster-size-sm']).toBe('32px');
+  it('nav-cluster-button-size is 36px', () => {
+    expect(expectedNavClusterValues['--nav-cluster-button-size']).toBe('36px');
   });
 
-  it('nav-cluster-size-md is 32px (synced with panel-toggle)', () => {
-    expect(expectedNavClusterValues['--nav-cluster-size-md']).toBe('32px');
+  it('nav-cluster-button-icon is 20px', () => {
+    expect(expectedNavClusterValues['--nav-cluster-button-icon']).toBe('20px');
   });
 
-  it('nav-cluster-size-lg is 32px (synced with panel-toggle)', () => {
-    expect(expectedNavClusterValues['--nav-cluster-size-lg']).toBe('32px');
+  it('nav-cluster-gap is 4px', () => {
+    expect(expectedNavClusterValues['--nav-cluster-gap']).toBe('4px');
   });
 
-  it('nav-cluster-z-index is 1000001', () => {
-    expect(expectedNavClusterValues['--nav-cluster-z-index']).toBe('1000001');
-  });
-
-  it('nav-cluster-repeat-hold-ms is 500', () => {
-    expect(expectedNavClusterValues['--nav-cluster-repeat-hold-ms']).toBe('500');
-  });
-
-  it('nav-cluster-no-sub-window-ms is 3000', () => {
-    expect(expectedNavClusterValues['--nav-cluster-no-sub-window-ms']).toBe('3000');
+  it('nav-cluster-radius is 9999px', () => {
+    expect(expectedNavClusterValues['--nav-cluster-radius']).toBe('9999px');
   });
 });

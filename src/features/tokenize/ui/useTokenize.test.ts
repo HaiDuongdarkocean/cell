@@ -37,13 +37,13 @@ function createMockStore(initial = { enabled: false, showStatus: false, showFreq
 describe('useTokenize', () => {
   it('starts with all toggles off when no store is provided', () => {
     const { result } = renderHook(() => useTokenize());
-    expect(result.current.state).toEqual({ enabled: false, showStatus: false, showFrequency: false });
+    expect(result.current.state).toEqual({ enabled: false, showStatus: false, showFrequency: false, subtitleEnabled: false });
   });
 
   it('reads initial state from the store', () => {
     const store = createMockStore({ enabled: true, showStatus: true, showFrequency: false });
     const { result } = renderHook(() => useTokenize({ store }));
-    expect(result.current.state).toEqual({ enabled: true, showStatus: true, showFrequency: false });
+    expect(result.current.state).toEqual({ enabled: true, showStatus: true, showFrequency: false, subtitleEnabled: false });
   });
 
   it('toggles internal state when no store is provided', () => {
@@ -57,6 +57,9 @@ describe('useTokenize', () => {
 
     act(() => result.current.onToggle('showFrequency'));
     expect(result.current.state.showFrequency).toBe(true);
+
+    act(() => result.current.onToggle('subtitleEnabled'));
+    expect(result.current.state.subtitleEnabled).toBe(true);
   });
 
   it('dispatches store setters when a store is provided', () => {
@@ -72,6 +75,9 @@ describe('useTokenize', () => {
 
     act(() => result.current.onToggle('showFrequency'));
     expect(store.getState().showFrequency).toBe(true);
+
+    act(() => result.current.onToggle('subtitleEnabled'));
+    expect(result.current.state.subtitleEnabled).toBe(true);
   });
 
   it('subscribes to store updates', () => {

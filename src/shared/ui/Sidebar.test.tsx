@@ -10,7 +10,7 @@ describe('Sidebar', () => {
   it('toggles collapsed state', () => {
     const onCollapsedChange = jest.fn();
     render(<Sidebar collapsible onCollapsedChange={onCollapsedChange}>Nav</Sidebar>);
-    fireEvent.click(screen.getByLabelText('Collapse sidebar'));
+    fireEvent.click(screen.getByLabelText('Collapse sidebar to icons'));
     expect(onCollapsedChange).toHaveBeenCalledWith(true);
   });
 
