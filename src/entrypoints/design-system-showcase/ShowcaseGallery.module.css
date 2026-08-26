@@ -128,14 +128,12 @@
   padding: var(--space-3);
   background: var(--color-glass-surface);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-lg);
   backdrop-filter: blur(var(--blur-md));
 }
 
 .previewOuter .previewInner {
   padding: var(--space-5);
   background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-xl);
 }
 
