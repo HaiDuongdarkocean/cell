@@ -10,3 +10,4 @@ Use these to generate candidate improvements to `SKILL.md` when `RUNBOOK.md` has
 6. The agent misses landing-page-specific tells. → Expand Part 4 of `AUDIT.md` or create `LANDING.md`.
 7. The agent proposes motion on high-frequency interactions. → Add a frequency check to `SKILL.md` Step 5.
 8. The agent reports "missing color/border" without first verifying the token exists. → Add a `tokens.css`/`tokens.json` lookup step in `AUDIT.md` before any component visual diagnosis.
+9. The agent misses nested borders in a card/gallery wrapper. → Add a "border count" check in `AUDIT.md`: if a component container has >1 visible border, convert the inner ones to spacing or background.

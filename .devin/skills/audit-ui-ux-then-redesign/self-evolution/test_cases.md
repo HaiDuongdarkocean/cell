@@ -37,3 +37,9 @@ These are reference pages to run the skill against.
 - Input: `src/shared/ui/Button.showcase.tsx` and `src/shared/styles/tokens.json`
 - Expected: Detect unresolvable `var(--component-*)` references before reporting "no color" or "no border".
 - Success: Brief includes P0 token-mismatch fix and does not stop at layout-only recommendations.
+
+## 7. Gallery / preview card with nested borders
+
+- Input: `src/entrypoints/design-system-showcase/ShowcaseGallery.module.css`
+- Expected: Count borders on the preview card; reject more than one visible border and report padding/gap issues.
+- Success: Brief proposes removing outer/stage borders and using background + spacing instead.

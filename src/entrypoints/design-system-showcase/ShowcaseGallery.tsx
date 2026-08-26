@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import {
-  Breadcrumb,
-  Button,
-  Card,
-  Code,
-  Heading,
-  IconButton,
-  SearchField,
-  Tabs,
-  Text,
-  Tree,
-} from '@/shared/ui';
+import { Badge, Box, Card, Heading, IconButton, SearchField, Text, Tree } from '@/shared/ui';
 import { type TreeNode } from '@/shared/ui/Tree';
 import { Icon } from '@/shared/icons/Icon';
 import { MockProviders } from './mockProviders';
@@ -26,9 +15,6 @@ import styles from './ShowcaseGallery.module.css';
 
 type ThemeMode = 'light' | 'dark';
 
-const DEFAULT_TABS = ['overview', 'tokens', 'usage', 'code'] as const;
-type DetailTab = (typeof DEFAULT_TABS)[number];
-
 interface ShowcasesById {
   [id: string]: DiscoveredShowcase;
 }
@@ -37,7 +23,6 @@ export function ShowcaseGallery(): ReactElement | null {
   const [filter, setFilter] = useState('');
   const [activeShowcaseId, setActiveShowcaseId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [mode, setMode] = useState<ThemeMode>('light');
 
   useEffect(() => {
@@ -59,10 +44,7 @@ export function ShowcaseGallery(): ReactElement | null {
     const match = allShowcases.find(
       (s) => s.meta.title.toLowerCase() === title.toLowerCase(),
     );
-    if (match) {
-      setActiveShowcaseId(match.id);
-      setActiveTab('overview');
-    }
+    if (match) setActiveShowcaseId(match.id);
   }, [allShowcases]);
 
   const filtered = useMemo(() => {
@@ -107,7 +89,6 @@ export function ShowcaseGallery(): ReactElement | null {
         icon: level.icon,
         children: categoryEntries.map(([category, showcases]) => {
           const items = showcases as DiscoveredShowcase[];
-          // Flatten single-child categories: click goes straight to the showcase.
           if (items.length === 1) {
             return {
               id: items[0].id,
@@ -128,7 +109,6 @@ export function ShowcaseGallery(): ReactElement | null {
     return nodes;
   }, [filtered, categoryPriority]);
 
-  // Default expansion: first level and first category.
   useEffect(() => {
     const defaults: string[] = [];
     if (treeData[0]) {
@@ -138,7 +118,6 @@ export function ShowcaseGallery(): ReactElement | null {
     setExpandedIds((prev) => (prev.length === 0 ? defaults : prev));
   }, [treeData]);
 
-  // Auto-open from URL param: ?showcase=Title or /showcase/Title
   useEffect(() => {
     if (activeShowcaseId) return;
     const params = new URLSearchParams(window.location.search);
@@ -158,12 +137,8 @@ export function ShowcaseGallery(): ReactElement | null {
   }, [activeShowcaseId, byId, filtered, allShowcases]);
 
   const handleSelect = useCallback((id: string, _node: TreeNode): void => {
-    if (byId[id]) {
-      setActiveShowcaseId(id);
-      setActiveTab('overview');
-    }
+    if (byId[id]) setActiveShowcaseId(id);
   }, [byId]);
-
 
   const handleToggle = useCallback((id: string, expanded: boolean): void => {
     setExpandedIds((prev) => {
@@ -174,79 +149,53 @@ export function ShowcaseGallery(): ReactElement | null {
     });
   }, []);
 
-  const breadcrumbItems = useMemo(() => {
-    if (!activeShowcase) return [];
-    const level = LIBRARY_LEVELS.find((l) => l.id === activeShowcase.meta.level);
-    const siblings = allShowcases.filter(
-      (s) => s.meta.level === activeShowcase.meta.level && s.meta.category === activeShowcase.meta.category,
-    );
-    const isSingleChildCategory = siblings.length === 1;
-    const items = [
-      { label: level?.label ?? activeShowcase.meta.level, id: `level-${activeShowcase.meta.level}` },
-      { label: activeShowcase.meta.title, id: activeShowcase.id, current: true },
-    ];
-    if (!isSingleChildCategory) {
-      items.splice(1, 0, { label: activeShowcase.meta.category, id: `cat-${activeShowcase.meta.level}-${activeShowcase.meta.category}` });
-    }
-    return items;
-  }, [activeShowcase, allShowcases]);
-
-  const handlePrevious = useCallback((): void => {
-    const idx = filtered.findIndex((s) => s.id === activeShowcase?.id);
-    if (idx > 0) setActiveShowcaseId(filtered[idx - 1].id);
-  }, [activeShowcase, filtered]);
-
-  const handleNext = useCallback((): void => {
-    const idx = filtered.findIndex((s) => s.id === activeShowcase?.id);
-    if (idx >= 0 && idx < filtered.length - 1) setActiveShowcaseId(filtered[idx + 1].id);
-  }, [activeShowcase, filtered]);
-
   if (allShowcases.length === 0) return null;
 
   return (
     <div className={styles.root}>
+      <div className={styles.glow} aria-hidden="true" />
+
       <header className={styles.topbar}>
-        <div className={styles.topbarLeft}>
-          <Heading level={1} size={3} className={styles.topbarTitle}>
-            Design System
-          </Heading>
-          <Text color="secondary" as="span" className={styles.topbarMeta}>
-            {filtered.length} of {allShowcases.length} components
-          </Text>
-        </div>
-        <div className={styles.topbarRight}>
-          <SearchField
-            value={filter}
-            onChange={setFilter}
-            placeholder="Search components…"
-            className={styles.searchField}
-          />
-          <IconButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={toggleMode}
-            aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
-          >
-            <Icon name={mode === 'light' ? 'moon' : 'sun'} size={20} />
-          </IconButton>
-        </div>
+        <Text as="span" variant="supporting" color="secondary" className={styles.eyebrow}>
+          Cell Design System
+        </Text>
+        <SearchField
+          value={filter}
+          onChange={setFilter}
+          placeholder="Search components…"
+          className={styles.searchField}
+        />
+        <IconButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={toggleMode}
+          aria-label={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}
+        >
+          <Icon name={mode === 'light' ? 'moon' : 'sun'} size={20} />
+        </IconButton>
       </header>
 
       <div className={styles.main}>
         <aside className={styles.sidebar} aria-label="Library tree">
           <div className={styles.sidebarHeader}>
-            <h1 className={styles.sidebarTitle}>Design System</h1>
-            <p className={styles.sidebarSubtitle}>Quiet confidence</p>
+            <Heading level={2} size={2} className={styles.sidebarTitle}>
+              Design System
+            </Heading>
+            <Text color="secondary" className={styles.sidebarSubtitle}>
+              Quiet confidence
+            </Text>
           </div>
-          <Tree
-            nodes={treeData}
-            activeId={activeShowcase?.id}
-            expandedIds={expandedIds}
-            onSelect={handleSelect}
-            onToggle={handleToggle}
-            ariaLabel="Library navigation tree"
-          />
+          <div className={styles.tree}>
+            <Tree
+              nodes={treeData}
+              activeId={activeShowcase?.id}
+              expandedIds={expandedIds}
+              onSelect={handleSelect}
+              onToggle={handleToggle}
+              ariaLabel="Library navigation tree"
+            />
+          </div>
           <Card className={styles.resultCard}>
             <Text as="p" color="secondary" className={styles.resultText}>
               Showing {filtered.length} / {allShowcases.length} items
@@ -254,125 +203,28 @@ export function ShowcaseGallery(): ReactElement | null {
           </Card>
         </aside>
 
-        <main className={styles.detail}>
+        <main className={styles.viewport}>
           {activeShowcase ? (
-            <>
-              <div className={styles.breadcrumbBar}>
-                <Breadcrumb items={breadcrumbItems} />
-                <div className={styles.detailNav}>
-                  <IconButton
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePrevious}
-                    disabled={filtered.findIndex((s) => s.id === activeShowcase.id) === 0}
-                    aria-label="Previous component"
-                  >
-                    <Icon name="chevronLeft" size={18} />
-                  </IconButton>
-                  <IconButton
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleNext}
-                    disabled={filtered.findIndex((s) => s.id === activeShowcase.id) === filtered.length - 1}
-                    aria-label="Next component"
-                  >
-                    <Icon name="chevronRight" size={18} />
-                  </IconButton>
-                </div>
-              </div>
-
-              <section className={styles.preview} aria-label="Component preview">
-                <Card className={styles.previewCard}>
-                  <MockProviders>
-                    <ShowcaseNavigationContext.Provider value={{ navigateToShowcase }}>
-                      <activeShowcase.Component />
-                    </ShowcaseNavigationContext.Provider>
-                  </MockProviders>
-                </Card>
-              </section>
-
-              <section className={styles.info} aria-labelledby="detail-title">
-                <div className={styles.infoHeader}>
-                  <Heading level={2} size={2} id="detail-title" className={styles.infoTitle}>
-                    {activeShowcase.meta.title}
-                  </Heading>
-                  {activeShowcase.meta.status && (
-                    <Text as="span" color="secondary" className={styles.statusBadge}>
-                      {activeShowcase.meta.status}
+            <MockProviders>
+              <ShowcaseNavigationContext.Provider value={{ navigateToShowcase }}>
+                <div className={styles.previewOuter}>
+                  <Card className={styles.previewInner}>
+                    <div className={styles.previewHeader}>
+                      <Heading level={1} size={3} className={styles.previewTitle}>
+                        {activeShowcase.meta.title}
+                      </Heading>
+                      <Badge className={styles.category}>{activeShowcase.meta.category}</Badge>
+                    </div>
+                    <Text as="p" color="secondary" className={styles.previewDesc}>
+                      {activeShowcase.meta.description}
                     </Text>
-                  )}
+                    <Box className={styles.stage}>
+                      <activeShowcase.Component />
+                    </Box>
+                  </Card>
                 </div>
-
-                <Text color="secondary" as="p" className={styles.infoDesc}>
-                  {activeShowcase.meta.description}
-                </Text>
-
-                <div className={styles.metaRow}>
-                  <Text as="span" color="secondary" className={styles.metaItem}>
-                    Level: {LIBRARY_LEVELS.find((l) => l.id === activeShowcase.meta.level)?.label ?? activeShowcase.meta.level}
-                  </Text>
-                  <Text as="span" color="secondary" className={styles.metaItem}>
-                    Category: {activeShowcase.meta.category}
-                  </Text>
-                </div>
-
-                <div className={styles.variants}>
-                  <Text as="span" variant="label" className={styles.variantsLabel}>
-                    Links:
-                  </Text>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const params = new URLSearchParams(window.location.search);
-                      params.set('showcase', encodeURIComponent(activeShowcase.meta.title));
-                      window.history.replaceState(null, '', `?${params.toString()}`);
-                    }}
-                  >
-                    Copy link
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handlePrevious} disabled={filtered.findIndex((s) => s.id === activeShowcase.id) === 0}>
-                    Previous
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleNext} disabled={filtered.findIndex((s) => s.id === activeShowcase.id) === filtered.length - 1}>
-                    Next
-                  </Button>
-                </div>
-              </section>
-
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DetailTab)}>
-                <Tabs.List className={styles.tabsList}>
-                  <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
-                  <Tabs.Trigger value="tokens">Tokens</Tabs.Trigger>
-                  <Tabs.Trigger value="usage">Usage</Tabs.Trigger>
-                  <Tabs.Trigger value="code">Code</Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content value="overview" className={styles.tabContent}>
-                  <Text as="p" color="secondary">
-                    {activeShowcase.meta.description || 'No overview available.'}
-                  </Text>
-                </Tabs.Content>
-                <Tabs.Content value="tokens" className={styles.tabContent}>
-                  <Text as="p" color="secondary">
-                    Token documentation is generated from the component CSS module. Inspect the source for available custom properties.
-                  </Text>
-                </Tabs.Content>
-                <Tabs.Content value="usage" className={styles.tabContent}>
-                  <Text as="p" color="secondary">
-                    Import and compose with other atoms. Refer to the showcase file at <Code>{activeShowcase.path}</Code> for live examples.
-                  </Text>
-                </Tabs.Content>
-                <Tabs.Content value="code" className={styles.tabContent}>
-                  <pre className={styles.codeBlock}>
-                    <Code>{`import { ${activeShowcase.meta.title.replace(/\s+/g, '')} } from '@/shared/ui';
-
-<${activeShowcase.meta.title.replace(/\s+/g, '')} />`}</Code>
-                  </pre>
-                </Tabs.Content>
-              </Tabs>
-            </>
+              </ShowcaseNavigationContext.Provider>
+            </MockProviders>
           ) : (
             <div className={styles.empty}>
               <Heading level={2} size={3}>No components found</Heading>
