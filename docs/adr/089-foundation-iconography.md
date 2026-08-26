@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — awaiting build + showcase prototype before final acceptance.
+Accepted — build verification passed; foundation tokens shipped in tokens.css.
 
 ## Context
 
