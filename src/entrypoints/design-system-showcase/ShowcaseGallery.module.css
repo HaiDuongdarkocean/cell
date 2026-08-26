@@ -59,10 +59,34 @@
   flex-direction: column;
   gap: var(--space-3);
   width: 260px;
-  padding: var(--space-3);
+  padding: var(--space-4);
   background: var(--color-surface);
   border-right: var(--border-width-hairline) solid var(--color-border);
   overflow-y: auto;
+}
+
+.sidebarHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-snug);
+  color: var(--color-text);
+}
+
+.sidebarSubtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
 }
 
 .resultCard {

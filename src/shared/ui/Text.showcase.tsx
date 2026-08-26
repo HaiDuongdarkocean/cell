@@ -27,8 +27,7 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Text',
   description: 'Text component with variants (body, label, supporting, heading) and colors. Use for general text display.',
-  level: 'atoms',
-  category: 'Content',
-  group: 'Generic Core',
-  order: 1,
+  level: 'foundations',
+  category: 'Typography',
+  order: 21,
 };
