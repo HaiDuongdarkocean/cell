@@ -1,0 +1,117 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  width: 100%;
+}
+
+.branch {
+  display: flex;
+  flex-direction: column;
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-150) var(--ease-standard),
+    color var(--duration-150) var(--ease-standard);
+}
+
+.node:hover {
+  background: var(--color-surface-hover);
+}
+
+.node:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.depth0 {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.depth1 {
+  padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-6);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.depth2 {
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-9);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.branchNode {
+  font-weight: var(--font-weight-semibold);
+}
+
+.leafNode {
+  font-weight: var(--font-weight-regular);
+}
+
+.active,
+.active:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.depth1.active,
+.depth2.active {
+  font-weight: var(--font-weight-medium);
+}
+
+.chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  transition: transform var(--duration-150) var(--ease-standard);
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.leading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node,
+  .chevron {
+    transition: none;
+  }
+}
