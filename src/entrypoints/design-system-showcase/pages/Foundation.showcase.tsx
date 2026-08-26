@@ -24,7 +24,7 @@ interface Section {
 const SECTIONS: Section[] = [
   { id: 'overview', label: 'Overview', description: 'Quiet confidence — the story of the foundation.', priority: 0 },
   { id: 'color', label: 'Color', description: 'Neutral-first palette with a single indigo accent.', priority: 1, target: 'Color Scale' },
-  { id: 'typography', label: 'Typography', description: 'Inter, 5 roles, progressive negative tracking.', priority: 2 },
+  { id: 'typography', label: 'Typography', description: 'Inter, 5 roles, progressive negative tracking.', priority: 2, target: 'Typography Scale' },
   { id: 'spacing', label: 'Spacing', description: '4px base unit for dense extension UI.', priority: 3, target: 'Spacing Scale' },
   { id: 'shape', label: 'Shape & Elevation', description: 'Concentric radius and surface lift over heavy shadow.', priority: 4 },
   { id: 'motion', label: 'Motion', description: 'Purpose-driven, under 300ms, reduced-motion aware.', priority: 5 },
