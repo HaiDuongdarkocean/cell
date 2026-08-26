@@ -37,8 +37,14 @@ export function InputField({
       <Label htmlFor={inputId} required={required} disabled={disabled}>
         {label}
       </Label>
-      <Input id={inputId} error={!!error} errorMessage={error} disabled={disabled} {...rest} />
-      {helperText && !error && <span className={styles.helper}>{helperText}</span>}
+      <Input
+        id={inputId}
+        error={!!error}
+        errorMessage={error}
+        helperText={!error ? helperText : undefined}
+        disabled={disabled}
+        {...rest}
+      />
     </div>
   );
 }

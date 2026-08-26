@@ -31,6 +31,7 @@ import linkSvg from './svg/link.svg?raw';
 
 // === None / hide panel variants (popup toolbar) ===
 import eyeOffSvg from './svg/eye-off.svg?raw';
+import eyeSvg from './svg/eye.svg?raw';
 import chevronDownSvg from './svg/chevron-down.svg?raw';
 import panelBottomCloseSvg from './svg/panel-bottom-close.svg?raw';
 
@@ -132,6 +133,7 @@ export { default as imageIcon } from './svg/image.svg?raw';
 export { default as languagesIcon } from './svg/languages.svg?raw';
 export { default as linkIcon } from './svg/link.svg?raw';
 export { default as eyeOffIcon } from './svg/eye-off.svg?raw';
+export { default as eyeIcon } from './svg/eye.svg?raw';
 export { default as chevronDownIcon } from './svg/chevron-down.svg?raw';
 export { default as panelBottomCloseIcon } from './svg/panel-bottom-close.svg?raw';
 export { default as xIcon } from './svg/x.svg?raw';
@@ -243,6 +245,7 @@ export const ICON_CATALOG = {
   link:        { svg: linkSvg,        source: 'lucide/link',        tags: ['link','chain','url','external','hyperlink'] } as IconEntry,
 
   // === None / hide panel variants ===
+  eye:              { svg: eyeSvg,              source: 'lucide/eye',                tags: ['show','eye','visible','reveal','view'] } as IconEntry,
   eyeOff:           { svg: eyeOffSvg,           source: 'lucide/eye-off',            tags: ['hide','eye-off','invisible','none','conceal'] } as IconEntry,
   chevronDown:      { svg: chevronDownSvg,      source: 'lucide/chevron-down',       tags: ['collapse','chevron','down','arrow-down','fold','dropdown','expand'] } as IconEntry,
   panelBottomClose: { svg: panelBottomCloseSvg, source: 'lucide/panel-bottom-close', tags: ['panel','hide','close','bottom','collapse-panel'] } as IconEntry,

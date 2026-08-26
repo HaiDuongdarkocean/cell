@@ -1,31 +1,115 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { Spinner } from './Spinner';
 import styles from './Input.module.css';
 
 type InputSize = 'sm' | 'md' | 'lg';
+type InputVariant = 'glass' | 'filled' | 'outline' | 'ghost';
 
-interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'prefix'> {
   /** Size. Default: md. */
   size?: InputSize;
+  /** Visual variant. Default: glass. */
+  variant?: InputVariant;
   /** Error state. */
   error?: boolean;
+  /** Success state. */
+  success?: boolean;
+  /** Loading state — shows a spinner and disables the input. */
+  loading?: boolean;
   /** Optional error message displayed below the input. */
   errorMessage?: ReactNode;
+  /** Optional helper text displayed below the input. */
+  helperText?: ReactNode;
+  /** Optional content rendered at the start of the input (e.g. icon). */
+  prefix?: ReactNode;
+  /** Optional content rendered at the end of the input (e.g. icon, action). */
+  suffix?: ReactNode;
 }
 
 /**
- * Input — styled text input with standard focus, error, and disabled states.
+ * Input — styled text input with liquid glass, focus, error, success,
+ * disabled, loading, and prefix/suffix support.
  */
-export function Input({ size = 'md', error, errorMessage, className, ...rest }: InputProps): React.JSX.Element {
-  const cls = [styles.input, styles[size], error ? styles.error : '', className ?? ''].filter(Boolean).join(' ');
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    size = 'md',
+    variant = 'glass',
+    error = false,
+    success = false,
+    loading = false,
+    errorMessage,
+    helperText,
+    prefix,
+    suffix,
+    className,
+    disabled,
+    readOnly,
+    'aria-describedby': ariaDescribedBy,
+    ...rest
+  }: InputProps,
+  ref
+): React.JSX.Element {
+  const hasPrefix = Boolean(prefix);
+  const hasSuffix = Boolean(suffix) || loading;
+  const suffixContent = loading ? (
+    <Spinner size="md" color="current" ariaLabel="Loading" />
+  ) : (
+    suffix
+  );
+
+  const cls = [
+    styles.input,
+    styles[variant],
+    styles[size],
+    hasPrefix ? styles.hasPrefix : '',
+    hasSuffix ? styles.hasSuffix : '',
+    error ? styles.error : '',
+    success ? styles.success : '',
+    loading ? styles.loading : '',
+    readOnly ? styles.readOnly : '',
+    className ?? '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const errorId = errorMessage ? 'input-error' : undefined;
+  const helperId = helperText ? 'input-helper' : undefined;
+  const describedBy = [ariaDescribedBy, errorId, helperId].filter(Boolean).join(' ') || undefined;
 
   return (
-    <>
-      <input className={cls} aria-invalid={error || undefined} aria-describedby={errorMessage ? 'input-error' : undefined} {...rest} />
+    <div className={styles.root}>
+      <div className={styles.wrapper}>
+        {hasPrefix && (
+          <span className={styles.prefix} aria-hidden="true">
+            {prefix}
+          </span>
+        )}
+        <input
+          ref={ref}
+          className={cls}
+          disabled={disabled || loading}
+          readOnly={readOnly}
+          aria-invalid={error || undefined}
+          aria-describedby={describedBy}
+          aria-busy={loading || undefined}
+          {...rest}
+        />
+        {hasSuffix && (
+          <span className={styles.suffix} aria-hidden="true">
+            {suffixContent}
+          </span>
+        )}
+      </div>
       {errorMessage && (
         <span id="input-error" className={styles.errorText} role="alert">
           {errorMessage}
         </span>
       )}
-    </>
+      {helperText && (
+        <span id="input-helper" className={styles.helperText}>
+          {helperText}
+        </span>
+      )}
+    </div>
   );
-}
+});

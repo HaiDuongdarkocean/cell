@@ -1,36 +1,27 @@
-.root {
-  position: relative;
+.clear {
   display: inline-flex;
   align-items: center;
-  width: 100%;
+  justify-content: center;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--input-suffix-color);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-in-out),
+    background var(--duration-fast) var(--ease-in-out);
 }
 
-.leadingIcon {
-  position: absolute;
-  left: var(--space-3);
-  display: inline-flex;
-  width: var(--space-4);
-  height: var(--space-4);
-  color: var(--color-text-secondary);
-  pointer-events: none;
+.clear:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
-.leadingIcon svg {
+.clear svg {
   width: 100%;
   height: 100%;
-}
-
-.root .input {
-  min-height: var(--touch-target);
-  padding-left: var(--space-8);
-  padding-right: var(--space-8);
-}
-
-.clear {
-  position: absolute;
-  right: var(--space-1);
-}
-
-.root .input::-webkit-search-cancel-button {
-  display: none;
 }

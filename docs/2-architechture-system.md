@@ -21,7 +21,7 @@ src/
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
-│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + ShowcaseGallery.tsx/.module.css (Glass Gallery) + preview components + PresetSwitcher + concept mockups (liquid-glass-*.html) + mock data for offline component demos
+│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + ShowcaseGallery.tsx/.module.css (Glass Gallery) + preview components + PresetSwitcher + concept mockups (liquid-glass-*.html, input-liquid-glass-concept.html) + mock data for offline component demos
 │   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
@@ -657,8 +657,8 @@ tests/
 | `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard, OptionsApp, UniversalPanel | Icon-only transparent button (22 call sites) |
 | `shared/ui/Sidebar.tsx` | — | — | Vertical nav container with optional collapse |
 | `shared/ui/useFocusTrap.ts` | — | OptionsApp, Drawer, BottomSheet, UniversalPanel | WCAG focus trap for modal drawers/dialogs |
-| `shared/ui/Input.tsx` | — | InputField, SearchField | Text input with error state and size variants |
-| `shared/ui/InputField.tsx` | — | SettingsDialog (planned) | Label + Input + helper/error text |
+| `shared/ui/Input.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` + `.showcase.module.css` | — | InputField, SearchField, design-system showcase | Liquid-glass text input: glass/filled/outline/ghost variants; sm/md/lg sizes; default/hover/focus/filled/error/loading/disabled/read-only/success states; prefix/suffix slots with icons; inline nature-palette focus override via CSS custom properties |
+| `shared/ui/InputField.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` + `.showcase.module.css` | Label | SettingsDialog, forms | Label + Input + helper/error text; uses `Input` + `Label` |
 | `shared/ui/Label.tsx` | — | InputField, Checkbox, Radio, FormGroup | Form control label with required/disabled states |
 | `shared/ui/ListItem.tsx` | — | — | Row with leading/trailing content and active state |
 | `shared/ui/NavItem.tsx` | — | — | Navigation item (sidebar/horizontal) |
@@ -666,7 +666,7 @@ tests/
 | `shared/ui/Progress.tsx` | — | DownloadCard, ImportProgress | Horizontal progress bar |
 | `shared/ui/Radio.tsx` | — | RadioGroup | Radio with label, error, disabled states |
 | `shared/ui/RadioGroup.tsx` | — | — | Managed list of radios |
-| `shared/ui/SearchField.tsx` | — | — | Input with leading search icon + clear button |
+| `shared/ui/SearchField.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` + `.showcase.module.css` | Input | search surfaces, design-system showcase | Input with leading search icon + clear button; uses `Input` |
 | `shared/ui/Select.tsx` | — | SettingsDialog (planned) | Plain HTML select wrapper with placeholder/error |
 | `shared/ui/Tabs.tsx` | — | ColorCustomization, SettingsDialog | Compound tab list/trigger/content |
 | `shared/ui/Accordion.tsx` | — | — | Collapsible single/multiple sections |

@@ -1,6 +1,5 @@
 import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react';
 import { Input } from './Input';
-import { IconButton } from './IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchField.module.css';
 
@@ -51,30 +50,28 @@ export function SearchField({
     onClear?.();
   };
 
+  const suffix = currentValue && !disabled ? (
+    <button
+      type="button"
+      className={styles.clear}
+      aria-label="Clear"
+      onClick={handleClear}
+    >
+      <Icon name="x" size={16} />
+    </button>
+  ) : undefined;
+
   return (
-    <div className={[styles.root, className ?? ''].filter(Boolean).join(' ')}>
-      <Icon name="search" className={styles.leadingIcon} />
-      <Input
-        type="search"
-        value={currentValue}
-        onChange={handleChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={styles.input}
-        {...rest}
-      />
-      {currentValue && !disabled && (
-        <IconButton
-          type="button"
-          className={styles.clear}
-          aria-label="Clear"
-          variant="ghost"
-          size="xs"
-          onClick={handleClear}
-        >
-          <Icon name="x"  />
-        </IconButton>
-      )}
-    </div>
+    <Input
+      type="search"
+      value={currentValue}
+      onChange={handleChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={className}
+      prefix={<Icon name="search" size={18} />}
+      suffix={suffix}
+      {...rest}
+    />
   );
 }
