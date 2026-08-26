@@ -331,7 +331,7 @@ export async function startMessageListener(): Promise<void> {
     sendResponse: (response?: unknown) => void,
   ): boolean | undefined => {
     const request = message as MessageRequest;
-    const type = request?.type;
+    const type = request.type as string;
 
     // Debug: log every message received by the offscreen listener.
     console.log('[OFFSCREEN-LISTENER] received:', type);
@@ -353,8 +353,8 @@ export async function startMessageListener(): Promise<void> {
     ) {
       // Normalize _OFFSCREEN_ prefixed types back to the base type for ocrRunner.
       const normalized = type.startsWith('_OFFSCREEN_')
-        ? { ...message, type: type.replace('_OFFSCREEN_', '') }
-        : message;
+        ? { ...request, type: type.replace('_OFFSCREEN_', '') }
+        : request;
       return ocrMessageListener(normalized, _sender, sendResponse);
     }
 

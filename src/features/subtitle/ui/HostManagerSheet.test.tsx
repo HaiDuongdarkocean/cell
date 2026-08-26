@@ -1,6 +1,6 @@
 import { render, fireEvent } from '@testing-library/react';
 import { HostManagerSheet } from './HostManagerSheet';
-import type { SerializedManagerState, ManagerAction } from '../logic/iframeManagerBridgeTypes';
+import type { SerializedManagerState } from '../logic/iframeManagerBridgeTypes';
 
 // Mock SubtitleManagerPanel to capture props without rendering its full tree.
 // The mock stores the last props on globalThis so each test can assert wiring.
@@ -23,7 +23,7 @@ type PanelProps = Record<string, unknown>;
 function lastPanelProps(): PanelProps {
   const calls = mockPanel.mock.calls;
   const last = calls[calls.length - 1];
-  return (last?.[0] ?? {}) as PanelProps;
+  return ((last?.[0] ?? {}) as unknown) as PanelProps;
 }
 
 function createMockState(): SerializedManagerState {
@@ -81,7 +81,7 @@ describe('HostManagerSheet', () => {
   });
 
   it('onSelect calls onAction with select', () => {
-    const onAction = jest.fn<(action: ManagerAction, args: Record<string, unknown>) => void>();
+    const onAction = jest.fn();
     render(
       <HostManagerSheet state={createMockState()} onAction={onAction} onClose={jest.fn()} />,
     );
@@ -92,7 +92,7 @@ describe('HostManagerSheet', () => {
   });
 
   it('onImport calls onAction with import', () => {
-    const onAction = jest.fn<(action: ManagerAction, args: Record<string, unknown>) => void>();
+    const onAction = jest.fn();
     render(
       <HostManagerSheet state={createMockState()} onAction={onAction} onClose={jest.fn()} />,
     );

@@ -42,7 +42,7 @@ export function LabelGroup({
         <span className={styles.labelRow}>
           <span className={styles.label}>{label}</span>
           {hint && (
-            <Tooltip content={hint} placement="top" trigger="click">
+            <Tooltip content={hint} placement="top">
               <span className={styles.hintIcon} role="img" aria-label="More info">
                 <Icon name="info" size="sm" />
               </span>

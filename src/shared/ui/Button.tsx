@@ -32,7 +32,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
   /** Elevation shadow. Default: none. */
   elevation?: ButtonElevation;
-  /** Ripple effect on click from pointer position. Disables hover bg. Default: false. */
+  /** Ripple effect on click from pointer position. Default: true. */
   ripple?: boolean;
   /** One-shot ripple: icon+label flash to primary color while ripple spreads, then revert. Default: false. */
   ripplePulse?: boolean;
@@ -63,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   fullWidth = false,
   collapseLabel = false,
   elevation = 'none',
-  ripple = false,
+  ripple = true,
   ripplePulse = false,
   leadingIcon,
   trailingIcon,
@@ -81,7 +81,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     if (!ripple || e.defaultPrevented) return;
     const btn = e.currentTarget;
     const rect = btn.getBoundingClientRect();
-    const diameter = Math.max(rect.width, rect.height) * 2;
+    const diameter = Math.max(rect.width, rect.height) * 1.6;
     const radius = diameter / 2;
     const x = e.clientX - rect.left - radius;
     const y = e.clientY - rect.top - radius;

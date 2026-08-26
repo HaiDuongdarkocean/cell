@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-preset="dawn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liquid Glass Showcase v3 — Color Scale</title>
+<style>
+/* === Generated tokens (dawn preset, light) === */
+:root {
+  --color-primary: #5EA5E9;
+  --color-primary-hover: #4A8FD4;
+  --color-primary-active: #3B7BC0;
+  --color-primary-subtle: rgba(94,165,233,0.12);
+  --color-primary-foreground: #1F2D3D;
+  --color-text-accent: #5EA5E9;
+  --color-border-focus: #5EA5E9;
+  --color-background: #F7FAFC;
+  --color-surface: #FFFFFF;
+  --color-text: #1F2D3D;
+  --color-text-secondary: #5A6A7A;
+  --color-border: #E2E2DF;
+  --color-surface-hover: #F2F2EF;
+  --color-surface-elevated: #FAFAF8;
+
+  /* Color scale 50-900 */
+  --color-primary-50: #EBF5FC;
+  --color-primary-100: #D1E7F8;
+  --color-primary-200: #A8D3F0;
+  --color-primary-300: #7FBFE8;
+  --color-primary-400: #6AB2F5;
+  --color-primary-500: #5EA5E9;
+  --color-primary-600: #4A8FD4;
+  --color-primary-700: #3B7BC0;
+  --color-primary-800: #2E68A8;
+  --color-primary-900: #1F5588;
+
+  /* Glass tokens */
+  --color-glass-surface: rgba(255,255,255,0.82);
+  --color-glass-surface-hover: rgba(255,255,255,0.92);
+  --color-glass-surface-popover: rgba(255,255,255,0.95);
+  --color-glass-input-bg: rgba(255,255,255,0.60);
+  --color-glass-border: rgba(0,0,0,0.06);
+  --color-glass-border-subtle: rgba(0,0,0,0.03);
+  --color-glass-text-primary: #1F2D3D;
+  --color-glass-text-secondary: rgba(42,42,43,0.65);
+  --color-glass-inner-highlight: rgba(255,255,255,0.45);
+
+  /* Liquid blob tokens — now using color scale */
+  --color-liquid-blob-1: var(--color-primary-50);
+  --color-liquid-blob-2: var(--color-primary-100);
+  --color-liquid-blob-3: var(--color-primary-200);
+  --color-liquid-blob-4: var(--color-primary-300);
+  --color-liquid-blob-5: var(--color-primary-400);
+
+  /* Glass hierarchy tiers */
+  --glass-tier-deep: color-mix(in srgb, var(--color-glass-surface), transparent 40%);
+  --glass-tier-mid: color-mix(in srgb, var(--color-glass-surface), transparent 55%);
+  --glass-tier-light: color-mix(in srgb, var(--color-glass-surface), transparent 70%);
+
+  /* Static tokens */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --tracking-wide: 0.05em;
+  --tracking-tight: -0.01em;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-pill: 9999px;
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 16px;
+  --blur-xl: 24px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.08);
+  --shadow-floating: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 0.06);
+  --border-width-hairline: 1px;
+  --transition: 180ms ease;
+  --duration-fast: 150ms;
+  --ease-in-out: ease;
+  --touch-target: 40px;
+  --iconbutton-size-sm: 32px;
+  --iconbutton-icon-sm: 16px;
+}
+
+[data-theme="dark"][data-preset="dawn"] {
+  --color-primary: #6AB2F5;
+  --color-primary-hover: #5EA5E9;
+  --color-primary-active: #4A8FD4;
+  --color-primary-subtle: rgba(106,178,245,0.16);
+  --color-text-accent: #6AB2F5;
+  --color-border-focus: #6AB2F5;
+  --color-background: #0F202E;
+  --color-surface: #162637;
+  --color-text: #F7F8F8;
+  --color-text-secondary: #AEB4BC;
+  --color-border: #33363A;
+  --color-surface-hover: #2B2D2F;
+  --color-surface-elevated: #222325;
+
+  --color-primary-50: #0A1820;
+  --color-primary-100: #0F202E;
+  --color-primary-200: #162637;
+  --color-primary-300: #1E3450;
+  --color-primary-400: #284668;
+  --color-primary-500: #6AB2F5;
+  --color-primary-600: #5EA5E9;
+  --color-primary-700: #4A8FD4;
+  --color-primary-800: #3B7BC0;
+  --color-primary-900: #2E68A8;
+
+  --color-glass-surface: rgba(22,38,55,0.82);
+  --color-glass-surface-hover: rgba(30,48,68,0.88);
+  --color-glass-surface-popover: rgba(38,58,82,0.92);
+  --color-glass-input-bg: rgba(22,38,55,0.65);
+  --color-glass-border: rgba(255,255,255,0.08);
+  --color-glass-border-subtle: rgba(255,255,255,0.04);
+  --color-glass-text-primary: #F7F8F8;
+  --color-glass-text-secondary: rgba(247,248,248,0.65);
+  --color-glass-inner-highlight: rgba(255,255,255,0.10);
+
+  --color-liquid-blob-1: var(--color-primary-900);
+  --color-liquid-blob-2: var(--color-primary-800);
+  --color-liquid-blob-3: var(--color-primary-700);
+  --color-liquid-blob-4: var(--color-primary-600);
+  --color-liquid-blob-5: var(--color-primary-500);
+
+  --glass-tier-deep: color-mix(in srgb, var(--color-glass-surface), transparent 35%);
+  --glass-tier-mid: color-mix(in srgb, var(--color-glass-surface), transparent 50%);
+  --glass-tier-light: color-mix(in srgb, var(--color-glass-surface), transparent 65%);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.12);
+  --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.20);
+  --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.30);
+  --shadow-floating: 0 1px 2px rgb(0 0 0 / 0.10);
+}
+
+/* === Reset === */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === Root — Liquid background with 5 tonal blobs === */
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--color-text);
+  background:
+    radial-gradient(ellipse 60% 40% at 80% 8%, var(--color-liquid-blob-1) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 15% 85%, var(--color-liquid-blob-2) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 60% at 50% 50%, var(--color-liquid-blob-3) 0%, transparent 50%),
+    radial-gradient(ellipse 35% 35% at 90% 70%, var(--color-liquid-blob-4) 0%, transparent 45%),
+    radial-gradient(ellipse 30% 30% at 25% 20%, var(--color-liquid-blob-5) 0%, transparent 40%),
+    linear-gradient(165deg, var(--color-background) 0%, var(--color-surface) 100%);
+  background-attachment: fixed;
+  overflow: hidden;
+}
+
+/* === Main layout === */
+.main {
+  display: flex;
+  flex: 1;
+  gap: var(--space-4);
+  min-height: 0;
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+/* === Sidebar — Tier 1: Deep glass (most opaque) === */
+.sidebar {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 16rem;
+  padding: var(--space-4);
+  background: var(--glass-tier-deep);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
+  --color-text: var(--color-glass-text-primary);
+  --color-text-secondary: var(--color-glass-text-secondary);
+  --color-surface-hover: var(--color-glass-surface-hover);
+}
+
+.sidebarHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
+}
+
+.sidebarTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sidebarTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-glass-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.searchToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
+  min-width: var(--iconbutton-size-sm);
+  min-height: var(--iconbutton-size-sm);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-surface-hover);
+  color: var(--color-glass-text-primary);
+  cursor: pointer;
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.searchToggle:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.searchToggle svg { width: var(--iconbutton-icon-sm); height: var(--iconbutton-icon-sm); }
+
+.searchField {
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--space-1);
+  padding: var(--space-1-5) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-input-bg);
+  color: var(--color-glass-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+.searchField::placeholder { color: var(--color-glass-text-secondary); }
+.searchField:focus { outline: none; border-color: var(--color-border-focus); }
+
+.tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  font-size: var(--font-size-sm);
+  color: var(--color-glass-text-primary);
+}
+
+.treeItem {
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.treeItem:hover { background: var(--color-glass-surface-hover); }
+.treeItem.active {
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.treeGroup {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-glass-text-secondary);
+  padding: var(--space-2) var(--space-2) var(--space-1);
+}
+
+.treeChild { padding-left: var(--space-4); }
+
+.sidebarFooter {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-glass-border);
+}
+
+.presetSelect {
+  flex: 1;
+  padding: var(--space-1-5) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-input-bg);
+  color: var(--color-glass-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  cursor: pointer;
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+.themeToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
+  min-width: var(--iconbutton-size-sm);
+  min-height: var(--iconbutton-size-sm);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-surface-hover);
+  color: var(--color-glass-text-primary);
+  cursor: pointer;
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.themeToggle:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.themeToggle svg { width: var(--iconbutton-icon-sm); height: var(--iconbutton-icon-sm); }
+
+/* === Viewport === */
+.viewport {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* === Preview card — Tier 2: Mid glass === */
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 75rem;
+  align-self: center;
+  flex: 1;
+  min-height: 0;
+  background: var(--glass-tier-mid);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
+  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+  color: var(--color-glass-text-primary);
+  overflow: hidden;
+}
+
+.previewHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
+}
+
+.previewTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.previewTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-glass-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.categoryBadge {
+  flex-shrink: 0;
+  padding: var(--space-0-5) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  background: var(--color-glass-surface-hover);
+  color: var(--color-glass-text-secondary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+.previewDesc {
+  color: var(--color-glass-text-secondary);
+  line-height: var(--leading-relaxed);
+  font-size: var(--font-size-sm);
+}
+
+/* === Stage — Tier 3: Light glass (most transparent) === */
+.stage {
+  flex: 1;
+  min-height: 15rem;
+  padding: var(--space-5);
+  background: var(--glass-tier-light);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
+}
+
+/* === Showcase content — Button demo === */
+.sectionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-glass-text-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.sectionCaption {
+  font-size: var(--font-size-xs);
+  color: var(--color-glass-text-secondary);
+}
+
+.sectionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* === Button styles === */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+
+.btnPrimary {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    inset 0 1px 0 var(--color-glass-inner-highlight);
+}
+.btnPrimary:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px color-mix(in srgb, var(--color-primary) 40%, transparent),
+    inset 0 1px 0 var(--color-glass-inner-highlight);
+}
+.btnPrimary:active { transform: translateY(0) scale(0.98); }
+
+.btnSecondary {
+  background: var(--color-glass-surface);
+  color: var(--color-glass-text-primary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  box-shadow: var(--shadow-floating), inset 0 1px 0 var(--color-glass-inner-highlight);
+  backdrop-filter: blur(var(--blur-md)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(150%);
+}
+.btnSecondary:hover {
+  background: var(--color-glass-surface-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--color-glass-inner-highlight);
+}
+
+.btnOutline {
+  background: transparent;
+  color: var(--color-glass-text-primary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+}
+.btnOutline:hover { background: var(--color-glass-surface-hover); border-color: var(--color-border-focus); }
+
+.btnGhost { background: transparent; color: var(--color-glass-text-primary); }
+.btnGhost:hover { background: var(--color-glass-surface-hover); }
+
+.btnDestructive {
+  background: color-mix(in srgb, var(--color-primary-900), transparent 85%);
+  color: var(--color-primary-900);
+}
+[data-theme="dark"] .btnDestructive {
+  background: color-mix(in srgb, var(--color-primary-900), transparent 80%);
+  color: var(--color-primary-900);
+}
+
+.btnAccent {
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  font-weight: var(--font-weight-semibold);
+}
+.btnAccent:hover { background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 10%); }
+
+/* === Color scale swatches === */
+.scaleRow {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: calc(var(--space-5) * 3);
+}
+
+.swatchColor {
+  width: 100%;
+  height: calc(var(--space-5) * 3);
+  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+}
+
+.swatchLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-glass-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* === Responsive === */
+@media (max-width: 839px) {
+  .main { flex-direction: column; padding: var(--space-3); overflow: auto; }
+  .sidebar { width: 100%; height: auto; max-height: 40%; padding: var(--space-3); }
+  .viewport { padding: 0; overflow: visible; }
+  .previewCard { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="root">
+  <div class="main">
+    <!-- Sidebar — Tier 1: Deep glass -->
+    <aside class="sidebar" aria-label="Library tree">
+      <div class="sidebarHeader">
+        <div class="sidebarTitleRow">
+          <h2 class="sidebarTitle">Design System</h2>
+          <button class="searchToggle" aria-label="Search components">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="tree">
+        <div class="treeGroup">Foundations</div>
+        <div class="treeItem">Color</div>
+        <div class="treeItem">Typography</div>
+        <div class="treeItem">Spacing</div>
+        <div class="treeItem active">Button</div>
+        <div class="treeItem">Card</div>
+        <div class="treeGroup">Atoms</div>
+        <div class="treeItem">Badge</div>
+        <div class="treeItem">Input</div>
+        <div class="treeItem">IconButton</div>
+        <div class="treeGroup">Molecules</div>
+        <div class="treeItem">SearchField</div>
+        <div class="treeItem">Tree</div>
+      </div>
+      <div class="sidebarFooter">
+        <select class="presetSelect" id="presetSelect">
+          <option value="dawn">Dawn</option>
+          <option value="forest">Forest</option>
+          <option value="ocean">Ocean</option>
+          <option value="warmth">Warmth</option>
+        </select>
+        <button class="themeToggle" id="themeToggle" aria-label="Toggle theme">
+          <svg class="iconSun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Viewport — Tier 2: Mid glass -->
+    <main class="viewport">
+      <div class="previewCard">
+        <header class="previewHeader">
+          <div class="previewTitleRow">
+            <h1 class="previewTitle">Button</h1>
+            <span class="categoryBadge">Action</span>
+          </div>
+          <p class="previewDesc">Button atom — 7 variants, 3 sizes, active toggle state. Token-driven, theme-agnostic.</p>
+        </header>
+
+        <!-- Stage — Tier 3: Light glass -->
+        <div class="stage">
+          <div class="sectionGroup">
+            <!-- Color Scale Display -->
+            <div class="section">
+              <h3 class="sectionTitle">Primary Color Scale (50–900)</h3>
+              <p class="sectionCaption">10 tonal steps from the preset hue. Used for liquid glass depth, gradients, and hierarchy.</p>
+              <div class="scaleRow">
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-50)"></div><span class="swatchLabel">50</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-100)"></div><span class="swatchLabel">100</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-200)"></div><span class="swatchLabel">200</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-300)"></div><span class="swatchLabel">300</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-400)"></div><span class="swatchLabel">400</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-500)"></div><span class="swatchLabel">500</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-600)"></div><span class="swatchLabel">600</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-700)"></div><span class="swatchLabel">700</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-800)"></div><span class="swatchLabel">800</span></div>
+                <div class="swatch"><div class="swatchColor" style="background: var(--color-primary-900)"></div><span class="swatchLabel">900</span></div>
+              </div>
+            </div>
+
+            <!-- Variants -->
+            <div class="section">
+              <h3 class="sectionTitle">Variants</h3>
+              <p class="sectionCaption">CTA is filled primary with glow. Secondary is frosted glass. Accent is primary-subtle. Outline/ghost keep neutral.</p>
+              <div class="sectionRow">
+                <button class="btn btnPrimary">CTA</button>
+                <button class="btn btnAccent">Accent</button>
+                <button class="btn btnSecondary">Secondary</button>
+                <button class="btn btnOutline">Outline</button>
+                <button class="btn btnGhost">Ghost</button>
+                <button class="btn btnDestructive">Destructive</button>
+              </div>
+            </div>
+
+            <!-- Sizes -->
+            <div class="section">
+              <h3 class="sectionTitle">Sizes</h3>
+              <p class="sectionCaption">Small for dense toolbars, medium as default, large for prominent actions.</p>
+              <div class="sectionRow">
+                <button class="btn btnPrimary" style="height: 32px; padding: 4px 10px; font-size: 12px;">Small</button>
+                <button class="btn btnPrimary">Medium</button>
+                <button class="btn btnPrimary" style="height: 48px; padding: 8px 20px; font-size: 17px;">Large</button>
+              </div>
+            </div>
+
+            <!-- Glass hierarchy demo -->
+            <div class="section">
+              <h3 class="sectionTitle">Glass Hierarchy (3 Tiers)</h3>
+              <p class="sectionCaption">Sidebar = deep glass (40% transparent). Preview = mid glass (55%). Stage = light glass (70%).</p>
+              <div class="sectionRow" style="gap: var(--space-3)">
+                <div style="padding: var(--space-3) var(--space-4); background: var(--glass-tier-deep); border: 1px solid var(--color-glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(24px) saturate(160%); font-size: 12px; color: var(--color-glass-text-primary);">Tier 1 — Deep</div>
+                <div style="padding: var(--space-3) var(--space-4); background: var(--glass-tier-mid); border: 1px solid var(--color-glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(24px) saturate(160%); font-size: 12px; color: var(--color-glass-text-primary);">Tier 2 — Mid</div>
+                <div style="padding: var(--space-3) var(--space-4); background: var(--glass-tier-light); border: 1px solid var(--color-glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(8px) saturate(140%); font-size: 12px; color: var(--color-glass-text-primary);">Tier 3 — Light</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+// Theme toggle
+const themeToggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+themeToggle.addEventListener('click', () => {
+  const current = html.getAttribute('data-theme');
+  html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+  themeToggle.querySelector('.iconSun').innerHTML = html.getAttribute('data-theme') === 'dark'
+    ? '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+    : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+});
+
+// Preset switcher
+const presetSelect = document.getElementById('presetSelect');
+presetSelect.addEventListener('change', () => {
+  html.setAttribute('data-preset', presetSelect.value);
+  location.reload();
+});
+</script>
+</body>
+</html>

@@ -39,7 +39,7 @@
     background-color var(--transition),
     color var(--transition),
     border-color var(--transition),
-    transform var(--transition),
+    transform var(--button-release-duration) var(--button-release-ease),
     box-shadow var(--transition),
     filter var(--transition);
 }
@@ -117,9 +117,9 @@
 }
 
 .button:active {
-  transform: scale(0.985);
+  transform: scale(var(--button-press-scale));
   filter: brightness(0.98);
-  transition: transform 0.08s var(--ease-out), filter 0.08s var(--ease-out);
+  transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
 }
 
 .button:focus-visible {
@@ -405,7 +405,7 @@
   }
 }
 
-/* === Ripple === */
+/* === Ripple — water-surface wave expanding from the touch point === */
 
 .rippleHost {
   overflow: hidden;
@@ -414,17 +414,26 @@
 .ripple {
   position: absolute;
   border-radius: 50%;
-  background: var(--color-primary);
+  background: radial-gradient(
+    circle,
+    var(--button-liquid-ripple) 0%,
+    color-mix(in srgb, var(--button-liquid-ripple), transparent 70%) 40%,
+    transparent 70%
+  );
   transform: scale(0);
-  animation: ripple var(--ripple-duration) var(--ripple-ease);
+  opacity: var(--button-ripple-start-opacity);
+  animation: ripple var(--button-ripple-duration) var(--button-ripple-ease);
   pointer-events: none;
-  opacity: var(--ripple-opacity);
-  z-index: 2;
+  z-index: 0;
 }
 
 @keyframes ripple {
-  to {
-    transform: scale(1);
+  0% {
+    transform: scale(0);
+    opacity: var(--button-ripple-start-opacity);
+  }
+  100% {
+    transform: scale(var(--button-ripple-scale));
     opacity: 0;
   }
 }

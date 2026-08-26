@@ -130,12 +130,6 @@ export function MockStreamingPage(): ReactElement {
     else v.pause();
   }, []);
 
-  const handleSeek = useCallback((delta: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + delta));
-  }, []);
-
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const v = videoRef.current;
     if (!v || !v.duration) return;

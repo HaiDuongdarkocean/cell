@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="vi" data-preset="warmth" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Showcase Gallery — Liquid Glass v2</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    :root {
+      --v2-blob-1: color-mix(in srgb, var(--color-primary) 20%, transparent);
+      --v2-blob-2: color-mix(in srgb, var(--color-primary-hover) 14%, transparent);
+      --v2-blob-3: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      font-family: var(--font-family), Inter, sans-serif;
+      color: var(--color-text-primary);
+      background:
+        radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--color-primary) 30%, transparent), transparent 25%),
+        radial-gradient(circle at 15% 90%, color-mix(in srgb, var(--color-primary-hover) 18%, transparent), transparent 30%),
+        radial-gradient(circle at 55% 55%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 45%),
+        linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 100%);
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient blobs — primary/success/warning as decorative glow */
+    .blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+    }
+    .blob-1 { width: 620px; height: 620px; top: -220px; right: -160px; background: var(--v2-blob-1); opacity: 0.70; }
+    .blob-2 { width: 520px; height: 520px; bottom: -180px; left: -140px; background: var(--v2-blob-2); opacity: 0.60; }
+    .blob-3 { width: 440px; height: 440px; top: 55%; left: 45%; background: var(--v2-blob-3); opacity: 0.55; }
+
+    /* Glass surface — stronger inner highlight in dark */
+    .glass {
+      background: var(--color-glass-surface);
+      border: 1px solid var(--color-glass-border);
+      backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: box-shadow 0.18s;
+    }
+    .glass-liquid {
+      background: color-mix(in srgb, var(--color-glass-surface), transparent 55%);
+      border: 1px solid var(--color-glass-border);
+      backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+      box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="light"] .glass, html[data-theme="light"] .glass-liquid { box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+
+    /* Topbar */
+    .topbar {
+      position: sticky;
+      top: var(--space-4);
+      z-index: var(--z-sticky);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      width: max-content;
+      min-width: min(70rem, calc(100% - var(--space-8)));
+      max-width: calc(100% - var(--space-8));
+      margin: var(--space-4) auto;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-pill);
+    }
+    .topbar .eyebrow {
+      flex-shrink: 0;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      color: var(--color-text-secondary);
+    }
+    .search {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 16.25rem;
+      min-width: 0;
+    }
+    .search input {
+      width: 100%;
+      padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-8);
+      background: var(--color-glass-input-bg);
+      border: 1px solid var(--color-glass-border);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-sm);
+      color: var(--color-glass-text-primary);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .search input::placeholder { color: var(--color-glass-text-secondary); }
+    .search input:focus { border-color: var(--color-border-focus); box-shadow: var(--shadow-focus); }
+    .search svg { position: absolute; left: var(--space-2-5); color: var(--color-glass-text-secondary); width: 18px; height: 18px; }
+    .topbar-actions { display: flex; align-items: center; gap: var(--space-2); }
+    .icon-btn, .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--color-glass-border);
+      background: transparent;
+      color: var(--color-glass-text-secondary);
+      cursor: pointer;
+      transition: color 0.18s, background 0.18s, transform 0.18s;
+    }
+    .icon-btn:hover, .theme-toggle:hover { color: var(--color-primary); background: var(--color-primary-subtle); transform: translateY(-1px); }
+    .icon-btn:active, .theme-toggle:active { transform: scale(0.95); }
+    .preset {
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-glass-border);
+      background: var(--color-glass-input-bg);
+      color: var(--color-glass-text-primary);
+      font-size: var(--font-size-sm);
+      outline: none;
+      cursor: pointer;
+    }
+    .preset:focus { border-color: var(--color-border-focus); }
+    html[data-theme="dark"] .theme-sun { display: none; }
+    html[data-theme="light"] .theme-moon { display: none; }
+
+    /* Main layout */
+    .main {
+      display: flex;
+      flex: 1;
+      gap: var(--space-4);
+      min-height: 0;
+      padding: 0 var(--space-4) var(--space-4);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      width: 17.5rem;
+      padding: var(--space-4);
+      border-radius: var(--radius-2xl);
+      overflow: hidden;
+    }
+    .sidebar-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-0-5);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--color-glass-border);
+    }
+    .sidebar-title { margin: 0; font-size: var(--font-size-md); font-weight: var(--font-weight-semibold); color: var(--color-glass-text-primary); }
+    .sidebar-subtitle { margin: 0; font-size: var(--font-size-sm); color: var(--color-glass-text-secondary); }
+
+    .tree { flex: 1; min-height: 0; overflow-y: auto; }
+    .tree ul { list-style: none; margin: 0; padding: 0; }
+    .tree li { padding: 0; }
+    .tree-node {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: var(--space-1-5) var(--space-2);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--color-glass-text-secondary);
+      cursor: pointer;
+      transition: color 0.18s, background 0.18s;
+    }
+    .tree-node:hover { color: var(--color-glass-text-primary); background: var(--color-glass-surface-hover); }
+    .tree-node.active { color: var(--color-text-accent); background: var(--color-primary-subtle); font-weight: var(--font-weight-medium); }
+    .tree-node svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tree-children { padding-left: var(--space-4); }
+
+    .result-card {
+      margin-top: auto;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-glass-surface-hover);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-xs);
+      color: var(--color-glass-text-secondary);
+    }
+
+    /* Viewport */
+    .viewport {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .preview-card {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      border-radius: var(--radius-2xl);
+      overflow: hidden;
+    }
+    .preview-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--color-glass-border);
+    }
+    .preview-title-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+    .preview-title { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); color: var(--color-glass-text-primary); }
+    .category-badge {
+      padding: var(--space-0-5) var(--space-2);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      background: var(--color-glass-surface-hover);
+      color: var(--color-glass-text-secondary);
+      border: 1px solid var(--color-glass-border);
+    }
+    .preview-desc { margin: 0; color: var(--color-glass-text-secondary); line-height: var(--leading-relaxed); font-size: var(--font-size-sm); }
+
+    .stage {
+      flex: 1;
+      min-height: 0;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+      overflow-y: auto;
+    }
+
+    /* Showcase sections */
+    .section { display: flex; flex-direction: column; gap: var(--space-2); }
+    .section h3 { margin: 0; font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
+    .section p { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: var(--leading-normal); }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+
+    /* Buttons — v2: CTA primary fill, secondary glass */
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1-5);
+      padding: var(--space-2) var(--space-4);
+      height: var(--button-height);
+      border: 1px solid transparent;
+      border-radius: var(--button-radius);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.18s var(--ease-out), background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
+    }
+    .btn svg { width: 18px; height: 18px; }
+
+    .btn-cta {
+      background: var(--color-primary);
+      color: var(--color-primary-foreground);
+      border-color: transparent;
+      box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 25%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .btn-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 35%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+    .btn-cta:active { transform: translateY(0) scale(0.98); }
+
+    .btn-secondary {
+      background: var(--color-glass-surface);
+      color: var(--color-glass-text-primary);
+      border-color: var(--color-glass-border);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .btn-secondary:hover { background: var(--color-glass-surface-hover); border-color: var(--color-glass-border); }
+    .btn-secondary:active { transform: scale(0.98); }
+    html[data-theme="light"] .btn-secondary { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+
+    .btn-accent {
+      background: var(--color-primary-subtle);
+      color: var(--color-text-accent);
+      border-color: transparent;
+    }
+    .btn-accent:hover { transform: translateY(-1px); filter: brightness(0.97); }
+    .btn-accent:active { transform: scale(0.98); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--color-text-primary);
+      border-color: var(--color-glass-border);
+    }
+    .btn-outline:hover { border-color: var(--color-border-focus); background: var(--color-glass-surface-hover); }
+    .btn-outline:active { transform: scale(0.98); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-text-primary);
+      border-color: transparent;
+    }
+    .btn-ghost:hover { background: var(--color-surface-hover); }
+    .btn-ghost:active { transform: scale(0.98); }
+
+    .btn-destructive {
+      background: var(--color-error-subtle);
+      color: var(--color-error);
+      border-color: transparent;
+    }
+    .btn-destructive:hover { transform: translateY(-1px); }
+    .btn-destructive:active { transform: scale(0.98); }
+
+    .btn-link {
+      background: transparent;
+      color: var(--color-primary);
+      padding: var(--space-1) var(--space-2);
+      height: auto;
+    }
+    .btn-link:hover { text-decoration: underline; background: var(--color-primary-subtle); }
+
+    .btn-vertical {
+      flex-direction: column;
+      height: auto;
+      min-height: var(--touch-target);
+      padding: var(--space-2) var(--space-4);
+    }
+    .btn-vertical .label { font-size: var(--font-size-xs); }
+
+    .btn-sm { height: var(--button-height-sm); padding: var(--space-1-5) var(--space-3); font-size: var(--font-size-2xs); }
+    .btn-lg { height: var(--button-height-lg); padding: var(--space-2-5) var(--space-6); font-size: var(--font-size-base); }
+
+    /* Cards */
+    .card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); }
+    .crd {
+      padding: var(--space-4);
+      border-radius: var(--card-radius);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-glass-border);
+      transition: transform 0.18s, background 0.18s, border-color 0.18s;
+      cursor: pointer;
+    }
+    .crd h4 { margin: 0 0 var(--space-1); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+    .crd p { margin: 0; font-size: var(--font-size-2xs); color: var(--color-text-secondary); }
+    .crd.glass {
+      background: var(--color-glass-surface);
+      backdrop-filter: blur(var(--blur-md));
+      box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    html[data-theme="light"] .crd.glass { box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+    .crd.interactive:hover { background: var(--color-surface-hover); border-color: var(--color-border); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .crd.selected { border-color: var(--color-primary); background: var(--color-primary-subtle); }
+    .crd.selected h4 { color: var(--color-text-accent); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    @media (max-width: 839px) {
+      .topbar { width: calc(100% - var(--space-6)); min-width: 0; padding: var(--space-2) var(--space-3); }
+      .eyebrow { display: none; }
+      .search { width: 100%; min-width: 0; }
+      .main { flex-direction: column; padding: 0 var(--space-3) var(--space-3); }
+      .sidebar { width: 100%; height: auto; max-height: 40%; padding: var(--space-3); }
+    }
+  </style>
+</head>
+<body>
+  <div class="blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <header class="topbar glass">
+    <span class="eyebrow">Cell Design System</span>
+    <label class="search" for="search">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search" type="search" placeholder="Search components…" />
+    </label>
+    <div class="topbar-actions">
+      <button class="theme-toggle" type="button" aria-label="Toggle theme" id="themeToggle">
+        <svg class="theme-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg class="theme-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <select class="preset" id="presetSelect" aria-label="Preset">
+        <option value="dawn">Dawn</option>
+        <option value="forest">Forest</option>
+        <option value="ocean">Ocean</option>
+        <option value="warmth" selected>Warmth</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar glass" aria-label="Library tree">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Design System</h2>
+        <p class="sidebar-subtitle">Quiet confidence</p>
+      </div>
+      <nav class="tree">
+        <ul>
+          <li>
+            <div class="tree-node active">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              Atoms
+            </div>
+            <ul class="tree-children">
+              <li class="tree-node active">Button</li>
+              <li class="tree-node">Card</li>
+              <li class="tree-node">Badge</li>
+            </ul>
+          </li>
+          <li>
+            <div class="tree-node">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              Molecules
+            </div>
+          </li>
+          <li>
+            <div class="tree-node">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              Organisms
+            </div>
+          </li>
+          <li>
+            <div class="tree-node">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              Foundations
+            </div>
+          </li>
+        </ul>
+      </nav>
+      <div class="result-card">Showing 2 / 8 items</div>
+    </aside>
+
+    <main class="viewport">
+      <section class="preview-card glass-liquid">
+        <header class="preview-header">
+          <div class="preview-title-row">
+            <h1 class="preview-title">Button</h1>
+            <span class="category-badge">Action</span>
+          </div>
+          <p class="preview-desc">CTA uses a filled primary with dark text. Secondary and glass use the frosted surface. Primary is reserved for CTA, active, and selected accents.</p>
+        </header>
+        <div class="stage">
+          <section class="section">
+            <h3>Variants</h3>
+            <p>CTA is filled primary. Secondary is glass. Accent is primary-subtle. Outline/ghost keep neutral. Destructive is red-subtle. Link is primary text.</p>
+            <div class="row">
+              <button class="btn btn-cta">CTA</button>
+              <button class="btn btn-accent">Accent</button>
+              <button class="btn btn-secondary">Secondary</button>
+              <button class="btn btn-outline">Outline</button>
+              <button class="btn btn-ghost">Ghost</button>
+              <button class="btn btn-destructive">Destructive</button>
+              <button class="btn btn-link">Link</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3>Active / toggle</h3>
+            <p>Use primary-subtle background for active toggle.</p>
+            <div class="row">
+              <button class="btn btn-outline">Inactive</button>
+              <button class="btn btn-accent">Active</button>
+              <button class="btn btn-ghost">Ghost inactive</button>
+              <button class="btn btn-ghost" style="color:var(--color-text-accent); background:var(--color-primary-subtle);">Ghost active</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3>Sizes</h3>
+            <p>Small for dense toolbars, medium default, large for prominent actions.</p>
+            <div class="row">
+              <button class="btn btn-cta btn-sm">Small</button>
+              <button class="btn btn-cta">Medium</button>
+              <button class="btn btn-cta btn-lg">Large</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3>Vertical (icon + label)</h3>
+            <p>ZaloPay-style bottom navigation: icon stacked above a short label.</p>
+            <div class="row" style="align-items: stretch;">
+              <button class="btn btn-ghost btn-vertical">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <span class="label">Search</span>
+              </button>
+              <button class="btn btn-ghost btn-vertical" style="color:var(--color-text-accent);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                <span class="label">Hide</span>
+              </button>
+              <button class="btn btn-accent btn-vertical">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 9 L18 9 M15 6 L18 9 L15 12"/><path d="M20 15 L6 15 M9 12 L6 15 L9 18"/></svg>
+                <span class="label">Generate</span>
+              </button>
+              <button class="btn btn-ghost btn-vertical">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+                <span class="label">Customize</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3>Liquid Glass</h3>
+            <p>Frosted glass surface that lifts on hover. Ideal for floating toolbars and panels.</p>
+            <div class="row">
+              <button class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+                Glass
+              </button>
+              <button class="btn btn-secondary">Glass icon</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <h3>Card surfaces</h3>
+            <p>Cards use surface, glass, or selected state. Selected uses primary border + primary-subtle fill.</p>
+            <div class="card-row">
+              <div class="crd"><h4>Default</h4><p>Static container.</p></div>
+              <div class="crd interactive"><h4>Interactive</h4><p>Hover to lift.</p></div>
+              <div class="crd glass"><h4>Glass</h4><p>Frosted surface.</p></div>
+              <div class="crd selected"><h4>Selected</h4><p>Primary accent.</p></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+    const presetSelect = document.getElementById('presetSelect');
+    presetSelect.value = html.dataset.preset || 'warmth';
+
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.attributeName === 'data-preset') {
+          presetSelect.value = html.dataset.preset;
+        }
+      });
+    });
+    observer.observe(html, { attributes: true });
+
+    document.getElementById('themeToggle').addEventListener('click', function() {
+      html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    });
+    presetSelect.addEventListener('change', function(e) {
+      html.dataset.preset = e.target.value;
+    });
+  </script>
+</body>
+</html>

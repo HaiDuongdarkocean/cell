@@ -58,9 +58,11 @@
 
 ## Remaining / In Progress
 
-- Missing `.showcase.tsx` files are being authored by background subagents (16 shared UI components).
-- Typecheck still has pre-existing errors unrelated to these changes.
-- Commit after showcases land.
+- [x] Missing `.showcase.tsx` files landed (16 shared UI components).
+- [x] Typecheck errors resolved.
+- [x] Build regenerated `tokens.css` and `docs/design-system/`.
+- [x] Commit prepared with Button v4, token/tokens.css, design-system assets, and cleanup.
+- Full project lint still has pre-existing errors; changed files lint clean.
 
 ---
 

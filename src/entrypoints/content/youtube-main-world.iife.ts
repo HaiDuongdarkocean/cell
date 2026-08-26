@@ -153,8 +153,11 @@
       if (Array.isArray(size) && typeof size[0] === 'number' && typeof size[1] === 'number') {
         return { width: size[0], height: size[1] };
       }
-      if (size && typeof size === 'object' && typeof size.width === 'number' && typeof size.height === 'number') {
-        return { width: size.width, height: size.height };
+      if (size && typeof size === 'object' && !Array.isArray(size)) {
+        const obj = size as { width?: unknown; height?: unknown };
+        if (typeof obj.width === 'number' && typeof obj.height === 'number') {
+          return { width: obj.width, height: obj.height };
+        }
       }
     } catch {
       return null;

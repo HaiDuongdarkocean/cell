@@ -123,3 +123,20 @@ __pycache__/
 # Local test media (210MB+, not part of extension source).
 data/resource/media/
 
+# Generated / one-off task artifacts (keep plan/*.md; ignore generated inventories).
+tasks/*.mjs
+tasks/*.json
+tasks/inventory-*.md
+
+# Stale runtime assets that leak into docs/design-system from public/ but are not
+# part of the design-system reference. The canonical copies live in public/.
+docs/design-system/ffmpeg/
+docs/design-system/models/
+docs/design-system/options.html
+docs/design-system/options.js
+docs/design-system/manifest.json
+docs/design-system/sql-wasm.wasm
+# Generated video copies of tracked source media (source lives in
+# src/entrypoints/design-system-showcase/assets/; build recreates these on demand).
+docs/design-system/assets/*.mp4
+
