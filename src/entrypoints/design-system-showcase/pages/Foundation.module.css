@@ -99,7 +99,6 @@
   flex: 1;
   min-width: 0;
   padding: var(--space-8) var(--space-10);
-  max-width: 960px;
 }
 
 .section {
