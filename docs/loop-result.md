@@ -61,3 +61,36 @@
 - Missing `.showcase.tsx` files are being authored by background subagents (16 shared UI components).
 - Typecheck still has pre-existing errors unrelated to these changes.
 - Commit after showcases land.
+
+---
+
+# Loop process log — agentic redesign tasks
+
+This file records what each loop accomplished, what changed, and how it was verified.
+
+## 2026-08-28 — Liquid Glass Button v4 fit
+
+**Goal**: align the shared `Button` atom to the approved `liquid-glass-dewdrop-v4.html` mockup.
+
+**What changed**:
+- `src/shared/styles/tokens.json`
+  - Added `color-button-liquid-*` tokens (surface/specular/caustic/surface-glow/edge-glow/reflex-light/reflex-dark/text-shadow) for both light and dark modes.
+  - Added `liquid-*` properties under the `button` component token block for geometry, blur, radius, and per-state values.
+  - Kept `color-button-liquid-reflex-*` as quoted strings so `src/shared/lib/tokens.ts` type checks.
+- `src/shared/ui/Button.module.css`
+  - Refactored default button to the Liquid Glass material: semi-transparent surface, backdrop blur/saturate, caustic surface highlight (`::before`), rim caustics (`::after`), contact shadow, reflex shadows, and text-shadow.
+  - Unified `outline` and `ghost` variants to use the same glass fill as `primary`/`success`/`destructive` (rim caustics provide the only outline), matching the v4 mockup where all action variants share one material.
+  - Updated sizing (`sm`/`md`/`lg`/`xl`), disabled/loading opacity, active/pressed brightness, and reduced-transparency fallbacks.
+- `src/shared/ui/Button.showcase.tsx`
+  - Updated the “Variants — Liquid Glass” caption to state that all action variants share the same material.
+- `docs/2-architechture-system.md`
+  - Updated the `shared/ui/Button.tsx` row to list co-located files (`.module.css`, `.style-guard.test.ts`, `.showcase.tsx`, `.showcase.module.css`) and the v4 feature set.
+  - Updated the `tokens.json` row to mention the `button` Liquid Glass component tokens.
+
+**Verification**:
+- `node scripts/generate-tokens.js` — pass.
+- `npx jest --selectProjects unit --testPathPatterns=Button` — 19 suites, 120 tests pass.
+- `npm run build` — pass.
+- `npm run typecheck` — pre-existing errors remain; no new `Button`/`tokens` errors introduced.
+- `npm run lint` — pre-existing project-wide errors remain; targeted `npx eslint src/shared/ui/Button.module.css src/shared/ui/Button.showcase.tsx` — clean.
+- Stealth CDP browser preview (`design-system-showcase.html?showcase=Button`) — dark-mode screenshot confirms all 6 variants share the same smoked-blue liquid-glass material with caustic rim highlights, matching the v4 mockup.
