@@ -1,0 +1,253 @@
+.root {
+  padding: var(--space-6);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  min-height: 100vh;
+}
+
+.section {
+  margin-bottom: var(--space-10);
+}
+
+.title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  margin: 0 0 var(--space-3);
+}
+
+.lead {
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.heading {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-snug);
+  margin: 0 0 var(--space-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.swatchColor {
+  width: 100%;
+  height: 80px;
+  border-radius: var(--radius-md);
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+.swatchName {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.swatchValue {
+  font-size: var(--font-size-3xs);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+}
+
+.spacerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.spacerName {
+  width: 100px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+}
+
+.spacerLine {
+  background: var(--color-primary);
+  border-radius: var(--radius-xs);
+}
+
+.spacerValue {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-family-mono);
+}
+
+.display3xl { font-size: var(--font-size-5xl); font-weight: var(--font-weight-semibold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-2); }
+.display2xl { font-size: var(--font-size-4xl); font-weight: var(--font-weight-semibold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-2); }
+.displayXl { font-size: var(--font-size-3xl); font-weight: var(--font-weight-semibold); line-height: var(--leading-snug); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-2); }
+.headlineLg { font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); line-height: var(--leading-snug); letter-spacing: var(--tracking-snug); margin: 0 0 var(--space-2); }
+.headlineMd { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--leading-snug); letter-spacing: var(--tracking-snug); margin: 0 0 var(--space-2); }
+.headlineSm { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--leading-snug); letter-spacing: var(--tracking-snug); margin: 0 0 var(--space-2); }
+.titleLg { font-size: var(--font-size-md); font-weight: var(--font-weight-medium); line-height: var(--leading-snug); margin: 0 0 var(--space-2); }
+.titleMd { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); line-height: var(--leading-snug); margin: 0 0 var(--space-2); }
+.titleSm { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); line-height: var(--leading-snug); margin: 0 0 var(--space-2); }
+.bodyLg { font-size: var(--font-size-md); font-weight: var(--font-weight-normal); line-height: var(--leading-relaxed); margin: 0 0 var(--space-2); }
+.bodyMd { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--leading-normal); margin: 0 0 var(--space-2); }
+.bodySm { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--leading-normal); margin: 0 0 var(--space-2); }
+.bodyXs { font-size: var(--font-size-xs); font-weight: var(--font-weight-normal); line-height: var(--leading-normal); margin: 0 0 var(--space-2); }
+.labelLg { font-size: var(--font-size-base); font-weight: var(--font-weight-medium); line-height: var(--leading-tight); margin: 0 0 var(--space-2); }
+.labelMd { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); line-height: var(--leading-tight); margin: 0 0 var(--space-2); }
+.labelSm { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); line-height: var(--leading-tight); margin: 0 0 var(--space-2); }
+
+.shapes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.shapes > * {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  font-size: var(--font-size-xs);
+}
+
+.shapeXs { border-radius: var(--radius-xs); }
+.shapeSm { border-radius: var(--radius-sm); }
+.shapeMd { border-radius: var(--radius-md); }
+.shapeLg { border-radius: var(--radius-lg); }
+.shapeXl { border-radius: var(--radius-xl); }
+.shapePill { border-radius: var(--radius-pill); }
+
+.elevations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.elev0 {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.elev1 {
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.elev2 {
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.elev3 {
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.motionBtn {
+  padding: var(--space-2-5) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-default);
+}
+
+.motionBtn:hover {
+  background: var(--color-surface-hover);
+}
+
+.icons {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--color-text);
+}
+
+.components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.btnPrimary {
+  padding: var(--space-2-5) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.btnSecondary {
+  padding: var(--space-2-5) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.btnGhost {
+  padding: var(--space-2-5) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.input {
+  padding: var(--space-2-5) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-border-focus);
+}
+
+.card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
