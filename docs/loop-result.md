@@ -96,3 +96,32 @@ This file records what each loop accomplished, what changed, and how it was veri
 - `npm run typecheck` — pre-existing errors remain; no new `Button`/`tokens` errors introduced.
 - `npm run lint` — pre-existing project-wide errors remain; targeted `npx eslint src/shared/ui/Button.module.css src/shared/ui/Button.showcase.tsx` — clean.
 - Stealth CDP browser preview (`design-system-showcase.html?showcase=Button`) — dark-mode screenshot confirms all 6 variants share the same smoked-blue liquid-glass material with caustic rim highlights, matching the v4 mockup.
+
+## 2026-08-28 — Button press ripple + water-surface spring
+
+**Goal**: add a visible pointer-down ripple and a water-surface spring/bounce on press/release.
+
+**What changed**:
+- `src/shared/styles/tokens.json`
+  - Added `color-button-liquid-ripple` token: `rgba(255, 255, 255, 0.35)` light, `rgba(255, 255, 255, 0.50)` dark.
+  - Added component `button` press/ripple motion tokens: `press-scale`, `press-duration`, `press-ease`, `release-duration`, `release-ease`, `ripple-duration`, `ripple-ease`, `ripple-scale`, `ripple-start-opacity`.
+- `src/shared/ui/Button.module.css`
+  - Base `.button` now uses `transform var(--button-release-duration) var(--button-release-ease)` so the release has a subtle spring overshoot.
+  - `.button:active` uses `transform: scale(var(--button-press-scale))` with a fast `var(--button-press-duration) var(--button-press-ease)`.
+  - `.ripple` uses a white radial gradient from `--button-liquid-ripple`, scaled from the touch point by `var(--button-ripple-scale)`, with `var(--button-ripple-start-opacity)` -> 0 fade.
+- `src/shared/ui/Button.tsx`
+  - `ripple` now defaults to `true` so every button emits the water ripple on pointer down.
+  - Reduced the generated ripple diameter to `1.6x` the button size to match the v4 droplet scale.
+- `src/shared/ui/Button.showcase.tsx`
+  - Updated the “Variants — Liquid Glass” caption to mention the pointer-down ripple and spring release.
+- `docs/2-architechture-system.md`
+  - Updated the `shared/ui/Button.tsx` row to mention ripple + spring.
+- `docs/0-wiki.md`
+  - Updated the wiki history.
+
+**Verification**:
+- `node scripts/generate-tokens.js` — pass.
+- `npx jest --selectProjects unit --testPathPatterns=Button` — 19 suites, 120 tests pass.
+- `npm run build` — pass.
+- `npm run typecheck` — pass (no new errors).
+- Stealth CDP browser preview — paused dark-mode animation shows a visible white water ripple expanding from the Primary button; release spring is active in CSS.
