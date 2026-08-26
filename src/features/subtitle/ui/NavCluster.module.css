@@ -25,11 +25,6 @@
   height: var(--cluster-btn-size);
   min-width: var(--cluster-btn-size);
   min-height: var(--cluster-btn-size);
-  opacity: var(--cluster-text-opacity);
-  color: var(--color-overlay-text);
-  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
-  border: none;
-  border-radius: var(--radius-full);
 }
 
 .cluster :global(button) :global(span),

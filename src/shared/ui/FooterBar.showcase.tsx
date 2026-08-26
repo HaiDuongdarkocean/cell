@@ -139,7 +139,7 @@ export function Showcase(): ReactElement {
         <div style={labelStyle}>Disabled state</div>
         <p style={descStyle}>
           Disabled slots are visually dimmed and non-interactive. Use when an action is unavailable
-          (e.g. "Save" when nothing changed).
+          (e.g. &quot;Save&quot; when nothing changed).
         </p>
         <div style={panelMockStyle}>
           <div style={{ ...contentPlaceholderStyle, padding: 'var(--space-6)', minHeight: 80 }}>
@@ -166,7 +166,7 @@ export function Showcase(): ReactElement {
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>label</code>
           <span>ReactNode — text below icon</span>
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>variant</code>
-          <span>'ghost' (default) | 'primarySubtle' (featured)</span>
+          <span>&apos;ghost&apos; (default) | &apos;primarySubtle&apos; (featured)</span>
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>active</code>
           <span>boolean — pale-blue bg + primary color</span>
           <code style={{ color: 'var(--color-primary)', fontWeight: 'var(--font-weight-semibold)' }}>disabled</code>

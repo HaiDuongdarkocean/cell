@@ -21,7 +21,7 @@ src/
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
-│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + ShowcaseGallery.tsx/.module.css (Glass Gallery) + preview components + PresetSwitcher + concept mockups (liquid-glass-*.html, input-liquid-glass-concept.html) + mock data for offline component demos
+│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + autoDiscovery.ts (SSOT taxonomy) + ShowcaseGallery.tsx/.module.css + MissingShowcasePlaceholder + preview components + concept mockups + mock data for offline component demos
 │   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
@@ -155,7 +155,9 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
 ```
 
-**Design-system showcase contract (ADR-074):** `src/entrypoints/design-system-showcase/` renders the auto-discovered atom gallery first, followed by token foundations and surface previews. `autoDiscovery.ts` includes `src/shared/ui/*.showcase.tsx` and `src/shared/domain/*/atoms/*.showcase.tsx`; `ShowcaseGallery` owns group ordering, filtering, sidebar navigation (collapsible rail on desktop, drawer on mobile), responsive card grid, and token-based layout. `LibraryLevelInfo` carries an `icon` (ICON_CATALOG key) for the collapsed rail — 6 custom atomic-design icons: `layers` (Foundations), `atom` (Atoms), `molecule` (Molecules), `organism` (Organisms), `wireframe` (Templates), `windowPage` (Pages). Foundation previews use flat sections; radius is rendered as an independent specimen list rather than nested cards.
+**Design-system showcase contract (ADR-074):** `src/entrypoints/design-system-showcase/` renders the auto-discovered library across all atomic-design levels. `autoDiscovery.ts` is the single source of truth for showcase taxonomy: it applies canonical `level`/`category` overrides (`CANONICAL_META`), normalizes legacy category aliases, detects `src/shared/ui/` components missing a `.showcase.tsx` file, and renders them as `MissingShowcasePlaceholder` entries so documentation gaps stay visible. `ShowcaseGallery` owns level/category grouping, persistent search, status badges (missing/deprecated/experimental), responsive sidebar, and token-based glass layout. `LibraryLevelInfo` carries an `icon` (ICON_CATALOG key) for the collapsed rail — 6 custom atomic-design icons: `layers` (Foundations), `atom` (Atoms), `molecule` (Molecules), `organism` (Organisms), `wireframe` (Templates), `windowPage` (Pages). Foundation previews use flat sections; radius is rendered as an independent specimen list rather than nested cards.
+
+New files: `MissingShowcasePlaceholder.tsx/.module.css`, `vite.showcase.config.ts` build target outputs `docs/design-system/design-system-showcase.html`, `package.json` adds `build:design-system`.
 
 **Refactor status**: M0-M13 COMPLETE (FSD migration). M14-M21 COMPLETE (architecture debt refactor, ADR-017):
 - M14: SW god-file split (2203→321 lines, 8 handler files)
@@ -1337,9 +1339,10 @@ Dictionary probe cache (T23):
 
 | Symbol | Path | Signature | Used by | Description |
 |--------|------|-----------|---------|-------------|
-| `autoDiscovery` | `entrypoints/design-system-showcase/autoDiscovery.ts` | `discoverShowcases()` -> `DiscoveredShowcase[]` | `ShowcaseGallery` | Auto-discovers `*.showcase.tsx` in `shared/ui/` and `features/*/ui/` via `import.meta.glob` |
-| `ShowcaseGallery` | `entrypoints/design-system-showcase/ShowcaseGallery.tsx` | `() -> JSX` | `App.tsx` | Renders discovered showcases grouped by `showcaseMeta.group`, wrapped in `MockProviders` |
+| `autoDiscovery` | `entrypoints/design-system-showcase/autoDiscovery.ts` | `discoverShowcases()` + `discoverMissingShowcases()` -> `DiscoveredShowcase[]` | `ShowcaseGallery` | SSOT canonical taxonomy (`CANONICAL_META`), category aliases, detects missing `shared/ui` showcases |
+| `ShowcaseGallery` | `entrypoints/design-system-showcase/ShowcaseGallery.tsx` | `() -> JSX` | `App.tsx` | Level/category tree, live search, status badges, responsive glass preview card |
 | `MockProviders` | `entrypoints/design-system-showcase/mockProviders.tsx` | `(children) -> JSX` | `ShowcaseGallery` | Provides mock cues, dictionary result, and card creator draft via context |
+| `MissingShowcasePlaceholder` | `entrypoints/design-system-showcase/MissingShowcasePlaceholder.tsx` | `{ title } -> JSX` | `autoDiscovery` | Placeholder preview for `shared/ui/` components without a showcase |
 | `*.showcase.tsx` | `shared/ui/` and `features/*/ui/` | `Showcase` + `showcaseMeta` | `ShowcaseGallery` | Per-component design-system examples auto-rendered by the gallery |
 
 ## Update protocol

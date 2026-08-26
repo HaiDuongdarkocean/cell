@@ -1,29 +1,39 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
+
+const rowStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'var(--space-3)',
+  alignItems: 'stretch',
+};
+
+const small: React.CSSProperties = { width: 'calc(var(--space-5) * 6)', padding: 'var(--space-4)' };
+const medium: React.CSSProperties = { width: 'calc(var(--space-5) * 8)', padding: 'var(--space-4)' };
 
 export function Showcase(): ReactElement {
   const [selected, setSelected] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'stretch' }}>
-      <Card style={{ width: 120, padding: 'var(--space-4)' }}>
+    <div style={rowStyle}>
+      <Card style={small}>
         <strong>Default</strong>
         <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Static container.</p>
       </Card>
-      <Card variant="interactive" style={{ width: 120, padding: 'var(--space-4)' }}>
+      <Card variant="interactive" style={small}>
         <strong>Interactive</strong>
         <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Hover to see active state.</p>
       </Card>
       <Card
         variant={selected ? 'selected' : 'default'}
         onClick={() => setSelected((s) => !s)}
-        style={{ width: 120, padding: 'var(--space-4)', cursor: 'pointer' }}
+        style={small}
       >
         <strong>{selected ? 'Selected' : 'Selectable'}</strong>
         <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Click to toggle.</p>
       </Card>
-      <Card variant="glass" style={{ width: 160, padding: 'var(--space-4)' }}>
+      <Card variant="glass" style={medium}>
         <strong>Glass</strong>
         <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Frosted, translucent surface.</p>
       </Card>

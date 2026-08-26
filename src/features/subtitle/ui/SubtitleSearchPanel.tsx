@@ -19,6 +19,7 @@ import { Button } from '@/shared/ui/Button';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { Tabs } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -348,15 +349,15 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         <div className={styles.apiHint} data-cell-id="search-api-hint">
           <Icon name="wrench" className={styles.apiHintIcon} />
           <span className={styles.apiHintText}>Add an API key to start searching</span>
-          <button
-            type="button"
-            className={styles.apiHintBtn}
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setManageKeysOpen((v) => !v)}
             aria-expanded={manageKeysOpen}
             data-cell-id="search-manage-keys-toggle"
           >
             {manageKeysOpen ? 'Hide' : 'Add key'}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -368,34 +369,22 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
 
       {/* Target / Native tabs — filter results by language, only after search */}
       {hasSearched && !loading && !error && (
-        <div className={styles.tabBar} role="tablist" data-cell-id="search-tabs">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'target'}
-            className={`${styles.tab} ${activeTab === 'target' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('target')}
-            data-cell-id="search-tab-target"
-          >
-            <span>{targetLabel}</span>
-            {activeTab === 'target' && filteredResults.length > 0 && (
-              <span className={styles.tabCount}>{filteredResults.length}</span>
-            )}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'native'}
-            className={`${styles.tab} ${activeTab === 'native' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('native')}
-            data-cell-id="search-tab-native"
-          >
-            <span>{nativeLabel}</span>
-            {activeTab === 'native' && filteredResults.length > 0 && (
-              <span className={styles.tabCount}>{filteredResults.length}</span>
-            )}
-          </button>
-        </div>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SubtitleRole)}>
+          <Tabs.List data-cell-id="search-tabs" role="tablist">
+            <Tabs.Trigger value="target" data-cell-id="search-tab-target">
+              <span>{targetLabel}</span>
+              {activeTab === 'target' && filteredResults.length > 0 && (
+                <span className={styles.tabCount}>{filteredResults.length}</span>
+              )}
+            </Tabs.Trigger>
+            <Tabs.Trigger value="native" data-cell-id="search-tab-native">
+              <span>{nativeLabel}</span>
+              {activeTab === 'native' && filteredResults.length > 0 && (
+                <span className={styles.tabCount}>{filteredResults.length}</span>
+              )}
+            </Tabs.Trigger>
+          </Tabs.List>
+        </Tabs>
       )}
 
       <div className={styles.resultsArea} data-cell-id="search-results-area">
