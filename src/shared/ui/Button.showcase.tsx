@@ -1,61 +1,81 @@
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
-import type { ReactElement } from 'react';
+import { useId, type ReactElement, type ReactNode } from 'react';
+import styles from './Button.showcase.module.css';
+
+interface SectionProps {
+  title: string;
+  caption: string;
+  children: ReactNode;
+  vertical?: boolean;
+}
+
+function Section({ title, caption, children, vertical }: SectionProps): ReactElement {
+  const id = useId();
+  return (
+    <section className={styles.group} aria-labelledby={id}>
+      <h3 id={id} className={styles.title}>{title}</h3>
+      <p className={styles.caption}>{caption}</p>
+      <div className={vertical ? styles.verticalRow : styles.row}>{children}</div>
+    </section>
+  );
+}
 
 export function Showcase(): ReactElement {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <h3 style={{ fontSize: 12, color: '#737373', marginBottom: 8 }}>Variants — horizontal</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <Button variant="primary">Primary</Button>
-          <Button variant="primarySubtle">Primary Subtle</Button>
-          <Button variant="secondary">Secondary</Button>
-          <Button variant="outline">Outline</Button>
-          <Button variant="ghost">Ghost</Button>
-          <Button variant="destructive">Destructive</Button>
-          <Button variant="link">Link</Button>
-        </div>
-      </div>
+    <div className={styles.root}>
+      <Section
+        title="Variants"
+        caption="Primary for the main CTA. Secondary for alternatives. Outline, ghost and link for lower emphasis. Destructive for irreversible actions."
+      >
+        <Button variant="primary">Primary</Button>
+        <Button variant="primarySubtle">Primary Subtle</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="destructive">Destructive</Button>
+        <Button variant="link">Link</Button>
+      </Section>
 
-      <div>
-        <h3 style={{ fontSize: 12, color: '#737373', marginBottom: 8 }}>Active state — toggle</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <Button variant="outline">Inactive</Button>
-          <Button variant="outline" active>Active</Button>
-          <Button variant="ghost">Ghost inactive</Button>
-          <Button variant="ghost" active>Ghost active</Button>
-        </div>
-      </div>
+      <Section
+        title="Active / toggle"
+        caption="Use the active prop for toggled states on outline and ghost variants."
+      >
+        <Button variant="outline">Inactive</Button>
+        <Button variant="outline" active>Active</Button>
+        <Button variant="ghost">Ghost inactive</Button>
+        <Button variant="ghost" active>Ghost active</Button>
+      </Section>
 
-      <div>
-        <h3 style={{ fontSize: 12, color: '#737373', marginBottom: 8 }}>Sizes</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <Button size="sm" variant="primary">Small</Button>
-          <Button size="md" variant="primary">Medium</Button>
-          <Button size="lg" variant="primary">Large</Button>
-        </div>
-      </div>
+      <Section
+        title="Sizes"
+        caption="Small for dense toolbars, medium as the default, large for prominent actions."
+      >
+        <Button size="sm" variant="primary">Small</Button>
+        <Button size="md" variant="primary">Medium</Button>
+        <Button size="lg" variant="primary">Large</Button>
+      </Section>
 
-      <div>
-        <h3 style={{ fontSize: 12, color: '#737373', marginBottom: 8 }}>Orientation: vertical (ZaloPay pattern)</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start', maxWidth: 400 }}>
-          <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="search" size={20} />}>Search</Button>
-          <Button variant="ghost" orientation="vertical" fullWidth active leadingIcon={<Icon name="eyeOff" size={20} />}>Hide</Button>
-          <Button variant="primarySubtle" orientation="vertical" fullWidth leadingIcon={<Icon name="generateNative" size={20} />}>Generate</Button>
-          <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="slidersHorizontal" size={20} />}>Customize</Button>
-        </div>
-      </div>
+      <Section
+        title="Vertical (icon + label)"
+        caption="ZaloPay-style bottom navigation: icon stacked above a short label. fullWidth keeps each item the same width."
+        vertical
+      >
+        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="search" size={20} />}>Search</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth active leadingIcon={<Icon name="eyeOff" size={20} />}>Hide</Button>
+        <Button variant="primarySubtle" orientation="vertical" fullWidth leadingIcon={<Icon name="generateNative" size={20} />}>Generate</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="slidersHorizontal" size={20} />}>Customize</Button>
+      </Section>
 
-      <div>
-        <h3 style={{ fontSize: 12, color: '#737373', marginBottom: 8 }}>States</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <Button disabled>Disabled</Button>
-          <Button loading>Loading</Button>
-          <Button fullWidth>Full width</Button>
-          <Button elevation="med">Elevated</Button>
-        </div>
-      </div>
+      <Section
+        title="States"
+        caption="Disabled, loading, full-width and elevated (shadow) treatments."
+      >
+        <Button disabled>Disabled</Button>
+        <Button loading>Loading</Button>
+        <Button fullWidth>Full width</Button>
+        <Button elevation="med">Elevated</Button>
+      </Section>
     </div>
   );
 }

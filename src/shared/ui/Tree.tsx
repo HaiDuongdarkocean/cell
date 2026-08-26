@@ -66,14 +66,13 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
         aria-expanded={hasChildren ? isExpanded : undefined}
         aria-current={isActive ? 'true' : undefined}
       >
-        {hasChildren && (
+        {hasChildren ? (
           <span className={[styles.chevron, isExpanded ? '' : styles.collapsed].filter(Boolean).join(' ')}>
             <Icon name="chevronDown" size={14} />
           </span>
-        )}
-        {!hasChildren && node.icon && (
-          <span className={styles.leading}>
-            <Icon name={node.icon} size={16} />
+        ) : (
+          <span className={styles.leading} aria-hidden="true">
+            {node.icon ? <Icon name={node.icon} size={16} /> : null}
           </span>
         )}
         <span className={styles.label}>{node.label}</span>
