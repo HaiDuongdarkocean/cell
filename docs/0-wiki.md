@@ -61,7 +61,8 @@ docs/           # Tài liệu dự án
 │   ├── learning-algorithms-summary.md # Learning algorithms summary
 │   ├── design-system-learning-map.md  # Design system learning map (foundations → tokens → components → a11y → Apple lens)
 │   ├── sdlc-flow.md                   # SDLC — sơ đồ dòng chảy Idea → Khung quy trình → Sản phẩm (output mỗi pha + ai làm)
-│   └── agentic-sdlc.md                # Agentic SDLC — tài liệu chuẩn (định nghĩa + nguồn gốc + 5 nguyên lý + pipeline 4 ông lớn + guardrail + metric + so sánh truyền thống + takeaway Cell + 10 nguồn)
+│   ├── agentic-sdlc.md                # Agentic SDLC — tài liệu chuẩn (định nghĩa + nguồn gốc + 5 nguyên lý + pipeline 4 ông lớn + guardrail + metric + so sánh truyền thống + takeaway Cell + 10 nguồn)
+│   └── atomic-design.md               # Tổng hợp atomic design: 5 cấp độ, atom vs token, bảng tra cứu Cell, nguồn
 ├── memory/                            # Agent memory — long-term context
 │   └── algorithm-tokenize.md          # Tokenize algorithm notes
 ├── research/                          # Subagent research reports
