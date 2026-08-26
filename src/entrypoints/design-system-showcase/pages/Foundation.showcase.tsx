@@ -3,7 +3,7 @@ import { Icon } from '@/shared/icons/Icon';
 import styles from './Foundation.module.css';
 
 export const showcaseMeta = {
-  title: 'Foundation',
+  title: 'Overview',
   description: 'Quiet confidence — a navigable reference for color, typography, spacing, shape, motion, iconography, and grid.',
   level: 'foundations' as const,
   category: 'Overview',
