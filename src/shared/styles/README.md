@@ -40,7 +40,7 @@ import '@/shared/styles/tokens.css';
 |-----------|------|-------|
 | P1 Content-first | Flat, no shadow, hairline 1px border | `--shadow-*: none` |
 | P2 Alpha states | Hover=surface-hover, Selected=primary-subtle, Focus=2px ring | `--color-surface-hover`, `--color-primary-subtle` |
-| P3 Shape≠Color | Pill 18px (btn/input), Card 10px, Dialog 12px, Icon-btn full | `--radius-pill`, `--radius-card`, `--radius-dialog`, `--radius-full` |
+| P3 Shape≠Color | Pill 18px (btn/input), Card 12px, Dialog 12px, Icon-btn full | `--radius-pill`, `--radius-card`, `--radius-full` |
 
 ## Hover pattern — UNIVERSAL
 
@@ -98,18 +98,9 @@ import '@/shared/styles/tokens.css';
 
 **Before adding new icon:** query `ICON_CATALOG` by tag → reuse, don't create duplicate.
 
-## Audit checklist (run before merge)
+## Audit checklist
 
-```bash
-# 1. Hardcoded colors (should be 0 outside tokens.css + SubtitlePreview)
-grep -rn '#[0-9a-fA-F]\{3,8\}' src/ --include="*.css" | grep -v tokens.css | grep -v SubtitlePreview
-
-# 2. Wrong hover token (should be 0)
-grep -rn 'color-accent' src/ --include="*.css" | grep hover
-
-# 3. Missing token import (options/popup/sidepanel must import tokens.css)
-grep -rn 'tokens.css' src/entrypoints/
-```
+See `src/shared/styles/STANDARD.md` §13 "Audit checklist (trước merge)" for the canonical pre-merge checks.
 
 ## When to read what
 
