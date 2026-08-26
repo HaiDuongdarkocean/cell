@@ -14,7 +14,14 @@ docs/           # Tài liệu dự án
 │   ├── native-fullscreen-iframe-player-mode.md  # Child-iframe Player Mode dùng native Fullscreen API và project player vào videoStage thay vì top-frame bridge
 │   ├── subtitle-appearance-in-manager.md        # Di chuyển subtitle appearance customization từ Settings sang Subtitle Manager Panel
 │   ├── 079-subtitle-search.md                   # WHY: client-only keys, SubDL-first, background-owns-network, quota ledger in session storage, rotate at download, no validate-on-add, discriminated union download, provider registry
-│   └── 080-subtitle-panels-atom-decomposition.md # WHY: tách god component SubtitlePanels.tsx thành 3 molecule (ClusterRightToolbar/ManagerLayer/OffsetLayer) + types SSOT + shared CSS; HostManagerSheet thin adapter; PlayerModeOverlay share toolbar
+│   ├── 080-subtitle-panels-atom-decomposition.md # WHY: tách god component SubtitlePanels.tsx thành 3 molecule (ClusterRightToolbar/ManagerLayer/OffsetLayer) + types SSOT + shared CSS; HostManagerSheet thin adapter; PlayerModeOverlay share toolbar
+│   ├── 084-foundation-color-system.md           # WHY: neutral-first + single indigo accent, OKLCH design, warm off-white / dark faint-blue-tint
+│   ├── 085-foundation-typography.md             # WHY: Inter variable, 5 roles, progressive negative tracking, weight 510
+│   ├── 086-foundation-spacing.md                # WHY: 4px base, 18-step scale for dense extension UI
+│   ├── 087-foundation-shape-elevation.md        # WHY: concentric radius, surface-lift over heavy shadow
+│   ├── 088-foundation-motion.md                 # WHY: 120-300ms, purpose-driven easing, reduced-motion
+│   ├── 089-foundation-iconography.md            # WHY: 24×24 1.5px round stroke, currentColor, semantic naming
+│   └── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
 ├── specs/
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
@@ -28,6 +35,7 @@ docs/           # Tài liệu dự án
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── DESIGN.md                      # Agent-facing SSOT for UI implementation (M3 → Cell token map, component map, audit commands)
+│   ├── foundations-tutorial.html      # Interactive HTML tutorial for design system foundations (color/typography/spacing/layout/shape/motion/icon/a11y)
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
 │   ├── universal-panel-demo.html      # Universal Panel (Dictionary + Settings) demo applying Meta/Facebook DS
@@ -50,6 +58,7 @@ docs/           # Tài liệu dự án
 │   └── reader.md                      # Reader feature intent
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   ├── learning-algorithms-summary.md # Learning algorithms summary
+│   ├── design-system-learning-map.md  # Design system learning map (foundations → tokens → components → a11y → Apple lens)
 │   ├── sdlc-flow.md                   # SDLC — sơ đồ dòng chảy Idea → Khung quy trình → Sản phẩm (output mỗi pha + ai làm)
 │   └── agentic-sdlc.md                # Agentic SDLC — tài liệu chuẩn (định nghĩa + nguồn gốc + 5 nguyên lý + pipeline 4 ông lớn + guardrail + metric + so sánh truyền thống + takeaway Cell + 10 nguồn)
 ├── memory/                            # Agent memory — long-term context
@@ -79,6 +88,8 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-23**: Redesign 100% design system foundation "quiet confidence" — 7 ADRs (`084-090`) cho color/typography/spacing/shape/motion/iconography/grid, `tokens.json` v2.0.0 rewritten with neutral-first palette + indigo accent, `tokens.css` regenerated, `npm run build` pass. ADRs include rejected alternatives, dẫn chứng from Linear/Apple/Material/Carbon/Atlassian.
 
 **2026-08-21**: Spec `docs/specs/orca-ocr-layer.md` revised sau 3-layer adversarial review (review → phản biện 1 → phản biện 2). 6 blocker + 5 major resolved: (1) ImageBitmap→ImageData via Port, (2) DRM black-frame detect, (3) bundle .wasm (MV3 cấm remotely-hosted code), (4) AC cold start <10s background, (5) script-run segmenter cho mixed intra-box, (6) spec tự mâu thuẫn native sub. Plan `tasks/plan.md` + `tasks/todo.md` updated: 27 tasks, 7 phases (T0 spike → T1-T3 foundation → T4-T7 engine → T8-T12 video pipeline → T13-T16 overlay+dict → T17-T20 Manager Panel → T21-T25 polish). Review log: `docs/specs/orca-ocr-review-final.md`. **Spike T0b PASS 5/5** (subagent browser test): frame capture mock+real (themoviebox.xyz mean luma 116.9, NOT DRM), WebGPU works, ImageData Port transfer OK, OCR POC mixed CN+EN+JA score 0.93-1.00. Test data: 4 JSON fixtures + 10 synthetic PNG frames trong `tests/data-test/ocr/`. **Phase 1+2 implemented**: T1 OcrEngine types+interface, T2 scriptRunSegmenter (SSOT upgrade detectLangCode, 15 fixture cases), T3 ocrStateStore (per-origin persistence), T4 PaddleOcrEngine (mock-tested 9 cases), T5 ocrRunner (offscreen document), T6 background OCR handler, T7 OcrController (content-script client), T7b mock-hardsub-page (port 4325, canvas burned-in subs). **Phase 3-6 implemented**: T8 frameCapture (rVFC+canvas+ImageData), T9 drmGuard (black-frame mean luma), T10 lumaDiff (region luma + pHash dedup), T11 cropRegion (bottom % subtitle crop), T12 ocrPipeline (orchestrator: DRM→luma→pHash→crop→OCR→segment), T13-T16 ocrOverlay (hitbox DOM positioning + lifecycle), T17-T20 OcrSettingsPanel (toggle + language mode + region % slider), T21-T25 ocrContentScript (OcrSession wires controller+pipeline+overlay). **128 tests pass, typecheck 0 OCR errors, build pass.** **Browser test PASS** (mock-hardsub-page port 4325): frame capture 1280x720 OK, DRM guard meanLuma 78→NOT DRM, subtitle region contrast 157-168 (text visible), pHash dedup 3 different hashes cho 3 subtitle changes (Hello World/我喜欢北京/我喜欢 watching movies). Luma diff 0.78-2.68 (below threshold 3 → pHash needed for subtitle change detection). **PaddleOCR.js browser test PASS** (prototype POC port 4326): WebGPU init 3274ms, cold OCR 5001ms (我喜欢北京 score=1.000), warm OCR 653ms (3.7x faster), mixed CN+EN+JA 3 regions: "我喜欢 watching movies" score=0.995, "日本語も勉強しています" score=1.000, "Hello 世界" score=0.935.
 
