@@ -130,12 +130,17 @@ This file records what each loop accomplished, what changed, and how it was veri
 
 **What changed**:
 - `src/shared/styles/tokens.json`
-  - `color-button-liquid-ripple` bumped to 0.55 (dark) and 0.40 (light).
-  - `ripple-start-opacity` bumped to 0.8 so the water-ripple flash is clearly visible on the liquid-glass surface.
+  - `color-button-liquid-ripple` raised to 0.70 (dark) and 0.50 (light).
+  - `ripple-start-opacity` raised to 0.9 and held until 60% of the ripple duration so the water-ripple flash stays visible while expanding.
+- `src/shared/ui/Button.module.css`
+  - `.ripple` uses a centered bright water-disc gradient (`0%` token → `40%` 60% token → `70%` transparent) with explicit `background-size: 100% 100%` and `no-repeat`.
+  - `z-index: 1` so the ripple paints above the caustic/rim layers but behind the button label.
+  - `@keyframes ripple` holds full opacity from `0%` to `60%`, then fades out to give a clear expanding water-ripple.
 - `src/shared/styles/tokens.css` regenerated.
 - `docs/design-system/` rebuilt with `npm run build`.
 
 **Verification**:
 - `npx jest --selectProjects unit --testPathPatterns=Button` — 120 tests pass.
 - `npm run build` — pass.
-- Stealth CDP on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, paused ripple at 300 ms) — Primary button clearly brightens with a white ripple expanding from the touch point.
+- `npm run typecheck` — pass.
+- Stealth CDP on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, paused ripple at 300 ms) — Primary button clearly brightens with a white ripple expanding from the touch point; text label remains legible.

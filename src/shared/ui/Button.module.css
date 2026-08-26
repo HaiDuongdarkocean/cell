@@ -417,19 +417,24 @@
   background: radial-gradient(
     circle,
     var(--button-liquid-ripple) 0%,
-    color-mix(in srgb, var(--button-liquid-ripple), transparent 70%) 40%,
+    color-mix(in srgb, var(--button-liquid-ripple), transparent 40%) 40%,
     transparent 70%
-  );
+  ) no-repeat;
+  background-size: 100% 100%;
   transform: scale(0);
   opacity: var(--button-ripple-start-opacity);
   animation: ripple var(--button-ripple-duration) var(--button-ripple-ease);
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
 }
 
 @keyframes ripple {
   0% {
     transform: scale(0);
+    opacity: var(--button-ripple-start-opacity);
+  }
+  60% {
+    transform: scale(var(--button-ripple-scale));
     opacity: var(--button-ripple-start-opacity);
   }
   100% {
