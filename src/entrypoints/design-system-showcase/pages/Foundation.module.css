@@ -117,6 +117,28 @@
   color: var(--color-text);
 }
 
+.sectionTitleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: var(--space-1);
+}
+
+.sectionTitleButton:hover {
+  color: var(--color-primary);
+}
+
 .sectionLead {
   margin: 0;
   font-size: var(--font-size-md);
