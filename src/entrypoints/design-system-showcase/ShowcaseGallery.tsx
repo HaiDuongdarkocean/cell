@@ -94,14 +94,24 @@ export function ShowcaseGallery(): ReactElement | null {
         id: `level-${levelId}`,
         label: level.label,
         icon: level.icon,
-        children: categoryEntries.map(([category, showcases]) => ({
-          id: `cat-${levelId}-${category}`,
-          label: category,
-          children: (showcases as DiscoveredShowcase[]).map((s) => ({
-            id: s.id,
-            label: s.meta.title,
-          })),
-        })),
+        children: categoryEntries.map(([category, showcases]) => {
+          const items = showcases as DiscoveredShowcase[];
+          // Flatten single-child categories: click goes straight to the showcase.
+          if (items.length === 1) {
+            return {
+              id: items[0].id,
+              label: items[0].meta.title,
+            };
+          }
+          return {
+            id: `cat-${levelId}-${category}`,
+            label: category,
+            children: items.map((s) => ({
+              id: s.id,
+              label: s.meta.title,
+            })),
+          };
+        }),
       });
     }
     return nodes;
@@ -156,12 +166,19 @@ export function ShowcaseGallery(): ReactElement | null {
   const breadcrumbItems = useMemo(() => {
     if (!activeShowcase) return [];
     const level = LIBRARY_LEVELS.find((l) => l.id === activeShowcase.meta.level);
-    return [
+    const siblings = allShowcases.filter(
+      (s) => s.meta.level === activeShowcase.meta.level && s.meta.category === activeShowcase.meta.category,
+    );
+    const isSingleChildCategory = siblings.length === 1;
+    const items = [
       { label: level?.label ?? activeShowcase.meta.level, id: `level-${activeShowcase.meta.level}` },
-      { label: activeShowcase.meta.category, id: `cat-${activeShowcase.meta.level}-${activeShowcase.meta.category}` },
       { label: activeShowcase.meta.title, id: activeShowcase.id, current: true },
     ];
-  }, [activeShowcase]);
+    if (!isSingleChildCategory) {
+      items.splice(1, 0, { label: activeShowcase.meta.category, id: `cat-${activeShowcase.meta.level}-${activeShowcase.meta.category}` });
+    }
+    return items;
+  }, [activeShowcase, allShowcases]);
 
   const handlePrevious = useCallback((): void => {
     const idx = filtered.findIndex((s) => s.id === activeShowcase?.id);
