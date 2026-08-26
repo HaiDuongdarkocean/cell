@@ -91,7 +91,7 @@ ${componentTokens}
   align-items: center;
   justify-content: center;
   padding: var(--space-6);
-  background-color: var(--color-overlay-backdrop);
+  background-color: var(--color-overlay);
   color: var(--color-text-primary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
