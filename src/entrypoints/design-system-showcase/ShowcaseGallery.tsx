@@ -146,9 +146,24 @@ export function ShowcaseGallery(): ReactElement | null {
     return filtered[0] ?? allShowcases[0] ?? null;
   }, [activeShowcaseId, byId, filtered, allShowcases]);
 
-  const handleSelect = useCallback((id: string, _node: TreeNode): void => {
+  const handleSelect = useCallback((id: string, node: TreeNode): void => {
     if (byId[id]) {
       setActiveShowcaseId(id);
+      setActiveTab('overview');
+      return;
+    }
+    // Clicking a level/category branch selects the first descendant showcase.
+    const findFirstShowcase = (n: TreeNode): string | null => {
+      if (byId[n.id]) return n.id;
+      for (const child of n.children ?? []) {
+        const found = findFirstShowcase(child);
+        if (found) return found;
+      }
+      return null;
+    };
+    const first = findFirstShowcase(node);
+    if (first) {
+      setActiveShowcaseId(first);
       setActiveTab('overview');
     }
   }, [byId]);
