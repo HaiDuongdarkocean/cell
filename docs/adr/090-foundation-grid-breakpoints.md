@@ -12,47 +12,54 @@ Cell chạy trên desktop, tablet, Android. UI surfaces khác nhau: popup (nhỏ
 
 ### 1. Mobile-first breakpoints
 
-| Token | Value | Range | Usage |
-|-------|-------|-------|-------|
-| `--breakpoint-sm` | 320px | 0 → 479px | Mobile compact (Android popup) |
-| `--breakpoint-md` | 480px | 480 → 767px | Mobile large / small tablet |
-| `--breakpoint-lg` | 768px | 768 → 1023px | Tablet / desktop sidepanel |
-| `--breakpoint-xl` | 1024px | 1024 → 1279px | Desktop small |
-| `--breakpoint-2xl` | 1280px | 1280px+ | Desktop large |
+| Name | Value | Range | Usage |
+|------|-------|-------|-------|
+| `compact` | 0 | < 600px | Mobile compact (Android popup) |
+| `medium` | 600px | 600px → 839px | Mobile large / small tablet |
+| `expanded` | 840px | 840px → 1199px | Tablet / desktop sidepanel |
+| `large` | 1200px | 1200px → 1599px | Desktop small |
+| `extra-large` | 1600px | ≥ 1600px | Desktop large |
 
 **Lý do:**
-- 320px là min-width của popup trên Android ([project context](docs/context/project-context.md)).
-- 768px là điểm tablet chuyển sang layout multi-pane.
-- 1024px+ là desktop/options page.
+- 600px là điểm đủ rộng để chuyển từ compact/mobile sang layout hai cột.
+- 840px là điểm tablet/sidepanel có không gian nội dung thoải mái.
+- 1200px+ là desktop/options page.
+
+**Quan trọng:** CSS custom properties **không thể** dùng trong `@media` queries. Các media query trong CSS phải hardcode giá trị px; JS dùng `BREAKPOINTS` export từ `src/shared/lib/tokens.ts`. Do đó `--breakpoint-*` không được sinh ra trong `tokens.css`.
 
 ### 2. Grid: 4-column on small, 12-column on large
 
+Grid column/gutter/margin không được token hóa thành CSS custom properties vì chúng phụ thuộc layout cụ thể và không cần theme switching. Các giá trị này dùng như pattern khi viết layout, không phải foundation tokens.
+
 | Breakpoint | Columns | Gutter | Margin |
 |------------|---------|--------|--------|
-| sm | 4 | 16px | 16px |
-| md | 4 | 16px | 24px |
-| lg | 12 | 24px | 24px |
-| xl | 12 | 24px | 32px |
-| 2xl | 12 | 24px | 48px |
+| compact | 4 | 16px | 16px |
+| medium | 4 | 16px | 24px |
+| expanded | 12 | 24px | 24px |
+| large | 12 | 24px | 32px |
+| extra-large | 12 | 24px | 48px |
 
 **Lý do:**
 - 4-column đủ cho màn hình nhỏ (button, card, list).
 - 12-column cho desktop giống Carbon/Material, linh hoạt layout.
 - Gutter 16-24px đủ rộng để phân tách, không quá lớn gây lãng phí.
 
-### 3. Container tokens
+### 3. Container patterns
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--container-sm` | 100% | Popup, small panels |
-| `--container-md` | 480px | Mobile large content |
-| `--container-lg` | 720px | Tablet dialogs |
-| `--container-xl` | 960px | Desktop small page |
-| `--container-2xl` | 1120px | Desktop large page |
+Container max-width không được token hóa. Dùng hardcode px hoặc component token khi cần, nhưng không sinh CSS custom property chung.
+
+| Context | Max-width | Usage |
+|---------|-----------|-------|
+| Popup | 320-360px | Extension popup |
+| Sidepanel | 480px | Desktop sidepanel |
+| Dialog compact | 100% (dưới 600px) | Full-screen trên mobile |
+| Dialog | 480px | Default dialog |
+| Dialog large | 640px | Wide dialog |
+| Options page | 1120px | Centered page |
 
 ### 4. Responsive patterns
 
-- **Dialog**: full-screen dưới 480px, max-width 448px trên 768px+.
+- **Dialog**: full-screen dưới 600px; max-width 448px trên 840px+.
 - **Sidepanel**: 100% width, max-width 480px.
 - **Options page**: max-width 1120px, centered.
 - **Popup**: max-width 360px, min-width 320px.
@@ -64,7 +71,7 @@ Cell chạy trên desktop, tablet, Android. UI surfaces khác nhau: popup (nhỏ
 - 4/12 column phù hợp cả mobile và desktop.
 
 **Negative:**
-- Component cũ dùng hardcoded `@media (max-width: 768px)` cần chuẩn hóa lại.
+- Component cũ dùng hardcoded `@media (max-width: 768px)` cần chuẩn hóa lại về 600px/840px hoặc giữ nguyên nếu là feature-local threshold.
 
 ## Rejected Alternatives
 

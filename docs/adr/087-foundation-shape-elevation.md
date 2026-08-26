@@ -19,17 +19,20 @@ Với bản sắc **"quiet confidence"**, shape cần "đơn giản, thanh lịc
 | `--radius-none` | 0 | Square elements, tables, full-bleed images | Cần để tạo contrast với rounded components. |
 | `--radius-xs` | 2px | Tags, chips, small pills | Micro rounding, không làm mất nghiêm túc. |
 | `--radius-sm` | 4px | Small controls, checkboxes, toggles | Slight roundness for friendliness. |
-| `--radius-md` | 6px | Buttons, inputs, badges | Default interactive control. |
+| `--radius-md` | 6px | Small controls, checkboxes, toggles | Default micro control. |
 | `--radius-lg` | 8px | Cards, panels, list items | Standard container. |
 | `--radius-xl` | 12px | Dialogs, modals, popovers | Elevated containers. |
 | `--radius-2xl` | 16px | Page-level cards, sidepanel | Large sections. |
+| `--radius-3xl` | 24px | Hero cards, large banners | Extra-large surface. |
 | `--radius-pill` | 9999px | Buttons, inputs, chips, icon buttons | Fully rounded for CTA/inputs. |
-| `--radius-full` | 9999px | Avatars, circular indicators | Same as pill but semantic different. |
+| `--radius-full` | 9999px | Avatars, circular indicators | Deprecated alias of `radius-pill`. |
 
 **Nguyên lý:**
 - Giảm `radius-card` từ 10px xuống **8px** (`--radius-lg`) để đơn giản hóa scale.
-- Giữ `radius-md` = 6px cho buttons/inputs — vừa thân thiện, vừa professional.
-- Dùng `radius-pill` cho **buttons và inputs** để tạo sự mềm mại, nhưng dùng `radius-lg` cho **cards** để card nổi bật hơn button.
+- Dùng `radius-pill` cho **buttons, inputs, và badges** để tạo sự mềm mại.
+- Dùng `radius-md` (6px) cho **checkboxes, toggles, và small controls**.
+- Dùng `radius-lg` (8px) cho **cards** để card nổi bật hơn button.
+- `radius-full` là alias cũ của `radius-pill`; dùng `radius-pill` cho mọi trường hợp 9999px.
 - **Concentric radius rule**: inner radius = `max(0, outerRadius - padding)`. Ví dụ card `radius-lg` (8px) với padding `space-4` (16px) thì inner content `radius-none` hoặc `radius-sm`.
 
 ### 2. Elevation philosophy: surface lift over shadow

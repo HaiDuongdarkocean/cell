@@ -24,7 +24,7 @@ Spacing quyết định relationship và hierarchy. Cell hiện dùng 4px base v
 - **8px base** (Carbon, Atlassian): tốt cho web app/desktop, nhưng quá thô cho extension UI dense.
 - **8pt base với 2px mini unit** (Carbon 2x grid): quá phức tạp, không cần thiết cho MVP.
 
-### 2. Spacing scale — 18 steps
+### 2. Spacing scale — 21 steps
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -41,8 +41,11 @@ Spacing quyết định relationship và hierarchy. Cell hiện dùng 4px base v
 | `--space-6` | 24px | Dialog padding, large gap |
 | `--space-7` | 28px | Section spacing |
 | `--space-8` | 32px | Page section |
+| `--space-9` | 36px | Page block |
 | `--space-10` | 40px | Large section |
+| `--space-11` | 44px | Touch target container |
 | `--space-12` | 48px | Page hero |
+| `--space-14` | 56px | Extra-large section |
 | `--space-16` | 64px | Major section |
 | `--space-20` | 80px | Page top/bottom |
 | `--space-24` | 96px | Landing section |
@@ -56,7 +59,7 @@ Spacing quyết định relationship và hierarchy. Cell hiện dùng 4px base v
 
 ### 4. Component spacing principles
 
-- **Touch target**: 44px mobile, 40px desktop → minimum height `size-11`/`size-10`.
+- **Touch target**: 44px mobile, 40px desktop → dùng `--touch-target-mobile` / `--touch-target-desktop`.
 - **Button padding**: `y = space-2-5` (10px), `x = space-4` (16px).
 - **Input padding**: `y = space-2-5`, `x = space-3`.
 - **Card padding**: `space-4` (16px) default, `space-3-5` (14px) compact.
