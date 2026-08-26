@@ -1,156 +1,341 @@
+import { useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Foundation.module.css';
 
 export const showcaseMeta = {
   title: 'Foundation',
-  description: 'Quiet confidence — color, typography, spacing, shape, motion, and elevation.',
+  description: 'Quiet confidence — a navigable reference for color, typography, spacing, shape, motion, iconography, and grid.',
   level: 'foundations' as const,
   category: 'Overview',
   order: 0,
   status: 'experimental' as const,
 };
 
-function Swatch({ name, color }: { name: string; color: string }) {
+type SectionId = 'overview' | 'color' | 'typography' | 'spacing' | 'shape' | 'motion' | 'iconography' | 'grid';
+
+interface Section {
+  id: SectionId;
+  label: string;
+  description: string;
+  priority: number;
+}
+
+const SECTIONS: Section[] = [
+  { id: 'overview', label: 'Overview', description: 'Quiet confidence — the story of the foundation.', priority: 0 },
+  { id: 'color', label: 'Color', description: 'Neutral-first palette with a single indigo accent.', priority: 1 },
+  { id: 'typography', label: 'Typography', description: 'Inter, 5 roles, progressive negative tracking.', priority: 2 },
+  { id: 'spacing', label: 'Spacing', description: '4px base unit for dense extension UI.', priority: 3 },
+  { id: 'shape', label: 'Shape & Elevation', description: 'Concentric radius and surface lift over heavy shadow.', priority: 4 },
+  { id: 'motion', label: 'Motion', description: 'Purpose-driven, under 300ms, reduced-motion aware.', priority: 5 },
+  { id: 'iconography', label: 'Iconography', description: '24×24, 1.5px stroke, round, semantic.', priority: 6 },
+  { id: 'grid', label: 'Grid & Breakpoints', description: 'Mobile-first 320px → 1280px.', priority: 7 },
+];
+
+function Swatch({ name, color, value }: { name: string; color: string; value?: string }) {
   return (
     <div className={styles.swatch}>
       <div className={styles.swatchColor} style={{ backgroundColor: color }} />
       <span className={styles.swatchName}>{name}</span>
-      <span className={styles.swatchValue}>{color}</span>
+      {value && <span className={styles.swatchValue}>{value}</span>}
     </div>
   );
 }
 
-function Spacer({ name, value }: { name: string; value: string }) {
+function SectionTitle({ children }: { children: string }) {
+  return <h2 className={styles.sectionTitle}>{children}</h2>;
+}
+
+function SectionLead({ children }: { children: string }) {
+  return <p className={styles.sectionLead}>{children}</p>;
+}
+
+function Overview() {
   return (
-    <div className={styles.spacerRow}>
-      <span className={styles.spacerName}>{name}</span>
-      <div className={styles.spacerLine} style={{ width: value, height: 'var(--space-4)' }} />
-      <span className={styles.spacerValue}>{value}</span>
+    <div className={styles.section}>
+      <SectionTitle>Quiet Confidence</SectionTitle>
+      <SectionLead>
+        Cell is a learning companion, not a loud tool. The foundation is designed to feel calm,
+        focused, and trustworthy while still encouraging curiosity.
+      </SectionLead>
+      <div className={styles.principles}>
+        {[
+          { title: 'Calm', body: 'No aggressive color, no heavy shadow. Restrained use of accent.' },
+          { title: 'Focused', body: 'Single accent color, clear hierarchy, purposeful motion.' },
+          { title: 'Learnable', body: 'Consistent patterns: 5 type roles, 4px spacing, concentric radius.' },
+          { title: 'Elegant', body: 'Warm off-white light theme. Near-black with faint blue tint dark theme.' },
+        ].map((p) => (
+          <div key={p.title} className={styles.principleCard}>
+            <h3 className={styles.principleTitle}>{p.title}</h3>
+            <p className={styles.principleBody}>{p.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+
+function Color() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Color</SectionTitle>
+      <SectionLead>
+        Neutral-first, single indigo accent as punctuation. Color is organized by role, not by hex.
+      </SectionLead>
+
+      <h3 className={styles.subsectionTitle}>Light palette</h3>
+      <div className={styles.grid}>
+        <Swatch name="Background" color="var(--color-background)" value="#F9F9F7" />
+        <Swatch name="Surface" color="var(--color-surface)" value="#FFFFFF" />
+        <Swatch name="Elevated" color="var(--color-surface-elevated)" value="#FAFAF8" />
+        <Swatch name="Hover" color="var(--color-surface-hover)" value="#F2F2EF" />
+        <Swatch name="Text" color="var(--color-text)" value="#2A2A2B" />
+        <Swatch name="Text secondary" color="var(--color-text-secondary)" value="#6E6E73" />
+        <Swatch name="Text tertiary" color="var(--color-text-tertiary)" value="#9A9AA2" />
+        <Swatch name="Primary" color="var(--color-primary)" value="#5E6AD2" />
+        <Swatch name="Border" color="var(--color-border)" value="#E2E2DF" />
+        <Swatch name="Success" color="var(--color-success)" value="#2F7D46" />
+        <Swatch name="Warning" color="var(--color-warning)" value="#9E6A1E" />
+        <Swatch name="Error" color="var(--color-error)" value="#A63C3C" />
+      </div>
+
+      <h3 className={styles.subsectionTitle}>Dark palette</h3>
+      <div className={styles.gridDark} data-theme="dark">
+        <Swatch name="Background" color="var(--color-background)" value="#0F1011" />
+        <Swatch name="Surface" color="var(--color-surface)" value="#18191A" />
+        <Swatch name="Elevated" color="var(--color-surface-elevated)" value="#222325" />
+        <Swatch name="Hover" color="var(--color-surface-hover)" value="#2B2D2F" />
+        <Swatch name="Text" color="var(--color-text)" value="#F7F8F8" />
+        <Swatch name="Text secondary" color="var(--color-text-secondary)" value="#AEB4BC" />
+        <Swatch name="Text tertiary" color="var(--color-text-tertiary)" value="#7D838B" />
+        <Swatch name="Primary" color="var(--color-primary)" value="#5E6AD2" />
+        <Swatch name="Border" color="var(--color-border)" value="#33363A" />
+        <Swatch name="Success" color="var(--color-success)" value="#5FD389" />
+        <Swatch name="Warning" color="var(--color-warning)" value="#F5B955" />
+        <Swatch name="Error" color="var(--color-error)" value="#F28B82" />
+      </div>
+
+      <h3 className={styles.subsectionTitle}>Usage rules</h3>
+      <ul className={styles.ruleList}>
+        <li>One chromatic accent per screen. Indigo is the only primary action color.</li>
+        <li>Hierarchy comes from surface lift and border, not from saturation.</li>
+        <li>Semantic colors are muted — never neon.</li>
+      </ul>
+    </div>
+  );
+}
+
+const TYPE_SAMPLES = [
+  { style: 'display-3xl', label: 'Display 3XL', sample: 'Quiet Confidence' },
+  { style: 'display-2xl', label: 'Display 2XL', sample: 'Quiet Confidence' },
+  { style: 'display-xl', label: 'Display XL', sample: 'Quiet Confidence' },
+  { style: 'headline-lg', label: 'Headline LG', sample: 'Build your vocabulary' },
+  { style: 'headline-md', label: 'Headline MD', sample: 'Build your vocabulary' },
+  { style: 'headline-sm', label: 'Headline SM', sample: 'Build your vocabulary' },
+  { style: 'title-lg', label: 'Title LG', sample: 'Subtitle settings' },
+  { style: 'title-md', label: 'Title MD', sample: 'Subtitle settings' },
+  { style: 'title-sm', label: 'Title SM', sample: 'Subtitle settings' },
+  { style: 'body-lg', label: 'Body LG', sample: 'Read along with video, look up words, and review cues.' },
+  { style: 'body-md', label: 'Body MD', sample: 'Read along with video, look up words, and review cues.' },
+  { style: 'body-sm', label: 'Body SM', sample: 'Read along with video, look up words, and review cues.' },
+  { style: 'body-xs', label: 'Body XS', sample: 'Last synced 2m ago' },
+  { style: 'label-lg', label: 'Label LG', sample: 'Save changes' },
+  { style: 'label-md', label: 'Label MD', sample: 'Save changes' },
+  { style: 'label-sm', label: 'Label SM', sample: 'Save changes' },
+];
+
+function Typography() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Typography</SectionTitle>
+      <SectionLead>
+        Inter Variable, five roles, aggressive negative tracking on display, restrained on body.
+      </SectionLead>
+
+      <div className={styles.typeStack}>
+        {TYPE_SAMPLES.map((t) => (
+          <div key={t.style} className={styles.typeRow}>
+            <span className={styles.typeLabel}>{t.label}</span>
+            <span className={`${styles.typeSample} ${styles[t.style]}`}>{t.sample}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const SPACE_TOKENS = [
+  { name: 'space-0-5', value: '2px' },
+  { name: 'space-1', value: '4px' },
+  { name: 'space-2', value: '8px' },
+  { name: 'space-3', value: '12px' },
+  { name: 'space-4', value: '16px' },
+  { name: 'space-5', value: '20px' },
+  { name: 'space-6', value: '24px' },
+  { name: 'space-8', value: '32px' },
+  { name: 'space-10', value: '40px' },
+  { name: 'space-12', value: '48px' },
+];
+
+function Spacing() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Spacing</SectionTitle>
+      <SectionLead>
+        4px base unit. Dense enough for popup and sidepanel, but with enough range for page sections.
+      </SectionLead>
+      <div className={styles.spacerList}>
+        {SPACE_TOKENS.map((t) => (
+          <div key={t.name} className={styles.spacerRow}>
+            <span className={styles.spacerName}>{t.name}</span>
+            <div className={styles.spacerLine} style={{ width: t.value }} />
+            <span className={styles.spacerValue}>{t.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Shape() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Shape & Elevation</SectionTitle>
+      <SectionLead>
+        Radius tells you what a component is. Elevation is built from surface lift, not decoration.
+      </SectionLead>
+      <div className={styles.shapes}>
+        <div className={`${styles.shapeBox} ${styles.shapeXs}`}>xs</div>
+        <div className={`${styles.shapeBox} ${styles.shapeSm}`}>sm</div>
+        <div className={`${styles.shapeBox} ${styles.shapeMd}`}>md</div>
+        <div className={`${styles.shapeBox} ${styles.shapeLg}`}>lg</div>
+        <div className={`${styles.shapeBox} ${styles.shapeXl}`}>xl</div>
+        <div className={`${styles.shapeBox} ${styles.shapePill}`}>pill</div>
+      </div>
+      <div className={styles.elevations}>
+        <div className={styles.elev0}>0 — page</div>
+        <div className={styles.elev1}>1 — card</div>
+        <div className={styles.elev2}>2 — popover</div>
+        <div className={styles.elev3}>3 — modal</div>
+      </div>
+    </div>
+  );
+}
+
+const MOTION_TABLE = [
+  { token: 'duration-instant', value: '0ms', use: 'Disable transition' },
+  { token: 'duration-fast', value: '120ms', use: 'Hover, active, color' },
+  { token: 'duration-normal', value: '200ms', use: 'Expand, fade, opacity' },
+  { token: 'duration-slow', value: '300ms', use: 'Modal, page transition' },
+  { token: 'duration-slower', value: '500ms', use: 'Toast, large layout' },
+];
+
+function Motion() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Motion</SectionTitle>
+      <SectionLead>
+        Every animation needs a purpose. No animation on keyboard actions. Respect reduced motion.
+      </SectionLead>
+      <div className={styles.motionTable}>
+        {MOTION_TABLE.map((m) => (
+          <div key={m.token} className={styles.motionRow}>
+            <span className={styles.motionToken}>{m.token}</span>
+            <span className={styles.motionValue}>{m.value}</span>
+            <span className={styles.motionUse}>{m.use}</span>
+          </div>
+        ))}
+      </div>
+      <button type="button" className={styles.motionBtn}>Hover me</button>
+    </div>
+  );
+}
+
+const ICONS = ['play', 'pause', 'search', 'settings', 'check', 'moon', 'sun'] as const;
+
+function Iconography() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Iconography</SectionTitle>
+      <SectionLead>
+        24×24 canvas, 1.5px stroke, round caps/joins, currentColor. One style across the app.
+      </SectionLead>
+      <div className={styles.icons}>
+        {ICONS.map((name) => (
+          <div key={name} className={styles.iconItem}>
+            <Icon name={name} size={24} />
+            <span className={styles.iconName}>{name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Grid() {
+  return (
+    <div className={styles.section}>
+      <SectionTitle>Grid & Breakpoints</SectionTitle>
+      <SectionLead>
+        Mobile-first, 4 columns on small screens, 12 on desktop. Built for popup, sidepanel, and options.
+      </SectionLead>
+      <div className={styles.gridTable}>
+        {[
+          { bp: 'sm', width: '320px', cols: '4' },
+          { bp: 'md', width: '480px', cols: '4' },
+          { bp: 'lg', width: '768px', cols: '12' },
+          { bp: 'xl', width: '1024px', cols: '12' },
+          { bp: '2xl', width: '1280px+', cols: '12' },
+        ].map((g) => (
+          <div key={g.bp} className={styles.gridRow}>
+            <span className={styles.gridBp}>{g.bp}</span>
+            <span className={styles.gridWidth}>{g.width}</span>
+            <span className={styles.gridCols}>{g.cols} cols</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const CONTENT: Record<SectionId, () => React.JSX.Element> = {
+  overview: Overview,
+  color: Color,
+  typography: Typography,
+  spacing: Spacing,
+  shape: Shape,
+  motion: Motion,
+  iconography: Iconography,
+  grid: Grid,
+};
 
 export function Showcase() {
+  const [active, setActive] = useState<SectionId>('overview');
+  const ActiveComponent = CONTENT[active];
+
   return (
     <div className={styles.root} data-theme="light">
-      <section className={styles.section}>
-        <h1 className={styles.title}>Foundation — Quiet Confidence</h1>
-        <p className={styles.lead}>
-          Calm, focused, learnable, điềm đạm, có hứng thú học tập, đơn giản, thanh lịch.
-        </p>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Color — light</h2>
-        <div className={styles.grid}>
-          <Swatch name="background" color="var(--color-background)" />
-          <Swatch name="surface" color="var(--color-surface)" />
-          <Swatch name="surface-elevated" color="var(--color-surface-elevated)" />
-          <Swatch name="surface-hover" color="var(--color-surface-hover)" />
-          <Swatch name="text" color="var(--color-text)" />
-          <Swatch name="text-secondary" color="var(--color-text-secondary)" />
-          <Swatch name="text-tertiary" color="var(--color-text-tertiary)" />
-          <Swatch name="primary" color="var(--color-primary)" />
-          <Swatch name="border" color="var(--color-border)" />
-          <Swatch name="border-subtle" color="var(--color-border-subtle)" />
-          <Swatch name="success" color="var(--color-success)" />
-          <Swatch name="warning" color="var(--color-warning)" />
-          <Swatch name="error" color="var(--color-error)" />
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarHeader}>
+          <h1 className={styles.sidebarTitle}>Foundations</h1>
+          <p className={styles.sidebarSubtitle}>Quiet confidence</p>
         </div>
-      </section>
-
-      <section className={styles.section} data-theme="dark">
-        <h2 className={styles.heading}>Color — dark</h2>
-        <div className={styles.grid}>
-          <Swatch name="background" color="var(--color-background)" />
-          <Swatch name="surface" color="var(--color-surface)" />
-          <Swatch name="surface-elevated" color="var(--color-surface-elevated)" />
-          <Swatch name="surface-hover" color="var(--color-surface-hover)" />
-          <Swatch name="text" color="var(--color-text)" />
-          <Swatch name="text-secondary" color="var(--color-text-secondary)" />
-          <Swatch name="text-tertiary" color="var(--color-text-tertiary)" />
-          <Swatch name="primary" color="var(--color-primary)" />
-          <Swatch name="border" color="var(--color-border)" />
-          <Swatch name="border-subtle" color="var(--color-border-subtle)" />
-          <Swatch name="success" color="var(--color-success)" />
-          <Swatch name="warning" color="var(--color-warning)" />
-          <Swatch name="error" color="var(--color-error)" />
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Typography</h2>
-        <p className={styles.display3xl}>Display 3XL — 40/56px</p>
-        <p className={styles.display2xl}>Display 2XL — 32/40px</p>
-        <p className={styles.displayXl}>Display XL — 28/32px</p>
-        <p className={styles.headlineLg}>Headline LG — 24/28px</p>
-        <p className={styles.headlineMd}>Headline MD — 20/24px</p>
-        <p className={styles.headlineSm}>Headline SM — 18/20px</p>
-        <p className={styles.titleLg}>Title LG — 16/18px</p>
-        <p className={styles.titleMd}>Title MD — 16/16px</p>
-        <p className={styles.titleSm}>Title SM — 14/14px</p>
-        <p className={styles.bodyLg}>Body LG — 16/18px. Learnable content for long-form reading.</p>
-        <p className={styles.bodyMd}>Body MD — 14/16px. The default paragraph for most UI content.</p>
-        <p className={styles.bodySm}>Body SM — 12/14px. Secondary descriptions and metadata.</p>
-        <p className={styles.bodyXs}>Body XS — 11/12px. Captions and timestamps.</p>
-        <p className={styles.labelLg}>Label LG — 16/16px</p>
-        <p className={styles.labelMd}>Label MD — 14/14px</p>
-        <p className={styles.labelSm}>Label SM — 12/12px</p>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Spacing</h2>
-        {['space-0-5', 'space-1', 'space-2', 'space-3', 'space-4', 'space-5', 'space-6', 'space-8', 'space-10', 'space-12'].map((t) => (
-          <Spacer key={t} name={t} value={`var(--${t})`} />
-        ))}
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Shape & Elevation</h2>
-        <div className={styles.shapes}>
-          <div className={styles.shapeXs}>radius-xs</div>
-          <div className={styles.shapeSm}>radius-sm</div>
-          <div className={styles.shapeMd}>radius-md</div>
-          <div className={styles.shapeLg}>radius-lg</div>
-          <div className={styles.shapeXl}>radius-xl</div>
-          <div className={styles.shapePill}>radius-pill</div>
-        </div>
-        <div className={styles.elevations}>
-          <div className={styles.elev0}>Elevation 0</div>
-          <div className={styles.elev1}>Elevation 1</div>
-          <div className={styles.elev2}>Elevation 2</div>
-          <div className={styles.elev3}>Elevation 3</div>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Motion</h2>
-        <button type="button" className={styles.motionBtn}>
-          Hover me (120ms)
-        </button>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Iconography</h2>
-        <div className={styles.icons}>
-          <Icon name="play" size={24} />
-          <Icon name="pause" size={24} />
-          <Icon name="search" size={24} />
-          <Icon name="settings" size={24} />
-          <Icon name="check" size={24} />
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.heading}>Core Components</h2>
-        <div className={styles.components}>
-          <button type="button" className={styles.btnPrimary}>Primary</button>
-          <button type="button" className={styles.btnSecondary}>Secondary</button>
-          <button type="button" className={styles.btnGhost}>Ghost</button>
-          <input className={styles.input} placeholder="Input" />
-          <div className={styles.card}>Card with surface + border</div>
-        </div>
-      </section>
+        <nav className={styles.nav}>
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={`${styles.navItem} ${active === s.id ? styles.navItemActive : ''}`}
+              onClick={() => setActive(s.id)}
+            >
+              <span className={styles.navLabel}>{s.label}</span>
+              <span className={styles.navDescription}>{s.description}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
+      <main className={styles.main}>
+        <ActiveComponent />
+      </main>
     </div>
   );
 }
