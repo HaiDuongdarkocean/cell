@@ -1,0 +1,11 @@
+/* Inter Variable — Latin + Vietnamese subset.
+ * Source: https://rsms.me/inter/
+ * Self-hosted in /public/fonts/Inter; do NOT use external CDN in MV3.
+ * Subset built with fonttools (U+0000-00FF, Latin Extended, Vietnamese). */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/Inter/InterVariable-subset.woff2') format('woff2-variations');
+}
