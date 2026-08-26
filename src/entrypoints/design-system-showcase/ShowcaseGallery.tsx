@@ -207,22 +207,20 @@ export function ShowcaseGallery(): ReactElement | null {
           {activeShowcase ? (
             <MockProviders>
               <ShowcaseNavigationContext.Provider value={{ navigateToShowcase }}>
-                <div className={styles.previewOuter}>
-                  <Card className={styles.previewInner}>
-                    <div className={styles.previewHeader}>
-                      <Heading level={1} size={3} className={styles.previewTitle}>
-                        {activeShowcase.meta.title}
-                      </Heading>
-                      <Badge className={styles.category}>{activeShowcase.meta.category}</Badge>
-                    </div>
-                    <Text as="p" color="secondary" className={styles.previewDesc}>
-                      {activeShowcase.meta.description}
-                    </Text>
-                    <Box className={styles.stage}>
-                      <activeShowcase.Component />
-                    </Box>
-                  </Card>
-                </div>
+                <Card className={styles.previewCard}>
+                  <div className={styles.previewHeader}>
+                    <Heading level={1} size={3} className={styles.previewTitle}>
+                      {activeShowcase.meta.title}
+                    </Heading>
+                    <Badge className={styles.category}>{activeShowcase.meta.category}</Badge>
+                  </div>
+                  <Text as="p" color="secondary" className={styles.previewDesc}>
+                    {activeShowcase.meta.description}
+                  </Text>
+                  <Box className={styles.stage}>
+                    <activeShowcase.Component />
+                  </Box>
+                </Card>
               </ShowcaseNavigationContext.Provider>
             </MockProviders>
           ) : (

@@ -122,19 +122,9 @@
   padding: var(--space-4) var(--space-4) var(--space-4) 0;
 }
 
-.previewOuter {
+.previewCard {
   max-width: 75rem;
   margin: 0 auto;
-  padding: var(--space-3);
-  background: var(--color-glass-surface);
-  border-radius: var(--radius-2xl);
-  backdrop-filter: blur(var(--blur-md));
-}
-
-.previewOuter .previewInner {
-  padding: var(--space-5);
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
 }
 
 .previewHeader {
@@ -161,11 +151,8 @@
   line-height: var(--leading-relaxed);
 }
 
-.previewInner .stage {
+.stage {
   min-height: 15rem;
-  padding: var(--space-5);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-elevated);
 }
 
 .empty {
@@ -212,16 +199,8 @@
     overflow: visible;
   }
 
-  .previewOuter {
+  .previewCard {
     max-width: 100%;
-  }
-
-  .previewOuter .previewInner {
-    padding: var(--space-4);
-  }
-
-  .previewInner .stage {
-    padding: var(--space-4);
   }
 
   .previewHeader {
@@ -241,8 +220,7 @@
   .glow,
   .topbar,
   .sidebar,
-  .previewOuter,
-  .previewInner {
+  .previewCard {
     transition: none;
     animation: none;
   }
