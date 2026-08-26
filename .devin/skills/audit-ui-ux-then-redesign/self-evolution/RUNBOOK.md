@@ -1,0 +1,7 @@
+# RUNBOOK
+
+| Date | Page | User said | Turned out to be | Dial | Best finding | What was missed | Outcome |
+|---|---|---|---|---|---|---|---|
+| 2026-05-30 | Foundation showcase | border quá nhiều, _section_ không có gap, content bị che, thiếu ghi chú | main block chưa flex, section margin 0, card-in-card 3 lớp, thiếu caption/token note | DESIGN_VARIANCE 3, MOTION 2, DENSITY 7 | `.section` margin-bottom 0; `.main` display block | Cần xem thêm mobile scroll restore | Brief P0-P2 đã xác định |
+| 2026-05-30 | Cross-page showcase audit | kiểm tra các trang dưới tree | Nhiều component mất border do token sai (input, button outline, select); nhiều showcase dùng inline style hardcoded; một số page render ra ngoài preview hoặc crash | DESIGN_VARIANCE 3, MOTION 3, DENSITY 6 | `--input-border` và `--button-outline-border` bị misused/missing; inline style object nhiều | Cần audit toàn bộ 100+ showcase | Cross-page brief đã tổng hợp |
+| 2026-05-30 | Button / Input / Select / Tree fix | Button/Input không có màu, layout lộn xộn, thiếu chú thích; Tree mép trái không đều | `tokens.json` thiếu toàn bộ component color tokens (Button, Input); Tree leaf không render leading placeholder; showcase dùng inline style; Foundation `.main` không có gap | DESIGN_VARIANCE 3, MOTION 1, DENSITY 5 | `var(--button-*)` và `var(--input-*)` cần được grep sớm để phát hiện token mismatch trước khi audit chi tiết; CSS module + caption là pattern khắc phục lộn xộn | Phải thêm token, không chỉ sửa CSS module | Đã thêm token, sửa Tree, refactor showcase, build pass |
