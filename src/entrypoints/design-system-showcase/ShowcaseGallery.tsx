@@ -66,6 +66,17 @@ export function ShowcaseGallery(): ReactElement | null {
     );
   }, [allShowcases, filter]);
 
+  const categoryPriority: Record<string, number> = {
+    Overview: 0,
+    Color: 1,
+    Typography: 2,
+    Spacing: 3,
+    Shape: 4,
+    Motion: 5,
+    Iconography: 6,
+    Grid: 7,
+  };
+
   const treeData: TreeNode[] = useMemo(() => {
     const grouped = groupByLevelThenCategory(filtered);
     const nodes: TreeNode[] = [];
@@ -73,7 +84,12 @@ export function ShowcaseGallery(): ReactElement | null {
       if (!level.supported || level.id === 'templates') continue;
       const levelId = level.id as LibraryLevel;
       const categories = grouped[levelId] ?? {};
-      const categoryEntries = Object.entries(categories).sort(([a], [b]) => a.localeCompare(b));
+      const categoryEntries = Object.entries(categories).sort(([a], [b]) => {
+        const pa = levelId === 'foundations' ? (categoryPriority[a] ?? 99) : 0;
+        const pb = levelId === 'foundations' ? (categoryPriority[b] ?? 99) : 0;
+        if (pa !== pb) return pa - pb;
+        return a.localeCompare(b);
+      });
       nodes.push({
         id: `level-${levelId}`,
         label: level.label,
@@ -89,7 +105,7 @@ export function ShowcaseGallery(): ReactElement | null {
       });
     }
     return nodes;
-  }, [filtered]);
+  }, [filtered, categoryPriority]);
 
   // Default expansion: first level and first category.
   useEffect(() => {
@@ -191,6 +207,10 @@ export function ShowcaseGallery(): ReactElement | null {
 
       <div className={styles.main}>
         <aside className={styles.sidebar} aria-label="Library tree">
+          <div className={styles.sidebarHeader}>
+            <h1 className={styles.sidebarTitle}>Design System</h1>
+            <p className={styles.sidebarSubtitle}>Quiet confidence</p>
+          </div>
           <Tree
             nodes={treeData}
             activeId={activeShowcase?.id}

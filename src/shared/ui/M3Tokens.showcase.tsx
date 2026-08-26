@@ -262,9 +262,10 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'M3 Design Tokens',
-  description: 'Material Design 3 verified token specs: Elevation (6 levels + shadow), Shape (7 tokens + component mapping), Motion (16 durations + 7 easing), Typography (15-style scale). Source: .agents/skills/m3-design-standard/references/',
-  level: 'foundations',
-  category: 'M3 Standard',
+  description: 'Reference archive: Material Design 3 verified token specs. Kept for comparison only; Cell design system does not use M3 tokens.',
+  level: 'atoms',
+  category: 'Reference',
   group: 'Tokens',
-  order: 0,
+  order: 200,
+  status: 'deprecated' as const,
 };
