@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design System Foundations — Cell Tutorial</title>
+  <style>
+    :root {
+      --bg: #f8f9fb;
+      --surface: #ffffff;
+      --surface-hover: #f1f5f9;
+      --text: #171717;
+      --text-secondary: #525252;
+      --primary: #2563eb;
+      --primary-subtle: rgba(37, 99, 235, 0.1);
+      --border: #e5e7eb;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.08);
+      --font: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --code: ui-monospace, 'SF Mono', Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    nav {
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+      padding: 24px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+    }
+    nav a {
+      display: block;
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+    }
+    nav a:hover, nav a.active {
+      background: var(--surface-hover);
+      color: var(--primary);
+    }
+    main {
+      padding: 40px;
+    }
+    section {
+      display: none;
+      max-width: 760px;
+    }
+    section.active {
+      display: block;
+    }
+    h2 { margin-top: 0; font-size: 2rem; }
+    h3 { font-size: 1.3rem; margin-top: 32px; }
+    p { color: var(--text-secondary); }
+    .callout {
+      background: var(--primary-subtle);
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      margin: 24px 0;
+    }
+    .demo {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: var(--shadow);
+    }
+    .demo-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .col { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 0.9rem; color: var(--text-secondary); }
+    input[type="range"], input[type="number"], input[type="text"], select {
+      width: 200px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+    }
+    .swatch {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 8px;
+      font-size: 0.7rem;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+    .color-box { width: 100%; height: 120px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 600; transition: 0.2s; }
+    .type-preview { border: 1px dashed var(--border); padding: 24px; border-radius: var(--radius-md); }
+    .spacing-box { background: var(--primary); color: #fff; border-radius: var(--radius-sm); transition: 0.2s; }
+    .spacing-row { background: var(--surface-hover); border: 1px dashed var(--border); border-radius: var(--radius-sm); display: flex; }
+    .radius-demo { width: 120px; height: 80px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; }
+    .shadow-demo { width: 120px; height: 80px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 12px; }
+    .motion-btn { padding: 10px 20px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; }
+    .icon { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .quiz { margin-top: 24px; padding: 20px; background: var(--surface-hover); border-radius: var(--radius-md); }
+    .quiz button { margin-top: 12px; padding: 8px 16px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); cursor: pointer; }
+    .answer { display: none; margin-top: 12px; color: var(--text-secondary); }
+    footer { padding: 40px; text-align: center; color: var(--text-secondary); font-size: 0.9rem; }
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { position: relative; top: 0; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      main { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📘 Design System Foundations — Cell Tutorial</h1>
+  </header>
+  <div class="layout">
+    <nav>
+      <a href="#intro" class="nav-link active">Bắt đầu</a>
+      <a href="#color" class="nav-link">1. Color</a>
+      <a href="#typography" class="nav-link">2. Typography</a>
+      <a href="#spacing" class="nav-link">3. Spacing</a>
+      <a href="#layout" class="nav-link">4. Layout</a>
+      <a href="#shape" class="nav-link">5. Shape</a>
+      <a href="#motion" class="nav-link">6. Motion</a>
+      <a href="#iconography" class="nav-link">7. Iconography</a>
+      <a href="#accessibility" class="nav-link">8. Accessibility</a>
+    </nav>
+    <main>
+      <section id="intro" class="active">
+        <h2>Học Foundation từ con số không</h2>
+        <p>Foundation là tầng nền của mọi design system. Nếu nền vững, component tự nhiên đẹp. Nếu nền yếu, dù có 100 component cũng rời rạc.</p>
+        <div class="callout">
+          <strong>Quy tắc vàng:</strong> Học theo thứ tự Color → Spacing → Typography → Layout → Shape → Motion → Iconography → Accessibility. Mỗi phần có lý thuyết + demo tương tác.
+        </div>
+        <p>Hãy click từng mục bên trái. Đừng chạy theo component trước khi hiểu rõ 8 phần này.</p>
+      </section>
+
+      <section id="color">
+        <h2>1. Color (Màu sắc)</h2>
+        <p>Màu là thứ người dùng thấy đầu tiên. UI xấu thường vì dùng màu lung tung: quá nhiều màu, màu không có hệ thống, hoặc contrast kém.</p>
+
+        <h3>1.1 Bộ ba màu cơ bản trong UI</h3>
+        <p>Đa số giao diện chỉ cần 3 nhóm màu:</p>
+        <div class="demo">
+          <div class="demo-label">Grey + Primary + Semantic</div>
+          <div class="swatch-grid">
+            <div class="swatch" style="background:#f3f4f6;color:#111">Grey 100</div>
+            <div class="swatch" style="background:#9ca3af;color:#fff">Grey 400</div>
+            <div class="swatch" style="background:#1f2937;color:#fff">Grey 800</div>
+            <div class="swatch" style="background:#2563eb;color:#fff">Primary</div>
+            <div class="swatch" style="background:#dcfce7;color:#166534">Success</div>
+            <div class="swatch" style="background:#fee2e2;color:#991b1b">Error</div>
+            <div class="swatch" style="background:#fef3c7;color:#92400e">Warning</div>
+            <div class="swatch" style="background:#dbeafe;color:#1e40af">Info</div>
+          </div>
+        </div>
+
+        <h3>1.2 HSL là gì?</h3>
+        <p>HSL = Hue (sắc độ) · Saturation (độ bão hòa) · Lightness (độ sáng). Dùng HSL dễ tạo bảng màu hơn HEX.</p>
+        <div class="demo">
+          <div class="demo-label">Kéo để thấy bảng màu thay đổi</div>
+          <div class="row">
+            <div class="col">
+              <label>Hue (sắc độ)</label>
+              <input type="range" id="hue" min="0" max="360" value="220" />
+            </div>
+            <div class="col">
+              <label>Saturation</label>
+              <input type="range" id="sat" min="0" max="100" value="80" />
+            </div>
+          </div>
+          <div class="swatch-grid" style="margin-top:16px" id="hsl-palette"></div>
+        </div>
+
+        <h3>1.3 Tạo tonal palette</h3>
+        <p>Mỗi màu thương hiệu cần 5–10 bậc sáng/tối. Lấy màu giữa làm gốc, rồi sáng dần và tối dần. Không dùng `lighten()`/`darken()` tự sinh vì sẽ ra 35 màu xanh hơi khác nhau.</p>
+        <div class="demo">
+          <div class="demo-label">Tonal palette mẫu (Primary Blue)</div>
+          <div class="swatch-grid" id="tonal-palette"></div>
+        </div>
+
+        <h3>1.4 Color roles</h3>
+        <p>Đặt tên theo vai trò, không theo màu cụ thể: `primary`, `on-primary`, `surface`, `on-surface`, `border`. Vai trò giúp chuyển light/dark dễ dàng.</p>
+        <div class="callout">
+          <strong>Nhớ:</strong> Không đặt tên token là <code>--blue-500</code> trong production. Hãy dùng <code>--color-primary</code>, <code>--color-surface</code>, <code>--color-text-primary</code>.
+        </div>
+
+        <div class="quiz">
+          <strong>Quiz:</strong> Tại sao không nên dùng `lighten()` để tạo màu real-time?<br/>
+          <button onclick="this.nextElementSibling.style.display='block'">Xem đáp án</button>
+          <div class="answer">Vì kết quả không kiểm soát, dễ tạo ra hàng chục màu gần giống nhau, mất consistency. Thay vào đó, định nghĩa sẵn bảng màu cố định.</div>
+        </div>
+      </section>
+
+      <section id="typography">
+        <h2>2. Typography (Chữ)</h2>
+        <p>Chữ truyền tải 90% nội dung. Typography tốt = dễ đọc + có hierarchy rõ ràng.</p>
+
+        <h3>2.1 Cấu trúc Type Scale</h3>
+        <p>Một hệ thống chữ thường có 6–8 cỡ, từ nhỏ đến lớn theo tỷ lệ nhân (modular scale, thường ×1.2 hoặc ×1.25).</p>
+        <div class="demo">
+          <div class="demo-label">Type scale mẫu</div>
+          <div id="type-scale"></div>
+        </div>
+
+        <h3>2.2 Điều chỉnh và xem kết quả</h3>
+        <div class="demo">
+          <div class="demo-label">Typography playground</div>
+          <div class="row">
+            <div class="col">
+              <label>Font size (px)</label>
+              <input type="range" id="tp-size" min="12" max="48" value="16" />
+            </div>
+            <div class="col">
+              <label>Line height</label>
+              <input type="range" id="tp-lh" min="1" max="2" step="0.05" value="1.6" />
+            </div>
+            <div class="col">
+              <label>Letter spacing (em)</label>
+              <input type="range" id="tp-ls" min="-0.05" max="0.1" step="0.005" value="0" />
+            </div>
+          </div>
+          <div class="type-preview" id="tp-preview" style="margin-top:16px">
+            Đây là một đoạn văn bản mẫu. Nếu line height quá nhỏ, chữ sẽ dính vào nhau. Nếu line height quá lớn, đoạn văn sẽ rời rạc. Hãy kéo thanh trượt để cảm nhận.
+          </div>
+          <div style="margin-top:8px;font-family:var(--code);font-size:0.8rem;color:var(--text-secondary)" id="tp-code"></div>
+        </div>
+
+        <h3>2.3 Hierarchy bằng 3 công cụ</h3>
+        <p>Thứ tự ưu tiên thông tin được tạo bởi: <strong>size</strong> → <strong>weight</strong> → <strong>color</strong>. Hãy dùng kết hợp, đừng chỉ phóng to.</p>
+        <div class="demo">
+          <div style="font-size:2rem;font-weight:600">Tiêu đề lớn</div>
+          <div style="font-size:1.1rem;font-weight:500;color:var(--text-secondary)">Tiêu đề phụ màu mờ hơn</div>
+          <div style="font-size:1rem;color:var(--text)">Nội dung chính ở cỡ chuẩn.</div>
+          <div style="font-size:0.85rem;color:var(--text-secondary)">Ghi chú nhỏ, mỏng, màu phụ.</div>
+        </div>
+      </section>
+
+      <section id="spacing">
+        <h2>3. Spacing (Khoảng cách)</h2>
+        <p>Khoảng cách không đều là lý do #1 khiến UI "trông hơi lạ". Hãy dùng scale cố định.</p>
+
+        <h3>3.1 4px Grid</h3>
+        <p>Mọi khoảng cách nên là bội số của 4px (hoặc 8px). Đây là đơn vị nhịp của toàn bộ hệ thống.</p>
+        <div class="demo">
+          <div class="demo-label">Spacing scale (px)</div>
+          <div class="swatch-grid" id="spacing-scale"></div>
+        </div>
+
+        <h3>3.2 Padding vs Margin vs Gap</h3>
+        <ul>
+          <li><strong>Padding</strong>: khoảng cách bên trong một element (từ border vào content).</li>
+          <li><strong>Margin</strong>: khoảng cách bên ngoài một element (đẩy các element khác).</li>
+          <li><strong>Gap</strong>: khoảng cách giữa các item trong flex/grid (dùng gap thay vì margin cho item con).</li>
+        </ul>
+        <div class="demo">
+          <div class="demo-label">Minh họa 3 khái niệm</div>
+          <div class="spacing-row" style="padding:24px;gap:24px">
+            <div class="spacing-box" style="padding:16px">padding:16px</div>
+            <div class="spacing-box" style="padding:16px;margin-right:24px">margin-right:24px</div>
+            <div class="spacing-box" style="padding:16px">item</div>
+            <div class="spacing-box" style="padding:16px">item</div>
+          </div>
+          <p style="font-size:0.8rem">Container có padding:24px và gap:24px. Item 2 có thêm margin-right:24px.</p>
+        </div>
+
+        <h3>3.3 Trắc nghiệm: nên dùng bao nhiêu px?</h3>
+        <div class="demo">
+          <div class="demo-label">Chọn padding cho button</div>
+          <div class="row">
+            <button class="motion-btn" id="btn-pad-small" style="padding:4px 8px">Quá nhỏ</button>
+            <button class="motion-btn" id="btn-pad-ok" style="padding:10px 20px">Vừa</button>
+            <button class="motion-btn" id="btn-pad-large" style="padding:24px 48px">Quá to</button>
+          </div>
+          <p style="margin-top:12px;font-size:0.9rem">Button vừa thường có padding dọc ~10-12px, padding ngang ~16-20px. Quá nhỏ khó bấm, quá to mất cân đối.</p>
+        </div>
+      </section>
+
+      <section id="layout">
+        <h2>4. Layout (Bố cục)</h2>
+        <p>Layout là cách sắp xếp các khối. Hai công cụ chính: Flexbox và CSS Grid.</p>
+
+        <h3>4.1 Flexbox — 1 chiều</h3>
+        <p>Dùng Flex khi các phần tử nằm trên một hàng hoặc một cột. Tuyệt vời cho button groups, navbar, card header.</p>
+        <div class="demo">
+          <div class="demo-label">Flex playground</div>
+          <div class="row" style="margin-bottom:12px">
+            <label>justify-content:</label>
+            <select id="flex-justify">
+              <option value="flex-start">flex-start</option>
+              <option value="center">center</option>
+              <option value="space-between">space-between</option>
+              <option value="space-around">space-around</option>
+            </select>
+            <label>align-items:</label>
+            <select id="flex-align">
+              <option value="stretch">stretch</option>
+              <option value="center">center</option>
+              <option value="flex-start">flex-start</option>
+              <option value="flex-end">flex-end</option>
+            </select>
+          </div>
+          <div id="flex-demo" style="height:140px;background:var(--surface-hover);border:1px dashed var(--border);border-radius:var(--radius-sm);display:flex;gap:12px;padding:12px">
+            <div style="padding:16px;background:var(--primary);color:#fff;border-radius:var(--radius-sm)">A</div>
+            <div style="padding:16px;background:var(--primary);color:#fff;border-radius:var(--radius-sm)">B</div>
+            <div style="padding:16px;background:var(--primary);color:#fff;border-radius:var(--radius-sm)">C</div>
+          </div>
+        </div>
+
+        <h3>4.2 CSS Grid — 2 chiều</h3>
+        <p>Dùng Grid khi có hàng + cột cùng lúc: gallery card, dashboard, form 2 cột.</p>
+        <div class="demo">
+          <div class="demo-label">Grid playground</div>
+          <div class="row" style="margin-bottom:12px">
+            <label>Cột:</label>
+            <input type="range" id="grid-cols" min="1" max="4" value="3" style="width:120px" />
+            <label>Gap:</label>
+            <input type="range" id="grid-gap" min="0" max="32" value="12" style="width:120px" />
+          </div>
+          <div id="grid-demo" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">1</div>
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">2</div>
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">3</div>
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">4</div>
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">5</div>
+            <div style="height:60px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm)">6</div>
+          </div>
+        </div>
+
+        <h3>4.3 Breakpoints</h3>
+        <p>Mobile-first: thiết kế cho màn hình nhỏ nhất trước, rồi mở rộng. Cell dùng 320px → 768px → 1280px.</p>
+        <div class="callout">
+          <strong>Mẹo:</strong> Thu nhỏ cửa sổ browser để xem phần này tự động chuyển layout.
+        </div>
+      </section>
+
+      <section id="shape">
+        <h2>5. Shape (Hình dạng)</h2>
+        <p>Border radius giúp phân biệt cấp độ component: button pill, card bo góc, dialog bo lớn hơn.</p>
+
+        <h3>5.1 Radius scale</h3>
+        <div class="demo">
+          <div class="demo-label">Tỷ lệ border-radius</div>
+          <div class="row" style="gap:20px;flex-wrap:wrap">
+            <div class="radius-demo" style="border-radius:0">0px</div>
+            <div class="radius-demo" style="border-radius:4px">4px</div>
+            <div class="radius-demo" style="border-radius:8px">8px</div>
+            <div class="radius-demo" style="border-radius:12px">12px</div>
+            <div class="radius-demo" style="border-radius:9999px">pill</div>
+          </div>
+        </div>
+
+        <h3>5.2 Elevation & Shadow</h3>
+        <p>Shadow dùng để thể hiện độ cao (elevation), không phải trang trí. Ánh sáng mặc định từ trên xuống, nên shadow nằm dưới đối tượng.</p>
+        <div class="demo">
+          <div class="demo-label">Elevation scale</div>
+          <div class="row" style="gap:24px;flex-wrap:wrap">
+            <div class="shadow-demo" style="box-shadow:none">0</div>
+            <div class="shadow-demo" style="box-shadow:0 1px 2px rgba(0,0,0,0.1)">1</div>
+            <div class="shadow-demo" style="box-shadow:0 4px 6px rgba(0,0,0,0.1)">2</div>
+            <div class="shadow-demo" style="box-shadow:0 10px 20px rgba(0,0,0,0.15)">3</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="motion">
+        <h2>6. Motion (Chuyển động)</h2>
+        <p>Animation phải có ý định: feedback (báo hiệu click), hierarchy (đưa mắt đến chỗ cần), continuity (mượt mà khi chuyển trạng thái).</p>
+
+        <h3>6.1 Duration & Easing</h3>
+        <ul>
+          <li><strong>150ms</strong>: micro-interactions (hover, focus ring).</li>
+          <li><strong>250ms</strong>: chuyển trạng thái component (mở menu, đổi tab).</li>
+          <li><strong>300–500ms</strong>: page/sheet transition.</li>
+        </ul>
+        <div class="demo">
+          <div class="demo-label">So sánh easing</div>
+          <div class="row" style="gap:16px;flex-wrap:wrap">
+            <div class="col" style="align-items:center">
+              <button class="motion-btn" onmouseover="this.style.width='180px'" onmouseout="this.style.width='140px'" style="width:140px;transition:width 0.3s linear">linear</button>
+            </div>
+            <div class="col" style="align-items:center">
+              <button class="motion-btn" onmouseover="this.style.width='180px'" onmouseout="this.style.width='140px'" style="width:140px;transition:width 0.3s ease">ease</button>
+            </div>
+            <div class="col" style="align-items:center">
+              <button class="motion-btn" onmouseover="this.style.width='180px'" onmouseout="this.style.width='140px'" style="width:140px;transition:width 0.3s cubic-bezier(0.34,1.56,0.64,1)">spring</button>
+            </div>
+          </div>
+        </div>
+
+        <h3>6.2 Reduced motion</h3>
+        <p>Luôn tôn trọng <code>prefers-reduced-motion</code>. Nếu user chuyển chế độ giảm chuyển động, animation phải tắt hoặc rút ngắn gần như tức thì.</p>
+      </section>
+
+      <section id="iconography">
+        <h2>7. Iconography (Biểu tượng)</h2>
+        <p>Icon là ngôn ngữ hình ảnh. Một icon set tốt phải consistent về stroke, corner, và size.</p>
+
+        <h3>7.1 Icon sizes</h3>
+        <div class="demo">
+          <div class="demo-label">Các cỡ icon thông dụng</div>
+          <div class="row" style="gap:24px;align-items:flex-end">
+            <div class="col" style="align-items:center"><svg class="icon" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/></svg><span style="font-size:0.75rem">16px</span></div>
+            <div class="col" style="align-items:center"><svg class="icon" style="width:20px;height:20px"><circle cx="12" cy="12" r="10"/></svg><span style="font-size:0.75rem">20px</span></div>
+            <div class="col" style="align-items:center"><svg class="icon" style="width:24px;height:24px"><circle cx="12" cy="12" r="10"/></svg><span style="font-size:0.75rem">24px</span></div>
+            <div class="col" style="align-items:center"><svg class="icon" style="width:32px;height:32px"><circle cx="12" cy="12" r="10"/></svg><span style="font-size:0.75rem">32px</span></div>
+          </div>
+        </div>
+
+        <h3>7.2 Stroke & Style</h3>
+        <p>Cell dùng stroke 1.5px, round caps, round joins. Mọi icon nên có cùng độ dày nét, cùng visual weight.</p>
+        <div class="callout">
+          <strong>Quy tắc:</strong> Không inline SVG trong component. Tra cứu <code>ICON_CATALOG</code> trước, chỉ tạo icon mới khi thực sự cần.
+        </div>
+      </section>
+
+      <section id="accessibility">
+        <h2>8. Accessibility (Tiếp cận)</h2>
+        <p>Design system đẹp mà không tiếp cận được với một phần user thì chưa đủ tốt.</p>
+
+        <h3>8.1 Contrast</h3>
+        <p>WCAG 2.2 AA yêu cầu text thường đạt tỷ lệ tương phản 4.5:1, text lớn (18px+ hoặc 14px bold+) đạt 3:1.</p>
+        <div class="demo">
+          <div class="demo-label">Contrast checker mini</div>
+          <div class="row" style="gap:16px">
+            <div class="col"><label>Background</label><input type="text" id="bg-input" value="#ffffff" /></div>
+            <div class="col"><label>Text</label><input type="text" id="fg-input" value="#171717" /></div>
+          </div>
+          <div id="contrast-box" style="margin-top:16px;padding:24px;border-radius:var(--radius-md);background:#ffffff;color:#171717;font-weight:500">
+            Text mẫu để kiểm tra độ tương phản
+          </div>
+          <p id="contrast-result" style="margin-top:8px;font-size:0.9rem"></p>
+        </div>
+
+        <h3>8.2 Focus & Touch target</h3>
+        <ul>
+          <li>Focus ring phải rõ: outline hoặc box-shadow 2px.</li>
+          <li>Touch target tối thiểu 44×44px trên mobile, 40×40px trên desktop.</li>
+          <li>Không dùng màu làm dấu hiệu duy nhất cho trạng thái.</li>
+        </ul>
+      </section>
+
+      <footer>
+        Xong 8 phần foundation. Giờ anh yêu có thể quay lại <code>docs/knowledge-base/design-system-learning-map.md</code> để xem lộ trình tiếp theo.
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    // Navigation
+    const links = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('section');
+    links.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const id = link.getAttribute('href').slice(1);
+        sections.forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+      });
+    });
+
+    // HSL palette
+    const hueInput = document.getElementById('hue');
+    const satInput = document.getElementById('sat');
+    const hslPalette = document.getElementById('hsl-palette');
+    function updateHsl() {
+      const h = hueInput.value, s = satInput.value;
+      hslPalette.innerHTML = '';
+      [10, 30, 50, 70, 90].forEach(l => {
+        const div = document.createElement('div');
+        div.className = 'swatch';
+        div.style.background = `hsl(${h} ${s}% ${l}%)`;
+        div.style.color = l > 60 ? '#111' : '#fff';
+        div.textContent = `${l}%`;
+        hslPalette.appendChild(div);
+      });
+    }
+    hueInput.addEventListener('input', updateHsl);
+    satInput.addEventListener('input', updateHsl);
+    updateHsl();
+
+    // Tonal palette (fixed)
+    const tonalPalette = document.getElementById('tonal-palette');
+    ['#dbeafe','#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af','#1e3a8a','#172554'].forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'swatch';
+      div.style.background = c;
+      div.textContent = c;
+      tonalPalette.appendChild(div);
+    });
+
+    // Type scale
+    const typeScale = document.getElementById('type-scale');
+    const sizes = [
+      {name:'Display', size:'2.5rem', weight:'600'},
+      {name:'H1', size:'2rem', weight:'600'},
+      {name:'H2', size:'1.5rem', weight:'600'},
+      {name:'H3', size:'1.25rem', weight:'600'},
+      {name:'Body', size:'1rem', weight:'400'},
+      {name:'Supporting', size:'0.875rem', weight:'400'},
+      {name:'Caption', size:'0.75rem', weight:'400'}
+    ];
+    sizes.forEach(s => {
+      const div = document.createElement('div');
+      div.style.fontSize = s.size;
+      div.style.fontWeight = s.weight;
+      div.style.margin = '8px 0';
+      div.textContent = `${s.name} — ${s.size}`;
+      typeScale.appendChild(div);
+    });
+
+    // Typography playground
+    const tpSize = document.getElementById('tp-size');
+    const tpLh = document.getElementById('tp-lh');
+    const tpLs = document.getElementById('tp-ls');
+    const tpPreview = document.getElementById('tp-preview');
+    const tpCode = document.getElementById('tp-code');
+    function updateType() {
+      tpPreview.style.fontSize = tpSize.value + 'px';
+      tpPreview.style.lineHeight = tpLh.value;
+      tpPreview.style.letterSpacing = tpLs.value + 'em';
+      tpCode.textContent = `font-size: ${tpSize.value}px; line-height: ${tpLh.value}; letter-spacing: ${tpLs.value}em;`;
+    }
+    [tpSize,tpLh,tpLs].forEach(i => i.addEventListener('input', updateType));
+    updateType();
+
+    // Spacing scale
+    const spacingScale = document.getElementById('spacing-scale');
+    [4,8,12,16,20,24,32,40,48,64].forEach(px => {
+      const div = document.createElement('div');
+      div.className = 'spacing-box';
+      div.style.padding = px + 'px';
+      div.textContent = px + 'px';
+      spacingScale.appendChild(div);
+    });
+
+    // Flex playground
+    const flexJustify = document.getElementById('flex-justify');
+    const flexAlign = document.getElementById('flex-align');
+    const flexDemo = document.getElementById('flex-demo');
+    function updateFlex() {
+      flexDemo.style.justifyContent = flexJustify.value;
+      flexDemo.style.alignItems = flexAlign.value;
+    }
+    flexJustify.addEventListener('change', updateFlex);
+    flexAlign.addEventListener('change', updateFlex);
+
+    // Grid playground
+    const gridCols = document.getElementById('grid-cols');
+    const gridGap = document.getElementById('grid-gap');
+    const gridDemo = document.getElementById('grid-demo');
+    function updateGrid() {
+      gridDemo.style.gridTemplateColumns = `repeat(${gridCols.value}, 1fr)`;
+      gridDemo.style.gap = gridGap.value + 'px';
+    }
+    gridCols.addEventListener('input', updateGrid);
+    gridGap.addEventListener('input', updateGrid);
+
+    // Contrast checker (simplified luminance)
+    const bgInput = document.getElementById('bg-input');
+    const fgInput = document.getElementById('fg-input');
+    const contrastBox = document.getElementById('contrast-box');
+    const contrastResult = document.getElementById('contrast-result');
+    function hexToRgb(hex) {
+      const s = hex.replace('#','');
+      const bigint = parseInt(s.length === 3 ? s.split('').map(c=>c+c).join('') : s, 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+    }
+    function lum([r,g,b]) {
+      const a = [r,g,b].map(v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+      return 0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2];
+    }
+    function updateContrast() {
+      const bg = bgInput.value, fg = fgInput.value;
+      contrastBox.style.background = bg;
+      contrastBox.style.color = fg;
+      let ratio;
+      try {
+        const l1 = lum(hexToRgb(bg)) + 0.05;
+        const l2 = lum(hexToRgb(fg)) + 0.05;
+        ratio = l1 > l2 ? l1/l2 : l2/l1;
+      } catch { ratio = 1; }
+      const aa = ratio >= 4.5 ? 'PASS AA' : 'FAIL AA';
+      contrastResult.textContent = `Contrast: ${ratio.toFixed(2)}:1 — ${aa}`;
+      contrastResult.style.color = ratio >= 4.5 ? '#007004' : '#a50c25';
+    }
+    bgInput.addEventListener('input', updateContrast);
+    fgInput.addEventListener('input', updateContrast);
+    updateContrast();
+  </script>
+</body>
+</html>
