@@ -182,6 +182,27 @@ function pickPrimaryForeground(core) {
   return '#FFFFFF';
 }
 
+function resolveColorToken(value, core, derived, seen = new Set()) {
+  if (!value || typeof value !== 'string') return null;
+  if (value.startsWith('#')) return value;
+
+  const varMatch = value.match(/^var\(--color-([^)]+)\)$/);
+  if (varMatch) {
+    const token = varMatch[1];
+    if (seen.has(token)) return null; // cycle guard
+    seen.add(token);
+
+    if (derived[`color-${token}`] !== undefined) {
+      return resolveColorToken(derived[`color-${token}`], core, derived, seen);
+    }
+
+    const coreKey = token.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    if (core[coreKey]) return core[coreKey];
+  }
+
+  return null;
+}
+
 function validateContrastPairs(mode, core, derived) {
   // Secondary/muted text pairs use 3:1 (WCAG AA for large text ≥18pt),
   // per Astryx/Meta standard (daft.md) which uses #737373 for text-secondary.
@@ -218,7 +239,9 @@ function validateContrastPairs(mode, core, derived) {
     ['Frequency Rare / Rare BG', derived['color-token-freq-rare-fg'], derived['color-token-freq-rare-bg']],
   ];
   const failures = [];
-  for (const [label, fg, bg] of pairs) {
+  for (const [label, rawFg, rawBg] of pairs) {
+    const fg = resolveColorToken(rawFg, core, derived);
+    const bg = resolveColorToken(rawBg, core, derived);
     if (!fg || !bg || !fg.startsWith('#') || !bg.startsWith('#')) continue;
     const ratio = getContrastRatio(fg, bg);
     const threshold = largeTextPairs.has(label) ? LARGE_TEXT_THRESHOLD : NORMAL_TEXT_THRESHOLD;
