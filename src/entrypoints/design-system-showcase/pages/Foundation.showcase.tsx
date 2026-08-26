@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { useShowcaseNavigation } from '../ShowcaseNavigationContext';
 import styles from './Foundation.module.css';
 
 export const showcaseMeta = {
@@ -18,13 +18,14 @@ interface Section {
   label: string;
   description: string;
   priority: number;
+  target?: string;
 }
 
 const SECTIONS: Section[] = [
   { id: 'overview', label: 'Overview', description: 'Quiet confidence — the story of the foundation.', priority: 0 },
-  { id: 'color', label: 'Color', description: 'Neutral-first palette with a single indigo accent.', priority: 1 },
+  { id: 'color', label: 'Color', description: 'Neutral-first palette with a single indigo accent.', priority: 1, target: 'Color Scale' },
   { id: 'typography', label: 'Typography', description: 'Inter, 5 roles, progressive negative tracking.', priority: 2 },
-  { id: 'spacing', label: 'Spacing', description: '4px base unit for dense extension UI.', priority: 3 },
+  { id: 'spacing', label: 'Spacing', description: '4px base unit for dense extension UI.', priority: 3, target: 'Spacing Scale' },
   { id: 'shape', label: 'Shape & Elevation', description: 'Concentric radius and surface lift over heavy shadow.', priority: 4 },
   { id: 'motion', label: 'Motion', description: 'Purpose-driven, under 300ms, reduced-motion aware.', priority: 5 },
   { id: 'iconography', label: 'Iconography', description: '24×24, 1.5px stroke, round, semantic.', priority: 6 },
@@ -41,8 +42,16 @@ function Swatch({ name, color, value }: { name: string; color: string; value?: s
   );
 }
 
-function SectionTitle({ children }: { children: string }) {
-  return <h2 className={styles.sectionTitle}>{children}</h2>;
+function SectionTitle({ children, onClick }: { children: string; onClick?: () => void }) {
+  if (!onClick) {
+    return <h2 className={styles.sectionTitle}>{children}</h2>;
+  }
+  return (
+    <button type="button" className={styles.sectionTitleButton} onClick={onClick}>
+      <span>{children}</span>
+      <Icon name="chevronRight" size={18} />
+    </button>
+  );
 }
 
 function SectionLead({ children }: { children: string }) {
@@ -74,10 +83,10 @@ function Overview() {
   );
 }
 
-function Color() {
+function Color({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Color</SectionTitle>
+      <SectionTitle onClick={onClick}>Color</SectionTitle>
       <SectionLead>
         Neutral-first, single indigo accent as punctuation. Color is organized by role, not by hex.
       </SectionLead>
@@ -143,10 +152,10 @@ const TYPE_SAMPLES = [
   { style: 'label-sm', label: 'Label SM', sample: 'Save changes' },
 ];
 
-function Typography() {
+function Typography({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Typography</SectionTitle>
+      <SectionTitle onClick={onClick}>Typography</SectionTitle>
       <SectionLead>
         Inter Variable, five roles, aggressive negative tracking on display, restrained on body.
       </SectionLead>
@@ -176,10 +185,10 @@ const SPACE_TOKENS = [
   { name: 'space-12', value: '48px' },
 ];
 
-function Spacing() {
+function Spacing({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Spacing</SectionTitle>
+      <SectionTitle onClick={onClick}>Spacing</SectionTitle>
       <SectionLead>
         4px base unit. Dense enough for popup and sidepanel, but with enough range for page sections.
       </SectionLead>
@@ -196,10 +205,10 @@ function Spacing() {
   );
 }
 
-function Shape() {
+function Shape({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Shape & Elevation</SectionTitle>
+      <SectionTitle onClick={onClick}>Shape & Elevation</SectionTitle>
       <SectionLead>
         Radius tells you what a component is. Elevation is built from surface lift, not decoration.
       </SectionLead>
@@ -229,10 +238,10 @@ const MOTION_TABLE = [
   { token: 'duration-slower', value: '500ms', use: 'Toast, large layout' },
 ];
 
-function Motion() {
+function Motion({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Motion</SectionTitle>
+      <SectionTitle onClick={onClick}>Motion</SectionTitle>
       <SectionLead>
         Every animation needs a purpose. No animation on keyboard actions. Respect reduced motion.
       </SectionLead>
@@ -252,10 +261,10 @@ function Motion() {
 
 const ICONS = ['play', 'pause', 'search', 'settings', 'check', 'moon', 'sun'] as const;
 
-function Iconography() {
+function Iconography({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Iconography</SectionTitle>
+      <SectionTitle onClick={onClick}>Iconography</SectionTitle>
       <SectionLead>
         24×24 canvas, 1.5px stroke, round caps/joins, currentColor. One style across the app.
       </SectionLead>
@@ -271,10 +280,10 @@ function Iconography() {
   );
 }
 
-function Grid() {
+function Grid({ onClick }: { onClick?: () => void }) {
   return (
     <div className={styles.section}>
-      <SectionTitle>Grid & Breakpoints</SectionTitle>
+      <SectionTitle onClick={onClick}>Grid & Breakpoints</SectionTitle>
       <SectionLead>
         Mobile-first, 4 columns on small screens, 12 on desktop. Built for popup, sidepanel, and options.
       </SectionLead>
@@ -297,7 +306,7 @@ function Grid() {
   );
 }
 
-const CONTENT: Record<SectionId, () => React.JSX.Element> = {
+const CONTENT: Record<SectionId, (props: { onClick?: () => void }) => React.JSX.Element> = {
   overview: Overview,
   color: Color,
   typography: Typography,
@@ -309,34 +318,18 @@ const CONTENT: Record<SectionId, () => React.JSX.Element> = {
 };
 
 export function Showcase() {
-  const [active, setActive] = useState<SectionId>('overview');
-  const ActiveComponent = CONTENT[active];
+  const { navigateToShowcase } = useShowcaseNavigation();
 
   return (
-    <div className={styles.root} data-theme="light">
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <h1 className={styles.sidebarTitle}>Foundations</h1>
-          <p className={styles.sidebarSubtitle}>Quiet confidence</p>
-        </div>
-        <nav className={styles.nav}>
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`${styles.navItem} ${active === s.id ? styles.navItemActive : ''}`}
-              onClick={() => setActive(s.id)}
-            >
-              <span className={styles.navLabel}>{s.label}</span>
-              <span className={styles.navDescription}>{s.description}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <main className={styles.main}>
-        <ActiveComponent />
-      </main>
-    </div>
+    <main className={styles.main}>
+      {SECTIONS.map((s) => {
+        const Component = CONTENT[s.id];
+        const handleClick = s.target ? () => navigateToShowcase(s.target) : undefined;
+        return (
+          <Component key={s.id} onClick={handleClick} />
+        );
+      })}
+    </main>
   );
 }
 

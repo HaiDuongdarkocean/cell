@@ -21,6 +21,7 @@ import {
   type DiscoveredShowcase,
   type LibraryLevel,
 } from './autoDiscovery';
+import { ShowcaseNavigationContext } from './ShowcaseNavigationContext';
 import styles from './ShowcaseGallery.module.css';
 
 type ThemeMode = 'light' | 'dark';
@@ -52,6 +53,16 @@ export function ShowcaseGallery(): ReactElement | null {
     const map: ShowcasesById = {};
     for (const s of allShowcases) map[s.id] = s;
     return map;
+  }, [allShowcases]);
+
+  const navigateToShowcase = useCallback((title: string): void => {
+    const match = allShowcases.find(
+      (s) => s.meta.title.toLowerCase() === title.toLowerCase(),
+    );
+    if (match) {
+      setActiveShowcaseId(match.id);
+      setActiveTab('overview');
+    }
   }, [allShowcases]);
 
   const filtered = useMemo(() => {
@@ -275,7 +286,9 @@ export function ShowcaseGallery(): ReactElement | null {
               <section className={styles.preview} aria-label="Component preview">
                 <Card className={styles.previewCard}>
                   <MockProviders>
-                    <activeShowcase.Component />
+                    <ShowcaseNavigationContext.Provider value={{ navigateToShowcase }}>
+                      <activeShowcase.Component />
+                    </ShowcaseNavigationContext.Provider>
                   </MockProviders>
                 </Card>
               </section>
