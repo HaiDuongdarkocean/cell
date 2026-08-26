@@ -138,20 +138,6 @@ function flattenStaticTokens(staticObj) {
     push(`overlay-${key}`, value);
   }
 
-  // breakpoints
-  if (staticObj.breakpoints) {
-    for (const [key, value] of Object.entries(staticObj.breakpoints)) {
-      push(`breakpoint-${key}`, value);
-    }
-  }
-
-  // responsiveTypography
-  if (staticObj.responsiveTypography) {
-    for (const [key, value] of Object.entries(staticObj.responsiveTypography)) {
-      push(`responsive-${key}`, value);
-    }
-  }
-
   return lines.join('\n');
 }
 
