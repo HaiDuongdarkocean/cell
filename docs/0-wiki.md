@@ -97,6 +97,8 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
+**2026-08-28**: Cập nhật `Button` atom theo v4 mockup — thêm Liquid Glass tokens trong `tokens.json`, refactor `src/shared/ui/Button.module.css` (caustic surface/rim, reflex shadows, unified `outline`/`ghost` glass fill, 4 sizes/8 states), cập nhật `Button.showcase.tsx`, đồng bộ `docs/2-architechture-system.md`, tạo `docs/loop-result.md`. Build + Button tests pass; verify bằng stealth CDP design-system showcase. Log: `docs/loop-result.md`.
+
 **2026-08-28**: Redesign `src/entrypoints/design-system-showcase/` — SSOT taxonomy trong `autoDiscovery.ts`, cải tiến `ShowcaseGallery.tsx` IA/visual, tự phát hiện component thiếu showcase, tạo `.showcase.tsx` bổ sung, thêm `build:design-system`. Log: `docs/loop-result.md`.
 
 **2026-08-27**: Xác nhận intent và thêm spec/plan cho Liquid-Glass Button System: V4 visual approval gate → themed shared `Button`/`IconButton` → migrate subtitle action buttons/Tabs → tách overlay geometry ownership khỏi shared material. Files: `docs/intent/liquid-glass-buttons.md`, `docs/specs/liquid-glass-buttons.md`, `tasks/plan-liquid-glass-buttons.md`, `tasks/todo-liquid-glass-buttons.md`.
