@@ -116,15 +116,20 @@
 }
 
 .viewport {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--space-4) var(--space-4) var(--space-4) 0;
 }
 
 .previewCard {
+  width: 100%;
   max-width: 75rem;
-  margin: 0 auto;
+  align-self: center;
+  flex: 1;
+  min-height: 0;
 }
 
 .previewHeader {
