@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="vi" data-preset="dawn" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Input — Liquid Glass Concept</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-family), Inter, sans-serif;
+      font-size: var(--font-size-base);
+      color: var(--color-text);
+      background:
+        radial-gradient(ellipse 55% 45% at 85% 10%, var(--color-liquid-blob-subtle) 0%, transparent 60%),
+        radial-gradient(ellipse 45% 50% at 15% 85%, var(--color-leaf-subtle) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 40% at 50% 50%, var(--color-sun-subtle) 0%, transparent 50%),
+        linear-gradient(155deg, var(--color-background) 0%, var(--color-surface) 100%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+      padding: var(--space-6) var(--space-5) var(--space-12);
+    }
+
+    /* === Nav controls === */
+    .nav {
+      position: sticky;
+      top: var(--space-4);
+      z-index: 100;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      justify-content: center;
+      max-width: 720px;
+      margin: 0 auto var(--space-8);
+      padding: var(--space-2) var(--space-3);
+      background: color-mix(in srgb, var(--color-glass-surface), transparent 20%);
+      border: var(--border-width-hairline) solid var(--color-glass-border);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(var(--blur-xl)) saturate(150%);
+      -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(150%);
+      box-shadow: var(--shadow-md), inset 0 1px 0 var(--color-glass-inner-highlight);
+    }
+
+    .nav-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+    }
+
+    .nav button {
+      padding: var(--space-1) var(--space-2-5);
+      border: var(--border-width-hairline) solid transparent;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      color: var(--color-text-secondary);
+      background: transparent;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out), border-color var(--duration-fast) var(--ease-in-out);
+    }
+
+    .nav button:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .nav button[aria-pressed="true"] {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      border-color: color-mix(in srgb, var(--color-primary), transparent 70%);
+    }
+
+    /* === Page layout === */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .hero h1 {
+      margin: 0 0 var(--space-2);
+      font-size: var(--font-size-4xl);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: var(--tracking-tight);
+    }
+
+    .hero p {
+      margin: 0 auto;
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+      max-width: 580px;
+    }
+
+    .section {
+      position: relative;
+      padding: var(--space-6);
+      background: color-mix(in srgb, var(--color-glass-surface), transparent 30%);
+      border: var(--border-width-hairline) solid var(--color-glass-border);
+      border-radius: var(--radius-2xl);
+      backdrop-filter: blur(var(--blur-xl)) saturate(150%);
+      -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(150%);
+      box-shadow: var(--shadow-lg), inset 0 1px 0 var(--color-glass-inner-highlight);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .section-head {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .section-tag {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-accent);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+    }
+
+    .section h2 {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: var(--tracking-tight);
+    }
+
+    .section p {
+      margin: 0;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: flex-start;
+    }
+
+    .row-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      min-width: 72px;
+      padding-top: var(--space-2);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      min-width: 240px;
+      flex: 1;
+    }
+
+    .field-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+
+    .field-hint {
+      font-size: var(--font-size-2xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .field-error {
+      font-size: var(--font-size-2xs);
+      color: var(--color-error);
+    }
+
+    /* === Base Input === */
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .input-liquid {
+      width: 100%;
+      min-height: var(--input-height);
+      padding: var(--input-padding-y) var(--input-padding-x);
+      border: var(--border-width-hairline) solid var(--color-glass-border);
+      border-radius: var(--input-radius);
+      background: var(--color-glass-input-bg);
+      color: var(--color-text);
+      font-family: inherit;
+      font-size: var(--input-font-size);
+      font-weight: var(--input-font-weight);
+      line-height: var(--leading-tight);
+      backdrop-filter: blur(var(--blur-md)) saturate(140%);
+      -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
+      box-shadow:
+        inset 0 1px 0 var(--color-glass-inner-highlight),
+        0 1px 2px var(--color-shadow);
+      transition:
+        border-color var(--duration-fast) var(--ease-in-out),
+        background var(--duration-fast) var(--ease-in-out),
+        box-shadow var(--duration-fast) var(--ease-in-out);
+      outline: none;
+    }
+
+    .input-liquid::placeholder { color: var(--color-text-secondary); opacity: 0.8; }
+
+    .input-liquid:hover:not(:disabled, .input-readonly) {
+      background: var(--color-glass-surface-hover);
+      border-color: var(--color-border-emphasized);
+    }
+
+    .input-liquid:focus-visible {
+      border-color: var(--color-border-focus);
+      box-shadow:
+        0 0 0 var(--space-0-5) var(--color-primary-subtle),
+        inset 0 1px 0 var(--color-glass-inner-highlight);
+    }
+
+    .input-liquid:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--color-glass-surface);
+    }
+
+    .input-liquid.input-readonly {
+      background: var(--color-glass-surface);
+      cursor: default;
+    }
+
+    .input-liquid.input-error,
+    .input-liquid.input-error:focus-visible {
+      border-color: var(--color-error);
+    }
+
+    .input-liquid.input-error:focus-visible {
+      box-shadow:
+        0 0 0 var(--space-0-5) var(--color-error-subtle),
+        inset 0 1px 0 var(--color-glass-inner-highlight);
+    }
+
+    .input-liquid.input-filled:not(:focus) { border-color: var(--color-border-focus); }
+
+    .input-liquid.input-success,
+    .input-liquid.input-success:focus-visible {
+      border-color: var(--color-success);
+    }
+
+    .input-liquid.input-success:focus-visible {
+      box-shadow:
+        0 0 0 var(--space-0-5) var(--color-success-subtle),
+        inset 0 1px 0 var(--color-glass-inner-highlight);
+    }
+
+    /* === Prefix / Suffix === */
+    .input-prefix,
+    .input-suffix {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .input-prefix { left: var(--space-3); }
+    .input-suffix { right: var(--space-3); }
+
+    .input-suffix.action {
+      pointer-events: auto;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: color var(--duration-fast) var(--ease-in-out);
+    }
+
+    .input-suffix.action:hover { color: var(--color-text); }
+
+    .input-liquid.has-prefix { padding-left: calc(var(--input-padding-x) + var(--space-5)); }
+    .input-liquid.has-suffix { padding-right: calc(var(--input-padding-x) + var(--space-5)); }
+
+    /* === Sizes === */
+    .input-liquid.input-sm {
+      min-height: var(--input-height-sm);
+      padding: var(--input-padding-y-sm) var(--input-padding-x-sm);
+      font-size: var(--input-font-size-sm);
+    }
+
+    .input-liquid.input-sm.has-prefix { padding-left: calc(var(--input-padding-x-sm) + var(--space-5)); }
+    .input-liquid.input-sm.has-suffix { padding-right: calc(var(--input-padding-x-sm) + var(--space-5)); }
+
+    .input-liquid.input-lg {
+      min-height: var(--input-height-lg);
+      padding: var(--input-padding-y-lg) var(--input-padding-x-lg);
+      font-size: var(--input-font-size-lg);
+    }
+
+    .input-liquid.input-lg.has-prefix { padding-left: calc(var(--input-padding-x-lg) + var(--space-6)); }
+    .input-liquid.input-lg.has-suffix { padding-right: calc(var(--input-padding-x-lg) + var(--space-6)); }
+
+    .input-sm ~ .input-prefix,
+    .input-sm ~ .input-suffix { left: var(--space-2-5); }
+    .input-sm ~ .input-suffix { right: var(--space-2-5); left: auto; }
+
+    .input-lg ~ .input-prefix,
+    .input-lg ~ .input-suffix { left: var(--space-3-5); }
+    .input-lg ~ .input-suffix { right: var(--space-3-5); left: auto; }
+
+    /* === Variants === */
+    .input-liquid.variant-filled {
+      background: var(--color-glass-surface);
+      border-color: transparent;
+      box-shadow: inset 0 1px 0 var(--color-glass-inner-highlight);
+    }
+
+    .input-liquid.variant-filled:hover:not(:disabled) {
+      background: var(--color-glass-surface-hover);
+      border-color: var(--color-glass-border);
+    }
+
+    .input-liquid.variant-outline {
+      background: transparent;
+      border-color: var(--color-border);
+    }
+
+    .input-liquid.variant-outline:hover:not(:disabled) {
+      background: var(--color-glass-surface-hover);
+      border-color: var(--color-border-emphasized);
+    }
+
+    .input-liquid.variant-ghost {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .input-liquid.variant-ghost:hover:not(:disabled) {
+      background: var(--color-glass-surface-hover);
+    }
+
+    /* === States visual helpers === */
+    .state-card {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      min-width: 220px;
+      flex: 1;
+    }
+
+    .state-title {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    /* === Loading spinner === */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--color-glass-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 0; }
+      .section { padding: var(--space-4); }
+      .row { flex-direction: column; }
+      .field { min-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Theme controls">
+    <span class="nav-label">Preset</span>
+    <button data-preset="dawn" aria-pressed="true">Sky</button>
+    <button data-preset="ocean">Ocean</button>
+    <button data-preset="forest">Forest</button>
+    <button data-preset="warmth">Sun</button>
+    <span class="nav-label" style="margin-left: auto;">Mode</span>
+    <button data-theme="light" aria-pressed="true">Light</button>
+    <button data-theme="dark">Dark</button>
+  </nav>
+
+  <main class="page">
+    <header class="hero">
+      <h1>Input — Liquid Glass</h1>
+      <p>Atom input cho Cell: trong suốt như giọt sương, mềm mại như tán lá, phản hồi tức thì khi chạm.</p>
+    </header>
+
+    <!-- === States === -->
+    <section class="section">
+      <div class="section-head">
+        <span class="section-tag">States</span>
+        <h2>Trạng thái tương tác</h2>
+        <p>Mọi trạng thái đều dùng token glass và nature accents có sẵn.</p>
+      </div>
+
+      <div class="row">
+        <div class="state-card">
+          <span class="state-title">Default</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input class="input-liquid has-prefix" type="text" placeholder="Tìm từ vựng..." />
+          </div>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Hover</span>
+          <div class="input-wrap">
+            <input class="input-liquid" type="text" value="Hover qua em đi anh" />
+          </div>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Focus</span>
+          <div class="input-wrap">
+            <input class="input-liquid" type="text" value="Đang focus nè" autofocus />
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="state-card">
+          <span class="state-title">Filled</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </span>
+            <input class="input-liquid has-prefix input-filled" type="url" value="https://themoviebox.xyz/..." />
+          </div>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Error</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            <input class="input-liquid has-prefix input-error" type="email" value="khong-phai-email" aria-invalid="true" />
+          </div>
+          <span class="field-error">Email không hợp lệ</span>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Loading</span>
+          <div class="input-wrap">
+            <input class="input-liquid" type="text" value="Đang tìm kiếm..." />
+            <span class="input-suffix" aria-hidden="true"><span class="spinner"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="state-card">
+          <span class="state-title">Disabled</span>
+          <div class="input-wrap">
+            <input class="input-liquid" type="text" value="Không chỉnh được" disabled />
+          </div>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Read-only</span>
+          <div class="input-wrap">
+            <input class="input-liquid input-readonly" type="text" value="Chỉ đọc thôi" readonly />
+          </div>
+        </div>
+
+        <div class="state-card">
+          <span class="state-title">Success</span>
+          <div class="input-wrap">
+            <input class="input-liquid input-success" type="text" value="URL hợp lệ" />
+            <span class="input-suffix" aria-hidden="true" style="color: var(--color-success);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === Sizes === -->
+    <section class="section">
+      <div class="section-head">
+        <span class="section-tag">Sizes</span>
+        <h2>Kích thước</h2>
+        <p>Small cho filter bar, Medium mặc định, Large cho hero search.</p>
+      </div>
+      <div class="row">
+        <div class="field">
+          <span class="field-label">Small — 28px</span>
+          <div class="input-wrap">
+            <input class="input-liquid input-sm" type="text" placeholder="Filter..." />
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Medium — 32px</span>
+          <div class="input-wrap">
+            <input class="input-liquid" type="text" placeholder="Nhập nội dung..." />
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Large — 40px</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input class="input-liquid input-lg has-prefix" type="text" placeholder="Dán link video..." />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === Variants === -->
+    <section class="section">
+      <div class="section-head">
+        <span class="section-tag">Variants</span>
+        <h2>Hình dạng &amp; phong cách</h2>
+        <p>Glass là mặc định. Filled dùng trên nền phức tạp. Outline cho form nghiêm túc. Ghost cho inline edit.</p>
+      </div>
+      <div class="row">
+        <div class="field">
+          <span class="field-label">Glass</span>
+          <input class="input-liquid" type="text" placeholder="Trong suốt, blur nền" />
+        </div>
+        <div class="field">
+          <span class="field-label">Filled</span>
+          <input class="input-liquid variant-filled" type="text" placeholder="Nền đục nhẹ" />
+        </div>
+        <div class="field">
+          <span class="field-label">Outline</span>
+          <input class="input-liquid variant-outline" type="text" placeholder="Viền rõ" />
+        </div>
+        <div class="field">
+          <span class="field-label">Ghost</span>
+          <input class="input-liquid variant-ghost" type="text" placeholder="Không nền" />
+        </div>
+      </div>
+    </section>
+
+    <!-- === Prefix / Suffix === -->
+    <section class="section">
+      <div class="section-head">
+        <span class="section-tag">Patterns</span>
+        <h2>Prefix &amp; Suffix</h2>
+        <p>Các slot cho icon hành động: search, link, password toggle, clear, loading.</p>
+      </div>
+      <div class="row">
+        <div class="field">
+          <span class="field-label">Search</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input class="input-liquid has-prefix" type="search" placeholder="Tìm từ..." />
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">URL</span>
+          <div class="input-wrap">
+            <span class="input-prefix" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </span>
+            <input class="input-liquid has-prefix" type="url" placeholder="Dán link video" />
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Password</span>
+          <div class="input-wrap">
+            <input class="input-liquid has-suffix" type="password" value="matkhau" />
+            <button class="input-suffix action" type="button" aria-label="Hiện mật khẩu" style="background: none; border: none; padding: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="field-label">Clearable</span>
+          <div class="input-wrap">
+            <input class="input-liquid has-suffix" type="text" value="Giá trị cần xóa" />
+            <button class="input-suffix action" type="button" aria-label="Xóa" style="background: none; border: none; padding: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === Nature accents === -->
+    <section class="section">
+      <div class="section-head">
+        <span class="section-tag">Nature palette</span>
+        <h2>Màu sắc thiên nhiên</h2>
+        <p>Bầu trời, nước, cây, sỏi, đất, mặt trời — được dùng làm accent cho từng preset.</p>
+      </div>
+      <div class="row">
+        <div class="field" style="--color-border-focus: var(--color-primary); --color-primary-subtle: var(--color-tint-blue-background);">
+          <span class="field-label">Sky / Water</span>
+          <input class="input-liquid" type="text" placeholder="Focus sẽ là xanh dương" />
+        </div>
+        <div class="field" style="--color-border-focus: var(--color-leaf); --color-primary-subtle: var(--color-leaf-subtle);">
+          <span class="field-label">Leaf</span>
+          <input class="input-liquid" type="text" placeholder="Focus sẽ là xanh lá" />
+        </div>
+        <div class="field" style="--color-border-focus: var(--color-earth); --color-primary-subtle: var(--color-earth-subtle);">
+          <span class="field-label">Earth</span>
+          <input class="input-liquid" type="text" placeholder="Focus sẽ là nâu đất" />
+        </div>
+        <div class="field" style="--color-border-focus: var(--color-sun); --color-primary-subtle: var(--color-sun-subtle);">
+          <span class="field-label">Sun</span>
+          <input class="input-liquid" type="text" placeholder="Focus sẽ là vàng nắng" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const html = document.documentElement;
+    const nav = document.querySelector('.nav');
+
+    nav.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      if (btn.dataset.preset) {
+        html.dataset.preset = btn.dataset.preset;
+        nav.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+      }
+
+      if (btn.dataset.theme) {
+        html.dataset.theme = btn.dataset.theme;
+        nav.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+      }
+    });
+  </script>
+</body>
+</html>

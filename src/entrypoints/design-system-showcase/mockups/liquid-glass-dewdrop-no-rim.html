@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dewdrop (No Rim) — Sương Mai · Liquid Glass Button v2</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('dewdrop-theme');
+      const savedPreset = localStorage.getItem('dewdrop-preset') || 'dawn';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+      document.documentElement.dataset.preset = savedPreset;
+    })();
+  </script>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    /* ============================================================
+       4 THEMES — Dawn / Forest / Ocean / Warmth
+       ============================================================ */
+    :root {
+      --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+      --dew-primary: #5EA5E9;
+      --dew-primary-dark: #4A8FD4;
+      --dew-primary-soft: rgba(94, 165, 233, 0.08);
+      --dew-success: #5FD389;
+      --dew-success-dark: #3CB371;
+      --dew-success-soft: rgba(95, 211, 137, 0.08);
+      --dew-error: #C45A5A;
+      --dew-error-soft: rgba(196, 90, 90, 0.07);
+      --dew-sun: #F5C542;
+      --dew-sun-soft: rgba(245, 197, 66, 0.10);
+      --dew-text: #1F2D3D;
+      --dew-text-sec: #5A6A7A;
+      --dew-leaf-tint: rgba(94, 165, 233, 0.08);
+      --dew-glass-bg: rgba(255, 255, 255, 0.30);
+      --dew-glass-bg-hover: rgba(255, 255, 255, 0.40);
+      --dew-glass-border: rgba(255, 255, 255, 0.35);
+      --dew-glass-border-tint: rgba(94, 165, 233, 0.18);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.22);
+      /* Soft, diffused surface highlight for light mode.
+         In sương mai: ánh sáng không rõ nét, trong suốt, mờ dần radial.
+         Two local sources at 135° and 315°, each fading independently. */
+      --dew-surface-glow: rgba(255, 255, 255, 0.14);
+      --dew-edge-glow: rgba(255, 255, 255, 0.30);
+      /* Diagonal light reflection — light hits the curved surface at 45°.
+         The "edge" is NOT horizontal/vertical — it follows the diagonal.
+         Light side (top-left 45°): sunlight reflecting off the curve.
+         Dark side (bottom-right 45°): water depth + contact with leaf. */
+      --dew-edge-dark: rgba(0, 0, 0, 0.08);
+      --dew-edge-dark-hover: rgba(0, 0, 0, 0.10);
+      --dew-refraction-ring: rgba(255, 255, 255, 0.18);
+      --dew-contact-shadow: rgba(0, 0, 0, 0.05);
+      --dew-ambient-glow: rgba(94, 165, 233, 0.18);
+      --dew-bg-grad: linear-gradient(135deg, #E8F2FC 0%, #F5FAFE 40%, #EAF5E8 100%);
+    }
+    [data-preset="forest"] {
+      --dew-primary: #5FD389;
+      --dew-primary-dark: #3CB371;
+      --dew-primary-soft: rgba(95, 211, 137, 0.08);
+      --dew-success: #5FD389;
+      --dew-success-dark: #3CB371;
+      --dew-success-soft: rgba(95, 211, 137, 0.08);
+      --dew-leaf-tint: rgba(95, 211, 137, 0.08);
+      --dew-glass-border-tint: rgba(95, 211, 137, 0.18);
+      --dew-ambient-glow: rgba(95, 211, 137, 0.18);
+      --dew-bg-grad: linear-gradient(135deg, #E8F8EF 0%, #F2FAF5 40%, #E8F5E0 100%);
+    }
+    [data-preset="ocean"] {
+      --dew-primary: #3B82C4;
+      --dew-primary-dark: #2B6B7A;
+      --dew-primary-soft: rgba(59, 130, 196, 0.08);
+      --dew-leaf-tint: rgba(59, 130, 196, 0.08);
+      --dew-glass-border-tint: rgba(59, 130, 196, 0.18);
+      --dew-ambient-glow: rgba(59, 130, 196, 0.18);
+      --dew-bg-grad: linear-gradient(135deg, #D8EEF5 0%, #E8F4F7 40%, #D0E8F0 100%);
+    }
+    [data-preset="warmth"] {
+      --dew-primary: #E8A34D;
+      --dew-primary-dark: #D4943E;
+      --dew-primary-soft: rgba(232, 163, 77, 0.09);
+      --dew-leaf-tint: rgba(232, 163, 77, 0.08);
+      --dew-glass-border-tint: rgba(232, 163, 77, 0.18);
+      --dew-ambient-glow: rgba(232, 163, 77, 0.16);
+      --dew-glass-bg: rgba(255, 251, 240, 0.32);
+      --dew-glass-bg-hover: rgba(255, 251, 240, 0.42);
+      --dew-glass-border: rgba(255, 255, 255, 0.40);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.24);
+      --dew-surface-glow: rgba(255, 255, 255, 0.16);
+      --dew-edge-glow: rgba(255, 255, 255, 0.32);
+      --dew-bg-grad: linear-gradient(135deg, #FFF6E0 0%, #FFFBF0 40%, #FFF0D8 100%);
+    }
+    [data-theme="dark"] {
+      /* Dark mode: dark vibrancy layer with R1 limit (< 0.55).
+         Blur must be strong (20px) so refraction (R6) still reads.
+         Text shadow is the primary legibility tool, not an opaque backing (R5). */
+      --dew-text: #F7F8F8;
+      --dew-text-sec: #B8C0CA;
+      --dew-glass-bg: rgba(18, 28, 38, 0.52);
+      --dew-glass-bg-hover: rgba(24, 36, 48, 0.58);
+      --dew-glass-border: rgba(255, 255, 255, 0.10);
+      --dew-glass-border-tint: rgba(94, 165, 233, 0.18);
+      --dew-inner-highlight: rgba(255, 255, 255, 0.05);
+      --dew-surface-glow: rgba(255, 255, 255, 0.03);
+      --dew-edge-glow: rgba(255, 255, 255, 0.14);
+      --dew-edge-dark: rgba(0, 0, 0, 0.30);
+      --dew-edge-dark-hover: rgba(0, 0, 0, 0.34);
+      --dew-refraction-ring: rgba(255, 255, 255, 0.06);
+      --dew-contact-shadow: rgba(0, 0, 0, 0.35);
+      --dew-ambient-glow: rgba(94, 165, 233, 0.16);
+      /* R3: variant tints must be faint (< 0.12) to avoid impure color fill. */
+      --dew-primary-soft: rgba(94, 165, 233, 0.10);
+      --dew-success-soft: rgba(95, 211, 137, 0.10);
+      --dew-error-soft: rgba(196, 90, 90, 0.09);
+      /* R7: all variant text = white; color only in reflected rim. */
+      --dew-primary-dark: #F7F8F8;
+      --dew-success-dark: #F7F8F8;
+      --dew-error: #F7F8F8;
+      --dew-bg-grad: linear-gradient(135deg, #0F202E 0%, #162637 40%, #0E1C25 100%);
+    }
+    [data-theme="dark"][data-preset="forest"] {
+      /* Forest dark: dark green glass tint matches bg color family */
+      --dew-glass-bg: rgba(14, 30, 22, 0.50);
+      --dew-glass-bg-hover: rgba(18, 38, 28, 0.55);
+      --dew-glass-border-tint: rgba(95, 211, 137, 0.18);
+      --dew-ambient-glow: rgba(95, 211, 137, 0.16);
+      --dew-bg-grad: linear-gradient(135deg, #0E241B 0%, #152F23 40%, #0C1F18 100%);
+    }
+    [data-theme="dark"][data-preset="ocean"] {
+      /* Ocean dark: dark teal glass tint */
+      --dew-glass-bg: rgba(10, 24, 32, 0.50);
+      --dew-glass-bg-hover: rgba(14, 32, 42, 0.55);
+      --dew-glass-border-tint: rgba(91, 163, 232, 0.18);
+      --dew-ambient-glow: rgba(91, 163, 232, 0.16);
+      --dew-bg-grad: linear-gradient(135deg, #0C1C25 0%, #122A36 40%, #0A1820 100%);
+    }
+    [data-theme="dark"][data-preset="warmth"] {
+      /* Warmth dark: dark warm brown glass tint */
+      --dew-glass-bg: rgba(38, 28, 14, 0.50);
+      --dew-glass-bg-hover: rgba(48, 36, 18, 0.55);
+      --dew-glass-border-tint: rgba(232, 163, 77, 0.18);
+      --dew-ambient-glow: rgba(232, 163, 77, 0.16);
+      --dew-bg-grad: linear-gradient(135deg, #2A1F0E 0%, #3A2A12 40%, #251A0C 100%);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family), Inter, sans-serif;
+      color: var(--dew-text);
+      min-height: 100dvh;
+      padding: var(--space-6) var(--space-5) var(--space-9);
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.5s var(--ease-out), color 0.4s var(--ease-out);
+    }
+
+    /* === Background: leaf + water bokeh — để thấy khúc xạ === */
+    .scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .scene-grad {
+      position: absolute;
+      inset: 0;
+      background: var(--dew-bg-grad);
+      transition: background 0.5s var(--ease-out);
+    }
+    .bokeh {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      pointer-events: none;
+    }
+    .bokeh-1 { width: 380px; height: 380px; top: -100px; right: -80px; background: var(--dew-primary); opacity: 0.10; }
+    .bokeh-2 { width: 300px; height: 300px; bottom: -60px; left: -60px; background: var(--dew-sun); opacity: 0.08; }
+    .bokeh-3 { width: 220px; height: 220px; top: 30%; left: 15%; background: var(--dew-primary-soft); opacity: 0.6; }
+    /* Leaf vein pattern — subtle organic texture behind buttons */
+    .leaf-texture {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image:
+        repeating-linear-gradient(105deg, transparent 0, transparent 40px, currentColor 40px, currentColor 41px),
+        repeating-linear-gradient(75deg, transparent 0, transparent 60px, currentColor 60px, currentColor 61px);
+      color: var(--dew-primary);
+    }
+    [data-theme="dark"] .leaf-texture { opacity: 0.06; }
+
+    /* === Nav === */
+    .nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      justify-content: center;
+      max-width: 760px;
+      margin: 0 auto var(--space-7);
+      padding: var(--space-1-5) var(--space-3);
+      background: var(--dew-glass-bg);
+      border: 1px solid var(--dew-glass-border);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      box-shadow: 0 8px 32px var(--dew-contact-shadow), inset 0 1px 0 var(--dew-inner-highlight);
+    }
+    .nav-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--dew-text-sec); letter-spacing: var(--tracking-wide); text-transform: uppercase; margin-right: var(--space-1); }
+    .preset-btn {
+      padding: var(--space-1) var(--space-2-5);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      color: var(--dew-text-sec);
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    }
+    .preset-btn:hover { background: var(--dew-primary-soft); color: var(--dew-primary-dark); }
+    .preset-btn[aria-pressed="true"] { background: var(--dew-primary); color: #fff; }
+    [data-preset="warmth"] .preset-btn[aria-pressed="true"] { color: #3A2A12; }
+    .theme-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--dew-glass-border); background: transparent;
+      color: var(--dew-text-sec); cursor: pointer; margin-left: auto;
+    }
+    .theme-toggle:hover { background: var(--dew-primary-soft); color: var(--dew-primary); }
+    [data-theme="dark"] .theme-sun { display: none; }
+    [data-theme="light"] .theme-moon { display: none; }
+
+    /* === Layout === */
+    .container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-7); }
+    .page-head { text-align: center; margin-bottom: var(--space-2); }
+    .page-head h1 { margin: 0 0 var(--space-2); font-size: var(--font-size-3xl); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-tight); }
+    .page-head .eyebrow { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--dew-primary-dark); margin-bottom: var(--space-1); display: block; }
+    .page-head p { margin: 0; font-size: var(--font-size-base); color: var(--dew-text-sec); line-height: var(--leading-relaxed); max-width: 580px; margin: 0 auto; }
+
+    /* === Section card — also glass, so buttons sit ON glass over glass === */
+    .section {
+      position: relative;
+      padding: var(--space-7);
+      background: var(--dew-glass-bg);
+      border: 1px solid var(--dew-glass-border);
+      border-radius: var(--radius-2xl);
+      box-shadow: 0 24px 60px var(--dew-contact-shadow), inset 0 1px 0 var(--dew-inner-highlight);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      display: flex; flex-direction: column; gap: var(--space-5);
+    }
+    [data-theme="dark"] .section {
+      backdrop-filter: blur(28px) saturate(160%);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+    }
+    .section-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+    .section-tag { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--dew-primary-dark); }
+    .section h2 { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-tight); }
+    .section-desc { margin: 0; font-size: var(--font-size-sm); color: var(--dew-text-sec); line-height: var(--leading-relaxed); }
+    .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .row-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--dew-text-sec); letter-spacing: var(--tracking-wide); text-transform: uppercase; min-width: 72px; }
+    .divider { height: 1px; background: var(--dew-glass-border); margin: var(--space-1) 0; }
+
+    /* ============================================================
+       DEWDROP — Sương Mai
+       Hạt sương đậu trên lá: trong suốt, khúc xạ, ánh dương phản chiếu.
+       Nhấn nhẹ → rung "có như không" + làn sóng lan ra.
+       ============================================================ */
+    .dewdrop {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1-5);
+      padding: var(--space-2-5) var(--space-5);
+      /* No solid border — a water droplet has no edge line.
+         The "edge" is light reflecting off the curved surface at 45°.
+         Drawn by ::after as a diagonal gradient, not by border. */
+      border: none;
+      border-radius: var(--radius-pill);
+      background: var(--dew-glass-bg);
+      color: var(--dew-text);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      min-height: 40px;
+      /* Khúc xạ — leaf behind appears blurred through the dewdrop.
+         Dark mode uses stronger blur to smear background detail away
+         from text, ensuring legibility over any background. */
+      backdrop-filter: blur(14px) saturate(150%);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      /* Only outer contact shadow here — the droplet resting on the leaf.
+         The diagonal light reflection is drawn by ::after. */
+      box-shadow: 0 1px 3px var(--dew-contact-shadow);
+      /* Text halo — subtle dark shadow protects text legibility over
+         any background, especially in dark mode with bright content behind. */
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.12),
+        0 2px 4px rgba(0, 0, 0, 0.08);
+      transition:
+        background-color 0.3s var(--ease-out),
+        box-shadow 0.3s var(--ease-out),
+        transform 0.18s var(--ease-out);
+    }
+    [data-theme="dark"] .dewdrop {
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.45),
+        0 2px 5px rgba(0, 0, 0, 0.40),
+        0 4px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Sunlight reflection — two LOCAL light sources on the curved surface.
+       Top-left (135°) AND bottom-right (315°) — each glows softly and fades
+       independently toward the center. Not a connected beam — two diffused
+       caustics where light catches the water curve.
+       In sương mai: ánh sáng trong suốt, mờ dần, không rõ nét. */
+    .dewdrop::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: inherit;
+      background:
+        radial-gradient(
+          ellipse 55% 45% at 22% 18%,
+          var(--dew-inner-highlight) 0%,
+          color-mix(in srgb, var(--dew-inner-highlight), transparent 55%) 35%,
+          color-mix(in srgb, var(--dew-surface-glow), transparent 80%) 60%,
+          transparent 80%
+        ),
+        radial-gradient(
+          ellipse 55% 45% at 78% 82%,
+          var(--dew-inner-highlight) 0%,
+          color-mix(in srgb, var(--dew-inner-highlight), transparent 55%) 35%,
+          color-mix(in srgb, var(--dew-surface-glow), transparent 80%) 60%,
+          transparent 80%
+        );
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.85;
+      filter: blur(0.8px);
+      transition: opacity 0.3s var(--ease-out);
+    }
+
+    /* Curved inner shadow — lensing bulge where light hits the surface.
+       Inset shadow with DIAGONAL offset creates an arc following the curve.
+       Offset (3px 3px) = shadow directed at 45° → arc sáng góc trên-trái.
+       Offset (-3px -3px) = shadow directed at 315° → arc sáng góc dưới-phải.
+       Blur 8px + spread -2px = mỏng, mờ, subtle — "sự bóng lên" của ánh sáng.
+       Mức sáng nhỏ (0.12-0.18) để không lấn át ánh sáng chính. */
+    .dewdrop {
+      box-shadow:
+        inset 3px 3px 12px -2px rgba(255, 255, 255, 0.10),
+        inset -3px -3px 12px -2px rgba(255, 255, 255, 0.08),
+        0 1px 3px var(--dew-contact-shadow);
+    }
+    [data-theme="dark"] .dewdrop {
+      box-shadow:
+        inset 3px 3px 12px -2px rgba(255, 255, 255, 0.06),
+        inset -3px -3px 12px -2px rgba(255, 255, 255, 0.05),
+        0 1px 3px var(--dew-contact-shadow);
+    }
+
+    /* No rim. Instead: two tiny caustic dots at 135° and 315°.
+       Each dot is small, blurred, and isolated — no connecting ring.
+       This preserves the dewdrop shape through light only, never a border. */
+    .dewdrop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        radial-gradient(
+          ellipse 12% 9% at 15% 15%,
+          var(--dew-edge-glow) 0%,
+          color-mix(in srgb, var(--dew-edge-glow), transparent 60%) 30%,
+          transparent 55%
+        ),
+        radial-gradient(
+          ellipse 12% 9% at 85% 85%,
+          var(--dew-edge-glow) 0%,
+          color-mix(in srgb, var(--dew-edge-glow), transparent 60%) 30%,
+          transparent 55%
+        );
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(0.6px);
+      transition: background 0.3s var(--ease-out);
+    }
+
+    /* Children paint above glass layers */
+    .dewdrop > * { position: relative; z-index: 1; pointer-events: none; }
+
+    /* Hover — sunlight intensifies, dewdrop brightens slightly.
+       Không lift — giọt sương nằm yên trên lá, không bay lên.
+       Inner shadow cong mạnh hơn + ambient glow. */
+    .dewdrop:hover {
+      background: var(--dew-glass-bg-hover);
+      box-shadow:
+        inset 3px 3px 14px -2px rgba(255, 255, 255, 0.14),
+        inset -3px -3px 14px -2px rgba(255, 255, 255, 0.11),
+        0 2px 8px var(--dew-ambient-glow),
+        0 1px 3px var(--dew-contact-shadow);
+    }
+    [data-theme="dark"] .dewdrop:hover {
+      box-shadow:
+        inset 3px 3px 14px -2px rgba(255, 255, 255, 0.08),
+        inset -3px -3px 14px -2px rgba(255, 255, 255, 0.07),
+        0 2px 8px var(--dew-ambient-glow),
+        0 1px 3px var(--dew-contact-shadow);
+    }
+    .dewdrop:hover::after {
+      background:
+        radial-gradient(
+          ellipse 14% 11% at 15% 15%,
+          var(--dew-edge-glow) 0%,
+          color-mix(in srgb, var(--dew-edge-glow), transparent 55%) 30%,
+          transparent 55%
+        ),
+        radial-gradient(
+          ellipse 14% 11% at 85% 85%,
+          var(--dew-edge-glow) 0%,
+          color-mix(in srgb, var(--dew-edge-glow), transparent 55%) 30%,
+          transparent 55%
+        );
+    }
+    .dewdrop:hover::before { opacity: 1; }
+
+    /* Focus-visible — water surface tension ring.
+       Ring nhẹ, không nặng — như sức căng bề mặt nước. */
+    .dewdrop:focus-visible {
+      outline: 2px solid var(--dew-primary);
+      outline-offset: 2px;
+    }
+    .dewdrop:focus-visible::before { opacity: 1; }
+
+    /* Pressed — "có như không".
+       scale(0.985) — gần như không cảm nhận. Như chạm mặt nước.
+       Inner shadow cong giảm — mặt nước ép xuống. */
+    .dewdrop:active {
+      transform: scale(0.985);
+      box-shadow:
+        inset 2px 2px 6px -2px rgba(255, 255, 255, 0.10),
+        inset -2px -2px 6px -2px rgba(255, 255, 255, 0.08),
+        0 0 1px var(--dew-contact-shadow);
+      transition: transform 0.08s var(--ease-out), box-shadow 0.08s var(--ease-out);
+    }
+
+    /* Disabled — dried dewdrop. Still there but lifeless. */
+    .dewdrop:disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+    .dewdrop:disabled::before { opacity: 0.3; }
+
+    /* === Variants ===
+       Each variant tints the RIM light reflection, not the surface glow.
+       ::before stays white (ambient sunlight); ::after picks up preset color.
+       Variant color conveyed through rim caustics + bg tint + ambient glow. */
+
+    /* Primary — sky-blue tinted dewdrop (dawn light through the drop) */
+    .dewdrop--primary {
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-primary-soft) 8%);
+      color: var(--dew-primary-dark);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-primary) 15%);
+    }
+    .dewdrop--primary:hover {
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-primary-soft) 10%);
+      color: var(--dew-primary-dark);
+    }
+
+    /* Glass — purest dewdrop, most transparent */
+    .dewdrop--glass {
+      background: var(--dew-glass-bg);
+    }
+    .dewdrop--glass:hover {
+      background: var(--dew-glass-bg-hover);
+    }
+
+    /* Outline — dewdrop with only a refraction ring, no fill.
+       The rim has two faint local caustics at 135° and 315°. */
+    .dewdrop--outline {
+      background: transparent;
+      backdrop-filter: blur(8px) saturate(130%);
+      -webkit-backdrop-filter: blur(8px) saturate(130%);
+      --dew-edge-glow: var(--dew-glass-border-tint);
+    }
+    .dewdrop--outline:hover {
+      background: var(--dew-primary-soft);
+    }
+
+    /* Ghost — barely visible dewdrop, only ripple on touch */
+    .dewdrop--ghost {
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: none;
+      --dew-edge-glow: transparent;
+      --dew-edge-dark: transparent;
+      --dew-edge-dark-hover: transparent;
+    }
+    .dewdrop--ghost::before { display: none; }
+    .dewdrop--ghost::after { display: none; }
+    .dewdrop--ghost:hover {
+      background: var(--dew-primary-soft);
+      color: var(--dew-primary-dark);
+    }
+
+    /* Success — leaf-green tinted dewdrop */
+    .dewdrop--success {
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-success-soft) 8%);
+      color: var(--dew-success-dark);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-success) 15%);
+    }
+    .dewdrop--success:hover {
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-success-soft) 10%);
+    }
+
+    /* Destructive — error-tinted dewdrop (damaged leaf) */
+    .dewdrop--destructive {
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-error-soft) 8%);
+      color: var(--dew-error);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 80%, var(--dew-error) 20%);
+    }
+    .dewdrop--destructive:hover {
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-error-soft) 10%);
+    }
+
+    /* === Sizes === */
+    .dewdrop--sm {
+      padding: var(--space-1-5) var(--space-3);
+      font-size: var(--font-size-xs);
+      min-height: 32px;
+      height: 32px;
+    }
+    .dewdrop--lg {
+      padding: var(--space-3) var(--space-6);
+      font-size: var(--font-size-base);
+      min-height: 48px;
+    }
+    .dewdrop--xl {
+      padding: var(--space-3-5) var(--space-7);
+      font-size: var(--font-size-lg);
+      min-height: 56px;
+      font-weight: var(--font-weight-semibold);
+      /* Larger dewdrop = thicker glass = stronger refraction */
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+    }
+
+    /* === States === */
+
+    /* Active (toggle) — dewdrop settled, persistent gentle glow */
+    .dewdrop--active,
+    .dewdrop--active:hover {
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-primary-soft) 8%);
+      color: var(--dew-primary-dark);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 85%, var(--dew-primary) 15%);
+      box-shadow: 0 0 12px var(--dew-ambient-glow);
+    }
+
+    /* Loading — dewdrop trembling gently (soft pulse, not spinner) */
+    .dewdrop--loading {
+      pointer-events: none;
+      cursor: wait;
+      animation: dewdropTremble 1.8s var(--ease-in-out) infinite;
+    }
+    .dewdrop--loading::before {
+      animation: dewdropShimmer 1.8s var(--ease-in-out) infinite;
+    }
+    @keyframes dewdropTremble {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.992); }
+    }
+    @keyframes dewdropShimmer {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; }
+    }
+
+    /* Error — dewdrop with red-tinted rim caustics */
+    .dewdrop--error {
+      background: color-mix(in srgb, var(--dew-glass-bg) 92%, var(--dew-error-soft) 8%);
+      color: var(--dew-error);
+      --dew-edge-glow: color-mix(in srgb, rgba(255, 255, 255, 0.12) 75%, var(--dew-error) 25%);
+    }
+    .dewdrop--error:hover {
+      background: color-mix(in srgb, var(--dew-glass-bg-hover) 90%, var(--dew-error-soft) 10%);
+    }
+
+    /* === Ripple — làn sóng lan ra từ điểm chạm ===
+       Rất nhẹ, opacity thấp, lan chậm — như sóng trên mặt nước tĩnh. */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.15) 40%,
+        transparent 70%
+      );
+      transform: scale(0);
+      animation: dewdropRipple 0.7s var(--ease-out);
+      pointer-events: none;
+      z-index: 0;
+    }
+    [data-theme="dark"] .ripple {
+      background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.06) 40%,
+        transparent 70%
+      );
+    }
+    .dewdrop--primary .ripple,
+    .dewdrop--success .ripple {
+      background: radial-gradient(
+        circle,
+        var(--dew-primary-soft) 0%,
+        transparent 70%
+      );
+    }
+    .dewdrop--success .ripple {
+      background: radial-gradient(
+        circle,
+        var(--dew-success-soft) 0%,
+        transparent 70%
+      );
+    }
+    @keyframes dewdropRipple {
+      0% { transform: scale(0); opacity: 0.6; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
+    /* === Icon === */
+    .dewdrop svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .dewdrop--xl svg { width: 20px; height: 20px; }
+    .dewdrop--sm svg { width: 16px; height: 16px; }
+
+    /* === Full width === */
+    .dewdrop--full { width: 100%; }
+
+    /* === Reduced motion / transparency / contrast === */
+    @media (prefers-reduced-motion: reduce) {
+      .dewdrop { transition: background-color 0.2s, color 0.2s, border-color 0.2s; }
+      .dewdrop:active { transform: none; }
+      .dewdrop--loading { animation: none; }
+      .dewdrop--loading::before { animation: none; }
+      .ripple { display: none; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .dewdrop {
+        background: var(--dew-glass-bg-hover);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+    }
+    @media (prefers-contrast: more) {
+      .dewdrop::after {
+        padding: 2px;
+        background: none;
+        box-shadow: inset 0 0 0 2px var(--dew-primary);
+      }
+    }
+
+    @media (max-width: 599px) {
+      .section { padding: var(--space-5); }
+      .page-head h1 { font-size: var(--font-size-2xl); }
+      .row-label { min-width: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="scene-grad"></div>
+    <div class="leaf-texture"></div>
+    <div class="bokeh bokeh-1"></div>
+    <div class="bokeh bokeh-2"></div>
+    <div class="bokeh bokeh-3"></div>
+  </div>
+
+  <nav class="nav" aria-label="Theme switcher">
+    <span class="nav-label">Theme</span>
+    <button class="preset-btn" data-preset="dawn" aria-pressed="true">Dawn</button>
+    <button class="preset-btn" data-preset="forest" aria-pressed="false">Forest</button>
+    <button class="preset-btn" data-preset="ocean" aria-pressed="false">Ocean</button>
+    <button class="preset-btn" data-preset="warmth" aria-pressed="false">Warmth</button>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+      <svg class="theme-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg class="theme-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </nav>
+
+  <div class="container">
+    <header class="page-head">
+      <span class="eyebrow">Version A · Dewdrop</span>
+      <h1>Sương Mai</h1>
+      <p>Hạt sương đậu trên lá lúc bình minh. Trong suốt — nhìn xuyên qua thấy lá mờ do nước khúc xạ. Ánh dương phản chiếu trên mặt cong. Khi chạm nhẹ, rung "có như không", làn sóng lan ra làm tâm hồn vui sướng.</p>
+    </header>
+
+    <!-- ============ VARIANTS ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Biến thể</span>
+        <h2>6 biến thể — cùng giọt sương, khác ánh sáng</h2>
+      </div>
+      <p class="section-desc">Mỗi biến thể là cùng một hạt sương nhưng ánh sáng phản chiếu khác nhau. Primary = sương nhuốm ánh trời. Glass = sương tinh khiết. Outline = viền lá. Ghost = sương gần như vô hình. Success = sương trên lá non. Destructive = sương trên lá úa.</p>
+      <div class="divider"></div>
+      <div class="row">
+        <button class="dewdrop dewdrop--primary">Primary</button>
+        <button class="dewdrop dewdrop--glass">Glass</button>
+        <button class="dewdrop dewdrop--outline">Outline</button>
+        <button class="dewdrop dewdrop--ghost">Ghost</button>
+        <button class="dewdrop dewdrop--success">Success</button>
+        <button class="dewdrop dewdrop--destructive">Destructive</button>
+      </div>
+      <div class="row">
+        <span class="row-label">+ icon</span>
+        <button class="dewdrop dewdrop--primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download</button>
+        <button class="dewdrop dewdrop--glass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
+        <button class="dewdrop dewdrop--outline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Next</button>
+        <button class="dewdrop dewdrop--success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Done</button>
+      </div>
+    </article>
+
+    <!-- ============ SIZES ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Kích thước</span>
+        <h2>4 cỡ — từ sương nhỏ đến giọt lớn</h2>
+      </div>
+      <p class="section-desc">Sm = sương mai nhỏ trên cỏ. Md = sương trên lá. Lg = giọt sương trên cành. Xl = giọt sương lớn lúc bình minh — kính dày hơn, khúc xạ mạnh hơn (blur 18px).</p>
+      <div class="divider"></div>
+      <div class="row">
+        <button class="dewdrop dewdrop--glass dewdrop--sm">Small</button>
+        <button class="dewdrop dewdrop--glass">Medium</button>
+        <button class="dewdrop dewdrop--glass dewdrop--lg">Large</button>
+        <button class="dewdrop dewdrop--glass dewdrop--xl">Extra</button>
+      </div>
+      <div class="row">
+        <span class="row-label">+ icon</span>
+        <button class="dewdrop dewdrop--primary dewdrop--sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+        <button class="dewdrop dewdrop--primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+        <button class="dewdrop dewdrop--primary dewdrop--lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+        <button class="dewdrop dewdrop--primary dewdrop--xl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download video</button>
+      </div>
+    </article>
+
+    <!-- ============ STATES ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Trạng thái</span>
+        <h2>8 trạng thái — từ tĩnh đến động</h2>
+      </div>
+      <p class="section-desc">Default = sương nằm yên. Hover = ánh dương mạnh hơn. Focus = sức căng bề mặt. Pressed = "có như không". Active = sương settled, glow nhẹ. Disabled = sương khô. Loading = sương rung nhẹ. Error = sương trên lá úa.</p>
+      <div class="divider"></div>
+      <div class="row">
+        <span class="row-label">Default</span>
+        <button class="dewdrop dewdrop--glass">Default</button>
+        <button class="dewdrop dewdrop--primary">Primary</button>
+        <button class="dewdrop dewdrop--outline">Outline</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Active</span>
+        <button class="dewdrop dewdrop--glass dewdrop--active">Active glass</button>
+        <button class="dewdrop dewdrop--primary dewdrop--active">Active primary</button>
+        <button class="dewdrop dewdrop--ghost dewdrop--active">Active ghost</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Disabled</span>
+        <button class="dewdrop dewdrop--glass" disabled>Disabled</button>
+        <button class="dewdrop dewdrop--primary" disabled>Disabled</button>
+        <button class="dewdrop dewdrop--success" disabled>Disabled</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Loading</span>
+        <button class="dewdrop dewdrop--glass dewdrop--loading">Loading</button>
+        <button class="dewdrop dewdrop--primary dewdrop--loading">Saving</button>
+        <button class="dewdrop dewdrop--success dewdrop--loading">Processing</button>
+      </div>
+      <div class="row">
+        <span class="row-label">Error</span>
+        <button class="dewdrop dewdrop--error">Error</button>
+        <button class="dewdrop dewdrop--error dewdrop--active">Error active</button>
+      </div>
+    </article>
+
+    <!-- ============ INTERACTION DEMO ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Tương tác</span>
+        <h2>Chạm nhẹ — làn sóng lan ra</h2>
+      </div>
+      <p class="section-desc">Nhấn vào bất kỳ nút nào để thấy làn sóng lan ra từ điểm chạm. Rất nhẹ — opacity 0.35, lan 0.7s. "Có như không" — scale 0.985, gần như không cảm nhận. Đây là cảm giác chạm mặt nước tĩnh.</p>
+      <div class="divider"></div>
+      <div class="row">
+        <button class="dewdrop dewdrop--glass dewdrop--xl dewdrop--full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Chạm tôi — làn sóng lan ra</button>
+      </div>
+      <div class="row">
+        <button class="dewdrop dewdrop--primary">Chạm</button>
+        <button class="dewdrop dewdrop--glass">Chạm</button>
+        <button class="dewdrop dewdrop--outline">Chạm</button>
+        <button class="dewdrop dewdrop--success">Chạm</button>
+        <button class="dewdrop dewdrop--ghost">Chạm</button>
+        <button class="dewdrop dewdrop--destructive">Chạm</button>
+      </div>
+    </article>
+
+    <!-- ============ ON LEAF BACKGROUND ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Khúc xạ</span>
+        <h2>Sương trên lá — nhìn xuyên qua</h2>
+      </div>
+      <p class="section-desc">Nền phía sau là texture lá (gân lá chéo). backdrop-filter blur tạo khúc xạ — gân lá mờ đi khi nhìn xuyên qua giọt sương. Đây là "chiếc lá mờ do nước khúc xạ" mà anh mô tả.</p>
+      <div class="divider"></div>
+      <div class="row" style="background: var(--dew-leaf-tint); padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <div style="position:absolute;inset:0;opacity:0.15;background-image:repeating-linear-gradient(105deg,transparent 0,transparent 30px,var(--dew-primary) 30px,var(--dew-primary) 31px),repeating-linear-gradient(75deg,transparent 0,transparent 50px,var(--dew-primary) 50px,var(--dew-primary) 51px);pointer-events:none;"></div>
+        <button class="dewdrop dewdrop--glass">Glass trên lá</button>
+        <button class="dewdrop dewdrop--primary">Primary trên lá</button>
+        <button class="dewdrop dewdrop--outline">Outline trên lá</button>
+        <button class="dewdrop dewdrop--glass dewdrop--xl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download</button>
+      </div>
+    </article>
+
+    <!-- ============ CONTRAST EDGE CASES ============ -->
+    <article class="section">
+      <div class="section-head">
+        <span class="section-tag">Contrast test</span>
+        <h2>Edge case — chữ rõ trên mọi nền</h2>
+      </div>
+      <p class="section-desc">Test contrast trên các nền khó: sáng, gradient, pattern, ảnh. Chữ trong button phải rõ bất kể nền phía sau. Dark mode dùng dark vibrancy layer + text-shadow halo để bảo vệ legibility.</p>
+      <div class="divider"></div>
+
+      <!-- Edge case 1: bright gradient background -->
+      <div class="row" style="background: linear-gradient(135deg, #FF6B6B, #FFD93D, #6BCB77); padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <button class="dewdrop dewdrop--glass">Glass trên nền sáng</button>
+        <button class="dewdrop dewdrop--primary">Primary trên nền sáng</button>
+        <button class="dewdrop dewdrop--success">Success trên nền sáng</button>
+        <button class="dewdrop dewdrop--destructive">Destructive trên nền sáng</button>
+      </div>
+
+      <!-- Edge case 2: dark photo-like background -->
+      <div class="row" style="background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <button class="dewdrop dewdrop--glass">Glass trên nền tối</button>
+        <button class="dewdrop dewdrop--primary">Primary trên nền tối</button>
+        <button class="dewdrop dewdrop--outline">Outline trên nền tối</button>
+        <button class="dewdrop dewdrop--ghost">Ghost trên nền tối</button>
+      </div>
+
+      <!-- Edge case 3: high-contrast pattern -->
+      <div class="row" style="background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 20px 20px; padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <button class="dewdrop dewdrop--glass">Glass trên pattern</button>
+        <button class="dewdrop dewdrop--primary">Primary trên pattern</button>
+        <button class="dewdrop dewdrop--success">Success trên pattern</button>
+      </div>
+
+      <!-- Edge case 4: busy image-like gradient with multiple colors -->
+      <div class="row" style="background: radial-gradient(circle at 20% 30%, #e74c3c 0%, transparent 40%), radial-gradient(circle at 80% 70%, #3498db 0%, transparent 40%), radial-gradient(circle at 50% 50%, #2ecc71 0%, transparent 30%), #2c3e50; padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <button class="dewdrop dewdrop--glass">Glass trên ảnh</button>
+        <button class="dewdrop dewdrop--primary">Primary trên ảnh</button>
+        <button class="dewdrop dewdrop--destructive">Destructive trên ảnh</button>
+        <button class="dewdrop dewdrop--glass dewdrop--xl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download video</button>
+      </div>
+
+      <!-- Edge case 5: white background (worst case for dark mode) -->
+      <div class="row" style="background: #FFFFFF; padding: var(--space-4); border-radius: var(--radius-xl); position: relative; overflow: hidden;">
+        <button class="dewdrop dewdrop--glass">Glass trên trắng</button>
+        <button class="dewdrop dewdrop--primary">Primary trên trắng</button>
+        <button class="dewdrop dewdrop--success">Success trên trắng</button>
+        <button class="dewdrop dewdrop--destructive">Destructive trên trắng</button>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    // === Preset switcher ===
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    function applyPreset(name) {
+      document.documentElement.dataset.preset = name;
+      localStorage.setItem('dewdrop-preset', name);
+      presetBtns.forEach(b => b.setAttribute('aria-pressed', b.dataset.preset === name ? 'true' : 'false'));
+    }
+    presetBtns.forEach(btn => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
+    applyPreset(document.documentElement.dataset.preset || 'dawn');
+
+    // === Theme toggle ===
+    document.querySelectorAll('.theme-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('dewdrop-theme', next);
+      });
+    });
+
+    // === Ripple — làn sóng lan ra từ điểm chạm ===
+    document.querySelectorAll('.dewdrop').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (btn.disabled || btn.classList.contains('dewdrop--loading')) return;
+        const rect = btn.getBoundingClientRect();
+        const d = Math.max(rect.width, rect.height) * 1.6;
+        const r = document.createElement('span');
+        r.className = 'ripple';
+        r.style.width = r.style.height = d + 'px';
+        r.style.left = (e.clientX - rect.left - d / 2) + 'px';
+        r.style.top = (e.clientY - rect.top - d / 2) + 'px';
+        btn.appendChild(r);
+        r.addEventListener('animationend', () => r.remove());
+      });
+    });
+  </script>
+</body>
+</html>

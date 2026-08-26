@@ -98,8 +98,7 @@ function main(): void {
   video.addEventListener('loadedmetadata', resizeCanvas);
   window.addEventListener('resize', resizeCanvas);
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const ctx = canvas.getContext('2d')!;
 
   // rVFC loop — draw video frame + subtitle text onto canvas.
   function renderFrame(): void {
@@ -150,8 +149,6 @@ function main(): void {
   });
   // Track rVFC callback execution.
   let rvfcCount = 0;
-  const origRenderFrame = renderFrame;
-  // Wrap renderFrame to count calls.
   // ponytail: rVFC counter for debug — remove after testing.
   (window as unknown as { __rvfcCount?: number }).__rvfcCount = 0;
   pauseBtn.addEventListener('click', () => video.pause());

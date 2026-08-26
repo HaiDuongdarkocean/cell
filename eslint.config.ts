@@ -16,6 +16,7 @@ export default tseslint.config(
       'project-reference/',
       'public/ffmpeg/',
       '.windsurf/',
+      '.mock-servers/',
       // Build artifacts leaked to repo root (gitignored, not source).
       'assets/',
       'ffmpeg/',
@@ -23,6 +24,10 @@ export default tseslint.config(
       'manifest.json',
       'service-worker-loader.js',
       'sql-wasm.wasm',
+      'test-scroll-up.js',
+      'test-verify.js',
+      // Generated design-system showcase assets (hashed JS/CSS from build).
+      'docs/design-system/assets/',
       // Third-party uBlock extension used only as a browser-test helper (AGENTS.md).
       'tests/data-test/extension-phụ-trợ/',
       // Local-only prototype/seed scratch dirs (not committed).
@@ -71,6 +76,9 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
+      // Empty catch clauses are intentionally used at extension API boundaries
+      // where the only safe recovery is to fall through (e.g. chrome.storage).
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
 
@@ -104,7 +112,7 @@ export default tseslint.config(
 
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
     languageOptions: {
       globals: {
         ...globals.node,

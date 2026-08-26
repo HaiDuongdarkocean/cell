@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactElement } from 'react';
+import type { SrtCue } from '@/entities/media';
 import jeremyChelseaMp4 from '../design-system-showcase/assets/jeremy-chelsea.mp4?url';
 import jeremyChelseaSrt from '../design-system-showcase/assets/jeremy-chelsea.srt?raw';
 import jeremyChelseaThumb from '../design-system-showcase/assets/jeremy-chelsea-thumb.jpg?url';
@@ -552,7 +553,7 @@ export function YouTubeWatchPage(): ReactElement {
           <div ref={guideOverlayRef} className={styles.guideOverlayPanel} onClick={e => e.stopPropagation()}>
             <div className={styles.guideSection}>
               <button
-                className={`${styles.guideItem} ${view === 'home' ? styles.guideItemActive : ''}`}
+                className={styles.guideItem}
                 onClick={() => { goHome(); setGuideOpen(false); }}
               >
                 <GuideIcon name="home" />

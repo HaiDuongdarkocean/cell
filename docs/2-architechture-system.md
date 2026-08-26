@@ -100,17 +100,16 @@ src/
 │   │   ├── languageRegistry.ts  # Language codes, names, and icon mapping
 │   │   └── urls.ts     # External service URLs
 │   ├── styles/         #   Global design-system styles
-│   │   ├── tokens.json   # Canonical design-token source (core/derived/static/component tokens); component tokens now include `button` Liquid Glass (caustic surface/rim/text shadows, reflex multipliers)
+│   │   ├── tokens.json   # Canonical design-token source (core/derived/static/component tokens); component tokens now include `button` Liquid Glass (caustic surface/rim/ripple/text shadows, reflex multipliers, press/release/ripple motion)
 │   │   ├── tokens.css    # Generated from tokens.json; imported by popup/sidepanel/options + Shadow DOM popup
 │   │   ├── components.css # Global non-hashed component classes (icon-btn, btn)
 │   │   └── README.md     # Design-system usage guide for AI agents
 │   ├── ui/             #   Reusable UI atoms (design-system-ui-ux Step 3, Rule of Three)
 │   │   ├── index.ts                       # Barrel exports for shared UI
-│   │   ├── Button.tsx + .module.css        # Button atom: primary/primarySubtle/secondary/outline/ghost/destructive/link/glass, sm/md/lg, horizontal/vertical orientation, active toggle, loading, disabled
+│   │   ├── Button.tsx + .module.css + .showcase.tsx + .style-guard.test.ts # Button atom: liquid-glass fill with caustic rim, ripple enabled by default, press/release scale tokens, sm/md/lg/xl, horizontal/vertical, active/loading/disabled
 │   │   ├── Badge.tsx + .module.css         # Small status label with variants/sizes
 │   │   ├── Alert.tsx + .module.css         # Inline message banner with variants
 │   │   ├── Badge.tsx + .module.css         # Small status label with variants/sizes
-│   │   ├── Button.tsx + .module.css        # Button atom: primary/primarySubtle/secondary/outline/ghost/destructive/link/glass, sm/md/lg, horizontal/vertical orientation, active toggle, loading, disabled
 │   │   ├── Card.tsx + .module.css          # Surface container: default/interactive/selected/glass variants
 │   │   ├── CardAnimations.module.css       # Shared card keyframe animations (fade-in, slide-down) used by VideoCard/SubtitleCard
 │   │   ├── Checkbox.tsx + .module.css      # Checkbox with label, indeterminate, error, disabled states
@@ -323,7 +322,7 @@ src/
 │
 ├── constants/
 │   ├── config.ts                     # DEFAULT_SETTINGS, GENERIC_TITLES, STORAGE_KEYS, limits
-│   ├── messages.ts                   # MESSAGE_TYPES constants
+│   ├── messages.ts                   # MESSAGE_TYPES constants (includes OCR region command)
 │   └── urls.ts                       # VIDEO_URL_PATTERNS, SUBTITLE_URL_PATTERNS
 │
 └── types/

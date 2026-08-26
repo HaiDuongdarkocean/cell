@@ -109,6 +109,7 @@ export type MessageType =
   | 'OCR_DISPOSE'
   | 'OCR_GET_STATE'
   | 'OCR_SET_STATE'
+  | 'OCR_REGION_COMMAND'
   | 'OPEN_READER';
 
 // === Message Request ===

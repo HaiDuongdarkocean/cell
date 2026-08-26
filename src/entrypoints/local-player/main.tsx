@@ -58,7 +58,7 @@ import type { SortBy } from '@/features/local-player/logic/librarySort';
 import { sortLibrary } from '@/features/local-player/logic/librarySort';
 import type { SrtCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
+import type { Settings, SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 import type { ManagerState, AppearanceState } from '@/features/subtitle/ui/subtitlePanelsTypes';
 import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';
@@ -216,8 +216,13 @@ function LocalPlayerApp(): React.JSX.Element {
         if (settings.subtitleBlockSettings) {
           subtitleEngine.updateBlockSettings(settings.subtitleBlockSettings);
         }
-        if (settings.navClusterSettings) {
-          subtitleEngine.updateClusterSettings(settings.navClusterSettings);
+        if (settings.navClusterEnabled !== undefined) {
+          subtitleEngine.updateClusterSettings({
+            enabled: settings.navClusterEnabled,
+            buttonSize: settings.navClusterButtonSize,
+            textOpacity: settings.navClusterTextOpacity,
+            bgOpacity: settings.navClusterButtonBgOpacity,
+          });
         }
         if (typeof settings.subtitlePreviewTargetText === 'string' && settings.subtitlePreviewTargetText) {
           setPreviewTargetText(settings.subtitlePreviewTargetText);
@@ -953,7 +958,7 @@ function LocalPlayerApp(): React.JSX.Element {
     stylePersistRef.current = setTimeout(() => {
       const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
       const current = role === 'target' ? subtitleEngine.targetStyle : subtitleEngine.nativeStyle;
-      void saveSettings({ [key]: current } as Record<string, unknown> as Partial<import('@/entities/settings').Settings>);
+      void saveSettings({ [key]: current } as Partial<Settings>);
       stylePersistRef.current = null;
     }, PERSIST_DEBOUNCE_MS);
   }, [subtitleEngine]);
@@ -971,7 +976,7 @@ function LocalPlayerApp(): React.JSX.Element {
     subtitleEngine.updateClusterSettings(partial);
     if (clusterPersistRef.current) clearTimeout(clusterPersistRef.current);
     clusterPersistRef.current = setTimeout(() => {
-      void saveSettings({ navClusterSettings: subtitleEngine.clusterSettings } as Record<string, unknown> as Partial<import('@/entities/settings').Settings>);
+      void saveSettings({ navClusterSettings: subtitleEngine.clusterSettings } as Partial<Settings>);
       clusterPersistRef.current = null;
     }, PERSIST_DEBOUNCE_MS);
   }, [subtitleEngine]);
@@ -980,7 +985,7 @@ function LocalPlayerApp(): React.JSX.Element {
     const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
     subtitleEngine.updateStyle(role, defaults);
     const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    void saveSettings({ [key]: defaults } as Record<string, unknown> as Partial<import('@/entities/settings').Settings>);
+    void saveSettings({ [key]: defaults } as Partial<Settings>);
   }, [subtitleEngine]);
 
   const handlePreviewTextChange = useCallback((role: 'target' | 'native', text: string): void => {
@@ -989,7 +994,7 @@ function LocalPlayerApp(): React.JSX.Element {
     if (previewTextPersistRef.current) clearTimeout(previewTextPersistRef.current);
     previewTextPersistRef.current = setTimeout(() => {
       const key = role === 'target' ? 'subtitlePreviewTargetText' : 'subtitlePreviewNativeText';
-      void saveSettings({ [key]: text } as Record<string, unknown> as Partial<import('@/entities/settings').Settings>);
+      void saveSettings({ [key]: text } as Partial<Settings>);
       previewTextPersistRef.current = null;
     }, PERSIST_DEBOUNCE_MS);
   }, []);

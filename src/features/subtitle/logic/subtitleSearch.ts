@@ -62,10 +62,10 @@ export function buildDownloadRequest(
 }
 
 /** Decode downloaded bytes → text + format. */
-export function decodeDownload(
+export async function decodeDownload(
   providerId: string,
   bytes: ArrayBuffer,
   result: SubtitleSearchResult,
-): { content: string; format: 'srt' | 'vtt' | 'ass' } {
+): Promise<{ content: string; format: 'srt' | 'vtt' | 'ass' }> {
   return PROVIDERS[providerId].decodeDownload(bytes, result);
 }

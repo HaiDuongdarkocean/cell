@@ -245,8 +245,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const targetLabel = targetLang ? languageShortLabel(targetLang) : 'Target';
   const nativeLabel = nativeLang ? languageShortLabel(nativeLang) : 'Native';
 
-  const hasAdvancedValues = Boolean(season || episode);
-
   return (
     <section className={styles.section} data-cell-id="search-section">
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}

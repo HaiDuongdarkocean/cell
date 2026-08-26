@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liquid Glass Button — 3 Concepts × 4 Themes</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('lg-btn-theme');
+      const savedPreset = localStorage.getItem('lg-btn-preset') || 'dawn';
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+      document.documentElement.dataset.preset = savedPreset;
+    })();
+  </script>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    /* ============================================================
+       4 THEMES — Dawn / Forest / Ocean / Warmth
+       Mỗi theme: primary, primary-dark, soft, blob, bg-gradient,
+       text, text-sec, card, border. Light + dark.
+       ============================================================ */
+    :root {
+      --c-primary: #5EA5E9;
+      --c-primary-dark: #4A8FD4;
+      --c-primary-soft: rgba(94, 165, 233, 0.18);
+      --c-blob: rgba(94, 165, 233, 0.25);
+      --c-bg: linear-gradient(135deg, #EAF5FF 0%, #F7FAFC 100%);
+      --c-text: #1F2D3D;
+      --c-text-sec: #5A6A7A;
+      --c-card: rgba(255, 255, 255, 0.82);
+      --c-border: rgba(255, 255, 255, 0.45);
+      --c-on-primary: #FFFFFF;
+    }
+    [data-preset="forest"] {
+      --c-primary: #5FD389;
+      --c-primary-dark: #3CB371;
+      --c-primary-soft: rgba(95, 211, 137, 0.18);
+      --c-blob: rgba(95, 211, 137, 0.25);
+      --c-bg: linear-gradient(135deg, #E8F8EF 0%, #F5FAF7 100%);
+      --c-text: #1E3A2F;
+      --c-text-sec: #4A6A5A;
+      --c-card: rgba(245, 251, 247, 0.88);
+      --c-border: rgba(255, 255, 255, 0.45);
+      --c-on-primary: #FFFFFF;
+    }
+    [data-preset="ocean"] {
+      --c-primary: #3B82C4;
+      --c-primary-dark: #2B6B7A;
+      --c-primary-soft: rgba(59, 130, 196, 0.18);
+      --c-blob: rgba(59, 130, 196, 0.25);
+      --c-bg: linear-gradient(135deg, #E0F4F7 0%, #EAF4F7 100%);
+      --c-text: #1A2C35;
+      --c-text-sec: #4A5B65;
+      --c-card: rgba(240, 250, 252, 0.85);
+      --c-border: rgba(255, 255, 255, 0.45);
+      --c-on-primary: #FFFFFF;
+    }
+    [data-preset="warmth"] {
+      --c-primary: #F5C542;
+      --c-primary-dark: #E8A34D;
+      --c-primary-soft: rgba(245, 197, 66, 0.20);
+      --c-blob: rgba(245, 197, 66, 0.28);
+      --c-bg: linear-gradient(135deg, #FFF6E0 0%, #FFFBF0 100%);
+      --c-text: #3A2A12;
+      --c-text-sec: #6B5230;
+      --c-card: rgba(255, 251, 240, 0.88);
+      --c-border: rgba(255, 255, 255, 0.50);
+      --c-on-primary: #3A2A12;
+    }
+    [data-theme="dark"] {
+      --c-bg: linear-gradient(135deg, #0F202E 0%, #162637 100%);
+      --c-text: #F7F8F8;
+      --c-text-sec: #AEB4BC;
+      --c-card: rgba(22, 38, 55, 0.82);
+      --c-border: rgba(255, 255, 255, 0.08);
+    }
+    [data-theme="dark"][data-preset="forest"] {
+      --c-bg: linear-gradient(135deg, #0E241B 0%, #152F23 100%);
+      --c-card: rgba(20, 45, 35, 0.85);
+      --c-primary: #5FD389;
+      --c-primary-dark: #4BCA76;
+      --c-primary-soft: rgba(95, 211, 137, 0.20);
+      --c-blob: rgba(95, 211, 137, 0.18);
+    }
+    [data-theme="dark"][data-preset="ocean"] {
+      --c-bg: linear-gradient(135deg, #0C1C25 0%, #122A36 100%);
+      --c-card: rgba(18, 42, 54, 0.85);
+      --c-primary: #5BA3E8;
+      --c-primary-dark: #4A8FD4;
+      --c-primary-soft: rgba(91, 163, 232, 0.18);
+      --c-blob: rgba(91, 163, 232, 0.20);
+    }
+    [data-theme="dark"][data-preset="warmth"] {
+      --c-bg: linear-gradient(135deg, #2A1F0E 0%, #3A2A12 100%);
+      --c-card: rgba(58, 42, 18, 0.82);
+      --c-primary: #F5C57A;
+      --c-primary-dark: #E8A34D;
+      --c-primary-soft: rgba(245, 197, 122, 0.18);
+      --c-blob: rgba(245, 197, 122, 0.20);
+      --c-on-primary: #2A1F0E;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family), Inter, sans-serif;
+      background: var(--c-bg);
+      color: var(--c-text);
+      min-height: 100dvh;
+      padding: var(--space-6) var(--space-5) var(--space-8);
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.4s var(--ease-out), color 0.4s var(--ease-out);
+    }
+
+    /* === Background blobs — ambient water reflections === */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 { width: 420px; height: 420px; top: -120px; right: -120px; background: var(--c-blob); }
+    .blob-2 { width: 340px; height: 340px; bottom: -80px; left: -80px; background: var(--c-primary); opacity: 0.14; }
+    .blob-3 { width: 260px; height: 260px; top: 40%; left: 10%; background: var(--c-primary-soft); opacity: 0.5; }
+
+    /* === Top nav — preset + theme switcher === */
+    .nav {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+      justify-content: center;
+      max-width: 720px;
+      margin: 0 auto var(--space-7);
+      padding: var(--space-1-5) var(--space-3);
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(20px) saturate(150%);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .nav-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--c-text-sec); letter-spacing: var(--tracking-wide); text-transform: uppercase; margin-right: var(--space-1); }
+    .preset-btn {
+      padding: var(--space-1) var(--space-2-5);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      color: var(--c-text-sec);
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    }
+    .preset-btn:hover { background: var(--c-primary-soft); color: var(--c-primary-dark); }
+    .preset-btn[aria-pressed="true"] { background: var(--c-primary); color: var(--c-on-primary); }
+    .theme-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--c-border); background: transparent;
+      color: var(--c-text-sec); cursor: pointer; margin-left: auto;
+    }
+    .theme-toggle:hover { background: var(--c-primary-soft); color: var(--c-primary); }
+    [data-theme="dark"] .theme-sun { display: none; }
+    [data-theme="light"] .theme-moon { display: none; }
+
+    /* === Layout === */
+    .container { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-7); }
+    .page-head { text-align: center; margin-bottom: var(--space-2); }
+    .page-head h1 { margin: 0 0 var(--space-2); font-size: var(--font-size-3xl); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-tight); }
+    .page-head p { margin: 0; font-size: var(--font-size-base); color: var(--c-text-sec); line-height: var(--leading-relaxed); }
+
+    /* === Concept card === */
+    .concept {
+      position: relative;
+      padding: var(--space-7);
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-2xl);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
+      backdrop-filter: blur(20px) saturate(150%);
+      display: flex; flex-direction: column; gap: var(--space-5);
+    }
+    [data-theme="dark"] .concept { box-shadow: 0 24px 60px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .concept-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+    .concept-tag { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--c-primary-dark); }
+    .concept h2 { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-tight); }
+    .concept-desc { margin: 0; font-size: var(--font-size-sm); color: var(--c-text-sec); line-height: var(--leading-relaxed); }
+    .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .row-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--c-text-sec); letter-spacing: var(--tracking-wide); text-transform: uppercase; min-width: 80px; }
+    .divider { height: 1px; background: var(--c-border); margin: var(--space-1) 0; }
+
+    /* ============================================================
+       VERSION A — DEWDROP (Sương mai)
+       Apple .glass Clear style: translucent, background shows through.
+       Minimal, defer to content. Inner highlight top, soft blur,
+       hairline border, ripple. No fill — tint only on hover/active.
+       ============================================================ */
+    .dewdrop {
+      position: relative;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: var(--space-1-5);
+      padding: var(--space-2-5) var(--space-5);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.35);
+      color: var(--c-text);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      min-height: 40px;
+      backdrop-filter: blur(12px) saturate(140%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.04);
+      transition: background 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+    }
+    [data-theme="dark"] .dewdrop {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 1px 2px rgba(0,0,0,0.2);
+      color: var(--c-text);
+    }
+    .dewdrop::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+      pointer-events: none; border-radius: inherit; z-index: 0;
+    }
+    [data-theme="dark"] .dewdrop::before { background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%); }
+    .dewdrop > * { position: relative; z-index: 1; }
+    .dewdrop:hover { background: rgba(255, 255, 255, 0.55); transform: translateY(-1px); }
+    [data-theme="dark"] .dewdrop:hover { background: rgba(255, 255, 255, 0.14); }
+    .dewdrop:active { transform: translateY(0) scale(0.97); }
+    .dewdrop.tint { color: var(--c-primary-dark); border-color: var(--c-primary-soft); }
+    .dewdrop.tint:hover { background: var(--c-primary-soft); }
+    .dewdrop.icon { padding: var(--space-2); width: 40px; height: 40px; }
+    .dewdrop.sm { padding: var(--space-1-5) var(--space-3); font-size: var(--font-size-xs); min-height: 32px; height: 32px; }
+    .dewdrop.lg { padding: var(--space-3) var(--space-6); font-size: var(--font-size-base); min-height: 48px; }
+    .dewdrop:disabled { opacity: 0.45; pointer-events: none; }
+
+    /* ============================================================
+       VERSION B — PEBBLE (Viên sỏi)
+       Apple .glassProminent style: opaque, primary fill, strong glow.
+       3D pebble — inner highlight top + bottom shadow, lensing edge.
+       Bold CTA, deeper shadow, stands out.
+       ============================================================ */
+    .pebble {
+      position: relative;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: var(--space-1-5);
+      padding: var(--space-2-5) var(--space-5);
+      border: none;
+      border-radius: var(--radius-pill);
+      background: var(--c-primary);
+      color: var(--c-on-primary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      font-family: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      min-height: 40px;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.4) inset,
+        0 -1px 0 rgba(0,0,0,0.12) inset,
+        0 4px 12px var(--c-blob),
+        0 1px 3px rgba(0,0,0,0.12);
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-out), filter 0.2s var(--ease-out);
+    }
+    .pebble::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 60%);
+      pointer-events: none; border-radius: inherit; z-index: 0;
+    }
+    .pebble > * { position: relative; z-index: 1; }
+    .pebble:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.06);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.45) inset,
+        0 -1px 0 rgba(0,0,0,0.14) inset,
+        0 8px 20px var(--c-blob),
+        0 2px 6px rgba(0,0,0,0.15);
+    }
+    .pebble:active { transform: translateY(0) scale(0.96); filter: brightness(0.96); }
+    .pebble.subtle {
+      background: var(--c-primary-soft);
+      color: var(--c-primary-dark);
+      box-shadow: inset 0 0 0 1px var(--c-primary-soft), 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .pebble.subtle::before { display: none; }
+    .pebble.subtle:hover { background: color-mix(in srgb, var(--c-primary-soft), var(--c-primary) 12%); filter: none; }
+    .pebble.icon { padding: var(--space-2); width: 40px; height: 40px; }
+    .pebble.sm { padding: var(--space-1-5) var(--space-3); font-size: var(--font-size-xs); min-height: 32px; height: 32px; }
+    .pebble.lg { padding: var(--space-3) var(--space-6); font-size: var(--font-size-base); min-height: 48px; }
+    .pebble.xl { padding: var(--space-3-5) var(--space-7); font-size: var(--font-size-lg); min-height: 56px; font-weight: var(--font-weight-bold); }
+    .pebble:disabled { opacity: 0.45; pointer-events: none; filter: grayscale(0.4); }
+
+    /* ============================================================
+       VERSION C — RIPPLE (Gợn sóng)
+       Liquid motion: glass base + animated blob + shimmer sweep.
+       Water-like, dynamic. Blob drifts, shimmer on hover, ripple on click.
+       ============================================================ */
+    .ripple-btn {
+      position: relative;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: var(--space-1-5);
+      padding: var(--space-2-5) var(--space-5);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-pill);
+      background: var(--c-card);
+      color: var(--c-text);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      font-family: inherit;
+      cursor: pointer;
+      overflow: hidden;
+      isolation: isolate;
+      min-height: 40px;
+      backdrop-filter: blur(16px) saturate(160%);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: transform 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-out);
+    }
+    [data-theme="dark"] .ripple-btn { box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06); }
+    /* Layer 1: drifting blob (water depth) */
+    .ripple-btn::before {
+      content: '';
+      position: absolute; inset: -20%;
+      background-image:
+        radial-gradient(circle at 30% 30%, var(--c-blob), transparent 55%),
+        radial-gradient(circle at 70% 70%, var(--c-primary-soft), transparent 55%);
+      background-size: 200% 200%;
+      background-position: 0% 0%, 100% 100%;
+      opacity: 0.7;
+      pointer-events: none; border-radius: inherit; z-index: 0;
+      animation: rippleBlob 8s var(--ease-spring) infinite alternate;
+    }
+    /* Layer 2: shimmer sweep (sunlight) */
+    .ripple-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+      background-size: 250% 100%;
+      background-position: 200% 0;
+      pointer-events: none; border-radius: inherit; z-index: 0;
+      transition: background-position 1.2s var(--ease-out);
+    }
+    [data-theme="dark"] .ripple-btn::after { background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%); background-size: 250% 100%; background-position: 200% 0; }
+    .ripple-btn > * { position: relative; z-index: 1; }
+    .ripple-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--c-blob), inset 0 1px 0 rgba(255,255,255,0.5); }
+    .ripple-btn:hover::after { background-position: -100% 0; }
+    .ripple-btn:active { transform: translateY(0) scale(0.97); }
+    .ripple-btn:active::before { animation-play-state: paused; }
+    .ripple-btn:focus-visible::before, .ripple-btn:focus-visible::after { animation-play-state: paused; }
+    .ripple-btn.primary { background: var(--c-primary); color: var(--c-on-primary); border-color: transparent; }
+    .ripple-btn.primary::before { opacity: 0.4; }
+    .ripple-btn.icon { padding: var(--space-2); width: 40px; height: 40px; }
+    .ripple-btn.sm { padding: var(--space-1-5) var(--space-3); font-size: var(--font-size-xs); min-height: 32px; height: 32px; }
+    .ripple-btn.lg { padding: var(--space-3) var(--space-6); font-size: var(--font-size-base); min-height: 48px; }
+    .ripple-btn.xl { padding: var(--space-3-5) var(--space-7); font-size: var(--font-size-lg); min-height: 56px; font-weight: var(--font-weight-semibold); }
+    .ripple-btn:disabled { opacity: 0.45; pointer-events: none; }
+    .ripple-btn:disabled::before { animation-play-state: paused; }
+    @keyframes rippleBlob {
+      0% { background-position: 0% 0%, 100% 100%; }
+      100% { background-position: 40% 30%, 60% 70%; }
+    }
+
+    /* === Shared ripple effect (click splash) === */
+    .splash {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(0);
+      animation: splash 0.6s var(--ease-out);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .pebble .splash, .ripple-btn.primary .splash { background: rgba(255,255,255,0.5); }
+    [data-theme="dark"] .dewdrop .splash, [data-theme="dark"] .ripple-btn .splash { background: rgba(255,255,255,0.2); }
+    @keyframes splash { to { transform: scale(2.5); opacity: 0; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ripple-btn::before { animation: none; }
+      .ripple-btn::after { transition: none; }
+      .ripple-btn:hover::after { background-position: 200% 0; }
+      .splash { display: none; }
+    }
+    @media (max-width: 599px) {
+      .concept { padding: var(--space-5); }
+      .page-head h1 { font-size: var(--font-size-2xl); }
+      .row-label { min-width: 64px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <nav class="nav" aria-label="Theme switcher">
+    <span class="nav-label">Theme</span>
+    <button class="preset-btn" data-preset="dawn" aria-pressed="true">Dawn</button>
+    <button class="preset-btn" data-preset="forest" aria-pressed="false">Forest</button>
+    <button class="preset-btn" data-preset="ocean" aria-pressed="false">Ocean</button>
+    <button class="preset-btn" data-preset="warmth" aria-pressed="false">Warmth</button>
+    <button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+      <svg class="theme-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <svg class="theme-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </nav>
+
+  <div class="container">
+    <header class="page-head">
+      <h1>Liquid Glass Button — 3 concepts</h1>
+      <p>Tham khảo Apple Liquid Glass (.glass + .glassProminent). 4 theme thiên nhiên: Dawn (bầu trời), Forest (lá cây), Ocean (nước sâu), Warmth (ánh mặt trời). Chuyển theme + light/dark ở nav trên.</p>
+    </header>
+
+    <!-- ============ VERSION A — DEWDROP ============ -->
+    <article class="concept">
+      <div class="concept-head">
+        <span class="concept-tag">Version A</span>
+        <h2>Dewdrop — Sương mai</h2>
+      </div>
+      <p class="concept-desc">Apple <code>.glass</code> Clear style. Trong suốt, nền xuyên qua, tối giản. Inner highlight mép trên, soft blur, hairline border. Không fill — tint chỉ khi hover/active. Giọt sương trên lá, defer to content.</p>
+      <div class="divider"></div>
+      <div class="row"><span class="row-label">Default</span>
+        <button class="dewdrop">Khám phá</button>
+        <button class="dewdrop tint">Tint</button>
+        <button class="dewdrop icon" aria-label="Search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+      </div>
+      <div class="row"><span class="row-label">Sizes</span>
+        <button class="dewdrop sm">Small</button>
+        <button class="dewdrop">Medium</button>
+        <button class="dewdrop lg">Large</button>
+      </div>
+      <div class="row"><span class="row-label">States</span>
+        <button class="dewdrop">Default</button>
+        <button class="dewdrop" disabled>Disabled</button>
+      </div>
+    </article>
+
+    <!-- ============ VERSION B — PEBBLE ============ -->
+    <article class="concept">
+      <div class="concept-head">
+        <span class="concept-tag">Version B</span>
+        <h2>Pebble — Viên sỏi</h2>
+      </div>
+      <p class="concept-desc">Apple <code>.glassProminent</code> style. Đặc, fill màu primary, glow mạnh. 3D pebble — inner highlight top + bottom shadow inset, lensing edge. Bold CTA, deeper shadow, nổi bật. Sỏi nằm im dưới đáy hồ.</p>
+      <div class="divider"></div>
+      <div class="row"><span class="row-label">Default</span>
+        <button class="pebble">Khám phá</button>
+        <button class="pebble subtle">Subtle</button>
+        <button class="pebble icon" aria-label="Download"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+      </div>
+      <div class="row"><span class="row-label">Sizes</span>
+        <button class="pebble sm">Small</button>
+        <button class="pebble">Medium</button>
+        <button class="pebble lg">Large</button>
+        <button class="pebble xl">Extra</button>
+      </div>
+      <div class="row"><span class="row-label">States</span>
+        <button class="pebble">Default</button>
+        <button class="pebble" disabled>Disabled</button>
+      </div>
+    </article>
+
+    <!-- ============ VERSION C — RIPPLE ============ -->
+    <article class="concept">
+      <div class="concept-head">
+        <span class="concept-tag">Version C</span>
+        <h2>Ripple — Gợn sóng</h2>
+      </div>
+      <p class="concept-desc">Liquid motion. Glass base + blob trôi chậm + shimmer quét ngang khi hover. Ripple bắn từ pointer. "Liquid" trong liquid glass — cá tung tắng, nước gợn sóng. Motion-heavy, có hồn.</p>
+      <div class="divider"></div>
+      <div class="row"><span class="row-label">Default</span>
+        <button class="ripple-btn">Khám phá</button>
+        <button class="ripple-btn primary">Primary</button>
+        <button class="ripple-btn icon" aria-label="Zap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></button>
+      </div>
+      <div class="row"><span class="row-label">Sizes</span>
+        <button class="ripple-btn sm">Small</button>
+        <button class="ripple-btn">Medium</button>
+        <button class="ripple-btn lg">Large</button>
+        <button class="ripple-btn xl">Extra</button>
+      </div>
+      <div class="row"><span class="row-label">States</span>
+        <button class="ripple-btn">Default</button>
+        <button class="ripple-btn" disabled>Disabled</button>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    // === Preset switcher ===
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    function applyPreset(name) {
+      document.documentElement.dataset.preset = name;
+      localStorage.setItem('lg-btn-preset', name);
+      presetBtns.forEach(b => b.setAttribute('aria-pressed', b.dataset.preset === name ? 'true' : 'false'));
+    }
+    presetBtns.forEach(btn => btn.addEventListener('click', () => applyPreset(btn.dataset.preset)));
+    applyPreset(document.documentElement.dataset.preset || 'dawn');
+
+    // === Theme toggle ===
+    document.querySelectorAll('.theme-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('lg-btn-theme', next);
+      });
+    });
+
+    // === Ripple splash on click (all button versions) ===
+    document.querySelectorAll('.dewdrop, .pebble, .ripple-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        if (btn.disabled) return;
+        const rect = btn.getBoundingClientRect();
+        const d = Math.max(rect.width, rect.height) * 1.4;
+        const s = document.createElement('span');
+        s.className = 'splash';
+        s.style.width = s.style.height = d + 'px';
+        s.style.left = (e.clientX - rect.left - d / 2) + 'px';
+        s.style.top = (e.clientY - rect.top - d / 2) + 'px';
+        btn.appendChild(s);
+        s.addEventListener('animationend', () => s.remove());
+      });
+    });
+  </script>
+</body>
+</html>

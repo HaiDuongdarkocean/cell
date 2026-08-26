@@ -42,6 +42,8 @@ docs/           # Tài liệu dự án
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
 │   ├── universal-panel-demo.html      # Universal Panel (Dictionary + Settings) demo applying Meta/Facebook DS
 │   ├── design-system-showcase.html    # Auto-generated interactive showcase (foundations → atoms → surfaces)
+│   ├── showcase-dark-redesign-brief.md # Design brief for dark-mode showcase refresh
+│   ├── mockups/                       # Concept mockups (HTML + PNG)
 │   ├── atom-design-plan.md            # 79-atom API/token/variant/state plan
 │   ├── tri-thuc-design-system.md      # Design-system knowledge base and conventions
 │   ├── verify-pages-showcases.md      # Showcase page verification notes
@@ -51,7 +53,8 @@ docs/           # Tài liệu dự án
 │   ├── cue-item-redesign.html         # 3 biến thể cue item mới (timestamp trái, text phải, format human-friendly)
 │   ├── README.md                      # Rationale + so sánh các mockup + token dùng
 │   ├── reader.html                    # Reader UI mockup
-│   └── reader-README.md               # Reader mockup notes
+│   ├── reader-README.md               # Reader mockup notes
+│   └── screenshots/                   # Design/iteration screenshots (e.g. clipboard-v4, OCR test)
 ├── ideas/                             # Refined idea one-pagers (idea-refine output)
 │   └── orca-ocr-layer.md              # OCR layer cho Cell (hard-sub video + image + screenshot) — PaddleOCR.js PP-OCRv5 primary, evidence-grounded
 ├── context/                           # Project context (persistent — skill elicitation load đầu tiên)
