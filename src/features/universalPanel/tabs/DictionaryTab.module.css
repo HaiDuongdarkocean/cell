@@ -21,7 +21,7 @@
   border-right: var(--border-width-hairline) solid var(--color-border);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 839px) {
   .dictionaryTab {
     flex-direction: column;
     overflow-y: auto;

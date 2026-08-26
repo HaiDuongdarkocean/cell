@@ -20,8 +20,8 @@
 }
 
 /* Split — wraps video-stage + content. Flex:1 fills space above dock.
-   >480px: row (video left, content right, resizable).
-   <480px: column (video top, content bottom — mobile stack). */
+   >600px: row (video left, content right, resizable).
+   <600px: column (video top, content bottom — mobile stack). */
 .split {
   flex: 1 1 0;
   min-height: 0;
@@ -55,7 +55,7 @@
 }
 
 /* Content other — CueList / dictionary sheet.
-   <480px: fills remaining vertical space. */
+   <600px: fills remaining vertical space. */
 .contentOther {
   flex: 1 1 0;
   min-height: 0;
@@ -65,13 +65,13 @@
   overflow: hidden;
 }
 
-/* Resize handle — hidden on mobile (<480px), visible on >480px. */
+/* Resize handle — hidden on mobile (<600px), visible on >600px. */
 .resizeHandle {
   display: none;
 }
 
-/* === Split layout: >480px (desktop/tablet) === */
-@media (min-width: 480px) {
+/* === Split layout: >600px (desktop/tablet) === */
+@media (min-width: 600px) {
   .split {
     flex-direction: row;
   }
@@ -219,8 +219,8 @@
   display: none;
 }
 
-/* Mobile 320–480px: tighter spacing, full-width dock. */
-@container (max-width: 480px) {
+/* Mobile <600px: tighter spacing, full-width dock. */
+@container (max-width: 599px) {
   .dock {
     padding: var(--space-1) var(--space-2);
     padding-bottom: max(var(--space-1), env(safe-area-inset-bottom));

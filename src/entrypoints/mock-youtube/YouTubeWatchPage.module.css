@@ -563,20 +563,20 @@
   flex: 0 0 402px;
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1600px) {
   .secondary {
     width: 426px;
     flex-basis: 426px;
   }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1599px) {
   .secondary {
     width: 360px;
   }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1199px) {
   .watchRow {
     flex-direction: column;
   }

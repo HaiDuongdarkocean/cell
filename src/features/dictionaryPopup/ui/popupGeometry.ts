@@ -16,7 +16,7 @@ export const POPUP_MIN_WIDTH_PX = 320;
 export const POPUP_MIN_HEIGHT_PX = 200;
 export const POPUP_DEFAULT_HEIGHT_PX = 300;
 export const POPUP_MAX_HEIGHT_RATIO = 0.7;
-export const POPUP_SHEET_BREAKPOINT_PX = BREAKPOINTS.mobileLg; // sync with CSS @media (max-width: 479px)
+export const POPUP_SHEET_BREAKPOINT_PX = BREAKPOINTS.medium; // sync with CSS @media (max-width: 599px)
 
 /** Player Mode active — used for Player Mode-specific bounds, NOT for forcing sheet mode. */
 export function isPlayerModeActive(): boolean {

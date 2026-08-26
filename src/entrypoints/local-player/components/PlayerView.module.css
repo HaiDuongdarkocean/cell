@@ -103,7 +103,7 @@
 }
 
 /* === Responsive — mobile / narrow viewport === */
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .libraryPanel {
     width: 100%;
     border-left: none;

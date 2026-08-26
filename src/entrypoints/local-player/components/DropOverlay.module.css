@@ -54,7 +54,7 @@
 }
 
 /* === Responsive — tighten on small screens === */
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .overlay {
     padding: var(--space-4);
     gap: var(--space-3);

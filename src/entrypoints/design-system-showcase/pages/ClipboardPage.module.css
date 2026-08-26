@@ -25,7 +25,7 @@
   position: relative;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .detailActionBtn {
     display: none;
   }
@@ -413,7 +413,7 @@
 
 /* ─── Mobile-first responsive: 320px baseline ─── */
 /* Mobile: sidebar ẩn mặc định, content hiện trước, toggle mới hiện sidebar */
-@media (max-width: 600px) {
+@media (max-width: 599px) {
   .sidebar {
     position: absolute;
     top: 0;
@@ -438,7 +438,7 @@
 }
 
 /* Desktop: wider sidebar */
-@media (min-width: 1280px) {
+@media (min-width: 1600px) {
   .sidebar {
     width: 320px;
   }

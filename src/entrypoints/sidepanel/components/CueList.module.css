@@ -71,8 +71,8 @@
   margin-top: var(--space-0-5);
 }
 
-/* === Responsive — mobile (320–479px, standard breakpoint) === */
-@media (max-width: 479px) {
+/* === Responsive — mobile (<600px, standard breakpoint) === */
+@media (max-width: 599px) {
   .timestamp {
     min-width: 2.8em;
     font-size: var(--font-size-xs);

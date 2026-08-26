@@ -71,7 +71,7 @@
 }
 
 /* === Responsive — mobile === */
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .root {
     gap: var(--space-2);
   }

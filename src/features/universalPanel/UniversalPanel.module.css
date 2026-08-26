@@ -75,7 +75,7 @@
   padding: var(--space-4);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 839px) {
   .panel {
     max-width: none;
     border-radius: var(--radius-md);
@@ -112,7 +112,7 @@
   }
 }
 
-@media (max-width: 479px) {
+@media (max-width: 599px) {
   .panel {
     width: 100%;
     height: 100%;
