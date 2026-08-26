@@ -324,7 +324,8 @@ export function Showcase() {
     <main className={styles.main}>
       {SECTIONS.map((s) => {
         const Component = CONTENT[s.id];
-        const handleClick = s.target ? () => navigateToShowcase(s.target) : undefined;
+        const target = s.target;
+        const handleClick = target ? () => navigateToShowcase(target) : undefined;
         return (
           <Component key={s.id} onClick={handleClick} />
         );

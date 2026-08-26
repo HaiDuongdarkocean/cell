@@ -96,8 +96,11 @@
 /* Main content */
 
 .main {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  gap: var(--space-12);
   padding: var(--space-8) var(--space-10);
 }
 

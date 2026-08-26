@@ -65,12 +65,9 @@
   color: var(--color-text-secondary);
 }
 
-.branchNode {
-  font-weight: var(--font-weight-semibold);
-}
-
+.branchNode,
 .leafNode {
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-medium);
 }
 
 .active,
