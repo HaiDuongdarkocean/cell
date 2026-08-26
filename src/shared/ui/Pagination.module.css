@@ -1,0 +1,100 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-card);
+  flex-shrink: 0;
+}
+
+.navBtn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+.pageBtn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.ellipsisWrap {
+  position: relative;
+}
+
+.ellipsisBtn {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-1);
+}
+
+.ellipsisPopup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: var(--space-1);
+  background: var(--color-surface-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-2);
+  z-index: var(--z-popover);
+  min-width: 160px;
+  max-height: 240px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.popupHeader {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-1);
+}
+
+.popupList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-0-5);
+  overflow-y: auto;
+  max-height: 180px;
+  padding: var(--space-0-5);
+}
+
+.popupItem {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.jumpInput {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  margin-left: var(--space-1);
+}
+
+.jumpField {
+  width: 48px;
+  height: 28px;
+  text-align: center;
+  padding: 0 var(--space-1);
+}

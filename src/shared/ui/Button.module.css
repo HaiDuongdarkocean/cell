@@ -16,6 +16,11 @@
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
+/* Children (icons/labels/spinners) must not intercept pointer events — the button itself should trigger. */
+.button > * {
+  pointer-events: none;
+}
+
 .button:focus-visible {
   outline: var(--space-0-5) solid var(--button-focus-ring);
   outline-offset: var(--space-0-5);

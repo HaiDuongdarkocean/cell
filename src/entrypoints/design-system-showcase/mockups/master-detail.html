@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell Design System — Master Detail Explorer</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-family-body);
+      font-size: var(--font-size-base);
+      line-height: var(--leading-normal);
+      color: var(--color-text-primary);
+      background: var(--color-background);
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       App shell
+       ============================================================ */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Top bar
+       ============================================================ */
+    .topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      height: 56px;
+      padding: 0 var(--space-5);
+      background: var(--color-surface);
+      border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+      z-index: var(--z-sticky);
+    }
+    .topbar-title {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: -0.01em;
+      color: var(--color-text);
+    }
+    .topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+    .search {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      width: 260px;
+      padding: var(--space-2) var(--space-3);
+      border: var(--border-width-hairline) solid var(--color-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-card);
+    }
+    .search input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--color-text);
+      font-size: var(--font-size-sm);
+      outline: none;
+    }
+    .search input::placeholder { color: var(--color-text-secondary); }
+    .theme-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: var(--border-width-hairline) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-card);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+    .theme-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+
+    /* ============================================================
+       Main layout
+       ============================================================ */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       Sidebar — hierarchical tree
+       ============================================================ */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding: var(--space-5);
+      background: var(--color-surface);
+      border-right: var(--border-width-hairline) solid var(--color-border-subtle);
+      overflow-y: auto;
+    }
+    .sidebar-title {
+      margin: 0;
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.02em;
+    }
+    .sidebar-subtitle {
+      margin-top: calc(var(--space-1) * -1);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .tree { display: flex; flex-direction: column; gap: var(--space-1); }
+    .tree-level,
+    .tree-category,
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      color: var(--color-text);
+      border-radius: var(--radius-sm);
+      transition: background var(--duration-150) var(--ease-standard), color var(--duration-150) var(--ease-standard);
+    }
+    .tree-level:hover,
+    .tree-category:hover,
+    .tree-item:hover { background: var(--color-surface-hover); }
+    .tree-level.active,
+    .tree-item.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .tree-category.active { color: var(--color-primary); }
+
+    .tree-level {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+    }
+    .tree-category {
+      padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-6);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+    .tree-item {
+      padding: var(--space-1) var(--space-3) var(--space-1) var(--space-9);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    .tree-item.active { font-weight: var(--font-weight-medium); }
+
+    .chevron {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      transition: transform var(--duration-150) var(--ease-standard);
+    }
+    .chevron.collapsed { transform: rotate(-90deg); }
+
+    .tree-children { display: flex; flex-direction: column; gap: var(--space-0-5); }
+    .tree-children.collapsed { display: none; }
+
+    /* ============================================================
+       Detail pane
+       ============================================================ */
+    .detail {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-surface);
+      border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    .breadcrumb strong { color: var(--color-text); font-weight: var(--font-weight-semibold); }
+    .breadcrumb span + span::before {
+      content: '/';
+      margin-right: var(--space-2);
+      color: var(--color-border);
+    }
+
+    /* Preview */
+    .preview {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8) var(--space-6);
+      background: var(--color-background);
+    }
+    .preview-box {
+      width: min(100%, 720px);
+      min-height: 240px;
+      padding: var(--space-8);
+      border: var(--border-width-hairline) solid var(--color-border-subtle);
+      border-radius: var(--radius-container);
+      background: var(--color-surface-card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-base);
+    }
+
+    /* Info block */
+    .info {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding: var(--space-6);
+      background: var(--color-surface);
+      border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+    }
+    .info-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .info-title {
+      margin: 0;
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.02em;
+    }
+    .info-desc {
+      margin: 0;
+      max-width: 75ch;
+      font-size: var(--font-size-base);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+    .info-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    .info-meta span {
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      background: var(--color-background);
+    }
+
+    /* Variant links */
+    .variants {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      align-items: center;
+    }
+    .variants-label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text);
+      margin-right: var(--space-2);
+    }
+    .variant-link {
+      padding: var(--space-1-5) var(--space-3);
+      border: var(--border-width-hairline) solid var(--color-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-card);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      text-decoration: none;
+      transition: background var(--duration-150) var(--ease-standard), color var(--duration-150) var(--ease-standard), border-color var(--duration-150) var(--ease-standard);
+    }
+    .variant-link:hover { background: var(--color-surface-hover); color: var(--color-text); border-color: var(--color-border-emphasized); }
+
+    /* Tabs */
+    .tabs {
+      flex-shrink: 0;
+      display: flex;
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-6);
+      background: var(--color-surface);
+      border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+    }
+    .tab {
+      padding: var(--space-2) var(--space-3);
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: background var(--duration-150) var(--ease-standard), color var(--duration-150) var(--ease-standard);
+    }
+    .tab:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .tab.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    /* Tab content */
+    .tab-content {
+      flex: 1;
+      padding: var(--space-6);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      line-height: 1.6;
+      background: var(--color-background);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ============================================================
+       Responsive — mobile
+       ============================================================ */
+    @media (max-width: 768px) {
+      .topbar { padding: 0 var(--space-3); height: 52px; }
+      .search { width: 160px; }
+      .main { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+        padding: var(--space-4);
+      }
+      .detail { height: 60%; }
+      .preview { padding: var(--space-4); }
+      .preview-box { min-height: 160px; padding: var(--space-4); }
+      .info { padding: var(--space-4); }
+      .info-title { font-size: var(--font-size-xl); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1 class="topbar-title">Design System — Master Detail</h1>
+      <div class="topbar-right">
+        <div class="search" role="search">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" placeholder="Search components…" aria-label="Search components" />
+        </div>
+        <button class="theme-btn" id="themeBtn" aria-label="Toggle dark mode">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside class="sidebar" aria-label="Library tree">
+        <div>
+          <h2 class="sidebar-title">Library</h2>
+          <p class="sidebar-subtitle">48 components · 5 levels</p>
+        </div>
+
+        <nav class="tree" id="tree" aria-label="Component tree">
+          <!-- Generated by JS -->
+        </nav>
+      </aside>
+
+      <main class="detail" id="detail">
+        <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+          <span>Atoms</span><span>Action</span><strong>Button</strong>
+        </nav>
+
+        <section class="preview" aria-label="Component preview">
+          <div class="preview-box" id="previewBox">[Button preview]</div>
+        </section>
+
+        <section class="info" aria-labelledby="infoTitle">
+          <div class="info-header">
+            <h2 class="info-title" id="infoTitle">Button</h2>
+          </div>
+          <p class="info-desc" id="infoDesc">Pill-shaped action control. Supports primary, secondary, outline, ghost, and destructive variants. Touch target 40–44px. Use <code>--button-bg</code> and <code>--button-fg</code> tokens.</p>
+          <div class="info-meta" id="infoMeta">
+            <span>Status: stable</span>
+            <span>Level: Atom</span>
+            <span>Category: Action</span>
+          </div>
+          <div class="variants" id="variants">
+            <span class="variants-label">Variants:</span>
+            <a href="#" class="variant-link" data-variant="primary">Primary</a>
+            <a href="#" class="variant-link" data-variant="secondary">Secondary</a>
+            <a href="#" class="variant-link" data-variant="ghost">Ghost</a>
+            <a href="#" class="variant-link" data-variant="destructive">Destructive</a>
+          </div>
+        </section>
+
+        <div class="tabs" role="tablist" aria-label="Component details">
+          <button class="tab active" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="tokens">Tokens</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="usage">Usage</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="code">Code</button>
+        </div>
+
+        <div class="tab-content">
+          <section class="tab-panel active" id="panel-overview">
+            Button is the most common action control. It uses <code>--button-bg</code> for background, <code>--button-fg</code> for text, and <code>--radius-pill</code> for corner. Hover uses <code>--color-surface-hover</code> on ghost/outline variants.
+          </section>
+          <section class="tab-panel" id="panel-tokens">
+            <ul>
+              <li><code>--button-bg</code> → <code>var(--color-primary)</code></li>
+              <li><code>--button-fg</code> → <code>var(--color-primary-foreground-soft)</code></li>
+              <li><code>--button-hover-bg</code> → <code>var(--color-primary-hover)</code></li>
+              <li><code>--button-radius</code> → <code>var(--radius-pill)</code></li>
+            </ul>
+          </section>
+          <section class="tab-panel" id="panel-usage">
+            Use <code>&lt;Button variant="primary"&gt;Save&lt;/Button&gt;</code> for the main action in a dialog. Use <code>ghost</code> for low-priority actions in a toolbar. Always keep label concise.
+          </section>
+          <section class="tab-panel" id="panel-code">
+            <pre style="margin:0; font-family: var(--font-family-mono); font-size: var(--font-size-sm);">import { Button } from '@/shared/ui';
+
+&lt;Button variant="primary" size="md" onClick={onSave}&gt;
+  Save changes
+&lt;/Button&gt;</pre>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const treeData = [
+      {
+        id: 'foundations',
+        label: 'Foundations',
+        categories: [
+          { label: 'Color', items: [{ label: 'Color Scale', desc: 'Semantic and primitive color tokens for light/dark.' }, { label: 'Tint', desc: 'Colored background + border + icon tints.' }] },
+          { label: 'Spacing', items: [{ label: 'Spacing', desc: '4px-based spacing scale from 0 to 96px.' }] }
+        ]
+      },
+      {
+        id: 'atoms',
+        label: 'Atoms',
+        categories: [
+          {
+            label: 'Action',
+            items: [
+              { label: 'Button', desc: 'Pill-shaped action control. Supports primary, secondary, outline, ghost, and destructive variants. Touch target 40–44px.', variants: ['Primary', 'Secondary', 'Ghost', 'Destructive'] },
+              { label: 'IconButton', desc: 'Icon-only action with full-radius touch target. Use with aria-label.', variants: ['Default', 'Ghost'] }
+            ]
+          },
+          {
+            label: 'Input',
+            items: [
+              { label: 'Input', desc: 'Single-line text control with focus ring and error state.', variants: ['Default', 'Error', 'Disabled'] },
+              { label: 'Checkbox', desc: 'Binary selection with animated check state.', variants: ['Checked', 'Indeterminate', 'Disabled'] },
+              { label: 'Select', desc: 'Single-select dropdown with search and grouped options.', variants: ['Default', 'Multi'] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'molecules',
+        label: 'Molecules',
+        categories: [
+          { label: 'Surface', items: [{ label: 'Card', desc: 'Container for grouped content with hairline border and hover lift.' }, { label: 'Badge', desc: 'Small status or count indicator.' }] },
+          { label: 'Navigation', items: [{ label: 'Tabs', desc: 'Segmented control for switching panels.' }, { label: 'NavItem', desc: 'Sidebar or rail navigation item.' }] }
+        ]
+      },
+      {
+        id: 'organisms',
+        label: 'Organisms',
+        categories: [
+          { label: 'Overlay', items: [{ label: 'Dialog', desc: 'Modal dialog with header, body, and footer regions.' }, { label: 'Drawer', desc: 'Side panel that slides in from the edge.' }] }
+        ]
+      },
+      {
+        id: 'pages',
+        label: 'Pages',
+        categories: [
+          { label: 'Dialog', items: [{ label: 'Settings Dialog Page', desc: 'Full settings flow inside a dialog.', status: 'experimental' }] },
+          { label: 'Player', items: [{ label: 'Video Player Page', desc: 'Subtitle overlay + nav cluster + dictionary.', status: 'stable' }] }
+        ]
+      }
+    ];
+
+    let activeLevel = 'atoms';
+    let activeCategory = 'Action';
+    let activeItem = 'Button';
+
+    function buildTree() {
+      const tree = document.getElementById('tree');
+      tree.innerHTML = '';
+
+      treeData.forEach((level) => {
+        const levelBtn = document.createElement('button');
+        levelBtn.className = 'tree-level' + (level.id === activeLevel ? ' active' : '');
+        levelBtn.setAttribute('aria-expanded', 'true');
+        levelBtn.innerHTML = `<span class="chevron">▼</span><span>${level.label}</span>`;
+        levelBtn.onclick = () => { activeLevel = level.id; activeCategory = level.categories[0].label; activeItem = level.categories[0].items[0].label; render(); };
+        tree.appendChild(levelBtn);
+
+        const levelChildren = document.createElement('div');
+        levelChildren.className = 'tree-children';
+
+        level.categories.forEach((cat) => {
+          const catBtn = document.createElement('button');
+          catBtn.className = 'tree-category' + (cat.label === activeCategory && level.id === activeLevel ? ' active' : '');
+          catBtn.setAttribute('aria-expanded', 'true');
+          catBtn.innerHTML = `<span class="chevron">▼</span><span>${cat.label}</span>`;
+          catBtn.onclick = () => { activeLevel = level.id; activeCategory = cat.label; activeItem = cat.items[0].label; render(); };
+          levelChildren.appendChild(catBtn);
+
+          const catChildren = document.createElement('div');
+          catChildren.className = 'tree-children';
+
+          cat.items.forEach((item) => {
+            const itemBtn = document.createElement('button');
+            itemBtn.className = 'tree-item' + (item.label === activeItem && level.id === activeLevel && cat.label === activeCategory ? ' active' : '');
+            itemBtn.textContent = item.label;
+            itemBtn.onclick = () => { activeLevel = level.id; activeCategory = cat.label; activeItem = item.label; render(); };
+            catChildren.appendChild(itemBtn);
+          });
+
+          levelChildren.appendChild(catChildren);
+        });
+
+        tree.appendChild(levelChildren);
+      });
+    }
+
+    function findActiveItem() {
+      for (const level of treeData) {
+        if (level.id !== activeLevel) continue;
+        for (const cat of level.categories) {
+          if (cat.label !== activeCategory) continue;
+          for (const item of cat.items) {
+            if (item.label === activeItem) return { level: level.label, category: cat.label, item };
+          }
+        }
+      }
+      return null;
+    }
+
+    function render() {
+      buildTree();
+      const found = findActiveItem();
+      if (!found) return;
+
+      const { level, category, item } = found;
+
+      document.getElementById('breadcrumb').innerHTML = `<span>${level}</span><span>${category}</span><strong>${item.label}</strong>`;
+      document.getElementById('infoTitle').textContent = item.label;
+      document.getElementById('infoDesc').innerHTML = item.desc;
+      document.getElementById('previewBox').textContent = `[${item.label} preview]`;
+      document.getElementById('infoMeta').innerHTML = `
+        <span>Status: ${item.status || 'stable'}</span>
+        <span>Level: ${level}</span>
+        <span>Category: ${category}</span>
+      `;
+
+      const variants = item.variants || ['Default'];
+      document.getElementById('variants').innerHTML = '<span class="variants-label">Variants:</span>' +
+        variants.map((v) => `<a href="#" class="variant-link">${v}</a>`).join('');
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.onclick = () => {
+        document.querySelectorAll('.tab').forEach((t) => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        const name = tab.dataset.tab;
+        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+      };
+    });
+
+    // Theme toggle
+    document.getElementById('themeBtn').onclick = () => {
+      const html = document.documentElement;
+      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    };
+
+    render();
+  </script>
+</body>
+</html>

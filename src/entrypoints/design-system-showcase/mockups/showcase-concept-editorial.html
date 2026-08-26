@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concept A — Quiet Editorial</title>
+  <style>
+    :root {
+      --bg: #F9F9F7;
+      --surface: #FFFFFF;
+      --surface-elevated: #FAFAF8;
+      --text: #2A2A2B;
+      --text-secondary: #6E6E73;
+      --primary: #5E6AD2;
+      --border: #E2E2DF;
+      --radius-card: 16px;
+      --radius-pill: 999px;
+      --font: Inter, system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      grid-template-columns: 240px 1fr;
+    }
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      overflow-y: auto;
+    }
+    .brand { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+    .tagline { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    nav { display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: var(--surface-elevated);
+      color: var(--text);
+    }
+    .nav-item.active { box-shadow: inset 0 0 0 1px var(--border); }
+    .nav-group { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); margin: 16px 0 8px; padding-left: 12px; }
+    main {
+      padding: 64px 80px;
+      overflow-y: auto;
+      max-width: 1200px;
+    }
+    header { margin-bottom: 64px; }
+    h1 { font-size: 64px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; margin: 0 0 20px; }
+    .lead { font-size: 20px; line-height: 1.6; color: var(--text-secondary); max-width: 60ch; margin: 0; }
+    .sections { display: flex; flex-direction: column; gap: 48px; }
+    .section {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 40px;
+    }
+    .section h2 { font-size: 32px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 12px; }
+    .section p { font-size: 16px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 28px; max-width: 70ch; }
+    .principles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; }
+    .card p { font-size: 14px; margin: 0; color: var(--text-secondary); }
+    .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+    .swatch { display: flex; flex-direction: column; gap: 8px; }
+    .swatch-color { width: 100%; height: 72px; border-radius: 10px; border: 1px solid var(--border); }
+    .swatch-name { font-size: 13px; font-weight: 500; }
+    .swatch-value { font-size: 11px; color: var(--text-secondary); font-family: ui-monospace, monospace; }
+    .nav-target { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface); font: inherit; font-size: 15px; color: var(--text); cursor: pointer; }
+    .nav-target:hover { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <aside>
+    <div>
+      <div class="brand">Cell Design</div>
+      <div class="tagline">Quiet confidence</div>
+    </div>
+    <nav>
+      <div class="nav-item active">Overview</div>
+      <div class="nav-group">Foundations</div>
+      <div class="nav-item">Color Scale</div>
+      <div class="nav-item">Typography Scale</div>
+      <div class="nav-item">Spacing Scale</div>
+      <div class="nav-group">Atoms</div>
+      <div class="nav-item">Button</div>
+      <div class="nav-item">Input</div>
+      <div class="nav-item">Card</div>
+    </nav>
+  </aside>
+  <main>
+    <header>
+      <h1>Quiet Confidence</h1>
+      <p class="lead">Cell is a learning companion, not a loud tool. The foundation is designed to feel calm, focused, and trustworthy while still encouraging curiosity.</p>
+    </header>
+    <div class="sections">
+      <section class="section">
+        <h2>Overview</h2>
+        <p>Calm, Focused, Learnable, Elegant — four principles that guide every token and component.</p>
+        <div class="principles">
+          <div class="card"><h3>Calm</h3><p>No aggressive color, no heavy shadow. Restrained use of accent.</p></div>
+          <div class="card"><h3>Focused</h3><p>Single accent color, clear hierarchy, purposeful motion.</p></div>
+          <div class="card"><h3>Learnable</h3><p>Consistent patterns: 5 type roles, 4px spacing, concentric radius.</p></div>
+          <div class="card"><h3>Elegant</h3><p>Warm off-white light theme. Near-black with faint blue tint dark theme.</p></div>
+        </div>
+      </section>
+      <section class="section">
+        <h2><button class="nav-target">Color <span>→</span></button></h2>
+        <p>Neutral-first, single indigo accent as punctuation. Color is organized by role, not by hex.</p>
+        <div class="swatches">
+          <div class="swatch"><div class="swatch-color" style="background:#F9F9F7"></div><span class="swatch-name">Background</span><span class="swatch-value">#F9F9F7</span></div>
+          <div class="swatch"><div class="swatch-color" style="background:#FFFFFF"></div><span class="swatch-name">Surface</span><span class="swatch-value">#FFFFFF</span></div>
+          <div class="swatch"><div class="swatch-color" style="background:#5E6AD2"></div><span class="swatch-name">Primary</span><span class="swatch-value">#5E6AD2</span></div>
+          <div class="swatch"><div class="swatch-color" style="background:#2A2A2B"></div><span class="swatch-name">Text</span><span class="swatch-value">#2A2A2B</span></div>
+          <div class="swatch"><div class="swatch-color" style="background:#E2E2DF"></div><span class="swatch-name">Border</span><span class="swatch-value">#E2E2DF</span></div>
+          <div class="swatch"><div class="swatch-color" style="background:#2F7D46"></div><span class="swatch-name">Success</span><span class="swatch-value">#2F7D46</span></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Showcase Layout Concepts</title>
+  <style>
+    :root {
+      --bg: #F9F9F7;
+      --surface: #FFFFFF;
+      --text: #2A2A2B;
+      --text-secondary: #6E6E73;
+      --primary: #5E6AD2;
+      --border: #E2E2DF;
+      --font: Inter, system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 64px 24px;
+    }
+    h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 12px; }
+    p { font-size: 16px; color: var(--text-secondary); margin: 0 0 48px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; width: 100%; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card h2 { font-size: 22px; font-weight: 600; margin: 0; }
+    .card p { font-size: 14px; line-height: 1.6; margin: 0; }
+    .card a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Design System Showcase — Layout Concepts</h1>
+  <p>3 concepts hoàn toàn khác nhau. Chọn 1 để em implement.</p>
+  <div class="cards">
+    <div class="card">
+      <h2>Concept A — Quiet Editorial</h2>
+      <p>Magazine-style: hero title lớn, sections rời rạc dạng card, nhiều whitespace, sidebar nhẹ. Phù hợp nếu anh muốn giống refero.</p>
+      <a href="showcase-concept-editorial.html" target="_blank">Xem Concept A</a>
+    </div>
+    <div class="card">
+      <h2>Concept B — Dense Dashboard</h2>
+      <p>Dashboard grid: sidebar tối, panels 2-3 cột, compact, stats và token nổi bật. Phù hợp nếu anh muốn thông tin dày đặc.</p>
+      <a href="showcase-concept-dashboard.html" target="_blank">Xem Concept B</a>
+    </div>
+    <div class="card">
+      <h2>Concept C — Minimal List</h2>
+      <p>Linear list: một cột dọc, accordion mở rộng, hình tròn swatch, rất clean. Phù hợp nếu anh muốn minimal/kiểu Linear docs.</p>
+      <a href="showcase-concept-minimal.html" target="_blank">Xem Concept C</a>
+    </div>
+  </div>
+</body>
+</html>

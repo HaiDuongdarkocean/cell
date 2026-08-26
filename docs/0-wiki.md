@@ -60,6 +60,7 @@ docs/           # Tài liệu dự án
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   ├── learning-algorithms-summary.md # Learning algorithms summary
 │   ├── design-system-learning-map.md  # Design system learning map (foundations → tokens → components → a11y → Apple lens)
+│   ├── design-system-from-scratch-loop.md # Pipeline xây dựng Design System từ đầu với vòng lặp cải tiến liên tục
 │   ├── sdlc-flow.md                   # SDLC — sơ đồ dòng chảy Idea → Khung quy trình → Sản phẩm (output mỗi pha + ai làm)
 │   ├── agentic-sdlc.md                # Agentic SDLC — tài liệu chuẩn (định nghĩa + nguồn gốc + 5 nguyên lý + pipeline 4 ông lớn + guardrail + metric + so sánh truyền thống + takeaway Cell + 10 nguồn)
 │   └── atomic-design.md               # Tổng hợp atomic design: 5 cấp độ, atom vs token, bảng tra cứu Cell, nguồn
@@ -90,6 +91,8 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-26**: Thêm `docs/knowledge-base/design-system-from-scratch-loop.md` — tổng hợp pipeline xây dựng Design System từ đầu với vòng lặp cải tiến liên tục, cập nhật 0-wiki.md.
 
 **2026-08-23**: Redesign 100% design system foundation "quiet confidence" — 7 ADRs (`084-090`) cho color/typography/spacing/shape/motion/iconography/grid, `tokens.json` v2.0.0 rewritten with neutral-first palette + indigo accent, `tokens.css` regenerated, `npm run build` pass. ADRs include rejected alternatives, dẫn chứng from Linear/Apple/Material/Carbon/Atlassian.
 

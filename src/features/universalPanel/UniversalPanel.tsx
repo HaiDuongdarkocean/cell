@@ -2,6 +2,8 @@ import { useRef, useState, useEffect, type ReactElement, type ReactNode, type Ke
 import { IconButton } from '@/shared/ui/IconButton';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { Icon } from '@/shared/icons/Icon';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { UniversalPanelHeader } from './UniversalPanelHeader';
 import { getLocalPlayerUrl } from './localPlayerLink';
 import type { TokenizePanelState } from '@/features/tokenize/types';
@@ -140,6 +142,21 @@ export function UniversalPanel({
                 <Icon name={tab.icon}  />
               </IconButton>
             ))}
+            <IconButton
+              size="md"
+              variant="ghost"
+              aria-label="Open Reader"
+              title="Open Reader"
+              onClick={() =>
+                void sendMessage({
+                  type: MESSAGE_TYPES.OPEN_READER,
+                  payload: {},
+                })
+              }
+              data-cell-id="universal-panel-reader"
+            >
+              <Icon name="library"  />
+            </IconButton>
             <IconButton
               size="md"
               variant="ghost"

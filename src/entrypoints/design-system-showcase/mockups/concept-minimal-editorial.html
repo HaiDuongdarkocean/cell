@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell Showcase — Minimal Editorial</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family), Inter, sans-serif;
+      background: var(--color-background);
+      color: var(--color-text-primary);
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      height: 56px;
+      padding: 0 var(--space-5);
+      background: var(--color-surface);
+      border-bottom: var(--borderWidth-hairline, 1px) solid var(--color-border);
+    }
+    .topbar-left { display: flex; align-items: baseline; gap: var(--space-3); }
+    .title { font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); margin: 0; letter-spacing: var(--tracking-tight); }
+    .meta { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+    .topbar-right { display: flex; align-items: center; gap: var(--space-3); }
+    .search {
+      width: 260px;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-hover);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .main { display: flex; height: calc(100vh - 56px); }
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      padding: var(--space-4);
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      display: flex; flex-direction: column; gap: var(--space-3);
+    }
+    .sidebar-header { padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border-subtle); }
+    .sidebar-title { margin: 0; font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); }
+    .sidebar-subtitle { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+    .tree { display: flex; flex-direction: column; gap: var(--space-1); }
+    .tree-item {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+    .tree-item:hover { background: var(--color-surface-hover); }
+    .tree-item.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .tree-group { padding-left: var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-xs); margin-top: var(--space-2); }
+    .result-card {
+      margin-top: auto;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-surface-hover);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+    .viewport { flex: 1; padding: var(--space-6); overflow: auto; }
+    .preview-card {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: var(--space-5);
+    }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .preview-title { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); }
+    .badge {
+      padding: var(--space-0-5) var(--space-2);
+      border-radius: var(--radius-pill);
+      background: var(--color-tint-blue-background);
+      color: var(--color-tint-blue-text);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+    .preview-desc { color: var(--color-text-secondary); margin: 0 0 var(--space-4); }
+    .stage {
+      min-height: 240px;
+      border-radius: var(--radius-md);
+      background: var(--color-background-muted);
+      border: 1px dashed var(--color-border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .search { width: 140px; }
+      .viewport { padding: var(--space-4); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="title">Design System</h1>
+      <span class="meta">47 of 47 components</span>
+    </div>
+    <div class="topbar-right">
+      <input class="search" type="text" placeholder="Search components…" />
+      <button class="icon-btn">◑</button>
+    </div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <p class="sidebar-title">Design System</p>
+        <p class="sidebar-subtitle">Quiet confidence</p>
+      </div>
+      <div class="tree">
+        <div class="tree-group">Foundations</div>
+        <div class="tree-item">Color</div>
+        <div class="tree-item active">Typography</div>
+        <div class="tree-item">Spacing</div>
+        <div class="tree-group">Components</div>
+        <div class="tree-item">Button</div>
+        <div class="tree-item">Input</div>
+        <div class="tree-item">Card</div>
+      </div>
+      <div class="result-card">Showing 3 / 47 items</div>
+    </aside>
+    <main class="viewport">
+      <div class="preview-card">
+        <div class="preview-header">
+          <h2 class="preview-title">Typography</h2>
+          <span class="badge">Foundations</span>
+        </div>
+        <p class="preview-desc">Type scale, weights, and tracking used across the Cell extension.</p>
+        <div class="stage">[ component preview area ]</div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
