@@ -27,6 +27,18 @@
   background: var(--color-primary-subtle);
 }
 
+/* Glass — translucent frosted card using liquid-glass tokens */
+.glass {
+  background: var(--color-glass-surface);
+  color: var(--color-glass-text-primary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(var(--blur-md));
+}
+
+.glass:hover {
+  background: var(--color-glass-surface-hover);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .card { transition: none; animation: none; }

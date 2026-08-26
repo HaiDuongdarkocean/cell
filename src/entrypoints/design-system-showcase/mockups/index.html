@@ -26,7 +26,7 @@
     }
     h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 12px; }
     p { font-size: 16px; color: var(--text-secondary); margin: 0 0 48px; }
-    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; width: 100%; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; max-width: 1160px; width: 100%; }
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -70,6 +70,31 @@
       <h2>Concept C — Minimal List</h2>
       <p>Linear list: một cột dọc, accordion mở rộng, hình tròn swatch, rất clean. Phù hợp nếu anh muốn minimal/kiểu Linear docs.</p>
       <a href="showcase-concept-minimal.html" target="_blank">Xem Concept C</a>
+    </div>
+  </div>
+
+  <h1 style="margin-top: 80px;">Liquid Glass — 4 Color Directions</h1>
+  <p>Chọn 1 concept để em implement thành tokens + component thật.</p>
+  <div class="cards">
+    <div class="card">
+      <h2>A · Dawn Lake</h2>
+      <p>Primary: bầu trời xanh (#5EA5E9). Nền sáng, hồ bình minh trong vắt, lá xanh nhấn nhá, sỏi và đất làm trung gian, mặt trời vàng ấm.</p>
+      <a href="liquid-glass-dawn.html" target="_blank">Xem Dawn</a>
+    </div>
+    <div class="card">
+      <h2>B · Forest Spring</h2>
+      <p>Primary: lá cây (#5FD389). Rừng tươi mát, bầu trời phản chiếu qua tán cây, nước trong veo, ấm nắng nhẹ qua khe lá.</p>
+      <a href="liquid-glass-forest.html" target="_blank">Xem Forest</a>
+    </div>
+    <div class="card">
+      <h2>C · Deep Ocean</h2>
+      <p>Primary: nước sâu (#3B82C4). Đại dương lặng, bầu trời phía xa, ánh sáng mặt trời lấp lánh trên mặt nước, sỏi đáy hồ lạnh.</p>
+      <a href="liquid-glass-ocean.html" target="_blank">Xem Ocean</a>
+    </div>
+    <div class="card">
+      <h2>D · Sun-warmed Pebbles</h2>
+      <p>Primary: ánh mặt trời (#E8A34D). Chiều vàng trên hồ, sỏi ấm, bầu trời xanh nhạt, lá xanh điểm, đất nâu hiền hòa.</p>
+      <a href="liquid-glass-warmth.html" target="_blank">Xem Warmth</a>
     </div>
   </div>
 </body>

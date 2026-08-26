@@ -33,7 +33,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(23);
+    expect(loaded.schemaVersion).toBe(24);
     expect(loaded.localPlayerSettings).toEqual(DEFAULT_LOCAL_PLAYER_SETTINGS);
   });
 
@@ -51,7 +51,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(23);
+    expect(loaded.schemaVersion).toBe(24);
     // Existing fields preserved.
     expect(loaded.concurrentDownloads).toBe(7);
     expect(loaded.defaultQuality).toBe('720p');
@@ -83,7 +83,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(23);
+    expect(loaded.schemaVersion).toBe(24);
     expect(loaded.localPlayerSettings.subtitleMatchEnabled).toBe(true);
     expect(loaded.localPlayerSettings.resumePromptEnabled).toBe(true);
     expect(loaded.localPlayerSettings.lastDirectoryId).toBeNull();

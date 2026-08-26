@@ -22,8 +22,8 @@ describe('PlayerModeOverlay.module.css', () => {
     expect(css).not.toMatch(/\.childFrame/s);
   });
 
-  it('cue list wrapper is NOT a scroll container (overflow:hidden — CueList .list is sole scroller)', () => {
-    expect(css).toMatch(/\.cueListWrap\s*\{[^}]*overflow:\s*hidden/s);
-    expect(css).not.toMatch(/\.cueListWrap\s*\{[^}]*overflow-y:\s*auto/s);
+  it('content other wrapper is NOT a scroll container (overflow:hidden — CueList .list is sole scroller)', () => {
+    expect(css).toMatch(/\.contentOther\s*\{[^}]*overflow:\s*hidden/s);
+    expect(css).not.toMatch(/\.contentOther\s*\{[^}]*overflow-y:\s*auto/s);
   });
 });

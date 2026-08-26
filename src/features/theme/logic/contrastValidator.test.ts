@@ -62,7 +62,7 @@ describe('contrastValidator', () => {
       expect(result.pairs.map((p) => p.label)).toEqual([
         'Text / Canvas',
         'Text Secondary / Canvas',
-        'White / Primary',
+        'Primary Foreground / Primary',
       ]);
     });
     it('allPass true when all pairs pass AA', () => {

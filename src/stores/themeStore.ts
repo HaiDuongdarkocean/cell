@@ -9,7 +9,8 @@ import { create } from 'zustand';
 import { loadThemeMode, loadThemeConfig, saveThemeMode, saveThemeConfig, DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import type { ThemeMode, ThemeConfig, ResolvedMode, CoreColorTokenKey } from '@/entities/theme';
+import { getPresetColors } from '@/shared/lib/tokens';
+import type { ThemeMode, ThemeConfig, ResolvedMode, CoreColorTokenKey, PresetName } from '@/entities/theme';
 
 interface ThemeStore {
   /** Current theme mode ('light'|'dark'|'system'). Source of truth. */
@@ -24,6 +25,8 @@ interface ThemeStore {
   switchMode(mode: ThemeMode): void;
   /** Update 1 core color token cho 1 mode (persist config). */
   updateColor(mode: ResolvedMode, token: CoreColorTokenKey, hex: string): void;
+  /** Switch to a named preset (or clear preset). */
+  switchPreset(preset: PresetName | undefined): void;
   /** Replace whole config (import JSON). */
   setConfig(config: ThemeConfig): void;
   /** Reset config to DEFAULT_THEME_CONFIG (persist). */
@@ -72,6 +75,15 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     };
     set({ config: updated });
     void saveThemeConfig(updated);
+  },
+
+  switchPreset(preset) {
+    const current = get().config;
+    const next: ThemeConfig = preset
+      ? { ...current, preset, customColors: { ...getPresetColors(preset) } }
+      : { ...current, preset: undefined };
+    set({ config: next });
+    void saveThemeConfig(next);
   },
 
   setConfig(config) {

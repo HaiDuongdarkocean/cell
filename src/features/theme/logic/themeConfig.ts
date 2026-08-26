@@ -5,6 +5,7 @@
 // hardcoded strings — DEFAULT_THEME_CONFIG là fallback khi storage absent.
 
 import type { ThemeConfig } from '@/entities/theme';
+import tokensJson from '@/shared/styles/tokens.json';
 import {
   DEFAULT_LIGHT_COLORS,
   DEFAULT_DARK_COLORS,
@@ -12,10 +13,11 @@ import {
 
 export { DEFAULT_LIGHT_COLORS, DEFAULT_DARK_COLORS };
 
-/** Default theme config — used when chrome.storage.local.themeConfig absent. */
+/** Default theme config — Dawn preset, used when chrome.storage.local.themeConfig absent. */
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
+  preset: 'dawn',
   customColors: {
-    light: { ...DEFAULT_LIGHT_COLORS },
-    dark: { ...DEFAULT_DARK_COLORS },
+    light: { ...tokensJson.presets.dawn.core.light },
+    dark: { ...tokensJson.presets.dawn.core.dark },
   },
 };

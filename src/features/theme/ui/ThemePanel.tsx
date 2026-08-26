@@ -10,6 +10,7 @@ import { applyTheme, resolveMode } from '@/features/theme/logic/themeManager';
 import { validateTheme } from '@/features/theme/logic/contrastValidator';
 import { Button } from '@/shared/ui';
 import { ModeCards } from './ModeCards';
+import { PresetSwitcher } from './PresetSwitcher';
 import { ColorCustomization } from './ColorCustomization';
 import { ThemePreview } from './ThemePreview';
 import { ContrastBadges } from './ContrastBadges';
@@ -17,7 +18,7 @@ import { ThemeImportExport } from './ThemeImportExport';
 import styles from './ThemePanel.module.css';
 
 export function ThemePanel(): React.JSX.Element {
-  const { mode, config, switchMode, updateColor, setConfig, resetTheme } = useThemeStore();
+  const { mode, config, switchMode, switchPreset, updateColor, setConfig, resetTheme } = useThemeStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
   // Realtime apply khi mode/config đổi (options page đã có ThemeProvider boot,
@@ -34,6 +35,11 @@ export function ThemePanel(): React.JSX.Element {
       <div className={styles.section}>
         <h2 className={styles.heading}>Mode</h2>
         <ModeCards value={mode} onChange={switchMode} />
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.heading}>Preset</h2>
+        <PresetSwitcher value={config.preset} onChange={switchPreset} data-cell-id="theme-preset-switcher" />
       </div>
 
       <div className={styles.section}>
