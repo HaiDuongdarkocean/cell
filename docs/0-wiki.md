@@ -100,7 +100,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
-**2026-08-28**: Cập nhật `Button` atom theo v4 mockup — thêm Liquid Glass tokens trong `tokens.json`, refactor `src/shared/ui/Button.module.css` (caustic surface/rim, reflex shadows, unified `outline`/`ghost` glass fill, 4 sizes/8 states), cập nhật `Button.showcase.tsx`, đồng bộ `docs/2-architechture-system.md`, tạo `docs/loop-result.md`. Build + Button tests pass; verify bằng stealth CDP design-system showcase. Log: `docs/loop-result.md`.
+**2026-08-28**: Cập nhật `Button` atom theo v4 mockup — thêm Liquid Glass tokens trong `tokens.json`, refactor `src/shared/ui/Button.module.css` (caustic surface/rim, reflex shadows, unified `outline`/`ghost` glass fill, 4 sizes/8 states), thêm gợn sóng từ điểm chạm + độ đàn hồi mặt nước khi nhấn (pointer-down ripple, spring release), cập nhật `Button.showcase.tsx`, đồng bộ `docs/2-architechture-system.md`, tạo `docs/loop-result.md`. Build + Button tests pass; verify bằng stealth CDP design-system showcase. Log: `docs/loop-result.md`.
 
 **2026-08-28**: Redesign `src/entrypoints/design-system-showcase/` — SSOT taxonomy trong `autoDiscovery.ts`, cải tiến `ShowcaseGallery.tsx` IA/visual, tự phát hiện component thiếu showcase, tạo `.showcase.tsx` bổ sung, thêm `build:design-system`. Log: `docs/loop-result.md`.
 

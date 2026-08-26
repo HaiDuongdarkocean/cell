@@ -26,7 +26,7 @@ export function Showcase(): ReactElement {
     <div className={styles.root}>
       <Section
         title="Variants — Liquid Glass"
-        caption="6 canonical variants. All action variants share the same neutral smoked-blue liquid-glass material; the rim caustics provide the only outline. Token-driven, theme-agnostic."
+        caption="6 canonical variants. All action variants share the same neutral smoked-blue liquid-glass material; the rim caustics provide the only outline. Pointer-down spawns a water ripple from the touch point; release uses a spring easing for a water-surface rebound. Token-driven, theme-agnostic."
       >
         <Button variant="primary">Primary</Button>
         <Button variant="glass">Glass</Button>
