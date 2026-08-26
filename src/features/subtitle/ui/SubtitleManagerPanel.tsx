@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Tabs } from '@/shared/ui/Tabs';
+import { Button, IconButton, Tabs } from '@/shared/ui';
 import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
 import { SubtitleManagerFooter } from './SubtitleManagerFooter';
@@ -242,16 +241,16 @@ function OffsetStepper({
       </div>
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
-          <button
-            type="button"
-            className={styles.stepBtn}
+          <Button
+            variant="primary"
+            size="md"
+            leadingIcon={<Icon name="minus" />}
             aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-dec-${role}`}
             onClick={() => bump(-OFFSET_STEP)}
           >
-            <Icon name="minus" />
             <span className={styles.stepLabel}>-0.5s</span>
-          </button>
+          </Button>
           <label className={styles.valueField}>
             <input
               type="text"
@@ -266,16 +265,16 @@ function OffsetStepper({
               data-cell-id={`manager-offset-input-${role}`}
             />
           </label>
-          <button
-            type="button"
-            className={styles.stepBtn}
+          <Button
+            variant="primary"
+            size="md"
+            leadingIcon={<Icon name="plus" />}
             aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-inc-${role}`}
             onClick={() => bump(OFFSET_STEP)}
           >
-            <Icon name="plus" />
             <span className={styles.stepLabel}>+0.5s</span>
-          </button>
+          </Button>
         </div>
         <IconButton
           size="md"
@@ -524,16 +523,15 @@ export function SubtitleManagerPanel({
     return (
       <>
         {v !== 'tracks' && (
-          <button
-            type="button"
+          <IconButton
             ref={backBtnRef}
-            className={styles.headerBack}
-            onClick={handleBack}
+            variant="ghost"
             aria-label="Back to subtitles"
             data-cell-id="manager-back-to-subtitles"
+            onClick={handleBack}
           >
             <Icon name="chevronLeft"  />
-          </button>
+          </IconButton>
         )}
         {v === 'tracks' && (
           <span className={styles.headerIcon}>

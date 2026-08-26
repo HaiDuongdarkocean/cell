@@ -26,6 +26,9 @@ export function Showcase(): ReactElement {
       <IconButton size="lg" aria-label="Large">
         <Icon name="settings" size={24} />
       </IconButton>
+      <IconButton variant="glass" aria-label="Glass">
+        <Icon name="sun" size={20} />
+      </IconButton>
       <IconButton loading aria-label="Loading" />
     </div>
   );
@@ -33,8 +36,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'IconButton',
-  description: 'Icon-only button with variants (solid, outline, ghost, transparent, danger) and sizes (xs, sm, md, lg). Use for compact icon actions.',
-  level: 'molecules',
+  description: 'Icon-only button with variants (solid, outline, ghost, transparent, danger, glass) and sizes (xs, sm, md, lg). Neutral smoked-blue liquid glass; semantic variants share the same material. Use for compact icon actions.',
+  level: 'atoms',
   category: 'Action',
   group: 'Shared UI — Action',
   order: 11,

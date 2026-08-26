@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import type { NavClusterSettings } from '@/entities/settings';
+import { Button } from '@/shared/ui';
 import { Slider } from '@/shared/ui/Slider';
 import styles from './NavClusterSettingsPanel.module.css';
 
@@ -101,16 +102,17 @@ export function NavClusterSettingsPanel({
             settings.textOpacity === preset.textOpacity &&
             settings.bgOpacity === preset.bgOpacity;
           return (
-            <button
+            <Button
               key={preset.label}
-              type="button"
-              className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ''}`}
-              onClick={() => handlePreset(preset)}
+              variant="primary"
+              size="sm"
+              active={isActive}
               aria-pressed={isActive}
+              onClick={() => handlePreset(preset)}
               data-cell-id={`nav-cluster-preset-${preset.label.toLowerCase()}`}
             >
               {preset.label}
-            </button>
+            </Button>
           );
         })}
       </div>

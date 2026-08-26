@@ -4,6 +4,17 @@
 > Update khi user nói khác. Không tự sửa mà chưa confirm.
 > Tham chiếu: `AGENTS.md` (conventions), `docs/1-share-language.md` (glossary), `docs/2-architechture-system.md` (architecture).
 
+## design system story
+ <!-- anh muốn hệ thống đi theo liquid glass design system. -->
+ tôi là Dương, dương của hải dương cũng là dương của thái dương, tôi yêu thiên
+  nhiên, bản mệnh là mộc, tôi thích những hàng cây với những tán lá đung đưa theo gió, tôi yêu nước vì nó yên bình, nhẹ nhàng, lả
+  lướt, mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm, phản ánh thế giới, cell được sinh ra cũng từ nước lớn lên và phát
+  triển, những cú cá tung tắng ở dưới nước làm mặt hồ gợn sóng, những viên sỏi nằm ở dưới đáy hồ cũng làm tôi cảm thấy chúng có một
+  vị trí đặc biệt mà chỉ cần nằm im cũng chứng tỏ sự quan trọng quả nó, tôi yêu bầu trời với màu xanh dương nhẹ nhàng. đó chính là
+  tôi người muốn có một cuộc sống gần gũi với thiên nhiên tôi muốn liquic glass sẽ là design system style, màu chủ đạo là màu xanh
+  dương của bầu trời, tiếp đó là màu xanh lá của cây, trong suốt của nước, màu xám của các viên sỏi, màu nâu của đất, màu vàng của
+  ánh mặt trời. tôi muốn chúng là một phần của hệ thống này.
+
 ## Persona
 
 - Người dùng từ 5 tuổi → 80 tuổi

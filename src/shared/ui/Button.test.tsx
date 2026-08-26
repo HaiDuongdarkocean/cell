@@ -19,12 +19,32 @@ describe('Button', () => {
   });
 
   it('renders all sizes', () => {
-    const sizes = ['sm', 'md', 'lg'] as const;
+    const sizes = ['sm', 'md', 'lg', 'xl'] as const;
     for (const size of sizes) {
       const { unmount } = render(<Button size={size}>{size}</Button>);
       expect(screen.getByRole('button', { name: size })).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('supports Apple-inspired liquid glass styles on glass buttons', () => {
+    const liquidStyles = [
+      ['regular', 'liquidRegular'],
+      ['clear', 'liquidClear'],
+      ['prominent', 'liquidProminent'],
+    ] as const;
+    for (const [liquidStyle, className] of liquidStyles) {
+      const { unmount } = render(<Button variant="glass" liquidStyle={liquidStyle}>Liquid</Button>);
+      expect(screen.getByRole('button', { name: 'Liquid' })).toHaveClass(className);
+      unmount();
+    }
+  });
+
+  it('does not expose liquidStyle as a DOM attribute on non-glass buttons', () => {
+    render(<Button variant="primary" liquidStyle="clear">Primary</Button>);
+    const button = screen.getByRole('button', { name: 'Primary' });
+    expect(button).not.toHaveAttribute('liquidstyle');
+    expect(button).not.toHaveClass('liquidClear');
   });
 
   it('disables and sets aria-busy when loading', () => {

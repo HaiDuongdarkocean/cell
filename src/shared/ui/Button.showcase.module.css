@@ -14,7 +14,7 @@
   margin: 0;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
@@ -22,7 +22,7 @@
 .caption {
   margin: 0;
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .row {

@@ -25,35 +25,35 @@ export function Showcase(): ReactElement {
   return (
     <div className={styles.root}>
       <Section
-        title="Variants"
-        caption="Primary for the main CTA. Secondary for alternatives. Outline, ghost and link for lower emphasis. Destructive for irreversible actions."
+        title="Variants — Liquid Glass"
+        caption="6 canonical variants. All action variants share the same neutral smoked-blue liquid-glass material; the rim caustics provide the only outline. Token-driven, theme-agnostic."
       >
         <Button variant="primary">Primary</Button>
-        <Button variant="primarySubtle">Primary Subtle</Button>
-        <Button variant="secondary">Secondary</Button>
+        <Button variant="glass">Glass</Button>
         <Button variant="outline">Outline</Button>
         <Button variant="ghost">Ghost</Button>
+        <Button variant="success">Success</Button>
         <Button variant="destructive">Destructive</Button>
-        <Button variant="link">Link</Button>
-      </Section>
-
-      <Section
-        title="Active / toggle"
-        caption="Use the active prop for toggled states on outline and ghost variants."
-      >
-        <Button variant="outline">Inactive</Button>
-        <Button variant="outline" active>Active</Button>
-        <Button variant="ghost">Ghost inactive</Button>
-        <Button variant="ghost" active>Ghost active</Button>
       </Section>
 
       <Section
         title="Sizes"
-        caption="Small for dense toolbars, medium as the default, large for prominent actions."
+        caption="sm / md / lg / xl. xl is the hero CTA — taller, semibold, for prominent actions."
       >
         <Button size="sm" variant="primary">Small</Button>
         <Button size="md" variant="primary">Medium</Button>
         <Button size="lg" variant="primary">Large</Button>
+        <Button size="xl" variant="primary">Extra</Button>
+      </Section>
+
+      <Section
+        title="1-item & 2-item"
+        caption="1-item: icon only or label only. 2-item horizontal: icon + label inline. 2-item vertical: icon stacked above label."
+      >
+        <Button variant="primary" aria-label="Download"><Icon name="download" size={18} /></Button>
+        <Button variant="primary">Label only</Button>
+        <Button variant="glass" leadingIcon={<Icon name="download" size={18} />}>Horizontal</Button>
+        <Button variant="outline" trailingIcon={<Icon name="chevronRight" size={18} />}>Next</Button>
       </Section>
 
       <Section
@@ -63,26 +63,31 @@ export function Showcase(): ReactElement {
       >
         <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="search" size={20} />}>Search</Button>
         <Button variant="ghost" orientation="vertical" fullWidth active leadingIcon={<Icon name="eyeOff" size={20} />}>Hide</Button>
-        <Button variant="primarySubtle" orientation="vertical" fullWidth leadingIcon={<Icon name="generateNative" size={20} />}>Generate</Button>
-        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="slidersHorizontal" size={20} />}>Customize</Button>
-      </Section>
-
-      <Section
-        title="Liquid Glass"
-        caption="Frosted glass surface that lifts on hover. Ideal for floating toolbars and panels."
-      >
-        <Button variant="glass">Glass</Button>
-        <Button variant="glass" leadingIcon={<Icon name="zap" size={18} />}>Glass icon</Button>
+        <Button variant="success" orientation="vertical" fullWidth leadingIcon={<Icon name="check" size={20} />}>Done</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="slidersHorizontal" size={20} />}>Custom</Button>
       </Section>
 
       <Section
         title="States"
-        caption="Disabled, loading, full-width and elevated (shadow) treatments."
+        caption="8 states: default, hover, focus, pressed, active(toggle), disabled, loading, error."
       >
+        <Button variant="ghost">Inactive</Button>
+        <Button variant="ghost" active>Active</Button>
         <Button disabled>Disabled</Button>
         <Button loading>Loading</Button>
-        <Button fullWidth>Full width</Button>
-        <Button elevation="med">Elevated</Button>
+        <Button error>Error</Button>
+        <Button variant="success" loading>Saving</Button>
+      </Section>
+
+      <Section
+        title="Liquid Glass — Apple materials"
+        caption="3 material directions, switched through one API. Use the showcase preset switcher above to preview Dawn, Forest, Ocean, and Warmth."
+      >
+        <Button variant="glass" liquidStyle="regular" leadingIcon={<Icon name="search" size={18} />}>Regular</Button>
+        <Button variant="glass" liquidStyle="clear" leadingIcon={<Icon name="image" size={18} />}>Clear</Button>
+        <Button variant="glass" liquidStyle="prominent" leadingIcon={<Icon name="sun" size={18} />}>Prominent</Button>
+        <Button variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
+        <Button variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Icon name="download" size={20} />}>Download video</Button>
       </Section>
     </div>
   );
@@ -90,7 +95,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Button',
-  description: 'Button atom — 7 variants (primary, primarySubtle, secondary, outline, ghost, destructive, link), 2 orientations (horizontal, vertical), 3 sizes, active toggle state. Token-driven, theme-agnostic.',
+  description: 'Button atom — Liquid Glass. 6 canonical variants (primary, glass, outline, ghost, success, destructive) + 3 aliases (secondary, primarySubtle, link). 4 sizes (sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, caustic highlights, smoked-blue glass, no idle motion. Token-driven, theme-agnostic.',
   level: 'atoms',
   category: 'Action',
   group: 'Shared UI — Action',

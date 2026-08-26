@@ -1,43 +1,170 @@
 .button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1-5);
+  gap: var(--button-gap);
   min-width: var(--touch-target);
   min-height: var(--touch-target);
+  height: var(--button-height);
+  padding: var(--button-padding-y) var(--button-padding-x);
   border: none;
   border-radius: var(--button-radius);
   font-family: var(--font-family);
+  font-size: var(--button-font-size);
   font-weight: var(--button-font-weight);
+  color: var(--button-liquid-foreground);
   text-decoration: none;
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition), color var(--transition), border-color var(--transition);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--button-liquid-surface);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 10%), transparent),
+    inset 1.8px 3px 0 -2px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 90%), transparent),
+    inset -2px -2px 0 -2px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 80%), transparent),
+    inset -3px -8px 1px -6px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 60%), transparent),
+    inset -0.3px -1px 4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 12%), transparent),
+    inset -1.5px 2.5px 0 -2px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 20%), transparent),
+    inset 0 3px 4px -2px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 20%), transparent),
+    inset 2px -6.5px 1px -4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 10%), transparent),
+    0 1px 5px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 10%), transparent),
+    0 6px 16px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 8%), transparent);
+  text-shadow: var(--button-liquid-text-shadow);
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition),
+    filter var(--transition);
 }
 
-/* Children (icons/labels/spinners) must not intercept pointer events — the button itself should trigger. */
 .button > * {
   pointer-events: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* Caustic surface highlight — top-left + bottom-right light sources. */
+.button::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 22% 18%,
+      var(--button-liquid-inner-highlight) 0%,
+      color-mix(in srgb, var(--button-liquid-inner-highlight), transparent 55%) 35%,
+      color-mix(in srgb, var(--button-liquid-surface-glow), transparent 80%) 60%,
+      transparent 80%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 78% 82%,
+      var(--button-liquid-inner-highlight) 0%,
+      color-mix(in srgb, var(--button-liquid-inner-highlight), transparent 55%) 35%,
+      color-mix(in srgb, var(--button-liquid-surface-glow), transparent 80%) 60%,
+      transparent 80%
+    );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  filter: blur(0.8px);
+  transition: opacity var(--transition);
+}
+
+/* Soft rim caustics, not a full border. */
+.button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 30% 22% at 12% 12%,
+      var(--button-liquid-edge-glow) 0%,
+      color-mix(in srgb, var(--button-liquid-edge-glow), transparent 55%) 35%,
+      color-mix(in srgb, var(--button-liquid-edge-glow), transparent 88%) 60%,
+      transparent 78%
+    ),
+    radial-gradient(
+      ellipse 30% 22% at 88% 88%,
+      var(--button-liquid-edge-glow) 0%,
+      color-mix(in srgb, var(--button-liquid-edge-glow), transparent 55%) 35%,
+      color-mix(in srgb, var(--button-liquid-edge-glow), transparent 88%) 60%,
+      transparent 78%
+    );
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(0.8px);
+  opacity: 0.9;
+  transition: background var(--transition), opacity var(--transition);
+}
+
+.button:hover {
+  background: var(--button-liquid-surface-hover);
+  filter: brightness(1.04);
+}
+
+.button:hover::before,
+.button:hover::after {
+  opacity: 1;
+}
+
+.button:active {
+  transform: scale(0.985);
+  filter: brightness(0.98);
+  transition: transform 0.08s var(--ease-out), filter 0.08s var(--ease-out);
 }
 
 .button:focus-visible {
-  outline: var(--space-0-5) solid var(--button-focus-ring);
-  outline-offset: var(--space-0-5);
+  outline: 2px solid color-mix(in srgb, currentColor 60%, transparent);
+  outline-offset: 3px;
 }
 
-.button:disabled,
-.button.loading {
-  opacity: var(--button-disabled-opacity);
+.button:disabled {
+  opacity: 0.4;
   pointer-events: none;
   cursor: not-allowed;
+}
+
+.button:disabled::before {
+  opacity: 0.3;
+}
+
+.button:disabled::after {
+  opacity: 0.4;
+}
+
+.button.loading {
+  opacity: 0.78;
+  pointer-events: none;
+  cursor: wait;
+}
+
+.button.loading::before,
+.button.loading::after {
+  opacity: 0.4;
 }
 
 /* === Sizes === */
 .sm {
   height: var(--button-height-sm);
+  min-height: var(--button-height-sm);
   padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
   font-size: var(--button-font-size-sm);
+  min-width: var(--button-height-sm);
+}
+
+.sm .leadingIcon,
+.sm .trailingIcon {
+  width: 16px;
+  height: 16px;
 }
 
 .md {
@@ -46,92 +173,87 @@
   font-size: var(--button-font-size);
 }
 
+.md .leadingIcon,
+.md .trailingIcon {
+  width: 18px;
+  height: 18px;
+}
+
 .lg {
   height: var(--button-height-lg);
   padding: var(--button-padding-lg-y) var(--button-padding-lg-x);
   font-size: var(--button-font-size-lg);
 }
 
+.lg .leadingIcon,
+.lg .trailingIcon {
+  width: 24px;
+  height: 24px;
+}
+
+.xl {
+  height: var(--button-height-xl);
+  padding: var(--button-padding-y-xl) var(--button-padding-x-xl);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+.xl .leadingIcon,
+.xl .trailingIcon {
+  width: 28px;
+  height: 28px;
+}
+
 /* === Variants === */
 
-/* Primary */
-.primary {
-  background: var(--button-bg);
-  color: var(--button-fg);
+/* All action variants share the same neutral liquid-glass material. */
+.primary,
+.secondary,
+.glass,
+.success,
+.destructive,
+.error,
+.primarySubtle {
+  background: var(--button-liquid-surface);
+  color: var(--button-liquid-foreground);
 }
 
-.primary:hover {
-  background: var(--button-hover-bg);
+.primarySubtle {
+  font-weight: var(--button-primary-subtle-font-weight);
 }
 
-.primary:active {
-  background: var(--button-active-bg);
-}
-
-/* Secondary */
-.secondary {
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-fg);
-}
-
-.secondary:hover {
-  background: var(--button-secondary-hover-bg);
-}
-
-.secondary:active {
-  background: var(--button-secondary-hover-bg);
-}
-
-/* Outline */
-.outline {
-  background: transparent;
-  color: var(--color-text);
-  border: var(--border-width-hairline) solid var(--button-outline-border);
-}
-
+/* Outline — same liquid-glass material; the rim provides the outline. */
+.outline,
 .outline:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
+  background: var(--button-liquid-surface);
+  color: var(--button-liquid-foreground);
 }
 
-.outline:active {
-  background: var(--color-surface-hover);
-}
-
-/* Ghost */
-.ghost {
-  background: transparent;
-  color: var(--color-text);
-}
-
+/* Ghost — same liquid-glass material; floats on tinted backgrounds. */
+.ghost,
 .ghost:hover {
-  background: var(--color-surface-hover);
+  background: var(--button-liquid-surface);
+  color: var(--button-liquid-foreground);
 }
 
-.ghost:active {
-  background: var(--color-surface-hover);
-}
-
-/* Destructive */
-.destructive {
-  background: var(--button-destructive-bg);
-  color: var(--button-destructive-fg);
-}
-
-.destructive:hover {
-  background: var(--button-destructive-hover-bg);
-}
-
-.destructive:active {
-  background: var(--button-destructive-hover-bg);
-}
-
-/* Link */
+/* Link — inline text, no glass. */
 .link {
-  background: transparent;
-  color: var(--color-primary);
-  padding: var(--space-1) var(--space-2);
+  display: inline-flex;
   height: auto;
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  color: var(--color-text-primary);
+  box-shadow: none;
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.link::before,
+.link::after {
+  display: none;
 }
 
 .link:hover {
@@ -139,78 +261,78 @@
   background: var(--color-primary-subtle);
 }
 
-.link:active {
-  color: var(--color-primary-hover);
+/* === Liquid Glass material styles (variant='glass') === */
+
+.liquidRegular,
+.liquidClear,
+.liquidProminent {
+  background: var(--button-liquid-surface);
+  color: var(--button-liquid-foreground);
+  backdrop-filter: blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation));
+  -webkit-backdrop-filter: blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation));
 }
 
-/* PrimarySubtle — bold primary text, no background (ZaloPay featured nav action) */
-.primarySubtle {
-  background: var(--button-primary-subtle-bg);
-  color: var(--button-primary-subtle-fg);
-  font-weight: var(--button-primary-subtle-font-weight);
+.liquidClear {
+  background: color-mix(in srgb, var(--button-liquid-surface) 55%, transparent);
+  border: var(--border-width-hairline) solid var(--color-glass-border-subtle);
 }
 
-.primarySubtle:hover {
-  background: var(--button-primary-subtle-hover-bg);
+.liquidClear:hover {
+  background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
 }
 
-.primarySubtle:active {
-  background: var(--button-primary-subtle-hover-bg);
+.liquidProminent {
+  background: var(--button-liquid-surface-active);
 }
 
-/* Glass — translucent frosted surface using liquid-glass tokens */
-.glass {
-  background: var(--color-glass-surface);
-  color: var(--color-glass-text-primary);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
-  box-shadow: var(--shadow-floating);
-  backdrop-filter: blur(var(--blur-sm));
-  position: relative;
-  overflow: hidden;
+.liquidProminent:hover {
+  background: var(--button-liquid-surface-active);
+  filter: brightness(1.05);
 }
 
-.glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 100%);
-  pointer-events: none;
-}
+/* === States === */
 
-.glass:hover {
-  background: var(--color-glass-surface-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.glass:active {
-  background: var(--color-glass-surface-hover);
-  transform: translateY(0) scale(0.98);
-}
-
-/* === Active state — persistent toggle (pale-blue subtle bg + primary color) === */
 .active,
 .active:hover {
-  background: var(--button-toggle-active-bg);
-  color: var(--button-toggle-active-fg);
-  border-color: transparent;
+  background: var(--button-liquid-surface-active);
+  color: var(--button-liquid-foreground);
+  filter: brightness(1.06);
 }
 
-/* === Active flat — color only, no background, no animation (footer/tab bar) === */
+.active::before,
+.active:hover::before,
+.active::after,
+.active:hover::after {
+  opacity: 0.5;
+}
+
 .activeFlat,
 .activeFlat:hover {
   background: transparent;
-  color: var(--color-primary);
-  border-color: transparent;
+  color: var(--color-text-accent);
+  box-shadow: none;
 }
 
-/* === Orientation: vertical (ZaloPay pattern — icon top, label bottom) === */
+.error,
+.error:hover {
+  background: var(--button-liquid-surface-active);
+  color: var(--button-liquid-foreground);
+}
+
+.loading,
+.loading:hover {
+  cursor: wait;
+}
+
+/* === Orientation === */
+
 .vertical {
   flex-direction: column;
   gap: var(--button-vertical-gap);
   padding: var(--button-vertical-padding-y) var(--button-vertical-padding-x);
   height: auto;
   min-height: var(--touch-target);
+  border-radius: 0;
 }
 
 .vertical .label {
@@ -228,14 +350,15 @@
 }
 
 /* === Icons === */
+
 .leadingIcon,
 .trailingIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
+  width: 18px;
+  height: 18px;
 }
 
 .leadingIcon svg,
@@ -244,67 +367,15 @@
   height: 100%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .button {
-    transition: none;
-    animation: none;
-  }
-  .ripple {
-    display: none;
-  }
-}
-
-/* === Ripple effect — water-like splash from pointer position === */
-.rippleHost {
-  position: relative;
-  overflow: hidden;
-  transition: color var(--ripple-color-duration) var(--ripple-ease);
-}
-
-/* Disable hover bg when ripple is enabled */
-.rippleHost:hover {
-  background: transparent;
-}
-
-.rippleHost.ghost:hover,
-.rippleHost.ghost:active {
-  background: transparent;
-}
-
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: var(--color-primary);
-  transform: scale(0);
-  animation: ripple var(--ripple-duration) var(--ripple-ease);
-  pointer-events: none;
-  opacity: var(--ripple-opacity);
-}
-
-@keyframes ripple {
-  to {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-
-/* === Ripple pulse — one-shot color flash while ripple spreads === */
-.ripplePulsing {
-  color: var(--color-primary);
-}
-
-.label {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-}
-
 /* === Full width === */
+
 .fullWidth {
   width: 100%;
+  border-radius: 0;
 }
 
-/* === Elevation (spec §2.1 — shadow when elevation ≠ none) === */
+/* === Elevation === */
+
 .elevation_low {
   box-shadow: var(--shadow-floating);
 }
@@ -315,4 +386,105 @@
 
 .elevation_high {
   box-shadow: var(--shadow-modal);
+}
+
+/* === Collapse label (icon-only when container < 380px) === */
+
+.collapseLabel {
+  container-type: normal;
+}
+
+@container (max-width: 380px) {
+  .collapseLabel .label,
+  .collapseLabel .trailingIcon {
+    display: none;
+  }
+
+  .collapseLabel .leadingIcon {
+    margin: 0;
+  }
+}
+
+/* === Ripple === */
+
+.rippleHost {
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: scale(0);
+  animation: ripple var(--ripple-duration) var(--ripple-ease);
+  pointer-events: none;
+  opacity: var(--ripple-opacity);
+  z-index: 2;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.ripplePulsing {
+  color: var(--color-primary);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* === Reduced motion / transparency / contrast === */
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+  }
+
+  .ripple {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .button,
+  .liquidRegular,
+  .liquidClear,
+  .liquidProminent {
+    background: var(--color-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .button::before,
+  .button::after,
+  .liquidRegular::before,
+  .liquidClear::before,
+  .liquidProminent::before,
+  .liquidRegular::after,
+  .liquidClear::after,
+  .liquidProminent::after {
+    display: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .button,
+  .outline,
+  .ghost,
+  .liquidRegular,
+  .liquidClear,
+  .liquidProminent {
+    border: var(--border-width-hairline) solid currentColor;
+  }
+
+  .ghost,
+  .link {
+    border: none;
+  }
 }

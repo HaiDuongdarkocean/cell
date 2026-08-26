@@ -2,8 +2,9 @@ import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type ReactNode
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link';
-type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success';
+type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+type ButtonLiquidStyle = 'regular' | 'clear' | 'prominent';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 type ButtonActiveStyle = 'default' | 'flat';
@@ -11,6 +12,10 @@ type ButtonActiveStyle = 'default' | 'flat';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
   variant?: ButtonVariant;
+  /** Hide label when nested in a container narrower than 380px. */
+  collapseLabel?: boolean;
+  /** Apple-inspired material for glass buttons. Default: regular. */
+  liquidStyle?: ButtonLiquidStyle;
   /** Size. Default: md. */
   size?: ButtonSize;
   /** Layout direction: horizontal (icon+label inline) or vertical (icon top, label bottom). Default: horizontal. */
@@ -21,6 +26,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   activeStyle?: ButtonActiveStyle;
   /** Show loading spinner and disable interactions. */
   loading?: boolean;
+  /** Error state — button reports a failed action (error-subtle fill + error blob). */
+  error?: boolean;
   /** Stretch to fill the available width. */
   fullWidth?: boolean;
   /** Elevation shadow. Default: none. */
@@ -46,12 +53,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
+  liquidStyle = 'regular',
   size = 'md',
   orientation = 'horizontal',
   active = false,
   activeStyle = 'default',
   loading = false,
+  error = false,
   fullWidth = false,
+  collapseLabel = false,
   elevation = 'none',
   ripple = false,
   ripplePulse = false,
@@ -90,14 +100,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     }
   };
 
+  const liquidClass = variant === 'glass'
+    ? liquidStyle === 'clear'
+      ? styles.liquidClear
+      : liquidStyle === 'prominent'
+        ? styles.liquidProminent
+        : styles.liquidRegular
+    : '';
+
   const cls = [
     styles.button,
     styles[variant],
+    liquidClass,
     styles[size],
     orientation === 'vertical' ? styles.vertical : '',
     active ? (activeStyle === 'flat' ? styles.activeFlat : styles.active) : '',
     loading ? styles.loading : '',
+    error ? styles.error : '',
     fullWidth ? styles.fullWidth : '',
+    collapseLabel ? styles.collapseLabel : '',
     elevation !== 'none' ? styles[`elevation_${elevation}`] : '',
     ripple ? styles.rippleHost : '',
     ripplePulse && pulsing ? styles.ripplePulsing : '',
@@ -113,6 +134,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cls}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      aria-invalid={error || undefined}
       onPointerDown={handlePointerDown}
       {...rest}
     >

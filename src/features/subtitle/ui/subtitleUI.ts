@@ -31,11 +31,26 @@ export function buildClusterCssVars(settings?: NavClusterSettings): CSSPropertie
   const buttonSize = settings?.buttonSize ?? 34;
   const textOpacity = settings?.textOpacity ?? 1;
   const bgOpacity = settings?.bgOpacity ?? 0.2;
+  const hoverAlpha = Math.min(bgOpacity + 0.06, 1);
+  const activeAlpha = Math.min(bgOpacity + 0.12, 1);
   return {
     '--cluster-btn-size': `clamp(${Math.round(buttonSize * 0.65)}px, ${Math.round(buttonSize * 0.15)}cqw, ${buttonSize}px)`,
     '--cluster-icon-size': `clamp(${Math.round(buttonSize * 0.35)}px, ${Math.round(buttonSize * 0.082)}cqw, 20px)`,
     '--cluster-text-opacity': String(textOpacity),
     '--cluster-bg-opacity': String(bgOpacity),
+    // Protected-overlay material: shared IconButton owns the geometry,
+    // but the cluster scope remaps the liquid tokens so the same
+    // component renders dark glass on top of video.
+    '--iconbutton-liquid-surface': `rgba(10, 16, 26, ${bgOpacity})`,
+    '--iconbutton-liquid-surface-hover': `rgba(14, 22, 34, ${hoverAlpha})`,
+    '--iconbutton-liquid-surface-active': `rgba(14, 22, 34, ${activeAlpha})`,
+    '--iconbutton-liquid-foreground': `rgba(247, 248, 248, ${textOpacity})`,
+    '--iconbutton-liquid-specular': 'rgba(255, 255, 255, 0.55)',
+    '--iconbutton-liquid-caustic': 'rgba(160, 184, 220, 0.42)',
+    '--iconbutton-liquid-inner-shadow': 'rgba(0, 0, 0, 0.3)',
+    '--iconbutton-liquid-contact-shadow': 'rgba(0, 0, 0, 0.2)',
+    '--iconbutton-liquid-focus-ring': 'rgba(255, 255, 255, 0.35)',
+    '--iconbutton-liquid-backdrop-blur': 'var(--blur-lg)',
   } as CSSProperties;
 }
 

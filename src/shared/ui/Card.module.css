@@ -4,8 +4,11 @@
   border: var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--card-padding);
-  transition: background-color var(--duration-fast) var(--ease-in-out),
-              border-color var(--duration-fast) var(--ease-in-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out),
+    transform var(--duration-fast) var(--ease-in-out),
+    box-shadow var(--duration-fast) var(--ease-in-out);
 }
 
 .interactive {
@@ -15,16 +18,22 @@
 .interactive:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border);
+  transform: translateY(calc(var(--space-0-5) * -0.5));
+  box-shadow: var(--shadow-md);
 }
 
 .selected {
   border-color: var(--color-primary);
   background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  box-shadow: 0 0 0 calc(var(--space-0-5) * 0.5) color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .selected:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-subtle);
+  transform: translateY(calc(var(--space-0-5) * -0.5));
+  box-shadow: 0 var(--space-0-5) var(--space-2) color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 /* Glass — translucent frosted card using liquid-glass tokens */
@@ -32,12 +41,18 @@
   background: var(--color-glass-surface);
   color: var(--color-glass-text-primary);
   border: var(--border-width-hairline) solid var(--color-glass-border);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(var(--blur-md));
+  box-shadow:
+    var(--shadow-floating),
+    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
+  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
 }
 
 .glass:hover {
   background: var(--color-glass-surface-hover);
+  transform: translateY(calc(var(--space-0-5) * -0.5));
+  box-shadow:
+    var(--shadow-md),
+    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
 }
 
 @media (prefers-reduced-motion: reduce) {

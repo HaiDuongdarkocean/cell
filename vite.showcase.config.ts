@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import { resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, cpSync, rmSync, rmdirSync } from 'node:fs';
 
 const SHOWCASE_HTML_PATH = resolve(
   __dirname,
@@ -12,6 +12,27 @@ const SHOWCASE_HTML_PATH = resolve(
  * Browser giữ URL /showcase/<title> (ShowcaseGallery đọc pathname),
  * Vite transformIndexHtml inject script với base đúng (/src/entrypoints/design-system-showcase/).
  */
+/**
+ * Move build output từ `docs/design-system/src/entrypoints/design-system-showcase/index.html`
+ * sang `docs/design-system/design-system-showcase.html` để `npm run design-system` serve
+ * artifact mới nhất từ root.
+ */
+const showcaseOutputMover = (): Plugin => ({
+  name: 'showcase-output-mover',
+  apply: 'build',
+  closeBundle() {
+    const outDir = resolve(__dirname, 'docs/design-system');
+    const deep = resolve(outDir, 'src/entrypoints/design-system-showcase/index.html');
+    const flat = resolve(outDir, 'design-system-showcase.html');
+    try {
+      cpSync(deep, flat, { force: true, recursive: false });
+      rmSync(resolve(outDir, 'src'), { force: true, recursive: true });
+    } catch {
+      // Ignore nếu artifact đã được xử lý.
+    }
+  },
+});
+
 const showcaseSpaRewrite = (): Plugin => ({
   name: 'showcase-spa-rewrite',
   configureServer(server: ViteDevServer) {
@@ -37,9 +58,9 @@ const showcaseSpaRewrite = (): Plugin => ({
 });
 
 /**
- * Vite config riêng cho Design System Showcase dev server.
+ * Vite config riêng cho Design System Showcase dev server và build.
  * Không load CRXJS → không interfere với extension.
- * Chỉ serve showcase HTML + HMR cho component iteration.
+ * Build outputs `docs/design-system/design-system-showcase.html`.
  */
 export default defineConfig({
   resolve: {
@@ -50,10 +71,19 @@ export default defineConfig({
   optimizeDeps: {
     entries: ['src/entrypoints/design-system-showcase/index.html'],
   },
-  plugins: [showcaseSpaRewrite()],
+  plugins: [showcaseSpaRewrite(), showcaseOutputMover()],
   server: {
     port: 5180,
     strictPort: true,
     open: '/src/entrypoints/design-system-showcase/index.html',
+  },
+  build: {
+    outDir: 'docs/design-system',
+    emptyOutDir: false,
+    rollupOptions: {
+      input: {
+        'design-system-showcase': SHOWCASE_HTML_PATH,
+      },
+    },
   },
 });

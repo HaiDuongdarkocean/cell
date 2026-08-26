@@ -40,7 +40,8 @@ export function MockCuesProvider({ children }: { readonly children: ReactNode })
 
 export function useMockCues(): MockCuesValue {
   const ctx = useContext(MockCuesContext);
-  return ctx ?? useMockCuesValue();
+  const fallback = useMockCuesValue();
+  return ctx ?? fallback;
 }
 
 function useMockCuesValue(): MockCuesValue {

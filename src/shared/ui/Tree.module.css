@@ -73,14 +73,14 @@
 .active,
 .active:hover {
   background: var(--color-primary-subtle);
-  color: var(--color-text);
+  color: var(--color-text-accent);
 }
 
 .depth1.active,
 .depth2.active,
 .branchNode.active {
   font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+  color: var(--color-text-accent);
 }
 
 .chevron {

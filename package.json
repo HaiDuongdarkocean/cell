@@ -12,6 +12,7 @@
     "postbuild": "node scripts/patch-ocr-csp.mjs",
     "design-system": "npx http-server docs/design-system -p 8123 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
+    "build:design-system": "vite build --config vite.showcase.config.ts",
     "preview": "vite preview",
     "test": "jest --passWithNoTests",
     "test:unit": "jest --selectProjects unit --passWithNoTests",

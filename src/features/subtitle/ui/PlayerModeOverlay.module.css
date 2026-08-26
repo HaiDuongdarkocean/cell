@@ -194,7 +194,6 @@
 .actionArea :global([role='button']) {
   min-width: var(--touch-target-mobile, 44px);
   min-height: var(--touch-target-mobile, 44px);
-  color: var(--color-overlay-text);
 }
 
 /* Player Mode icon size: override NavCluster/SubtitlePanels --cluster-icon-size

@@ -22,7 +22,7 @@ export interface FooterBarSlot {
   /** Ref forwarded to underlying button. */
   readonly ref?: React.Ref<HTMLButtonElement>;
   /** Extra button attributes (title, data-cell-id, aria-*). */
-  readonly buttonProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'ref'>;
+  readonly buttonProps?: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'ref'> & Record<`data-${string}`, string | undefined>;
 }
 
 export interface FooterBarProps {

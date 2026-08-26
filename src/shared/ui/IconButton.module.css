@@ -1,121 +1,212 @@
-/* === IconButton atom — design-system-ui-ux Step 3 (Rule of Three: 11 call sites) ===
-   Consumes tokens only (no raw hex/radius). Variants via props, not CSS overrides.
-   Migrates: Header.iconBtn, SettingsDialog.iconBtn/iconBtnSm, VideoCard.expandBtn/downloadBtn,
-   SubtitleCard.expandBtn/downloadBtn, SelectionBar.clearBtn, DownloadCard.actionBtn.
-   Header active states (extDisabled/adActive) via `active` prop. */
-
 .iconBtn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  background: var(--iconbutton-bg);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  min-width: var(--iconbutton-size-md);
+  min-height: var(--iconbutton-size-md);
+  padding: 0;
   border: none;
   border-radius: var(--iconbutton-radius);
   cursor: pointer;
-  color: var(--iconbutton-fg);
-  transition: background var(--transition), color var(--transition);
-  padding: 0;
   flex-shrink: 0;
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
+  color: var(--iconbutton-liquid-foreground);
+  background: var(--iconbutton-liquid-surface);
+  backdrop-filter: blur(var(--iconbutton-liquid-backdrop-blur)) saturate(var(--iconbutton-liquid-backdrop-saturation));
+  -webkit-backdrop-filter: blur(var(--iconbutton-liquid-backdrop-blur)) saturate(var(--iconbutton-liquid-backdrop-saturation));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--iconbutton-liquid-specular) 8%, transparent),
+    0 1px 3px var(--iconbutton-liquid-contact-shadow);
+  text-shadow: 0 1px 2px var(--iconbutton-liquid-inner-shadow);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    background-color var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition);
 }
 
-/* Children (icons/labels) must not intercept pointer events — the button itself should trigger. */
 .iconBtn > * {
   pointer-events: none;
+  position: relative;
+  z-index: 1;
 }
 
-/* === Sizes — DS spec §2 Icon Button: default 40×40 (md) === */
-.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); min-width: var(--iconbutton-size-xs); min-height: var(--iconbutton-size-xs); }
-.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); min-width: var(--iconbutton-size-sm); min-height: var(--iconbutton-size-sm); }
-.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); min-width: var(--iconbutton-size-md); min-height: var(--iconbutton-size-md); }
-.lg { width: var(--space-12); height: var(--space-12); min-width: var(--space-12); min-height: var(--space-12); }
-
-/* Icon size — SSOT, controlled by button not by Icon prop */
-.iconBtn > svg,
-.iconBtn > * svg {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
+/* Caustic surface highlight. */
+.iconBtn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 22% 18%,
+      var(--iconbutton-liquid-specular) 0%,
+      color-mix(in srgb, var(--iconbutton-liquid-specular), transparent 55%) 35%,
+      color-mix(in srgb, var(--iconbutton-liquid-caustic), transparent 80%) 60%,
+      transparent 80%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 78% 82%,
+      var(--iconbutton-liquid-specular) 0%,
+      color-mix(in srgb, var(--iconbutton-liquid-specular), transparent 55%) 35%,
+      color-mix(in srgb, var(--iconbutton-liquid-caustic), transparent 80%) 60%,
+      transparent 80%
+    );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  filter: blur(0.8px);
+  transition: opacity var(--transition);
 }
 
-.xs > svg,
-.xs > * svg {
-  width: var(--iconbutton-icon-xs);
-  height: var(--iconbutton-icon-xs);
+/* Soft rim caustics. */
+.iconBtn::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--iconbutton-liquid-caustic), transparent 80%) 0%, transparent 35%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--iconbutton-liquid-caustic), transparent 80%) 0%, transparent 35%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+  transition: opacity var(--transition);
 }
 
-/* === Variants === */
-
-/* Solid — filled primary background (mirrors Button.primary) */
-.solid {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
+.iconBtn:hover {
+  background: var(--iconbutton-liquid-surface-hover);
 }
 
-.solid:hover {
-  background: var(--color-primary-hover);
+.iconBtn:active {
+  transform: scale(0.985);
 }
 
-/* Outline — hairline border, transparent background (mirrors Button.outline) */
-.outline {
-  background: transparent;
-  color: var(--color-text-secondary);
-  border: var(--border-width-hairline) solid var(--color-border);
-}
-
-.outline:hover {
-  background: var(--iconbutton-hover-bg);
-  color: var(--color-text);
-}
-
-/* Ghost — transparent, surface-hover background on hover */
-.ghost:hover {
-  background: var(--iconbutton-hover-bg);
-  color: var(--iconbutton-hover-fg);
-}
-
-/* Transparent — no background, no border, no hover background (like ghost but inert) */
-.transparent {
-  background: transparent;
-  border: none;
-}
-
-/* Danger — error-subtle background + error color on hover */
-.danger:hover {
-  background: var(--iconbutton-danger-hover-bg);
-  color: var(--iconbutton-danger-hover-fg);
-}
-
-/* === Active states (persistent — no hover change) ===
-   variant='ghost' + active → primary active (Header.adActive pattern)
-   variant='danger' + active → danger active (Header.extDisabled pattern) */
-.activePrimary,
-.activePrimary:hover {
-  color: var(--iconbutton-active-fg);
-  background: var(--iconbutton-active-bg);
-}
-
-.activeDanger,
-.activeDanger:hover {
-  color: var(--color-error);
-  background: var(--color-error-subtle);
-}
-
-/* === States — match components.css .icon-btn === */
-.iconBtn:disabled { opacity: 0.5; pointer-events: none; }
-
-/* === Loading (spec §5.1 — Spinner replaces icon + aria-busy) === */
-.loading { pointer-events: none; }
-
-/* === Focus ring (global :focus-visible also applies, this is per-atom for offset) === */
 .iconBtn:focus-visible {
-  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline: var(--space-0-5) solid var(--iconbutton-liquid-focus-ring);
   outline-offset: var(--space-0-5);
 }
 
+.iconBtn:disabled,
+.iconBtn.loading {
+  opacity: 0.78;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.iconBtn:disabled::before,
+.iconBtn:disabled::after,
+.iconBtn.loading::before,
+.iconBtn.loading::after {
+  opacity: 0.4;
+}
+
+/* === Sizes === */
+.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); min-width: var(--iconbutton-size-xs); min-height: var(--iconbutton-size-xs); }
+.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); min-width: var(--iconbutton-size-sm); min-height: var(--iconbutton-size-sm); }
+.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); min-width: var(--iconbutton-size-md); min-height: var(--iconbutton-size-md); }
+.lg { width: var(--iconbutton-size-lg); height: var(--iconbutton-size-lg); min-width: var(--iconbutton-size-lg); min-height: var(--iconbutton-size-lg); }
+
+/* Icon sizing — SSOT controlled by the button atom. */
+.iconBtn > svg,
+.iconBtn > * svg {
+  width: var(--iconbutton-icon-md);
+  height: var(--iconbutton-icon-md);
+}
+
+.xs > svg,
+.xs > * svg { width: var(--iconbutton-icon-xs); height: var(--iconbutton-icon-xs); }
+.sm > svg,
+.sm > * svg { width: var(--iconbutton-icon-sm); height: var(--iconbutton-icon-sm); }
+.md > svg,
+.md > * svg { width: var(--iconbutton-icon-md); height: var(--iconbutton-icon-md); }
+.lg > svg,
+.lg > * svg { width: var(--iconbutton-icon-lg); height: var(--iconbutton-icon-lg); }
+
+/* === Variants === */
+
+/* All variants share the same neutral liquid-glass material. */
+.solid,
+.outline,
+.ghost,
+.transparent,
+.danger,
+.glass {
+  background: var(--iconbutton-liquid-surface);
+  color: var(--iconbutton-liquid-foreground);
+}
+
+.outline {
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+}
+
+.outline:hover {
+  background: var(--iconbutton-liquid-surface-hover);
+  border-color: var(--color-border-focus);
+}
+
+.ghost,
+.transparent {
+  background: transparent;
+}
+
+.ghost:hover {
+  background: var(--iconbutton-liquid-surface-hover);
+}
+
+.glass {
+  background: var(--iconbutton-liquid-surface);
+}
+
+.danger,
+.danger:hover {
+  background: var(--iconbutton-liquid-surface);
+  color: var(--iconbutton-liquid-foreground);
+}
+
+/* === Active states === */
+.activePrimary,
+.activePrimary:hover,
+.activeDanger,
+.activeDanger:hover {
+  background: var(--iconbutton-liquid-surface-active);
+  color: var(--iconbutton-liquid-foreground);
+}
+
+/* === Reduced motion / transparency / contrast === */
 
 @media (prefers-reduced-motion: reduce) {
-  .iconBtn { transition: none; animation: none; }
+  .iconBtn {
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .iconBtn {
+    background: var(--color-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .iconBtn::before,
+  .iconBtn::after {
+    display: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .iconBtn {
+    border: var(--border-width-hairline) solid currentColor;
+  }
+
+  .ghost,
+  .transparent {
+    border: none;
+  }
 }

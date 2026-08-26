@@ -24,6 +24,7 @@ docs/           # Tài liệu dự án
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
 │   └── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
 ├── specs/
+│   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 │   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
@@ -55,7 +56,9 @@ docs/           # Tài liệu dự án
 │   └── orca-ocr-layer.md              # OCR layer cho Cell (hard-sub video + image + screenshot) — PaddleOCR.js PP-OCRv5 primary, evidence-grounded
 ├── context/                           # Project context (persistent — skill elicitation load đầu tiên)
 │   └── project-context.md             # Persona + platform + constraints + glossary + design system + existing specs
+├── loop-result.md                     # Loop process log for agentic redesign tasks
 ├── intent/                            # Confirmed user intent (interview-me / elicitation output)
+│   ├── liquid-glass-buttons.md        # Confirmed intent: themed shared Button/IconButton + subtitle overlay actions only
 │   └── reader.md                      # Reader feature intent
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   ├── learning-algorithms-summary.md # Learning algorithms summary
@@ -86,11 +89,17 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 tasks/          # Active plan & task checklist (current sprint)
-├── plan.md                          # Implementation plan for current feature — Plan: Manager Host Sheet Bridge
-└── todo.md                          # Ordered task checklist with acceptance criteria
+├── plan.md                          # Existing Orca OCR implementation plan
+├── todo.md                          # Existing Orca OCR ordered checklist
+├── plan-liquid-glass-buttons.md     # Liquid-glass Button/IconButton + subtitle migration implementation plan
+└── todo-liquid-glass-buttons.md     # Liquid-glass ordered tasks with acceptance criteria
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-28**: Redesign `src/entrypoints/design-system-showcase/` — SSOT taxonomy trong `autoDiscovery.ts`, cải tiến `ShowcaseGallery.tsx` IA/visual, tự phát hiện component thiếu showcase, tạo `.showcase.tsx` bổ sung, thêm `build:design-system`. Log: `docs/loop-result.md`.
+
+**2026-08-27**: Xác nhận intent và thêm spec/plan cho Liquid-Glass Button System: V4 visual approval gate → themed shared `Button`/`IconButton` → migrate subtitle action buttons/Tabs → tách overlay geometry ownership khỏi shared material. Files: `docs/intent/liquid-glass-buttons.md`, `docs/specs/liquid-glass-buttons.md`, `tasks/plan-liquid-glass-buttons.md`, `tasks/todo-liquid-glass-buttons.md`.
 
 **2026-08-26**: Thêm `docs/knowledge-base/design-system-from-scratch-loop.md` — tổng hợp pipeline xây dựng Design System từ đầu với vòng lặp cải tiến liên tục, cập nhật 0-wiki.md.
 

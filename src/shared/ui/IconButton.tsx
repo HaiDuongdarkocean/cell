@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 import styles from './IconButton.module.css';
 
 type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
-type IconButtonVariant = 'solid' | 'outline' | 'ghost' | 'transparent' | 'danger';
+type IconButtonVariant = 'solid' | 'outline' | 'ghost' | 'transparent' | 'danger' | 'glass';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Size: xs=28, sm=32, md=40, lg=48. Default 'md'. */
