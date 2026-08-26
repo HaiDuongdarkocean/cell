@@ -1,6 +1,6 @@
 ---
 name: design-from-idea
-description: Run a Socratic pipeline that turns a vague UI idea into a concrete component design. Use when the user has an inspiration, concept, or partial requirement and needs to decide what to build, how it looks, and which design tokens or components to use. Not for writing implementation code, debugging existing code, or auditing finished UI.
+description: Run a Socratic pipeline that turns a vague UI idea into a concrete component design, grounded in the project's design system context. Use when the user has an inspiration, concept, or partial requirement and needs to decide what to build, how it looks, and which design tokens or components to use. Not for writing implementation code, debugging existing code, or auditing finished UI.
 ---
 
 # Design from Idea — Socratic Component Design Pipeline
@@ -10,6 +10,8 @@ description: Run a Socratic pipeline that turns a vague UI idea into a concrete 
 This skill treats design knowledge as perishable. The answer that worked yesterday may not fit today's context. So the workflow does not dump a checklist; it asks questions until the design reveals itself from the user's own constraints.
 
 The output is a **component design brief** the agent can hand to `design-taste-frontend`, `m3-design-standard`, or implementation skills.
+
+The skill first ingests `docs/context/project-context.md` (and the design system it references) so it can propose concrete design decisions without asking the user for context the project already defines.
 
 ## When to Use
 
@@ -27,6 +29,23 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 ## The Socratic Pipeline
 
+### Step 0 — Ingest project context
+
+**Purpose:** Ground every design decision in the project's existing design story, constraints, and components.
+
+**Actions:**
+- Read `docs/context/project-context.md` and extract the design story (e.g., liquid glass, nature/water/sun), persona, platform, and constraints.
+- Read `src/shared/styles/README.md` and `docs/design-system/DESIGN.md` if available for token/component maps and audit rules.
+- Skim `src/shared/styles/tokens.json` and `src/shared/ui/*` to know available tokens and components.
+- If the component may touch architecture or shared language, read `docs/1-share-language.md` and `docs/2-architechture-system.md`.
+- Summarize: palette, shape language, motion language, density, and any component that covers 80% of the idea.
+
+**Guard:** The agent can state the project's design story and at least two concrete token/component directions in one sentence.
+
+**Loop back:** If `project-context.md` is missing or the design story is empty, invoke `interview-me` or `elicitation` to extract it before continuing.
+
+---
+
 ### Step 1 — Anchor the idea
 
 **Purpose:** Capture the raw inspiration without losing it.
@@ -34,6 +53,7 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 **Actions:**
 - Ask: "What is the one word or one image that sums up this idea?"
 - Ask: "What should the user feel when they see this component?"
+- Compare the answer to the project design story from Step 0 and surface any mismatch (e.g., "the project palette leans ocean/sun; does this idea need a different color?").
 - Ask: "What would make this component feel out of place in your product?"
 
 **Guard:** The user can name at least one concrete feeling or one visual reference.
@@ -59,32 +79,33 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 ### Step 3 — Map to the design system
 
-**Purpose:** Decide whether to reuse, extend, or create.
+**Purpose:** Decide whether to reuse, extend, or create — using the project context, not the user's memory.
 
 **Actions:**
-- Ask: "Is there an existing component in `src/shared/ui/*` that does 80% of this?"
-- Ask: "Which token groups will this component touch: color, typography, spacing, radius, elevation, motion?"
-- Ask: "What must stay inside the existing token set, and what might need a new token?"
+- Use Step 0 context: list existing `src/shared/ui/*` components that cover 80% of the idea and how to compose them.
+- List the token groups the component must touch: color, typography, spacing, radius, elevation, motion.
+- Decide what must stay inside the existing token set and what might need a new token, based on `tokens.json` patterns.
+- Only ask the user a focused question if the context is genuinely ambiguous (e.g., two equally valid token choices).
 
-**Guard:** The user can name at least one existing component or one token group.
+**Guard:** The agent can name at least one existing component or one token group, and justify the choice with a context quote.
 
-**Loop back:** If the design system is unknown, run `skill:design-system-guardian` or read `docs/design-system/DESIGN.md` first.
+**Loop back:** If the design system is still unknown after Step 0, run `skill:design-system-guardian` or read `docs/design-system/DESIGN.md`.
 
 ---
 
 ### Step 4 — Choose the visual expression
 
-**Purpose:** Translate inspiration into visual decisions.
+**Purpose:** Translate inspiration into visual decisions that fit the project design story.
 
 **Actions:**
-- Ask: "Which 1–3 colors from the brand should dominate?"
-- Ask: "Should the shape be sharp, soft, pill, organic, or absent?"
-- Ask: "What kind of motion fits the mood: instant, gentle spring, slow fade, none?"
-- Ask: "Which is more important: density or breathing room?"
+- Use the palette and shape/motion language from Step 0 to propose the dominant 1–3 colors.
+- Propose shape (sharp, soft, pill, organic, absent) and motion (instant, gentle spring, slow fade, none) based on the project's liquid-glass / nature / water / sun story.
+- Ask the user to confirm or adjust, rather than asking from a blank slate.
+- Set the three dials `DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY` on a 1–10 scale and explain the default with a context quote.
 
-**Guard:** The user can set three dials: `DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY` on a 1–10 scale.
+**Guard:** The user can set three dials or explicitly accept the proposed defaults.
 
-**Loop back:** If the visual direction conflicts with the design system, surface the conflict and ask for a tradeoff or invoke `design-system-guardian`.
+**Loop back:** If the visual direction conflicts with the design system, surface the conflict, propose a resolution, and only ask if both options are equally valid.
 
 ---
 
@@ -107,6 +128,7 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 **Purpose:** Ensure the component survives all screens.
 
 **Actions:**
+- Use the platform constraints from Step 0 (desktop, tablet, Android, RAM ≥1GB, response <3s) to propose default breakpoints.
 - Ask: "At 320px, what stays, what hides, what stacks?"
 - Ask: "At 1280px, does the component grow, center, or break into multiple columns?"
 - Ask: "What is the minimum touch target and the maximum comfortable width?"
@@ -119,10 +141,11 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 ### Step 7 — Write the brief
 
-**Purpose:** Produce a hand-off artifact.
+**Purpose:** Produce a hand-off artifact grounded in the project context.
 
 **Actions:**
 - Emit a brief with: Design Read, 3 dials, color/token mapping, typography roles, layout, states, responsive behavior, component reuse plan, anti-patterns.
+- Include at least one quote from `docs/context/project-context.md` (persona, palette, platform, or constraint) that justifies a design choice.
 - Ask: "Does this brief still match your original inspiration?"
 
 **Guard:** The user confirms the brief matches the feeling from Step 1.
@@ -133,6 +156,7 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 | Don't | Why |
 |---|---|
+| Start designing before reading `docs/context/project-context.md` | The project already owns the design story; asking the user repeats work and risks drift. |
 | Start from tokens | Tokens encode decisions; they are not the starting point. |
 | Copy a reference 1:1 | References teach principles, not output. |
 | Skip the "one primary job" | Components with two primary jobs become confusing. |
@@ -149,6 +173,7 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 | "I want it minimal" | "Minimal means removing something. What should this component not do?" |
 | "Copy YouTube" | "What specific feeling in YouTube do you want, and what must we change to fit Cell?" |
 | "Use blue and green" | "Which is dominant, which is accent, and what neutral ties them together?" |
+| "I don't know the design system" | "The project context and `src/shared/styles/README.md` already define it. Let's read those first." |
 
 ## Templates
 
@@ -168,6 +193,9 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 ## Primary job
 [one sentence]
+
+## Context quote
+[one sentence from `docs/context/project-context.md` that justifies a design choice]
 
 ## Token mapping
 - color: ...
@@ -214,13 +242,14 @@ The output is a **component design brief** the agent can hand to `design-taste-f
 
 ## Verification
 
+- [ ] `docs/context/project-context.md` and design system files were read before asking design questions.
 - [ ] The user named a concrete feeling or visual reference.
 - [ ] The component has one primary job.
-- [ ] At least one existing component or token group was considered.
-- [ ] Three dials were set or defaulted.
+- [ ] At least one existing component or token group was considered, with a context quote.
+- [ ] Three dials were set or defaulted, with a context quote for the default.
 - [ ] Default, hover, and focus states are defined.
 - [ ] 320 and 1280 behavior are described.
-- [ ] The final brief includes a Design Read, token mapping, layout, states, and reuse plan.
+- [ ] The final brief includes a Design Read, token mapping, layout, states, component reuse, context quote, and anti-patterns.
 - [ ] The user confirmed the brief still matches the original inspiration.
 
 ## Router boomerang
