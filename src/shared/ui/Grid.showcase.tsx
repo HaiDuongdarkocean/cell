@@ -70,7 +70,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Grid',
   description: 'CSS Grid layout primitive with columns, gap, and template props. Use for grid layouts.',
-  level: 'foundations',
-  category: 'Grid',
-  order: 70,
+  level: 'atoms',
+  category: 'Layout',
+  group: 'Layout',
+  order: 12,
 };

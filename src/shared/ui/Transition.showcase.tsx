@@ -29,8 +29,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Transition',
-  description: 'Layout-aware enter/exit transition wrapper for consistent motion patterns.',
-  level: 'foundations',
-  category: 'Motion',
-  order: 50,
+  level: 'atoms',
+  category: 'Utility',
+  group: 'Utility',
+  order: 33,
 };

@@ -38,7 +38,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Section',
   description: 'Semantic section wrapper with as prop (section, article, main, etc.), padding, and gap. Use for content sectioning.',
-  level: 'foundations',
-  category: 'Spacing',
-  order: 32,
+  level: 'atoms',
+  category: 'Layout',
+  group: 'Layout',
+  order: 17,
 };
