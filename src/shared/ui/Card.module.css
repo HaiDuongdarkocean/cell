@@ -1,10 +1,9 @@
 .card {
-  background: var(--card-bg);
-  color: var(--card-fg);
-  border: var(--border-width-hairline) solid var(--card-border);
+  background: var(--card-background);
+  color: var(--color-text-primary);
+  border: var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--card-padding);
-  box-shadow: var(--card-shadow);
   transition: background-color var(--duration-fast) var(--ease-in-out),
               border-color var(--duration-fast) var(--ease-in-out);
 }
