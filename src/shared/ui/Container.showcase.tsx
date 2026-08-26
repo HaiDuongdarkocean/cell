@@ -46,7 +46,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Container',
   description: 'Page content wrapper with maxWidth constraint and centering. Use to constrain page width.',
-  level: 'foundations',
-  category: 'Grid',
-  order: 72,
+  level: 'atoms',
+  category: 'Layout',
+  group: 'Layout',
+  order: 14,
 };

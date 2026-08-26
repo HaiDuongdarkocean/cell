@@ -37,7 +37,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'AspectRatio',
   description: 'Aspect ratio container with ratio prop. Use for media with fixed proportions.',
-  level: 'foundations',
-  category: 'Shape',
-  order: 40,
+  level: 'atoms',
+  category: 'Layout',
+  group: 'Layout',
+  order: 16,
 };
