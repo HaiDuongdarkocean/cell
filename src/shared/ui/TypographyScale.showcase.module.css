@@ -19,7 +19,6 @@
   font-size: var(--font-size-md);
   line-height: var(--leading-relaxed);
   color: var(--color-text-secondary);
-  max-width: 70ch;
 }
 
 .principles {
