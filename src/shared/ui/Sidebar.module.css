@@ -1,10 +1,10 @@
 /* === Sidebar — responsive navigation container ===
-   320-479px: horizontal scrollable chip bar at TOP (icon + label).
-   480-767px: bottom tab bar (icon-only, 48px touch target).
-   768px+:    vertical sidebar on left, collapsible to icon-only.
+   <600px:    horizontal scrollable chip bar at TOP (icon + label).
+   600-839px: bottom tab bar (icon-only, 48px touch target).
+   840px+:    vertical sidebar on left, collapsible to icon-only.
    Consumes tokens only — no raw hex/radius. */
 
-/* ─── Mobile base (320-479px): horizontal chip bar at TOP ─── */
+/* ─── Mobile base (<600px): horizontal chip bar at TOP ─── */
 .sidebar {
   display: flex;
   flex-direction: row;
@@ -52,8 +52,8 @@
   background: var(--color-surface-hover);
 }
 
-/* ─── 480-767px: bottom tab bar (icon-only) ─── */
-@media (min-width: 480px) and (max-width: 767px) {
+/* ─── 600-839px: bottom tab bar (icon-only) ─── */
+@media (min-width: 600px) and (max-width: 839px) {
   .sidebar {
     border-bottom: none;
     border-top: var(--border-width-hairline) solid var(--color-border-subtle);
@@ -79,7 +79,7 @@
 }
 
 /* ─── Desktop: vertical sidebar ─── */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .sidebar {
     flex-direction: column;
     width: calc(var(--space-5) * 8);
@@ -204,7 +204,7 @@
   width: var(--space-16);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 839px) {
   .collapsed {
     width: auto;
   }

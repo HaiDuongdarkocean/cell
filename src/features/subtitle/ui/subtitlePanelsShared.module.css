@@ -86,7 +86,7 @@
 
 /* ─── Manager panel layer — backdrop + centered sheet (YouTube settings style)
    Desktop: absolute backdrop (inset:0, dark translucent) + centered sheet
-   inside. Mobile <768px: bottom sheet 94% width, all 4 corners rounded. */
+   inside. Mobile <840px: bottom sheet 94% width, all 4 corners rounded. */
 .panelLayer {
   position: absolute;
   inset: 0;
@@ -105,13 +105,13 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Desktop ≥768px: glass panel — scoped token remap so all child modules
+/* Desktop ≥840px: glass panel — scoped token remap so all child modules
    (SubtitleManagerPanel, search, appearance, shared Button/Input/Select/
    IconButton/Tabs/FooterBar) inherit translucent light-on-dark values
-   instead of their default opaque theme-aware tokens. Mobile <768px sheet
+   instead of their default opaque theme-aware tokens. Mobile <840px sheet
    keeps opaque tokens (see media query below).
    No backdrop on desktop — panel floats directly over video (no dimming). */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .panelLayer {
     background: transparent;
     --color-surface: var(--color-glass-surface);
@@ -136,10 +136,10 @@
   }
 }
 
-/* Mobile <768px: bottom sheet — shared atom specs (BottomSheet.module.css SSOT).
+/* Mobile <840px: bottom sheet — shared atom specs (BottomSheet.module.css SSOT).
    94% width centered on main axis, slide-up from bottom, max 75vh.
    All 4 corners rounded (YouTube settings sheet style). */
-@media (max-width: 767px) {
+@media (max-width: 839px) {
   .panelLayer {
     position: fixed;
     left: 3%;
@@ -167,7 +167,7 @@
    75vh = 360px is too small for subtitle manager content (header + tabs +
    track list + footer). Expand to 95vh = 456px, leaving 24px gap for
    user to dismiss. Width 94% keeps side margins for swipe gesture. */
-@media (max-width: 767px) and (max-height: 480px) {
+@media (max-width: 839px) and (max-height: 480px) {
   .panelLayer {
     max-height: 95vh;
     bottom: var(--space-1);

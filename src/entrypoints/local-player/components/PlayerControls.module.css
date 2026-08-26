@@ -97,7 +97,7 @@
 
 /* === Responsive — mobile / narrow viewport ===
    Two-row layout already prevents overflow; just tighten gaps on small screens. */
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .bar {
     padding: 0 var(--space-1) var(--space-1);
   }

@@ -168,7 +168,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [managerExiting, setManagerExiting] = useState(false);
     const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
     const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const isMobile = useIsMobile(BREAKPOINTS.mobileLg);
+    const isMobile = useIsMobile(BREAKPOINTS.medium);
     // Desktop: trigger slide-out animation, then unmount after 280ms.
     // Mobile: unmount immediately (Sheet handles its own exit animation).
     const closeManager = useCallback(() => {

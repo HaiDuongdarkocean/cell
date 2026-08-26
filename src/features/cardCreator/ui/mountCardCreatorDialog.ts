@@ -103,7 +103,7 @@ export function mountCardCreatorDialog(
 
   const isMobile = (): boolean => {
     if (typeof window === 'undefined') return false;
-    return window.matchMedia(`(max-width: ${BREAKPOINTS.tablet - 1}px)`).matches;
+    return window.matchMedia(`(max-width: ${BREAKPOINTS.expanded - 1}px)`).matches;
   };
 
   function handleOpenChange(next: boolean): void {

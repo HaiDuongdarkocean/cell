@@ -1,4 +1,4 @@
-/* === SettingsDialog content — responsive mobile-first (320→1280px+) ===
+/* === SettingsDialog content — responsive mobile-first (<600→1600px+) ===
    Redesign: SSOT Sidebar + Card + SettingsRow + NavItem + Icon.
    iOS Settings card pattern. Apple design: response, progressive disclosure,
    visual hierarchy by spacing. Animation: subtle card enter, reduced-motion safe. */
@@ -11,9 +11,9 @@
   min-height: 0;
 }
 
-/* 320-479px: sidebar chip bar at TOP — natural DOM order (sidebar first).
-   480-767px: sidebar bottom tab bar — flip order so content is on top. */
-@media (min-width: 480px) and (max-width: 767px) {
+/* <600px: sidebar chip bar at TOP — natural DOM order (sidebar first).
+   600-839px: sidebar bottom tab bar — flip order so content is on top. */
+@media (min-width: 600px) and (max-width: 839px) {
   .popoverBody > :first-child {
     order: 2;
   }
@@ -108,7 +108,7 @@
   border-left: var(--space-0-5) solid var(--color-border-subtle);
 }
 
-@media (max-width: 479px) {
+@media (max-width: 599px) {
   .childField {
     margin-left: var(--space-3);
     padding-left: var(--space-2);
@@ -139,7 +139,7 @@
   min-width: 0;
 }
 
-@container (min-width: 480px) {
+@container (min-width: 600px) {
   .shortcutField {
     flex-direction: row;
     justify-content: space-between;
@@ -156,13 +156,13 @@
   text-overflow: clip;
 }
 
-/* Mobile: pill stretches full width (stack layout). 480px+: pill auto width. */
+/* Mobile: pill stretches full width (stack layout). 600px+: pill auto width. */
 .shortcutField > :global([role="button"]) {
   width: 100%;
   min-width: 0;
 }
 
-@container (min-width: 480px) {
+@container (min-width: 600px) {
   .shortcutField > :global([role="button"]) {
     width: auto;
     min-width: calc(var(--space-5) * 7);
@@ -175,8 +175,8 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* === 480px+: slightly more breathing room === */
-@media (min-width: 480px) {
+/* === 600px+: slightly more breathing room === */
+@media (min-width: 600px) {
   .mainCol {
     padding: var(--space-4);
     gap: var(--space-3);
@@ -187,9 +187,9 @@
   }
 }
 
-/* === 768px+: sidebar switches to vertical left (Sidebar component handles),
+/* === 840px+: sidebar switches to vertical left (Sidebar component handles),
    body becomes row === */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
 
   .popoverBody {
     flex-direction: row;
@@ -201,12 +201,12 @@
   }
 }
 
-/* === Sidebar width overrides (Sidebar component base = 160px at 768px+) ===
+/* === Sidebar width overrides (Sidebar component base = 160px at 840px+) ===
    Collapsed width always wins over responsive width via [data-collapsed]. === */
 .sidebarWidth {}
 
-/* === 1024px+: wider sidebar === */
-@media (min-width: 1024px) {
+/* === 1200px+: wider sidebar === */
+@media (min-width: 1200px) {
   .sidebarWidth {
     width: calc(var(--space-5) * 9);
   }
@@ -215,8 +215,8 @@
   }
 }
 
-/* === 1280px+: widest sidebar === */
-@media (min-width: 1280px) {
+/* === 1600px+: widest sidebar === */
+@media (min-width: 1600px) {
   .sidebarWidth {
     width: calc(var(--space-5) * 10);
   }

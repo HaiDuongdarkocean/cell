@@ -11,7 +11,7 @@
   font-size: var(--font-size-sm);
 }
 
-@media (max-width: 479px) {
+@media (max-width: 599px) {
   .panel {
     width: calc(100vw - var(--space-4));
   }

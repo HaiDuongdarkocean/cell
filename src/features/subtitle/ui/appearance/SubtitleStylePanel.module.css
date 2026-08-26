@@ -250,7 +250,7 @@
   gap: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .customShadowRow {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

@@ -185,7 +185,7 @@
   padding: var(--space-8);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 839px) {
   .topbar {
     width: calc(100% - var(--space-6));
     min-width: 0;

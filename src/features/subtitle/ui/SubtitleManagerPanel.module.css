@@ -27,14 +27,14 @@
   flex: 0 0 auto;
 }
 
-/* Desktop ≥768px: right-aligned sidebar card — max 360×660px.
+/* Desktop ≥840px: right-aligned sidebar card — max 360×660px.
    Only left corners rounded (top-left, bottom-left) — right corners flush
    against container right edge. Slide-in from right on open, slide-out
    to right on close (see [data-state] animations below).
    Width: min(100% container, 360px). Height: 100% capped at 660px.
    Background: --color-glass-sidebar-panel (0.65 alpha for readability).
    Token SSOT: --color-glass-sidebar-panel. */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .panel {
     flex: 0 1 auto;
     width: min(100%, 360px);
@@ -67,9 +67,9 @@
   }
 }
 
-/* Mobile <768px: fill 100% width + height of video container (no centering,
+/* Mobile <840px: fill 100% width + height of video container (no centering,
    no backdrop padding — panel fills the container edge to edge). */
-@media (max-width: 767px) {
+@media (max-width: 839px) {
   .panel {
     height: auto;
     flex: 0 1 auto;
@@ -223,7 +223,7 @@
   color: var(--color-text-secondary);
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .header {
     min-height: 44px;
     padding: var(--space-1-5) var(--space-3);
@@ -290,7 +290,7 @@
   z-index: 1;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .sectionBar {
     padding: var(--space-1) var(--space-3);
   }
@@ -323,7 +323,7 @@
   padding: 0 var(--space-1);
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .tabTrigger {
     min-height: 40px;
   }
@@ -342,7 +342,7 @@
   padding: var(--space-1) var(--space-2);
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .tabContent {
     padding: var(--space-2) var(--space-3);
   }
@@ -379,10 +379,10 @@
   background: var(--color-primary-subtle);
 }
 
-/* Glass panel (desktop ≥768px): selected row blends into panel — no inset bar.
+/* Glass panel (desktop ≥840px): selected row blends into panel — no inset bar.
    The active track is conveyed by text color (.trackActive .trackName) only.
    Header + footer keep hairline border for elevation boundary. */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .trackActive {
     box-shadow: none;
   }
@@ -637,7 +637,7 @@
   align-self: center;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .stepBtn {
     min-width: 56px;
   }
@@ -730,7 +730,7 @@
   }
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .backBtn {
     padding: var(--space-2) var(--space-3);
   }
@@ -752,8 +752,8 @@
   font-size: var(--font-size-sm);
 }
 
-/* ─── Auto-hide header/footer on scroll (mobile only, <768px) ─── */
-@media (max-width: 767px) {
+/* ─── Auto-hide header/footer on scroll (mobile only, <840px) ─── */
+@media (max-width: 839px) {
   .panel[data-scrolled='down'] .header,
   .panel[data-scrolled='down'] :global([class*='footer']) {
     height: 0;
@@ -786,11 +786,11 @@
   }
 }
 
-/* ─── Glass panel overrides (desktop ≥768px) — MUST be last for cascade ───
+/* ─── Glass panel overrides (desktop ≥840px) — MUST be last for cascade ───
    Base rules above define borders on .pillGroup, .valueField, .tabContent, etc.
    These overrides remove them for the YouTube-style uniform charcoal surface.
    Placed last so same-specificity rules win the cascade. */
-@media (min-width: 768px) {
+@media (min-width: 840px) {
   .pillGroup,
   .pillGroup:hover {
     border: 0;

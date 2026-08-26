@@ -29,12 +29,12 @@
 .cols3 { grid-template-columns: 1fr 1fr 1fr; }
 .cols4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 
-/* Responsive: 1 column mobile → N columns at 480px+ */
+/* Responsive: 1 column mobile → N columns at 600px+ */
 .responsive {
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 480px) {
+@media (min-width: 600px) {
   .responsive.cols2 { grid-template-columns: 1fr 1fr; }
   .responsive.cols3 { grid-template-columns: 1fr 1fr 1fr; }
   .responsive.cols4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
@@ -71,8 +71,8 @@
 .gap20 { gap: var(--space-20); }
 .gap24 { gap: var(--space-24); }
 
-/* === Responsive gap — desktop override at 480px+ === */
-@media (min-width: 480px) {
+/* === Responsive gap — desktop override at 600px+ === */
+@media (min-width: 600px) {
   .gapDesktop0 { gap: var(--space-0); }
   .gapDesktop0-5 { gap: var(--space-0-5); }
   .gapDesktop1 { gap: var(--space-1); }

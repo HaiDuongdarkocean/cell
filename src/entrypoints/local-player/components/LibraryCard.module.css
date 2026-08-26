@@ -282,7 +282,7 @@
 }
 
 /* === Responsive — mobile === */
-@media (max-width: 480px) {
+@media (max-width: 599px) {
   .leading { width: 36px; height: 36px; }
   .pct { font-size: 10px; }
   .name { font-size: var(--font-size-sm); }

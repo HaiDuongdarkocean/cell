@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 
 /** Minimal matchMedia hook — returns true when viewport < breakpoint. */
-export function useIsMobile(breakpoint: number = BREAKPOINTS.tablet): boolean {
+export function useIsMobile(breakpoint: number = BREAKPOINTS.medium): boolean {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches,
   );
