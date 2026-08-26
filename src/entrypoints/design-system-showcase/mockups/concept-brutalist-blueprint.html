@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell Showcase — Brutalist Blueprint</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family-mono), ui-monospace, monospace;
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      min-height: 56px;
+      padding: 0 var(--space-4);
+      border-bottom: 2px solid var(--color-border-emphasized);
+      background: var(--color-surface);
+    }
+    .brand { display: flex; align-items: baseline; gap: var(--space-2); }
+    .marker { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+    .title { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-tight); }
+    .count { font-size: var(--font-size-xs); color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+    .topbar-right { display: flex; align-items: center; gap: var(--space-2); }
+    .search {
+      width: 240px;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-hover);
+      color: var(--color-text-secondary);
+      font-family: var(--font-family-mono), ui-monospace, monospace;
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+    }
+    .icon-btn {
+      width: 32px; height: 32px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .main { display: flex; height: calc(100vh - 56px); }
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+    }
+    .sidebar-header {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .sidebar-title { margin: 0; font-size: var(--font-size-base); font-weight: var(--font-weight-bold); }
+    .sidebar-subtitle { margin: 0; font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+    .tree { flex: 1; overflow: auto; }
+    .tree-group {
+      padding: var(--space-2) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      background: var(--color-surface-hover);
+    }
+    .tree-item {
+      padding: var(--space-2) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-primary);
+      cursor: pointer;
+    }
+    .tree-item:hover { background: var(--color-surface-hover); }
+    .tree-item.active { border-left: 3px solid var(--color-error); background: var(--color-surface-hover); }
+    .result-card {
+      padding: var(--space-2) var(--space-4);
+      border-top: 1px solid var(--color-border);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      background: var(--color-surface);
+    }
+    .viewport { flex: 1; padding: var(--space-4); overflow: auto; }
+    .preview-card {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .preview-title { margin: 0; font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
+    .tags { display: flex; gap: var(--space-2); }
+    .tag {
+      padding: 0 var(--space-2);
+      border: 1px solid var(--color-border);
+      font-size: var(--font-size-2xs);
+      color: var(--color-text-secondary);
+    }
+    .stage {
+      min-height: 240px;
+      padding: var(--space-4);
+      background: var(--color-background);
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .telemetry {
+      padding: var(--space-2) var(--space-4);
+      border-top: 1px solid var(--color-border);
+      font-size: var(--font-size-2xs);
+      color: var(--color-text-secondary);
+      display: flex; gap: var(--space-4);
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .search { width: 140px; }
+      .viewport { padding: var(--space-3); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <span class="marker">[ CELL / DS ]</span>
+      <h1 class="title">DESIGN SYSTEM</h1>
+    </div>
+    <div class="topbar-right">
+      <span class="count">014 / 047</span>
+      <input class="search" type="text" placeholder="SEARCH COMPONENTS…" />
+      <button class="icon-btn">◑</button>
+    </div>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <p class="sidebar-title">LIBRARY</p>
+        <p class="sidebar-subtitle">QUIET CONFIDENCE</p>
+      </div>
+      <div class="tree">
+        <div class="tree-group">[ LIB ] FOUNDATIONS</div>
+        <div class="tree-item">COLOR</div>
+        <div class="tree-item">TYPOGRAPHY</div>
+        <div class="tree-item">SPACING</div>
+        <div class="tree-group">[ LIB ] COMPONENTS</div>
+        <div class="tree-item active">BUTTON</div>
+        <div class="tree-item">INPUT</div>
+        <div class="tree-item">CARD</div>
+      </div>
+      <div class="result-card">SHOWING 014 / 047</div>
+    </aside>
+    <main class="viewport">
+      <div class="preview-card">
+        <div class="preview-header">
+          <h2 class="preview-title">&lt; BUTTON &gt;</h2>
+          <div class="tags">
+            <span class="tag">[ LV.02 ]</span>
+            <span class="tag" style="color: var(--color-error);">[ ALERT ]</span>
+          </div>
+        </div>
+        <div class="stage">[ LIVE COMPONENT RENDER ]</div>
+        <div class="telemetry">
+          <span>REV 2.6</span>
+          <span>NODE 00X</span>
+          <span style="color: var(--color-success);">STATUS [ OK ]</span>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

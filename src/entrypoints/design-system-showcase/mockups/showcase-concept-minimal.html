@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Concept C — Minimal List</title>
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --surface: #FFFFFF;
+      --text: #2A2A2B;
+      --text-secondary: #6E6E73;
+      --primary: #5E6AD2;
+      --border: #E2E2DF;
+      --font: Inter, system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      grid-template-columns: 260px 1fr;
+    }
+    aside {
+      border-right: 1px solid var(--border);
+      padding: 24px;
+      overflow-y: auto;
+    }
+    nav { display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-item:hover, .nav-item.active { color: var(--text); }
+    .nav-item.active { color: var(--primary); }
+    .nav-group { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin: 24px 0 8px; }
+    main { overflow-y: auto; }
+    .list { max-width: 720px; margin: 0 auto; padding: 48px 32px; display: flex; flex-direction: column; gap: 4px; }
+    .item {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 0;
+    }
+    .item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .item-title { font-size: 24px; font-weight: 500; letter-spacing: -0.02em; margin: 0; }
+    .item-number { font-size: 14px; color: var(--text-secondary); font-family: ui-monospace, monospace; }
+    .item-body { padding-top: 16px; }
+    .item-desc { font-size: 15px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 20px; }
+    .principles { display: flex; flex-direction: column; gap: 12px; }
+    .principle { font-size: 15px; padding: 12px 0; border-top: 1px solid var(--border); }
+    .principle strong { font-weight: 600; }
+    .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+    .swatch { width: 80px; }
+    .swatch-color { width: 80px; height: 80px; border-radius: 50%; border: 1px solid var(--border); }
+    .swatch-name { font-size: 12px; margin-top: 8px; color: var(--text-secondary); }
+    .tokens { display: flex; flex-direction: column; gap: 8px; }
+    .token { font-size: 14px; font-family: ui-monospace, monospace; color: var(--text-secondary); }
+    .open .item-body { display: block; }
+  </style>
+</head>
+<body>
+  <aside>
+    <nav>
+      <div class="nav-item active">Overview</div>
+      <div class="nav-group">Foundations</div>
+      <div class="nav-item">Color Scale</div>
+      <div class="nav-item">Typography Scale</div>
+      <div class="nav-item">Spacing Scale</div>
+      <div class="nav-group">Atoms</div>
+      <div class="nav-item">Button</div>
+      <div class="nav-item">Input</div>
+      <div class="nav-item">Card</div>
+    </nav>
+  </aside>
+  <main>
+    <div class="list">
+      <article class="item open">
+        <div class="item-header">
+          <h2 class="item-title">Quiet Confidence</h2>
+          <span class="item-number">01</span>
+        </div>
+        <div class="item-body">
+          <p class="item-desc">Cell is a learning companion, not a loud tool. The foundation is designed to feel calm, focused, and trustworthy.</p>
+          <div class="principles">
+            <div class="principle"><strong>Calm</strong> — no aggressive color, no heavy shadow.</div>
+            <div class="principle"><strong>Focused</strong> — single accent, clear hierarchy.</div>
+            <div class="principle"><strong>Learnable</strong> — consistent patterns.</div>
+            <div class="principle"><strong>Elegant</strong> — warm off-white, faint blue dark.</div>
+          </div>
+        </div>
+      </article>
+      <article class="item">
+        <div class="item-header">
+          <h2 class="item-title">Color</h2>
+          <span class="item-number">02</span>
+        </div>
+        <div class="item-body">
+          <p class="item-desc">Neutral-first, single indigo accent as punctuation.</p>
+          <div class="swatches">
+            <div class="swatch"><div class="swatch-color" style="background:#F9F9F7"></div><div class="swatch-name">Background</div></div>
+            <div class="swatch"><div class="swatch-color" style="background:#FFFFFF"></div><div class="swatch-name">Surface</div></div>
+            <div class="swatch"><div class="swatch-color" style="background:#5E6AD2"></div><div class="swatch-name">Primary</div></div>
+            <div class="swatch"><div class="swatch-color" style="background:#2A2A2B"></div><div class="swatch-name">Text</div></div>
+          </div>
+        </div>
+      </article>
+      <article class="item">
+        <div class="item-header">
+          <h2 class="item-title">Typography</h2>
+          <span class="item-number">03</span>
+        </div>
+        <div class="item-body">
+          <p class="item-desc">Inter Variable, five roles, negative tracking on display.</p>
+          <div class="tokens">
+            <div class="token">display-3xl 40px · 600 · -0.04em</div>
+            <div class="token">headline-lg 24px · 600 · -0.02em</div>
+            <div class="token">body-md 14px · 400 · 0</div>
+          </div>
+        </div>
+      </article>
+      <article class="item">
+        <div class="item-header">
+          <h2 class="item-title">Spacing</h2>
+          <span class="item-number">04</span>
+        </div>
+        <div class="item-body">
+          <p class="item-desc">4px base unit for dense extension UI.</p>
+          <div class="tokens">
+            <div class="token">space-2 → 8px</div>
+            <div class="token">space-4 → 16px</div>
+            <div class="token">space-6 → 24px</div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

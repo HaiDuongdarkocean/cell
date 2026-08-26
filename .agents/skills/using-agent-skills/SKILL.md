@@ -26,6 +26,7 @@ When a task arrives, identify the development phase and apply the corresponding 
 Task arrives
     │
     ├── Don't know what you want yet? ──────→ interview-me
+    ├── Can't articulate abstract questions? → interview-me (elicitation mode: context + domain scoping + prototype)
     ├── Have a rough concept, need variants? → idea-refine
     ├── New project/feature/change? ──→ spec-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
@@ -154,24 +155,27 @@ These are the subtle errors that look like productivity but create problems:
 For a complete feature, the typical skill sequence is:
 
 ```
-1.  interview-me                → Extract what the user actually wants
-2.  idea-refine                 → Refine vague ideas
-3.  spec-driven-development     → Define what we're building
-4.  planning-and-task-breakdown → Break into verifiable chunks
-5.  context-engineering         → Load the right context
-6.  source-driven-development   → Verify against official docs
-7.  learning-and-apply (APPLY)  → Grep knowledge index.json, check bad patterns before coding
-8.  incremental-implementation  → Build slice by slice
-9.  observability-and-instrumentation → Instrument as you build (runs parallel with 8-10, not after)
-10. doubt-driven-development    → Cross-examine non-trivial decisions in-flight
-11. test-driven-development     → Prove each slice works
-12. learning-and-apply (ACCUMULATE) → Extract reusable principle to atom JSON (after test pass + root cause understood)
-13. code-review-and-quality     → Review before merge
-14. code-simplification         → Reduce unnecessary complexity while preserving behavior
-15. git-workflow-and-versioning → Clean commit history
-16. documentation-and-adrs      → Document decisions
-17. deprecation-and-migration   → Retire old systems and move users safely when needed
-18. shipping-and-launch         → Deploy safely
+1.  elicitation                → Orchestrate: idea → observation → interview → confirmed 8-field frame
+2.  interview-me                → Extract what the user actually wants (interview mode: CAN articulate / elicitation mode: CANNOT + context + domain scoping + prototype)
+3.  idea-refine                 → Refine vague ideas
+4.  spec-driven-development     → Define what we're building
+5.  planning-and-task-breakdown → Break into verifiable chunks
+6.  context-engineering         → Load the right context
+7.  source-driven-development   → Verify against official docs
+8.  learning-and-apply (APPLY)  → Grep knowledge index.json, check bad patterns before coding
+9.  incremental-implementation  → Build slice by slice
+10.  observability-and-instrumentation → Instrument as you build (runs parallel with 8-10, not after)
+11.  doubt-driven-development    → Cross-examine non-trivial decisions in-flight
+12.  design-system-guardian      → Audit UI against DESIGN.md (token, component, layout)
+13.  test-driven-development     → Prove each slice works
+14.  pre-commit-gate             → Run local quality checks before any commit
+15.  learning-and-apply (ACCUMULATE) → Extract reusable principle to atom JSON (after test pass + root cause understood)
+16.  code-review-and-quality     → Review before merge
+17.  code-simplification         → Reduce unnecessary complexity while preserving behavior
+18.  git-workflow-and-versioning → Clean commit history
+19.  documentation-and-adrs      → Document decisions
+20.  deprecation-and-migration   → Retire old systems and move users safely when needed
+21.  shipping-and-launch         → Deploy safely
 ```
 
 Not every task needs every skill. A bug fix might only need: `debugging-and-error-recovery` → `test-driven-development` → `learning-and-apply (ACCUMULATE)` → `code-review-and-quality`.
@@ -180,7 +184,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 
 | Phase | Skill | One-Line Summary |
 |-------|-------|-----------------|
-| Define | interview-me | Surface what the user actually wants before any plan, spec, or code exists |
+| Define | interview-me | Surface what the user actually wants — interview mode (CAN articulate) + elicitation mode (CANNOT: context + domain scoping + dependency mapping + prototype) |
 | Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
@@ -191,6 +195,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | context-engineering | Right context at the right time |
 | Build | frontend-ui-engineering | Production-quality UI with accessibility |
 | Build | api-and-interface-design | Stable interfaces with clear contracts |
+| Verify | design-system-guardian | Audit UI against DESIGN.md (token, component, layout) |
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
 | Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |

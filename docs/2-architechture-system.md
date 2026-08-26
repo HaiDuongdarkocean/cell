@@ -21,7 +21,7 @@ src/
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
-│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + preview components + mock data for offline component demos
+│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + ShowcaseGallery.tsx/.module.css (Glass Gallery) + preview components + concept mockups + mock data for offline component demos
 │   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection

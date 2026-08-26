@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell Showcase — Glass Gallery</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family), Inter, sans-serif;
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      min-height: 100dvh;
+    }
+    .glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle at 70% 10%, var(--color-primary-subtle) 0%, transparent 50%);
+      filter: blur(60px);
+      opacity: 0.4;
+    }
+    .topbar {
+      position: relative;
+      z-index: 10;
+      margin: var(--space-4) auto 0;
+      width: max-content;
+      max-width: 90%;
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-2) var(--space-4);
+      background: var(--color-glass-surface);
+      border: 1px solid var(--color-glass-border);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(12px);
+    }
+    .eyebrow { font-size: var(--font-size-xs); color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: var(--tracking-wide); }
+    .search {
+      width: 260px;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-glass-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-glass-surface);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+    .icon-btn {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-glass-border);
+      background: var(--color-glass-surface);
+      color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .main { position: relative; z-index: 5; display: flex; gap: var(--space-4); padding: var(--space-5); height: calc(100dvh - 96px); }
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      padding: var(--space-4);
+      background: var(--color-glass-surface);
+      border: 1px solid var(--color-glass-border);
+      border-radius: var(--radius-2xl);
+      display: flex; flex-direction: column; gap: var(--space-3);
+      backdrop-filter: blur(16px);
+    }
+    .sidebar-title { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); }
+    .sidebar-subtitle { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+    .tree { display: flex; flex-direction: column; gap: var(--space-1); }
+    .tree-item {
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: transform 0.2s var(--ease-out), background 0.2s var(--ease-out);
+    }
+    .tree-item:hover { background: var(--color-surface-hover); }
+    .tree-item.active { background: var(--color-primary-subtle); color: var(--color-primary); transform: translateY(-2px); box-shadow: var(--shadow-popover); }
+    .result-card {
+      margin-top: auto;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-glass-surface-hover);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+    .viewport { flex: 1; overflow: auto; }
+    .preview-outer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-1);
+      background: var(--color-glass-surface);
+      border: 1px solid var(--color-glass-border);
+      border-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(12px);
+    }
+    .preview-inner {
+      padding: var(--space-5);
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+    }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .preview-title { margin: 0; font-size: var(--font-size-2xl); font-weight: var(--font-weight-semibold); }
+    .badge {
+      padding: var(--space-0-5) var(--space-2);
+      border-radius: var(--radius-pill);
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+    .preview-desc { color: var(--color-text-secondary); margin: 0 0 var(--space-4); }
+    .stage {
+      min-height: 240px;
+      border-radius: var(--radius-lg);
+      background: var(--color-background-muted);
+      border: 1px solid var(--color-border-subtle);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+    .bento { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-3); margin-top: var(--space-4); }
+    .tile { padding: var(--space-3); background: var(--color-surface-hover); border-radius: var(--radius-lg); }
+    @media (max-width: 768px) {
+      .main { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; }
+      .search { width: 140px; }
+      .bento { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="topbar">
+    <span class="eyebrow">Cell Design System</span>
+    <input class="search" type="text" placeholder="Search components…" />
+    <button class="icon-btn">◑</button>
+  </div>
+  <div class="main">
+    <aside class="sidebar">
+      <div>
+        <p class="sidebar-title">Design System</p>
+        <p class="sidebar-subtitle">Quiet confidence</p>
+      </div>
+      <div class="tree">
+        <div class="tree-item">Color</div>
+        <div class="tree-item active">Typography</div>
+        <div class="tree-item">Spacing</div>
+        <div class="tree-item">Button</div>
+        <div class="tree-item">Input</div>
+        <div class="tree-item">Card</div>
+      </div>
+      <div class="result-card">Showing 3 / 47 items</div>
+    </aside>
+    <main class="viewport">
+      <div class="preview-outer">
+        <div class="preview-inner">
+          <div class="preview-header">
+            <h2 class="preview-title">Typography</h2>
+            <span class="badge">Foundations</span>
+          </div>
+          <p class="preview-desc">Type scale, weights, and tracking used across the Cell extension.</p>
+          <div class="stage">[ component preview area ]</div>
+          <div class="bento">
+            <div class="tile">Variant A</div>
+            <div class="tile">Props</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
