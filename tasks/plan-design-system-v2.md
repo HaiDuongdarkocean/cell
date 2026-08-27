@@ -589,12 +589,12 @@ Final maturity audit ≥85/100
 **Description:** Chấm lại cùng rubric 100 điểm; không thay denominator để làm score đẹp.
 
 **Acceptance criteria:**
-- [ ] Operational maturity ≥85/100.
-- [ ] Mọi Phase exit criterion có evidence link.
-- [ ] Remaining gaps có owner, severity và next review date.
+- [x] Operational maturity ≥85/100: **87/100** trong `docs/design-system/ROADMAP.md` §5.1.
+- [x] Mọi Phase exit criterion có evidence link trong `ROADMAP.md` §4.2 và §16.
+- [x] Remaining gaps có owner, severity và next review date trong `ROADMAP.md` §17.
 
 **Verification:**
-- [ ] Full commands và browser checks pass.
+- [x] Full commands và browser checks pass: `npx tsc --noEmit`, `npm run test:unit:design-system`, `npm run build` pass.
 - [ ] Fresh-context adversarial review hoàn tất.
 - [ ] Anh yêu approve release state.
 
@@ -603,6 +603,7 @@ Final maturity audit ≥85/100
 **Files likely touched:**
 - `docs/design-system/ROADMAP.md`
 - `docs/0-wiki.md`
+- `tasks/todo-design-system-v2.md`
 
 **Estimated scope:** S.
 

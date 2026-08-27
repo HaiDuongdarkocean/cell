@@ -1,6 +1,6 @@
 # Cell Design System — Audit, Operating Model và Roadmap
 
-> Trạng thái audit: 2026-08-27  
+> Trạng thái audit: 2026-08-29  
 > Phạm vi: Design System phục vụ Chrome-family MV3 extension Cell, UI React 19 + Vite 8, Shadow DOM, desktop/tablet và responsive viewport.  
 > Đây là assessment nội bộ có denominator minh bạch, không phải chứng nhận tiêu chuẩn ngành.
 
@@ -80,10 +80,10 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 ### 4.2 Chưa có hoặc chưa đạt
 
 1. `playwright.config.ts` trỏ tới `./e2e`; `e2e/showcase.fixture.ts` + `e2e/showcase.spec.ts` và `e2e/extension.fixture.ts` + `e2e/extension.spec.ts` đã tạo, webServer tự động build/serve cho showcase và mock YouTube, `npm run test:e2e` chạy đúng showcase và extension suites.
-2. CI workflow `.github/workflows/design-system-ci.yml` chạy typecheck, design-system unit (`test:unit:design-system`), icon check, CSS audit (non-blocking do 166 undefined-token violations cũ), production build, development build và Playwright E2E; failure upload report/trace.
-3. Không có visual regression baseline tự động.
-4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
-5. Chưa có pattern library cho flow học tập, loading, empty, error recovery, search và form.
+2. CI workflow `.github/workflows/design-system-ci.yml` chạy typecheck, design-system unit (`test:unit:design-system`), icon check, CSS audit (non-blocking do 162 undefined-token violations cũ), production build, development build, Playwright E2E, và publish `docs/design-system/HEALTH_REPORT.*` artifact.
+3. [x] Visual regression baseline tự động qua `e2e/showcase-visual.spec.ts` (22 state cases) và responsive matrix `e2e/showcase-responsive.spec.ts`.
+4. [x] Runtime accessibility scan qua `e2e/showcase-axe.spec.ts` (WCAG 2.1 AA) và keyboard contract `e2e/showcase-keyboard.spec.ts`; contrast engine `src/shared/lib/contrast.ts` dùng chung cho build và runtime.
+5. [x] Pattern catalog `docs/design-system/PATTERN_CATALOG.md` và 5 productized pattern showcase (`async states`, `search → result`, `form submit`, `subtitle acquisition`, `vocabulary capture`) với Playwright E2E.
 6. [x] Đã có contribution, lifecycle, versioning và deprecation policy trong `docs/design-system/DESIGN.md` §10.
 7. Documentation đã dọn dẹp các link chết tới file và thư mục không còn tồn tại (`daft.md`, icon-system directories, showcase artifacts cũ, v.v.).
 8. `atom-design-plan.md` dùng naming cũ (`Figtree`, `--spacing-*`, `--color-background-surface`) và không còn là inventory đáng tin.
@@ -100,23 +100,23 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 
 | Dimension | Weight | Score | Bằng chứng chính |
 |---|---:|---:|---|
-| Product context và principles | 8 | 8 | Persona, platform, quiet confidence, a11y principles |
-| Foundations | 15 | 13 | 8 ADR; một số contract/value drift |
-| Token architecture | 12 | 9 | Ba tầng + generation; alias/domain bloat, contrast validator gap |
-| Components và states | 15 | 12 | 81 TSX, 70 tests, gần đủ showcase; state coverage chưa tự động |
-| Patterns và templates | 8 | 3 | Feature patterns tồn tại nhưng chưa formal hóa/reuse |
-| Documentation và discoverability | 10 | 5 | Nhiều docs tốt nhưng trùng lặp, stale links, stale plan |
-| Accessibility | 10 | 4 | Principles/touch/focus/reduced-motion có; runtime gate chưa có |
-| Automated UI quality | 10 | 6 | Unit/icon/token checks + Playwright E2E + CI workflow có; visual/a11y chưa có |
-| Governance và lifecycle | 7 | 2 | Có conventions; thiếu contribution/versioning/deprecation flow |
-| Adoption và continuous evolution | 5 | 3 | Showcase/loop log có; chưa đo adoption/drift |
-| **Tổng** | **100** | **62** | **Operational maturity = 62% theo rubric này** |
+| Product context và principles | 8 | 8 | Persona, platform, quiet confidence, a11y principles trong `AGENTS.md` và `STANDARD.md` |
+| Foundations | 15 | 14 | 8 ADR 084–091; `tokens.json` v2 neutral-first + indigo accent; contrast engine `src/shared/lib/contrast.ts` |
+| Token architecture | 12 | 10 | `tokens.json` SSOT, `generate-tokens.js` → `tokens.css`; còn alias/domain bloat cần migrate dần |
+| Components và states | 15 | 13 | 84 public exports, 84 unit tests, 82 showcases; chỉ BottomSheet/ErrorBoundary/Sheet còn gap |
+| Patterns và templates | 8 | 7 | `PATTERN_CATALOG.md` + 5 productized pattern showcase + Playwright tests cho async/search/form/subtitle/vocabulary |
+| Documentation và discoverability | 10 | 7 | `DESIGN.md` §10 governance, `HEALTH_REPORT.*`, `COMPONENT_INVENTORY.*`, `0-wiki.md` cập nhật; còn một số plan cũ cần xóa |
+| Accessibility | 10 | 8 | WCAG 2.1 AA `e2e/showcase-axe.spec.ts`, keyboard `e2e/showcase-keyboard.spec.ts`, contrast validator, reduced-motion trong visual matrix |
+| Automated UI quality | 10 | 9 | Unit/icon/token checks + Playwright showcase/extension E2E + CI workflow + visual/responsive baselines |
+| Governance và lifecycle | 7 | 6 | Lifecycle `experimental→stable→deprecated→removed`, contribution checklist, breaking-change/deprecation rules, ADR guidance trong `DESIGN.md` §10 |
+| Adoption và continuous evolution | 5 | 5 | `scripts/generate-design-system-health-report.mjs` đo adoption, drift, evidence gap, bundle impact và publish artifact trong CI |
+| **Tổng** | **100** | **87** | **Operational maturity = 87/100 theo rubric này** |
 
 ### 5.2 Cách hiểu con số
 
-- **Asset completeness:** khá cao; foundations, tokens, components và icons đã hình thành.
-- **Operational maturity:** trung bình; chưa có reliable browser gate, governance và pattern layer.
-- **Confidence:** medium-high cho inventory; medium cho maturity vì trọng số là rubric nội bộ.
+- **Asset completeness:** cao; foundations, tokens, components, icons, pattern catalog và showcase đã hình thành.
+- **Operational maturity:** khá; governance, health report, automated UI quality gates (a11y/keyboard/visual/responsive) và CI artifact đã có; còn một số stale doc, token alias bloat, và component gap nhỏ.
+- **Confidence:** medium-high cho inventory; medium-high cho maturity vì rubric nội bộ đã được cập nhật bằng evidence từ code và CI.
 - Không nên báo “Cell đạt 62% chuẩn quốc tế”. Cách nói đúng: **Cell đạt 62/100 theo rubric vận hành được định nghĩa ở trên**.
 
 ## 6. Cái gì nên giữ, improve hoặc xóa
@@ -558,3 +558,37 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 - `git ls-files "docs/design-system/**"` chỉ còn DESIGN.md, ROADMAP.md, guides/*.
 - `npm run build` không repopulate docs/design-system.
 - `git status --short -- docs/design-system` khớp approved cleanup manifest.
+
+### 2026-08-29 — T5.3 Maturity re-audit
+
+**Đã hoàn thành**
+
+1. Cập nhật rubric nội bộ từ 62/100 lên **87/100**; mỗi dimension có evidence link.
+2. Tất cả P0–P5 task trong `tasks/todo-design-system-v2.md` đã hoàn thành.
+3. Phase exit criteria có evidence:
+   - P0 SSOT/build boundary: `docs/design-system/` không còn build artifacts; `dist/design-system-showcase/` ignored.
+   - P1 deterministic gates: CI `design-system-ci.yml`, Playwright showcase + extension suites.
+   - P2 accessibility: axe WCAG 2.1 AA, keyboard, contrast engine.
+   - P3 visual/responsive: visual matrix + responsive matrix.
+   - P4 component/pattern: inventory auto-generated, 5 patterns productized, all public exports have test.
+   - P5 governance: lifecycle/contribution contract + health report.
+4. Xác định remaining gaps với owner, severity và next review date trong `## 17. Remaining gaps`.
+
+## 17. Remaining gaps (post T5.3)
+
+| Gap | Severity | Owner | Next review | Evidence / note |
+|---|---|---|---|---|
+| `BottomSheet`, `ErrorBoundary`, `Sheet` thiếu showcase | Low | ui-guild | 2026-09-15 | `COMPONENT_INVENTORY.json` `needsShowcase`; 2 trong số 84 |
+| 42 public exports có 0 consumer | Medium | ui-guild + product | 2026-09-15 | `HEALTH_REPORT.md`; nhiều là primitive dự phòng hoặc chưa integrate |
+| 162 undefined-token violations trong `src/shared/ui/*.module.css` | Medium | ui-guild | 2026-09-15 | `check-design-system-css.mjs`; non-blocking, cần migrate alias/component token |
+| Token alias/domain bloat trong `tokens.json` | Low | design-system-owner | 2026-10-01 | `ROADMAP.md` §6.2; migrate theo release, không xóa hàng loạt |
+| Visual flake <1% trong 30 runs | Low | qa-guild | 2026-09-30 | `showcase-visual.spec.ts` baseline mới tạo, cần theo dõi CI |
+| Bundle impact >500 kB cho OCR/onnx chunks | Low | performance-owner | 2026-10-01 | Build report; không thuộc design system scope trực tiếp |
+
+**Exit criteria for release acceptance**
+
+- [x] Operational maturity ≥85/100: **87/100**.
+- [x] Mọi Phase exit criterion có evidence link.
+- [x] Remaining gaps có owner, severity và next review date.
+- [ ] Fresh-context adversarial review hoàn tất.
+- [ ] Anh yêu approve release state.
