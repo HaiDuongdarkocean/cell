@@ -1,0 +1,47 @@
+.background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--color-background);
+}
+
+.blob1,
+.blob2,
+.blob3 {
+  position: absolute;
+  border-radius: var(--radius-full);
+  filter: blur(var(--blur-xl)) saturate(160%);
+  opacity: 0.55;
+}
+
+.blob1 {
+  top: calc(var(--space-8) * -1);
+  left: calc(var(--space-8) * -1);
+  width: calc(var(--space-12) * 8);
+  height: calc(var(--space-12) * 8);
+  background: radial-gradient(circle at 30% 30%, var(--color-liquid-blob-strong), transparent 60%);
+}
+
+.blob2 {
+  top: 20%;
+  right: calc(var(--space-8) * -2);
+  width: calc(var(--space-12) * 7);
+  height: calc(var(--space-12) * 7);
+  background: radial-gradient(circle at 70% 40%, var(--color-liquid-blob-medium), transparent 55%);
+}
+
+.blob3 {
+  bottom: calc(var(--space-8) * -2);
+  left: 15%;
+  width: calc(var(--space-12) * 9);
+  height: calc(var(--space-12) * 9);
+  background: radial-gradient(circle at 50% 50%, var(--color-liquid-blob-subtle), transparent 65%);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, transparent 40%, var(--color-background) 90%);
+  opacity: 0.85;
+}
