@@ -598,6 +598,31 @@ Final maturity audit ≥85/100
 
 **Estimated scope:** S.
 
+### Task 5.4: Restructure and consolidate agent skills registry
+
+**Description:** Agent skills hiện bị phân mảnh: skill mới không xuất hiện trong `using-agent-skills`, một số skill duplicate dưới nhiều path khác nhau, và tổng số skill vượt quá 20. Cần audit, gộp, cập nhật router.
+
+**Acceptance criteria:**
+- [ ] Danh sách skill được audit từ `.agents/skills/`, `.devin/skills/`, `.claude/skills/`, `.codeium/windsurf/skills/`.
+- [ ] Các skill duplicate/overlay được gộp hoặc đánh dấu deprecated.
+- [ ] `using-agent-skills` index được cập nhật để reflect đầy đủ skill hiện hành.
+- [ ] Tổng số skill active ≤ 20.
+- [ ] Các skill bị deprecated có migration note hoặc ghi chú thay thế.
+
+**Verification:**
+- [ ] `skill list` / `skill search` trả về kết quả nhất quán giữa các source.
+- [ ] `using-agent-skills` invoke output mention được skill mới thêm.
+- [ ] Không còn skill path trùng lặp trong `<available_skills>`.
+
+**Dependencies:** Tasks 5.1, 5.3.
+
+**Files likely touched:**
+- `.agents/skills/using-agent-skills/SKILL.md`
+- Các `SKILL.md` bị duplicate hoặc overlap
+- `AGENTS.md` (nếu cần đồng bộ pipeline)
+
+**Estimated scope:** M.
+
 ## 5. Required final verification
 
 ```bash
