@@ -22,6 +22,7 @@ It does not settle for vague feelings. It asks *why* something feels off, cites 
 
 - Fixing a logic bug or runtime error → use `debugging-and-error-recovery`.
 - Building from a raw idea with no target page → use `design-from-idea`.
+- You already have a `design-from-idea` brief that needs validation → run this audit, then hand the findings back to `design-from-idea`.
 - No design system, no tokens, no shared components, and no user context.
 - Pure content/copy task with no visual or interaction change.
 
@@ -320,7 +321,8 @@ Output a brief with this table:
 Then:
 1. Run design-system audit commands from `DESIGN.md` §8.
 2. If code was changed, run `npm run typecheck` and `npm run build`.
-3. Update `self-evolution/RUNBOOK.md` with one line.
+3. If the audit is a **precursor to designing a component** (not just a page redesign), append a `## Hand-off to design-from-idea` section.
+4. Update `self-evolution/RUNBOOK.md` with one line.
 
 ---
 
@@ -347,6 +349,29 @@ Then present findings in priority order. Each finding must contain:
 ```
 
 End with a concise **Redesign Brief** table and a **SSOT action list**.
+
+If the audit is intended as input for `design-from-idea`, also append a `## Hand-off to design-from-idea` section with:
+
+```markdown
+## Hand-off to design-from-idea
+
+**Design Read:** [one line]
+
+**Top constraints (P0/P1):**
+1. [Finding] → [what the new design must solve]
+2. [Finding] → [what the new design must solve]
+
+**Non-negotiables:**
+- [e.g., must use existing `Button` not custom `<button>`]
+- [e.g., touch target ≥ 44px on mobile]
+- [e.g., single accent only]
+
+**Starting frame for `design-from-idea`:**
+- Component/pattern scope: ...
+- Primary job: ...
+- Suggested 3 dials: DESIGN_VARIANCE [?], MOTION_INTENSITY [?], VISUAL_DENSITY [?]
+- Suggested starting point in `src/shared/ui/*`: ...
+```
 
 ---
 
@@ -390,6 +415,7 @@ End with a concise **Redesign Brief** table and a **SSOT action list**.
 - [ ] SSOT check done: no duplicate patterns, no hardcode where token exists.
 - [ ] Build / typecheck pass (if code changed).
 - [ ] `self-evolution/RUNBOOK.md` updated.
+- [ ] If this is a component/pattern audit, a `## Hand-off to design-from-idea` section is appended.
 
 ---
 
@@ -403,4 +429,8 @@ When `RUNBOOK.md` has 5+ entries or a test case fails, run `self-evolution/workf
 
 ## Router Boomerang
 
-Task changes or unsure which skill fits? Invoke `/using-agent-skills` to re-route.
+- Task changes or unsure which skill fits? Invoke `/using-agent-skills` to re-route.
+- If the user starts with a **raw idea** and no target → use `design-from-idea`.
+- If the user has an **audit brief** and is ready to design the fix → hand off to `design-from-idea` with the `## Hand-off to design-from-idea` section.
+- If the audit reveals the target is a single component and the user wants a detailed design → `design-from-idea` is the next skill.
+- If the audit reveals the target is a full page or complex flow → stay in this skill or hand off to `frontend-ui-engineering` after the brief.
