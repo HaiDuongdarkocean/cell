@@ -1004,12 +1004,13 @@ Dictionary probe cache (T23):
 | `convertTtmlToSrt` | `lib/parsers/ttmlToSrt.ts` | string → string | (download path) | **ADR-029**: Convert TTML content to SRT format (parseTtml → msToSrtTime per cue) |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
 | `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialogContent, NavClusterSettingsPanel, OcrSettingsPanel | Switch pill; sm=28px (matches button-height-sm), md=touch-target 40/44px, lg=48px |
-| `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | contrastValidator, tokens | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
-| `getLuminance` | `features/theme/logic/colorGenerator.ts` | string → number | contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1) |
+| `hexToRgb` | `shared/lib/contrast.ts` | string → {r,g,b} | colorGenerator, tokens | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
+| `getLuminance` | `shared/lib/contrast.ts` | color → number | colorGenerator, contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1); requires opaque color |
 | `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | tokens | **ADR-022**: Darken hex by percent (0-100) |
 | `generateHoverColor` | `features/theme/logic/colorGenerator.ts` | hex → hex | tokens | **ADR-022**: Hover = shade 10% |
-| `getContrastRatio` | `features/theme/logic/contrastValidator.ts` | (fg, bg) → number | contrastValidator | **ADR-022**: WCAG contrast ratio (1-21) |
-| `validateTheme` | `features/theme/logic/contrastValidator.ts` | CoreColorTokens → ValidationResult | ThemePanel | **ADR-022**: Validate 3 pairs (text/canvas, textSecondary/canvas, white/primary) |
+| `getContrastRatio` | `shared/lib/contrast.ts` | (fg, bg, backdrop?) → number | colorGenerator, contrastValidator, generate-tokens | **ADR-022**: WCAG contrast ratio (1-21); alpha compositing over backdrop |
+| `resolveColor` / `pickPrimaryForeground` | `shared/lib/contrast.ts` | (value, tokenMap) → Rgba / (background, candidates) → hex | generate-tokens, contrastValidator, tokens | **ADR-022**: Resolve CSS color token chains (var, rgba, color-mix) and pick accessible foreground |
+| `validateTheme` | `features/theme/logic/contrastValidator.ts` | CoreColorTokens → ValidationResult | ThemePanel | **ADR-022**: Runtime facade; validate 3 pairs via shared/lib/contrast (normal text 4.5:1) |
 | `applyTheme` | `features/theme/logic/themeManager.ts` | (ResolvedMode, ThemeConfig, target?: HTMLElement) → void | ThemeProvider, ThemePanel, ShadowThemeProvider | **ADR-022**: Set all color (core + derived) CSS vars on target (default :root) via shared/lib/tokens + data-theme attr |
 | `resolveMode` | `features/theme/logic/themeManager.ts` | ThemeMode → ResolvedMode | ThemeProvider, ThemePanel, popup App | **ADR-022**: system → light/dark via prefers-color-scheme |
 | `useThemeStore` | `stores/themeStore.ts` | Zustand store | ThemeProvider, ThemePanel, popup App | **ADR-022**: mode + config + init/switchMode/updateColor/setConfig/resetTheme |

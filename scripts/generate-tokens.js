@@ -1,8 +1,17 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { createJiti } from 'jiti';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const jiti = createJiti(import.meta.url);
+const {
+  resolveColor,
+  getContrastRatio,
+  pickPrimaryForeground: pickPrimaryForegroundEngine,
+  meetsAA,
+  toHex,
+} = await jiti.import('../src/shared/lib/contrast.ts');
 
 const CORE_COLOR_KEYS = [
   'primary',
@@ -155,65 +164,52 @@ function flattenComponentTokens(componentObj) {
   return lines.join('\n');
 }
 
-function getLuminance(hex) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0;
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function getContrastRatio(a, b) {
-  const l1 = getLuminance(a);
-  const l2 = getLuminance(b);
-  const lighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
 function pickPrimaryForeground(core) {
   const candidates = [core.background, core.text, '#000000', '#FFFFFF'];
-  for (const candidate of candidates) {
-    const ratio = getContrastRatio(candidate, core.primary);
-    if (ratio >= 4.5) return candidate;
-  }
-  return '#FFFFFF';
+  return pickPrimaryForegroundEngine(core.primary, candidates);
 }
 
-function resolveColorToken(value, core, derived, seen = new Set()) {
-  if (!value || typeof value !== 'string') return null;
-  if (value.startsWith('#')) return value;
-
-  const varMatch = value.match(/^var\(--color-([^)]+)\)$/);
-  if (varMatch) {
-    const token = varMatch[1];
-    if (seen.has(token)) return null; // cycle guard
-    seen.add(token);
-
-    if (derived[`color-${token}`] !== undefined) {
-      return resolveColorToken(derived[`color-${token}`], core, derived, seen);
+function buildColorTokenMap(core, derived) {
+  const map = {};
+  for (const key of CORE_COLOR_KEYS) {
+    const name = kebabCase(key);
+    map[`color-${name}`] = core[key];
+    const rgb = hexToRgb(core[key]);
+    if (rgb) {
+      map[`color-${name}-rgb`] = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
     }
-
-    const coreKey = token.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    if (core[coreKey]) return core[coreKey];
   }
+  for (const [key, value] of Object.entries(derived)) {
+    map[key] = value;
+  }
+  return map;
+}
 
-  return null;
+function validateContrastPair(label, rawFg, rawBg, mode, tokenMap, backdrop, isLargeText) {
+  let fg;
+  let bg;
+  try {
+    fg = resolveColor(rawFg, tokenMap);
+    bg = resolveColor(rawBg, tokenMap);
+  } catch (err) {
+    throw new Error(`[${mode}] ${label}: ${err.message}`);
+  }
+  const ratio = getContrastRatio(fg, bg, backdrop);
+  if (!meetsAA(ratio, isLargeText)) {
+    throw new Error(`[${mode}] ${label}: ${toHex(fg)} on ${toHex(bg)} = ${ratio.toFixed(2)}:1`);
+  }
 }
 
 function validateContrastPairs(mode, core, derived) {
-  // Secondary/muted text pairs use 3:1 (WCAG AA for large text ≥18pt),
-  // per src/shared/styles/STANDARD.md, which uses #737373 for text-secondary.
-  const LARGE_TEXT_THRESHOLD = 3.0;
-  const NORMAL_TEXT_THRESHOLD = 4.5;
   const largeTextPairs = new Set([
     'Text Secondary / Background',
     'Text Muted / Background',
     'Text Muted / Surface',
     'Muted Foreground / Muted',
+    'Primary Soft Foreground / Primary',
   ]);
+  const tokenMap = buildColorTokenMap(core, derived);
+  const backdrop = core.background;
   const pairs = [
     ['Text / Background', core.text, core.background],
     ['Text / Surface', core.text, core.surface],
@@ -225,8 +221,8 @@ function validateContrastPairs(mode, core, derived) {
     ['Primary Soft Foreground / Primary', derived['color-primary-foreground-soft'], core.primary],
     ['Secondary Foreground / Secondary', derived['color-secondary-foreground'], derived['color-secondary']],
     ['Accent Foreground / Accent', derived['color-accent-foreground'], derived['color-accent']],
-    ['Card Foreground / Card', derived['color-card-foreground'], derived['color-card']],
-    ['Popover Foreground / Popover', derived['color-popover-foreground'], derived['color-popover']],
+    ['Card Foreground / Surface Card', derived['color-card-foreground'], derived['color-surface-card']],
+    ['Popover Foreground / Surface Popover', derived['color-popover-foreground'], derived['color-surface-popover']],
     ['Muted Foreground / Muted', derived['color-muted-foreground'], derived['color-muted']],
     ['Destructive Foreground / Destructive', derived['color-destructive-foreground'], derived['color-destructive']],
     ['Inverse Text / Warning', derived['color-text-inverse'], core.warning],
@@ -240,12 +236,11 @@ function validateContrastPairs(mode, core, derived) {
   ];
   const failures = [];
   for (const [label, rawFg, rawBg] of pairs) {
-    const fg = resolveColorToken(rawFg, core, derived);
-    const bg = resolveColorToken(rawBg, core, derived);
-    if (!fg || !bg || !fg.startsWith('#') || !bg.startsWith('#')) continue;
-    const ratio = getContrastRatio(fg, bg);
-    const threshold = largeTextPairs.has(label) ? LARGE_TEXT_THRESHOLD : NORMAL_TEXT_THRESHOLD;
-    if (ratio < threshold) failures.push(`${mode} ${label}: ${fg} on ${bg} = ${ratio.toFixed(2)}:1`);
+    try {
+      validateContrastPair(label, rawFg, rawBg, mode, tokenMap, backdrop, largeTextPairs.has(label));
+    } catch (err) {
+      failures.push(err.message);
+    }
   }
   return failures;
 }

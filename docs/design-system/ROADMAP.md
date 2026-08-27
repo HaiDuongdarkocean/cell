@@ -303,8 +303,8 @@ Problem / user flow
 
 **Mục tiêu:** chứng minh rendered UI, không chỉ token.
 
-1. Hợp nhất contrast math thành pure module, hỗ trợ hex/rgb/rgba và alpha compositing.
-2. Áp 4.5:1 cho normal text; chỉ 3:1 khi role thực sự đạt large-text threshold.
+1. [x] Hợp nhất contrast math thành `src/shared/lib/contrast.ts`, hỗ trợ hex/rgb/rgba/color-mix/alpha compositing, được build (`scripts/generate-tokens.js` qua jiti) và runtime dùng chung.
+2. [x] Áp 4.5:1 cho normal text; chỉ 3:1 khi pair được đánh dấu explicit large-text.
 3. Thêm axe scan cho stable showcase components/pages.
 4. Thêm keyboard/focus tests cho Dialog, Drawer, Sheet, Tabs, Select, Menu/Popover nếu có.
 5. Thêm ARIA snapshots cho navigation, form error, dialog và subtitle controls.
@@ -312,7 +312,7 @@ Problem / user flow
 
 **Exit criteria**
 
-- 0 skipped contrast pair vì unsupported color format.
+- [x] 0 skipped contrast pair vì unsupported color format.
 - 0 axe violation ở component stable.
 - 100% interactive stable component có keyboard/focus assertion hoặc documented exemption.
 - Critical flows có NVDA + Chrome smoke checklist và kết quả lưu theo release.

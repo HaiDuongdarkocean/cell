@@ -4,42 +4,9 @@
 // themeManager (popup/options/sidepanel :root) + themeTokens.ts (content-script
 // container inject). Derive secondary tokens from 9 core — DRY, no drift.
 
-/** Regex for 6-digit hex (#RRGGBB), 3-digit (#RGB), or 8-digit hex with alpha (#RRGGBBAA). Case-insensitive. */
-const HEX_RE = /^#?([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+import { hexToRgb, rgbToHex, getLuminance } from '@/shared/lib/contrast';
 
-/** Parse hex string → {r,g,b} (0-255). Throws on invalid hex. Ignores alpha channel if present (8-digit hex). */
-export function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const match = HEX_RE.exec(hex.trim());
-  if (!match) throw new Error(`Invalid hex color: "${hex}"`);
-  let h = match[1];
-  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
-  // 8-digit hex (RRGGBBAA) — extract first 6 chars (RGB), ignore last 2 (alpha)
-  if (h.length === 8) h = h.slice(0, 6);
-  return {
-    r: parseInt(h.slice(0, 2), 16),
-    g: parseInt(h.slice(2, 4), 16),
-    b: parseInt(h.slice(4, 6), 16),
-  };
-}
-
-/** Convert {r,g,b} → #rrggbb (lowercase). */
-export function rgbToHex(r: number, g: number, b: number): string {
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
-  return '#' + [clamp(r), clamp(g), clamp(b)].map((n) => n.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Relative luminance per WCAG 2.1 (https://www.w3.org/TR/WCAG21/#dfn-relative-luminance).
- * Returns 0 (black) → 1 (white).
- */
-export function getLuminance(hex: string): number {
-  const { r, g, b } = hexToRgb(hex);
-  const channel = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-}
+export { hexToRgb, rgbToHex, getLuminance };
 
 /**
  * Shade (darken) a hex color by `percent` (0-100).
