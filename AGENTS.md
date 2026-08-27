@@ -3,6 +3,151 @@
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
 > Workflow (LOOP, ponytail, quality gates): các skill trong `.agents/skills/`.
 
+## pipeline 
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  META-SKILL: using-agent-skills (router) — invoke khi task đổi / không rõ   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: DEFINE                                                            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  elicitation (ORCHESTRATOR — wrapper)                               │    │
+│  │    ├── idea-refine       → diverge, expand options                  │    │
+│  │    ├── observation       → contextual inquiry                       │    │
+│  │    ├── interview-me      → converge, 8-field frame                  │    │
+│  │    │   ├── interview mode: user CAN articulate                      │    │
+│  │    │   └── elicitation mode: user CANNOT + prototype validation     │    │
+│  │    └── doubt-driven-development → stress-test assumptions           │    │
+│  │    Output: docs/intent/[topic].md                                   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  spec-driven-development                                            │    │
+│  │    ├── Phase 1: Specify (objective, commands, structure, style...)  │    │
+│  │    ├── Phase 2: Plan (technical implementation plan)                │    │
+│  │    ├── Phase 3: Tasks (discrete tasks w/ acceptance criteria)       │    │
+│  │    └── Phase 4: Implement (execute via incremental-implementation)  │    │
+│  │    Output: docs/specs/[feature].md                                  │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  spec-review-stakeholder                                            │    │
+│  │    Review 3 lens: BA / PO / TL                                      │    │
+│  │    Output: Verdict APPROVE / APPROVE WITH CHANGES / REJECT          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: PLAN                                                              │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  planning-and-task-breakdown                                        │    │
+│  │    ├── Step 1: Enter Plan Mode (read-only)                          │    │
+│  │    ├── Step 2: Identify Dependency Graph                            │    │
+│  │    ├── Step 3: Slice Vertically                                     │    │
+│  │    ├── Step 4: Write Tasks (w/ AC, verification, dependencies)      │    │
+│  │    └── Step 5: Order and Checkpoint                                 │    │
+│  │    Output: tasks/plan.md + tasks/todo.md                            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3: BUILD                                                             │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  learning-and-apply (APPLY mode) — BẮT BUỘC trước khi viết code     │    │
+│  │    ├── Grep index.json                                              │    │
+│  │    ├── Read matching principles                                     │    │
+│  │    ├── Check code against bad patterns                              │    │
+│  │    └── Apply good patterns                                          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  incremental-implementation                                         │    │
+│  │    └── Build thin vertical slices → test → verify → commit          │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼ (song song)                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  observability-and-instrumentation                                  │    │
+│  │    └── Add logging/metrics/tracing ALONGSIDE feature code           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 4: VERIFY                                                            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  test-driven-development                                            │    │
+│  │    └── RED → GREEN → REFACTOR                                       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  pre-commit-gate (local)                                            │    │
+│  │    ├── Detect scope (git status)                                    │    │
+│  │    ├── Lint (npm run lint)                                          │    │
+│  │    ├── Type check (npx tsc --noEmit)                                │    │
+│  │    ├── Unit tests (npm run test:unit)                               │    │
+│  │    ├── Build (npm run build)                                        │    │
+│  │    └── UI audit (design-system-guardian if CSS/TSX UI changed)      │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  learning-and-apply (ACCUMULATE mode)                               │    │
+│  │    └── Extract principle → experience/<id>.json (after bug pass)    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 5: REVIEW                                                            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  code-review-and-quality                                            │    │
+│  │    └── 5-axis review: Correctness/Readability/Architecture/         │    │
+│  │        Security/Performance                                         │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  git-workflow-and-versioning                                        │    │
+│  │    └── Atomic commits, semantic messages, versioning                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  documentation-and-adrs                                             │    │
+│  │    └── ADRs, changelog, wiki updates                                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 6: SHIP                                                              │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  ci-cd-and-automation                                               │    │
+│  │    └── Lint → Type check → Tests → Build → Security → Bundle size   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  shipping-and-launch                                                │    │
+│  │    └── Pre-launch checklist → staged rollout → rollback plan        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
 ## personas sử dụng
 
 - Người dùng từ 5 tuổi -> 80 tuổi.
