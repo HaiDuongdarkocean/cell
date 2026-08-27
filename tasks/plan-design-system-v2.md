@@ -87,14 +87,14 @@ Final maturity audit ≥85/100
 **Description:** Bỏ showcase-copy plugin khỏi extension build, đổi standalone showcase output sang `dist/design-system-showcase/`, và update scripts để build/serve từ output mới.
 
 **Acceptance criteria:**
-- [ ] Main `npm run build` không ghi vào `docs/design-system/`.
-- [ ] `npm run build:design-system` chỉ ghi vào `dist/design-system-showcase/`.
-- [ ] Một command dev và một command built-preview đều chạy được.
+- [x] Main `npm run build` không ghi vào `docs/design-system/`.
+- [x] `npm run build:design-system` chỉ ghi vào `dist/design-system-showcase/`.
+- [x] Một command dev và một command built-preview đều chạy được.
 
 **Verification:**
-- [ ] Snapshot `docs/design-system/`, chạy cả hai build, diff directory bằng 0.
-- [ ] Open built showcase và verify asset/font load không 404.
-- [ ] `npm run build` pass.
+- [x] Snapshot `docs/design-system/`, chạy cả hai build, diff directory bằng 0.
+- [x] Open built showcase và verify asset/font load không 404.
+- [x] `npm run build` pass.
 
 **Dependencies:** Task 0.1.
 

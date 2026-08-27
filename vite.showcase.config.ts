@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin, type ViteDevServer } from 'vite';
 import { resolve } from 'node:path';
-import { readFileSync, cpSync, rmSync, rmdirSync } from 'node:fs';
+import { readFileSync, cpSync, rmSync } from 'node:fs';
 
 const SHOWCASE_HTML_PATH = resolve(
   __dirname,
@@ -13,15 +13,15 @@ const SHOWCASE_HTML_PATH = resolve(
  * Vite transformIndexHtml inject script với base đúng (/src/entrypoints/design-system-showcase/).
  */
 /**
- * Move build output từ `docs/design-system/src/entrypoints/design-system-showcase/index.html`
- * sang `docs/design-system/design-system-showcase.html` để `npm run design-system` serve
+ * Move build output từ `dist/design-system-showcase/src/entrypoints/design-system-showcase/index.html`
+ * sang `dist/design-system-showcase/design-system-showcase.html` để `npm run design-system` serve
  * artifact mới nhất từ root.
  */
 const showcaseOutputMover = (): Plugin => ({
   name: 'showcase-output-mover',
   apply: 'build',
   closeBundle() {
-    const outDir = resolve(__dirname, 'docs/design-system');
+    const outDir = resolve(__dirname, 'dist/design-system-showcase');
     const deep = resolve(outDir, 'src/entrypoints/design-system-showcase/index.html');
     const flat = resolve(outDir, 'design-system-showcase.html');
     try {
@@ -60,7 +60,7 @@ const showcaseSpaRewrite = (): Plugin => ({
 /**
  * Vite config riêng cho Design System Showcase dev server và build.
  * Không load CRXJS → không interfere với extension.
- * Build outputs `docs/design-system/design-system-showcase.html`.
+ * Build outputs `dist/design-system-showcase/design-system-showcase.html`.
  */
 export default defineConfig({
   resolve: {
@@ -78,8 +78,8 @@ export default defineConfig({
     open: '/src/entrypoints/design-system-showcase/index.html',
   },
   build: {
-    outDir: 'docs/design-system',
-    emptyOutDir: false,
+    outDir: 'dist/design-system-showcase',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         'design-system-showcase': SHOWCASE_HTML_PATH,

@@ -9,9 +9,9 @@
 - [ ] **T0.1 Approve cleanup manifest**
   - [ ] Manifest có delete/move/keep/generated và dependency proof.
   - [ ] Anh yêu xác nhận exact destructive paths.
-- [ ] **T0.2 Make showcase build single-path and disposable**
-  - [ ] Main build không ghi vào docs.
-  - [ ] Standalone build/preview chạy từ `dist/design-system-showcase/`.
+- [x] **T0.2 Make showcase build single-path and disposable**
+  - [x] Main build không ghi vào docs.
+  - [x] Standalone build/preview chạy từ `dist/design-system-showcase/`.
 - [ ] **T0.3 Clean and reorganize design-system docs**
   - [ ] Root chỉ còn DESIGN, ROADMAP, guides.
   - [ ] Không có build/public artifacts trong docs.

@@ -524,3 +524,20 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 - `npm run build:design-system`: pass.
 - `npx jest tests/unit/entrypoints/design-system-showcase/autoDiscovery.test.ts`: 33/33 pass.
 - `npm run design-system` + Chrome CDP: navigation render đúng foundations/atoms/molecules/organisms/pages.
+
+### 2026-08-29 — Implemented T0.2 showcase build path
+
+**Đã hoàn thành**
+
+1. Xóa `designSystemShowcase` plugin khỏi `vite.config.ts` — main build không còn copy showcase sang `docs/design-system/`.
+2. Xóa `designSystemShowcase` khỏi `rollupOptions.input` của main build.
+3. Đổi `vite.showcase.config.ts` `outDir` sang `dist/design-system-showcase/`; giữ `showcaseOutputMover` flatten output.
+4. Cập nhật `package.json` `design-system` script serve từ `dist/design-system-showcase`.
+5. Cập nhật `docs/2-architechture-system.md` và `docs/0-wiki.md`.
+
+**Kết quả verify**
+
+- `npm run typecheck`: pass.
+- `npm run build`: pass; `git status --short -- docs/design-system` rỗng.
+- `npm run build:design-system`: pass; output chỉ trong `dist/design-system-showcase/`.
+- `npm run design-system`: 200 OK, `assets/` và `fonts/` load không 404, navigation render đúng.
