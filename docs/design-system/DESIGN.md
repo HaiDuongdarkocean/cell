@@ -1,6 +1,7 @@
 # Cell DESIGN.md
 
 > Agent-facing source of truth for UI implementation in Cell.
+> Reference `docs/design-system/liquid-glass-concept.md` for the Liquid Glass design manifesto (principles, palette, shape, motion, anti-patterns).
 > Reference `src/shared/styles/STANDARD.md` for full design-system theory and `src/shared/styles/tokens.json` for canonical token values.
 > This document is the practical checklist agents must follow before declaring any UI task done.
 
