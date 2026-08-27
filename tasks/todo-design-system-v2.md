@@ -107,7 +107,8 @@
   - [x] Slice 1: productize Async states pattern (catalog doc + PatternAsyncStates showcase + Playwright a11y/keyboard tests).
   - [x] Slice 2: productize Search → result pattern (PatternSearchResult showcase + Playwright a11y/keyboard tests).
   - [x] Slice 3: productize Form submit pattern (PatternFormSubmit showcase + Playwright a11y/keyboard tests).
-  - [ ] Slices 4-N: productize remaining patterns (subtitle acquisition, vocabulary capture) where real consumers exist.
+  - [x] Slice 4: productize Subtitle acquisition pattern (PatternSubtitleAcquisition showcase + Playwright a11y/keyboard tests).
+  - [ ] Slice 5: productize Vocabulary capture pattern where real consumer exists.
   - [ ] Every pattern has production consumer and when/when-not guidance.
   - [ ] Pattern interaction/a11y tests pass.
 
