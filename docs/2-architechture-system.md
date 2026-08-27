@@ -385,6 +385,9 @@ e2e/                                  # Playwright E2E specs (browser, layout, i
 ├── extension.spec.ts                 # Extension E2E: service worker ID, popup page, content script on mock video page
 ├── showcase.fixture.ts               # Fixture `showcasePage`: navigate to showcase, wait for app + fonts ready
 └── showcase.spec.ts                  # Showcase E2E: gallery loads, theme toggle, component route via query param
+
+.github/workflows/                    # GitHub Actions CI
+└── design-system-ci.yml              # Quality gates + Playwright E2E for design system v2
 ```
 
 ---

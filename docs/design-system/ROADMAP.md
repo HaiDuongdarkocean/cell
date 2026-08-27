@@ -80,7 +80,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 ### 4.2 Chưa có hoặc chưa đạt
 
 1. `playwright.config.ts` trỏ tới `./e2e`; `e2e/showcase.fixture.ts` + `e2e/showcase.spec.ts` và `e2e/extension.fixture.ts` + `e2e/extension.spec.ts` đã tạo, webServer tự động build/serve cho showcase và mock YouTube, `npm run test:e2e` chạy đúng showcase và extension suites.
-2. Không có CI workflow; kiểm tra local chưa phải deterministic merge gate.
+2. CI workflow `.github/workflows/design-system-ci.yml` chạy typecheck, design-system unit (`test:unit:design-system`), icon check, CSS audit (non-blocking do 166 undefined-token violations cũ), production build, development build và Playwright E2E; failure upload report/trace.
 3. Không có visual regression baseline tự động.
 4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
 5. Chưa có pattern library cho flow học tập, loading, empty, error recovery, search và form.
@@ -107,7 +107,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 | Patterns và templates | 8 | 3 | Feature patterns tồn tại nhưng chưa formal hóa/reuse |
 | Documentation và discoverability | 10 | 5 | Nhiều docs tốt nhưng trùng lặp, stale links, stale plan |
 | Accessibility | 10 | 4 | Principles/touch/focus/reduced-motion có; runtime gate chưa có |
-| Automated UI quality | 10 | 3 | Unit/icon/token checks có; E2E/visual/a11y/CI chưa có |
+| Automated UI quality | 10 | 6 | Unit/icon/token checks + Playwright E2E + CI workflow có; visual/a11y chưa có |
 | Governance và lifecycle | 7 | 2 | Có conventions; thiếu contribution/versioning/deprecation flow |
 | Adoption và continuous evolution | 5 | 3 | Showcase/loop log có; chưa đo adoption/drift |
 | **Tổng** | **100** | **62** | **Operational maturity = 62% theo rubric này** |
@@ -391,7 +391,7 @@ Không xây thêm component trước P0/P1 trừ khi feature thật bị block. 
 | Shared UI missing showcase | 3 | 0 hoặc documented exemption |
 | Icons passing geometry QC | 90/90 | 100% + catalog 1:1 |
 | Playwright E2E tests | 3 (showcase) + 3 (extension) | Critical showcase + extension flows |
-| CI workflows | 0 | 1 required quality pipeline |
+| CI workflows | 1 (`design-system-ci.yml`) | 1 required quality pipeline |
 | Runtime a11y automation | 0 | 100% stable showcase scope |
 | Visual baselines | 0 | 100% P0 state matrix |
 | Dead documentation links | Nhiều | 0 |
