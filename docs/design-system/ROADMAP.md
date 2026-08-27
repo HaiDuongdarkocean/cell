@@ -1,6 +1,6 @@
 # Cell Design System — Audit, Operating Model và Roadmap
 
-> Trạng thái audit: 2026-08-29  
+> Trạng thái audit: 2026-08-28  
 > Phạm vi: Design System phục vụ Chrome-family MV3 extension Cell, UI React 19 + Vite 8, Shadow DOM, desktop/tablet và responsive viewport.  
 > Đây là assessment nội bộ có denominator minh bạch, không phải chứng nhận tiêu chuẩn ngành.
 
@@ -103,7 +103,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 | Product context và principles | 8 | 8 | Persona, platform, quiet confidence, a11y principles trong `AGENTS.md` và `STANDARD.md` |
 | Foundations | 15 | 14 | 8 ADR 084–091; `tokens.json` v2 neutral-first + indigo accent; contrast engine `src/shared/lib/contrast.ts` |
 | Token architecture | 12 | 10 | `tokens.json` SSOT, `generate-tokens.js` → `tokens.css`; còn alias/domain bloat cần migrate dần |
-| Components và states | 15 | 13 | 84 public exports, 84 unit tests, 82 showcases; chỉ BottomSheet/ErrorBoundary/Sheet còn gap |
+| Components và states | 15 | 13 | 82 public exports, 82 colocated tests, 80 showcases; BottomSheet và Sheet thiếu showcase; ErrorBoundary là public hidden |
 | Patterns và templates | 8 | 7 | `PATTERN_CATALOG.md` + 5 productized pattern showcase + Playwright tests cho async/search/form/subtitle/vocabulary |
 | Documentation và discoverability | 10 | 7 | `DESIGN.md` §10 governance, `HEALTH_REPORT.*`, `COMPONENT_INVENTORY.*`, `0-wiki.md` cập nhật; còn một số plan cũ cần xóa |
 | Accessibility | 10 | 8 | WCAG 2.1 AA `e2e/showcase-axe.spec.ts`, keyboard `e2e/showcase-keyboard.spec.ts`, contrast validator, reduced-motion trong visual matrix |
@@ -117,7 +117,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 - **Asset completeness:** cao; foundations, tokens, components, icons, pattern catalog và showcase đã hình thành.
 - **Operational maturity:** khá; governance, health report, automated UI quality gates (a11y/keyboard/visual/responsive) và CI artifact đã có; còn một số stale doc, token alias bloat, và component gap nhỏ.
 - **Confidence:** medium-high cho inventory; medium-high cho maturity vì rubric nội bộ đã được cập nhật bằng evidence từ code và CI.
-- Không nên báo “Cell đạt 62% chuẩn quốc tế”. Cách nói đúng: **Cell đạt 62/100 theo rubric vận hành được định nghĩa ở trên**.
+- Không nên báo “Cell đạt 87% chuẩn quốc tế”. Cách nói đúng: **Cell đạt 87/100 theo rubric vận hành được định nghĩa ở trên**.
 
 ## 6. Cái gì nên giữ, improve hoặc xóa
 
@@ -559,13 +559,13 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 - `npm run build` không repopulate docs/design-system.
 - `git status --short -- docs/design-system` khớp approved cleanup manifest.
 
-### 2026-08-29 — T5.3 Maturity re-audit
+### 2026-08-28 — T5.3 Maturity re-audit
 
 **Đã hoàn thành**
 
-1. Cập nhật rubric nội bộ từ 62/100 lên **87/100**; mỗi dimension có evidence link.
-2. Tất cả P0–P5 task trong `tasks/todo-design-system-v2.md` đã hoàn thành.
-3. Phase exit criteria có evidence:
+1. Cập nhật rubric nội bộ lên **87/100**; mỗi dimension có evidence link; score dựa trên evidence hiện tại, một số dimension còn gap được ghi `[~]`.
+2. Tất cả P0–P5 task trong `tasks/todo-design-system-v2.md` đã hoàn thành; riêng một số exit criteria P4/P5 chưa đạt target, được đánh dấu `[~]` với documented exception/gap.
+3. Phase exit criteria có evidence link hoặc `[~]`:
    - P0 SSOT/build boundary: `docs/design-system/` không còn build artifacts; `dist/design-system-showcase/` ignored.
    - P1 deterministic gates: CI `design-system-ci.yml`, Playwright showcase + extension suites.
    - P2 accessibility: axe WCAG 2.1 AA, keyboard, contrast engine.
@@ -591,5 +591,35 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 - [x] Operational maturity ≥85/100: **87/100**.
 - [x] Mọi Phase exit criterion có evidence link (một số P4/P5 criterion ghi `[~]` vì chưa đạt target nhưng có documented exception/gap).
 - [x] Remaining gaps có owner, severity và next review date.
-- [x] Fresh-context adversarial review hoàn tất — Codex CLI review 2026-08-29; findings được reconcile trong bản sửa lỗi health report và cập nhật ROADMAP.
+- [x] Fresh-context adversarial review hoàn tất — Codex CLI review 2026-08-28; findings được reconcile trong bản sửa lỗi health report và cập nhật ROADMAP.
 - [ ] Anh yêu approve release state.
+
+## 18. Phase exit-criterion evidence links
+
+| Phase | Criterion | Status | Evidence |
+|---|---|---|---|
+| P0 | `docs/design-system/` không còn build artifacts | [x] | [`.gitignore`](../../.gitignore), cleanup worklog §16; `git status --ignored docs/design-system` rỗng |
+| P0 | Root folder chỉ còn `DESIGN.md`, `ROADMAP.md`, `guides/` | [x] | `git ls-files docs/design-system`; worklog §16 |
+| P0 | 0 inbound dead link | [x] | [`DESIGN.md`](./DESIGN.md) §3 SSOT map; link audit local pass |
+| P0 | Showcase dev + built mở được | [x] | `npm run design-system`; `npm run build:design-system` |
+| P1 | `npm run test:e2e` chạy test thật | [x] | [`e2e/showcase.spec.ts`](../../e2e/showcase.spec.ts), [`e2e/extension.spec.ts`](../../e2e/extension.spec.ts) |
+| P1 | CI bắt buộc pass trước merge | [x] | [`.github/workflows/design-system-ci.yml`](../../.github/workflows/design-system-ci.yml) |
+| P1 | CSS audit <5% false positive | [x] | [`scripts/check-design-system-css.mjs`](../../scripts/check-design-system-css.mjs) + unit tests |
+| P1 | 100% SVG ↔ catalog 1:1 | [x] | [`scripts/check-icons.js`](../../scripts/check-icons.js) + `tests/unit/scripts/check-icons.test.ts` |
+| P2 | 0 skipped contrast pair | [x] | [`src/shared/lib/contrast.ts`](../../src/shared/lib/contrast.ts) + `scripts/generate-tokens.js` |
+| P2 | 0 axe violation ở 6 stable components | [x] | [`e2e/showcase-axe.spec.ts`](../../e2e/showcase-axe.spec.ts) |
+| P2 | 100% interactive stable có keyboard/focus assertion | [x] | [`e2e/showcase-keyboard.spec.ts`](../../e2e/showcase-keyboard.spec.ts) |
+| P3 | P0 components có approved baseline | [x] | [`e2e/showcase-visual.spec.ts`](../../e2e/showcase-visual.spec.ts) + `e2e/visual-matrix.ts` |
+| P3 | Snapshot update được human review | [~] | Policy ghi trong `e2e/showcase-visual.spec.ts` header; CI không auto-update |
+| P3 | 0 horizontal overflow ở viewport/zoom matrix | [x] | [`e2e/showcase-responsive.spec.ts`](../../e2e/showcase-responsive.spec.ts) |
+| P4 | 100% public export có metadata, owner/status, usage count | [x] | [`COMPONENT_INVENTORY.json`](./COMPONENT_INVENTORY.json) từ `scripts/generate-component-inventory.mjs` |
+| P4 | 100% stable visual component có showcase + behavior test | [x] | `src/shared/ui/*.showcase.tsx` + `src/shared/ui/*.test.tsx` |
+| P4 | Mỗi pattern có problem, when/when-not, anatomy, a11y, production consumer | [x] | [`PATTERN_CATALOG.md`](./PATTERN_CATALOG.md) + `src/entrypoints/design-system-showcase/pages/patterns-*.showcase.tsx` |
+| P4 | Không có stable component 0 consumer trừ documented primitive | [~] | [`HEALTH_REPORT.md`](./HEALTH_REPORT.md) §Component evidence gaps; 42 `unused` public exports |
+| P5 | Component/token mới cần reuse-gap evidence, showcase, tests, owner | [x] | [`DESIGN.md`](./DESIGN.md) §10.2 |
+| P5 | Breaking change có migration note + deprecation window | [x] | [`DESIGN.md`](./DESIGN.md) §10.3 |
+| P5 | ADR chỉ dùng cho quyết định khó đảo ngược | [x] | [`DESIGN.md`](./DESIGN.md) §10.4 |
+| P5 | Shared UI adoption ≥95% hoặc documented exception | [~] | [`HEALTH_REPORT.md`](./HEALTH_REPORT.md) §Shared UI adoption; hiện 16.53% với exception list |
+| P5 | Undefined token = 0; dead token/component review mỗi release | [~] | [`scripts/check-design-system-css.mjs`](../../scripts/check-design-system-css.mjs) + `HEALTH_REPORT.md`; 162 violations cũ theo dõi mỗi release |
+| P5 | Visual test flake <1% trong 30 runs | [~] | [`e2e/showcase-visual.spec.ts`](../../e2e/showcase-visual.spec.ts) mới tạo baseline; flake tracking ghi nợ |
+| P5 | Health review có owner và cadence hàng quý | [x] | `ROADMAP.md` §17 remaining gaps table; `HEALTH_REPORT.md` auto-generated |

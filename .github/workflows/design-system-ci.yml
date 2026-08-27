@@ -49,10 +49,9 @@ jobs:
         run: npm run generate:component-inventory
 
       - name: Generate Design System health report
-        # Non-blocking: the report captures pre-existing drift (undefined tokens,
-        # hardcoded px/z-index, low shared-UI adoption) and is published as an
-        # artifact for human review. Failures are reserved for M3 tokens.
-        continue-on-error: true
+        # The report captures pre-existing drift (undefined tokens, hardcoded
+        # px/z-index, low shared-UI adoption) as warnings. Failures are reserved
+        # for M3 tokens or script/runtime errors.
         run: npm run generate:design-system-health-report
 
       - name: Upload Design System health report
