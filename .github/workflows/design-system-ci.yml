@@ -45,6 +45,21 @@ jobs:
       - name: Development build (showcase)
         run: npm run build:design-system
 
+      - name: Generate Design System health report
+        # Non-blocking: the report captures pre-existing drift (undefined tokens,
+        # hardcoded px/z-index, low shared-UI adoption) and is published as an
+        # artifact for human review. Failures are reserved for M3 tokens.
+        continue-on-error: true
+        run: npm run generate:design-system-health-report
+
+      - name: Upload Design System health report
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-system-health-report
+          path: |
+            docs/design-system/HEALTH_REPORT.json
+            docs/design-system/HEALTH_REPORT.md
+
   e2e:
     name: Playwright E2E
     needs: quality
