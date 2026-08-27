@@ -1,15 +1,11 @@
-import { Icon } from '@/shared/ui';
+import { IconButton, Icon } from '@/shared/ui';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PresetName } from '@/entities/theme';
 import styles from './LauncherUserBar.module.css';
 
 const PRESETS: readonly (PresetName | undefined)[] = ['dawn', 'forest', 'ocean', 'warmth', undefined];
 
-export interface LauncherUserBarProps {
-  onAddClick?: () => void;
-}
-
-export function LauncherUserBar({ onAddClick }: LauncherUserBarProps) {
+export function LauncherUserBar() {
   const mode = useThemeStore((s) => s.mode);
   const switchMode = useThemeStore((s) => s.switchMode);
   const config = useThemeStore((s) => s.config);
@@ -32,41 +28,40 @@ export function LauncherUserBar({ onAddClick }: LauncherUserBarProps) {
 
   return (
     <nav className={styles.userBar} aria-label="User actions">
-      <button
-        type="button"
-        className={styles.button}
+      <IconButton
+        size="lg"
+        variant="glass"
         onClick={cycleMode}
         aria-label={`Theme: ${mode}`}
         title={`Theme: ${mode}`}
       >
         <Icon name={themeIcon} size="md" />
-      </button>
-      <button
-        type="button"
-        className={styles.button}
+      </IconButton>
+      <IconButton
+        size="lg"
+        variant="glass"
         onClick={cyclePreset}
         aria-label={`Preset: ${config.preset ?? 'default'}`}
         title={`Preset: ${config.preset ?? 'default'}`}
       >
         <Icon name="layers" size="md" />
-      </button>
-      <button
-        type="button"
-        className={styles.button}
+      </IconButton>
+      <IconButton
+        size="lg"
+        variant="glass"
         aria-label="Settings"
         title="Settings"
       >
         <Icon name="settings" size="md" />
-      </button>
-      <button
-        type="button"
-        className={styles.button}
-        onClick={onAddClick}
+      </IconButton>
+      <IconButton
+        size="lg"
+        variant="glass"
         aria-label="Add"
         title="Add"
       >
         <Icon name="plus" size="md" />
-      </button>
+      </IconButton>
     </nav>
   );
 }
