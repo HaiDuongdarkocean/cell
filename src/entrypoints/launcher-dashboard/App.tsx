@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { LauncherBackground } from './components/LauncherBackground';
 import { LauncherSearchBar } from './components/LauncherSearchBar';
 import { LauncherTile } from './components/LauncherTile';
+import { LauncherUserBar } from './components/LauncherUserBar';
 import { LAUNCHER_TILES } from './data/launcherTiles';
 import styles from './App.module.css';
 
@@ -42,7 +43,12 @@ export function App() {
           </ul>
         </main>
         <footer className={styles.footer}>
-          <div className={styles.userBarPlaceholder} aria-label="User actions" />
+          <LauncherUserBar
+            onAddClick={() => {
+              // eslint-disable-next-line no-console
+              console.log('[launcher] add clicked');
+            }}
+          />
         </footer>
       </div>
     </div>
