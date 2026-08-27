@@ -136,6 +136,7 @@ This file records what each loop accomplished, what changed, and how it was veri
   - `.ripple` uses a centered bright water-disc gradient (`0%` token → `40%` 60% token → `70%` transparent) with explicit `background-size: 100% 100%` and `no-repeat`.
   - `z-index: 1` so the ripple paints above the caustic/rim layers but behind the button label.
   - `@keyframes ripple` holds full opacity from `0%` to `60%`, then fades out to give a clear expanding water-ripple.
+- `package.json`: `design-system` script now uses `http-server -c-1` to avoid stale asset caching across rebuilds.
 - `src/shared/styles/tokens.css` regenerated.
 - `docs/design-system/` rebuilt with `npm run build`.
 
@@ -143,4 +144,4 @@ This file records what each loop accomplished, what changed, and how it was veri
 - `npx jest --selectProjects unit --testPathPatterns=Button` — 120 tests pass.
 - `npm run build` — pass.
 - `npm run typecheck` — pass.
-- Stealth CDP on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, paused ripple at 300 ms) — Primary button clearly brightens with a white ripple expanding from the touch point; text label remains legible.
+- Stealth CDP real browser click on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, ripple paused at 200 ms by MutationObserver after a real `pointerdown`) — Primary button clearly brightens with a white water ripple expanding from the touch point; text label remains legible.
