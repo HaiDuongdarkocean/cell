@@ -68,6 +68,9 @@ function parseCssAudit(output) {
       }
     }
   }
+  if (Object.keys(byRule).length === 0 && !output.includes('0 violations')) {
+    throw new Error('CSS audit output is malformed or empty: ' + output.slice(0, 200));
+  }
   return { findings, byRule };
 }
 
@@ -291,11 +294,16 @@ function summarize(adoption, drift, inlineSvg, evidence, cssAudit) {
 }
 
 async function inventorySourcesMaxMtime() {
-  const sourceFiles = await glob('src/shared/ui/*.tsx', { cwd: ROOT, absolute: true });
-  const showcaseFiles = await glob('src/shared/ui/*.showcase.tsx', { cwd: ROOT, absolute: true });
-  const all = [...sourceFiles, ...showcaseFiles];
-  if (all.length === 0) return 0;
-  const mtimes = await Promise.all(all.map((f) => stat(f).then((s) => s.mtimeMs)));
+  const patterns = [
+    'src/shared/ui/*.tsx',
+    'src/shared/ui/*.showcase.tsx',
+    'src/shared/ui/index.ts',
+    'src/entrypoints/design-system-showcase/autoDiscovery.logic.ts',
+    'scripts/generate-component-inventory.mjs',
+  ];
+  const files = (await Promise.all(patterns.map((p) => glob(p, { cwd: ROOT, absolute: true })))).flat();
+  if (files.length === 0) return 0;
+  const mtimes = await Promise.all(files.map((f) => stat(f).then((s) => s.mtimeMs)));
   return Math.max(...mtimes);
 }
 

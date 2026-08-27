@@ -34,6 +34,9 @@ const MD_OUT = join(DOCS_DIR, 'COMPONENT_INVENTORY.md');
 const EXCLUDED_DIRS = [
   'src/shared/ui/__snapshots__',
   'src/entrypoints/design-system-showcase',
+  'src/entrypoints/mock-',
+  'src/entrypoints/mockup-',
+  'src/entrypoints/test',
   'tests',
   'e2e',
   'scripts',
@@ -130,7 +133,6 @@ async function collectSourceFiles() {
 async function countUsage(exportName, sourceBase, allFiles) {
   const importRe = new RegExp(
     `import\\s+(?:type\\s+)?\\{[^}]*\\b${escapeRegExp(exportName)}\\b[^}]*\\}`,
-    'g',
   );
 
   const consumers = [];
