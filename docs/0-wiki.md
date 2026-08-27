@@ -94,7 +94,7 @@ tasks/          # Active plan & task checklist (current sprint)
 └── todo-design-system-v2.md         # Ordered Design System v2 execution checklist
 ```
 
-||**2026-08-29 (Elicitation-to-Spec auto-pipeline)**: Mở rộng `.agents/skills/elicitation/SKILL.md` thành pipeline tự động 9 steps: sau khi user OK 8-field frame, agent tự invoke `spec-driven-development` (Autonomous Mode) để viết `docs/specs/[topic].md`, rồi `spec-review-stakeholder` để review BA/PO/TL, rồi tự sửa spec theo Blocker/Major findings. Lặp tối đa 3 vòng, cuối cùng đưa user bản spec cuối để approve. Cập nhật `.agents/skills/spec-driven-development/SKILL.md` (thêm Autonomous Mode) và `.agents/skills/spec-review-stakeholder/SKILL.md` (ghi rõ report được `elicitation` consume để edit). Verify: đọc lại 3 skill files, cấu trúc đồng nhất.|
+||**2026-08-29 (Elicitation-to-Spec auto-pipeline)**: Mở rộng `.agents/skills/elicitation/SKILL.md` thành pipeline tự động 9 steps: sau khi user OK 8-field frame, agent tự invoke `spec-driven-development` (Autonomous Mode) để viết `docs/specs/[topic].md`, rồi `spec-review-stakeholder` để review BA/PO/TL, rồi tự sửa spec theo Blocker/Major findings. Lặp tối đa 3 vòng, cuối cùng đưa user bản spec cuối để approve. Cập nhật `.agents/skills/spec-driven-development/SKILL.md` (thêm Autonomous Mode) và `.agents/skills/spec-review-stakeholder/SKILL.md` (ghi rõ report được `elicitation` consume để edit). Thêm `/design-from-idea` vào `.agents/skills/interview-me/SKILL.md` Phase 2 prototype (Step 7) để tạo design brief trước khi viết prototype. Cập nhật `docs/0-wiki.md`. Verify: đọc lại 4 skill files, cấu trúc đồng nhất.|
 
 ## Lịch sử cập nhật wiki
 

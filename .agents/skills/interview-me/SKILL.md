@@ -215,7 +215,18 @@ If you've gone several rounds and still can't predict: "I've asked X questions a
 
 **Skip in interview-only mode.** Validate with prototype when user can't articulate.
 
-### Step 7: Generate Prototype Page
+### Step 7: Design Brief (design-from-idea)
+
+**Before writing code, ground the prototype in the project's design system.**
+
+**Actions:**
+- Invoke `/design-from-idea` with the confirmed 8-field frame as the raw idea.
+- Get: component design brief with Design Read, 3 dials (DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY), color/token mapping, typography, layout (320/768/1280/1920), states, component reuse plan, and anti-patterns.
+- The brief becomes the SSOT for the prototype's visual and interaction decisions.
+
+**Loop back:** If the brief conflicts with the 8-field frame, reconcile with the user before building the prototype.
+
+### Step 8: Generate Prototype Page
 
 **Real Cell components, not throwaway HTML.**
 
@@ -227,11 +238,11 @@ If you've gone several rounds and still can't predict: "I've asked X questions a
 
 **Logic + UI in parallel.** Not sequential — evolve together.
 
-### Step 8: User Drive Prototype
+### Step 9: User Drive Prototype
 
 Open `browser_preview`. User presses buttons, tries flow. AI observes state changes + UI reaction.
 
-### Step 9: Feedback → Rephrase → Confirm → Log
+### Step 10: Feedback → Rephrase → Confirm → Log
 
 ```
 AI: "Anh thấy prototype này thế nào?"
@@ -259,7 +270,7 @@ AI rephrases → "Em hiểu góp ý là [X]. Đúng chưa?"
 
 **Guard:** After each feedback round, log is appended before proceeding to Step 10. If log not updated, stop and update.
 
-### Step 10: Analyze Feedback
+### Step 11: Analyze Feedback
 
 | Type | Action |
 |---|---|
@@ -273,11 +284,11 @@ AI rephrases → "Em hiểu góp ý là [X]. Đúng chưa?"
 - Correct → accept → update frame + prototype → log
 - Incorrect → explain why + suggest alternative → confirm → log
 
-### Step 11: Update Frame + Intent Doc
+### Step 12: Update Frame + Intent Doc
 
 If feedback correct: add/edit frame fields AND update `docs/intent/[topic].md`. Frame is SSOT — prototype reflects frame — intent doc reflects frame.
 
-### Step 12: Sync Component
+### Step 13: Sync Component
 
 **If feedback changes a component, update the real component.**
 
@@ -290,11 +301,11 @@ If feedback correct: add/edit frame fields AND update `docs/intent/[topic].md`. 
 
 **Always run `npm run build` after sync.** Always update `docs/2-architechture-system.md` if `src/` changed.
 
-### Step 13: Confirm → Loop or Exit
+### Step 14: Confirm → Loop or Exit
 
 ```
 AI: "Em đã cập nhật [X]. Anh cần góp ý thêm, hay confirm chuyển sang phase tiếp theo?"
-    ├─ More feedback → return to Step 7 (prototype v2)
+    ├─ More feedback → return to Step 8 (prototype v2) or Step 7 if the design brief needs to change
     └─ Confirm → Phase 2 DONE
 ```
 
