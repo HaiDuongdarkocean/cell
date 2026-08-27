@@ -22,7 +22,14 @@ src/
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
 │   ├── design-system-showcase/  #   Design system showcase page — App.tsx + autoDiscovery.ts (Vite glob + discovery) + autoDiscovery.logic.ts (pure taxonomy inference) + ShowcaseGallery.tsx/.module.css + MissingShowcasePlaceholder + preview components + concept mockups + mock data for offline component demos
-│   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
+│   ├── mock-streaming-page/    #   StreamFlix same-origin player mock — StreamFlixPage.tsx + VideoPlayer.tsx + streamFlixData.ts + tokens.css
+│   ├── mock-streaming-iframe-page/  #   StreamFlix cross-origin iframe host mock — shares StreamFlixPage with mode='iframe-host'
+│   ├── mock-iframe-player/     #   StreamFlix child iframe player mock — shares StreamFlixPage with mode='iframe-child'
+│   ├── mock-youtube/           #   YouTube-style video page mock
+│   ├── mock-hardsub-page/      #   Hard-sub video page mock
+│   ├── mock-youtube-hardsub/   #   YouTube hard-sub video page mock
+│   ├── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
+│   └── launcher-dashboard/     #   Liquid Glass prototype launcher (new entrypoint) — App.tsx + LauncherBackground + LauncherSearchBar + LauncherTile + LauncherUserBar + data/launcherTiles.ts; responsive tile grid, theme/preset toggle, search filter
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
 │   │   └── subtitleDiscovery/  # Generic subtitle-list discovery pipeline (T1-T12 E2E): signals, adapters, schema, pipeline, candidate/identity helpers
@@ -1311,6 +1318,17 @@ Dictionary probe cache (T23):
 || `pattern E2E` | `e2e/showcase-patterns-vocabulary-capture.spec.ts` | `test.describe('Pattern: Vocabulary capture')` | `playwright.config.ts` (`showcase` project) | Five deterministic tests: word dialog, capture, cancel, lookup error, keyboard, axe per state |
 || `extension` fixture | `e2e/extension.fixture.ts` | `{ context, worker, extensionId, popupPage, mockPage } -> ...` | `e2e/extension.spec.ts` | Playwright fixture: persistent Chromium context with built extension loaded; derives ID from service worker; closes context in `test.afterAll` |
 || `extension E2E` | `e2e/extension.spec.ts` | `test.describe('Cell MV3 extension')` | `playwright.config.ts` (`chromium` project) | Three deterministic tests: service worker running, popup page loads, content script on mock video page |
+
+## Launcher dashboard index
+
+| Symbol | Path | Signature | Used by | Description |
+|--------|------|-----------|---------|-------------|
+| `LauncherBackground` | `entrypoints/launcher-dashboard/components/LauncherBackground.tsx` | `() -> JSX` | `App.tsx` | Fixed full-viewport animated gradient blob mesh (CSS-only) using glass tokens |
+| `LauncherSearchBar` | `entrypoints/launcher-dashboard/components/LauncherSearchBar.tsx` | `{ value?, onChange?, placeholder? } -> JSX` | `App.tsx` | Pill-shaped glass search input with search icon and accessible clear button |
+| `LauncherTile` | `entrypoints/launcher-dashboard/components/LauncherTile.tsx` | `{ icon, label, onClick? } -> JSX` | `App.tsx` | Square glass tile with icon + label, hover lift and press scale |
+| `LauncherUserBar` | `entrypoints/launcher-dashboard/components/LauncherUserBar.tsx` | `() -> JSX` | `App.tsx` | Floating pill user bar with `IconButton` glass buttons: theme cycle, preset cycle, settings, add |
+| `LAUNCHER_TILES` | `entrypoints/launcher-dashboard/data/launcherTiles.ts` | `readonly LauncherTileItem[]` | `App.tsx` | Tile registry with icon keys, labels and search keywords |
+| `launcher E2E` | `e2e/launcher-dashboard.spec.ts` | `test.describe('Launcher Dashboard')` | `playwright.config.ts` (`launcher` project) | Three tests: loads + shows all tiles, search filters, preset button cycles data-preset |
 
 ## Update protocol
 

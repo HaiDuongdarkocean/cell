@@ -4,7 +4,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--button-gap);
-  min-width: var(--touch-target);
+  width: auto;
+  min-width: min-content;
   min-height: var(--touch-target);
   height: var(--button-height);
   padding: var(--button-padding-y) var(--button-padding-x);
@@ -105,14 +106,16 @@
   transition: background var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
 }
 
-.button:hover {
-  background: var(--button-liquid-surface-hover);
-  filter: brightness(1.04);
-}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    background: var(--button-liquid-surface-hover);
+    filter: brightness(1.04);
+  }
 
-.button:hover::before,
-.button:hover::after {
-  opacity: 1;
+  .button:hover::before,
+  .button:hover::after {
+    opacity: 1;
+  }
 }
 
 .button:active {
@@ -153,11 +156,12 @@
 
 /* === Sizes === */
 .sm {
-  height: var(--button-height-sm);
-  min-height: var(--button-height-sm);
-  padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
+  /* Visual content stays compact (font/icon), but hit box follows --touch-target. */
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  height: auto;
+  padding: var(--button-padding-y-sm) var(--button-padding-x-sm);
   font-size: var(--button-font-size-sm);
-  min-width: var(--button-height-sm);
 }
 
 .sm .leadingIcon,
@@ -180,7 +184,7 @@
 
 .lg {
   height: var(--button-height-lg);
-  padding: var(--button-padding-lg-y) var(--button-padding-lg-x);
+  padding: var(--button-padding-y-lg) var(--button-padding-x-lg);
   font-size: var(--button-font-size-lg);
 }
 
@@ -255,9 +259,11 @@
   display: none;
 }
 
-.link:hover {
-  text-decoration: underline;
-  background: var(--color-primary-subtle);
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    text-decoration: underline;
+    background: var(--color-primary-subtle);
+  }
 }
 
 /* === Liquid Glass material styles (variant='glass') === */
@@ -276,17 +282,15 @@
   border: var(--border-width-hairline) solid var(--color-glass-border-subtle);
 }
 
-.liquidClear:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
-}
+@media (hover: hover) and (pointer: fine) {
+  .liquidClear:hover {
+    background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
+  }
 
-.liquidProminent {
-  background: var(--button-liquid-surface-active);
-}
-
-.liquidProminent:hover {
-  background: var(--button-liquid-surface-active);
-  filter: brightness(1.05);
+  .liquidProminent:hover {
+    background: var(--button-liquid-surface-active);
+    filter: brightness(1.05);
+  }
 }
 
 /* === States === */
@@ -346,6 +350,44 @@
 .vertical .trailingIcon {
   width: var(--button-vertical-icon-size);
   height: var(--button-vertical-icon-size);
+}
+
+/* === Icon-only — circular dewdrop when a single icon is the only content === */
+
+.iconOnly {
+  aspect-ratio: 1 / 1;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border-radius: var(--radius-full);
+}
+
+.sm.iconOnly,
+.iconOnly.sm {
+  width: var(--touch-target);
+  min-width: var(--touch-target);
+  height: var(--touch-target);
+}
+
+.md.iconOnly,
+.iconOnly.md {
+  width: var(--button-height);
+  min-width: var(--button-height);
+  height: var(--button-height);
+}
+
+.lg.iconOnly,
+.iconOnly.lg {
+  width: var(--button-height-lg);
+  min-width: var(--button-height-lg);
+  height: var(--button-height-lg);
+}
+
+.xl.iconOnly,
+.iconOnly.xl {
+  width: var(--button-height-xl);
+  min-width: var(--button-height-xl);
+  height: var(--button-height-xl);
 }
 
 /* === Icons === */

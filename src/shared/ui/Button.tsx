@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
+import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
@@ -100,6 +100,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     }
   };
 
+  const childCount = Children.count(children);
+  const onlyChildIsElement = childCount === 1 && isValidElement(children);
+  const hasTextChild = childCount > 0 && !onlyChildIsElement;
+  const iconOnly = !hasTextChild && !leadingIcon && !trailingIcon && !loading && (onlyChildIsElement || childCount === 0);
+
   const liquidClass = variant === 'glass'
     ? liquidStyle === 'clear'
       ? styles.liquidClear
@@ -116,6 +121,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     orientation === 'vertical' ? styles.vertical : '',
     active ? (activeStyle === 'flat' ? styles.activeFlat : styles.active) : '',
     loading ? styles.loading : '',
+    iconOnly ? styles.iconOnly : '',
     error ? styles.error : '',
     fullWidth ? styles.fullWidth : '',
     collapseLabel ? styles.collapseLabel : '',

@@ -163,6 +163,7 @@ export default defineConfig(({ mode }) => ({
         localPlayer: resolve(__dirname, 'src/entrypoints/local-player/index.html'),
         reader: resolve(__dirname, 'src/entrypoints/reader/index.html'),
         mockupLanguageProfile: resolve(__dirname, 'src/entrypoints/mockup-language-profile/index.html'),
+        launcherDashboard: resolve(__dirname, 'src/entrypoints/launcher-dashboard/index.html'),
       },
       output: {
         manualChunks(id) {
