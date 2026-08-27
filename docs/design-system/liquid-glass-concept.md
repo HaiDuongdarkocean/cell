@@ -67,14 +67,37 @@ Cell đã có hệ token glass. Chúng ta tận dụng và mở rộng, không t
 | Đất nâu | `--color-earth` / `--color-tint-orange-*` | Warning, warm accent |
 | Mặt trời vàng | `--color-sun` / `--color-tint-yellow-*` | Shimmer, highlight, active glow |
 
-### 4.2 Glass variants
+### 4.2 Glass material tiers
 
-| Variant | Light mode | Dark mode | Khi nào dùng |
-|---|---|---|---|
-| **Regular** | `var(--color-glass-surface)` `rgba(255,255,255,0.85)` | `rgba(24,25,26,0.85)` | Mặc định cho nav, controls, buttons. Adaptive, legible. |
-| **Regular hover** | `var(--color-glass-surface-hover)` | `rgba(34,35,37,0.92)` | Hover / selected. |
-| **Clear** | `color-mix(in srgb, var(--color-glass-surface) 42%, transparent)` | tương tự với dark | Trên media/video/photo, khi nội dung dưới cần lộ rõ. Cần dimming layer. |
-| **Popover/Sheet** | `var(--color-glass-surface-popover)` | `rgba(24,25,26,0.95)` | Modal, bottom sheet, menu bubble. Độ đục cao hơn để đọc text. |
+Apple định nghĩa nhiều material tiers; Cell rút gọn thành 4 tiers chính để phù hợp web + MV3:
+
+| Tier | Light mode | Dark mode | Độ đục | Blur | Khi nào dùng |
+|---|---|---|---|---|---|
+| **Thin** | `color-mix(in srgb, var(--color-glass-surface) 55%, transparent)` | tương tự | 0.45 | `var(--blur-sm)` 4px | Tooltip, hint bubble, mini popover cần nhìn xuyên qua. |
+| **Regular** | `var(--color-glass-surface)` `rgba(255,255,255,0.85)` | `rgba(24,25,26,0.85)` | 0.85 | `var(--blur-md)` 8px | Default cho nav, controls, buttons, tab bar, toolbar. |
+| **Regular hover** | `var(--color-glass-surface-hover)` | `rgba(34,35,37,0.92)` | 0.92 | `var(--blur-md)` 8px | Hover / selected trên Regular. |
+| **Thick** | `var(--color-glass-surface-popover)` | `rgba(24,25,26,0.95)` | 0.95 | `var(--blur-lg)` 16px | Sidebar, large panel, bottom sheet, dialog — cần đọc nhiều text. |
+| **Popover/Sheet** | `var(--color-glass-surface-popover)` | `rgba(24,25,26,0.95)` | 0.95 | `var(--blur-lg)` 16px | Modal, bottom sheet, menu bubble (tương đương Thick). |
+| **Clear** | `color-mix(in srgb, var(--color-glass-surface) 30%, transparent)` | tương tự | 0.30 | `var(--blur-md)` 8px | Trên media/video/photo. Cần dimming + foreground bold/bright. |
+
+### 4.2a Clear variant — strict criteria
+
+Clear **không phải** phiên bản "trong hơn của Regular". Chỉ dùng khi đủ 3 điều kiện:
+
+1. Element nổi trên **media-rich content** (video, ảnh, map, gradient đậm).
+2. Có **dimming layer** hoặc scrim phía sau (`--color-glass-clear-dimming`).
+3. Foreground (text/icon) là **bold/bright** (`color-text-inverse`, font-weight >= 600, hoặc icon fill trắng trên dark).
+
+**Không dùng Clear** cho: text label thường, button trên nền trung tính, form input, list item.
+
+### 4.2b Glass on glass detection
+
+Khi bố cục có nhiều hơn 2 layer glass chồng lên nhau (ví dụ: glass nav bar trên glass sheet trên glass card), hãy kiểm tra:
+
+- Tổng số glass layer trên viewport <= 3 (kể cả blur pseudo-element).
+- Không có glass scroll container bên trong glass panel.
+- Input, select, textarea bên trong sheet dùng `Thick`/`Popover` (đục), không dùng `Thin`/`Clear`.
+- Mỗi màn hình chỉ có **một** glass layer ở mức `Thin` hoặc `Clear`.
 
 ### 4.3 Caustic & specular
 
@@ -103,7 +126,7 @@ Cell đã có hệ token glass. Chúng ta tận dụng và mở rộng, không t
 |---|---|---|---|
 | **Pill / Stadium** | Dài gấp 3-6 lần cao | `--radius-pill` (9999px) | Button, input, search bar, tab, segmented control, slider track. |
 | **Circle** | 1:1 | `50%` / `--radius-full` | IconButton, FAB, play/pause, avatar, toggle thumb. |
-| **Squircle / Superellipse** | 1:1 hoặc 4:3 | `--radius-2xl`/`3xl` (16-24px) | Card, tile, sheet, menu panel, bottom nav item. |
+| **Squircle** | 1:1 hoặc 4:3 | `--radius-2xl`/`3xl` (16-24px) | Card, tile, sheet, menu panel, bottom nav item. Hình dạng giữa rounded-rect và superellipse: góc mềm hơn rounded-rect nhưng không quá cong như hình elip hoàn chỉnh. |
 | **Rounded-rect** | Tùy | `--radius-xl`/`2xl` | Dialog, bottom sheet, sidebar, large panels. |
 
 ### 5.2 Quy tắc
@@ -141,12 +164,49 @@ Một element Liquid Glass tối thiểu có 4 lớp:
 
 ### 6.3 Lensing trên web
 
-Web không render ray-traced caustic. Tái tạo bằng:
+Web không render ray-traced caustic. Phần lớn Liquid Glass trên web là **approximation**, không phải vật lý chính xác.
+
+#### 6.3a CSS-only approximation (default)
+
+Đây là baseline cho mọi component Cell:
 
 - `backdrop-filter: blur(Npx) saturate(150%);`
 - `background: linear-gradient(135deg, var(--color-button-liquid-specular) 0%, transparent 35%, transparent 65%, var(--color-button-liquid-inner-shadow) 100%);`
 - Border caustic: `box-shadow: inset 1px 1px 0 var(--color-button-liquid-caustic), inset -1px -1px 0 var(--color-button-liquid-inner-shadow);`
-- Mỗi component có thể thêm lớp pseudo-element `::before` cho rim light, `::after` cho inner shadow.
+- Mỗi component thêm lớp pseudo-element `::before` cho rim light, `::after` cho inner shadow.
+- Caustic highlight tĩnh ở góc trên trái; có thể di chuyển nhẹ theo pointer bằng CSS `radial-gradient` với `background-position` (optional, không animating backdrop-filter).
+
+#### 6.3b Refraction reality check
+
+Apple Liquid Glass cốt lõi là **refraction** — bẻ cong ánh sáng qua rìa convex (Snell's Law). CSS `backdrop-filter` chỉ làm **frosted blur**, không tạo refraction.
+
+- True refraction trên web cần **SVG filters** (`feDisplacementMap` + `feSpecularLighting`) hoặc **WebGL/GLSL**.
+- SVG filter qua `backdrop-filter: url(#filter)` chỉ hoạt động ổn định trên **Chromium**; Safari/Firefox hỗ trợ kém hoặc không.
+- Thực hiện refraction trong **MV3 Shadow DOM** là phức tạp: filter `<svg>` phải inject vào shadow root, không xuyên qua multiple shadow boundaries.
+
+#### 6.3c Progressive enhancement path
+
+| Level | Technique | Scope | Khi nào |
+|---|---|---|---|
+| **L0 — Baseline** | CSS `backdrop-filter` + inset shadow + caustic pseudo-elements | Tất cả components | MVP, cross-browser, low-end |
+| **L1 — Caustic motion** | CSS pointer-driven `background-position` / `transform` trên pseudo-element | Button, IconButton, Card | Fine pointer, reduced-motion off |
+| **L2 — SVG displacement** | `backdrop-filter: url(#liquid-glass-displacement)` | Hero media controls, special circle buttons | Chromium only, high-end device, khi cần "wow" |
+| **L3 — WebGL refraction** | Full-screen or per-element GLSL shader | Research spike cho v2 | Không phải MVP |
+
+**Rule:** Không bắt buộc refraction. Nếu chỉ có L0, giao diện vẫn là Liquid Glass hợp lệ miễn là material, motion, caustic highlight đúng.
+
+### 6.4 Performance budget
+
+`backdrop-filter` là một trong những CSS property tốn GPU nhất. Thiết lập budget để tránh jank trên low-end (benchmark >= 200k, RAM >= 1GB).
+
+| Constraint | Giới hạn | Lý do |
+|---|---|---|
+| **Blur radius** | Mobile `8px`, tablet `12px`, desktop `16px` max | `blur(20px+)` trên Android mid-range drop 60→40 fps. |
+| **Số glass layer đồng thời trên viewport** | Max 3 | Mỗi layer composes backdrop riêng, cost cộng dồn. |
+| **Số pseudo-element caustic** | Max 2 (`::before` + `::after`) | Tránh thêm pseudo thứ 3 chỉ cho decoration. |
+| **Animatable properties** | Chỉ `transform`, `opacity`, `background-color`, `color`, `box-shadow` | **Không** animate `backdrop-filter`, `filter`, `width`, `height`, `top`, `left`. |
+| **Scroll + blur** | Không dùng `position: sticky` glass header trên content scroll + blur nặng | Combo này là worst case cho frame rate. |
+| **Fallback** | `@supports not (backdrop-filter: blur(1px))` hoặc `prefers-reduced-transparency` → dùng solid `color-glass-surface` | Safari cũ, Firefox pre-103, user chọn reduce transparency. |
 
 ---
 
@@ -227,6 +287,19 @@ Z-0: Content                 (video, text, list)
 
 ## 10. Component Patterns
 
+### 10.0 Migration priority
+
+Cell đã có Button/IconButton/Card với liquid glass; các component khác cần glass hóa theo thứ tự:
+
+| Phase | Components | Tiers chính | Lý do ưu tiên |
+|---|---|---|---|
+| **P1 — Done / polish** | Button, IconButton, Card | Regular, Clear (media controls) | Đã có implementation; tinh chỉnh caustic + ripple. |
+| **P2 — Floating chrome** | BottomSheet, Dialog, Popover, NavItem, Floating action bar | Thick / Popover, Regular | Nổi trên content, cần glass để tạo depth. |
+| **P3 — Controls** | Tabs, Toggle, Slider, SearchField, ListItem | Regular | Cần thay line-style / solid bằng glass pill/circle. |
+| **P4 — Inputs** | Input, Select, Textarea, Label, ShortcutInput | Regular, Thick nếu trong sheet | Cẩn thận legibility — ưu tiên sau vì dễ ảnh hưởng readability. |
+
+**Rule:** Hoàn thành P1-P2 trước khi chạm P3-P4. Không glass hóa toàn bộ cùng lúc.
+
 ### 10.1 Button (pill)
 
 | State | Diễn giải |
@@ -258,8 +331,10 @@ Z-0: Content                 (video, text, list)
 ### 10.5 Bottom Sheet / Dialog
 
 - Bo góc trên (top-radius 24-32px cho sheet).
-- Backdrop blur + dim.
+- Backdrop blur + dim (`--color-overlay`).
+- Sheet body dùng **Thick / Popover** tier (`--color-glass-surface-popover`) để đọc text dễ.
 - Nội dung bên trong dùng fill/vibrancy, **không** dùng glass trên glass.
+- Các input/select bên trong sheet dùng nền đục (`color-glass-input-bg` hoặc solid surface), không dùng Clear/Thin.
 
 ### 10.6 Slider / Toggle
 
@@ -290,11 +365,31 @@ Z-0: Content                 (video, text, list)
 | Toggle | thumb translateX spring | `--duration-normal` 200ms `--ease-spring` |
 | Scroll edge | content fade/dissolve dưới glass header | theo scroll position |
 
+### 11.3a Content intersection handling
+
+Khi nội dung scroll **dưới** glass header/bar (như dashboard list dưới search bar):
+
+1. **Tránh intersection** khi có thể: reposition hoặc scale content để duy trì khoảng cách với glass.
+2. **Nếu không thể tránh**, tăng shadow/contact shadow của glass bar khi content tiếp cận.
+3. **Tăng dimming/tint** tự động: khi text/image bên dưới glass sáng/tối quá, điều chỉnh glass surface để đảm bảo legibility.
+4. **Scroll edge gradient**: thêm gradient fade-out trên mép dưới glass bar (`mask-image: linear-gradient(to bottom, black 70%, transparent 100%)`) để nội dung "tan biến" mềm mại khi chạm glass.
+
+**Không làm:** để text mờ bị che bởi glass mà không có shadow/gradient separation.
+
 ### 11.3 Accessibility
 
-- Tôn trọng `prefers-reduced-motion`: giảm elastic, tắt ripple lan, chuyển về opacity/translate đơn giản.
-- `prefers-reduced-transparency`: tăng opacity surface (`--color-glass-surface` → `0.95`).
-- `prefers-contrast: more`: viền đậm, icon/text đen trắng rõ ràng.
+| Media query | Thay đổi trên glass | Cách implement |
+|---|---|---|
+| `prefers-reduced-motion` | Tắt ripple, spring, caustic motion. Giữ opacity/translate đơn giản. | `@media (prefers-reduced-motion: reduce) { * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }` |
+| `prefers-reduced-transparency` | Glass đục hơn. Regular → `opacity 0.95`; Clear → `opacity 0.75` + dimming đậm hơn. | Override `--color-glass-surface` và `--color-glass-clear-dimming` trong media query. |
+| `prefers-contrast: more` | Thêm viền 1.5px solid rõ ràng (`color-text-primary` light / `color-text-inverse` dark). Text/icon đen trắng, không dùng tint. | Override `box-shadow` inset border và `color` trong media query. |
+
+**Runtime tests trước ship:**
+- [ ] Toggle từng media query trong DevTools, chụp screenshot 3 trạng thái.
+- [ ] Kiểm tra contrast text trên glass với nền lightest/darkest: >= 4.5:1 cho body, >= 3:1 cho large text.
+- [ ] Focus ring 2px, contrast 3:1 so với unfocused.
+- [ ] Touch target >= 44×44px mobile, 40×40px desktop.
+- [ ] Không có glass trên glass khi reduced-transparency bật.
 
 ---
 
@@ -302,7 +397,7 @@ Z-0: Content                 (video, text, list)
 
 | # | Anti-pattern | Tại sao |
 |---|---|---|
-| A1 | Glass trên glass | Làm mất hierarchy, giao diện bẩn. |
+| A1 | Glass trên glass | Làm mất hierarchy, giao diện bẩn. Detect: tổng glass layer > 3, glass panel chứa glass scroll list, input trong sheet dùng Clear/Thin. |
 | A2 | Tint tất cả mọi thứ | Không có focal point, rối mắt. |
 | A3 | Góc vuông hoặc radius nhỏ | Phá vỡ ngôn ngữ liquid. |
 | A4 | Bóng quá đậm / quá nhiều | Glass phải nhẹ, bay bổng, không nặng nề. |
@@ -316,7 +411,7 @@ Z-0: Content                 (video, text, list)
 
 | Khái niệm concept | Token (đã có hoặc cần mở rộng) |
 |---|---|
-| Glass surface | `--color-glass-surface`, `--color-glass-surface-hover`, `--color-glass-surface-popover` |
+| Glass surface | `--color-glass-surface`, `--color-glass-surface-hover`, `--color-glass-surface-popover` (cần thêm `--color-glass-thin`, `--color-glass-thick`) |
 | Glass border | `--color-glass-border`, `--color-glass-border-subtle` |
 | Blur | `--blur-sm`, `--blur-md`, `--blur-lg`, `--blur-xl` |
 | Button liquid surface | `--color-button-liquid-surface`, `--color-button-liquid-surface-hover`, `--color-button-liquid-surface-active` |
@@ -336,22 +431,37 @@ Z-0: Content                 (video, text, list)
 
 | Token mới | Giá trị đề xuất | Mục đích |
 |---|---|---|
+| `--color-glass-thin` | `color-mix(in srgb, var(--color-glass-surface) 55%, transparent)` | Thin tier: tooltips, hint bubbles. |
+| `--color-glass-thick` | `color-mix(in srgb, var(--color-glass-surface) 98%, transparent)` | Thick tier: sidebar, sheets, dialogs. |
+| `--color-glass-thin-hover` | `color-mix(in srgb, var(--color-glass-surface-hover) 60%, transparent)` | Hover state trên Thin. |
+| `--color-glass-clear-dimming` | `rgba(0,0,0,0.20)` light / `rgba(0,0,0,0.35)` dark | Dimming layer cho Clear variant trên media. |
+| `--color-glass-ambient-spill` | `color-mix(in srgb, var(--color-primary) 15%, transparent)` | Ánh sáng từ nội dung màu chiếu lên glass. |
 | `--shadow-liquid-sm` | `0 2px 8px -2px rgba(0,0,0,0.06), 0 1px 0 0 var(--color-button-liquid-caustic) inset` | Bóng mềm + rim light cho floating controls. |
 | `--shadow-liquid-md` | `0 6px 20px -4px rgba(0,0,0,0.08), 0 1px 0 0 var(--color-button-liquid-caustic) inset` | Cho cards/tiles. |
 | `--shadow-liquid-lg` | `0 12px 40px -8px rgba(0,0,0,0.12), 0 1px 0 0 var(--color-button-liquid-caustic) inset` | Cho sheet/dialog. |
-| `--color-glass-clear-dimming` | `rgba(0,0,0,0.20)` light / `rgba(0,0,0,0.35)` dark | Dimming layer cho Clear variant trên media. |
-| `--color-glass-ambient-spill` | `color-mix(in srgb, var(--color-primary) 15%, transparent)` | Ánh sáng từ nội dung màu chiếu lên glass. |
 
 ---
 
 ## 14. Implementation Notes
 
+### 14.1 Performance & fallback
 - **Dùng `backdrop-filter` có chừng mực**: performance trên low-end Android có thể kém. Cung cấp fallback `background-color` solid khi `prefers-reduced-transparency`.
 - **Không blur toàn màn hình**: blur chỉ áp dụng cho glass layer, không cho nền content.
 - **GPU acceleration**: dùng `transform` và `opacity` cho animation, tránh `top/left/width/height`.
 - **Layer promotion**: `will-change: transform` trên element đang animate; xóa sau animation.
 - **Bundle size**: không thêm thư viện nếu có thể. CSS `backdrop-filter`, `box-shadow`, `color-mix` là đủ.
-- **Shadow DOM**: dictionary popup inject `tokens.css` bằng raw import; đảm bảo `:host` reset `font-size`.
+
+### 14.2 Cross-browser & MV3 constraints
+- **Chrome/Edge/Brave desktop + Android**: primary target. `-webkit-backdrop-filter` đủ cho hầu hết versions.
+- **Safari**: cần `-webkit-backdrop-filter` prefix; một số version cũ bỏ qua `backdrop-filter` hoàn toàn. Test trên Safari 16+.
+- **Firefox**: hỗ trợ `backdrop-filter` từ v103 trở lên. Pre-v103 fallback: solid `color-glass-surface` hoặc `color-glass-thick`.
+- **Shadow DOM**: content-script popup, dictionary popup inject `tokens.css` bằng raw import; đảm bảo `:host` reset `font-size`. Glass layer trong shadow DOM hoạt động như bình thường vì `backdrop-filter` dựa trên stacking context của shadow root.
+- **MV3 service worker**: không DOM, nên glass chỉ áp dụng ở popup/sidepanel/options/content-script — không ở SW.
+- **Reduced features**: nếu `prefers-reduced-transparency` hoặc `prefers-reduced-motion`, dùng solid surface + simple transition.
+
+### 14.3 Refraction implementation
+- V1 (MVP) **không bắt buộc refraction**.
+- V2 research spike: đánh giá SVG `feDisplacementMap` trong shadow DOM của extension popup. Chỉ triển khai nếu pass performance test trên Snapdragon 665 tương đương.
 
 ---
 
@@ -363,8 +473,15 @@ Z-0: Content                 (video, text, list)
 - [ ] `npm run typecheck` pass.
 - [ ] Playwright showcase tests pass.
 - [ ] Không có glass trên glass trong prototype.
-- [ ] `prefers-reduced-motion` và `prefers-reduced-transparency` được tôn trọng.
-- [ ] Touch target đạt 44px mobile / 40px desktop.
+- [ ] `prefers-reduced-motion`, `prefers-reduced-transparency`, `prefers-contrast: more` được tôn trọng.
+- [ ] Touch target đạt 44×44px mobile / 40×40px desktop.
+- [ ] Contrast text trên glass >= 4.5:1 body, >= 3:1 large text.
+- [ ] Focus ring 2px, contrast 3:1 so với unfocused.
+- [ ] Blur radius không vượt budget (mobile 8px / tablet 12px / desktop 16px).
+- [ ] Max 3 glass layer đồng thời trên viewport.
+- [ ] Fallback `@supports not (backdrop-filter)` hoặc `prefers-reduced-transparency` hoạt động.
+- [ ] Cross-browser test: Chrome, Edge, Brave, Safari 16+, Firefox 103+.
+- [ ] Reduced-motion + reduced-transparency screenshots lưu trong `docs/design-system/`.
 
 ---
 
@@ -401,6 +518,7 @@ Z-0: Content                 (video, text, list)
 - `src/shared/styles/tokens.json` — canonical token SSOT.
 - `src/shared/styles/README.md` — component inventory + token usage rules.
 - `docs/design-system/DESIGN.md` — agent UI implementation checklist.
+- `docs/design-system/liquid-glass-critique.md` — Critical Decision Brief: nghiên cứu + phản biện concept từ codebase + internet.
 
 ---
 
