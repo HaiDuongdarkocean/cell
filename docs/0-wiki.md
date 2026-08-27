@@ -37,6 +37,7 @@ docs/           # Tài liệu dự án
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── DESIGN.md                      # Agent-facing SSOT for UI implementation (M3 → Cell token map, component map, audit commands)
+│   ├── ROADMAP.md                     # Audit maturity 62/100 + operating model + UI test-tool target + cleanup/reorganization roadmap
 │   ├── foundations-tutorial.html      # Interactive HTML tutorial for design system foundations (color/typography/spacing/layout/shape/motion/icon/a11y)
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
@@ -95,10 +96,16 @@ tasks/          # Active plan & task checklist (current sprint)
 ├── plan.md                          # Existing Orca OCR implementation plan
 ├── todo.md                          # Existing Orca OCR ordered checklist
 ├── plan-liquid-glass-buttons.md     # Liquid-glass Button/IconButton + subtitle migration implementation plan
-└── todo-liquid-glass-buttons.md     # Liquid-glass ordered tasks with acceptance criteria
+├── todo-liquid-glass-buttons.md     # Liquid-glass ordered tasks with acceptance criteria
+├── plan-design-system-v2.md         # Canonical P0-P5 implementation plan từ audit 62/100 → target ≥85/100
+└── todo-design-system-v2.md         # Ordered Design System v2 execution checklist
 ```
 
 ## Lịch sử cập nhật wiki
+
+**2026-08-29 (T0.5 Auto taxonomy)**: Tách `autoDiscovery.ts` thành `autoDiscovery.logic.ts` (pure taxonomy inference: path → level, basename → category, `showcaseMeta` override, `CANONICAL_META` chỉ còn <10 trường hợp đặc biệt) + `autoDiscovery.ts` (Vite glob + discovery). Mở rộng glob cho features/molecules, features/organisms, templates, shared/styles. Thêm `tests/unit/entrypoints/design-system-showcase/autoDiscovery.test.ts` (33 cases). Cập nhật `docs/2-architechture-system.md`. Typecheck, build (`npm run build` + `build:design-system`), showcase server 200 OK, navigation render đúng foundations/atoms/molecules/organisms/pages.
+
+**2026-08-27 (Design System audit + plan)**: Thêm `docs/design-system/ROADMAP.md` — audit vận hành 62/100 với denominator minh bạch, SSOT map, toolchain Playwright/axe/parser-based CSS audit, lộ trình P0–P5, target folder structure, deletion safety gate và session worklog. Thêm canonical execution files `tasks/plan-design-system-v2.md` + `tasks/todo-design-system-v2.md`; đã qua hai fresh-context adversarial reviews.
 
 **2026-08-28 (v4 AC)**: Căn chỉnh `Button` press/focus/ripple theo `liquid-glass-dewdrop-v4.html` — tokens `color-button-liquid-ripple/mid/primary`, `ripple-start-opacity=0.6`, press scale 0.985 trong 80ms, release 180ms ease-out; `@keyframes ripple` scale 0 → 2.8 / opacity 0.6 → 0 trong 700ms ease-out; focus-visible outline 2px `currentColor 60%` + offset 3px. Sửa `var(--transition)` chưa định nghĩa bằng token `transition` mới và duration rõ ràng trong `Button.module.css`. Cập nhật `docs/specs/liquid-glass-buttons.md`, `docs/2-architechture-system.md`, `docs/loop-result.md`. Build + typecheck + Button tests pass; verify ripple trên showcase dark mode qua stealth CDP.
 

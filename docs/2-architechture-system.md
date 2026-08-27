@@ -21,7 +21,7 @@ src/
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
-│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + autoDiscovery.ts (SSOT taxonomy) + ShowcaseGallery.tsx/.module.css + MissingShowcasePlaceholder + preview components + concept mockups + mock data for offline component demos
+│   ├── design-system-showcase/  #   Design system showcase page — App.tsx + autoDiscovery.ts (Vite glob + discovery) + autoDiscovery.logic.ts (pure taxonomy inference) + ShowcaseGallery.tsx/.module.css + MissingShowcasePlaceholder + preview components + concept mockups + mock data for offline component demos
 │   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
@@ -154,9 +154,9 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
 ```
 
-**Design-system showcase contract (ADR-074):** `src/entrypoints/design-system-showcase/` renders the auto-discovered library across all atomic-design levels. `autoDiscovery.ts` is the single source of truth for showcase taxonomy: it applies canonical `level`/`category` overrides (`CANONICAL_META`), normalizes legacy category aliases, detects `src/shared/ui/` components missing a `.showcase.tsx` file, and renders them as `MissingShowcasePlaceholder` entries so documentation gaps stay visible. `ShowcaseGallery` owns level/category grouping, persistent search, status badges (missing/deprecated/experimental), responsive sidebar, and token-based glass layout. `LibraryLevelInfo` carries an `icon` (ICON_CATALOG key) for the collapsed rail — 6 custom atomic-design icons: `layers` (Foundations), `atom` (Atoms), `molecule` (Molecules), `organism` (Organisms), `wireframe` (Templates), `windowPage` (Pages). Foundation previews use flat sections; radius is rendered as an independent specimen list rather than nested cards.
+**Design-system showcase contract (ADR-074):** `src/entrypoints/design-system-showcase/` renders the auto-discovered library across all atomic-design levels. `autoDiscovery.ts` owns the Vite glob and entry-point discovery (`discoverShowcases`, `discoverMissingShowcases`); `autoDiscovery.logic.ts` is the single source of truth for showcase taxonomy: it infers `level` from the file path, `category` from the component basename, applies `showcaseMeta` declared in each `.showcase.tsx` file, and only falls back to `CANONICAL_META` for special cases (hidden helpers, deprecated archives, components without a `.showcase.tsx`). It normalizes legacy category aliases, detects `src/shared/ui/` components missing a `.showcase.tsx` file, and renders them as `MissingShowcasePlaceholder` entries so documentation gaps stay visible. `ShowcaseGallery` owns level/category grouping, persistent search, status badges (missing/deprecated/experimental), responsive sidebar, and token-based glass layout. `LibraryLevelInfo` carries an `icon` (ICON_CATALOG key) for the collapsed rail — 6 custom atomic-design icons: `layers` (Foundations), `atom` (Atoms), `molecule` (Molecules), `organism` (Organisms), `wireframe` (Templates), `windowPage` (Pages). Foundation previews use flat sections; radius is rendered as an independent specimen list rather than nested cards.
 
-New files: `MissingShowcasePlaceholder.tsx/.module.css`, `vite.showcase.config.ts` build target outputs `docs/design-system/design-system-showcase.html`, `package.json` adds `build:design-system`.
+New files: `autoDiscovery.logic.ts` (pure taxonomy), `MissingShowcasePlaceholder.tsx/.module.css`, `vite.showcase.config.ts` build target outputs `docs/design-system/design-system-showcase.html`, `package.json` adds `build:design-system`.
 
 **Refactor status**: M0-M13 COMPLETE (FSD migration). M14-M21 COMPLETE (architecture debt refactor, ADR-017):
 - M14: SW god-file split (2203→321 lines, 8 handler files)
