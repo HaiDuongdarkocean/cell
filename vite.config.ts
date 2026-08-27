@@ -172,6 +172,10 @@ function autoSeedAssets(mode: string): Plugin {
 
 export default defineConfig(({ mode }) => ({
   plugins: [crx({ manifest }), hoverOnlyOnHoverDevices(), autoSeedAssets(mode), designSystemShowcase()],
+  // Rolldown (Vite 8) changed default CJS interop. React is CJS and has no
+  // `__esModule` / default export, so `import React from 'react'` used by
+  // zustand can resolve to an incorrect named export without this legacy flag.
+  legacy: { inconsistentCjsInterop: true },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
