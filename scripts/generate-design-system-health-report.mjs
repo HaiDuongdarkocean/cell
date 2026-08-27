@@ -1,4 +1,5 @@
 import { readFile, stat, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, relative, sep } from 'node:path';
 import { glob } from 'glob';
@@ -17,7 +18,7 @@ function relativePath(file) {
 }
 
 async function runCssAudit() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const child = spawn('node', ['scripts/check-design-system-css.mjs'], {
       cwd: ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -25,7 +26,18 @@ async function runCssAudit() {
     let output = '';
     child.stdout.on('data', (data) => { output += data.toString(); });
     child.stderr.on('data', (data) => { output += data.toString(); });
-    child.on('close', () => resolve(output));
+    child.on('error', (err) => reject(err));
+    child.on('close', (code, signal) => {
+      if (signal) {
+        reject(new Error(`CSS audit killed by signal ${signal}`));
+        return;
+      }
+      if (code !== 0 && !output.includes('Found ')) {
+        reject(new Error(`CSS audit exited ${code}: ${output}`));
+        return;
+      }
+      resolve(output);
+    });
   });
 }
 
@@ -65,6 +77,7 @@ function isProductionTsx(rel) {
     rel.startsWith('src/shared/icons/') ||
     rel.startsWith('src/entrypoints/design-system-showcase/') ||
     rel.startsWith('src/entrypoints/mock-') ||
+    rel.startsWith('src/entrypoints/mockup-') ||
     rel.startsWith('src/entrypoints/test/') ||
     rel.includes('.showcase.') ||
     rel.includes('.stories.') ||
@@ -75,6 +88,29 @@ function isProductionTsx(rel) {
 
 function hasJsx(content) {
   return content.includes('</') || content.includes('/>');
+}
+
+function hasJsxUsage(content, importNames) {
+  for (const name of importNames) {
+    const re = new RegExp('<\\s*\\b' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
+    if (re.test(content)) return true;
+  }
+  return false;
+}
+
+function extractSharedUiImports(content) {
+  const names = [];
+  const importRe = /import\s+(?:type\s+)?\{([\s\S]*?)\}\s+from\s+['"]@\/shared\/ui['"]/g;
+  for (const match of content.matchAll(importRe)) {
+    const block = match[1];
+    for (const part of block.split(',')) {
+      const clean = part.trim().split(/\s+as\s+/)[0].trim();
+      if (clean && !clean.startsWith('type ')) {
+        names.push(clean);
+      }
+    }
+  }
+  return [...new Set(names)];
 }
 
 async function collectAdoption() {
@@ -88,7 +124,8 @@ async function collectAdoption() {
     const content = await readFile(file, 'utf8');
     if (!hasJsx(content)) continue;
     total.push(rel);
-    if (content.includes('@/shared/ui')) {
+    const sharedUiImports = extractSharedUiImports(content);
+    if (sharedUiImports.length > 0 && hasJsxUsage(content, sharedUiImports)) {
       consumers.push(rel);
     } else {
       exceptions.push(rel);
@@ -108,8 +145,7 @@ async function collectAdoption() {
 }
 
 async function collectDrift() {
-  const cssFiles = await glob('src/**/*.module.css', { cwd: ROOT, absolute: true });
-  const allCss = [...cssFiles, ...(await glob('src/**/*.css', { cwd: ROOT, absolute: true }))];
+  const allCss = [...new Set(await glob('src/**/*.css', { cwd: ROOT, absolute: true }))];
   const m3Files = [];
   const hexFiles = [];
   const pxFiles = [];
@@ -125,6 +161,7 @@ async function collectDrift() {
       rel.includes('.test.') ||
       rel.includes('.showcase.') ||
       rel.startsWith('src/entrypoints/mock-') ||
+      rel.startsWith('src/entrypoints/mockup-') ||
       rel.startsWith('src/entrypoints/design-system-showcase/')
     ) {
       continue;
@@ -176,6 +213,7 @@ async function collectInlineSvg() {
       rel.startsWith('src/shared/icons/') ||
       rel.startsWith('src/shared/ui/') ||
       rel.startsWith('src/entrypoints/mock-') ||
+      rel.startsWith('src/entrypoints/mockup-') ||
       rel.startsWith('src/entrypoints/design-system-showcase/') ||
       rel.startsWith('src/entrypoints/test/') ||
       rel.includes('.showcase.') ||
@@ -197,16 +235,25 @@ async function collectInlineSvg() {
 
 async function collectEvidence() {
   const inventory = JSON.parse(await readFile(INVENTORY_PATH, 'utf8'));
-  const publicExports = inventory.publicExports || [];
-  const stableNoConsumer = publicExports
-    .filter((c) => c.status === 'stable' && c.usageCount === 0)
-    .map((c) => c.name);
-  return { summary: inventory.summary, stableNoConsumer };
+  return {
+    summary: inventory.summary,
+    zeroConsumerPublicExports: inventory.gaps?.zeroConsumer || [],
+  };
+}
+
+async function newestMatchingFile(pattern) {
+  const files = await glob(pattern, { cwd: ROOT, absolute: true });
+  if (files.length === 0) return null;
+  const withMtime = await Promise.all(
+    files.map(async (file) => ({ file, mtime: (await stat(file)).mtimeMs })),
+  );
+  withMtime.sort((a, b) => b.mtime - a.mtime);
+  return withMtime[0].file;
 }
 
 async function collectBundle() {
-  const distUi = (await glob('dist/assets/ui-*.js', { cwd: ROOT, absolute: true }))[0];
-  const distTokens = (await glob('dist/assets/tokens-*.js', { cwd: ROOT, absolute: true }))[0];
+  const distUi = await newestMatchingFile('dist/assets/ui-*.js');
+  const distTokens = await newestMatchingFile('dist/assets/tokens-*.js');
   const ui = distUi ? { file: relativePath(distUi), bytes: (await stat(distUi)).size } : null;
   const tokens = distTokens ? { file: relativePath(distTokens), bytes: (await stat(distTokens)).size } : null;
   return { ui, tokens };
@@ -230,8 +277,8 @@ function summarize(adoption, drift, inlineSvg, evidence, cssAudit) {
   if (inlineSvg.count > 0) {
     warnings.push(inlineSvg.count + ' inline <svg> in production TSX');
   }
-  if (evidence.stableNoConsumer.length > 0) {
-    warnings.push(evidence.stableNoConsumer.length + ' stable shared UI exports have 0 consumers');
+  if (evidence.zeroConsumerPublicExports.length > 0) {
+    warnings.push(evidence.zeroConsumerPublicExports.length + ' public UI exports have showcase+test but 0 consumers');
   }
   const undefinedTokenCount = cssAudit.byRule['undefined-token'] || 0;
   if (undefinedTokenCount > 0) {
@@ -243,7 +290,48 @@ function summarize(adoption, drift, inlineSvg, evidence, cssAudit) {
   return { status, failures, warnings };
 }
 
+async function inventorySourcesMaxMtime() {
+  const sourceFiles = await glob('src/shared/ui/*.tsx', { cwd: ROOT, absolute: true });
+  const showcaseFiles = await glob('src/shared/ui/*.showcase.tsx', { cwd: ROOT, absolute: true });
+  const all = [...sourceFiles, ...showcaseFiles];
+  if (all.length === 0) return 0;
+  const mtimes = await Promise.all(all.map((f) => stat(f).then((s) => s.mtimeMs)));
+  return Math.max(...mtimes);
+}
+
+async function ensureInventoryFresh() {
+  if (!existsSync(INVENTORY_PATH)) {
+    await generateInventory();
+    return;
+  }
+  const inventoryMtime = (await stat(INVENTORY_PATH)).mtimeMs;
+  const sourceMtime = await inventorySourcesMaxMtime();
+  if (sourceMtime > inventoryMtime) {
+    await generateInventory();
+  }
+}
+
+function generateInventory() {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', ['scripts/generate-component-inventory.mjs'], {
+      cwd: ROOT,
+      stdio: 'inherit',
+    });
+    child.on('error', (err) => reject(err));
+    child.on('close', (code, signal) => {
+      if (signal) {
+        reject(new Error(`Inventory generator killed by signal ${signal}`));
+      } else if (code !== 0) {
+        reject(new Error(`Inventory generator exited ${code}`));
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 async function main() {
+  await ensureInventoryFresh();
   const [adoption, drift, inlineSvg, evidence, bundle, cssOutput] = await Promise.all([
     collectAdoption(),
     collectDrift(),
@@ -288,8 +376,8 @@ async function main() {
     '## Shared UI adoption',
     '',
     '- Production TSX files: **' + adoption.total + '**',
-    '- Files importing from `@/shared/ui`: **' + adoption.consumers + '**',
-    '- Adoption rate: **' + adoption.ratePercent + '%** (target >= 95%)',
+    '- Files using shared UI components as JSX: **' + adoption.consumers + '**',
+    '- Adoption rate: **' + adoption.ratePercent + '%** (target >= 95%; metric counts production TSX with JSX that renders at least one imported shared UI component)',
     '- Target met: **' + (adoption.targetMet ? 'Yes' : 'No') + '**',
     '',
     ...(adoption.targetMet ? [] : ['### Exceptions (' + adoption.exceptions + ')', ...adoption.exceptionList.map((f) => '- `' + f + '`'), '']),
@@ -322,7 +410,7 @@ async function main() {
     '- Zero consumers: **' + evidence.summary.zeroConsumer + '**',
     '- Orphan showcases: **' + evidence.summary.orphanShowcases + '**',
     '',
-    ...(evidence.stableNoConsumer.length > 0 ? ['### Stable components with 0 production consumers (' + evidence.stableNoConsumer.length + ')', ...evidence.stableNoConsumer.map((n) => '- ' + n), ''] : []),
+    ...(evidence.zeroConsumerPublicExports.length > 0 ? ['### Public UI exports ready but with 0 consumers (' + evidence.zeroConsumerPublicExports.length + ')', ...evidence.zeroConsumerPublicExports.map((n) => '- ' + n), ''] : []),
     '## Bundle impact',
     '',
     bundle.ui ? '- `' + bundle.ui.file + '`: ' + bundle.ui.bytes.toLocaleString() + ' bytes' : '- UI bundle not found; run `npm run build` first.',
@@ -335,7 +423,7 @@ async function main() {
     '## Deliberate / accepted violations',
     '',
     '- Undefined-token violations in `src/shared/ui/*.module.css` are pre-existing token drift; the CSS audit is non-blocking in CI.',
-    '- Hardcoded values in `src/entrypoints/mock-*` pages are excluded from production health counts.',
+    '- Hardcoded values in `src/entrypoints/mock-*/mockup-*` pages are excluded from production health counts.',
     '',
   ].filter(Boolean);
 

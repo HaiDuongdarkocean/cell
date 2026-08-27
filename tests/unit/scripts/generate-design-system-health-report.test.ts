@@ -57,11 +57,11 @@ describe('generate-design-system-health-report', () => {
     expect(report.summary.warnings.some((w) => w.includes('undefined-token'))).toBe(true);
   });
 
-  it('flags zero-consumer stable components when present', async () => {
+  it('flags zero-consumer public UI exports when present', async () => {
     const raw = await readFile(jsonPath, 'utf-8');
-    const report = JSON.parse(raw) as { evidence: { stableNoConsumer: string[] } };
+    const report = JSON.parse(raw) as { evidence: { zeroConsumerPublicExports: string[] } };
 
-    expect(Array.isArray(report.evidence.stableNoConsumer)).toBe(true);
+    expect(Array.isArray(report.evidence.zeroConsumerPublicExports)).toBe(true);
   });
 
   it('reports bundle sizes when dist artifacts exist', async () => {
