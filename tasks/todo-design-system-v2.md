@@ -39,9 +39,9 @@
 - [x] **T1.2 Extend icon integrity gate**
   - [x] SVG ↔ catalog 1:1.
   - [x] Tags bắt buộc; duplicate SVG bị phát hiện.
-- [ ] **T1.3 Establish Playwright showcase suite**
-  - [ ] `npm run test:e2e` chạy test thật.
-  - [ ] Theme/navigation/critical interaction pass hai lần liên tiếp.
+- [x] **T1.3 Establish Playwright showcase suite**
+  - [x] `npm run test:e2e` chạy test thật.
+  - [x] Theme/navigation/critical interaction pass hai lần liên tiếp.
 - [ ] **T1.4 Establish Chromium extension E2E fixture**
   - [ ] Dynamic extension ID từ service worker.
   - [ ] Popup + content-script mock flow pass.

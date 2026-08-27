@@ -240,13 +240,13 @@ Final maturity audit ≥85/100
 **Description:** Tạo test directory/fixture thật, start showcase server tự động và kiểm critical navigation/theme/component interactions.
 
 **Acceptance criteria:**
-- [ ] `npm run test:e2e` không còn trỏ tới empty directory.
-- [ ] Fixture đợi font/app readiness, không dùng sleep tùy ý.
-- [ ] Light/dark và component route chính có deterministic assertions.
+- [x] `npm run test:e2e` không còn trỏ tới empty directory.
+- [x] Fixture đợi font/app readiness, không dùng sleep tùy ý.
+- [x] Light/dark và component route chính có deterministic assertions.
 
 **Verification:**
-- [ ] Playwright suite pass hai lần liên tiếp local.
-- [ ] Trace giữ khi retry/failure.
+- [x] Playwright suite pass hai lần liên tiếp local.
+- [x] Trace giữ khi retry/failure.
 
 **Dependencies:** Task 0.2.
 

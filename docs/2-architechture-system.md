@@ -379,6 +379,10 @@ tests/
     ├── compare.integration.test.ts
     ├── parallel.integration.test.ts
     └── sequential.integration.test.ts
+
+e2e/                                  # Playwright E2E specs (browser, layout, interaction)
+├── showcase.fixture.ts               # Fixture `showcasePage`: navigate to showcase, wait for app + fonts ready
+└── showcase.spec.ts                  # Showcase E2E: gallery loads, theme toggle, component route via query param
 ```
 
 ---
@@ -1287,6 +1291,8 @@ Dictionary probe cache (T23):
 | `MockProviders` | `entrypoints/design-system-showcase/mockProviders.tsx` | `(children) -> JSX` | `ShowcaseGallery` | Provides mock cues, dictionary result, and card creator draft via context |
 | `MissingShowcasePlaceholder` | `entrypoints/design-system-showcase/MissingShowcasePlaceholder.tsx` | `{ title } -> JSX` | `autoDiscovery` | Placeholder preview for `shared/ui/` components without a showcase |
 | `*.showcase.tsx` | `shared/ui/` and `features/*/ui/` | `Showcase` + `showcaseMeta` | `ShowcaseGallery` | Per-component design-system examples auto-rendered by the gallery |
+| `showcasePage` fixture | `e2e/showcase.fixture.ts` | `{ page } -> Page` | `e2e/showcase.spec.ts` | Playwright fixture: navigates to showcase, waits for `readyState` + first `h1` + `document.fonts.ready` |
+| `showcase E2E` | `e2e/showcase.spec.ts` | `test.describe('Design System Showcase')` | `playwright.config.ts` (`showcase` project) | Three deterministic tests: gallery load, light/dark toggle, `?showcase=Button` route |
 
 ## Update protocol
 

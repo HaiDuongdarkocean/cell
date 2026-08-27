@@ -75,6 +75,7 @@ docs/           # Tài liệu dự án
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
+e2e/            # Playwright E2E specs (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
   skills/         # 25 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship) — interview-me đã gộp elicitation mode
                  # browser-testing-with-devtools/SKILL.md: có "Reliable install workflow on Devin CLI"
@@ -94,6 +95,8 @@ tasks/          # Active plan & task checklist (current sprint)
 ```
 
 ## Lịch sử cập nhật wiki
+
+|**2026-08-29 (T1.3 Playwright showcase suite)**: Thêm `e2e/showcase.fixture.ts` (fixture `showcasePage`, đợi `document.readyState === 'complete'`, heading render, `document.fonts.ready`) và `e2e/showcase.spec.ts` (3 tests: load gallery + light theme, toggle light/dark, navigate `?showcase=Button`). Cập nhật `playwright.config.ts`: `webServer` auto build/serve với `http-server` + fallback proxy, hai project (`chromium`/`showcase`), `outputDir: 'test-results/'`, `trace: 'retain-on-failure'`, `screenshot: 'only-on-failure'`. Cập nhật `docs/design-system/ROADMAP.md`, `docs/2-architechture-system.md`, `tasks/plan-design-system-v2.md`, `tasks/todo-design-system-v2.md`. Verify: `npx eslint e2e/showcase*.ts playwright.config.ts` pass, `npx tsc --noEmit -p tsconfig.e2e.json` pass, `npm run typecheck` pass, `npm run test:e2e` pass 2 lần liên tiếp (3 tests/showcase).|
 
 |**2026-08-29 (T1.1 + T1.2 Design-system quality gates)**: Thêm `scripts/check-design-system-css.mjs` (PostCSS parser audit: hardcoded color/spacing/radius/z-index, undefined token trong `src/shared/ui/*.module.css`) + `tests/unit/scripts/check-design-system-css.test.ts`. Mở rộng `scripts/check-icons.js` sang catalog↔file integrity, dead entry, empty tags, duplicate SVG detection; bổ sung 2 icon `panel-left-collapse` / `panel-left-expand` vào `ICON_CATALOG`. Thêm `tests/unit/scripts/check-icons.test.ts` + fixtures. Cập nhật `package.json`, `docs/design-system/ROADMAP.md`, `docs/2-architechture-system.md`, `tasks/plan-design-system-v2.md`, `tasks/todo-design-system-v2.md`. Verify: `node scripts/check-icons.js` pass 90/90, targeted Jest pass, `npm run typecheck` pass, `npm run build` pass.
 
