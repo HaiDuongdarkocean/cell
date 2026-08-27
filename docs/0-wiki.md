@@ -94,7 +94,7 @@ tasks/          # Active plan & task checklist (current sprint)
 └── todo-design-system-v2.md         # Ordered Design System v2 execution checklist
 ```
 
-||**2026-08-29 (Elicitation-to-Spec auto-pipeline)**: Mở rộng `.agents/skills/elicitation/SKILL.md` thành pipeline tự động: sau khi user OK 8-field frame, agent tự invoke `spec-driven-development` để viết `docs/specs/[topic].md`, rồi `spec-review-stakeholder` để review BA/PO/TL, rồi tự sửa spec theo findings. Lặp tối đa 3 vòng, cuối cùng đưa user bản spec cuối để approve. Cập nhật `docs/0-wiki.md`. Verify: `npx markdownlint .agents/skills/elicitation/SKILL.md` nếu có, đọc lại skill structure.|
+||**2026-08-29 (Elicitation-to-Spec auto-pipeline)**: Mở rộng `.agents/skills/elicitation/SKILL.md` thành pipeline tự động 9 steps: sau khi user OK 8-field frame, agent tự invoke `spec-driven-development` (Autonomous Mode) để viết `docs/specs/[topic].md`, rồi `spec-review-stakeholder` để review BA/PO/TL, rồi tự sửa spec theo Blocker/Major findings. Lặp tối đa 3 vòng, cuối cùng đưa user bản spec cuối để approve. Cập nhật `.agents/skills/spec-driven-development/SKILL.md` (thêm Autonomous Mode) và `.agents/skills/spec-review-stakeholder/SKILL.md` (ghi rõ report được `elicitation` consume để edit). Verify: đọc lại 3 skill files, cấu trúc đồng nhất.|
 
 ## Lịch sử cập nhật wiki
 

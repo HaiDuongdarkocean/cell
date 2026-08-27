@@ -12,6 +12,8 @@ Quy trình:
 4. Đưa verdict: APPROVE / APPROVE WITH CHANGES / REJECT.
 5. Viết báo cáo ngắn, không tạo file riêng, không handoff doc.
 
+**Invoked from `/elicitation` auto-pipeline:** The review report is consumed by the `/elicitation` skill (Step 8) to edit `docs/specs/[topic].md`. The `/elicitation` skill, not this skill, performs the edits. This skill still outputs the report in the conversation and does not create files or handoff documents.
+
 ## Lens 1 — BA (Business Analyst)
 
 Tâm thế: đại diện user & business process. Hỏi:

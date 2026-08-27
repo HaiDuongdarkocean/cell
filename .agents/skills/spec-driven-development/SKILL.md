@@ -19,6 +19,29 @@ Write a structured specification before writing any code. The spec is the shared
 
 **When NOT to use:** Single-line fixes, typo corrections, or changes where requirements are unambiguous and self-contained.
 
+## Modes
+
+### Interactive Mode (default)
+
+Start with a high-level vision. Ask the human clarifying questions until requirements are concrete. Use this mode when the input is a vague idea or incomplete requirements.
+
+### Autonomous Mode
+
+Use this mode when `/elicitation` hands off a **confirmed 8-field frame** (`docs/intent/[topic].md`). In this mode, do **not** ask the human clarifying questions. Treat the 8-field frame and the elicitation log as the SSOT requirements.
+
+**Trigger conditions:**
+- Invoked from `/elicitation` Step 6
+- `docs/intent/[topic].md` exists and contains a confirmed 8-field frame
+- The human has already given explicit "yes" to the frame
+
+**Behavior in Autonomous Mode:**
+- Skip the "Ask the human clarifying questions" step.
+- Use the 8-field frame to fill Objective, User, Success Criteria, Scope, Constraints.
+- Infer remaining sections (Tech Stack, Commands, Project Structure, Code Style, Testing Strategy, Boundaries) from `docs/2-architechture-system.md`, `docs/specs/`, `docs/adr/`, and the existing codebase.
+- Document any remaining assumptions as accepted risks in the spec; do not ask the user.
+- Output path convention: `docs/specs/[topic].md`.
+- If a requirement is genuinely missing and cannot be inferred, make a reasonable assumption, document it, and flag it as an accepted risk.
+
 ## The Gated Workflow
 
 Spec-driven development has four phases. Do not advance to the next phase until the current one is validated.
