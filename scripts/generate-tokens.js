@@ -205,7 +205,7 @@ function resolveColorToken(value, core, derived, seen = new Set()) {
 
 function validateContrastPairs(mode, core, derived) {
   // Secondary/muted text pairs use 3:1 (WCAG AA for large text ≥18pt),
-  // per Astryx/Meta standard (daft.md) which uses #737373 for text-secondary.
+  // per src/shared/styles/STANDARD.md, which uses #737373 for text-secondary.
   const LARGE_TEXT_THRESHOLD = 3.0;
   const NORMAL_TEXT_THRESHOLD = 4.5;
   const largeTextPairs = new Set([

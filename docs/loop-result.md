@@ -11,14 +11,14 @@
 - `docs/knowledge-base/atomic-design.md` — 5 levels, token sub-atomic, atom definition, taxonomy checklist.
 - `src/entrypoints/design-system-showcase/{ShowcaseGallery.tsx, autoDiscovery.ts, ShowNavigationContext.tsx, App.tsx}`
 - `src/shared/ui/index.ts` — 83 exports.
-- `package.json` — `design-system:dev` 5180, `design-system` serves `docs/design-system/design-system-showcase.html`.
+- `package.json` — `design-system:dev` 5180, `design-system` serves `dist/design-system-showcase/design-system-showcase.html`.
 
 ## Pain Points Confirmed
 
 1. **Không SSOT**: metadata (`level`, `category`, `order`) nằm rải rác trong từng file `.showcase.tsx` → sửa nhiều nơi.
 2. **Taxonomy đảo lộn**: `ShowcaseGallery` chỉ ưu tiên category cho `foundations`; các level khác xếp alphabet → trông ngẫu nhiên.
 3. **Visual xấu / khó thao tác**: glass surface nặng, search bị ẩn, preview card không rõ hierarchy, responsive breakpoint 839px không chuẩn.
-4. **Nội dung chậm cập nhật**: nhiều component `src/shared/ui/index.ts` không có `.showcase.tsx`; `docs/design-system/design-system-showcase.html` là static build cũ, không tự đồng bộ khi thêm component.
+4. **Nội dung chậm cập nhật**: nhiều component `src/shared/ui/index.ts` không có `.showcase.tsx`; `dist/design-system-showcase/design-system-showcase.html` là static build cũ, không tự đồng bộ khi thêm component.
 
 ## Audit Snapshot
 
@@ -44,7 +44,7 @@
 - [x] `ShowcaseGallery.tsx` — persistent search, level/category tree, status badges, `Missing` icon, cleaner layout.
 - [x] `ShowcaseGallery.module.css` — reduced visual noise, standard tokens, 768px breakpoint, glass preview card.
 - [x] `MissingShowcasePlaceholder.tsx/.module.css` — placeholder for `src/shared/ui/` components without showcase.
-- [x] `vite.showcase.config.ts` — build outputs to `docs/design-system/design-system-showcase.html`, `showcaseOutputMover` plugin flattens output.
+- [x] `vite.showcase.config.ts` — build outputs to `dist/design-system-showcase/design-system-showcase.html`, `showcaseOutputMover` plugin flattens output.
 - [x] `package.json` — `build:design-system` script.
 - [x] Run `npx vite build --config vite.showcase.config.ts` — passes; navigation to `http://127.0.0.1:8123/design-system-showcase.html` returns title `Cell Design System Showcase`.
 - [x] Update `docs/0-wiki.md` and `docs/2-architechture-system.md`.
@@ -52,8 +52,8 @@
 ## Verification
 
 - Build `npx vite build --config vite.showcase.config.ts` succeeds.
-- Output artifact at `docs/design-system/design-system-showcase.html` with root-relative `/assets/` references.
-- `http-server docs/design-system -p 8123` serves the page.
+- Output artifact at `dist/design-system-showcase/design-system-showcase.html` with root-relative `/assets/` references.
+- `http-server dist/design-system-showcase -p 8123` serves the page.
 - `stealth-chrome-devtools` spawned browser navigates to page and loads.
 
 ## Remaining / In Progress

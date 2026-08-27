@@ -30,8 +30,7 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
  * Sizes: sm, md, lg.
  *
  * NOTE: Currently renders a native `<a>`. When a router framework is integrated,
- * replace with `useLinkComponent()` so consumers can plug their router
- * (see docs/design-system/daft.md §2.3 rule 8).
+ * replace with `useLinkComponent()` so consumers can plug their router.
  */
 export function Link({
   href,
