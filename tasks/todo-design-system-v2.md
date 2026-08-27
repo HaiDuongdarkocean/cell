@@ -97,10 +97,11 @@
 - [x] **T4.1 Generate public component inventory**
   - [x] All public exports have metadata/evidence/exemption qua `scripts/generate-component-inventory.mjs`.
   - [x] Missing/orphan/zero-consumer cases detected automatically.
-- [~] **T4.2 Close stable component evidence gaps** [in progress]
+- [x] **T4.2 Close stable component evidence gaps**
   - [x] Slice 1: thêm behavior test cho 3 public export có consumer — SettingsRow, LabelGroup, FooterBar.
   - [x] Slice 2: thêm behavior test cho 3 public export có consumer — SliderRow, SearchableSelect, HintIcon.
-  - [ ] 100% stable visual exports còn missing test/showcase cần slice tiếp (Breadcrumb, Tree không có consumer; BottomSheet, Sheet thiếu showcase).
+  - [x] Slice 3: thêm behavior test cho Breadcrumb, Tree; `missingTest` rỗng.
+  - [ ] Ghi nợ: BottomSheet/Sheet là non-public và thiếu showcase — cần quyết định public/export hoặc exemption.
   - [ ] Applicable states have behavior/a11y/visual evidence.
 - [ ] **T4.3 Productize only proven UX patterns**
   - [ ] Every pattern has production consumer and when/when-not guidance.
