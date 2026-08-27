@@ -543,12 +543,12 @@ Final maturity audit ≥85/100
 **Description:** Ghi flow experimental→stable→deprecated→removed, contribution requirements và breaking-change migration trong existing operational docs.
 
 **Acceptance criteria:**
-- [ ] Component/token mới cần reuse-gap evidence, showcase, tests và owner.
-- [ ] Breaking change có migration note + deprecation window.
-- [ ] ADR chỉ dùng cho quyết định khó đảo ngược, không cho CSS tweak.
+- [x] Component/token mới cần reuse-gap evidence, showcase, tests và owner.
+- [x] Breaking change có migration note + deprecation window.
+- [x] ADR chỉ dùng cho quyết định khó đảo ngược, không cho CSS tweak.
 
 **Verification:**
-- [ ] Một example proposal được dry-run qua checklist.
+- [x] Một example proposal (`Pagination`) được dry-run qua checklist trong `docs/design-system/DESIGN.md` §10.5.
 
 **Dependencies:** Checkpoint E.
 

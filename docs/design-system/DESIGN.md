@@ -210,3 +210,67 @@ Replace hardcoded values:
 | `gap: 12px` | `var(--space-3)` |
 | `box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15)` | `var(--shadow-popover)` |
 | `box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2)` | `var(--shadow-modal)` |
+
+---
+
+## 10. Lifecycle & Contribution Contract
+
+### 10.1 Component/token lifecycle
+
+Every public token, component and pattern in `src/shared/ui/` and `src/shared/styles/tokens.json` must have a status:
+
+| Status | Meaning | Exit/entry gate |
+|---|---|---|
+| `experimental` | New; proof-of-concept or single-consumer | Needs reuse-gap evidence, owner, showcase, behavior test and human approval to move to `stable`. |
+| `stable` | Proven in at least two production features or one proven pattern; safe to reuse | Must have showcase, deterministic Playwright test, documented states, a11y contract and consumer count. |
+| `deprecated` | Will be removed; replacement exists or usage dropped to 0 | Needs migration note in `docs/design-system/MIGRATION.md`, deprecation window ≥ one minor release, and a warning in source. |
+| `removed` | Deleted in current or next major release | Allowed only after migration window closes and CI proves 0 consumers. |
+
+**Status source of truth:** `docs/design-system/COMPONENT_INVENTORY.json` for components and `src/shared/styles/tokens.json` metadata for tokens.
+
+### 10.2 Contribution requirements
+
+Before adding or changing a public UI primitive, complete the checklist below. The smallest proposal that satisfies the gap wins.
+
+1. **Re-use search first.** Check `src/shared/ui/`, `src/shared/icons/index.ts` and `tokens.json`.
+2. **Prove the gap.** A one-line example of why the existing library cannot express the new use case.
+3. **Define owner.** One named owner in `docs/design-system/COMPONENT_INVENTORY.json`.
+4. **Prototype in showcase.** Add `src/entrypoints/design-system-showcase/pages/*.showcase.tsx` + `.module.css`.
+5. **Add evidence.** Unit/behavior test or Playwright E2E; for components add `src/shared/ui/<Name>.test.tsx`.
+6. **Run audit commands.** Section 7 of this file must return zero for the new source.
+7. **Document decision.** ADR only when the change is hard to reverse (new token family, new layer, breaking API). CSS tweaks and new variants do not need an ADR.
+
+### 10.3 Breaking changes and deprecation
+
+A change is breaking when it:
+- removes or renames a public export,
+- changes token value semantics (e.g. `--color-error-subtle` now means a different color),
+- changes a component prop API or ARIA contract,
+- removes a pattern file or e2e contract.
+
+Required for every breaking change:
+- Migration note in `docs/design-system/MIGRATION.md` with "from / to / action".
+- Deprecation window of at least one minor release.
+- `console.warn` or source comment marking the deprecated path.
+- No deletion before CI shows 0 consumers inside `src/` and `e2e/`.
+
+### 10.4 When to write an ADR
+
+- New token family, new visual layer, new dependency, breaking API, or a governance/tooling decision.
+- NOT for: CSS value tweaks, adding a component variant, renaming a class, or any change reversible in one commit.
+
+### 10.5 Example proposal — dry run
+
+**Proposal:** Add a new `Pagination` component.
+
+| Check | Evidence | Pass |
+|---|---|---|
+| Re-use search | No existing pagination primitive in `src/shared/ui/` | ✅ |
+| Reuse gap | Card list needs numbered page controls; `Button` + `HStack` does not express active/disabled page semantics | ✅ |
+| Owner | `owner: "ui-guild"` | ✅ |
+| Showcase | `src/entrypoints/design-system-showcase/pages/Pagination.showcase.tsx` | ✅ |
+| Tests | `src/shared/ui/Pagination.test.tsx` + Playwright pattern test | ✅ |
+| Audit | 0 M3 / hardcoded / px / inline SVG / z-index | ✅ |
+| ADR needed? | No — it is a new variant of existing `Button` + `Text` | ✅ |
+
+Result: proposal can enter `experimental` status.

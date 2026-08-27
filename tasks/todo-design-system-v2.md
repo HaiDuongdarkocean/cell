@@ -120,9 +120,10 @@
 
 ## Phase 5 — Governance and evolution
 
-- [ ] **T5.1 Define lifecycle and contribution contract**
-  - [ ] Experimental→stable→deprecated→removed documented.
-  - [ ] Breaking change requires migration note + window.
+- [x] **T5.1 Define lifecycle and contribution contract**
+  - [x] Experimental→stable→deprecated→removed documented in `docs/design-system/DESIGN.md` §10.
+  - [x] Breaking change requires migration note + window.
+  - [x] Example proposal (Pagination) dry-run in `DESIGN.md` §10.5.
 - [ ] **T5.2 Add Design System health report**
   - [ ] Adoption, drift, token, evidence, flake, bundle metrics generated.
   - [ ] Shared UI adoption ≥95% or documented exceptions.

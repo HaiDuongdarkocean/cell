@@ -84,7 +84,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 3. Không có visual regression baseline tự động.
 4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
 5. Chưa có pattern library cho flow học tập, loading, empty, error recovery, search và form.
-6. Chưa có contribution, lifecycle, versioning và deprecation policy hoạt động.
+6. [x] Đã có contribution, lifecycle, versioning và deprecation policy trong `docs/design-system/DESIGN.md` §10.
 7. Documentation đã dọn dẹp các link chết tới file và thư mục không còn tồn tại (`daft.md`, icon-system directories, showcase artifacts cũ, v.v.).
 8. `atom-design-plan.md` dùng naming cũ (`Figtree`, `--spacing-*`, `--color-background-surface`) và không còn là inventory đáng tin.
 9. `DESIGN.md`, `README.md`, `STANDARD.md` và ADR có một số value/alias mâu thuẫn; nhiều nguồn cùng cố làm SSOT.
@@ -354,15 +354,17 @@ Problem / user flow
 
 **Mục tiêu:** giữ hệ thống đúng sau khi roadmap kết thúc.
 
-1. Contribution flow: request → evidence of reuse gap → proposal → showcase → tests → approval.
-2. Semantic lifecycle cho token/component: experimental → stable → deprecated → removed.
+1. Contribution flow: request → evidence of reuse gap → proposal → showcase → tests → approval. Chi tiết trong `docs/design-system/DESIGN.md` §10.
+2. Semantic lifecycle cho token/component: `experimental` → `stable` → `deprecated` → `removed`. `experimental` cần owner, showcase, test và human approval trước khi lên `stable`. `stable` cần ≥2 production consumer hoặc 1 proven pattern, Playwright test, a11y contract. `deprecated` cần migration note trong `docs/design-system/MIGRATION.md`, deprecation window ≥ 1 minor release và warning trong source. `removed` chỉ khi CI chứng minh 0 consumer.
 3. Changelog tập trung vào breaking behavior/token/API, không log mọi CSS tweak.
 4. Dashboard định kỳ: adoption, hardcoded drift, undefined/unused token, a11y, visual flake, bundle impact.
 5. Quarterly review principles/foundations theo user evidence; không redesign theo trend.
 
 **Exit criteria**
 
-- Breaking change có migration note và deprecation window.
+- [x] Component/token mới cần reuse-gap evidence, showcase, tests và owner (`DESIGN.md` §10.2).
+- [x] Breaking change có migration note và deprecation window (`DESIGN.md` §10.3).
+- [x] ADR chỉ dùng cho quyết định khó đảo ngược, không cho CSS tweak (`DESIGN.md` §10.4).
 - Shared UI adoption ở production interactive controls ≥95% hoặc có documented exception.
 - Undefined token = 0; dead token/component được review mỗi release.
 - Visual test flake <1% trong 30 runs.
