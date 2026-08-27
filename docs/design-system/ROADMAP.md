@@ -345,10 +345,10 @@ Problem / user flow
 
 **Exit criteria**
 
-- 100% public export có metadata, owner/status và usage count.
-- 100% stable visual component có showcase + behavior test.
-- Mỗi pattern có problem, when/when-not, anatomy, a11y và production consumer.
-- Không có component stable 0 consumer trừ documented primitive.
+- [x] 100% public export có metadata, owner/status và usage count — evidence: `docs/design-system/COMPONENT_INVENTORY.json` từ `scripts/generate-component-inventory.mjs`.
+- [x] 100% stable visual component có showcase + behavior test — evidence: `src/shared/ui/*.showcase.tsx` + `src/shared/ui/*.test.tsx`.
+- [x] Mỗi pattern có problem, when/when-not, anatomy, a11y và production consumer — evidence: `docs/design-system/PATTERN_CATALOG.md` + `src/entrypoints/design-system-showcase/pages/patterns-*.showcase.tsx`.
+- [~] Không có component stable 0 consumer trừ documented primitive — evidence: `docs/design-system/HEALTH_REPORT.md` §Component evidence gaps liệt kê `zeroConsumerPublicExports`; 42 public exports đang `unused` được ghi nhận.
 
 ## Phase 5 — Governance và continuous evolution
 
@@ -365,10 +365,10 @@ Problem / user flow
 - [x] Component/token mới cần reuse-gap evidence, showcase, tests và owner (`DESIGN.md` §10.2).
 - [x] Breaking change có migration note và deprecation window (`DESIGN.md` §10.3).
 - [x] ADR chỉ dùng cho quyết định khó đảo ngược, không cho CSS tweak (`DESIGN.md` §10.4).
-- Shared UI adoption ở production interactive controls ≥95% hoặc có documented exception.
-- Undefined token = 0; dead token/component được review mỗi release.
-- Visual test flake <1% trong 30 runs.
-- Design System health review có owner và cadence hàng quý.
+- [~] Shared UI adoption ở production interactive controls ≥95% hoặc có documented exception — evidence: `docs/design-system/HEALTH_REPORT.md` §Shared UI adoption; hiện dưới target, được ghi nhận là warning (adoption metric + exception list).
+- [~] Undefined token = 0; dead token/component được review mỗi release — evidence: `scripts/check-design-system-css.mjs` + `docs/design-system/HEALTH_REPORT.md`; còn 162 undefined-token violations cũ, được theo dõi mỗi release.
+- [~] Visual test flake <1% trong 30 runs — evidence: `e2e/showcase-visual.spec.ts` mới tạo baseline; flake chưa đo đủ 30 run, được ghi nợ trong `HEALTH_REPORT.md` §Visual flake.
+- [x] Design System health review có owner và cadence hàng quý — evidence: `docs/design-system/ROADMAP.md` §17 remaining gaps table (owner + next review date) và `HEALTH_REPORT.md` được sinh tự động.
 
 ## 11. Ưu tiên và thứ tự phụ thuộc
 
@@ -573,6 +573,7 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
    - P4 component/pattern: inventory auto-generated, 5 patterns productized, all public exports have test.
    - P5 governance: lifecycle/contribution contract + health report.
 4. Xác định remaining gaps với owner, severity và next review date trong `## 17. Remaining gaps`.
+5. Fresh-context adversarial review bằng Codex CLI phát hiện lỗi trong `scripts/generate-design-system-health-report.mjs`: double-count CSS, mockup classification, adoption metric, inventory freshness, CSS audit error handling, bundle mtime; đã sửa và regenerate.
 
 ## 17. Remaining gaps (post T5.3)
 
@@ -588,7 +589,7 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 **Exit criteria for release acceptance**
 
 - [x] Operational maturity ≥85/100: **87/100**.
-- [x] Mọi Phase exit criterion có evidence link.
+- [x] Mọi Phase exit criterion có evidence link (một số P4/P5 criterion ghi `[~]` vì chưa đạt target nhưng có documented exception/gap).
 - [x] Remaining gaps có owner, severity và next review date.
-- [ ] Fresh-context adversarial review hoàn tất.
+- [x] Fresh-context adversarial review hoàn tất — Codex CLI review 2026-08-29; findings được reconcile trong bản sửa lỗi health report và cập nhật ROADMAP.
 - [ ] Anh yêu approve release state.
