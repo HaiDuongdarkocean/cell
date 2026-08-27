@@ -22,7 +22,8 @@ docs/           # Tài liệu dự án
 │   ├── 088-foundation-motion.md                 # WHY: 120-300ms, purpose-driven easing, reduced-motion
 │   ├── 089-foundation-iconography.md            # WHY: 24×24 1.5px round stroke, currentColor, semantic naming
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
-│   └── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
+│   ├── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
+│   └── 093-streamflix-redesign.md               # WHY: one shared StreamFlixPage component, light/dark mode, URL parameters, liquid-glass tokens
 ├── specs/
 │   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
