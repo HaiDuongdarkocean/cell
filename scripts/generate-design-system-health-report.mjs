@@ -32,7 +32,7 @@ async function runCssAudit() {
         reject(new Error(`CSS audit killed by signal ${signal}`));
         return;
       }
-      if (code !== 0 && !output.includes('Found ')) {
+      if (code > 1 || (code === 1 && !output.includes('Found '))) {
         reject(new Error(`CSS audit exited ${code}: ${output}`));
         return;
       }
@@ -255,11 +255,27 @@ async function newestMatchingFile(pattern) {
 }
 
 async function collectBundle() {
-  const distUi = await newestMatchingFile('dist/assets/ui-*.js');
-  const distTokens = await newestMatchingFile('dist/assets/tokens-*.js');
-  const ui = distUi ? { file: relativePath(distUi), bytes: (await stat(distUi)).size } : null;
-  const tokens = distTokens ? { file: relativePath(distTokens), bytes: (await stat(distTokens)).size } : null;
+  const [distUi, distTokens] = await Promise.all([
+    newestMatchingFile('dist/assets/ui-*.js'),
+    newestMatchingFile('dist/assets/tokens-*.js'),
+  ]);
+  const [srcUiMtime, srcTokensMtime] = await Promise.all([
+    stat(resolve(ROOT, 'src/shared/ui/index.ts')).then((s) => s.mtimeMs).catch(() => 0),
+    stat(resolve(ROOT, 'src/shared/styles/tokens.json')).then((s) => s.mtimeMs).catch(() => 0),
+  ]);
+  const ui = distUi ? await bundleEntry(distUi, srcUiMtime) : null;
+  const tokens = distTokens ? await bundleEntry(distTokens, srcTokensMtime) : null;
   return { ui, tokens };
+}
+
+async function bundleEntry(file, sourceMtime) {
+  const s = await stat(file);
+  return {
+    file: relativePath(file),
+    bytes: s.size,
+    lastModified: new Date(s.mtimeMs).toISOString(),
+    fresh: s.mtimeMs >= sourceMtime,
+  };
 }
 
 function summarize(adoption, drift, inlineSvg, evidence, cssAudit) {
@@ -338,21 +354,42 @@ function generateInventory() {
   });
 }
 
+async function reportSourceMtime() {
+  const patterns = [
+    'src/**/*.tsx',
+    'src/**/*.module.css',
+    'src/**/*.css',
+    'src/shared/ui/index.ts',
+    'src/entrypoints/design-system-showcase/autoDiscovery.logic.ts',
+    'scripts/generate-component-inventory.mjs',
+    'scripts/generate-design-system-health-report.mjs',
+    'scripts/check-design-system-css.mjs',
+    'src/shared/styles/tokens.json',
+    'src/shared/styles/tokens.css',
+    INVENTORY_PATH,
+  ];
+  const files = (await Promise.all(patterns.map((p) => glob(p, { cwd: ROOT, absolute: true })))).flat();
+  const mtimes = await Promise.all(files.map((f) => stat(f).then((s) => s.mtimeMs).catch(() => 0)));
+  return Math.max(...mtimes, 0);
+}
+
 async function main() {
   await ensureInventoryFresh();
-  const [adoption, drift, inlineSvg, evidence, bundle, cssOutput] = await Promise.all([
+  const [adoption, drift, inlineSvg, evidence, bundle, cssOutput, generatedAtMs] = await Promise.all([
     collectAdoption(),
     collectDrift(),
     collectInlineSvg(),
     collectEvidence(),
     collectBundle(),
     runCssAudit(),
+    reportSourceMtime(),
   ]);
+  const generatedAt = new Date(generatedAtMs).toISOString();
   const cssAudit = parseCssAudit(cssOutput);
   const summary = summarize(adoption, drift, inlineSvg, evidence, cssAudit);
 
   const report = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     summary,
     adoption,
     tokenHealth: {
@@ -421,8 +458,8 @@ async function main() {
     ...(evidence.zeroConsumerPublicExports.length > 0 ? ['### Public UI exports ready but with 0 consumers (' + evidence.zeroConsumerPublicExports.length + ')', ...evidence.zeroConsumerPublicExports.map((n) => '- ' + n), ''] : []),
     '## Bundle impact',
     '',
-    bundle.ui ? '- `' + bundle.ui.file + '`: ' + bundle.ui.bytes.toLocaleString() + ' bytes' : '- UI bundle not found; run `npm run build` first.',
-    bundle.tokens ? '- `' + bundle.tokens.file + '`: ' + bundle.tokens.bytes.toLocaleString() + ' bytes' : '- Tokens bundle not found; run `npm run build` first.',
+    bundle.ui ? '- `' + bundle.ui.file + '`: ' + bundle.ui.bytes.toLocaleString() + ' bytes' + (bundle.ui.fresh ? ' (fresh)' : ' (stale; source newer than bundle — run `npm run build`)') : '- UI bundle not found; run `npm run build` first.',
+    bundle.tokens ? '- `' + bundle.tokens.file + '`: ' + bundle.tokens.bytes.toLocaleString() + ' bytes' + (bundle.tokens.fresh ? ' (fresh)' : ' (stale; source newer than bundle — run `npm run build`)') : '- Tokens bundle not found; run `npm run build` first.',
     '',
     '## Visual flake',
     '',
