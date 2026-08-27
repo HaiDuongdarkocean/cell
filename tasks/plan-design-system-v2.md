@@ -195,14 +195,14 @@ Final maturity audit ≥85/100
 **Description:** Spike parser-based CSS policy trên `src/shared/ui`; so sánh precision với audit shell hiện tại trước khi chọn Stylelint plugin/config hoặc Node checker nhỏ.
 
 **Acceptance criteria:**
-- [ ] Detector phân biệt production, showcase, mock-site và documented exceptions.
-- [ ] Detect hardcoded color/spacing/radius/z-index và undefined token theo Cell rules, không theo M3 visual language.
+- [x] Detector phân biệt production, showcase, mock-site và documented exceptions.
+- [x] Detect hardcoded color/spacing/radius/z-index và undefined token theo Cell rules, không theo M3 visual language.
 - [ ] False-positive rate <5% trên sample review tối thiểu 100 findings hoặc toàn scope nếu ít hơn.
 
 **Verification:**
-- [ ] Có fixture good/bad cho mỗi policy.
-- [ ] Command trả exit code 1 chỉ với actionable violation.
-- [ ] Dependency mới, nếu có, đã kiểm tuổi phiên bản, install size và dev-only impact.
+- [x] Có fixture good/bad cho mỗi policy.
+- [x] Command trả exit code 1 chỉ với actionable violation.
+- [x] Dependency mới, nếu có, đã kiểm tuổi phiên bản, install size và dev-only impact.
 
 **Dependencies:** Checkpoint A.
 

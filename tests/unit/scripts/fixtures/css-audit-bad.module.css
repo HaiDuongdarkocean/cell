@@ -1,0 +1,44 @@
+/* Fixture: should fail the parser audit with one violation per rule. */
+
+.hcColorHex {
+  color: #ff0000;
+}
+
+.hcColorRgb {
+  background: rgb(255 0 0);
+}
+
+.hcColorRgba {
+  border-color: rgba(0, 0, 0, 0.5);
+}
+
+.hcColorHsl {
+  outline-color: hsl(120 50% 50%);
+}
+
+.hcColorHsla {
+  box-shadow: 0 1px 2px hsla(120 50% 50% / 0.5);
+}
+
+/* The fallback inside var() is allowed, but the undefined variable is not. */
+.hcUndefined {
+  padding: var(--not-a-token, 4px);
+}
+
+.hcSpacing {
+  margin: 16px;
+  padding: 0.5rem 0;
+  gap: 8px;
+}
+
+.hcRadiusPx {
+  border-radius: 4px;
+}
+
+.hcRadiusPercent {
+  border-top-right-radius: 10%;
+}
+
+.hcZIndex {
+  z-index: 100;
+}

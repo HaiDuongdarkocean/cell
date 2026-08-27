@@ -26,6 +26,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
+    "check-design-system-css": "node scripts/check-design-system-css.mjs",
     "check-icons": "node scripts/check-icons.js",
     "mock": "node scripts/serve-mock-pages.mjs",
     "mock:stream": "node scripts/serve-mock-pages.mjs --stream",
