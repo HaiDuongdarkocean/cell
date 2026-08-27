@@ -11,8 +11,6 @@
 }
 
 .navBtn {
-  min-width: 28px;
-  height: 28px;
   padding: 0 var(--space-1);
   font-variant-numeric: tabular-nums;
 }
@@ -24,8 +22,6 @@
 }
 
 .pageBtn {
-  min-width: 28px;
-  height: 28px;
   padding: 0 var(--space-1);
   font-variant-numeric: tabular-nums;
 }
@@ -35,8 +31,6 @@
 }
 
 .ellipsisBtn {
-  min-width: 28px;
-  height: 28px;
   padding: 0 var(--space-1);
 }
 
@@ -78,8 +72,6 @@
 }
 
 .popupItem {
-  min-width: 32px;
-  height: 28px;
   padding: 0 var(--space-1);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;

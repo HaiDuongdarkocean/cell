@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { MockStreamingIframePage } from './MockStreamingIframePage';
+import '@/shared/styles/tokens.css';
+import { StreamFlixPage } from '../mock-streaming-page/StreamFlixPage';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <MockStreamingIframePage />
+    <StreamFlixPage mode="iframe-host" />
   </React.StrictMode>,
 );

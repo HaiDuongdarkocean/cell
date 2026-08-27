@@ -5,8 +5,9 @@
   justify-content: center;
   width: var(--iconbutton-size-md);
   height: var(--iconbutton-size-md);
-  min-width: var(--iconbutton-size-md);
-  min-height: var(--iconbutton-size-md);
+  /* Hit box follows the system touch target; visual size can stay smaller. */
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   padding: 0;
   border: none;
   border-radius: var(--iconbutton-radius);
@@ -79,8 +80,10 @@
   transition: opacity var(--transition);
 }
 
-.iconBtn:hover {
-  background: var(--iconbutton-liquid-surface-hover);
+@media (hover: hover) and (pointer: fine) {
+  .iconBtn:hover {
+    background: var(--iconbutton-liquid-surface-hover);
+  }
 }
 
 .iconBtn:active {
@@ -88,7 +91,7 @@
 }
 
 .iconBtn:focus-visible {
-  outline: var(--space-0-5) solid var(--iconbutton-liquid-focus-ring);
+  outline: var(--space-0-5) solid var(--button-focus-ring);
   outline-offset: var(--space-0-5);
 }
 
@@ -107,10 +110,11 @@
 }
 
 /* === Sizes === */
-.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); min-width: var(--iconbutton-size-xs); min-height: var(--iconbutton-size-xs); }
-.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); min-width: var(--iconbutton-size-sm); min-height: var(--iconbutton-size-sm); }
-.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); min-width: var(--iconbutton-size-md); min-height: var(--iconbutton-size-md); }
-.lg { width: var(--iconbutton-size-lg); height: var(--iconbutton-size-lg); min-width: var(--iconbutton-size-lg); min-height: var(--iconbutton-size-lg); }
+/* min-width/min-height come from .iconBtn (touch target). Visual width/height stays compact. */
+.xs { width: var(--iconbutton-size-xs); height: var(--iconbutton-size-xs); }
+.sm { width: var(--iconbutton-size-sm); height: var(--iconbutton-size-sm); }
+.md { width: var(--iconbutton-size-md); height: var(--iconbutton-size-md); }
+.lg { width: var(--iconbutton-size-lg); height: var(--iconbutton-size-lg); }
 
 /* Icon sizing — SSOT controlled by the button atom. */
 .iconBtn > svg,
@@ -146,18 +150,20 @@
   border: var(--border-width-hairline) solid var(--color-glass-border);
 }
 
-.outline:hover {
-  background: var(--iconbutton-liquid-surface-hover);
-  border-color: var(--color-border-focus);
+@media (hover: hover) and (pointer: fine) {
+  .outline:hover {
+    background: var(--iconbutton-liquid-surface-hover);
+    border-color: var(--color-border-focus);
+  }
+
+  .ghost:hover {
+    background: var(--iconbutton-liquid-surface-hover);
+  }
 }
 
 .ghost,
 .transparent {
   background: transparent;
-}
-
-.ghost:hover {
-  background: var(--iconbutton-liquid-surface-hover);
 }
 
 .glass {

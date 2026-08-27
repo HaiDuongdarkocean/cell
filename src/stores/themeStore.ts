@@ -39,24 +39,30 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   isLoaded: false,
 
   async init() {
-    let mode = await loadThemeMode();
-    // Legacy fallback: nếu themeMode absent (default returned), kiểm tra settings.theme
-    // (pre-port) để seed. Tránh user mất theme preference khi upgrade.
-    if (mode === DEFAULT_THEME_MODE) {
-      try {
-        const settings = await loadSettings();
-        const legacyTheme = (settings as { theme?: 'light' | 'dark' }).theme;
-        if (legacyTheme === 'light' || legacyTheme === 'dark') {
-          mode = legacyTheme;
-          // Seed themeMode từ legacy (1 lần, sau đó themeMode là source of truth).
-          await saveThemeMode(mode);
+    try {
+      let mode = await loadThemeMode();
+      // Legacy fallback: nếu themeMode absent (default returned), kiểm tra settings.theme
+      // (pre-port) để seed. Tránh user mất theme preference khi upgrade.
+      if (mode === DEFAULT_THEME_MODE) {
+        try {
+          const settings = await loadSettings();
+          const legacyTheme = (settings as { theme?: 'light' | 'dark' }).theme;
+          if (legacyTheme === 'light' || legacyTheme === 'dark') {
+            mode = legacyTheme;
+            // Seed themeMode từ legacy (1 lần, sau đó themeMode là source of truth).
+            await saveThemeMode(mode);
+          }
+        } catch {
+          // settings load fail → giữ default, không block theme init.
         }
-      } catch {
-        // settings load fail → giữ default, không block theme init.
       }
+      const config = await loadThemeConfig();
+      set({ mode, config, isLoaded: true });
+    } catch {
+      // chrome.storage unavailable (e.g. page opened outside extension context).
+      // Keep defaults and mark loaded so ThemeProvider still applies the theme.
+      set({ isLoaded: true });
     }
-    const config = await loadThemeConfig();
-    set({ mode, config, isLoaded: true });
   },
 
   switchMode(mode) {

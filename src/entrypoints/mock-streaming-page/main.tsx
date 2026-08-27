@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { MockStreamingPage } from './MockStreamingPage';
+import '@/shared/styles/tokens.css';
+import { StreamFlixPage } from './StreamFlixPage';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <MockStreamingPage />
+    <StreamFlixPage mode="same" />
   </React.StrictMode>,
 );

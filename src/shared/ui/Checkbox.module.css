@@ -45,8 +45,9 @@
   height: var(--space-1);
   border-bottom: var(--space-0-5) solid currentColor;
   border-left: var(--space-0-5) solid currentColor;
-  transform: rotate(-45deg) scale(0);
-  transition: transform var(--duration-fast) var(--ease-out);
+  transform: rotate(-45deg) scale(0.5);
+  opacity: 0;
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
 }
 
 .input:checked + .box,
@@ -57,6 +58,7 @@
 
 .input:checked + .box::after {
   transform: rotate(-45deg) scale(1);
+  opacity: 1;
 }
 
 .input:indeterminate + .box::after {
