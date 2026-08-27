@@ -30,25 +30,13 @@ export function App() {
           <ul className={styles.grid}>
             {filteredTiles.map((tile) => (
               <li key={tile.id} className={styles.tileWrapper}>
-                <LauncherTile
-                  icon={tile.icon}
-                  label={tile.label}
-                  onClick={() => {
-                    // eslint-disable-next-line no-console
-                    console.log(`[launcher] clicked: ${tile.id}`);
-                  }}
-                />
+                <LauncherTile icon={tile.icon} label={tile.label} />
               </li>
             ))}
           </ul>
         </main>
         <footer className={styles.footer}>
-          <LauncherUserBar
-            onAddClick={() => {
-              // eslint-disable-next-line no-console
-              console.log('[launcher] add clicked');
-            }}
-          />
+          <LauncherUserBar />
         </footer>
       </div>
     </div>

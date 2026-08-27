@@ -28,6 +28,12 @@ export default defineConfig({
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
     },
+    {
+      command: 'npx http-server dist -p 8124 -c-1 -d false -P http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
+      url: 'http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+    },
   ],
   projects: [
     {
@@ -41,6 +47,14 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:8123/design-system-showcase.html',
+      },
+    },
+    {
+      name: 'launcher',
+      testMatch: '**/launcher-dashboard*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
       },
     },
   ],
