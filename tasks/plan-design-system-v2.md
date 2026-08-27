@@ -514,7 +514,7 @@ Final maturity audit ≥85/100
 
 **Acceptance criteria:**
 - [~] Mỗi pattern có problem, when/when-not, anatomy, states, a11y và production consumer (catalog `docs/design-system/PATTERN_CATALOG.md` covers 7 proven patterns; Async states showcase implemented).
-- [x] Pattern showcase compose existing components; không tạo visual language mới (`PatternAsyncStates` uses Spinner, Skeleton, EmptyState, Alert, Card, Button, StatusDot).
+- [x] Pattern showcase compose existing components; không tạo visual language mới (`PatternAsyncStates` uses Spinner, Skeleton, EmptyState, Alert, Card, Button, StatusDot; `PatternSearchResult` uses SearchField, Tabs, Card, EmptyState, Alert, Spinner, Skeleton).
 - [x] Không thêm pattern không có consumer thật.
 
 **Verification:**
