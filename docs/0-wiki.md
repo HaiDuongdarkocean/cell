@@ -26,6 +26,7 @@ docs/           # Tài liệu dự án
 │   └── 093-streamflix-redesign.md               # WHY: one shared StreamFlixPage component, light/dark mode, URL parameters, liquid-glass tokens
 ├── specs/
 │   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
+│   ├── launcher-dashboard.md           # Spec: standalone Liquid Glass launcher prototype entrypoint
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
 │   ├── manager-host-sheet-bridge.md    # Spec: Subtitle Manager Mobile Sheet trên Host Page (Bridge Protocol)
