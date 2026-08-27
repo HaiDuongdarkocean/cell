@@ -145,3 +145,30 @@ This file records what each loop accomplished, what changed, and how it was veri
 - `npm run build` — pass.
 - `npm run typecheck` — pass.
 - Stealth CDP real browser click on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, ripple paused at 200 ms by MutationObserver after a real `pointerdown`) — Primary button clearly brightens with a white water ripple expanding from the touch point; text label remains legible.
+
+## 2026-08-28 — Align Button press/focus/ripple to v4 SSOT
+
+**AC source**: `src/entrypoints/design-system-showcase/mockups/liquid-glass-dewdrop-v4.html`
+
+**What changed**:
+- `src/shared/styles/tokens.json`
+  - `color-button-liquid-ripple` reset to v4: `0.35` (light), `0.18` (dark).
+  - Added `color-button-liquid-ripple-mid`: `0.15` (light), `0.06` (dark).
+  - Added `color-button-liquid-ripple-primary`: `0.28` (both themes).
+  - `ripple-start-opacity` reset to v4 `0.6`.
+  - `release-duration` reset to v4 `180ms`; `release-ease` reset to `var(--ease-out)`.
+  - Added global `transition` token: `var(--duration-normal) var(--ease-out)`.
+- `src/shared/ui/Button.module.css`
+  - `.ripple` gradient now matches v4 exactly: `0%` token, `40%` mid token, `70%` transparent; `z-index: 0` (behind rim caustics); no `background-size`/`no-repeat`.
+  - `.primary .ripple` / `.success .ripple` use the primary ripple token.
+  - `@keyframes ripple` v4: `0% scale(0) opacity 0.6` → `100% scale(2.8) opacity 0` over `700ms` `ease-out`.
+  - Base `.button` transition replaces broken `var(--transition)` with explicit `var(--duration-slow)`/`var(--button-release-duration)` timing; removed `filter` from base transition to match v4.
+- `src/shared/styles/tokens.css` regenerated.
+- `docs/specs/liquid-glass-buttons.md` updated with exact v4 press/focus/ripple contract and token list.
+- `docs/design-system/` rebuilt.
+
+**Verification**:
+- `npx jest --selectProjects unit --testPathPatterns=Button` — 120 tests pass.
+- `npm run build` — pass.
+- `npm run typecheck` — pass.
+- Stealth CDP real `pointerdown` on `http://127.0.0.1:8123/design-system-showcase.html?showcase=Button` (dark mode, ripple paused at 150 ms) — a white water ripple is visible expanding from the Primary button's touch point.
