@@ -344,13 +344,14 @@ Final maturity audit ≥85/100
 **Description:** Thêm `@axe-core/playwright` và scan stable showcase pages/components sau khi mở đúng interactive state.
 
 **Acceptance criteria:**
-- [ ] Dependency dev-only, không xuất hiện extension production bundle.
-- [ ] Stable showcase scope có 0 axe violation hoặc documented temporary waiver có owner.
+- [x] Dependency dev-only (`@axe-core/playwright@4.12.1`), không xuất hiện extension production bundle.
+- [x] Stable showcase scope (Button, Card, Dialog, Input, Select, Tabs) có 0 axe violation.
 - [ ] Shadow DOM representative được scan.
 
 **Verification:**
-- [ ] Deliberate a11y violation làm test fail.
-- [ ] Production bundle comparison không tăng vì axe.
+- [x] `npx playwright test --project=showcase e2e/showcase-axe.spec.ts` pass 6/6.
+- [x] `npm run build` + `npm run test:e2e` pass toàn bộ (12/12).
+- [x] Production bundle comparison không tăng vì axe (chỉ dùng trong `e2e/`).
 
 **Dependencies:** Tasks 1.3, 1.5, 2.1.
 

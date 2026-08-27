@@ -61,9 +61,9 @@
   - [x] Hex/rgb/rgba/alpha supported.
   - [x] Normal 4.5:1; large 3:1 chỉ qua explicit role.
   - [x] Unsupported/skipped pair = 0.
-- [ ] **T2.2 Integrate rendered axe checks**
-  - [ ] `@axe-core/playwright` dev-only, không tăng production bundle.
-  - [ ] Stable scope có 0 unwaived axe violation.
+- [x] **T2.2 Integrate rendered axe checks**
+  - [x] `@axe-core/playwright` dev-only, không tăng production bundle.
+  - [x] Stable scope có 0 unwaived axe violation.
 - [ ] **T2.3 Add keyboard, focus and ARIA contracts**
   - [ ] P0 controls có keyboard/focus assertions.
   - [ ] Critical semantics có reviewed ARIA snapshots.

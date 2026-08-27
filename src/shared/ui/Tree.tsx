@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './Tree.module.css';
 
 export interface TreeNode {
@@ -44,6 +44,7 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isExpanded = expandedSet.has(node.id);
   const isActive = activeId === node.id;
+  const itemRef = useRef<HTMLDivElement>(null);
 
   const handleClick = useCallback((): void => {
     if (hasChildren) {
@@ -52,19 +53,35 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
     onSelect(node.id, node);
   }, [hasChildren, node, onSelect, onToggle]);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>): void => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick();
+      }
+    },
+    [handleClick],
+  );
+
   return (
-    <div className={styles.branch}>
-      <button
-        type="button"
+    <div
+      ref={itemRef}
+      className={styles.branch}
+      role="treeitem"
+      tabIndex={0}
+      aria-expanded={hasChildren ? isExpanded : undefined}
+      aria-selected={isActive}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      <div
         className={[
           styles.node,
           styles[`depth${Math.min(depth, 2)}`],
           isActive ? styles.active : '',
           hasChildren ? styles.branchNode : styles.leafNode,
         ].filter(Boolean).join(' ')}
-        onClick={handleClick}
-        aria-expanded={hasChildren ? isExpanded : undefined}
-        aria-current={isActive ? 'true' : undefined}
+        role="none"
       >
         {hasChildren ? (
           <span className={[styles.chevron, isExpanded ? '' : styles.collapsed].filter(Boolean).join(' ')}>
@@ -76,10 +93,10 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
           </span>
         )}
         <span className={styles.label}>{node.label}</span>
-      </button>
+      </div>
 
       {hasChildren && isExpanded && (
-        <div className={styles.children}>
+        <div className={styles.children} role="group" aria-label={node.label}>
           {node.children?.map((child) => (
             <TreeItem
               key={child.id}
