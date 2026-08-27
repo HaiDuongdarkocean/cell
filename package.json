@@ -34,7 +34,8 @@
     "mock:stream:iframe": "node scripts/serve-mock-pages.mjs --stream-iframe",
     "mock:youtube": "node scripts/serve-mock-pages.mjs --youtube",
     "mock:build": "node scripts/serve-mock-pages.mjs --build-only",
-    "generate:component-inventory": "node scripts/generate-component-inventory.mjs"
+    "generate:component-inventory": "node scripts/generate-component-inventory.mjs",
+    "generate:design-system-health-report": "node scripts/generate-design-system-health-report.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
