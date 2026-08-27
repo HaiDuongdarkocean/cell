@@ -131,11 +131,11 @@ src/
 │   │   ├── Radio.tsx + .module.css         # Radio with label, error, disabled states
 │   │   ├── RadioGroup.tsx + .module.css    # Managed list of radios
 │   │   ├── SearchField.tsx + .module.css   # Input with leading search icon + clear button
-│   │   ├── Select.tsx + .module.css        # Plain HTML select wrapper with placeholder/error
+│   │   ├── Select.tsx + .module.css        # Custom single-select dropdown with button trigger, scrollable listbox, keyboard navigation (Arrow/Home/End/Enter/Space/Escape), disabled options, error state
 │   │   ├── Sidebar.tsx + .module.css       # Vertical nav container with optional collapse
 │   │   ├── Skeleton.tsx + .module.css      # Placeholder loading shape
 │   │   ├── Spinner.tsx + .module.css       # Animated loading indicator
-│   │   ├── Tabs.tsx + .module.css          # Compound tab list/trigger/content
+│   │   ├── Tabs.tsx + .module.css          # Compound tab list/trigger/content with roving tabindex, arrow/Home/End keyboard navigation, and focusable tabpanel
 │   │   ├── Textarea.tsx + .module.css      # Multiline input with resize/error/disabled
 │   │   ├── Toggle.tsx + .module.css        # Switch pill; default sm, md/lg override (touch-target via size="md") (settings-controls-restyle F1)
 │   │   ├── Tooltip.tsx + .module.css       # Accessible hover/focus tooltip
