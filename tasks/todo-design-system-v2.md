@@ -99,7 +99,8 @@
   - [x] Missing/orphan/zero-consumer cases detected automatically.
 - [~] **T4.2 Close stable component evidence gaps** [in progress]
   - [x] Slice 1: thêm behavior test cho 3 public export có consumer — SettingsRow, LabelGroup, FooterBar.
-  - [ ] 100% stable visual exports còn missing test/showcase cần slice tiếp.
+  - [x] Slice 2: thêm behavior test cho 3 public export có consumer — SliderRow, SearchableSelect, HintIcon.
+  - [ ] 100% stable visual exports còn missing test/showcase cần slice tiếp (Breadcrumb, Tree không có consumer; BottomSheet, Sheet thiếu showcase).
   - [ ] Applicable states have behavior/a11y/visual evidence.
 - [ ] **T4.3 Productize only proven UX patterns**
   - [ ] Every pattern has production consumer and when/when-not guidance.

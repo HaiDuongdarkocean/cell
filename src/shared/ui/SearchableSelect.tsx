@@ -184,7 +184,7 @@ export function SearchableSelect({
           </div>
 
           {/* Options list */}
-          <ul className={styles.list} role="listbox">
+          <ul className={styles.list}>
             {filtered.length > 0 ? (
               filtered.map((opt, index) => (
                 <li

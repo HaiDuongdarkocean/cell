@@ -494,7 +494,7 @@ Final maturity audit ≥85/100
 **Description:** Bổ sung test/showcase hoặc exemption; audit states cho component có production consumer trước.
 
 **Acceptance criteria:**
-- [~] 100% stable visual public export có showcase + behavior test (slice 1: SettingsRow, LabelGroup, FooterBar đã có test).
+- [~] 100% stable visual public export có showcase + behavior test (slice 1+2: SettingsRow/LabelGroup/FooterBar/SliderRow/SearchableSelect/HintIcon đã có test; sửa SearchableSelect nested listbox).
 - [ ] Non-visual exports có documented exemption.
 - [ ] Applicable states có behavior/a11y/visual evidence.
 
