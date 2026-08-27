@@ -40,6 +40,7 @@ docs/           # Tài liệu dự án
 │   ├── DESIGN.md                      # Agent-facing SSOT for UI implementation (token map, component map, audit commands)
 │   ├── ROADMAP.md                     # Audit maturity 62/100 + operating model + UI test-tool target + cleanup/reorganization roadmap
 │   ├── liquid-glass-concept.md        # Liquid Glass design manifesto: principles, palette, shape, motion, anti-patterns, token mapping
+│   ├── liquid-glass-critique.md       # Critical Decision Brief — inquiry-creativity review of liquid-glass-concept.md
 │   └── guides/                          # Foundation interactive guides
 │       ├── foundations-tutorial.html    # Color/typography/spacing/layout/shape/motion/icon/a11y tutorial
 │       └── foundations-advanced.html    # Advanced foundation patterns and edge cases
