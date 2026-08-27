@@ -36,12 +36,11 @@
     0 6px 16px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 8%), transparent);
   text-shadow: var(--button-liquid-text-shadow);
   transition:
-    background-color var(--transition),
-    color var(--transition),
-    border-color var(--transition),
+    background-color var(--duration-slow) var(--ease-out),
+    color var(--duration-slow) var(--ease-out),
+    border-color var(--duration-slow) var(--ease-out),
     transform var(--button-release-duration) var(--button-release-ease),
-    box-shadow var(--transition),
-    filter var(--transition);
+    box-shadow var(--duration-slow) var(--ease-out);
 }
 
 .button > * {
@@ -75,7 +74,7 @@
   z-index: 0;
   opacity: 0.85;
   filter: blur(0.8px);
-  transition: opacity var(--transition);
+  transition: opacity var(--duration-slow) var(--ease-out);
 }
 
 /* Soft rim caustics, not a full border. */
@@ -103,7 +102,7 @@
   z-index: 0;
   filter: blur(0.8px);
   opacity: 0.9;
-  transition: background var(--transition), opacity var(--transition);
+  transition: background var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
 }
 
 .button:hover {
@@ -405,7 +404,12 @@
   }
 }
 
-/* === Ripple — water-surface wave expanding from the touch point === */
+/* === Ripple — water-surface wave expanding from the touch point ===
+   AC: liquid-glass-dewdrop-v4.html
+   Light: 0.35 → 0.15 → transparent at 70%.
+   Dark: 0.18 → 0.06 → transparent at 70%.
+   Primary / success: 0.28 → transparent at 70%.
+   Scale 0 → 2.8 over 0.7s ease-out, opacity 0.6 → 0. */
 
 .rippleHost {
   overflow: hidden;
@@ -417,24 +421,28 @@
   background: radial-gradient(
     circle,
     var(--button-liquid-ripple) 0%,
-    color-mix(in srgb, var(--button-liquid-ripple), transparent 40%) 40%,
+    var(--button-liquid-ripple-mid) 40%,
     transparent 70%
-  ) no-repeat;
-  background-size: 100% 100%;
+  );
   transform: scale(0);
   opacity: var(--button-ripple-start-opacity);
   animation: ripple var(--button-ripple-duration) var(--button-ripple-ease);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
+}
+
+.primary .ripple,
+.success .ripple {
+  background: radial-gradient(
+    circle,
+    var(--button-liquid-ripple-primary) 0%,
+    transparent 70%
+  );
 }
 
 @keyframes ripple {
   0% {
     transform: scale(0);
-    opacity: var(--button-ripple-start-opacity);
-  }
-  60% {
-    transform: scale(var(--button-ripple-scale));
     opacity: var(--button-ripple-start-opacity);
   }
   100% {
@@ -457,7 +465,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .button {
-    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+    transition: background-color var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out);
   }
 
   .ripple {

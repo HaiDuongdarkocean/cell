@@ -77,13 +77,13 @@ Geometry must not turn horizontal buttons into fixed-width ovals. Width follows 
 |---|---|
 | Default | Static glass; no idle drift |
 | Hover | Slight highlight/opacity increase; no `translateY` |
-| Pressed | Scale around `0.985`; no lift |
-| Focus-visible | External accessible focus indicator, contrast ≥3:1 |
+| Pressed | `transform: scale(0.985)` over `80ms` `ease-out`; `filter: brightness(0.98)`. Release transform transitions over `180ms` `ease-out` (from base `.button` transition). No lift. |
+| Focus-visible | `outline: 2px solid color-mix(in srgb, currentColor 60%, transparent)` with `outline-offset: 3px`; caustic opacity intensifies. Contrast ≥3:1. |
 | Active/toggle | Optical intensity change only; no semantic color |
 | Disabled | Reduced opacity while preserving recognizable content |
 | Loading | Spinner replaces content; no idle liquid animation |
 | Error | `aria-invalid` and explicit text/status; material remains neutral |
-| Ripple | Only when caller passes `ripple`; bounded DOM creation |
+| Ripple | Pointer-down spawns a centered water ripple from `clientX/clientY`; bounded DOM creation. Default ripple: light `0.35 → 0.15 → transparent` at `70%`; dark `0.18 → 0.06 → transparent` at `70%`; primary/success `0.28 → transparent` at `70%`. Scale `0 → 2.8` over `700ms` `ease-out`, opacity `0.6 → 0`. Hidden under `prefers-reduced-motion`. |
 | Reduced motion | No scale, ripple or non-essential transition |
 | Reduced transparency | Opaque-enough neutral fallback; no backdrop filter |
 
@@ -155,6 +155,18 @@ Provisional component-token roles:
 --button-liquid-backdrop-blur
 --button-liquid-backdrop-saturation
 --button-liquid-focus-ring
+--button-liquid-ripple
+--button-liquid-ripple-mid
+--button-liquid-ripple-primary
+--button-press-scale
+--button-press-duration
+--button-press-ease
+--button-release-duration
+--button-release-ease
+--button-ripple-duration
+--button-ripple-ease
+--button-ripple-scale
+--button-ripple-start-opacity
 
 --iconbutton-liquid-*     aliases/references button optical roles
 
