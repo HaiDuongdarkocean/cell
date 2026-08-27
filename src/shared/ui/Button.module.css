@@ -4,7 +4,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--button-gap);
-  min-width: var(--touch-target);
+  width: auto;
+  min-width: min-content;
   min-height: var(--touch-target);
   height: var(--button-height);
   padding: var(--button-padding-y) var(--button-padding-x);
@@ -346,6 +347,44 @@
 .vertical .trailingIcon {
   width: var(--button-vertical-icon-size);
   height: var(--button-vertical-icon-size);
+}
+
+/* === Icon-only — circular dewdrop when a single icon is the only content === */
+
+.iconOnly {
+  aspect-ratio: 1 / 1;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border-radius: var(--radius-full);
+}
+
+.sm.iconOnly,
+.iconOnly.sm {
+  width: var(--button-height-sm);
+  min-width: var(--button-height-sm);
+  height: var(--button-height-sm);
+}
+
+.md.iconOnly,
+.iconOnly.md {
+  width: var(--button-height);
+  min-width: var(--button-height);
+  height: var(--button-height);
+}
+
+.lg.iconOnly,
+.iconOnly.lg {
+  width: var(--button-height-lg);
+  min-width: var(--button-height-lg);
+  height: var(--button-height-lg);
+}
+
+.xl.iconOnly,
+.iconOnly.xl {
+  width: var(--button-height-xl);
+  min-width: var(--button-height-xl);
+  height: var(--button-height-xl);
 }
 
 /* === Icons === */
