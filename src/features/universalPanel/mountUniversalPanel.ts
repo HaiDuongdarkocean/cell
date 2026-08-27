@@ -9,6 +9,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
@@ -308,7 +309,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       prefill: pendingCardCreatorContext,
     }) as ReactElement;
 
-  const settingsPanel = createElement(SettingsTab) as ReactElement;
+  const settingsPanel = createElement(ErrorBoundary, null, createElement(SettingsTab)) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
   // not in the Settings tab. Subscribe at mount level so header re-renders
