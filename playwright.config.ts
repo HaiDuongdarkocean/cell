@@ -14,13 +14,21 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  webServer: {
-    command:
-      'npm run build:design-system && npx http-server dist/design-system-showcase -p 8123 -c-1 -d false -P http://localhost:8123/design-system-showcase.html',
-    url: 'http://localhost:8123/design-system-showcase.html',
-    timeout: 120_000,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command:
+        'npm run build:design-system && npx http-server dist/design-system-showcase -p 8123 -c-1 -d false -P http://127.0.0.1:8123/design-system-showcase.html',
+      url: 'http://127.0.0.1:8123/design-system-showcase.html',
+      timeout: 180_000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'node scripts/serve-mock-pages.mjs --youtube --no-build',
+      url: 'http://127.0.0.1:4322/index.html',
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   projects: [
     {
       name: 'chromium',

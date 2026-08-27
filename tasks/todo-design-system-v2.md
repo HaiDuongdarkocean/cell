@@ -42,9 +42,9 @@
 - [x] **T1.3 Establish Playwright showcase suite**
   - [x] `npm run test:e2e` chạy test thật.
   - [x] Theme/navigation/critical interaction pass hai lần liên tiếp.
-- [ ] **T1.4 Establish Chromium extension E2E fixture**
-  - [ ] Dynamic extension ID từ service worker.
-  - [ ] Popup + content-script mock flow pass.
+- [x] **T1.4 Establish Chromium extension E2E fixture**
+  - [x] Dynamic extension ID từ service worker.
+  - [x] Popup + content-script mock flow pass.
 - [ ] **T1.5 Add required CI quality pipeline**
   - [ ] CI chạy full deterministic gates.
   - [ ] Deliberate failure làm job fail và lưu report/trace.

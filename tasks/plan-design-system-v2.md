@@ -263,13 +263,13 @@ Final maturity audit ≥85/100
 **Description:** Load built extension bằng Playwright bundled Chromium persistent context theo official extension workflow; test popup/service-worker/content-script smoke flow.
 
 **Acceptance criteria:**
-- [ ] Extension ID lấy từ service worker, không hardcode.
-- [ ] Test build artifact, không test source server giả.
-- [ ] Ít nhất popup open và một mock-page content-script flow pass.
+- [x] Extension ID lấy từ service worker, không hardcode.
+- [x] Test build artifact, không test source server giả.
+- [x] Ít nhất popup open và một mock-page content-script flow pass.
 
 **Verification:**
-- [ ] Headless bundled Chromium pass local.
-- [ ] Failure lưu trace/screenshot.
+- [x] Headless bundled Chromium pass local.
+- [x] Failure lưu trace/screenshot.
 
 **Dependencies:** Tasks 1.3 và successful production build.
 
