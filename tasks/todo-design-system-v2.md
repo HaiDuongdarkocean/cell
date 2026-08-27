@@ -45,9 +45,9 @@
 - [x] **T1.4 Establish Chromium extension E2E fixture**
   - [x] Dynamic extension ID từ service worker.
   - [x] Popup + content-script mock flow pass.
-- [ ] **T1.5 Add required CI quality pipeline**
-  - [ ] CI chạy full deterministic gates.
-  - [ ] Deliberate failure làm job fail và lưu report/trace.
+- [x] **T1.5 Add required CI quality pipeline**
+  - [x] CI chạy typecheck, design-system unit, production build, development build, icon/token/CSS checks và Playwright suites.
+  - [x] Deliberate failing fixture làm job fail và lưu report/trace.
 
 ### Checkpoint B
 
