@@ -35,9 +35,13 @@
   background: var(--color-surface-hover);
 }
 
-.node:focus-visible {
+.branch:focus-visible > .node {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
+}
+
+.branch:focus-visible {
+  outline: none;
 }
 
 .depth0 {

@@ -1,4 +1,14 @@
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+  type ComponentType,
+} from 'react';
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Input.showcase.module.css';
@@ -26,10 +36,22 @@ interface FieldProps {
 }
 
 function Field({ label, children, className }: FieldProps): ReactElement {
+  const id = useId();
+  const isComponent =
+    isValidElement(children) && typeof children.type === 'function';
+  const labelledChild = isComponent
+    ? cloneElement(
+        children as ReactElement<{ id?: string }, ComponentType<{ id?: string }>>,
+        { id },
+      )
+    : children;
+
   return (
     <div className={[styles.field, className ?? ''].filter(Boolean).join(' ')}>
-      <span className={styles.fieldLabel}>{label}</span>
-      {children}
+      <label htmlFor={id} className={styles.fieldLabel}>
+        {label}
+      </label>
+      {labelledChild}
     </div>
   );
 }
@@ -97,13 +119,14 @@ export function Showcase(): ReactElement {
               prefix={<Icon name="search" size={18} />}
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              aria-label="Tìm từ vựng"
             />
           </StateCard>
           <StateCard title="Hover">
-            <Input value="Hover qua em đi anh" readOnly />
+            <Input value="Hover qua em đi anh" readOnly aria-label="Hover" />
           </StateCard>
           <StateCard title="Focus">
-            <Input ref={focusRef} value="Đang focus nè" />
+            <Input ref={focusRef} value="Đang focus nè" aria-label="Focus" />
           </StateCard>
         </div>
         <div className={styles.row}>
@@ -112,6 +135,7 @@ export function Showcase(): ReactElement {
               type="url"
               value="https://themoviebox.xyz/..."
               prefix={<Icon name="link" size={18} />}
+              aria-label="Filled"
             />
           </StateCard>
           <StateCard title="Error">
@@ -121,24 +145,26 @@ export function Showcase(): ReactElement {
               error
               errorMessage="Email không hợp lệ"
               prefix={<Icon name="alertCircle" size={18} />}
+              aria-label="Email lỗi"
             />
           </StateCard>
           <StateCard title="Loading">
-            <Input value="Đang tìm kiếm..." loading />
+            <Input value="Đang tìm kiếm..." loading aria-label="Loading" />
           </StateCard>
         </div>
         <div className={styles.row}>
           <StateCard title="Disabled">
-            <Input value="Không chỉnh được" disabled />
+            <Input value="Không chỉnh được" disabled aria-label="Disabled" />
           </StateCard>
           <StateCard title="Read-only">
-            <Input value="Chỉ đọc thôi" readOnly />
+            <Input value="Chỉ đọc thôi" readOnly aria-label="Read-only" />
           </StateCard>
           <StateCard title="Success">
             <Input
               value="URL hợp lệ"
               success
               suffix={<Icon name="check" size={18} />}
+              aria-label="Success"
             />
           </StateCard>
         </div>
@@ -219,6 +245,7 @@ export function Showcase(): ReactElement {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               suffix={passwordSuffix}
+              aria-label="Password"
             />
           </Field>
           <Field label="Clearable">

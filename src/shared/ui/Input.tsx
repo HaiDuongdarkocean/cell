@@ -95,7 +95,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {...rest}
         />
         {hasSuffix && (
-          <span className={styles.suffix} aria-hidden="true">
+          <span className={styles.suffix}>
             {suffixContent}
           </span>
         )}

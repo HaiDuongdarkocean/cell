@@ -12,7 +12,7 @@ type ShowcaseFixtures = {
  */
 export const test = base.extend<ShowcaseFixtures>({
   showcasePage: async ({ page }, providePage) => {
-    await page.goto('/');
+    await page.goto('/design-system-showcase.html');
 
     await page.waitForFunction(() => {
       const main = document.querySelector('main');

@@ -305,7 +305,7 @@ Problem / user flow
 
 1. [x] Hợp nhất contrast math thành `src/shared/lib/contrast.ts`, hỗ trợ hex/rgb/rgba/color-mix/alpha compositing, được build (`scripts/generate-tokens.js` qua jiti) và runtime dùng chung.
 2. [x] Áp 4.5:1 cho normal text; chỉ 3:1 khi pair được đánh dấu explicit large-text.
-3. Thêm axe scan cho stable showcase components/pages.
+3. [x] Thêm `@axe-core/playwright` dev-only và `e2e/showcase-axe.spec.ts`; scan 6 stable components (Button, Card, Dialog, Input, Select, Tabs) đạt 0 WCAG 2.1 AA violation.
 4. Thêm keyboard/focus tests cho Dialog, Drawer, Sheet, Tabs, Select, Menu/Popover nếu có.
 5. Thêm ARIA snapshots cho navigation, form error, dialog và subtitle controls.
 6. Manual screen-reader matrix cho các flow critical; automation không thay thế hoàn toàn.
@@ -313,7 +313,7 @@ Problem / user flow
 **Exit criteria**
 
 - [x] 0 skipped contrast pair vì unsupported color format.
-- 0 axe violation ở component stable.
+- [x] 0 axe violation ở 6 stable components (Button, Card, Dialog, Input, Select, Tabs).
 - 100% interactive stable component có keyboard/focus assertion hoặc documented exemption.
 - Critical flows có NVDA + Chrome smoke checklist và kết quả lưu theo release.
 
