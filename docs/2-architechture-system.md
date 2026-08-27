@@ -381,6 +381,8 @@ tests/
     └── sequential.integration.test.ts
 
 e2e/                                  # Playwright E2E specs (browser, layout, interaction)
+├── extension.fixture.ts              # Fixture `context`/`worker`/`extensionId`/`popupPage`/`mockPage`: persistent Chromium + MV3
+├── extension.spec.ts                 # Extension E2E: service worker ID, popup page, content script on mock video page
 ├── showcase.fixture.ts               # Fixture `showcasePage`: navigate to showcase, wait for app + fonts ready
 └── showcase.spec.ts                  # Showcase E2E: gallery loads, theme toggle, component route via query param
 ```
@@ -1293,6 +1295,8 @@ Dictionary probe cache (T23):
 | `*.showcase.tsx` | `shared/ui/` and `features/*/ui/` | `Showcase` + `showcaseMeta` | `ShowcaseGallery` | Per-component design-system examples auto-rendered by the gallery |
 | `showcasePage` fixture | `e2e/showcase.fixture.ts` | `{ page } -> Page` | `e2e/showcase.spec.ts` | Playwright fixture: navigates to showcase, waits for `readyState` + first `h1` + `document.fonts.ready` |
 | `showcase E2E` | `e2e/showcase.spec.ts` | `test.describe('Design System Showcase')` | `playwright.config.ts` (`showcase` project) | Three deterministic tests: gallery load, light/dark toggle, `?showcase=Button` route |
+|| `extension` fixture | `e2e/extension.fixture.ts` | `{ context, worker, extensionId, popupPage, mockPage } -> ...` | `e2e/extension.spec.ts` | Playwright fixture: persistent Chromium context with built extension loaded; derives ID from service worker; closes context in `test.afterAll` |
+|| `extension E2E` | `e2e/extension.spec.ts` | `test.describe('Cell MV3 extension')` | `playwright.config.ts` (`chromium` project) | Three deterministic tests: service worker running, popup page loads, content script on mock video page |
 
 ## Update protocol
 

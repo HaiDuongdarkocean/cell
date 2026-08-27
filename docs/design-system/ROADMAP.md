@@ -74,12 +74,12 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 | Showcase | 82 showcase files tổng; chỉ BottomSheet, ErrorBoundary, Sheet thiếu showcase trong shared UI | Living showcase gần đầy đủ |
 | Icon system | 90 SVG; `scripts/check-icons.js` mở rộng kiểm geometry + file↔catalog 1:1 + tags + duplicate SVG | 90/90 pass; gate hoạt động với Jest fixtures |
 | Token pipeline | `generate-tokens.js` → `tokens.css`; predev/prebuild tự sinh | Có automation |
-| UI browser tool | Playwright 1.61; `e2e/showcase.spec.ts` (3 tests) + fixture, webServer auto-build/serve | Showcase suite pass local 2x, trace retain-on-failure |
+| UI browser tool | Playwright 1.61; `e2e/showcase.spec.ts` (3 tests) + fixture, `e2e/extension.spec.ts` (3 tests) + fixture, webServer auto-build/serve | Showcase + extension suites pass local 2x, trace retain-on-failure |
 | Unit infrastructure | Jest + Testing Library, 403 test/spec files toàn repo | Không nên migration wholesale thiếu benchmark |
 
 ### 4.2 Chưa có hoặc chưa đạt
 
-1. `playwright.config.ts` trỏ tới `./e2e`; `e2e/showcase.fixture.ts` + `e2e/showcase.spec.ts` đã tạo, webServer tự động build/serve, `npm run test:e2e` chạy đúng showcase suite.
+1. `playwright.config.ts` trỏ tới `./e2e`; `e2e/showcase.fixture.ts` + `e2e/showcase.spec.ts` và `e2e/extension.fixture.ts` + `e2e/extension.spec.ts` đã tạo, webServer tự động build/serve cho showcase và mock YouTube, `npm run test:e2e` chạy đúng showcase và extension suites.
 2. Không có CI workflow; kiểm tra local chưa phải deterministic merge gate.
 3. Không có visual regression baseline tự động.
 4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
@@ -287,7 +287,7 @@ Problem / user flow
 **Mục tiêu:** thay manual/regex-only checks bằng kiểm tra tái lập.
 
 1. Tạo Playwright showcase suite với fixture light/dark, breakpoint và reduced motion.
-2. Tạo extension fixture theo official persistent-context workflow trên bundled Chromium.
+2. [x] Tạo extension fixture theo official persistent-context workflow trên bundled Chromium (`e2e/extension.fixture.ts` + `e2e/extension.spec.ts`, pass `npm run test:e2e`).
 3. Thêm CI chạy typecheck, unit, build, icon/token checks và Playwright.
 4. Parser-based CSS audit gate `scripts/check-design-system-css.mjs` kiểm `src/shared/ui/*.module.css` (bỏ `*.showcase.module.css` và code showcase/feature) với PostCSS; gồm fixtures good/bad. Mở rộng scope sau khi false-positive <5%.
 5. Mở rộng icon checker: mọi SVG phải có đúng một catalog entry và tags không rỗng.
@@ -390,7 +390,7 @@ Không xây thêm component trước P0/P1 trừ khi feature thật bị block. 
 | Shared UI colocated tests | 70 | 100% stable visual/interactive exports |
 | Shared UI missing showcase | 3 | 0 hoặc documented exemption |
 | Icons passing geometry QC | 90/90 | 100% + catalog 1:1 |
-| Playwright E2E tests | 3 (showcase) | Critical showcase + extension flows |
+| Playwright E2E tests | 3 (showcase) + 3 (extension) | Critical showcase + extension flows |
 | CI workflows | 0 | 1 required quality pipeline |
 | Runtime a11y automation | 0 | 100% stable showcase scope |
 | Visual baselines | 0 | 100% P0 state matrix |

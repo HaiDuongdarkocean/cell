@@ -120,6 +120,10 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      // Playwright fixtures pass a callback named `use`; this is not a React hook.
+      'react-hooks/rules-of-hooks': 'off',
+      // Playwright fixtures with no dependencies use an empty destructuring pattern.
+      'no-empty-pattern': 'off',
     },
   },
 
