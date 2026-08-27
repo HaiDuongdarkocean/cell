@@ -1,17 +1,18 @@
 ---
 name: inquiry-creativity
-description: Turn a vague topic into sharp questions, verified knowledge, and original design decisions using Bloom's taxonomy and the 4-Step Knowledge Distillation method. Use when the user wants to ask better questions, research a domain, or generate creative solutions from first principles. Not for direct implementation or one-off search queries without synthesis.
+description: Turn a vague topic into sharp questions, verified knowledge, and original design decisions using Bloom's taxonomy, critical thinking, and the 4-Step Knowledge Distillation method. Use when the user wants to ask better questions, research a domain, or generate creative solutions from first principles. Not for direct implementation or one-off search queries without synthesis.
 ---
 
-# Inquiry & Creativity — Bloom + 4-Step Knowledge Distillation
+# Inquiry & Creativity — Bloom + Critical Thinking + 4-Step Knowledge Distillation
 
-> **Asking is a skill. Creating is connecting.**
+> **Asking is a skill. Creating is connecting. Deciding is weighing.**
 
-This skill turns any topic into a chain of precise questions, then pulls verified knowledge from two sources — the **codebase** (SSOT) and the **internet** — and finally connects the dots into an original, well-justified answer.
+This skill turns any topic into a chain of precise questions, then pulls verified knowledge from two sources — the **codebase** (SSOT) and the **internet** — and finally connects the dots into an original, well-justified decision.
 
-It follows two frames:
+It follows three frames:
 1. **Bloom's Taxonomy** — move up from Remember → Understand → Apply → Analyze → Evaluate → Create.
 2. **4-Step Knowledge Distillation** — scope, query, sift, synthesize.
+3. **Critical Thinking Loop** — expand options, weigh trade-offs, ask 5 Whys, converge on the most fitting solution.
 
 ## When to Use
 
@@ -19,6 +20,7 @@ It follows two frames:
 - The user wants to ask better questions before designing or deciding.
 - The user wants a creative solution but no raw idea exists.
 - The user has a domain keyword and wants verified knowledge distilled into a design input.
+- The user must choose between A and B and needs a rigorous, project-aware justification.
 
 ## When NOT to Use
 
@@ -32,7 +34,7 @@ It follows two frames:
 
 ## Core Principle
 
-> **Creativity is not invention from nothing. It is connecting verified facts in a new pattern.**
+> **Creativity is not invention from nothing. It is connecting verified facts in a new pattern. Decision is not picking the best idea; it is picking the idea that best fits the constraints.**
 
 A good answer:
 - Names what it knows (Remember).
@@ -41,6 +43,7 @@ A good answer:
 - Breaks it into parts (Analyze).
 - Judges the trade-offs (Evaluate).
 - Builds something new (Create).
+- Defends why it is the most fitting choice (Critique & Converge).
 
 ---
 
@@ -62,7 +65,7 @@ If the two sources conflict, **codebase wins for project-specific decisions; int
 
 ---
 
-## The 4-Step + Bloom Workflow
+## The 4-Step + Bloom + Critical Thinking Workflow
 
 ### Step 1 — Scope the topic with 5W1H
 
@@ -161,6 +164,41 @@ Codebase sources skip SIFT but still need:
 
 ---
 
+### Step 5 — Critique & Converge (Critical Thinking)
+
+**Purpose:** Do not stop at the first workable answer. Find the most fitting one.
+
+> **A senior decision is not "A is better than B"; it is "A is the best fit for these constraints, and here is the risk we accept."**
+
+**Actions:**
+1. **Expand options.** List at least 3: A, B, and at least one C/D/E. If the user only gave A/B, use "5 Whys" to generate alternatives.
+2. **Define must-haves vs. nice-to-haves.** Must-haves are non-negotiable project constraints (e.g., `build` must pass, `tokens.css` cannot be edited by hand, WCAG AA must hold). Nice-to-haves are desirable but not blocking.
+3. **Build a weighted trade-off matrix.**
+   - Criteria must map to project constraints: bundle size, build/test pass, responsive, a11y, SSOT, performance, maintenance, time to ship.
+   - Each criterion has a weight (sum = 100%).
+   - Score each option 1–10 per criterion.
+   - Compute `weighted score = score × weight`.
+4. **Add confidence and risk for each option.**
+   - Confidence: how sure are we that the evidence supports the score?
+   - Risk: what could go wrong if we pick this option?
+5. **Run the 5 Whys to stress-test the winner.**
+   - "Why is this the best fit?"
+   - "Why not a hybrid of A and C?"
+   - "Why can't we defer this?"
+   - "Why will this still work in 6 months?"
+   - "Why would a senior engineer disagree?"
+6. **Apply the 80% stop rule.**
+   - If the top option reaches ≥80% fit and no option is clearly better after 5 Whys, stop iterating and propose a small, reversible experiment.
+
+**Guard:** You can answer:
+1. What are the top 3 options?
+2. What are the must-have constraints?
+3. Which option has the highest weighted score, and what is its main risk?
+
+**Loop back:** If the top two options are within 10% of each other, do another round of 5 Whys or ask the user for their risk tolerance.
+
+---
+
 ## Question Bank (Socratic)
 
 Use these to keep asking until the answer reveals itself:
@@ -176,6 +214,8 @@ Use these to keep asking until the answer reveals itself:
 8. What is the cheapest test that would prove or disprove this?
 9. What would a senior in this domain question about our conclusion?
 10. What new pattern can we build from these verified pieces?
+11. Why is option A the best fit, and what risk do we accept?
+12. What is a hybrid or third option we haven't considered?
 ```
 
 ---
@@ -244,11 +284,39 @@ Use these to keep asking until the answer reveals itself:
 - What new component/pattern/workflow can we invent from these pieces?
 ```
 
+### Template 3 — Critical Decision Brief
+
+```markdown
+## Decision
+[one line: what we must choose]
+
+## Must-haves
+- [e.g., build pass, no new dep, responsive]
+- [e.g., respect tokens.json, use shared UI]
+
+## Options
+| Option | Pros | Cons | Trade-off | Weighted score | Confidence | Main risk |
+|---|---|---|---|---|---|---|
+| A | ... | ... | ... | ... | high/medium/low | ... |
+| B | ... | ... | ... | ... | high/medium/low | ... |
+| C | ... | ... | ... | ... | high/medium/low | ... |
+
+## 5 Whys stress-test on top option
+1. Why is this the best fit? → ...
+2. Why not a hybrid? → ...
+3. Why can't we defer? → ...
+4. Why will this still work in 6 months? → ...
+5. Why would a senior disagree? → ...
+
+## Verdict
+[Option X, 80% fit, experiment is ...]
+```
+
 ---
 
 ## Anti-Patterns
 
-| Don't | Why |
+| Do not | Why |
 |---|---|
 | Answer from memory without searching | Stale or hallucinated knowledge. |
 | Use a single source | No cross-check, no confidence. |
@@ -257,6 +325,10 @@ Use these to keep asking until the answer reveals itself:
 | Skip the codebase | The project already has constraints, tokens, and decisions. |
 | Stop at Understand when user needs Create | Every level must be climbed explicitly. |
 | Propose a creative solution without verifying feasibility | Creativity without constraints is daydreaming. |
+| Pick the first binary option (A or B) | Better options often appear at C, D, or E. |
+| Score options without weights | Not all criteria are equally important. |
+| Ignore the main risk of the chosen option | A decision without risk is an opinion. |
+| Iterate past 80% fit without an experiment | Analysis paralysis. |
 
 ## Common Rationalizations
 
@@ -266,6 +338,8 @@ Use these to keep asking until the answer reveals itself:
 | "Tại sao lại thế này?" | "Let's check the codebase and 2–3 authoritative sources before answering." |
 | "Em nghĩ sao?" | "I'll separate what I know (fact), what I infer (analysis), and what I propose (creation)." |
 | "Có cách nào mới không?" | "First we verify what exists; then we combine the pieces into a new pattern." |
+| "Chọn A hay B?" | "Let's define must-haves, find a third option, score with weights, and name the risk." |
+| "Cứ làm theo ý anh đi" | "Let's verify the constraints first, or we may build something the design system rejects." |
 
 ---
 
@@ -279,7 +353,12 @@ Use these to keep asking until the answer reveals itself:
 - [ ] Each source has an authority score.
 - [ ] Conflicts between sources are surfaced and resolved.
 - [ ] Answer reaches the Bloom target or explains why it cannot.
-- [ ] Output includes at least one template (Knowledge Brief or Question Ladder).
+- [ ] If the task is a decision, at least 3 options are listed with weighted trade-offs.
+- [ ] Must-haves and nice-to-haves are separated.
+- [ ] 5 Whys stress-test is applied to the top option.
+- [ ] Confidence and main risk are stated for the chosen option.
+- [ ] 80% stop rule is respected; next step is an experiment, not another round of analysis.
+- [ ] Output includes at least one template (Knowledge Brief, Question Ladder, or Critical Decision Brief).
 - [ ] Next action or skill is named (e.g., `design-from-idea`, `audit-ui-ux-then-redesign`, `spec-driven-development`).
 
 ---
