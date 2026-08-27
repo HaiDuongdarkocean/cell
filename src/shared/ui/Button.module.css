@@ -154,11 +154,12 @@
 
 /* === Sizes === */
 .sm {
-  height: var(--button-height-sm);
-  min-height: var(--button-height-sm);
-  padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
+  /* Visual content stays compact (font/icon), but hit box follows --touch-target. */
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  height: auto;
+  padding: var(--button-padding-y-sm) var(--button-padding-x-sm);
   font-size: var(--button-font-size-sm);
-  min-width: var(--button-height-sm);
 }
 
 .sm .leadingIcon,
@@ -181,7 +182,7 @@
 
 .lg {
   height: var(--button-height-lg);
-  padding: var(--button-padding-lg-y) var(--button-padding-lg-x);
+  padding: var(--button-padding-y-lg) var(--button-padding-x-lg);
   font-size: var(--button-font-size-lg);
 }
 
@@ -361,9 +362,9 @@
 
 .sm.iconOnly,
 .iconOnly.sm {
-  width: var(--button-height-sm);
-  min-width: var(--button-height-sm);
-  height: var(--button-height-sm);
+  width: var(--touch-target);
+  min-width: var(--touch-target);
+  height: var(--touch-target);
 }
 
 .md.iconOnly,
