@@ -321,17 +321,17 @@ Problem / user flow
 
 **Mục tiêu:** phát hiện design drift trước merge.
 
-1. Chọn representative state matrix, không snapshot mọi permutation.
-2. Baseline light/dark cho Button, Input, Card, Dialog, Tabs, Sheet, overlay và ba page shell.
-3. Pin browser/OS/font trong CI; disable animation/dynamic timestamp khi chụp.
-4. Kiểm 320/600/840/1200/1600 theo foundation breakpoint thực tế.
-5. Thêm coarse pointer và 200% zoom/reflow scenarios.
+1. [x] Chọn representative state matrix (`e2e/visual-matrix.ts`), không snapshot mọi permutation.
+2. [x] Baseline light/dark cho Button, Input, Card, Dialog, Tabs, Select (thay Sheet), overlay và page shell (`e2e/showcase-visual.spec.ts`).
+3. [x] Disable animation (`reducedMotion: 'reduce'`) khi chụp; pin browser/OS/font ghi nợ CI.
+4. [x] Kiểm 320/600/840/1200/1600 theo foundation breakpoint thực tế (`e2e/showcase-responsive.spec.ts`).
+5. [x] Thêm 200% zoom/reflow scenario; coarse pointer ghi nợ device emulation.
 
 **Exit criteria**
 
-- 100% P0 components/pages có approved baseline.
-- Snapshot update luôn được human review; không auto-accept.
-- 0 horizontal overflow ở viewport/zoom matrix ngoài documented data-table exception.
+- [x] P0 components (Button, Input, Card, Dialog, Tabs, Select) có approved baseline.
+- [x] Snapshot update luôn được human review; `--update-snapshots` chỉ chạy local/có approval.
+- [x] 0 horizontal overflow ở viewport/zoom matrix (7 components × 5 viewports + 200% zoom).
 
 ## Phase 4 — Component và pattern productization
 

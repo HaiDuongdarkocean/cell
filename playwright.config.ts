@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  snapshotPathTemplate: 'e2e/__snapshots__/{projectName}/{testFilePath}/{arg}{ext}',
   fullyParallel: false, // Extensions need sequential browser launches
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

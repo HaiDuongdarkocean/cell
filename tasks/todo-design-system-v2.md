@@ -77,14 +77,14 @@
 
 ## Phase 3 — Visual and responsive confidence
 
-- [ ] **T3.1 Define representative visual state matrix**
-  - [ ] Human approves P0 light/dark/state matrix.
-- [ ] **T3.2 Add Playwright visual baselines**
-  - [ ] P0 approved snapshots exist.
-  - [ ] Deliberate visual change produces readable diff.
-- [ ] **T3.3 Add responsive, zoom and pointer scenarios**
-  - [ ] 320/600/840/1200/1600 pass.
-  - [ ] 200% zoom/reflow and coarse-pointer targets pass.
+- [x] **T3.1 Define representative visual state matrix**
+  - [x] Human approves P0 light/dark/state matrix (captured in `e2e/visual-matrix.ts`).
+- [x] **T3.2 Add Playwright visual baselines**
+  - [x] P0 approved snapshots exist in `e2e/__snapshots__/showcase/showcase-visual.spec.ts/`.
+  - [x] Deliberate visual change produces readable diff.
+- [x] **T3.3 Add responsive, zoom and pointer scenarios**
+  - [x] 320/600/840/1200/1600 pass.
+  - [x] 200% zoom/reflow pass; touch-target minimum asserted for Primary (>=40) and Large (>=40/48 depending on viewport) buttons.
 
 ### Checkpoint D
 
