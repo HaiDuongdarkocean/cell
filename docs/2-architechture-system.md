@@ -333,64 +333,6 @@ src/
 
 ```
 
-## Cây thư mục docs/design-system/icon (Lucide reference — chỉ tham khảo phong cách)
-
-```
-docs/design-system/icon/               # Lucide reference catalog (KHÔNG bundled, chỉ tham khảo style)
-├── README.md                          # Workflow: find icon → copy to src/ → import ?raw → use
-├── LICENSE                            # ISC license from Lucide (redistribution obligation)
-├── catalog.md                         # Auto-generated index of 1995 icons with tags (do not edit by hand)
-├── index.html                         # Visual overview page (search + click-to-copy, self-contained, open in browser)
-└── svg/                               # 1995 raw .svg files from lucide-static (stroke 2.0, 24x24, round caps, currentColor)
-```
-
-## Cây thư mục docs/design-system/icon-system (cell icon system — tự vẽ, 322 SVG)
-
-```
-docs/design-system/icon-system/        # Tự vẽ 322 icon (KHÔNG bundled, docs-only)
-├── README.md                          # Workflow: tìm icon → copy to src/ → import ?raw → use
-├── STYLE-GUIDE.md                     # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
-├── catalog.md                         # Auto-generated index of 322 icons (do not edit by hand)
-├── index.html                         # Visual overview page (search + filter by category + click-to-copy, self-contained)
-├── icon-list.txt                      # Danh sách icon gốc (reference)
-└── svg/                               # 322 SVG files
-    ├── media/                         # 43 SVG (play/pause/skip/rewind/volume/...)
-    ├── subtitle/                      # 28 SVG (captions/translate/align/...)
-    ├── dictionary/                    # 30 SVG (book-open/search/mic/character/...)
-    ├── flashcard/                     # 26 SVG (layers/card/deck/graduation-cap/...)
-    ├── mediatype/                     # 25 SVG (film/music/book/newspaper/...)
-    ├── download/                      # 25 SVG (download/file/folder/save/...)
-    ├── nav/                           # 30 SVG (arrow/chevron/home/menu/...)
-    ├── edit/                          # 29 SVG (pencil/scissors/trash/bold/...)
-    ├── settings/                      # 29 SVG (gear/toggle/sun/moon/lock/...)
-    ├── time/                          # 20 SVG (clock/timer/calendar/history/...)
-    ├── status/                        # 26 SVG (check/x/alert/loader/star/...)
-    └── comm/                          # 11 SVG (message/share/send/bell/...)
-```
-
-## Cây thư mục docs/design-system/icon-system_v2 (cell icon system v2 — minimalism V1, 322 SVG)
-
-```
-docs/design-system/icon-system_v2/     # Tự vẽ 322 icon variant V1 minimalism (KHÔNG bundled, docs-only)
-├── README.md                          # Workflow: tìm icon v2 → copy to src/ → import ?raw → use
-├── STYLE-GUIDE.md                     # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
-├── catalog.md                         # Auto-generated index of 322 icons (do not edit by hand)
-├── index.html                         # Visual overview page (search + filter by category + click-to-copy, self-contained)
-├── icon-list.txt                      # Danh sách icon gốc (reference)
-└── svg/                               # 322 SVG files (variant V1 minimalism, fallback V1 cho 42 synced)
-```
-
-## Cây thư mục scripts
-
-```
-scripts/
-├── sync-icons.mjs                     # Sync lucide-static SVG → docs/design-system/icon/ + generate catalog.md + copy LICENSE. Re-run after `npm update lucide-static`.
-└── icon-system/                       # Cell icon system generator (tự vẽ, không copy)
-    ├── gen.mjs                        # Generator: đọc categories/*.mjs → xuất 322 SVG V1 + catalog.md + index.html
-    ├── gen-v2.mjs                     # Generator: đọc categories/*.mjs → xuất 322 SVG V1 minimalism + catalog.md + index.html
-    ├── variants.mjs                   # SVG wrapper (24x24, stroke 2, round caps, currentColor, fill none)
-    └── categories/                    # 12 category files (media/subtitle/dictionary/flashcard/mediatype/download/nav/edit/settings/time/status/comm)
-```
 
 ---
 
@@ -511,7 +453,7 @@ tests/
 | `content/navClusterActions.ts` | subtitleSync (findCurrentLine), types (SrtCue) | subtitleBlockController.ts | **ADR-018**: Pure action helpers — findActiveCueIndex (target-primary native-fallback), prevSentence/nextSentence (gap fallback), seekBy ([0,duration] clamp + NaN/Infinity live-stream) |
 | `content/navClusterButton.ts` | navClusterIcons | subtitleBlockController.ts | **ADR-018**: Atom — createNavClusterButton DOM factory (inline SVG icons via navClusterIcons, click/hold handlers + aria-pressed toggle) |
 | `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | subtitleBlockController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
-| `content/navClusterIcons.ts` | — | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) — **note: icon-svg/ đã xóa, thay bằng docs/design-system/icon/ (Lucide reference catalog)** |
+| `content/navClusterIcons.ts` | — | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: `src/shared/icons/` (ICON_CATALOG). |
 | `content/navClusterCss.ts` | — | themeTokens (injectThemeTokens), design-system-showcase/NavClusterPreview | **ADR-018 T004**: Layout-only cluster CSS (positioning, display, transform, cursor, pointer-events). Injected as a string into content-script `<style>` and the design-system `NavClusterPreview` shadow root. Visual/themable styles (color, spacing, radius, transitions, effects) now live in `NavCluster.module.css` and are concatenated with this string at runtime |
 | `content/NavCluster.module.css` | tokens.css, tokens.json | themeTokens (injectThemeTokens), design-system-showcase/NavClusterPreview | **T004**: Nav cluster visual/themable styles via `var(--*)` tokens. Imported as `?inline` string so it can be injected alongside `navClusterCss.ts` into content-script or design-system shadow root |
 | `content/offsetController.ts` | subtitleOffsetPanel (createOffsetSection), subtitleOffsetBadge, subtitleOffset (logic), settingsStore (saveSettings/loadSettings), types (Settings) | contentScriptController.ts | **ADR-019**: OffsetController class — subtitle time offset orchestrator. Lifecycle: init (idempotent, builds section nested trong manager panel + floating badge) → loadCues (hasSubtitle bool, reset on unload) → destroy. State machine: committed (persisted, badge hidden) ↔ lazy (apply all ngay, badge visible, timer 2 phút). Wall-clock auto-commit via timeupdate + visibilitychange (no setTimeout — MV3 throttle safe). Persist per-URL vào settings.subtitleOffset (value=0 → remove key). Public stepBy/reset cho keyboard |

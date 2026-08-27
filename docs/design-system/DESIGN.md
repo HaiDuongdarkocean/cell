@@ -29,7 +29,7 @@
 | `var(--md-sys-color-on-surface)` | `var(--color-text-primary)` | Body text |
 | `var(--md-sys-color-on-surface-variant)` | `var(--color-text-secondary)` | Muted text |
 | `var(--md-sys-color-primary)` | `var(--color-primary)` | Brand accent |
-| `var(--md-sys-color-on-primary)` | `var(--color-primary-foreground)` | Text on primary |
+| `var(--md-sys-color-on-primary)` | `var(--color-text-on-primary)` | Text on primary |
 | `var(--md-sys-color-secondary-container)` | `var(--color-secondary)` or `var(--color-primary-subtle)` | Selected/subtle accent |
 | `var(--md-sys-color-outline)` | `var(--color-border)` | Default border |
 | `var(--md-sys-color-outline-variant)` | `var(--color-border-subtle)` | Subtle divider |
@@ -52,11 +52,12 @@
 
 | Token | Value | Usage |
 |---|---|---|
-| `var(--radius-pill)` | 18px | Buttons, inputs, selects |
-| `var(--radius-card)` | 10px | Cards, panels |
-| `var(--radius-md)` | 8px | Inner elements inside cards |
-| `var(--radius-sm)` | 6px | Small controls |
-| `var(--radius-full)` | 9999px | Avatars, icon buttons |
+| `var(--radius-pill)` | 9999px | Buttons, inputs, selects, badges |
+| `var(--radius-xl)` | 12px | Cards, panels (replaces the old `--radius-card`) |
+| `var(--radius-md)` | 6px | Inputs, small cards |
+| `var(--radius-sm)` | 4px | Small controls |
+| `var(--radius-xs)` | 2px | Chips, tags, micro elements |
+| `var(--radius-full)` | 9999px | Deprecated per `STANDARD.md`; use `--radius-pill` |
 
 ### 2.4 Typography
 
@@ -187,7 +188,7 @@ For the current `ClipboardPage` prototype, replace these tokens immediately:
 | `var(--md-sys-color-surface-container-high, #ece6f0)` | `var(--color-surface-card)` |
 | `var(--md-sys-color-surface-container-highest, #e6e0e9)` | `var(--color-surface-hover)` |
 | `var(--md-sys-color-primary, #6750a4)` | `var(--color-primary)` |
-| `var(--md-sys-color-on-primary, #ffffff)` | `var(--color-primary-foreground)` |
+| `var(--md-sys-color-on-primary, #ffffff)` | `var(--color-text-on-primary)` |
 | `var(--md-sys-color-secondary-container, #e8def8)` | `var(--color-primary-subtle)` |
 | `var(--md-sys-color-outline, #79747e)` | `var(--color-border)` |
 | `var(--md-sys-color-outline-variant, #cac4d0)` | `var(--color-border-subtle)` |
@@ -198,8 +199,8 @@ Replace hardcoded values:
 
 | Hardcoded | Token |
 |---|---|
-| `border-radius: 8px` | `var(--radius-md)` |
-| `border-radius: 4px` | `var(--radius-2xs)` |
+| `border-radius: 8px` | `var(--radius-lg)` |
+| `border-radius: 4px` | `var(--radius-sm)` |
 | `padding: 8px 12px` | `var(--space-2) var(--space-3)` |
 | `padding: 12px 16px` | `var(--space-3) var(--space-4)` |
 | `padding: 10px 16px` | `var(--space-2-5) var(--space-4)` |

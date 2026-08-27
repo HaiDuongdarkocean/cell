@@ -85,7 +85,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
 5. Chưa có pattern library cho flow học tập, loading, empty, error recovery, search và form.
 6. Chưa có contribution, lifecycle, versioning và deprecation policy hoạt động.
-7. Documentation có link chết tới `daft.md`, `daft-reference.html`, `universal-panel-demo.html`, `verify-pages-showcases.md` và các icon-system directory không tồn tại.
+7. Documentation đã dọn dẹp các link chết tới file và thư mục không còn tồn tại (`daft.md`, icon-system directories, showcase artifacts cũ, v.v.).
 8. `atom-design-plan.md` dùng naming cũ (`Figtree`, `--spacing-*`, `--color-background-surface`) và không còn là inventory đáng tin.
 9. `DESIGN.md`, `README.md`, `STANDARD.md` và ADR có một số value/alias mâu thuẫn; nhiều nguồn cùng cố làm SSOT.
 10. Build output showcase đang ghi vào `docs/design-system/`, trộn source docs với hashed assets và public extension files.
@@ -541,3 +541,18 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 - `npm run build`: pass; `git status --short -- docs/design-system` rỗng.
 - `npm run build:design-system`: pass; output chỉ trong `dist/design-system-showcase/`.
 - `npm run design-system`: 200 OK, `assets/` và `fonts/` load không 404, navigation render đúng.
+
+### 2026-08-29 — Implemented T0.3 cleanup docs/design-system
+
+**Đã hoàn thành**
+
+1. Tạo `docs/design-system/guides/`.
+2. Move `foundations-tutorial.html` và `foundations-advanced.html` vào `guides/`.
+3. Xóa `design-system-showcase.html`, `assets/` (50 hashed files), `fonts/`, `icons/`, `mockups/`, `atom-design-plan.md`, `showcase-dark-redesign-brief.md`, `tri-thuc-design-system.md`, `navcluster-shadow-mockup.html`.
+4. Cập nhật `docs/0-wiki.md` tree.
+
+**Kết quả verify**
+
+- `git ls-files "docs/design-system/**"` chỉ còn DESIGN.md, ROADMAP.md, guides/*.
+- `npm run build` không repopulate docs/design-system.
+- `git status --short -- docs/design-system` khớp approved cleanup manifest.

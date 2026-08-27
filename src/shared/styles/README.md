@@ -3,7 +3,7 @@
 > Single source of truth for AI agents writing UI code.
 > **Standard (ngôn ngữ chung + naming convention):** `src/shared/styles/STANDARD.md` — đọc đầu tiên.
 > `tokens.json` = token source (sửa ở đây). `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
-> Reference: `docs/design-system/daft.md` (Meta/Astryx best practices).
+> Reference: `src/shared/styles/STANDARD.md` (design-system standards and best practices).
 
 ## Token file
 
@@ -108,4 +108,4 @@ See `src/shared/styles/STANDARD.md` §13 "Audit checklist (trước merge)" for 
 - Adding NEW component (not in inventory above) → đọc `src/shared/ui/` component gần nhất → bắt chước pattern
 - Changing token value → sửa `tokens.json` → chạy `node scripts/generate-tokens.js` → xong
 - Unsure which variant to use → đọc component `.tsx` + `.module.css` trong `src/shared/ui/`
-- Tham khảo best practice → `docs/design-system/daft.md`
+- Tham khảo best practice → `src/shared/styles/STANDARD.md`

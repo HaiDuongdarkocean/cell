@@ -59,7 +59,7 @@ export interface ValidationResult {
 /**
  * Validate 3 critical contrast pairs cho 1 mode palette:
  * 1. text/canvas — body text readability (AA ≥ 4.5:1)
- * 2. textSecondary/canvas — secondary text readability (AA Large ≥ 3:1, per daft.md)
+ * 2. textSecondary/canvas — secondary text readability (AA Large ≥ 3:1, per src/shared/styles/STANDARD.md)
  * 3. primary-foreground/primary — button label trên primary bg (AA ≥ 4.5:1)
  */
 export function pickPrimaryForeground(colors: CoreColorTokens): string {
@@ -91,7 +91,7 @@ function makePair(label: string, fg: string, bg: string): PairResult {
   return { label, fg, bg, ratio, rating: getRating(ratio) };
 }
 
-/** Secondary text uses AA Large threshold (≥ 3:1) per daft.md/Astryx spec. */
+/** Secondary text uses AA Large threshold (≥ 3:1) per src/shared/styles/STANDARD.md. */
 function makePairSecondary(label: string, fg: string, bg: string): PairResult {
   const ratio = getContrastRatio(fg, bg);
   const pass = meetsAALarge(ratio);
