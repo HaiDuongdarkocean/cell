@@ -1,0 +1,27 @@
+.app {
+  min-height: 100dvh;
+  padding: var(--space-4);
+  color: var(--color-text-primary);
+  background: var(--color-background);
+  font-family: var(--font-family);
+}
+
+.header {
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
