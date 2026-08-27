@@ -36,9 +36,9 @@
 - [x] **T1.1 Replace noisy M3 shell audit with scoped parser audit**
   - [x] Cell-specific parser gate có fixtures.
   - [ ] False-positive rate <5% trên reviewed sample.
-- [ ] **T1.2 Extend icon integrity gate**
-  - [ ] SVG ↔ catalog 1:1.
-  - [ ] Tags bắt buộc; duplicate SVG bị phát hiện.
+- [x] **T1.2 Extend icon integrity gate**
+  - [x] SVG ↔ catalog 1:1.
+  - [x] Tags bắt buộc; duplicate SVG bị phát hiện.
 - [ ] **T1.3 Establish Playwright showcase suite**
   - [ ] `npm run test:e2e` chạy test thật.
   - [ ] Theme/navigation/critical interaction pass hai lần liên tiếp.

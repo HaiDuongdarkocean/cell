@@ -219,13 +219,13 @@ Final maturity audit ≥85/100
 **Description:** Mở rộng icon QC từ geometry sang file↔catalog integrity và semantic metadata.
 
 **Acceptance criteria:**
-- [ ] Mỗi SVG có đúng một catalog entry.
-- [ ] Mỗi catalog entry trỏ tới SVG tồn tại và có tags không rỗng.
-- [ ] Duplicate normalized SVG content bị flag.
+- [x] Mỗi SVG có đúng một catalog entry.
+- [x] Mỗi catalog entry trỏ tới SVG tồn tại và có tags không rỗng.
+- [x] Duplicate normalized SVG content bị flag.
 
 **Verification:**
-- [ ] Existing 90 icons pass.
-- [ ] Fixtures missing-entry, dead-entry, empty-tags, duplicate fail đúng lý do.
+- [x] Existing 90 icons pass.
+- [x] Fixtures missing-entry, dead-entry, empty-tags, duplicate fail đúng lý do.
 
 **Dependencies:** Checkpoint A.
 

@@ -35,6 +35,10 @@ import eyeSvg from './svg/eye.svg?raw';
 import chevronDownSvg from './svg/chevron-down.svg?raw';
 import panelBottomCloseSvg from './svg/panel-bottom-close.svg?raw';
 
+// === Panel left variants ===
+import panelLeftCollapseSvg from './svg/panel-left-collapse.svg?raw';
+import panelLeftExpandSvg from './svg/panel-left-expand.svg?raw';
+
 // === General UI icons ===
 import xSvg from './svg/x.svg?raw';
 import downloadSvg from './svg/download.svg?raw';
@@ -136,6 +140,8 @@ export { default as eyeOffIcon } from './svg/eye-off.svg?raw';
 export { default as eyeIcon } from './svg/eye.svg?raw';
 export { default as chevronDownIcon } from './svg/chevron-down.svg?raw';
 export { default as panelBottomCloseIcon } from './svg/panel-bottom-close.svg?raw';
+export { default as panelLeftCollapseIcon } from './svg/panel-left-collapse.svg?raw';
+export { default as panelLeftExpandIcon } from './svg/panel-left-expand.svg?raw';
 export { default as xIcon } from './svg/x.svg?raw';
 export { default as downloadIcon } from './svg/download.svg?raw';
 export { default as searchIcon } from './svg/search.svg?raw';
@@ -249,6 +255,8 @@ export const ICON_CATALOG = {
   eyeOff:           { svg: eyeOffSvg,           source: 'lucide/eye-off',            tags: ['hide','eye-off','invisible','none','conceal'] } as IconEntry,
   chevronDown:      { svg: chevronDownSvg,      source: 'lucide/chevron-down',       tags: ['collapse','chevron','down','arrow-down','fold','dropdown','expand'] } as IconEntry,
   panelBottomClose: { svg: panelBottomCloseSvg, source: 'lucide/panel-bottom-close', tags: ['panel','hide','close','bottom','collapse-panel'] } as IconEntry,
+  panelLeftCollapse: { svg: panelLeftCollapseSvg, source: 'custom/panel-left-collapse', tags: ['panel','left','collapse','sidebar','hide'] } as IconEntry,
+  panelLeftExpand:   { svg: panelLeftExpandSvg,   source: 'custom/panel-left-expand',   tags: ['panel','left','expand','sidebar','show'] } as IconEntry,
 
   // === General UI ===
   x:           { svg: xSvg,           source: 'lucide/x',           tags: ['close','dismiss','cancel','x','clear'] } as IconEntry,
