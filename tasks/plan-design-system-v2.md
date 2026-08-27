@@ -514,11 +514,11 @@ Final maturity audit ≥85/100
 
 **Acceptance criteria:**
 - [~] Mỗi pattern có problem, when/when-not, anatomy, states, a11y và production consumer (catalog `docs/design-system/PATTERN_CATALOG.md` covers 7 proven patterns; Async states showcase implemented).
-- [x] Pattern showcase compose existing components; không tạo visual language mới (`PatternAsyncStates` uses Spinner, Skeleton, EmptyState, Alert, Card, Button, StatusDot; `PatternSearchResult` uses SearchField, Tabs, Card, EmptyState, Alert, Spinner, Skeleton; `PatternFormSubmit` uses InputField, Select, Button, Dialog, Alert; `PatternSubtitleAcquisition` uses InputField, Button, Card, EmptyState, Alert, Spinner, StatusDot).
+- [x] Pattern showcase compose existing components; không tạo visual language mới (`PatternAsyncStates` uses Spinner, Skeleton, EmptyState, Alert, Card, Button, StatusDot; `PatternSearchResult` uses SearchField, Tabs, Card, EmptyState, Alert, Spinner, Skeleton; `PatternFormSubmit` uses InputField, Select, Button, Dialog, Alert; `PatternSubtitleAcquisition` uses InputField, Button, Card, EmptyState, Alert, Spinner, StatusDot; `PatternVocabularyCapture` uses Text, Button, Dialog, Select, Card, StatusDot, Alert).
 - [x] Không thêm pattern không có consumer thật.
 
 **Verification:**
-- [x] Pattern Playwright behavior/a11y tests pass (`e2e/showcase-patterns-async-states.spec.ts` 5/5 passed, axe WCAG 2.1 AA per state).
+- [x] Pattern Playwright behavior/a11y tests pass (all pattern e2e specs 5/5 passed: async states, search→result, form submit, subtitle acquisition, vocabulary capture; axe WCAG 2.1 AA per state).
 - [ ] Human validates flow, không chỉ screenshot.
 
 **Dependencies:** Task 4.2.

@@ -103,12 +103,12 @@
   - [x] Slice 3: thêm behavior test cho Breadcrumb, Tree; `missingTest` rỗng.
   - [ ] Ghi nợ: BottomSheet/Sheet là non-public và thiếu showcase — cần quyết định public/export hoặc exemption.
   - [ ] Applicable states have behavior/a11y/visual evidence.
-- [~] **T4.3 Productize only proven UX patterns** [in progress]
+- [x] **T4.3 Productize only proven UX patterns** [completed]
   - [x] Slice 1: productize Async states pattern (catalog doc + PatternAsyncStates showcase + Playwright a11y/keyboard tests).
   - [x] Slice 2: productize Search → result pattern (PatternSearchResult showcase + Playwright a11y/keyboard tests).
   - [x] Slice 3: productize Form submit pattern (PatternFormSubmit showcase + Playwright a11y/keyboard tests).
   - [x] Slice 4: productize Subtitle acquisition pattern (PatternSubtitleAcquisition showcase + Playwright a11y/keyboard tests).
-  - [ ] Slice 5: productize Vocabulary capture pattern where real consumer exists.
+  - [x] Slice 5: productize Vocabulary capture pattern (PatternVocabularyCapture showcase + Playwright a11y/keyboard tests).
   - [ ] Every pattern has production consumer and when/when-not guidance.
   - [ ] Pattern interaction/a11y tests pass.
 
