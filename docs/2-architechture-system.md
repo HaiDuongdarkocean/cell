@@ -22,6 +22,12 @@ src/
 │   ├── sidepanel/      #   Side panel UI (React)
 │   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
 │   ├── design-system-showcase/  #   Design system showcase page — App.tsx + autoDiscovery.ts (Vite glob + discovery) + autoDiscovery.logic.ts (pure taxonomy inference) + ShowcaseGallery.tsx/.module.css + MissingShowcasePlaceholder + preview components + concept mockups + mock data for offline component demos
+│   ├── mock-streaming-page/    #   StreamFlix same-origin player mock — StreamFlixPage.tsx + VideoPlayer.tsx + streamFlixData.ts + tokens.css
+│   ├── mock-streaming-iframe-page/  #   StreamFlix cross-origin iframe host mock — shares StreamFlixPage with mode='iframe-host'
+│   ├── mock-iframe-player/     #   StreamFlix child iframe player mock — shares StreamFlixPage with mode='iframe-child'
+│   ├── mock-youtube/           #   YouTube-style video page mock
+│   ├── mock-hardsub-page/      #   Hard-sub video page mock
+│   ├── mock-youtube-hardsub/   #   YouTube hard-sub video page mock
 │   └── reader/                 #   Reader page (React) — TXT import/read/tokenize/TTS (Day-1 MVP)
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection

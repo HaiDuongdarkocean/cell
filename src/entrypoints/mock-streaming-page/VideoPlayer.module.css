@@ -1,0 +1,320 @@
+/* VideoPlayer — liquid-glass custom video controls for StreamFlix mock. */
+
+.playerContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--color-background-inverted);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.videoWrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.videoElement {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-dropdown);
+}
+
+.spinner {
+  width: var(--space-12);
+  height: var(--space-12);
+  border: var(--space-1) solid color-mix(in srgb, var(--color-text-inverse), transparent 80%);
+  border-top-color: var(--color-text-inverse);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.mask {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-background-inverted), transparent 70%);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .mask:hover {
+    background: color-mix(in srgb, var(--color-background-inverted), transparent 80%);
+  }
+}
+
+.state {
+  width: var(--space-20);
+  height: var(--space-20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-primary), transparent 20%);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-full);
+  opacity: 0.95;
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .mask:hover .state {
+    transform: scale(1.08);
+  }
+}
+
+.subtitleOverlay {
+  position: absolute;
+  bottom: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80%;
+  padding: var(--space-1) var(--space-3);
+  background: color-mix(in srgb, var(--color-background-inverted), transparent 30%);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-md);
+  line-height: var(--leading-normal);
+  text-align: center;
+  border-radius: var(--radius-md);
+  z-index: var(--z-base);
+  pointer-events: none;
+  text-shadow: var(--overlay-text-shadow);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+}
+
+.modeBadge {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: var(--z-base);
+  padding: var(--space-0-5) var(--space-2);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-inverse);
+  background: color-mix(in srgb, var(--color-background-inverted), transparent 40%);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.modeBadge[data-mode="hash"] {
+  border-left: 2px solid var(--color-primary);
+}
+
+.modeBadge[data-mode="track"] {
+  border-left: 2px solid var(--color-success);
+}
+
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-3) var(--space-2);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-background-inverted), transparent 20%) 0%,
+    color-mix(in srgb, var(--color-background-inverted), transparent 60%) 60%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out);
+  pointer-events: none;
+}
+
+.playerContainer.controlsVisible .controls,
+.playerContainer:hover .controls,
+.playerContainer:not(.playing) .controls {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .controls {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.progress {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-bottom: var(--space-1);
+}
+
+.progressTrack {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: color-mix(in srgb, var(--color-text-inverse), transparent 75%);
+  border-radius: var(--radius-pill);
+  transition: height var(--duration-fast) var(--ease-out);
+}
+
+.progress:hover .progressTrack {
+  height: 6px;
+}
+
+.progressBuffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: color-mix(in srgb, var(--color-text-inverse), transparent 65%);
+  border-radius: var(--radius-pill);
+}
+
+.progressPlayed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+
+.progressThumb {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-primary);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.progress:hover .progressThumb {
+  opacity: 1;
+}
+
+.controlsBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.controlsLeft,
+.controlsRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.controlBtn {
+  width: var(--touch-target-desktop);
+  height: var(--touch-target-desktop);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-md);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .controlBtn:hover {
+    background: color-mix(in srgb, var(--color-text-inverse), transparent 85%);
+  }
+}
+
+.volumeGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--space-16);
+  height: var(--space-1);
+  background: color-mix(in srgb, var(--color-text-inverse), transparent 70%);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  outline: none;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-text-inverse);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-text-inverse);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.timeDisplay {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-inverse);
+  font-variant-numeric: tabular-nums;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+.controlSelect {
+  min-width: 100px;
+}
+
+@media (max-width: 600px) {
+  .controlsBar {
+    flex-wrap: wrap;
+  }
+
+  .controlsRight {
+    order: -1;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .controlSelect {
+    min-width: 80px;
+  }
+}
