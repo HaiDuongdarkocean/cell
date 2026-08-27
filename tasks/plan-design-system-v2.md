@@ -513,12 +513,12 @@ Final maturity audit ≥85/100
 **Description:** Trích pattern từ production flows: loading, empty, error recovery, search→result, form submit, subtitle acquisition, vocabulary capture.
 
 **Acceptance criteria:**
-- [ ] Mỗi pattern có problem, when/when-not, anatomy, states, a11y và production consumer.
-- [ ] Pattern showcase compose existing components; không tạo visual language mới.
-- [ ] Không thêm pattern không có consumer thật.
+- [~] Mỗi pattern có problem, when/when-not, anatomy, states, a11y và production consumer (catalog `docs/design-system/PATTERN_CATALOG.md` covers 7 proven patterns; Async states showcase implemented).
+- [x] Pattern showcase compose existing components; không tạo visual language mới (`PatternAsyncStates` uses Spinner, Skeleton, EmptyState, Alert, Card, Button, StatusDot).
+- [x] Không thêm pattern không có consumer thật.
 
 **Verification:**
-- [ ] Pattern Playwright behavior/a11y tests pass.
+- [x] Pattern Playwright behavior/a11y tests pass (`e2e/showcase-patterns-async-states.spec.ts` 5/5 passed, axe WCAG 2.1 AA per state).
 - [ ] Human validates flow, không chỉ screenshot.
 
 **Dependencies:** Task 4.2.

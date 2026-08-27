@@ -1,0 +1,40 @@
+.root {
+  padding: var(--space-6);
+}
+
+.controls {
+  flex-wrap: wrap;
+}
+
+.stage {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  min-height: 15rem;
+  background: var(--color-surface);
+}
+
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.padded {
+  padding: var(--space-6);
+}
+
+.skeletonList {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.retry {
+  margin-top: var(--space-4);
+}
+
+.result {
+  padding: var(--space-3) var(--space-4);
+}
