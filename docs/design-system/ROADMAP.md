@@ -205,7 +205,7 @@ dist/design-system-showcase/             # generated, ignored, disposable
 | Visual regression | Playwright `toHaveScreenshot()` | Có sẵn trong dependency hiện tại |
 | Semantic regression | Playwright ARIA snapshots | Có sẵn; dùng cho role/name/order quan trọng |
 | Runtime accessibility | `@axe-core/playwright` | Một dev dependency mới, sau bundle/dev-cost check |
-| CSS/token policy | Stylelint + declaration policy, hoặc parser-based Node checker | Spike trước; thay audit regex nếu signal tốt hơn |
+| CSS/token policy | `scripts/check-design-system-css.mjs` (PostCSS parser gate) | Parser gate đang chạy trên `src/shared/ui`; Stylelint chỉ thêm nếu benchmark chứng minh lợi ích |
 | Token contrast | Pure contrast module dùng chung | Fix threshold/alpha compositing và reuse build/runtime |
 | Icon integrity | Mở rộng `check-icons.js` | Verify file↔catalog 1:1, semantic tags, duplicate SVG |
 | Extension E2E | Playwright bundled Chromium + persistent context | Official deterministic path cho CI |
@@ -289,7 +289,7 @@ Problem / user flow
 1. Tạo Playwright showcase suite với fixture light/dark, breakpoint và reduced motion.
 2. Tạo extension fixture theo official persistent-context workflow trên bundled Chromium.
 3. Thêm CI chạy typecheck, unit, build, icon/token checks và Playwright.
-4. Spike Stylelint/parser checker trên `src/shared/ui` trước; đo precision/false-positive rồi mới mở rộng.
+4. Parser-based CSS audit gate `scripts/check-design-system-css.mjs` kiểm `src/shared/ui/*.module.css` (bỏ `*.showcase.module.css` và code showcase/feature) với PostCSS; gồm fixtures good/bad. Mở rộng scope sau khi false-positive <5%.
 5. Mở rộng icon checker: mọi SVG phải có đúng một catalog entry và tags không rỗng.
 
 **Exit criteria**

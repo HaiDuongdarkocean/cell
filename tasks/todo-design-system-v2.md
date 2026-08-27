@@ -33,8 +33,8 @@
 
 ## Phase 1 — Deterministic quality gates
 
-- [ ] **T1.1 Replace noisy M3 shell audit with scoped parser audit**
-  - [ ] Cell-specific parser gate có fixtures.
+- [x] **T1.1 Replace noisy M3 shell audit with scoped parser audit**
+  - [x] Cell-specific parser gate có fixtures.
   - [ ] False-positive rate <5% trên reviewed sample.
 - [ ] **T1.2 Extend icon integrity gate**
   - [ ] SVG ↔ catalog 1:1.
