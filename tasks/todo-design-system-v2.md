@@ -1,0 +1,140 @@
+# Cell Design System v2 — Execution Checklist
+
+> Plan: `tasks/plan-design-system-v2.md`  
+> Canonical audit/roadmap: `docs/design-system/ROADMAP.md`  
+> Không chạy checklist cũ `todo-design-system-enforcement.md` hoặc `todo-foundation-v1.md` song song.
+
+## Phase 0 — Trust and repository boundary
+
+- [ ] **T0.1 Approve cleanup manifest**
+  - [ ] Manifest có delete/move/keep/generated và dependency proof.
+  - [ ] Anh yêu xác nhận exact destructive paths.
+- [ ] **T0.2 Make showcase build single-path and disposable**
+  - [ ] Main build không ghi vào docs.
+  - [ ] Standalone build/preview chạy từ `dist/design-system-showcase/`.
+- [ ] **T0.3 Clean and reorganize design-system docs**
+  - [ ] Root chỉ còn DESIGN, ROADMAP, guides.
+  - [ ] Không có build/public artifacts trong docs.
+- [ ] **T0.4 Reconcile SSOT documents and dead references**
+  - [ ] Một numeric value có một canonical source.
+  - [ ] Dead Design System links = 0.
+- [x] **T0.5 Automate showcase taxonomy and discovery**
+  - [x] New `.showcase.tsx` files auto-classify without editing `CANONICAL_META`.
+  - [x] Path-based level inference works for all component locations.
+  - [x] Category inference from filename or `showcaseMeta` works.
+  - [x] `CANONICAL_META` reduced to override/special cases only.
+
+### Checkpoint A
+
+- [ ] Showcase source/build/docs tách trách nhiệm.
+- [ ] Builds không repopulate docs.
+- [ ] Typecheck, unit, production build, development build đã chạy.
+- [ ] Anh yêu review cleanup diff.
+
+## Phase 1 — Deterministic quality gates
+
+- [ ] **T1.1 Replace noisy M3 shell audit with scoped parser audit**
+  - [ ] Cell-specific parser gate có fixtures.
+  - [ ] False-positive rate <5% trên reviewed sample.
+- [ ] **T1.2 Extend icon integrity gate**
+  - [ ] SVG ↔ catalog 1:1.
+  - [ ] Tags bắt buộc; duplicate SVG bị phát hiện.
+- [ ] **T1.3 Establish Playwright showcase suite**
+  - [ ] `npm run test:e2e` chạy test thật.
+  - [ ] Theme/navigation/critical interaction pass hai lần liên tiếp.
+- [ ] **T1.4 Establish Chromium extension E2E fixture**
+  - [ ] Dynamic extension ID từ service worker.
+  - [ ] Popup + content-script mock flow pass.
+- [ ] **T1.5 Add required CI quality pipeline**
+  - [ ] CI chạy full deterministic gates.
+  - [ ] Deliberate failure làm job fail và lưu report/trace.
+
+### Checkpoint B
+
+- [ ] CSS/icon/token checks tạo actionable signal.
+- [ ] Showcase + extension Playwright pass local và CI.
+- [ ] Manual MCP không bị mô tả là merge gate.
+
+## Phase 2 — Accessibility correctness
+
+- [ ] **T2.1 Create one contrast engine**
+  - [ ] Hex/rgb/rgba/alpha supported.
+  - [ ] Normal 4.5:1; large 3:1 chỉ qua explicit role.
+  - [ ] Unsupported/skipped pair = 0.
+- [ ] **T2.2 Integrate rendered axe checks**
+  - [ ] `@axe-core/playwright` dev-only, không tăng production bundle.
+  - [ ] Stable scope có 0 unwaived axe violation.
+- [ ] **T2.3 Add keyboard, focus and ARIA contracts**
+  - [ ] P0 controls có keyboard/focus assertions.
+  - [ ] Critical semantics có reviewed ARIA snapshots.
+
+### Checkpoint C
+
+- [ ] 0 skipped contrast pair.
+- [ ] 0 unwaived axe violation.
+- [ ] 100% P0 interactive components có keyboard/focus evidence.
+- [ ] NVDA + real Chrome release checklist tồn tại.
+
+## Phase 3 — Visual and responsive confidence
+
+- [ ] **T3.1 Define representative visual state matrix**
+  - [ ] Human approves P0 light/dark/state matrix.
+- [ ] **T3.2 Add Playwright visual baselines**
+  - [ ] P0 approved snapshots exist.
+  - [ ] Deliberate visual change produces readable diff.
+- [ ] **T3.3 Add responsive, zoom and pointer scenarios**
+  - [ ] 320/600/840/1200/1600 pass.
+  - [ ] 200% zoom/reflow and coarse-pointer targets pass.
+
+### Checkpoint D
+
+- [ ] P0 visual matrix pass.
+- [ ] Visual flake target <1% after 30 runs or current baseline documented.
+- [ ] Horizontal overflow = 0 outside documented exception.
+
+## Phase 4 — Component and pattern productization
+
+- [ ] **T4.1 Generate public component inventory**
+  - [ ] All public exports have metadata/evidence/exemption.
+  - [ ] Missing/orphan/zero-consumer cases detected automatically.
+- [ ] **T4.2 Close stable component evidence gaps**
+  - [ ] 100% stable visual exports have showcase + behavior test.
+  - [ ] Applicable states have behavior/a11y/visual evidence.
+- [ ] **T4.3 Productize only proven UX patterns**
+  - [ ] Every pattern has production consumer and when/when-not guidance.
+  - [ ] Pattern interaction/a11y tests pass.
+
+### Checkpoint E
+
+- [ ] Stable visual export evidence gaps = 0.
+- [ ] Pattern catalog contains only proven flows.
+- [ ] Component count is not used as a success target.
+
+## Phase 5 — Governance and evolution
+
+- [ ] **T5.1 Define lifecycle and contribution contract**
+  - [ ] Experimental→stable→deprecated→removed documented.
+  - [ ] Breaking change requires migration note + window.
+- [ ] **T5.2 Add Design System health report**
+  - [ ] Adoption, drift, token, evidence, flake, bundle metrics generated.
+  - [ ] Shared UI adoption ≥95% or documented exceptions.
+- [ ] **T5.3 Re-audit maturity and accept release**
+  - [ ] Same rubric score ≥85/100.
+  - [ ] Fresh-context adversarial review done.
+  - [ ] Anh yêu approves release state.
+
+## Final gates
+
+- [ ] `npm run typecheck`
+- [ ] `npm run test:unit`
+- [ ] `npm run build`
+- [ ] `npx vite build --mode development`
+- [ ] `npm run build:design-system`
+- [ ] `npm run test:e2e`
+- [ ] `npm run lint`
+- [ ] Built showcase has no 404.
+- [ ] Bundled Chromium extension E2E pass.
+- [ ] Real Chrome release smoke pass.
+- [ ] Light/dark, reduced motion, keyboard, 200% zoom and coarse pointer pass.
+- [ ] `git diff --check` pass.
+- [ ] Wiki + architecture map match real tree.
