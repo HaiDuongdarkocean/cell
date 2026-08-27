@@ -9,14 +9,31 @@ export default defineConfig({
   reporter: 'html',
   timeout: 120_000, // 2 min per test (sites can be slow)
   expect: { timeout: 30_000 },
+  outputDir: 'test-results/',
   use: {
-    baseURL: 'chrome://extensions',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  webServer: {
+    command:
+      'npm run build:design-system && npx http-server dist/design-system-showcase -p 8123 -c-1 -d false -P http://localhost:8123/design-system-showcase.html',
+    url: 'http://localhost:8123/design-system-showcase.html',
+    timeout: 120_000,
+    reuseExistingServer: !process.env.CI,
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/extension*.spec.ts',
+      use: { ...devices['Desktop Chrome'], baseURL: 'chrome://extensions' },
+    },
+    {
+      name: 'showcase',
+      testMatch: '**/showcase*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:8123/design-system-showcase.html',
+      },
     },
   ],
 });

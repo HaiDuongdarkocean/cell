@@ -74,12 +74,12 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 | Showcase | 82 showcase files tổng; chỉ BottomSheet, ErrorBoundary, Sheet thiếu showcase trong shared UI | Living showcase gần đầy đủ |
 | Icon system | 90 SVG; `scripts/check-icons.js` mở rộng kiểm geometry + file↔catalog 1:1 + tags + duplicate SVG | 90/90 pass; gate hoạt động với Jest fixtures |
 | Token pipeline | `generate-tokens.js` → `tokens.css`; predev/prebuild tự sinh | Có automation |
-| UI browser tool | Playwright 1.61 đã cài; DevTools/stealth MCP đang dùng thủ công | Có nền tảng nhưng chưa thành test suite |
+| UI browser tool | Playwright 1.61; `e2e/showcase.spec.ts` (3 tests) + fixture, webServer auto-build/serve | Showcase suite pass local 2x, trace retain-on-failure |
 | Unit infrastructure | Jest + Testing Library, 403 test/spec files toàn repo | Không nên migration wholesale thiếu benchmark |
 
 ### 4.2 Chưa có hoặc chưa đạt
 
-1. `playwright.config.ts` trỏ tới `./e2e`, nhưng thư mục không tồn tại; `npm run test:e2e` chưa có suite thực thi.
+1. `playwright.config.ts` trỏ tới `./e2e`; `e2e/showcase.fixture.ts` + `e2e/showcase.spec.ts` đã tạo, webServer tự động build/serve, `npm run test:e2e` chạy đúng showcase suite.
 2. Không có CI workflow; kiểm tra local chưa phải deterministic merge gate.
 3. Không có visual regression baseline tự động.
 4. Không có runtime accessibility scan; token contrast không đủ để chứng minh component accessible.
@@ -390,7 +390,7 @@ Không xây thêm component trước P0/P1 trừ khi feature thật bị block. 
 | Shared UI colocated tests | 70 | 100% stable visual/interactive exports |
 | Shared UI missing showcase | 3 | 0 hoặc documented exemption |
 | Icons passing geometry QC | 90/90 | 100% + catalog 1:1 |
-| Playwright E2E tests | 0 | Critical showcase + extension flows |
+| Playwright E2E tests | 3 (showcase) | Critical showcase + extension flows |
 | CI workflows | 0 | 1 required quality pipeline |
 | Runtime a11y automation | 0 | 100% stable showcase scope |
 | Visual baselines | 0 | 100% P0 state matrix |
