@@ -72,7 +72,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 | Component library | 81 file TSX nguồn trong `src/shared/ui`; barrel có 80 export statements | Library rộng, taxonomy còn drift |
 | Component tests | 70 file `src/shared/ui/*.test.tsx` | Coverage file-level cao nhưng chưa chứng minh interaction/a11y |
 | Showcase | 82 showcase files tổng; chỉ BottomSheet, ErrorBoundary, Sheet thiếu showcase trong shared UI | Living showcase gần đầy đủ |
-| Icon system | 90 SVG; `scripts/check-icons.js` báo 90/90 pass geometry/style QC | Geometry tốt; catalog metadata chưa được gate đầy đủ |
+| Icon system | 90 SVG; `scripts/check-icons.js` mở rộng kiểm geometry + file↔catalog 1:1 + tags + duplicate SVG | 90/90 pass; gate hoạt động với Jest fixtures |
 | Token pipeline | `generate-tokens.js` → `tokens.css`; predev/prebuild tự sinh | Có automation |
 | UI browser tool | Playwright 1.61 đã cài; DevTools/stealth MCP đang dùng thủ công | Có nền tảng nhưng chưa thành test suite |
 | Unit infrastructure | Jest + Testing Library, 403 test/spec files toàn repo | Không nên migration wholesale thiếu benchmark |
@@ -92,7 +92,7 @@ Thứ tự giải quyết xung đột: **code/token hiện tại → STANDARD �
 11. `m3-design-standard/audit.sh` trả 534 finding, có shell error tại heuristic count và flag mock pages/wrapper hợp lệ; tín hiệu thấp, không thể dùng làm gate.
 12. `generate-tokens.js` gắn 3:1 cho secondary/muted text dù role mặc định là 12–14px; normal text cần 4.5:1. Resolver cũng skip pair `rgba()` vì chỉ validate màu bắt đầu bằng `#`.
 13. Contrast math tồn tại ở cả build script và runtime theme validator, có nguy cơ drift.
-14. Icon QC kiểm geometry nhưng chưa đảm bảo mọi SVG được đăng ký đúng một lần trong `ICON_CATALOG` với semantic tags.
+14. Icon QC đã mở rộng kiểm geometry + file↔catalog 1:1 + tags + duplicate SVG; 90/90 pass.
 
 ## 5. Maturity score
 
@@ -207,7 +207,7 @@ dist/design-system-showcase/             # generated, ignored, disposable
 | Runtime accessibility | `@axe-core/playwright` | Một dev dependency mới, sau bundle/dev-cost check |
 | CSS/token policy | `scripts/check-design-system-css.mjs` (PostCSS parser gate) | Parser gate đang chạy trên `src/shared/ui`; Stylelint chỉ thêm nếu benchmark chứng minh lợi ích |
 | Token contrast | Pure contrast module dùng chung | Fix threshold/alpha compositing và reuse build/runtime |
-| Icon integrity | Mở rộng `check-icons.js` | Verify file↔catalog 1:1, semantic tags, duplicate SVG |
+| Icon integrity | `scripts/check-icons.js` (regex parser + CLI paths + Jest fixtures) | Verify file↔catalog 1:1, semantic tags, duplicate SVG — implemented |
 | Extension E2E | Playwright bundled Chromium + persistent context | Official deterministic path cho CI |
 | Chrome/Edge/Brave thực | Existing nodriver + DevTools MCP | Exploratory/manual smoke test, không phải merge gate |
 | Performance/a11y diagnosis | Chrome DevTools MCP | Dùng khi cần trace, computed accessibility tree, runtime debug |
