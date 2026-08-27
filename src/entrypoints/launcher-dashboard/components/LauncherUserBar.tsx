@@ -53,10 +53,6 @@ export function LauncherUserBar({ onAddClick }: LauncherUserBarProps) {
       <button
         type="button"
         className={styles.button}
-        onClick={() => {
-          // eslint-disable-next-line no-console
-          console.log('[launcher] settings clicked');
-        }}
         aria-label="Settings"
         title="Settings"
       >
