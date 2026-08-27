@@ -368,13 +368,13 @@ Final maturity audit ≥85/100
 **Description:** Kiểm Dialog, Drawer, Sheet, Tabs, Select và subtitle controls bằng keyboard; dùng ARIA snapshots cho semantic structure quan trọng.
 
 **Acceptance criteria:**
-- [ ] Focus order/trap/restore được assertion.
-- [ ] Escape/Enter/Space/Arrow behavior theo component contract.
-- [ ] Stable role/name/order có reviewed ARIA snapshots.
+- [x] Focus order/trap/restore được assertion (Dialog, Drawer).
+- [x] Escape/Enter/Space/Arrow behavior theo component contract (Button, Tabs, Select, Input).
+- [x] Stable role/name/order có reviewed ARIA snapshots (Tabs tabIndex/role/aria-selected, Select listbox/aria-activedescendant, Dialog aria-modal/aria-labelledby).
 
 **Verification:**
-- [ ] Tests chạy bằng `keyboard`, không gọi handler trực tiếp.
-- [ ] `prefers-reduced-motion` scenario pass.
+- [x] `e2e/showcase-keyboard.spec.ts` chạy bằng `keyboard.press`, không gọi handler trực tiếp.
+- [ ] `prefers-reduced-motion` scenario pass (ghi nợ T3 visual testing).
 
 **Dependencies:** Task 2.2.
 

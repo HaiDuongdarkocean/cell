@@ -68,6 +68,7 @@ export function Select({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
 
   const selectedIndex = options.findIndex((opt) => opt.value === value);
   const selectedOption = selectedIndex !== -1 ? options[selectedIndex] : null;
@@ -126,6 +127,22 @@ export function Select({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, closeMenu]);
+
+  // Move focus to the listbox so keyboard navigation (Arrow, Home, End, Enter,
+  // Space) is handled by the menu. Tab out of the listbox closes the menu.
+  useEffect(() => {
+    if (isOpen) {
+      listboxRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  const handleListboxKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Tab') {
+      closeMenu();
+      return;
+    }
+    handleMenuKeyDown(e);
+  };
 
   const handleTriggerClick = (): void => {
     if (isOpen) {
@@ -237,11 +254,13 @@ export function Select({
 
       {isOpen && (
         <div
+          ref={listboxRef}
+          tabIndex={-1}
           className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
           role="listbox"
           aria-activedescendant={highlightedIndex >= 0 ? `select-option-${options[highlightedIndex]?.value}` : undefined}
           style={menuMaxHeight !== undefined ? { '--select-menu-max-height': `${menuMaxHeight}px` } as React.CSSProperties : undefined}
-          onKeyDown={handleMenuKeyDown}
+          onKeyDown={handleListboxKeyDown}
         >
           {options.map((opt, index) => (
             <div

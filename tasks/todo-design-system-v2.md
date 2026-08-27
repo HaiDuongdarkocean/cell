@@ -64,9 +64,9 @@
 - [x] **T2.2 Integrate rendered axe checks**
   - [x] `@axe-core/playwright` dev-only, không tăng production bundle.
   - [x] Stable scope có 0 unwaived axe violation.
-- [ ] **T2.3 Add keyboard, focus and ARIA contracts**
-  - [ ] P0 controls có keyboard/focus assertions.
-  - [ ] Critical semantics có reviewed ARIA snapshots.
+- [x] **T2.3 Add keyboard, focus and ARIA contracts**
+  - [x] P0 controls có keyboard/focus assertions (Dialog, Drawer, Button, Tabs, Select, Input).
+  - [x] Critical semantics có reviewed ARIA snapshots trong `showcase-keyboard.spec.ts`.
 
 ### Checkpoint C
 
