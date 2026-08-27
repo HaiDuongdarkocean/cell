@@ -348,7 +348,7 @@ Problem / user flow
 - [x] 100% public export có metadata, owner/status và usage count — evidence: `docs/design-system/COMPONENT_INVENTORY.json` từ `scripts/generate-component-inventory.mjs`.
 - [x] 100% stable visual component có showcase + behavior test — evidence: `src/shared/ui/*.showcase.tsx` + `src/shared/ui/*.test.tsx`.
 - [x] Mỗi pattern có problem, when/when-not, anatomy, a11y và production consumer — evidence: `docs/design-system/PATTERN_CATALOG.md` + `src/entrypoints/design-system-showcase/pages/patterns-*.showcase.tsx`.
-- [~] Không có component stable 0 consumer trừ documented primitive — evidence: `docs/design-system/HEALTH_REPORT.md` §Component evidence gaps liệt kê `zeroConsumerPublicExports`; 42 public exports đang `unused` được ghi nhận.
+- [~] Không có component stable 0 consumer trừ documented primitive — evidence: `docs/design-system/HEALTH_REPORT.md` §Component evidence gaps liệt kê `zeroConsumerPublicExports`; 46 public exports đang `unused` được ghi nhận.
 
 ## Phase 5 — Governance và continuous evolution
 
@@ -564,23 +564,21 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 **Đã hoàn thành**
 
 1. Cập nhật rubric nội bộ lên **87/100**; mỗi dimension có evidence link; score dựa trên evidence hiện tại, một số dimension còn gap được ghi `[~]`.
-2. Tất cả P0–P5 task trong `tasks/todo-design-system-v2.md` đã hoàn thành; riêng một số exit criteria P4/P5 chưa đạt target, được đánh dấu `[~]` với documented exception/gap.
-3. Phase exit criteria có evidence link hoặc `[~]`:
-   - P0 SSOT/build boundary: `docs/design-system/` không còn build artifacts; `dist/design-system-showcase/` ignored.
-   - P1 deterministic gates: CI `design-system-ci.yml`, Playwright showcase + extension suites.
-   - P2 accessibility: axe WCAG 2.1 AA, keyboard, contrast engine.
-   - P3 visual/responsive: visual matrix + responsive matrix.
-   - P4 component/pattern: inventory auto-generated, 5 patterns productized, all public exports have test.
-   - P5 governance: lifecycle/contribution contract + health report.
+2. Mọi task T5.1–T5.3 trong `tasks/todo-design-system-v2.md` đã hoàn thành; riêng một số exit criteria P4/P5 chưa đạt target, được đánh dấu `[~]` với documented exception/gap. Các checkbox `[ ]` còn lại trong `tasks/plan-design-system-v2.md` là work ghi nợ / ngoài scope T5.3 (nằm trong §17 Remaining gaps).
+3. Phase exit criteria có evidence link hoặc `[~]` trong §18.
 4. Xác định remaining gaps với owner, severity và next review date trong `## 17. Remaining gaps`.
-5. Fresh-context adversarial review bằng Codex CLI phát hiện lỗi trong `scripts/generate-design-system-health-report.mjs`: double-count CSS, mockup classification, adoption metric, inventory freshness, CSS audit error handling, bundle mtime; đã sửa và regenerate.
+5. Fresh-context adversarial review 3 round Codex CLI:
+   - Round 1: double-count CSS, mockup classification, adoption metric, inventory freshness, CSS audit error handling, bundle mtime.
+   - Round 2: rubric count mismatch, RegExp `g` bug, mock/mockup consumer exclusion, `continue-on-error` CI, stale dates.
+   - Round 3: deterministic `generatedAt`, bundle freshness proof, consumer import source anchoring, exit-criterion coverage, completion-claim accuracy.
+   Các finding đã reconcile trong code/docs; round 3 findings về source-anchored consumers và deterministic timestamp đã sửa.
 
 ## 17. Remaining gaps (post T5.3)
 
 | Gap | Severity | Owner | Next review | Evidence / note |
 |---|---|---|---|---|
 | `BottomSheet`, `ErrorBoundary`, `Sheet` thiếu showcase | Low | ui-guild | 2026-09-15 | `COMPONENT_INVENTORY.json` `needsShowcase`; 2 trong số 84 |
-| 42 public exports có 0 consumer | Medium | ui-guild + product | 2026-09-15 | `HEALTH_REPORT.md`; nhiều là primitive dự phòng hoặc chưa integrate |
+| 46 public exports có 0 consumer | Medium | ui-guild + product | 2026-09-15 | `HEALTH_REPORT.md`; nhiều là primitive dự phòng hoặc chưa integrate |
 | 162 undefined-token violations trong `src/shared/ui/*.module.css` | Medium | ui-guild | 2026-09-15 | `check-design-system-css.mjs`; non-blocking, cần migrate alias/component token |
 | Token alias/domain bloat trong `tokens.json` | Low | design-system-owner | 2026-10-01 | `ROADMAP.md` §6.2; migrate theo release, không xóa hàng loạt |
 | Visual flake <1% trong 30 runs | Low | qa-guild | 2026-09-30 | `showcase-visual.spec.ts` baseline mới tạo, cần theo dõi CI |
@@ -615,7 +613,7 @@ Cleanup là destructive operation nên phải chờ T0.1: Anh yêu xác nhận e
 | P4 | 100% public export có metadata, owner/status, usage count | [x] | [`COMPONENT_INVENTORY.json`](./COMPONENT_INVENTORY.json) từ `scripts/generate-component-inventory.mjs` |
 | P4 | 100% stable visual component có showcase + behavior test | [x] | `src/shared/ui/*.showcase.tsx` + `src/shared/ui/*.test.tsx` |
 | P4 | Mỗi pattern có problem, when/when-not, anatomy, a11y, production consumer | [x] | [`PATTERN_CATALOG.md`](./PATTERN_CATALOG.md) + `src/entrypoints/design-system-showcase/pages/patterns-*.showcase.tsx` |
-| P4 | Không có stable component 0 consumer trừ documented primitive | [~] | [`HEALTH_REPORT.md`](./HEALTH_REPORT.md) §Component evidence gaps; 42 `unused` public exports |
+| P4 | Không có stable component 0 consumer trừ documented primitive | [~] | [`HEALTH_REPORT.md`](./HEALTH_REPORT.md) §Component evidence gaps; 46 `unused` public exports |
 | P5 | Component/token mới cần reuse-gap evidence, showcase, tests, owner | [x] | [`DESIGN.md`](./DESIGN.md) §10.2 |
 | P5 | Breaking change có migration note + deprecation window | [x] | [`DESIGN.md`](./DESIGN.md) §10.3 |
 | P5 | ADR chỉ dùng cho quyết định khó đảo ngược | [x] | [`DESIGN.md`](./DESIGN.md) §10.4 |

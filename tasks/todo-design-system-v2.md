@@ -130,9 +130,9 @@
   - [x] CI publishes `HEALTH_REPORT.*` artifact; deliberate undefined-token drift appears as accepted warning.
 - [x] **T5.3 Re-audit maturity and accept release**
   - [x] Rubric score cập nhật 87/100 trong `docs/design-system/ROADMAP.md` §5.1.
-  - [x] Mọi Phase exit criterion có evidence link.
+  - [x] Mọi Phase exit criterion có evidence link (§18); một số P4/P5 ghi `[~]` với documented exception.
   - [x] Remaining gaps table trong `ROADMAP.md` §17 với owner/severity/next review.
-  - [ ] Fresh-context adversarial review.
+  - [x] Fresh-context adversarial review — 3 round Codex CLI; findings đã reconcile (consumer source anchoring, deterministic `generatedAt`, bundle freshness note, CSS audit exit-code, completion-claim accuracy).
   - [ ] Anh yêu approve release state.
   - [ ] Anh yêu approves release state.
 

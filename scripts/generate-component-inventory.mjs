@@ -10,13 +10,14 @@
  * Detects missing showcase/test, zero-consumer stable exports, and orphan showcases.
  */
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const root = join(__dirname, '..');
 const jiti = createJiti(import.meta.url);
 
@@ -132,7 +133,7 @@ async function collectSourceFiles() {
 
 async function countUsage(exportName, sourceBase, allFiles) {
   const importRe = new RegExp(
-    `import\\s+(?:type\\s+)?\\{[^}]*\\b${escapeRegExp(exportName)}\\b[^}]*\\}`,
+    `import\\s+(?:type\\s+)?\\{[^}]*\\b${escapeRegExp(exportName)}\\b[^}]*\\}\\s+from\\s+['"]@/shared/ui(?:/[^'"]*)?['"];?`,
   );
 
   const consumers = [];
@@ -282,12 +283,19 @@ async function buildNonPublicEntry(sourceBase, allFiles) {
   };
 }
 
+async function maxMtime(files) {
+  const mtimes = await Promise.all(files.map((f) => stat(f).then((s) => s.mtimeMs).catch(() => 0)));
+  return new Date(Math.max(...mtimes)).toISOString();
+}
+
 async function generateInventory() {
   const publicExports = await getPublicExports();
   const { publicSources, allSources } = await getSourceFiles();
   const publicSourceSet = new Set(publicSources);
 
   const allFiles = await collectSourceFiles();
+
+  const generatedAt = await maxMtime([...allFiles, INDEX_FILE, __filename]);
 
   const publicEntries = [];
   for (const exp of publicExports) {
@@ -335,7 +343,7 @@ async function generateInventory() {
   };
 
   const inventory = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     summary,
     publicExports: publicEntries,
     nonPublicComponents: nonPublicEntries,
@@ -351,7 +359,7 @@ async function generateInventory() {
 
   const md = `# Component Inventory
 
-> Auto-generated from ".src/shared/ui/index.ts" and source files. Do not edit by hand; run ".npm run generate:component-inventory" to refresh.
+> Auto-generated from \`src/shared/ui/index.ts\` and source files. Do not edit by hand; run \`npm run generate:component-inventory\` to refresh.
 
 ## Summary
 
