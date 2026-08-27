@@ -106,14 +106,16 @@
   transition: background var(--duration-slow) var(--ease-out), opacity var(--duration-slow) var(--ease-out);
 }
 
-.button:hover {
-  background: var(--button-liquid-surface-hover);
-  filter: brightness(1.04);
-}
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    background: var(--button-liquid-surface-hover);
+    filter: brightness(1.04);
+  }
 
-.button:hover::before,
-.button:hover::after {
-  opacity: 1;
+  .button:hover::before,
+  .button:hover::after {
+    opacity: 1;
+  }
 }
 
 .button:active {
@@ -257,9 +259,11 @@
   display: none;
 }
 
-.link:hover {
-  text-decoration: underline;
-  background: var(--color-primary-subtle);
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    text-decoration: underline;
+    background: var(--color-primary-subtle);
+  }
 }
 
 /* === Liquid Glass material styles (variant='glass') === */
@@ -278,17 +282,15 @@
   border: var(--border-width-hairline) solid var(--color-glass-border-subtle);
 }
 
-.liquidClear:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
-}
+@media (hover: hover) and (pointer: fine) {
+  .liquidClear:hover {
+    background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
+  }
 
-.liquidProminent {
-  background: var(--button-liquid-surface-active);
-}
-
-.liquidProminent:hover {
-  background: var(--button-liquid-surface-active);
-  filter: brightness(1.05);
+  .liquidProminent:hover {
+    background: var(--button-liquid-surface-active);
+    filter: brightness(1.05);
+  }
 }
 
 /* === States === */
