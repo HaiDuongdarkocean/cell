@@ -15,11 +15,13 @@
   cursor: pointer;
 }
 
-.interactive:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border);
-  transform: translateY(calc(var(--space-0-5) * -0.5));
-  box-shadow: var(--shadow-md);
+@media (hover: hover) and (pointer: fine) {
+  .interactive:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-border);
+    transform: translateY(calc(var(--space-0-5) * -0.5));
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .selected {

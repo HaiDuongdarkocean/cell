@@ -13,8 +13,10 @@
   transition: background-color var(--duration-fast) var(--ease-in-out);
 }
 
-.item:hover {
-  background: var(--color-surface-hover);
+@media (hover: hover) and (pointer: fine) {
+  .item:hover {
+    background: var(--color-surface-hover);
+  }
 }
 
 .item:focus-visible {

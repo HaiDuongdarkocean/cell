@@ -45,8 +45,9 @@
   height: var(--space-2);
   border-radius: var(--radius-full);
   background: currentColor;
-  transform: scale(0);
-  transition: transform var(--duration-fast) var(--ease-out);
+  transform: scale(0.5);
+  opacity: 0;
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
 }
 
 .input:checked + .box {
@@ -56,6 +57,7 @@
 
 .input:checked + .box::after {
   transform: scale(1);
+  opacity: 1;
 }
 
 .input:focus-visible + .box {
