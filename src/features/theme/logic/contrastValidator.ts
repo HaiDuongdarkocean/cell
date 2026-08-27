@@ -1,46 +1,44 @@
 // contrastValidator — WCAG 2.1 contrast validation (ADR-022 D2, spec F3).
 //
-// Pure logic, no DOM deps. validateTheme kiểm tra 3 pair quan trọng:
-// text/canvas, text-secondary/canvas, white/primary (button text trên primary bg).
+// Thin runtime facade over src/shared/lib/contrast.ts. Pure logic, no DOM deps.
+// validateTheme kiểm tra 3 pair quan trọng:
+// text/canvas, text-secondary/canvas, primary-foreground/primary.
 
-import { getLuminance } from '@/features/theme/logic/colorGenerator';
+import {
+  getContrastRatio as getContrastRatioEngine,
+  meetsAA as meetsAAEngine,
+  meetsAAA as meetsAAAEngine,
+  getRating as getRatingEngine,
+  pickPrimaryForeground as pickPrimaryForegroundEngine,
+} from '@/shared/lib/contrast';
+import type { ContrastRating } from '@/shared/lib/contrast';
 import type { CoreColorTokens } from '@/entities/theme';
 
-/** WCAG contrast ratio giữa 2 hex color (1-21). */
+export type { ContrastRating };
+
+/** WCAG contrast ratio between two opaque colors (1-21). */
 export function getContrastRatio(fg: string, bg: string): number {
-  const l1 = getLuminance(fg);
-  const l2 = getLuminance(bg);
-  const lighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
+  return getContrastRatioEngine(fg, bg);
 }
 
-/** WCAG AA normal text: ≥ 4.5:1. */
-export function meetsAA(ratio: number): boolean {
-  return ratio >= 4.5;
+/** WCAG AA: ≥ 4.5 for normal text, ≥ 3.0 for large text. */
+export function meetsAA(ratio: number, isLargeText = false): boolean {
+  return meetsAAEngine(ratio, isLargeText);
 }
 
-/** WCAG AAA normal text: ≥ 7:1. */
-export function meetsAAA(ratio: number): boolean {
-  return ratio >= 7;
+/** WCAG AAA: ≥ 7 for normal text, ≥ 4.5 for large text. */
+export function meetsAAA(ratio: number, isLargeText = false): boolean {
+  return meetsAAAEngine(ratio, isLargeText);
 }
 
 /** WCAG AA large text (≥18pt or ≥14pt bold): ≥ 3:1. */
 export function meetsAALarge(ratio: number): boolean {
-  return ratio >= 3;
+  return meetsAAEngine(ratio, true);
 }
 
-export interface ContrastRating {
-  readonly level: 'AA' | 'AAA' | 'Fail';
-  readonly ratio: number;
-  readonly pass: boolean;
-}
-
-/** Rating cho 1 contrast ratio — AAA > AA > Fail. */
-export function getRating(ratio: number): ContrastRating {
-  if (meetsAAA(ratio)) return { level: 'AAA', ratio, pass: true };
-  if (meetsAA(ratio)) return { level: 'AA', ratio, pass: true };
-  return { level: 'Fail', ratio, pass: false };
+/** Rating for a contrast ratio — AAA > AA > Fail. */
+export function getRating(ratio: number, isLargeText = false): ContrastRating {
+  return getRatingEngine(ratio, isLargeText);
 }
 
 export interface PairResult {
@@ -57,30 +55,24 @@ export interface ValidationResult {
 }
 
 /**
- * Validate 3 critical contrast pairs cho 1 mode palette:
- * 1. text/canvas — body text readability (AA ≥ 4.5:1)
- * 2. textSecondary/canvas — secondary text readability (AA Large ≥ 3:1, per src/shared/styles/STANDARD.md)
- * 3. primary-foreground/primary — button label trên primary bg (AA ≥ 4.5:1)
+ * Choose a readable foreground for the primary surface.
+ * Candidates are ordered by design intent: canvas, body text, then extremes.
  */
 export function pickPrimaryForeground(colors: CoreColorTokens): string {
-  // Prefer the canvas, then body text, then black, then white. This mirrors
-  // how the actual --color-text-on-primary is chosen for each preset (canvas
-  // for dark/muted primaries, text for light primaries, the final fallbacks
-  // are the extreme grays to guarantee WCAG AA when nothing else does).
   const candidates = [colors.background, colors.text, '#000000', '#FFFFFF'];
-  for (const candidate of candidates) {
-    if (meetsAA(getContrastRatio(candidate, colors.primary))) {
-      return candidate;
-    }
-  }
-  return '#FFFFFF';
+  return pickPrimaryForegroundEngine(colors.primary, candidates);
 }
 
+/**
+ * Validate 3 critical contrast pairs for one mode palette.
+ * All three use the normal-text AA threshold (4.5:1) unless the caller
+ * explicitly tags a pair as large text.
+ */
 export function validateTheme(colors: CoreColorTokens): ValidationResult {
   const primaryForeground = pickPrimaryForeground(colors);
   const pairs: PairResult[] = [
     makePair('Text / Canvas', colors.text, colors.background),
-    makePairSecondary('Text Secondary / Canvas', colors.textSecondary, colors.background),
+    makePair('Text Secondary / Canvas', colors.textSecondary, colors.background),
     makePair('Primary Foreground / Primary', primaryForeground, colors.primary),
   ];
   return { pairs, allPass: pairs.every((p) => p.rating.pass) };
@@ -89,11 +81,4 @@ export function validateTheme(colors: CoreColorTokens): ValidationResult {
 function makePair(label: string, fg: string, bg: string): PairResult {
   const ratio = getContrastRatio(fg, bg);
   return { label, fg, bg, ratio, rating: getRating(ratio) };
-}
-
-/** Secondary text uses AA Large threshold (≥ 3:1) per src/shared/styles/STANDARD.md. */
-function makePairSecondary(label: string, fg: string, bg: string): PairResult {
-  const ratio = getContrastRatio(fg, bg);
-  const pass = meetsAALarge(ratio);
-  return { label, fg, bg, ratio, rating: { level: pass ? 'AA' : 'Fail', ratio, pass } };
 }

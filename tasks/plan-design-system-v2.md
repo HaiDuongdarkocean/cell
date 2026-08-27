@@ -318,21 +318,24 @@ Final maturity audit ≥85/100
 **Description:** Tách contrast/color parsing thành pure module dùng chung cho build và runtime; hỗ trợ hex, rgb, rgba, CSS alpha compositing trong phạm vi token format Cell.
 
 **Acceptance criteria:**
-- [ ] Một implementation luminance/contrast canonical.
-- [ ] Normal text 4.5:1; large text 3:1 chỉ qua explicit semantic role.
-- [ ] Không silently skip pair vì unsupported format.
+- [x] Một implementation luminance/contrast canonical.
+- [x] Normal text 4.5:1; large text 3:1 chỉ qua explicit semantic role.
+- [x] Không silently skip pair vì unsupported format.
 
 **Verification:**
-- [ ] W3C boundary fixtures, alpha fixtures và light/dark/preset tests pass.
-- [ ] Mọi skipped pair làm test/build fail với token name.
+- [x] W3C boundary fixtures, alpha fixtures và light/dark/preset tests pass.
+- [x] Mọi skipped pair làm test/build fail với token name.
 
 **Dependencies:** Checkpoint B.
 
-**Files likely touched:**
-- new/shared contrast pure module
-- its unit test
-- `scripts/generate-tokens.js`
-- `src/features/theme/logic/contrastValidator.ts`
+**Files touched:**
+- `src/shared/lib/contrast.ts` (new canonical engine)
+- `src/shared/lib/contrast.test.ts` (W3C/alpha/preset fixtures)
+- `src/features/theme/logic/colorGenerator.ts` (re-exports from contrast)
+- `src/features/theme/logic/contrastValidator.ts` (runtime facade)
+- `src/shared/lib/tokens.ts` (uses contrast helpers)
+- `scripts/generate-tokens.js` (build-time validation via jiti)
+- `src/shared/styles/tokens.css` (regenerated)
 
 **Estimated scope:** M.
 

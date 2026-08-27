@@ -57,10 +57,10 @@
 
 ## Phase 2 — Accessibility correctness
 
-- [ ] **T2.1 Create one contrast engine**
-  - [ ] Hex/rgb/rgba/alpha supported.
-  - [ ] Normal 4.5:1; large 3:1 chỉ qua explicit role.
-  - [ ] Unsupported/skipped pair = 0.
+- [x] **T2.1 Create one contrast engine**
+  - [x] Hex/rgb/rgba/alpha supported.
+  - [x] Normal 4.5:1; large 3:1 chỉ qua explicit role.
+  - [x] Unsupported/skipped pair = 0.
 - [ ] **T2.2 Integrate rendered axe checks**
   - [ ] `@axe-core/playwright` dev-only, không tăng production bundle.
   - [ ] Stable scope có 0 unwaived axe violation.
