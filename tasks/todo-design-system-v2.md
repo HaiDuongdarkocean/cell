@@ -94,11 +94,12 @@
 
 ## Phase 4 — Component and pattern productization
 
-- [ ] **T4.1 Generate public component inventory**
-  - [ ] All public exports have metadata/evidence/exemption.
-  - [ ] Missing/orphan/zero-consumer cases detected automatically.
-- [ ] **T4.2 Close stable component evidence gaps**
-  - [ ] 100% stable visual exports have showcase + behavior test.
+- [x] **T4.1 Generate public component inventory**
+  - [x] All public exports have metadata/evidence/exemption qua `scripts/generate-component-inventory.mjs`.
+  - [x] Missing/orphan/zero-consumer cases detected automatically.
+- [~] **T4.2 Close stable component evidence gaps** [in progress]
+  - [x] Slice 1: thêm behavior test cho 3 public export có consumer — SettingsRow, LabelGroup, FooterBar.
+  - [ ] 100% stable visual exports còn missing test/showcase cần slice tiếp.
   - [ ] Applicable states have behavior/a11y/visual evidence.
 - [ ] **T4.3 Productize only proven UX patterns**
   - [ ] Every pattern has production consumer and when/when-not guidance.

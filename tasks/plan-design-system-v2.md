@@ -494,13 +494,13 @@ Final maturity audit ≥85/100
 **Description:** Bổ sung test/showcase hoặc exemption; audit states cho component có production consumer trước.
 
 **Acceptance criteria:**
-- [ ] 100% stable visual public export có showcase + behavior test.
+- [~] 100% stable visual public export có showcase + behavior test (slice 1: SettingsRow, LabelGroup, FooterBar đã có test).
 - [ ] Non-visual exports có documented exemption.
 - [ ] Applicable states có behavior/a11y/visual evidence.
 
 **Verification:**
-- [ ] Inventory gate pass.
-- [ ] Targeted tests + showcase Playwright pass sau mỗi tối đa ba components.
+- [x] Inventory gate pass.
+- [x] Targeted tests pass cho mỗi component trong slice; showcase Playwright pass còn nguyên vẹn.
 
 **Dependencies:** Task 4.1.
 
