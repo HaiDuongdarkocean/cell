@@ -199,6 +199,31 @@ Codebase sources skip SIFT but still need:
 
 ---
 
+### Step 5.5 — First-Principles / Unconstrained Best Practice
+
+> **If you remove all project constraints, what is the best solution? Then compare it to the constrained winner. If they tie, the unconstrained one wins because it is closer to first principles.**
+
+**Purpose:** Avoid letting current tooling, deadlines, or local habits define the ceiling of the answer.
+
+**Actions:**
+1. **Strip constraints.** Ask: "If we had infinite time, no legacy code, no audit tool limitation, and no migration cost, what would we build?"
+2. **Define the ideal solution.** Describe the option that solves the root cause in the cleanest, most reusable, and most theoretically correct way.
+3. **Score the ideal solution** with the same weighted matrix, but relax constraints that are purely local (e.g., "axe can't measure pseudo-elements" or "we have 5 files to migrate"). Keep hard constraints like WCAG, physics, or security.
+4. **Compare to the constrained winner.**
+   - If the ideal solution scores **higher** → choose it and design a migration path.
+   - If the ideal solution scores **lower** → the constraints are real; choose the constrained winner.
+   - If they are **tied** → choose the ideal/unconstrained solution. It is closer to best practice and will age better.
+5. **Document the gap.** If you choose the constrained winner, write one sentence: "We accept X because of Y constraint; the ideal solution is Z."
+
+**Guard:** You can state:
+1. What the unconstrained best practice is.
+2. Its score vs. the constrained winner.
+3. The reason for the gap (or why there is none).
+
+**Loop back:** If you cannot describe the unconstrained solution without mentioning a current tool or file, you are still inside the constraints. Ask again.
+
+---
+
 ## Question Bank (Socratic)
 
 Use these to keep asking until the answer reveals itself:
@@ -216,6 +241,8 @@ Use these to keep asking until the answer reveals itself:
 10. What new pattern can we build from these verified pieces?
 11. Why is option A the best fit, and what risk do we accept?
 12. What is a hybrid or third option we haven't considered?
+13. If we removed all current constraints, what would the best solution look like?
+14. Is the constrained winner tied with the unconstrained best practice? If so, why not choose the best practice?
 ```
 
 ---
@@ -308,8 +335,15 @@ Use these to keep asking until the answer reveals itself:
 4. Why will this still work in 6 months? → ...
 5. Why would a senior disagree? → ...
 
+## First-Principles / Unconstrained Best Practice
+- **Ideal solution if no constraints:** ...
+- **Why it is best in theory:** ...
+- **Re-scored against the same matrix (relaxed local constraints):** ...
+- **Comparison to constrained winner:** tied / higher / lower by ...
+- **Tie-break rule:** if tied, choose the unconstrained best practice.
+
 ## Verdict
-[Option X, 80% fit, experiment is ...]
+[Option X, 80% fit, experiment is ..., and the ideal target is Y]
 ```
 
 ---
@@ -329,6 +363,8 @@ Use these to keep asking until the answer reveals itself:
 | Score options without weights | Not all criteria are equally important. |
 | Ignore the main risk of the chosen option | A decision without risk is an opinion. |
 | Iterate past 80% fit without an experiment | Analysis paralysis. |
+| Skip the first-principles option | Current constraints become an invisible ceiling. |
+| Choose the constrained winner when tied with the ideal | If they tie, best practice ages better. |
 
 ## Common Rationalizations
 
@@ -340,6 +376,7 @@ Use these to keep asking until the answer reveals itself:
 | "Có cách nào mới không?" | "First we verify what exists; then we combine the pieces into a new pattern." |
 | "Chọn A hay B?" | "Let's define must-haves, find a third option, score with weights, and name the risk." |
 | "Cứ làm theo ý anh đi" | "Let's verify the constraints first, or we may build something the design system rejects." |
+| "A ràng buộc hơn nhưng dễ làm" | "Let's score the unconstrained best practice too. If it ties or wins, we prefer it and design a migration path." |
 
 ---
 
@@ -358,6 +395,8 @@ Use these to keep asking until the answer reveals itself:
 - [ ] 5 Whys stress-test is applied to the top option.
 - [ ] Confidence and main risk are stated for the chosen option.
 - [ ] 80% stop rule is respected; next step is an experiment, not another round of analysis.
+- [ ] First-principles / unconstrained best-practice option is described and scored.
+- [ ] Tie-break rule applied: if constrained winner ties with unconstrained best practice, best practice is chosen.
 - [ ] Output includes at least one template (Knowledge Brief, Question Ladder, or Critical Decision Brief).
 - [ ] Next action or skill is named (e.g., `design-from-idea`, `audit-ui-ux-then-redesign`, `spec-driven-development`).
 
