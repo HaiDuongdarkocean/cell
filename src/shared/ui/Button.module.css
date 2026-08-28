@@ -262,7 +262,7 @@
 /* Solid + colored variants */
 .solid.primary {
   background: var(--color-primary);
-  color: var(--color-text-on-primary);
+  color: var(--color-text-inverse);
   border-color: transparent;
 }
 
@@ -294,7 +294,7 @@
 
 .solid.success {
   background: var(--color-success);
-  color: var(--color-on-success);
+  color: var(--color-text-inverse);
   border-color: transparent;
 }
 
