@@ -89,6 +89,22 @@ export function Showcase(): ReactElement {
         <Button variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
         <Button variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Icon name="download" size={20} />}>Download video</Button>
       </Section>
+
+      <Section
+        title="Surfaces"
+        caption="Extreme white and black surfaces to verify the conic rim and contact shadow remain visible."
+      >
+        <div data-theme="light" className={styles.surfaceWhite}>
+          <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>White</Button>
+          <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
+          <Button variant="glass" size="lg">Large</Button>
+        </div>
+        <div data-theme="dark" className={styles.surfaceBlack}>
+          <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>Black</Button>
+          <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
+          <Button variant="glass" size="lg">Large</Button>
+        </div>
+      </Section>
     </div>
   );
 }
