@@ -14,7 +14,6 @@ import navClusterSettingsCss from './NavClusterSettingsPanel.module.css?inline';
 import navClusterCss from '../NavCluster.module.css?inline';
 import sliderCss from '@/shared/ui/Slider.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import toggleCss from '@/shared/ui/Toggle.module.css?inline';
 import tabsCss from '@/shared/ui/Tabs.module.css?inline';
@@ -30,7 +29,6 @@ export const appearanceShadowCss: string[] = [
   navClusterCss,
   sliderCss,
   buttonCss,
-  iconButtonCss,
   iconCss,
   toggleCss,
   tabsCss,

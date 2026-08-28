@@ -74,7 +74,6 @@ import errorBoundaryCss from '@/shared/ui/ErrorBoundary.module.css?inline';
 import formGroupCss from '@/shared/ui/FormGroup.module.css?inline';
 import headerCss from '@/shared/ui/Header.module.css?inline';
 import hintIconCss from '@/shared/ui/HintIcon.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import inputCss from '@/shared/ui/Input.module.css?inline';
 import inputFieldCss from '@/shared/ui/InputField.module.css?inline';
 import labelCss from '@/shared/ui/Label.module.css?inline';
@@ -171,7 +170,6 @@ const SHADOW_CSS = [
   formGroupCss,
   headerCss,
   hintIconCss,
-  iconButtonCss,
   inputCss,
   inputFieldCss,
   labelCss,

@@ -36,7 +36,6 @@ import { buildClusterCssVars } from './subtitleUI';
 import subtitlePanelCss from './SubtitlePanel.module.css?inline';
 import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import tabsCss from '@/shared/ui/Tabs.module.css?inline';
 import selectCss from '@/shared/ui/Select.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
@@ -764,7 +763,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // undefined → colors fall back to browser defaults.
       const panelShadow = panel.attachShadow({ mode: 'open' });
       injectShadowCss(panelShadow, {
-        css: [subtitlePanelCss, cueListCss, iconCss, iconButtonCss, tabsCss, selectCss, buttonCss, libraryViewCss, libraryCardCss],
+        css: [subtitlePanelCss, cueListCss, iconCss, tabsCss, selectCss, buttonCss, libraryViewCss, libraryCardCss],
       });
       const panelInner = document.createElement('div');
       panelInner.setAttribute('data-theme', 'dark');

@@ -29,7 +29,6 @@ import uiIconCss from '@/shared/ui/Icon.module.css?inline';
 import labelGroupCss from '@/shared/ui/LabelGroup.module.css?inline';
 import settingsRowCss from '@/shared/ui/SettingsRow.module.css?inline';
 import sliderRowCss from '@/shared/ui/SliderRow.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import sheetCss from '@/shared/ui/Sheet.module.css?inline';
 import toggleCss from '@/shared/ui/Toggle.module.css?inline';
 import sliderCss from '@/shared/ui/Slider.module.css?inline';
@@ -208,7 +207,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         labelGroupCss,
         settingsRowCss,
         sliderRowCss,
-        iconButtonCss,
         toggleCss,
         sliderCss,
         tooltipCss,
@@ -249,7 +247,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         labelGroupCss,
         settingsRowCss,
         sliderRowCss,
-        iconButtonCss,
         toggleCss,
         sliderCss,
         tooltipCss,
