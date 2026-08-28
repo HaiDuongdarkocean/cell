@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
 import styles from './Select.module.css';
@@ -6,6 +6,9 @@ import styles from './Select.module.css';
 export interface SelectOption {
   value: string;
   label: ReactNode;
+  /** Optional string used for filtering when `searchable` is true.
+   * Falls back to `label` if it is a plain string. */
+  searchLabel?: string;
   disabled?: boolean;
 }
 
@@ -46,6 +49,10 @@ export interface SelectProps {
    *  - 'auto': pick the side with more viewport room.
    * The menu will still flip to the opposite side if it does not fit. */
   menuAlign?: 'left' | 'right' | 'auto';
+  /** Whether the menu has a search input to filter long option lists. */
+  searchable?: boolean;
+  /** Placeholder for the search input. */
+  searchPlaceholder?: string;
   /** Optional data-cell-id for the root element. */
   'data-cell-id'?: string;
   /** Accessible label for the trigger button. */
@@ -74,14 +81,19 @@ export function Select({
   className,
   menuMaxHeight,
   menuAlign = 'left',
+  searchable = false,
+  searchPlaceholder = 'Search...',
   'data-cell-id': dataTestId,
   'aria-label': ariaLabel,
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const selectedIndex = options.findIndex((opt) => opt.value === value);
   const selectedOption = selectedIndex !== -1 ? options[selectedIndex] : null;
@@ -93,17 +105,31 @@ export function Select({
     menuAlign,
     menuMaxHeight,
     triggerRef,
-    menuRef: listboxRef,
+    menuRef,
   });
+
+  const optionSearchLabel = useCallback((opt: SelectOption): string => {
+    if (opt.searchLabel !== undefined) return opt.searchLabel;
+    if (typeof opt.label === 'string') return opt.label;
+    return '';
+  }, []);
+
+  const visibleOptions = useMemo(() => {
+    if (!searchable || !query.trim()) return options;
+    const q = query.trim().toLowerCase();
+    return options.filter((opt) => optionSearchLabel(opt).toLowerCase().includes(q));
+  }, [options, query, searchable, optionSearchLabel]);
 
   const openMenu = useCallback((): void => {
     if (disabled) return;
+    setQuery('');
     setHighlightedIndex(selectedIndex !== -1 ? selectedIndex : 0);
     setIsOpen(true);
   }, [disabled, selectedIndex]);
 
   const closeMenu = useCallback((): void => {
     setIsOpen(false);
+    setQuery('');
     setHighlightedIndex(-1);
   }, []);
 
@@ -151,13 +177,16 @@ export function Select({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, closeMenu]);
 
-  // Move focus to the listbox so keyboard navigation (Arrow, Home, End, Enter,
-  // Space) is handled by the menu. Tab out of the listbox closes the menu.
+  // Move focus to the listbox (or search input) when the menu opens.
   useEffect(() => {
     if (isOpen) {
-      listboxRef.current?.focus();
+      if (searchable) {
+        searchRef.current?.focus();
+      } else {
+        listboxRef.current?.focus();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, searchable]);
 
   const handleListboxKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Tab') {
@@ -165,6 +194,36 @@ export function Select({
       return;
     }
     handleMenuKeyDown(e);
+  };
+
+  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeMenu();
+      triggerRef.current?.focus();
+      return;
+    }
+    if (e.key === 'Tab') {
+      closeMenu();
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.min(prev + 1, visibleOptions.length - 1));
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && visibleOptions.length > 0) {
+      e.preventDefault();
+      const highlighted = visibleOptions[highlightedIndex];
+      if (highlighted && !highlighted.disabled) {
+        selectOption(highlighted.value);
+      }
+    }
   };
 
   const handleTriggerClick = (): void => {
@@ -180,31 +239,35 @@ export function Select({
       e.preventDefault();
       if (!isOpen) {
         openMenu();
+      } else if (searchable) {
+        searchRef.current?.focus();
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (!isOpen) {
         openMenu();
+      } else if (searchable) {
+        searchRef.current?.focus();
       }
     } else if (e.key === 'Home' && isOpen) {
       e.preventDefault();
       setHighlightedIndex(0);
     } else if (e.key === 'End' && isOpen) {
       e.preventDefault();
-      setHighlightedIndex(options.length - 1);
+      setHighlightedIndex(visibleOptions.length - 1);
     }
   };
 
-  const handleMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
+  const handleMenuKeyDown = (e: KeyboardEvent<HTMLDivElement | HTMLInputElement>): void => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlightedIndex((prev) => {
         const next = prev + 1;
-        if (next >= options.length) return prev;
+        if (next >= visibleOptions.length) return prev;
         // Skip disabled options.
-        if (options[next]?.disabled) {
+        if (visibleOptions[next]?.disabled) {
           const after = next + 1;
-          return after < options.length ? after : prev;
+          return after < visibleOptions.length ? after : prev;
         }
         return next;
       });
@@ -213,7 +276,7 @@ export function Select({
       setHighlightedIndex((prev) => {
         const next = prev - 1;
         if (next < 0) return prev;
-        if (options[next]?.disabled) {
+        if (visibleOptions[next]?.disabled) {
           const before = next - 1;
           return before >= 0 ? before : prev;
         }
@@ -221,7 +284,7 @@ export function Select({
       });
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      const highlighted = options[highlightedIndex];
+      const highlighted = visibleOptions[highlightedIndex];
       if (highlighted && !highlighted.disabled) {
         selectOption(highlighted.value);
       }
@@ -230,7 +293,7 @@ export function Select({
       setHighlightedIndex(0);
     } else if (e.key === 'End') {
       e.preventDefault();
-      setHighlightedIndex(options.length - 1);
+      setHighlightedIndex(visibleOptions.length - 1);
     }
   };
 
@@ -241,9 +304,14 @@ export function Select({
   };
 
   const handleMouseEnter = (index: number): void => {
-    if (!options[index]?.disabled) {
+    if (!visibleOptions[index]?.disabled) {
       setHighlightedIndex(index);
     }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setQuery(e.target.value);
+    setHighlightedIndex(0);
   };
 
   const rootClass = [styles.root, className ?? ''].filter(Boolean).join(' ');
@@ -260,10 +328,9 @@ export function Select({
 
   const triggerLabel = selectedOption ? selectedOption.label : (placeholder ?? '');
 
-  const menuClass = [
-    styles.menu,
-    styles[`menuAlign${placement.align.charAt(0).toUpperCase()}${placement.align.slice(1)}` as keyof typeof styles],
-  ].filter(Boolean).join(' ');
+  const menuAlignClass = styles[`menuAlign${placement.align.charAt(0).toUpperCase()}${placement.align.slice(1)}` as keyof typeof styles] ?? '';
+
+  const menuClass = [styles.menu, menuAlignClass].filter(Boolean).join(' ');
 
   const menuStyle = {
     top: placement.vpos === 'bottom' ? 'calc(100% + var(--space-1))' : 'auto',
@@ -299,37 +366,63 @@ export function Select({
 
       {isOpen && (
         <div
-          ref={listboxRef}
-          tabIndex={-1}
+          ref={menuRef}
           className={menuClass}
-          role="listbox"
-          aria-activedescendant={highlightedIndex >= 0 ? `select-option-${options[highlightedIndex]?.value}` : undefined}
           style={menuStyle}
-          onKeyDown={handleListboxKeyDown}
         >
-          {options.map((opt, index) => (
-            <div
-              key={opt.value}
-              id={`select-option-${opt.value}`}
-              className={[
-                styles.option,
-                opt.value === value ? styles.optionSelected : '',
-                index === highlightedIndex ? styles.optionHighlighted : '',
-                opt.disabled ? styles.optionDisabled : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              role="option"
-              aria-selected={opt.value === value}
-              onClick={(e) => handleOptionClick(e, opt.value, opt.disabled)}
-              onMouseEnter={() => handleMouseEnter(index)}
-            >
-              <span className={styles.optionLabel}>{opt.label}</span>
-              {opt.value === value && (
-                <Icon name="check" className={styles.checkMark} />
-              )}
+          {searchable && (
+            <div className={styles.searchWrap}>
+              <Icon name="search" className={styles.searchIcon} />
+              <input
+                ref={searchRef}
+                type="search"
+                className={styles.searchInput}
+                placeholder={searchPlaceholder}
+                aria-label="Search options"
+                value={query}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+              />
             </div>
-          ))}
+          )}
+          <div
+            ref={listboxRef}
+            tabIndex={-1}
+            className={[styles.options, menuAlignClass].filter(Boolean).join(' ')}
+            role="listbox"
+            aria-activedescendant={highlightedIndex >= 0 ? `select-option-${visibleOptions[highlightedIndex]?.value}` : undefined}
+            onKeyDown={!searchable ? handleListboxKeyDown : undefined}
+          >
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((opt, index) => (
+                <div
+                  key={opt.value}
+                  id={`select-option-${opt.value}`}
+                  className={[
+                    styles.option,
+                    opt.value === value ? styles.optionSelected : '',
+                    index === highlightedIndex ? styles.optionHighlighted : '',
+                    opt.disabled ? styles.optionDisabled : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  role="option"
+                  aria-selected={opt.value === value}
+                  onClick={(e) => handleOptionClick(e, opt.value, opt.disabled)}
+                  onMouseEnter={() => handleMouseEnter(index)}
+                >
+                  <span className={styles.optionLabel}>{opt.label}</span>
+                  {opt.value === value && (
+                    <Icon name="check" className={styles.checkMark} />
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className={styles.emptyState} role="presentation">
+                No matching options
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

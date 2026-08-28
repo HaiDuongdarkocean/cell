@@ -15,6 +15,26 @@ const FLAVORS = [
   { value: 'strawberry', label: 'Strawberry' },
 ];
 
+const LANGUAGES = [
+  { value: 'ar', label: 'العربية' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+  { value: 'fr', label: 'Français' },
+  { value: 'hi', label: 'हिन्दी' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'ja', label: '日本語' },
+  { value: 'ko', label: '한국어' },
+  { value: 'nl', label: 'Nederlands' },
+  { value: 'pl', label: 'Polski' },
+  { value: 'pt', label: 'Português' },
+  { value: 'ru', label: 'Русский' },
+  { value: 'th', label: 'ไทย' },
+  { value: 'tr', label: 'Türkçe' },
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'zh', label: '中文' },
+];
+
 interface SectionProps {
   title: string;
   caption: string;
@@ -35,6 +55,7 @@ function Section({ title, caption, children }: SectionProps): ReactElement {
 export function Showcase(): ReactElement {
   const [value, setValue] = useState('en');
   const [value2, setValue2] = useState('');
+  const [searchValue, setSearchValue] = useState('');
 
   return (
     <div className={styles.root}>
@@ -44,6 +65,20 @@ export function Showcase(): ReactElement {
       >
         <Select options={OPTIONS} value={value} onChange={setValue} placeholder="Choose a language" />
         <Select options={OPTIONS} value={value2} onChange={setValue2} placeholder="Choose a language" />
+      </Section>
+
+      <Section
+        title="Searchable"
+        caption="Long option lists can be filtered by typing. Focus moves to the search input when the menu opens."
+      >
+        <Select
+          options={LANGUAGES}
+          value={searchValue}
+          onChange={setSearchValue}
+          searchable
+          searchPlaceholder="Find a language…"
+          placeholder="Choose a language"
+        />
       </Section>
 
       <Section
@@ -79,7 +114,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Select',
-  description: 'Single-select dropdown with a button trigger, scrollable listbox, rounded options, responsive placement, disabled options, and size/variant/state support.',
+  description: 'Single-select dropdown with a button trigger, scrollable listbox, rounded options, responsive placement, searchable filter, disabled options, and size/variant/state support.',
   level: 'molecules',
   category: 'Input',
   group: 'Shared UI — Input',

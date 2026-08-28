@@ -12,6 +12,13 @@ const longOptions = Array.from({ length: 20 }, (_, i) => ({
   label: `Option ${i + 1}`,
 }));
 
+const searchableOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'zh', label: '中文' },
+  { value: 'ja', label: '日本語' },
+];
+
 describe('Select', () => {
   it('renders trigger with selected label', () => {
     render(<Select options={options} value="a" />);
@@ -120,11 +127,75 @@ describe('Select', () => {
     expect(menu.className).toMatch(/menuAlignLeft|menuAlignRight/);
   });
 
-  it('sets dynamic placement styles when open', () => {
+  it('sets dynamic placement styles on the menu', () => {
     render(<Select options={longOptions} value="opt-0" />);
     fireEvent.click(screen.getByRole('button'));
-    const menu = screen.getByRole('listbox');
-    expect(menu.style.getPropertyValue('max-width')).toBeTruthy();
-    expect(menu.style.getPropertyValue('max-height')).toBeTruthy();
+    const menu = screen.getByRole('listbox').parentElement;
+    expect(menu).toBeTruthy();
+    expect(menu?.style.getPropertyValue('max-width')).toBeTruthy();
+    expect(menu?.style.getPropertyValue('max-height')).toBeTruthy();
+  });
+
+  describe('searchable', () => {
+    it('renders search input when searchable is true', () => {
+      render(<Select options={searchableOptions} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    });
+
+    it('filters options when typing', () => {
+      render(<Select options={searchableOptions} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      const input = screen.getByPlaceholderText('Search...');
+      fireEvent.change(input, { target: { value: 'Eng' } });
+      expect(screen.getByRole('option', { name: 'English' })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: '日本語' })).not.toBeInTheDocument();
+    });
+
+    it('selects from filtered options', () => {
+      const onChange = jest.fn();
+      render(<Select options={searchableOptions} onChange={onChange} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      const input = screen.getByPlaceholderText('Search...');
+      fireEvent.change(input, { target: { value: '日本' } });
+      fireEvent.click(screen.getByRole('option', { name: '日本語' }));
+      expect(onChange).toHaveBeenCalledWith('ja');
+    });
+
+    it('shows empty state when no matches', () => {
+      render(<Select options={searchableOptions} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      const input = screen.getByPlaceholderText('Search...');
+      fireEvent.change(input, { target: { value: 'xyz' } });
+      expect(screen.queryByRole('option')).not.toBeInTheDocument();
+      expect(screen.getByText('No matching options')).toBeInTheDocument();
+    });
+
+    it('uses custom searchLabel when filtering', () => {
+      const opts = [
+        { value: 'us', label: '🇺🇸 US', searchLabel: 'United States' },
+        { value: 'vn', label: '🇻🇳 VN', searchLabel: 'Vietnam' },
+      ];
+      render(<Select options={opts} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      const input = screen.getByPlaceholderText('Search...');
+      fireEvent.change(input, { target: { value: 'viet' } });
+      expect(screen.getByRole('option', { name: '🇻🇳 VN' })).toBeInTheDocument();
+      expect(screen.queryByRole('option', { name: '🇺🇸 US' })).not.toBeInTheDocument();
+    });
+
+    it('resets query on close', () => {
+      render(<Select options={searchableOptions} searchable />);
+      fireEvent.click(screen.getByRole('button'));
+      const input = screen.getByPlaceholderText('Search...');
+      fireEvent.change(input, { target: { value: 'eng' } });
+      fireEvent.keyDown(input, { key: 'Escape' });
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      // Re-open; all options should be back and query empty.
+      fireEvent.click(screen.getByRole('button'));
+      expect(screen.getByRole('option', { name: '日本語' })).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search...')).toHaveValue('');
+    });
   });
 });
