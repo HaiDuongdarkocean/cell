@@ -85,14 +85,31 @@ type ButtonVariant =
   | 'outline'
   | 'ghost'
   | 'glass'
-  | 'solid'      // new
   | 'destructive'
   | 'link'
   | 'success'
   | 'transparent';
+
+type ButtonMaterial = 'liquid' | 'solid';
 ```
 
-`variant="solid"` is a material directive. It overrides the optical treatment to use solid tokens and disables liquid effects.
+`material="solid"` is a surface directive. It can be combined with any `variant` to switch from the default liquid glass to a flat, opaque surface.
+
+### Usage
+
+```tsx
+<Button material="solid" variant="primary" onClick={save}>
+  Save
+</Button>
+
+<Button material="solid" variant="success" size="sm" leadingIcon={<Icon name="download" />}>
+  Download
+</Button>
+
+<Button variant="primary" onClick={save}>          {/* liquid default */}
+  Liquid primary
+</Button>
+```
 
 ### Usage
 
