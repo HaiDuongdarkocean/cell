@@ -3,19 +3,22 @@ import { Spinner } from './Spinner';
 import { getButtonGlassFilter } from './ButtonGlassFilter';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'solid' | 'destructive' | 'link' | 'success' | 'transparent';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success' | 'transparent';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
 type ButtonLiquidStyle = 'regular' | 'clear' | 'prominent';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 type ButtonActiveStyle = 'default' | 'flat';
+type ButtonMaterial = 'liquid' | 'solid';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
   variant?: ButtonVariant;
   /** Hide label when nested in a container narrower than 380px. */
   collapseLabel?: boolean;
+  /** Surface material. Default: liquid. */
+  material?: ButtonMaterial;
   /** Apple-inspired material for glass buttons. Default: regular. */
   liquidStyle?: ButtonLiquidStyle;
   /** Size. Default: md. */
@@ -57,6 +60,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
+  material = 'liquid',
   liquidStyle = 'regular',
   size = 'md',
   shape,
@@ -127,6 +131,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     styles.button,
     styles[variant],
     liquidClass,
+    material === 'solid' ? styles.solid : '',
     styles[size],
     resolvedShape === 'circle' ? styles.circle : '',
     orientation === 'vertical' ? styles.vertical : '',
@@ -149,7 +154,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type="button"
       className={cls}
-      style={{ ...style, ['--button-liquid-filter-url' as string]: `url(#${filterId})` }}
+      style={{
+        ...style,
+        ['--button-liquid-filter-url' as string]: material === 'liquid' ? `url(#${filterId})` : 'none',
+      }}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-invalid={error || undefined}

@@ -49,7 +49,7 @@ Showcase hiện tại hiển thị liquid trên cả nền trắng/đen; anh yê
 
 ## Chosen method
 
-`variant="solid"` trong API `Button` hiện tại.
+`material="solid"` độc lập với `variant`, tận dụng CSS Modules bằng cách kết hợp 2 class (`.solid.primary`, `.solid.success`, …).
 
 ## Elicitation log
 

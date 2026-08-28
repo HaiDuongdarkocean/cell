@@ -10,7 +10,7 @@ describe('Button', () => {
   });
 
   it('renders all variants', () => {
-    const variants = ['primary', 'secondary', 'outline', 'ghost', 'solid', 'destructive', 'link'] as const;
+    const variants = ['primary', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const;
     for (const variant of variants) {
       const { unmount } = render(<Button variant={variant}>{variant}</Button>);
       expect(screen.getByRole('button', { name: variant })).toBeInTheDocument();
@@ -18,9 +18,14 @@ describe('Button', () => {
     }
   });
 
-  it('applies solid class for solid variant', () => {
-    const { container } = render(<Button variant="solid">Solid</Button>);
+  it('applies solid class for solid material', () => {
+    const { container } = render(<Button material="solid">Solid</Button>);
     expect(container.firstChild).toHaveClass('solid');
+  });
+
+  it('applies liquid class by default', () => {
+    const { container } = render(<Button>Liquid</Button>);
+    expect(container.firstChild).not.toHaveClass('solid');
   });
 
   it('renders all sizes', () => {

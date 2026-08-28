@@ -92,12 +92,17 @@ export function Showcase(): ReactElement {
 
       <Section
         title="Solid"
-        caption="Flat, opaque material reusing shared surface tokens. For forms, dialogs and settings where glass is too subtle."
+        caption="Flat, opaque material for non-glass contexts. Works with any variant: primary, success, destructive, secondary, outline, ghost, link."
       >
-        <Button variant="solid">Primary</Button>
-        <Button variant="solid" disabled>Disabled</Button>
-        <Button variant="solid" loading>Loading</Button>
-        <Button variant="solid" leadingIcon={<Icon name="download" size={18} />}>Download</Button>
+        <Button material="solid" variant="primary">Primary</Button>
+        <Button material="solid" variant="success">Success</Button>
+        <Button material="solid" variant="destructive">Destructive</Button>
+        <Button material="solid" variant="secondary">Secondary</Button>
+        <Button material="solid" variant="outline">Outline</Button>
+        <Button material="solid" variant="ghost">Ghost</Button>
+        <Button material="solid" variant="link">Link</Button>
+        <Button material="solid" disabled>Disabled</Button>
+        <Button material="solid" loading>Loading</Button>
       </Section>
 
       <Section
@@ -108,13 +113,13 @@ export function Showcase(): ReactElement {
           <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>White</Button>
           <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
           <Button variant="glass" size="lg">Large</Button>
-          <Button variant="solid">Solid</Button>
+          <Button material="solid" variant="primary">Solid</Button>
         </div>
         <div data-theme="dark" className={styles.surfaceBlack}>
           <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>Black</Button>
           <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
           <Button variant="glass" size="lg">Large</Button>
-          <Button variant="solid">Solid</Button>
+          <Button material="solid" variant="primary">Solid</Button>
         </div>
       </Section>
     </div>
