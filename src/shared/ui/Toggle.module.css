@@ -1,89 +1,104 @@
 .toggle {
-  /* size-driven via --toggle-h / --toggle-w (set by .sm/.md/.lg) */
+  --default: #D1D6EE;
+  --hover: #CACFE6;
+  --active: #275EFE;
+  --dot: #fff;
+  --dot-shadow: rgba(0, 9, 61, 0.1);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
   width: var(--toggle-w);
   min-width: var(--toggle-w);
   height: var(--toggle-h);
   min-height: var(--toggle-h);
-  border-radius: var(--radius-full);
-  background: var(--color-border);
-  position: relative;
-  transition: background var(--transition);
-  cursor: pointer;
   flex-shrink: 0;
+  cursor: pointer;
   border: none;
   padding: 0;
+  margin: 0;
+  background: transparent;
 }
 
-/* === Sizes (spec §2.8 — track height × ~1.6-1.8 width) === */
+/* === Sizes === */
 .sm {
   --toggle-h: var(--space-8);
-  --toggle-w: calc(var(--space-8) * 1.625);
+  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
 }
 
 .md {
   --toggle-h: var(--touch-target);
-  --toggle-w: calc(var(--touch-target) * 1.8);
+  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
 }
 
 .lg {
   --toggle-h: var(--space-12);
-  --toggle-w: calc(var(--space-12) * 1.625);
+  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
 }
 
-.toggle[aria-checked="true"] {
-  background: var(--color-primary);
+/* === Track === */
+.input {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  outline: none;
+  display: block;
+  border: none;
+  background: var(--b, var(--default));
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.3s linear;
 }
 
-.toggle:hover {
-  background: var(--color-text-secondary);
+.input:hover {
+  --b: var(--hover);
 }
 
-.toggle[aria-checked="true"]:hover {
-  background: var(--color-primary-hover);
+.input:checked {
+  --b: var(--active);
 }
 
-.toggle:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-}
-
-.thumb {
-  position: absolute;
-  top: 50%;
-  left: var(--space-0-5);
-  width: calc(var(--toggle-h) - 2 * var(--space-0-5));
-  height: calc(var(--toggle-h) - 2 * var(--space-0-5));
-  border-radius: var(--radius-full);
-  background: var(--color-text-inverse);
-  /* transform-box: border-box — host pages may reset transform-box to view-box
-     (SVG default), which makes translateY(%) resolve against the SVG viewport
-     instead of the element's border-box, collapsing the thumb off-center. */
-  transform-box: border-box;
-  transform: translateY(-50%);
-  transition: transform var(--transition);
-}
-
-.toggle[aria-checked="true"] .thumb {
-  /* translate(X, -50%) — X = track width - thumb width - 2×left offset
-     = toggle-w - (toggle-h - 2×offset) - 2×offset = toggle-w - toggle-h. */
-  transform: translate(calc(var(--toggle-w) - var(--toggle-h)), -50%);
-}
-
-.toggle:disabled {
+.input:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.toggle:disabled:hover {
-  background: var(--color-border);
+.toggle.disabled {
+  cursor: not-allowed;
 }
 
-.toggle[aria-checked="true"]:disabled:hover {
-  background: var(--color-primary);
+.toggle.disabled .thumb {
+  opacity: 0.4;
 }
 
+/* === Dot / SVG thumb === */
+.thumb {
+  fill: var(--dot);
+  display: block;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  pointer-events: none;
+  filter: drop-shadow(0 0.5px 0.5px var(--dot-shadow));
+  transform-origin: 50% 50%;
+}
+
+.toggle.checked .thumb {
+  transform: scaleX(-1);
+}
+
+.input:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .toggle { transition: none; animation: none; }
-  .thumb { transition: none; animation: none; }
+  .input {
+    transition: none;
+  }
 }
