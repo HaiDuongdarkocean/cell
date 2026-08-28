@@ -65,7 +65,7 @@ export function Drawer({
         {title && (
           <div className={styles.header}>
             <h2 id="drawer-title" className={styles.title}>{title}</h2>
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
+            <Button material="solid" variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
               ×
             </Button>
           </div>

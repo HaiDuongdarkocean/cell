@@ -12,7 +12,7 @@ import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
-import { Icon } from '@/shared/icons/Icon';
+import { ChevronRight } from 'lucide-react';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Tabs } from '@/shared/ui';
 import styles from './SubtitlePanel.module.css';
@@ -56,14 +56,14 @@ function SubtitlePanelImpl({
     <div className={styles.panel} data-cell-id="subtitle-panel">
       {onClose && (
         <div className={styles.header}>
-          <IconButton variant="transparent"
+          <IconButton material="solid" variant="transparent"
             aria-label="Collapse subtitle list"
             title="Collapse (T)"
             data-cell-id="subtitle-panel-close"
             size="sm"
             onClick={onClose}
           >
-            <Icon name="chevronRight" />
+            <ChevronRight aria-hidden="true" />
           </IconButton>
           <span className={styles.title}>{filename ?? 'Subtitles'}</span>
         </div>

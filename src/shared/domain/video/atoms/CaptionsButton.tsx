@@ -26,7 +26,7 @@ export function CaptionsButton({
   ...rest
 }: CaptionsButtonProps): React.JSX.Element {
   return (
-    <IconButton
+    <IconButton material="solid"
       active={captionsOn}
       disabled={disabled || !available}
       aria-pressed={captionsOn}

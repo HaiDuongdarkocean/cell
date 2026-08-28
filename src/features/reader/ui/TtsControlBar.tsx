@@ -96,7 +96,7 @@ export function TtsControlBar({
 
   return (
     <div className={styles.bar}>
-      <Button
+      <Button material="solid"
         variant="primary"
         size="sm"
         onClick={handlePlay}
@@ -104,10 +104,10 @@ export function TtsControlBar({
       >
         {isPlaying ? 'Stop' : 'Play'}
       </Button>
-      <Button variant="outline" size="sm" onClick={handlePrev} disabled={currentIndex <= 0}>
+      <Button material="solid" variant="outline" size="sm" onClick={handlePrev} disabled={currentIndex <= 0}>
         Prev
       </Button>
-      <Button
+      <Button material="solid"
         variant="outline"
         size="sm"
         onClick={handleNext}
@@ -115,7 +115,7 @@ export function TtsControlBar({
       >
         Next
       </Button>
-      <Button variant="outline" size="sm" onClick={handleRepeat} disabled={!engine}>
+      <Button material="solid" variant="outline" size="sm" onClick={handleRepeat} disabled={!engine}>
         Repeat
       </Button>
       <span className={styles.sentence}>{sentenceText}</span>

@@ -129,7 +129,7 @@ export function UniversalPanel({
         >
           <div className={styles.tabGroup}>
             {TABS.map((tab) => (
-              <IconButton
+              <IconButton material="solid"
                 key={tab.key}
                 size="md"
                 variant="ghost"
@@ -142,7 +142,7 @@ export function UniversalPanel({
                 <Icon name={tab.icon}  />
               </IconButton>
             ))}
-            <IconButton
+            <IconButton material="solid"
               size="md"
               variant="ghost"
               aria-label="Open Reader"
@@ -157,7 +157,7 @@ export function UniversalPanel({
             >
               <Icon name="library"  />
             </IconButton>
-            <IconButton
+            <IconButton material="solid"
               size="md"
               variant="ghost"
               aria-label="Open local player"

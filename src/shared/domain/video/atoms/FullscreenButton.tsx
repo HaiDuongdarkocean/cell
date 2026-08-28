@@ -28,7 +28,7 @@ export function FullscreenButton({
       : true;
 
   return (
-    <IconButton
+    <IconButton material="solid"
       active={fullscreen}
       disabled={disabled || !supported}
       aria-pressed={fullscreen}

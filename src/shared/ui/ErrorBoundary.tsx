@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             An unexpected error occurred. Reload to try again.
           </div>
           <div className={styles.action}>
-            <Button type="button" variant="primary" size="sm" onClick={this.handleReload}>
+            <Button material="solid" type="button" variant="primary" size="sm" onClick={this.handleReload}>
               <Icon name="rotateCcw"  />
               Reload
             </Button>

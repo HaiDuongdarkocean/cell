@@ -244,7 +244,7 @@ export function Sidebar({
         <div className={styles.topbar}>
           {header && <div className={styles.header}>{header}</div>}
           {collapsible && (
-            <IconButton
+            <IconButton material="solid"
               type="button"
               aria-label={collapsed ? 'Expand sidebar to full' : 'Collapse sidebar to icons'}
               aria-controls={id}

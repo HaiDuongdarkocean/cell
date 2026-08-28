@@ -41,7 +41,7 @@ export function FooterBar({ slots, className }: FooterBarProps): React.JSX.Eleme
   return (
     <div className={cls}>
       {slots.map((slot) => (
-        <Button
+        <Button material="solid"
           key={slot.key}
           variant={slot.variant ?? 'ghost'}
           orientation="vertical"

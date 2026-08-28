@@ -311,7 +311,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 <div className={styles.voiceSelectionList} role="list" data-cell-id="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
-                      <IconButton
+                      <IconButton material="solid"
                         size="sm"
                         onClick={() => void handlePlayVoice(v.voiceName)}
                         disabled={playing}
@@ -358,7 +358,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           </div>
 
           <div className={styles.actions}>
-            <Button variant="primary" onClick={handleSaveSlots} data-cell-id="tts-save-settings">
+            <Button material="solid" variant="primary" onClick={handleSaveSlots} data-cell-id="tts-save-settings">
               Save settings
             </Button>
           </div>
@@ -404,7 +404,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             <div className={styles.row__label}>Voices</div>
             <div className={styles.row__control}>
               <div className={styles.ttsHeader}>
-                <Button
+                <Button material="solid"
                   variant="secondary"
                   onClick={handleDeleteSelection}
                   data-cell-id="tts-clear-selection"
@@ -412,7 +412,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                   Delete selection ({selectedCount})
                 </Button>
                 <div className={styles.ttsHeader__actions}>
-                  <Button
+                  <Button material="solid"
                     variant="primary"
                     onClick={() => void handlePlayAll()}
                     loading={playing}
@@ -420,7 +420,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                   >
                     Play all audios
                   </Button>
-                  <Button
+                  <Button material="solid"
                     variant="secondary"
                     onClick={handleSaveVoiceList}
                     data-cell-id="tts-save-voice-list"

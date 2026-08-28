@@ -266,7 +266,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
             <Icon name="externalLink"  />
             <span>Get {PROVIDER_LABELS[addProvider]} API key</span>
           </a>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="md"
             onClick={handleAdd}
@@ -372,7 +372,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
           <Icon name="wrench" className={styles.fullEmptyIcon} />
           <span className={styles.fullEmptyTitle}>No API keys yet</span>
           <span className={styles.fullEmptyHint}>Add a key to start searching for subtitles</span>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="md"
             onClick={() => setAddOpen(true)}
@@ -393,10 +393,10 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         data-cell-id="delete-key-confirm"
         footer={
           <div className={styles.confirmFooter}>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
+            <Button material="solid" variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button variant="destructive" size="sm" onClick={confirmDelete} data-cell-id="confirm-delete">
+            <Button material="solid" variant="destructive" size="sm" onClick={confirmDelete} data-cell-id="confirm-delete">
               Delete
             </Button>
           </div>
@@ -451,10 +451,10 @@ function InlineEdit({
         data-cell-id="akm-edit-key-input"
       />
       <div className={styles.editActions}>
-        <Button variant="ghost" size="sm" onClick={onCancel} data-cell-id="akm-edit-cancel">
+        <Button material="solid" variant="ghost" size="sm" onClick={onCancel} data-cell-id="akm-edit-cancel">
           Cancel
         </Button>
-        <Button variant="primary" size="sm" onClick={onSave} data-cell-id="akm-edit-save">
+        <Button material="solid" variant="primary" size="sm" onClick={onSave} data-cell-id="akm-edit-save">
           Save
         </Button>
       </div>

@@ -100,7 +100,7 @@ export function BottomSheet({
             {title && (
               <h2 id="bottom-sheet-title" className={styles.title}>{title}</h2>
             )}
-            <IconButton
+            <IconButton material="solid"
               size="sm"
               aria-label="Close"
               onClick={() => onOpenChange?.(false)}

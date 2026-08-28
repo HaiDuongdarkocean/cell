@@ -151,7 +151,7 @@ export function PlayerControls({
       <div className={styles.controlsRow}>
         <div className={styles.pillLeft}>
           {onPrevVideo && (
-            <IconButton
+            <IconButton material="solid"
               aria-label="Previous video"
               title="Previous video"
               disabled={!hasPrevVideo}
@@ -162,7 +162,7 @@ export function PlayerControls({
           )}
           <PlayPauseButton playing={isPlaying} onClick={onPlayPause} />
           {onNextVideo && (
-            <IconButton
+            <IconButton material="solid"
               aria-label="Next video"
               title="Next video"
               disabled={!hasNextVideo}
@@ -201,7 +201,7 @@ export function PlayerControls({
           )}
           {hasSettingsItems && (
             <div className={styles.settingsWrap} ref={settingsRef}>
-              <IconButton
+              <IconButton material="solid"
                 aria-label="Settings"
                 aria-haspopup="menu"
                 aria-expanded={settingsOpen}

@@ -411,7 +411,7 @@ export function PlayerView({
               <div className={styles.noSubtitleBanner} data-cell-id="no-subtitle-banner">
                 <Icon name="captions" size={20} />
                 <span>No subtitle found</span>
-                <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
+                <Button material="solid" variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
                   Open subtitle file
                 </Button>
               </div>
@@ -421,7 +421,7 @@ export function PlayerView({
               <div className={styles.noSubtitleBanner} data-cell-id="subtitle-error-banner">
                 <Icon name="triangleAlert" size={16} />
                 <span>Subtitle access unavailable on this browser</span>
-                <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
+                <Button material="solid" variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
                   Open subtitle file
                 </Button>
               </div>
