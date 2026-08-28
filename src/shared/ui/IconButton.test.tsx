@@ -71,7 +71,7 @@ describe('IconButton', () => {
         <Icon name="settings" size={20} />
       </IconButton>,
     );
-    expect(container.firstChild).toHaveClass('activePrimary');
+    expect(container.firstChild).toHaveClass('active');
   });
 
   it('merges custom className', () => {

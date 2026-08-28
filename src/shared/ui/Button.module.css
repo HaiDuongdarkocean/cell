@@ -155,6 +155,20 @@
 }
 
 /* === Sizes === */
+.xs {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  height: auto;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.xs .leadingIcon,
+.xs .trailingIcon {
+  width: 14px;
+  height: 14px;
+}
+
 .sm {
   /* Visual content stays compact (font/icon), but hit box follows --touch-target. */
   min-height: var(--touch-target);
@@ -239,6 +253,24 @@
 .ghost:hover {
   background: var(--button-liquid-surface);
   color: var(--button-liquid-foreground);
+}
+
+/* Transparent — no fill, no border, no hover surface. */
+.transparent,
+.transparent:hover,
+.transparent:active {
+  background: transparent;
+  color: var(--color-text-primary);
+  box-shadow: none;
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: none;
+}
+
+.transparent::before,
+.transparent::after {
+  display: none;
 }
 
 /* Link — inline text, no glass. */
@@ -352,42 +384,95 @@
   height: var(--button-vertical-icon-size);
 }
 
-/* === Icon-only — circular dewdrop when a single icon is the only content === */
+/* === Icon-only / Circle — circular dewdrop when a single icon is the only content === */
 
-.iconOnly {
+.iconOnly,
+.circle {
   aspect-ratio: 1 / 1;
-  width: auto;
   min-width: 0;
   padding: 0;
   border-radius: var(--radius-full);
 }
 
+.xs.iconOnly,
+.iconOnly.xs,
+.xs.circle,
+.circle.xs {
+  width: var(--iconbutton-size-xs);
+  height: var(--iconbutton-size-xs);
+}
+
 .sm.iconOnly,
-.iconOnly.sm {
-  width: var(--touch-target);
-  min-width: var(--touch-target);
-  height: var(--touch-target);
+.iconOnly.sm,
+.sm.circle,
+.circle.sm {
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
 }
 
 .md.iconOnly,
-.iconOnly.md {
-  width: var(--button-height);
-  min-width: var(--button-height);
-  height: var(--button-height);
+.iconOnly.md,
+.md.circle,
+.circle.md {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
 }
 
 .lg.iconOnly,
-.iconOnly.lg {
-  width: var(--button-height-lg);
-  min-width: var(--button-height-lg);
-  height: var(--button-height-lg);
+.iconOnly.lg,
+.lg.circle,
+.circle.lg {
+  width: var(--iconbutton-size-lg);
+  height: var(--iconbutton-size-lg);
 }
 
 .xl.iconOnly,
-.iconOnly.xl {
+.iconOnly.xl,
+.xl.circle,
+.circle.xl {
   width: var(--button-height-xl);
-  min-width: var(--button-height-xl);
   height: var(--button-height-xl);
+}
+
+/* Icon sizing inside icon-only/circle buttons. */
+.iconOnly .label > svg,
+.iconOnly .label > * svg,
+.circle .label > svg,
+.circle .label > * svg {
+  width: var(--iconbutton-icon-md);
+  height: var(--iconbutton-icon-md);
+}
+
+.xs.iconOnly .label > svg,
+.xs.iconOnly .label > * svg,
+.xs.circle .label > svg,
+.xs.circle .label > * svg {
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
+}
+
+.sm.iconOnly .label > svg,
+.sm.iconOnly .label > * svg,
+.sm.circle .label > svg,
+.sm.circle .label > * svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+}
+
+.md.iconOnly .label > svg,
+.md.iconOnly .label > * svg,
+.md.circle .label > svg,
+.md.circle .label > * svg {
+  width: var(--iconbutton-icon-md);
+  height: var(--iconbutton-icon-md);
+}
+
+.lg.iconOnly .label > svg,
+.lg.iconOnly .label > * svg,
+.lg.circle .label > svg,
+.lg.circle .label > * svg {
+  width: var(--iconbutton-icon-lg);
+  height: var(--iconbutton-icon-lg);
 }
 
 /* === Icons === */

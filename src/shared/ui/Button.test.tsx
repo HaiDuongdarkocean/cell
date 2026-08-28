@@ -19,7 +19,7 @@ describe('Button', () => {
   });
 
   it('renders all sizes', () => {
-    const sizes = ['sm', 'md', 'lg', 'xl'] as const;
+    const sizes = ['xs', 'sm', 'md', 'lg', 'xl'] as const;
     for (const size of sizes) {
       const { unmount } = render(<Button size={size}>{size}</Button>);
       expect(screen.getByRole('button', { name: size })).toBeInTheDocument();
@@ -81,5 +81,16 @@ describe('Button', () => {
     );
     expect(screen.getByTestId('leading')).toBeInTheDocument();
     expect(screen.getByTestId('trailing')).toBeInTheDocument();
+  });
+
+  it('auto-switches to circle and iconOnly when only an icon is provided', () => {
+    const { container } = render(<Button aria-label="Icon only"><span data-cell-id="icon">I</span></Button>);
+    expect(container.firstChild).toHaveClass('circle');
+    expect(container.firstChild).toHaveClass('iconOnly');
+  });
+
+  it('supports transparent variant', () => {
+    render(<Button variant="transparent">Transparent</Button>);
+    expect(screen.getByRole('button', { name: 'Transparent' })).toBeInTheDocument();
   });
 });

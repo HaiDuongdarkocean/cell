@@ -2,14 +2,15 @@ import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTML
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success';
-type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success' | 'transparent';
+type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+type ButtonShape = 'pill' | 'circle';
 type ButtonLiquidStyle = 'regular' | 'clear' | 'prominent';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 type ButtonActiveStyle = 'default' | 'flat';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
   variant?: ButtonVariant;
   /** Hide label when nested in a container narrower than 380px. */
@@ -18,6 +19,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   liquidStyle?: ButtonLiquidStyle;
   /** Size. Default: md. */
   size?: ButtonSize;
+  /** Shape. Default: pill. Icon-only buttons auto-switch to circle. */
+  shape?: ButtonShape;
   /** Layout direction: horizontal (icon+label inline) or vertical (icon top, label bottom). Default: horizontal. */
   orientation?: ButtonOrientation;
   /** Persistent active/toggle state. Default: pale-blue subtle bg + primary color. */
@@ -55,6 +58,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   variant = 'primary',
   liquidStyle = 'regular',
   size = 'md',
+  shape,
   orientation = 'horizontal',
   active = false,
   activeStyle = 'default',
@@ -104,6 +108,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const onlyChildIsElement = childCount === 1 && isValidElement(children);
   const hasTextChild = childCount > 0 && !onlyChildIsElement;
   const iconOnly = !hasTextChild && !leadingIcon && !trailingIcon && !loading && (onlyChildIsElement || childCount === 0);
+  const resolvedShape = shape ?? (iconOnly ? 'circle' : 'pill');
 
   const liquidClass = variant === 'glass'
     ? liquidStyle === 'clear'
@@ -118,6 +123,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     styles[variant],
     liquidClass,
     styles[size],
+    resolvedShape === 'circle' ? styles.circle : '',
     orientation === 'vertical' ? styles.vertical : '',
     active ? (activeStyle === 'flat' ? styles.activeFlat : styles.active) : '',
     loading ? styles.loading : '',

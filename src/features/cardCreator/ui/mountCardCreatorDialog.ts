@@ -26,7 +26,6 @@ import fieldRowCss from './FieldRow.module.css?inline';
 import dialogCss from '@/shared/ui/Dialog.module.css?inline';
 import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import selectCss from '@/shared/ui/Select.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 
@@ -65,7 +64,6 @@ const SHADOW_CSS = [
   dialogCss,
   bottomSheetCss,
   buttonCss,
-  iconButtonCss,
   selectCss,
   iconCss,
 ];

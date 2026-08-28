@@ -73,7 +73,6 @@ import '@/shared/styles/tokens.css';
 | Tabs | Tabs.tsx | Tabs.module.css | 18 var() |
 | Accordion | Accordion.tsx | Accordion.module.css | 15 var() |
 | Tooltip | Tooltip.tsx | Tooltip.module.css | 15 var() |
-| IconButton | IconButton.tsx | IconButton.module.css | 13 var() |
 | SearchableSelect | SearchableSelect.tsx | SearchableSelect.module.css | 46 var() |
 | BottomSheet | BottomSheet.tsx | BottomSheet.module.css | 18 var() |
 | Drawer | Drawer.tsx | Drawer.module.css | 21 var() |

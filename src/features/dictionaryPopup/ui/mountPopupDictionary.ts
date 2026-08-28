@@ -10,7 +10,6 @@ import popupDictionaryCss from './PopupDictionary.module.css?inline';
 import dictionaryPanelViewCss from './DictionaryPanelView.module.css?inline';
 import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
 import inputCss from '@/shared/ui/Input.module.css?inline';
-import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import buttonCss from '@/shared/ui/Button.module.css?inline';
 import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
@@ -178,7 +177,6 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
         dictionaryPanelViewCss,
         searchFieldCss,
         inputCss,
-        iconButtonCss,
         buttonCss,
         spinnerCss,
         skeletonCss,
