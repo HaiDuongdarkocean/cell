@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Toggle — Liquid Morph</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/MorphSVGPlugin.min.js"></script>
+  <style>
+    :root {
+      --font: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', Arial, sans-serif;
+    }
+
+    html {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    *, *::before, *::after {
+      box-sizing: inherit;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      font-family: var(--font);
+      justify-content: center;
+      align-items: center;
+      background: #F6F8FF;
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #6E6E73;
+      letter-spacing: 0.02em;
+    }
+
+    .switch {
+      --default: #D1D6EE;
+      --hover: #CACFE6;
+      --active: #275EFE;
+      --dot: #fff;
+      --dot-shadow: rgba(0, 9, 61, 0.1);
+      position: relative;
+    }
+
+    .switch input {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-appearance: none;
+      outline: none;
+      display: block;
+      border: none;
+      background: var(--b, var(--default));
+      width: 40px;
+      height: 22px;
+      padding: 0;
+      margin: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      transition: background 0.3s linear;
+    }
+
+    .switch input:hover {
+      --b: var(--hover);
+    }
+
+    .switch input:checked {
+      --b: var(--active);
+    }
+
+    .switch input:checked + svg {
+      transform: scaleX(-1);
+    }
+
+    .switch.active input {
+      --b: var(--active);
+    }
+
+    .switch.active input:checked {
+      --b: var(--default);
+    }
+
+    .switch svg {
+      fill: var(--dot);
+      display: block;
+      width: 36px;
+      height: 18px;
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      pointer-events: none;
+      filter: drop-shadow(0 0.5px 0.5px var(--dot-shadow));
+    }
+  </style>
+</head>
+<body>
+  <p class="title">Liquid morph toggle — hover & click</p>
+
+  <label class="switch" aria-label="Liquid morph toggle">
+    <input type="checkbox" />
+    <svg viewBox="0 0 36 18">
+      <path d="M18 9C18 13.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 18 4.02944 18 9Z" />
+    </svg>
+  </label>
+
+  <script>
+    gsap.registerPlugin(MorphSVGPlugin);
+
+    document.querySelectorAll('.switch').forEach(element => {
+      const path = element.querySelector('path');
+      const input = element.querySelector('input');
+
+      element.addEventListener('mouseenter', () => {
+        if (element.classList.contains('active')) {
+          return;
+        }
+        gsap.to(path, {
+          morphSVG: 'M20 9C20 13.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 20 5.02944 20 9Z',
+          duration: 0.15,
+        });
+      });
+
+      element.addEventListener('mouseleave', () => {
+        if (element.classList.contains('active')) {
+          return;
+        }
+        gsap.to(path, {
+          morphSVG: 'M18 9C18 13.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 18 4.02944 18 9Z',
+          duration: 0.15,
+        });
+      });
+
+      element.addEventListener('click', e => {
+        e.preventDefault();
+
+        if (element.classList.contains('active')) {
+          return;
+        }
+
+        element.classList.add('active');
+
+        gsap.to(path, {
+          keyframes: [
+            {
+              morphSVG: 'M36 9C36 15.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 36 2.02944 36 9Z',
+              duration: 0.15,
+            },
+            {
+              morphSVG: 'M35.9954 9C35.9954 13.9706 31.9659 18 26.9954 18C22.0248 18 23.9954 12.9706 23.9954 9C23.9954 5.02944 22.0248 0 26.9954 0C31.9659 0 35.9954 4.02944 35.9954 9Z',
+              duration: 0.15,
+            },
+            {
+              morphSVG: 'M36 9C36 13.9706 31.9706 18 27 18C22.0294 18 18 13.9706 18 9C18 4.02944 22.0294 0 27 0C31.9706 0 36 4.02944 36 9Z',
+              duration: 0.5,
+              ease: 'elastic.out(1, 0.8)',
+              onComplete() {
+                input.checked = !input.checked;
+                gsap.set(path, {
+                  morphSVG: 'M18 9C18 13.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 18 4.02944 18 9Z',
+                });
+                element.classList.remove('active');
+              },
+            },
+          ],
+        });
+      });
+    });
+  </script>
+</body>
+</html>
