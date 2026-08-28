@@ -21,9 +21,9 @@
   white-space: nowrap;
   overflow: hidden;
   isolation: isolate;
-  background: var(--button-liquid-surface);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
+  backdrop-filter: var(--button-liquid-filter-url, blur(12px) saturate(150%));
+  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(12px) saturate(150%));
   box-shadow:
     inset -2px -2px 4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 12%), transparent),
     0 4px 14px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 8%), transparent);
@@ -36,73 +36,45 @@
     box-shadow var(--duration-slow) var(--ease-out);
 }
 
+/* Hidden SVG filter reference; zero-size, never participates in layout. */
+.glassFilter {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .button > * {
   pointer-events: none;
   position: relative;
   z-index: calc(var(--z-base) + 1);
 }
 
-/* 45° conic rim — bright top-left, dark bottom-right. */
+/* Rim — bright top-left, dark bottom-right, soft inner glow. */
 .button::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: conic-gradient(
-    from 315deg,
-    color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 75%), transparent) 0deg,
-    color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 20%), transparent) 50deg,
-    transparent 100deg,
-    transparent 160deg,
-    color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 16%), transparent) 210deg,
-    transparent 270deg,
-    transparent 320deg,
-    color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 60%), transparent) 360deg
-  );
-  -webkit-mask: radial-gradient(circle, transparent 94%, var(--color-text-inverse) 95%, var(--color-text-inverse) 97%, transparent 98%);
-  mask: radial-gradient(circle, transparent 94%, var(--color-text-inverse) 95%, var(--color-text-inverse) 97%, transparent 98%);
+  background: none;
+  box-shadow:
+    inset 2px 2px 0px -2px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 75%), transparent),
+    inset 0 0 3px 1px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 55%), transparent),
+    inset -2px -2px 4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 12%), transparent);
   z-index: var(--z-base);
   opacity: 0.85;
   transition: opacity var(--duration-slow) var(--ease-out);
 }
 
-/* Soft surface caustic behind the conic rim. */
-.button::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      ellipse 55% 45% at 22% 18%,
-      var(--button-liquid-inner-highlight) 0%,
-      color-mix(in srgb, var(--button-liquid-inner-highlight), transparent 55%) 35%,
-      color-mix(in srgb, var(--button-liquid-surface-glow), transparent 80%) 60%,
-      transparent 80%
-    ),
-    radial-gradient(
-      ellipse 55% 45% at 78% 82%,
-      var(--button-liquid-inner-highlight) 0%,
-      color-mix(in srgb, var(--button-liquid-inner-highlight), transparent 55%) 35%,
-      color-mix(in srgb, var(--button-liquid-surface-glow), transparent 80%) 60%,
-      transparent 80%
-    );
-  pointer-events: none;
-  z-index: var(--z-base);
-  filter: blur(0.8px);
-  opacity: 0.6;
-  transition: opacity var(--duration-slow) var(--ease-out);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .button:hover {
-    background: var(--button-liquid-surface-hover);
+    background: color-mix(in srgb, var(--button-liquid-surface-hover) 30%, transparent);
     filter: brightness(1.04);
   }
 
-  .button:hover::before,
-  .button:hover::after {
+  .button:hover::before {
     opacity: 1;
   }
 }
@@ -128,9 +100,7 @@
   opacity: 0.3;
 }
 
-.button:disabled::after {
-  opacity: 0.4;
-}
+
 
 .button.loading {
   opacity: 0.78;
@@ -138,8 +108,7 @@
   cursor: wait;
 }
 
-.button.loading::before,
-.button.loading::after {
+.button.loading::before {
   opacity: 0.4;
 }
 
@@ -202,8 +171,8 @@
   padding: var(--button-padding-y-xl) var(--button-padding-x-xl);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: var(--button-liquid-filter-url, blur(18px) saturate(160%));
+  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(18px) saturate(160%));
 }
 
 .xl .leadingIcon,
@@ -222,7 +191,7 @@
 .destructive,
 .error,
 .primarySubtle {
-  background: var(--button-liquid-surface);
+  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
   color: var(--button-liquid-foreground);
 }
 
@@ -233,14 +202,14 @@
 /* Outline — same liquid-glass material; the rim provides the outline. */
 .outline,
 .outline:hover {
-  background: var(--button-liquid-surface);
+  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
   color: var(--button-liquid-foreground);
 }
 
 /* Ghost — same liquid-glass material; floats on tinted backgrounds. */
 .ghost,
 .ghost:hover {
-  background: var(--button-liquid-surface);
+  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
   color: var(--button-liquid-foreground);
 }
 
@@ -257,8 +226,7 @@
   transform: none;
 }
 
-.transparent::before,
-.transparent::after {
+.transparent::before {
   display: none;
 }
 
@@ -275,8 +243,7 @@
   -webkit-backdrop-filter: none;
 }
 
-.link::before,
-.link::after {
+.link::before {
   display: none;
 }
 
@@ -292,24 +259,24 @@
 .liquidRegular,
 .liquidClear,
 .liquidProminent {
-  background: var(--button-liquid-surface);
+  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
   color: var(--button-liquid-foreground);
-  backdrop-filter: blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation));
-  -webkit-backdrop-filter: blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation));
+  backdrop-filter: var(--button-liquid-filter-url, blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation)));
+  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation)));
 }
 
 .liquidClear {
-  background: color-mix(in srgb, var(--button-liquid-surface) 55%, transparent);
+  background: color-mix(in srgb, var(--button-liquid-surface) 11%, transparent);
   border: var(--border-width-hairline) solid var(--color-glass-border-subtle);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .liquidClear:hover {
-    background: color-mix(in srgb, var(--button-liquid-surface-hover) 55%, transparent);
+    background: color-mix(in srgb, var(--button-liquid-surface-hover) 16%, transparent);
   }
 
   .liquidProminent:hover {
-    background: var(--button-liquid-surface-active);
+    background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
     filter: brightness(1.05);
   }
 }
@@ -318,15 +285,13 @@
 
 .active,
 .active:hover {
-  background: var(--button-liquid-surface-active);
+  background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
   color: var(--button-liquid-foreground);
   filter: brightness(1.06);
 }
 
 .active::before,
-.active:hover::before,
-.active::after,
-.active:hover::after {
+.active:hover::before {
   opacity: 0.5;
 }
 
@@ -339,7 +304,7 @@
 
 .error,
 .error:hover {
-  background: var(--button-liquid-surface-active);
+  background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
   color: var(--button-liquid-foreground);
 }
 
@@ -373,12 +338,10 @@
   height: var(--button-vertical-icon-size);
 }
 
-/* No conic rim on vertical or full-width bars — the pill rim reads wrong on a rectangle. */
+/* No rim on vertical or full-width bars — the pill rim reads wrong on a rectangle. */
 .button.vertical::before,
 .button.fullWidth::before {
-  background: none;
-  -webkit-mask: none;
-  mask: none;
+  box-shadow: none;
 }
 
 /* === Icon-only / Circle — circular dewdrop when a single icon is the only content === */
@@ -608,13 +571,9 @@
   }
 
   .button::before,
-  .button::after,
   .liquidRegular::before,
   .liquidClear::before,
-  .liquidProminent::before,
-  .liquidRegular::after,
-  .liquidClear::after,
-  .liquidProminent::after {
+  .liquidProminent::before {
     display: none;
   }
 }
