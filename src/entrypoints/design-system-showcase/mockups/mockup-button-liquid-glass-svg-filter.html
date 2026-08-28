@@ -3,13 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Video Player — Liquid Glass Controls</title>
+  <title>Video Player — SVG Filter Liquid Glass Controls</title>
   <style>
     :root {
       --font: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', sans-serif;
-      --glass-fill: rgba(255, 255, 255, 0.08);
-      --glass-fill-hover: rgba(255, 255, 255, 0.12);
-      --glass-fill-active: rgba(255, 255, 255, 0.16);
       --glass-icon: #FFFFFF;
     }
 
@@ -39,9 +36,7 @@
       position: relative;
       overflow: hidden;
       background:
-        /* Overlay tối nhẹ */
         linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.04) 45%, rgba(0,0,0,0.14) 100%),
-        /* Desert photo */
         url('/mockup-bg-desert.jpg') center / cover no-repeat;
       display: flex;
       flex-direction: column;
@@ -52,7 +47,7 @@
         0 4px 14px -2px rgba(0,0,0,0.08);
     }
 
-    /* === Glass control base === */
+    /* === Liquid glass control base === */
     .ctrl {
       position: relative;
       display: inline-flex;
@@ -62,45 +57,44 @@
       border: none;
       cursor: pointer;
       color: var(--glass-icon);
-      background: var(--glass-fill);
+      background: transparent;
       border-radius: 999px;
-      box-shadow:
-        inset -2px -2px 4px rgba(0, 0, 0, 0.12),
-        0 4px 14px rgba(0, 0, 0, 0.08);
-      backdrop-filter: blur(14px) saturate(120%) brightness(1.02);
-      -webkit-backdrop-filter: blur(14px) saturate(120%) brightness(1.02);
       overflow: hidden;
       isolation: isolate;
-      transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+      transition: transform 0.12s ease, box-shadow 0.18s ease;
     }
 
-    /* L1: 45° rim — bright top-left, dark bottom-right */
+    /* L1: refracted glass body — SVG filter distorts the backdrop */
+    .ctrl::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.04);
+      /* Blur + displacement on the backdrop */
+      backdrop-filter: url(#btn-glass);
+      -webkit-backdrop-filter: url(#btn-glass);
+      z-index: 0;
+    }
+
+    /* L2: rim highlight and 3D edge */
     .ctrl::before {
       content: '';
       position: absolute;
       inset: 0;
       border-radius: inherit;
       pointer-events: none;
-      background: conic-gradient(
-        from 315deg,
-        rgba(255,255,255,0.75) 0deg,
-        rgba(255,255,255,0.20) 50deg,
-        rgba(255,255,255,0.0) 100deg,
-        rgba(0,0,0,0.0) 160deg,
-        rgba(0,0,0,0.16) 210deg,
-        rgba(0,0,0,0.0) 270deg,
-        rgba(255,255,255,0.0) 320deg,
-        rgba(255,255,255,0.60) 360deg
-      );
-      -webkit-mask: radial-gradient(circle, transparent 94%, black 95%, black 97%, transparent 98%);
-      mask: radial-gradient(circle, transparent 94%, black 95%, black 97%, transparent 98%);
+      box-shadow:
+        inset 2px 2px 0px -2px rgba(255,255,255,0.75),
+        inset 0 0 3px 1px rgba(255,255,255,0.55),
+        inset -2px -2px 4px rgba(0,0,0,0.12),
+        0 4px 14px rgba(0,0,0,0.10);
       z-index: 1;
     }
 
-    .ctrl::after { display: none; }
-
-    .ctrl:hover { background: var(--glass-fill-hover); }
-    .ctrl:active { transform: scale(0.96); background: var(--glass-fill-active); }
+    .ctrl:hover::after { background: rgba(255, 255, 255, 0.08); }
+    .ctrl:active { transform: scale(0.96); }
     .ctrl > * { position: relative; z-index: 2; pointer-events: none; }
 
     /* Circle sizes */
@@ -302,7 +296,7 @@
     .player[data-bg="white"] .progress-track::after { background: #000000; }
     .player[data-bg="white"] .progress-pill { color: rgba(0, 0, 0, 0.80); }
 
-    /* Variant switcher === */
+    /* === Variant switcher === */
     .variant-panel {
       position: fixed;
       top: 24px;
@@ -331,10 +325,20 @@
   </style>
 </head>
 <body>
+  <svg style="display: none;">
+    <defs>
+      <filter id="btn-glass" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blur" />
+        <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="8" result="noise" />
+        <feDisplacementMap in="blur" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
   <div class="variant-panel" role="group" aria-label="Switch variant">
     <span>Variant</span>
-    <a href="mockup-button-liquid-glass.html" class="active">CSS Blur</a>
-    <a href="mockup-button-liquid-glass-svg-filter.html">SVG Filter</a>
+    <a href="mockup-button-liquid-glass.html">CSS Blur</a>
+    <a href="mockup-button-liquid-glass-svg-filter.html" class="active">SVG Filter</a>
   </div>
 
   <div class="bg-panel" role="group" aria-label="Change background">
