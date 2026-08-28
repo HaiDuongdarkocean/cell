@@ -91,18 +91,30 @@ export function Showcase(): ReactElement {
       </Section>
 
       <Section
+        title="Solid"
+        caption="Flat, opaque material reusing shared surface tokens. For forms, dialogs and settings where glass is too subtle."
+      >
+        <Button variant="solid">Primary</Button>
+        <Button variant="solid" disabled>Disabled</Button>
+        <Button variant="solid" loading>Loading</Button>
+        <Button variant="solid" leadingIcon={<Icon name="download" size={18} />}>Download</Button>
+      </Section>
+
+      <Section
         title="Surfaces"
-        caption="Extreme white and black surfaces to verify the conic rim and contact shadow remain visible."
+        caption="Extreme white and black surfaces to verify the conic rim and contact shadow remain visible; solid stays opaque and legible."
       >
         <div data-theme="light" className={styles.surfaceWhite}>
           <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>White</Button>
           <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
           <Button variant="glass" size="lg">Large</Button>
+          <Button variant="solid">Solid</Button>
         </div>
         <div data-theme="dark" className={styles.surfaceBlack}>
           <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>Black</Button>
           <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
           <Button variant="glass" size="lg">Large</Button>
+          <Button variant="solid">Solid</Button>
         </div>
       </Section>
     </div>
@@ -111,7 +123,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Button',
-  description: 'Button atom — Liquid Glass. 6 canonical variants (primary, glass, outline, ghost, success, destructive) + 3 aliases (secondary, primarySubtle, link). 4 sizes (sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, caustic highlights, smoked-blue glass, no idle motion. Token-driven, theme-agnostic.',
+  description: 'Button atom — Liquid Glass + Solid. 7 canonical variants (primary, glass, outline, ghost, solid, success, destructive) + 3 aliases (secondary, primarySubtle, link). 4 sizes (sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, caustic highlights, smoked-blue glass, no idle motion. Token-driven, theme-agnostic.',
   level: 'atoms',
   category: 'Action',
   group: 'Shared UI — Action',

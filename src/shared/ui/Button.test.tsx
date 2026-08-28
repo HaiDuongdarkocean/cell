@@ -10,12 +10,17 @@ describe('Button', () => {
   });
 
   it('renders all variants', () => {
-    const variants = ['primary', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const;
+    const variants = ['primary', 'secondary', 'outline', 'ghost', 'solid', 'destructive', 'link'] as const;
     for (const variant of variants) {
       const { unmount } = render(<Button variant={variant}>{variant}</Button>);
       expect(screen.getByRole('button', { name: variant })).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('applies solid class for solid variant', () => {
+    const { container } = render(<Button variant="solid">Solid</Button>);
+    expect(container.firstChild).toHaveClass('solid');
   });
 
   it('renders all sizes', () => {

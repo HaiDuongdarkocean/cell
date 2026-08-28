@@ -32,4 +32,10 @@ describe('Button style contract guard', () => {
     // Prominent must not be a solid primary fill; it must use a neutral token.
     expect(prominentBlock).not.toMatch(/background-color:\s*var\(--color-primary\)/);
   });
+
+  it('removes backdrop filter on solid variant', () => {
+    const solidBlock = css.match(/\.solid\s*\{[^{}]*\}/)?.[0] ?? '';
+    expect(solidBlock).toMatch(/backdrop-filter\s*:\s*none/);
+    expect(solidBlock).toMatch(/-webkit-backdrop-filter\s*:\s*none/);
+  });
 });
