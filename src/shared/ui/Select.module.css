@@ -166,21 +166,18 @@
   position: absolute;
   top: calc(100% + var(--space-1));
   left: 0;
-  composes: themed from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
   width: max-content;
   min-width: 100%;
   max-width: min(calc(var(--space-5) * 16), calc(100vw - var(--space-8)));
   max-height: min(calc(var(--space-5) * 11), 50vh);
-  padding: var(--space-1);
   background: var(--color-surface-elevated);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--dialog-radius);
   box-shadow: var(--shadow-popover);
   z-index: var(--z-dropdown);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* The alignment classes are pure markers in CSS; actual left/right/top/bottom
@@ -188,6 +185,56 @@
 .menuAlignLeft {}
 
 .menuAlignRight {}
+
+/* --- Search input --- */
+.searchWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+}
+
+.searchIcon {
+  width: var(--space-4);
+  height: var(--space-4);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.searchInput:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Options list --- */
+.options {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  overflow-y: auto;
+}
 
 /* --- Options --- */
 .option {
@@ -236,6 +283,13 @@
   height: var(--space-4);
   color: var(--color-primary);
   flex-shrink: 0;
+}
+
+.emptyState {
+  padding: var(--space-3);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
 }
 
 @media (prefers-reduced-motion: reduce) {
