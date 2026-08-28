@@ -17,7 +17,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
           icon={<Icon name="link"  />}
           title="No external links"
           action={
-            <Button variant="outline" size="md" onClick={() => { /* open settings */ }}>
+            <Button material="solid" variant="outline" size="md" onClick={() => { /* open settings */ }}>
               Open settings
             </Button>
           }

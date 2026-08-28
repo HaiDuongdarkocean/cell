@@ -54,7 +54,7 @@ export function TranslatePanel({
           icon={<Icon name="languages"  />}
           title="No translation"
           action={
-            <Button variant="outline" size="md" onClick={onTranslate}>
+            <Button material="solid" variant="outline" size="md" onClick={onTranslate}>
               Translate to {targetLang}
             </Button>
           }
@@ -93,7 +93,7 @@ export function TranslatePanel({
         icon={<Icon name="languages"  />}
         title="No translation"
         action={
-          <Button variant="outline" size="md" loading={loading} onClick={onTranslate}>
+          <Button material="solid" variant="outline" size="md" loading={loading} onClick={onTranslate}>
             Translate to {targetLang}
           </Button>
         }

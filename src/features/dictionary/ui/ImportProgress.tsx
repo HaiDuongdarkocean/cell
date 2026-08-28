@@ -23,7 +23,7 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
         {processed}{total > 0 ? ` / ${total}` : ''} mục
       </span>
       {onCancel && (
-        <Button variant="outline" size="sm" onClick={onCancel}>
+        <Button material="solid" variant="outline" size="sm" onClick={onCancel}>
           Hủy
         </Button>
       )}

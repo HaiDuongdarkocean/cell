@@ -243,7 +243,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
 
           <div className={styles.controlsBar}>
             <div className={styles.controlsLeft}>
-              <IconButton
+              <IconButton material="solid"
                 variant="transparent"
                 size="md"
                 onClick={handlePlayPause}
@@ -254,7 +254,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
               </IconButton>
 
               <div className={styles.volumeGroup}>
-                <IconButton
+                <IconButton material="solid"
                   variant="transparent"
                   size="md"
                   onClick={toggleMute}
@@ -299,7 +299,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
                 menuAlign="right"
               />
 
-              <IconButton
+              <IconButton material="solid"
                 variant="transparent"
                 size="md"
                 aria-label="Settings"
@@ -308,7 +308,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
                 <Icon name="slidersHorizontal" size="sm" />
               </IconButton>
 
-              <IconButton
+              <IconButton material="solid"
                 variant="transparent"
                 size="md"
                 aria-label="Picture in picture"
@@ -317,7 +317,7 @@ export function VideoPlayer({ video: propVideo, mode, className }: VideoPlayerPr
                 <Icon name="pip" size="sm" />
               </IconButton>
 
-              <IconButton
+              <IconButton material="solid"
                 variant="transparent"
                 size="md"
                 onClick={toggleFullscreen}

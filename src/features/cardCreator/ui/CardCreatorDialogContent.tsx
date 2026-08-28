@@ -89,7 +89,7 @@ export function CardCreatorDialogContent({
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
   const headerSettings = isPanel ? (
-    <Button
+    <Button material="solid"
       variant="ghost"
       size="sm"
       disabled
@@ -102,7 +102,7 @@ export function CardCreatorDialogContent({
   ) : undefined;
 
   const headerQueue = isPanel ? (
-    <Button
+    <Button material="solid"
       variant="ghost"
       size="sm"
       onClick={toggleQueueSidebar}
@@ -219,7 +219,7 @@ export function CardCreatorDialogContent({
             aria-label="Sentence translation"
             dataId="cc-sentence-translation"
           />
-          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
+          <Button material="solid" variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
             Translate
           </Button>
         </FieldRow>
@@ -362,10 +362,10 @@ export function CardCreatorDialogContent({
           />
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
-          <Button variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
+          <Button material="solid" variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button
+          <Button material="solid"
             variant="secondary"
             size="sm"
             onClick={() => submit('add')}
@@ -374,7 +374,7 @@ export function CardCreatorDialogContent({
           >
             Add
           </Button>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="sm"
             onClick={() => submit('update')}

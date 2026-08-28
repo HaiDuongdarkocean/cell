@@ -28,35 +28,35 @@ export function LauncherUserBar() {
 
   return (
     <nav className={styles.userBar} aria-label="User actions">
-      <IconButton
+      <IconButton material="solid"
         size="lg"
-        variant="glass"
+        variant="ghost"
         onClick={cycleMode}
         aria-label={`Theme: ${mode}`}
         title={`Theme: ${mode}`}
       >
         <Icon name={themeIcon} size="md" />
       </IconButton>
-      <IconButton
+      <IconButton material="solid"
         size="lg"
-        variant="glass"
+        variant="ghost"
         onClick={cyclePreset}
         aria-label={`Preset: ${config.preset ?? 'default'}`}
         title={`Preset: ${config.preset ?? 'default'}`}
       >
         <Icon name="layers" size="md" />
       </IconButton>
-      <IconButton
+      <IconButton material="solid"
         size="lg"
-        variant="glass"
+        variant="ghost"
         aria-label="Settings"
         title="Settings"
       >
         <Icon name="settings" size="md" />
       </IconButton>
-      <IconButton
+      <IconButton material="solid"
         size="lg"
-        variant="glass"
+        variant="ghost"
         aria-label="Add"
         title="Add"
       >

@@ -30,7 +30,7 @@ export function SkipButton({
   const label = `Skip ${direction} ${seconds} seconds`;
 
   return (
-    <IconButton
+    <IconButton material="solid"
       aria-label={label}
       className={[styles.skipBtn, className].filter(Boolean).join(' ')}
       {...rest}

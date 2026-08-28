@@ -281,7 +281,7 @@ export function ReaderApp(): React.JSX.Element {
           </span>
         )}
         {view === 'reader' && (
-          <Button variant="outline" size="sm" onClick={handleBack}>
+          <Button material="solid" variant="outline" size="sm" onClick={handleBack}>
             Back
           </Button>
         )}
@@ -294,7 +294,7 @@ export function ReaderApp(): React.JSX.Element {
               style={{ display: 'none' }}
               onChange={handleFileChange}
             />
-            <Button onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
+            <Button material="solid" onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
           </>
         )}
       </header>
@@ -317,7 +317,7 @@ export function ReaderApp(): React.JSX.Element {
                   <span className={styles.bookMeta}>
                     {book.paragraphs.length} paragraphs
                   </span>
-                  <Button
+                  <Button material="solid"
                     variant="ghost"
                     size="sm"
                     onClick={(event) => {

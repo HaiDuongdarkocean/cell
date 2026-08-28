@@ -20,7 +20,7 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
           {!resource.installationFinished && ' · đang import...'}
         </span>
       </div>
-      <Button
+      <Button material="solid"
         variant="outline"
         size="sm"
         onClick={onDelete}

@@ -136,7 +136,7 @@ export function CardCreatorSettingsPanel({
             {buildStatusDetail(status, version, settings.ankiConnectUrl)}
           </span>
         </div>
-        <Button
+        <Button material="solid"
           variant="outline"
           size="sm"
           onClick={handleTest}

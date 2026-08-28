@@ -325,7 +325,7 @@ export function SubtitleStylePanel({
       {/* ─── Reset ─── */}
       <div className={styles.resetRow}>
         {!showResetConfirm ? (
-          <Button
+          <Button material="solid"
             variant="ghost"
             size="sm"
             onClick={() => setShowResetConfirm(true)}
@@ -337,10 +337,10 @@ export function SubtitleStylePanel({
         ) : (
           <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>
             <span>Reset to defaults?</span>
-            <Button variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
+            <Button material="solid" variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
               Reset
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
+            <Button material="solid" variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
               Cancel
             </Button>
           </div>

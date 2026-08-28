@@ -100,9 +100,9 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
     <div className={styles.wrapper} data-cell-id="theme-import-export">
       <div className={styles.label}>Export / Import</div>
       <div className={styles.row}>
-        <Button variant="secondary" size="sm" onClick={handleExport} data-cell-id="theme-export">⬇ Export JSON</Button>
-        <Button variant="secondary" size="sm" onClick={() => void handleCopy()} data-cell-id="theme-copy">📋 Copy</Button>
-        <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-cell-id="theme-import-file">⬆ Import file</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={handleExport} data-cell-id="theme-export">⬇ Export JSON</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={() => void handleCopy()} data-cell-id="theme-copy">📋 Copy</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-cell-id="theme-import-file">⬆ Import file</Button>
         <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFile} className={styles.fileInput} data-cell-id="theme-file-input" />
       </div>
       <div className={styles.label}>Or paste JSON:</div>
@@ -114,7 +114,7 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
         data-cell-id="theme-paste-textarea"
       />
       <div className={`${styles.row} ${styles.actionRow}`}>
-        <Button variant="primary" size="sm" onClick={handlePasteApply} data-cell-id="theme-apply-paste">Apply</Button>
+        <Button material="solid" variant="primary" size="sm" onClick={handlePasteApply} data-cell-id="theme-apply-paste">Apply</Button>
       </div>
       {error && <Alert variant="error" description={error} data-cell-id="theme-import-error" />}
       {success && <Alert variant="success" description={success} data-cell-id="theme-import-success" />}

@@ -232,7 +232,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   </span>
                 </HStack>
                 <HStack align="center" gap="1" className={styles.profileActions}>
-                  <IconButton
+                  <IconButton material="solid"
                     type="button"
                     size="sm"
                     variant={isActive ? 'solid' : 'ghost'}
@@ -244,7 +244,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   >
                     <Icon name={isActive ? 'check' : 'check'} size={16} />
                   </IconButton>
-                  <IconButton
+                  <IconButton material="solid"
                     type="button"
                     size="sm"
                     variant="ghost"
@@ -254,7 +254,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   >
                     <Icon name="pencil" size={16} />
                   </IconButton>
-                  <IconButton
+                  <IconButton material="solid"
                     type="button"
                     size="sm"
                     variant="danger"
@@ -268,7 +268,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                 </HStack>
               </HStack>
               <HStack align="center" gap="1" className={styles.profileReorder}>
-                <IconButton
+                <IconButton material="solid"
                   type="button"
                   size="sm"
                   variant="ghost"
@@ -279,7 +279,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                 >
                   <Icon name="moveVertical" size={16} />
                 </IconButton>
-                <IconButton
+                <IconButton material="solid"
                   type="button"
                   size="sm"
                   variant="ghost"
@@ -296,7 +296,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         })}
       </div>
 
-      <Button
+      <Button material="solid"
         type="button"
         size="sm"
         variant="outline"
@@ -318,10 +318,10 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         data-cell-id="language-profile-dialog"
         footer={
           <HStack justify="end" gap="2">
-            <Button type="button" variant="ghost" size="sm" onClick={closeDialog}>
+            <Button material="solid" type="button" variant="ghost" size="sm" onClick={closeDialog}>
               Cancel
             </Button>
-            <Button
+            <Button material="solid"
               type="button"
               size="sm"
               onClick={saveProfile}

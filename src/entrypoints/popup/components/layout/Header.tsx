@@ -30,7 +30,7 @@ export function Header({
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}
-        <IconButton
+        <IconButton material="solid"
           size="sm"
           variant={isActive ? 'ghost' : 'danger'}
           active={!isActive}
@@ -47,7 +47,7 @@ export function Header({
         </IconButton>
 
         {/* Auto Download toggle — primary active when ON */}
-        <IconButton
+        <IconButton material="solid"
           size="sm"
           active={isAutoDownloadActive}
           onClick={onToggleAutoDownload}
@@ -59,7 +59,7 @@ export function Header({
         </IconButton>
 
         {/* Theme toggle */}
-        <IconButton
+        <IconButton material="solid"
           size="sm"
           onClick={onToggleTheme}
           aria-label="Toggle theme"
@@ -73,7 +73,7 @@ export function Header({
         </IconButton>
 
         {/* Settings */}
-        <IconButton
+        <IconButton material="solid"
           size="sm"
           onClick={onOpenSettings}
           aria-label="Settings"

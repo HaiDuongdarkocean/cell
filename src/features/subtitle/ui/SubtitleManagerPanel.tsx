@@ -1,7 +1,17 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import {
+  ChevronLeft,
+  Download,
+  EyeOff,
+  List,
+  Minus,
+  Plus,
+  RotateCcw,
+  X,
+} from 'lucide-react';
 import { Button, IconButton, Tabs } from '@/shared/ui';
-import { SubtitlePanelItem, formatBytes } from './subtitlePanelModel';
+import type { SubtitlePanelItem} from './subtitlePanelModel';
+import { formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
 import { SubtitleManagerFooter } from './SubtitleManagerFooter';
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
@@ -142,7 +152,7 @@ function ItemRow({
       </span>
       {onDownload && (
         <span className={styles.trackActions}>
-          <IconButton
+          <IconButton material="solid"
             size="md"
             variant="ghost"
             aria-label={`Download ${item.name}`}
@@ -152,7 +162,7 @@ function ItemRow({
               onDownload(role, index);
             }}
           >
-            <Icon name="download"  />
+            <Download aria-hidden="true" />
           </IconButton>
         </span>
       )}
@@ -241,10 +251,10 @@ function OffsetStepper({
       </div>
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="md"
-            leadingIcon={<Icon name="minus" />}
+            leadingIcon={<Minus aria-hidden="true" />}
             aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-dec-${role}`}
             onClick={() => bump(-OFFSET_STEP)}
@@ -265,10 +275,10 @@ function OffsetStepper({
               data-cell-id={`manager-offset-input-${role}`}
             />
           </label>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="md"
-            leadingIcon={<Icon name="plus" />}
+            leadingIcon={<Plus aria-hidden="true" />}
             aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
             data-cell-id={`manager-offset-inc-${role}`}
             onClick={() => bump(OFFSET_STEP)}
@@ -276,7 +286,7 @@ function OffsetStepper({
             <span className={styles.stepLabel}>+0.5s</span>
           </Button>
         </div>
-        <IconButton
+        <IconButton material="solid"
           size="md"
           variant="outline"
           aria-label="Reset latency"
@@ -284,7 +294,7 @@ function OffsetStepper({
           onClick={handleReset}
           className={styles.resetBtn}
         >
-          <Icon name="rotateCcw" />
+          <RotateCcw aria-hidden="true" />
         </IconButton>
       </div>
     </div>
@@ -523,19 +533,19 @@ export function SubtitleManagerPanel({
     return (
       <>
         {v !== 'tracks' && (
-          <IconButton
+          <IconButton material="solid"
             ref={backBtnRef}
             variant="ghost"
             aria-label="Back to subtitles"
             data-cell-id="manager-back-to-subtitles"
             onClick={handleBack}
           >
-            <Icon name="chevronLeft"  />
+            <ChevronLeft aria-hidden="true" />
           </IconButton>
         )}
         {v === 'tracks' && (
           <span className={styles.headerIcon}>
-            <Icon name="subtitleManager"  />
+            <List aria-hidden="true" />
           </span>
         )}
         <span className={styles.title}>{title}</span>
@@ -578,12 +588,12 @@ export function SubtitleManagerPanel({
             {renderHeaderContent(view)}
           </div>
         </div>
-        <IconButton
+        <IconButton material="solid"
           aria-label="Close subtitle manager"
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
         >
-          <Icon name="x"  />
+          <X aria-hidden="true" />
         </IconButton>
       </div>
 
@@ -605,18 +615,18 @@ export function SubtitleManagerPanel({
                 </Tabs.List>
                 <div className={styles.sectionActions}>
                   {onImport && (
-                    <IconButton
+                    <IconButton material="solid"
                       size="md"
                       variant="ghost"
                       aria-label={`Import ${activeLabel} subtitle`}
                       data-cell-id={`manager-import-${activeTab}`}
                       onClick={() => onImport(activeTab)}
                     >
-                      <Icon name="plus"  />
+                      <Plus aria-hidden="true" />
                     </IconButton>
                   )}
                   {onHideSection && (
-                    <IconButton
+                    <IconButton material="solid"
                       size="md"
                       variant="ghost"
                       active={activeHidden}
@@ -624,7 +634,7 @@ export function SubtitleManagerPanel({
                       data-cell-id={`manager-hide-section-${activeTab}`}
                       onClick={() => onHideSection(activeTab)}
                     >
-                      <Icon name="eyeOff"  />
+                      <EyeOff aria-hidden="true" />
                     </IconButton>
                   )}
                 </div>

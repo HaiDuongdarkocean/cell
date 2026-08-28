@@ -13,9 +13,9 @@ export function ThemePreview(): React.JSX.Element {
       <div className={styles.section}>
         <div className={styles.sectionLabel}>Buttons</div>
         <div className={styles.row}>
-          <Button variant="primary" size="sm">Primary</Button>
-          <Button variant="secondary" size="sm">Secondary</Button>
-          <Button variant="primary" size="sm" disabled>Disabled</Button>
+          <Button material="solid" variant="primary" size="sm">Primary</Button>
+          <Button material="solid" variant="secondary" size="sm">Secondary</Button>
+          <Button material="solid" variant="primary" size="sm" disabled>Disabled</Button>
         </div>
       </div>
 

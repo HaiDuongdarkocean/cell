@@ -92,7 +92,7 @@ export function Dialog({
             {showCloseButton && centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <Button
+                <Button material="solid"
                   variant="ghost"
                   size="sm"
                   onClick={() => onOpenChange?.(false)}
@@ -109,7 +109,7 @@ export function Dialog({
             {showCloseButton && !centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
+                <Button material="solid" variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
                   ×
                 </Button>
               </HStack>

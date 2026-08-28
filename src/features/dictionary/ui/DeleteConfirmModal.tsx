@@ -13,8 +13,8 @@ interface DeleteConfirmModalProps {
 export function DeleteConfirmModal({ resource, onConfirm, onCancel }: DeleteConfirmModalProps): ReactElement {
   const footer = (
     <>
-      <Button variant="outline" onClick={onCancel}>Hủy bỏ</Button>
-      <Button variant="destructive" onClick={onConfirm} data-cell-id="confirm-delete">Xóa</Button>
+      <Button material="solid" variant="outline" onClick={onCancel}>Hủy bỏ</Button>
+      <Button material="solid" variant="destructive" onClick={onConfirm} data-cell-id="confirm-delete">Xóa</Button>
     </>
   );
 

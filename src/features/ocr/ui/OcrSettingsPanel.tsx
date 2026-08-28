@@ -325,7 +325,7 @@ export function OcrSettingsPanel({
               <SettingsRow stacked divider>
                 <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
                 <div className={styles.segmentButtons}>
-                  <Button
+                  <Button material="solid"
                     variant="outline"
                     size="sm"
                     fullWidth
@@ -335,7 +335,7 @@ export function OcrSettingsPanel({
                   >
                     Top = Target
                   </Button>
-                  <Button
+                  <Button material="solid"
                     variant="outline"
                     size="sm"
                     fullWidth
@@ -444,7 +444,7 @@ export function OcrSettingsPanel({
           {/* Region action buttons — horizontal (icon + label inline) */}
           <SettingsRow stacked divider>
             <div className={styles.regionButtons}>
-              <Button
+              <Button material="solid"
                 variant="outline"
                 size="sm"
                 collapseLabel
@@ -455,7 +455,7 @@ export function OcrSettingsPanel({
                 Select
               </Button>
               {hasCustomRegion && (
-                <Button
+                <Button material="solid"
                   variant="outline"
                   size="sm"
                   collapseLabel
@@ -466,7 +466,7 @@ export function OcrSettingsPanel({
                   Edit
                 </Button>
               )}
-              <Button
+              <Button material="solid"
                 variant="ghost"
                 size="sm"
                 collapseLabel

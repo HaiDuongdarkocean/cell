@@ -25,7 +25,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
       <p className={styles.primaryHint}>Drop your video and subtitles here</p>
       <p className={styles.noteHint}>You can add multiple subtitle files, but only one video</p>
       <div className={styles.buttonRow}>
-        <Button
+        <Button material="solid"
           variant="primary"
           size="md"
           onClick={onOpenFile}
@@ -34,7 +34,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
         >
           Add files
         </Button>
-        <Button
+        <Button material="solid"
           variant="secondary"
           size="md"
           onClick={onOpenFolder}

@@ -169,7 +169,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                   )}
                 </div>
                 <div className={styles.actions}>
-                  <IconButton
+                  <IconButton material="solid"
                     aria-label={hidden ? `Hiện ${language}` : `Ẩn ${language}`}
                     title={hidden ? 'Hiện' : 'Ẩn'}
                     variant="ghost"
@@ -179,7 +179,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                   >
                     <Icon name="eyeOff" />
                   </IconButton>
-                  <IconButton
+                  <IconButton material="solid"
                     aria-label={`Tải lại ${language}`}
                     title="Tải lại"
                     variant="ghost"
@@ -190,7 +190,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                   >
                     <Icon name="rotateCcw" />
                   </IconButton>
-                  <IconButton
+                  <IconButton material="solid"
                     aria-label={`Xóa ${language}`}
                     title="Xóa"
                     variant="ghost"
@@ -226,7 +226,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
               data-cell-id="local-tts-add-select"
               className={styles.addSelect}
             />
-            <Button
+            <Button material="solid"
               variant="primary"
               size="sm"
               leadingIcon={<Icon name="download" />}

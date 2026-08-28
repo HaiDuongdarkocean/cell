@@ -71,7 +71,7 @@ export function CardCreatorDialog({
   // Queue toggle icon — only rendered when N ≥ 2.
   const hasQueue = state.queueItems.length >= 2;
   const headerExtra = hasQueue ? (
-    <Button
+    <Button material="solid"
       variant="ghost"
       size="sm"
       onClick={state.toggleQueueSidebar}

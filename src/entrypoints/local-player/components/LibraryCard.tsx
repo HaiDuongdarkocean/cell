@@ -170,7 +170,7 @@ export function LibraryCard({
           </span>
         </span>
 
-        <IconButton
+        <IconButton material="solid"
           variant="danger"
           size="sm"
           aria-label="Delete video"
@@ -180,7 +180,7 @@ export function LibraryCard({
         >
           <Icon name="trash" size={16} />
         </IconButton>
-        <IconButton
+        <IconButton material="solid"
           variant="ghost"
           size="sm"
           aria-expanded={expanded}

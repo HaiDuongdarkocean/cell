@@ -30,7 +30,7 @@ export function PiPButton({
       : true;
 
   return (
-    <IconButton
+    <IconButton material="solid"
       active={pip}
       disabled={disabled || !supported}
       aria-pressed={pip}

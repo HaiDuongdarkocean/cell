@@ -20,7 +20,13 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tabs } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import {
+  Captions,
+  Search,
+  SlidersHorizontal,
+  Wrench,
+  X,
+} from 'lucide-react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -250,7 +256,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
-          <IconButton
+          <IconButton material="solid"
             variant="ghost"
             size="md"
             active={manageKeysOpen}
@@ -259,7 +265,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             aria-label="Manage API keys"
             data-cell-id="search-manage-keys-toggle"
           >
-            <Icon name="wrench" />
+            <Wrench aria-hidden="true" />
           </IconButton>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
@@ -276,17 +282,17 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           />
           <div className={styles.searchActions}>
             {query && (
-              <IconButton
+              <IconButton material="solid"
                 variant="ghost"
                 size="md"
                 onClick={handleClearQuery}
                 aria-label="Clear search"
                 data-cell-id="search-clear"
               >
-                <Icon name="x" />
+                <X aria-hidden="true" />
               </IconButton>
             )}
-            <IconButton
+            <IconButton material="solid"
               variant="ghost"
               size="md"
               onClick={handleSearchClick}
@@ -294,11 +300,11 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               aria-label="Search subtitles"
               data-cell-id="search-button"
             >
-              <Icon name="search" />
+              <Search aria-hidden="true" />
             </IconButton>
           </div>
         </div>
-        <IconButton
+        <IconButton material="solid"
           variant="ghost"
           size="md"
           active={advancedOpen}
@@ -307,7 +313,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           aria-label="Advanced search options (season, episode)"
           data-cell-id="search-advanced-toggle"
         >
-          <Icon name="slidersHorizontal" />
+          <SlidersHorizontal aria-hidden="true" />
         </IconButton>
       </div>
 
@@ -345,9 +351,9 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* API key hint — replaces status chip, actionable when no keys */}
       {!hasSearchKeys && (
         <div className={styles.apiHint} data-cell-id="search-api-hint">
-          <Icon name="wrench" className={styles.apiHintIcon} />
+          <Wrench className={styles.apiHintIcon} aria-hidden="true" />
           <span className={styles.apiHintText}>Add an API key to start searching</span>
-          <Button
+          <Button material="solid"
             variant="primary"
             size="sm"
             onClick={() => setManageKeysOpen((v) => !v)}
@@ -389,7 +395,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {/* Hint + icon — fills empty space before search, hidden when manage keys open */}
         {!loading && !error && !hasSearched && hasSearchKeys && !manageKeysOpen && (
           <div className={styles.hintState} data-cell-id="search-hint">
-            <Icon name="captions" className={styles.hintIcon} />
+            <Captions className={styles.hintIcon} aria-hidden="true" />
             <span className={styles.hintText}>Search for subtitles by movie or series title</span>
           </div>
         )}
@@ -408,7 +414,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {!loading && error && (
           <div className={styles.errorState} role="alert" data-cell-id="search-error">
             <span className={styles.errorText}>{error}</span>
-            <Button variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
+            <Button material="solid" variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
               Retry
             </Button>
           </div>

@@ -185,7 +185,7 @@ export function VideoCard({
 
         {/* Actions — expand chevron + download button */}
         <HStack align="center" gap="1" className={styles.actions}>
-          <IconButton
+          <IconButton material="solid"
             size="sm"
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
@@ -203,7 +203,7 @@ export function VideoCard({
                 <Spinner size="md" color="secondary" aria-hidden="true" />
               </Center>
             ) : (
-              <IconButton
+              <IconButton material="solid"
                 size="sm"
                 variant="ghost"
                 onClick={handleActionClick}

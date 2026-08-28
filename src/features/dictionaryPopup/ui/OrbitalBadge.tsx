@@ -384,7 +384,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       onPointerUp={gesture.onPointerUp}
       onPointerCancel={gesture.onPointerCancel}
     >
-      <IconButton
+      <IconButton material="solid"
         className={styles.badge}
         aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
         data-cell-id="orbital-badge-button"
