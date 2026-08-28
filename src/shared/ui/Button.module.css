@@ -36,8 +36,11 @@
     box-shadow var(--duration-slow) var(--ease-out);
 }
 
-/* Hidden SVG filter reference; zero-size, never participates in layout. */
-.glassFilter {
+/* Hidden SVG filter reference; zero-size, never participates in layout.
+   Scoped as .button > .glassFilter so its position: absolute beats
+   the .button > * position: relative that otherwise re-enters it into
+   the flex flow and creates an unwanted gap. */
+.button > .glassFilter {
   position: absolute;
   width: 0;
   height: 0;
