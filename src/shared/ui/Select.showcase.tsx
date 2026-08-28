@@ -9,6 +9,12 @@ const OPTIONS = [
   { value: 'ja', label: '日本語' },
 ];
 
+const FLAVORS = [
+  { value: 'vanilla', label: 'Vanilla' },
+  { value: 'chocolate', label: 'Chocolate' },
+  { value: 'strawberry', label: 'Strawberry' },
+];
+
 interface SectionProps {
   title: string;
   caption: string;
@@ -41,10 +47,30 @@ export function Showcase(): ReactElement {
       </Section>
 
       <Section
-        title="Validation & state"
-        caption="Error and disabled states. Error highlights the trigger border; disabled dims the control."
+        title="Variants"
+        caption="Outline (form default), filled (subtle raised), and ghost (no outer ring, ideal for headers)."
       >
-        <Select options={OPTIONS} value={value2} onChange={setValue2} error placeholder="Select with error" />
+        <Select options={OPTIONS} value={value} onChange={setValue} variant="outline" />
+        <Select options={OPTIONS} value={value} onChange={setValue} variant="filled" />
+        <Select options={OPTIONS} value={value} onChange={setValue} variant="ghost" />
+      </Section>
+
+      <Section
+        title="Sizes"
+        caption="Small, medium, and large trigger heights."
+      >
+        <Select options={OPTIONS} value={value} onChange={setValue} size="sm" />
+        <Select options={OPTIONS} value={value} onChange={setValue} size="md" />
+        <Select options={OPTIONS} value={value} onChange={setValue} size="lg" />
+      </Section>
+
+      <Section
+        title="Validation & state"
+        caption="Error, success, warning, and disabled states. Error highlights the trigger border; disabled dims the control."
+      >
+        <Select options={FLAVORS} value={value2} onChange={setValue2} state="error" placeholder="Error state" />
+        <Select options={FLAVORS} value={value2} onChange={setValue2} state="success" placeholder="Success state" />
+        <Select options={FLAVORS} value={value2} onChange={setValue2} state="warning" placeholder="Warning state" />
         <Select options={OPTIONS} value="" onChange={() => {}} disabled placeholder="Disabled select" />
       </Section>
     </div>
@@ -53,7 +79,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Select',
-  description: 'Single-select dropdown with a button trigger, scrollable listbox, disabled options, and error state. Themed to match the design system inputs.',
+  description: 'Single-select dropdown with a button trigger, scrollable listbox, rounded options, responsive placement, disabled options, and size/variant/state support.',
   level: 'molecules',
   category: 'Input',
   group: 'Shared UI — Input',

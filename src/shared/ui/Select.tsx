@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { useMenuPlacement } from './useMenuPlacement';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -7,6 +8,10 @@ export interface SelectOption {
   label: ReactNode;
   disabled?: boolean;
 }
+
+export type SelectSize = 'sm' | 'md' | 'lg';
+export type SelectVariant = 'outline' | 'filled' | 'ghost';
+export type SelectValidation = 'error' | 'success' | 'warning';
 
 export interface SelectProps {
   /** HTML id. */
@@ -21,8 +26,14 @@ export interface SelectProps {
   placeholder?: string;
   /** Disabled state. */
   disabled?: boolean;
-  /** Error state. */
+  /** Error state. Kept for backward compatibility; prefer `state="error"`. */
   error?: boolean;
+  /** Visual size of the trigger. */
+  size?: SelectSize;
+  /** Visual variant of the trigger. */
+  variant?: SelectVariant;
+  /** Validation state of the trigger. */
+  state?: SelectValidation;
   /** Called with the new value when selection changes. */
   onChange?: (value: string) => void;
   /** Optional class name. */
@@ -30,11 +41,11 @@ export interface SelectProps {
   /** Max height of the dropdown menu in pixels. */
   menuMaxHeight?: number;
   /** Horizontal alignment of the dropdown menu relative to the trigger.
-   *  - 'left'  (default): menu's left edge aligns with trigger's left edge (opens rightward).
-   *  - 'right': menu's right edge aligns with trigger's right edge (opens leftward).
-   *  Use 'right' when the select sits on the right side of a row so the
-   *  menu doesn't overflow the card/container. */
-  menuAlign?: 'left' | 'right';
+   *  - 'left'  (default): menu's left edge aligns with trigger's left edge.
+   *  - 'right': menu's right edge aligns with trigger's right edge.
+   *  - 'auto': pick the side with more viewport room.
+   * The menu will still flip to the opposite side if it does not fit. */
+  menuAlign?: 'left' | 'right' | 'auto';
   /** Optional data-cell-id for the root element. */
   'data-cell-id'?: string;
   /** Accessible label for the trigger button. */
@@ -46,8 +57,7 @@ export interface SelectProps {
  *
  * Uses a button trigger + listbox menu instead of a native `<select>` so the
  * dropdown scrollbar can be themed with the design-system tokens (same as
- * Dialog and SearchableSelect). Native `<select>` dropdowns are rendered by the
- * OS and cannot be styled reliably.
+ * Dialog and SearchableSelect).
  */
 export function Select({
   id,
@@ -57,6 +67,9 @@ export function Select({
   placeholder,
   disabled,
   error,
+  size = 'md',
+  variant = 'outline',
+  state,
   onChange,
   className,
   menuMaxHeight,
@@ -66,12 +79,22 @@ export function Select({
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLDivElement>(null);
 
   const selectedIndex = options.findIndex((opt) => opt.value === value);
   const selectedOption = selectedIndex !== -1 ? options[selectedIndex] : null;
+
+  const validationState = state ?? (error ? 'error' : undefined);
+
+  const { placement, maxWidth, maxHeight } = useMenuPlacement({
+    isOpen,
+    menuAlign,
+    menuMaxHeight,
+    triggerRef,
+    menuRef: listboxRef,
+  });
 
   const openMenu = useCallback((): void => {
     if (disabled) return;
@@ -104,9 +127,9 @@ export function Select({
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: Event): void => {
-      if (!menuRef.current || !triggerRef.current) return;
+      if (!rootRef.current || !triggerRef.current) return;
       const path = e.composedPath();
-      if (!path.includes(menuRef.current) && !path.includes(triggerRef.current)) {
+      if (!path.includes(rootRef.current) && !path.includes(triggerRef.current)) {
         closeMenu();
       }
     };
@@ -223,24 +246,46 @@ export function Select({
     }
   };
 
-  const rootClass = [styles.root, error ? styles.error : '', disabled ? styles.disabled : '', className ?? '']
-    .filter(Boolean)
-    .join(' ');
+  const rootClass = [styles.root, className ?? ''].filter(Boolean).join(' ');
+
+  const triggerClass = [
+    styles.trigger,
+    styles[`trigger${(variant ?? 'outline').charAt(0).toUpperCase()}${(variant ?? 'outline').slice(1)}` as keyof typeof styles],
+    styles[`trigger${(size ?? 'md').charAt(0).toUpperCase()}${(size ?? 'md').slice(1)}` as keyof typeof styles],
+    isOpen ? styles.triggerOpen : '',
+    validationState
+      ? styles[`trigger${validationState.charAt(0).toUpperCase()}${validationState.slice(1)}` as keyof typeof styles]
+      : '',
+  ].filter(Boolean).join(' ');
 
   const triggerLabel = selectedOption ? selectedOption.label : (placeholder ?? '');
 
+  const menuClass = [
+    styles.menu,
+    styles[`menuAlign${placement.align.charAt(0).toUpperCase()}${placement.align.slice(1)}` as keyof typeof styles],
+  ].filter(Boolean).join(' ');
+
+  const menuStyle = {
+    top: placement.vpos === 'bottom' ? 'calc(100% + var(--space-1))' : 'auto',
+    bottom: placement.vpos === 'top' ? 'calc(100% + var(--space-1))' : 'auto',
+    left: placement.align === 'left' ? 0 : 'auto',
+    right: placement.align === 'right' ? 0 : 'auto',
+    maxWidth,
+    maxHeight,
+  } as React.CSSProperties;
+
   return (
-    <div className={rootClass} ref={menuRef} data-cell-id={dataTestId}>
+    <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
       {name && <input type="hidden" name={name} value={value ?? ''} />}
       <button
         ref={triggerRef}
         type="button"
         id={id}
-        className={styles.trigger}
+        className={triggerClass}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-invalid={error || undefined}
+        aria-invalid={validationState === 'error' || undefined}
         aria-label={ariaLabel}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
@@ -256,10 +301,10 @@ export function Select({
         <div
           ref={listboxRef}
           tabIndex={-1}
-          className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
+          className={menuClass}
           role="listbox"
           aria-activedescendant={highlightedIndex >= 0 ? `select-option-${options[highlightedIndex]?.value}` : undefined}
-          style={menuMaxHeight !== undefined ? { '--select-menu-max-height': `${menuMaxHeight}px` } as React.CSSProperties : undefined}
+          style={menuStyle}
           onKeyDown={handleListboxKeyDown}
         >
           {options.map((opt, index) => (

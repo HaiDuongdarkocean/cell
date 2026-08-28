@@ -9,14 +9,14 @@
   width: 100%;
 }
 
+/* --- Trigger base --- */
 .trigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  min-height: var(--touch-target);
-  height: var(--input-height);
+  min-height: var(--input-height);
   padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
   border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
@@ -24,24 +24,113 @@
   color: var(--input-fg);
   font-family: var(--font-family);
   font-size: var(--input-font-size);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--duration-fast) var(--ease-in-out);
+  transition:
+    border-color var(--duration-fast) var(--ease-in-out),
+    background var(--duration-fast) var(--ease-in-out),
+    color var(--duration-fast) var(--ease-in-out),
+    box-shadow var(--duration-fast) var(--ease-in-out);
 }
 
-.trigger:hover {
+/* Variants */
+.triggerOutline {
+  border-color: var(--input-border);
+  background: var(--input-bg);
+}
+
+.triggerOutline:hover {
+  border-color: var(--color-border-emphasized);
+  background: var(--color-surface-hover);
+}
+
+.triggerOutline.triggerOpen {
   border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
 }
 
-.trigger:focus-visible,
-.root:focus-within .trigger {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
+.triggerFilled {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+}
+
+.triggerFilled:hover {
+  background: var(--color-surface-hover);
+}
+
+.triggerFilled.triggerOpen {
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
+}
+
+.triggerGhost {
+  border-color: transparent;
+  background: transparent;
+}
+
+.triggerGhost:hover {
+  background: var(--color-surface-hover);
+}
+
+.triggerGhost.triggerOpen {
+  background: var(--color-surface-pressed);
+  color: var(--color-text);
+}
+
+/* Validation states */
+.triggerError {
+  border-color: var(--color-error);
+}
+
+.triggerSuccess {
+  border-color: var(--color-success);
+}
+
+.triggerWarning {
+  border-color: var(--color-warning);
+}
+
+/* Focus-visible */
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.triggerError:focus-visible {
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-error);
+}
+
+.triggerSuccess:focus-visible {
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-success);
+}
+
+.triggerWarning:focus-visible {
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-warning);
 }
 
 .trigger:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* Sizes */
+.triggerSm {
+  min-height: var(--input-height-sm);
+  padding: var(--input-padding-y-sm) var(--space-6) var(--input-padding-y-sm) var(--input-padding-x-sm);
+  font-size: var(--input-font-size-sm);
+}
+
+.triggerMd {
+  min-height: var(--input-height);
+  padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
+  font-size: var(--input-font-size);
+}
+
+.triggerLg {
+  min-height: var(--input-height-lg);
+  padding: var(--input-padding-y-lg) var(--space-10) var(--input-padding-y-lg) var(--input-padding-x-lg);
+  font-size: var(--input-font-size-lg);
 }
 
 .value {
@@ -61,53 +150,56 @@
   transform: translateY(-50%);
   color: var(--color-text-secondary);
   pointer-events: none;
-  transition: transform var(--duration-fast) var(--ease-in-out);
+  transition: transform var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
+}
+
+.triggerOpen .chevron {
+  color: var(--color-primary);
 }
 
 .chevronOpen {
   transform: translateY(-50%) rotate(180deg);
 }
 
-/* === Menu === */
+/* --- Menu --- */
 .menu {
   position: absolute;
   top: calc(100% + var(--space-1));
+  left: 0;
   composes: themed from '@/shared/ui/Scrollable.module.css';
-  /* Width follows content so a narrow trigger doesn't clip long options,
-     but never shrinks below the trigger and is capped to guard very long
-     items. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   width: max-content;
   min-width: 100%;
-  max-width: calc(var(--space-5) * 16);
-  background: var(--color-background);
+  max-width: min(calc(var(--space-5) * 16), calc(100vw - var(--space-8)));
+  max-height: min(calc(var(--space-5) * 11), 50vh);
+  padding: var(--space-1);
+  background: var(--color-surface-elevated);
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
+  border-radius: var(--dialog-radius);
+  box-shadow: var(--shadow-popover);
   z-index: var(--z-dropdown);
-  max-height: min(var(--select-menu-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow-y: auto;
 }
 
-/* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
-.menuAlignLeft {
-  left: 0;
-}
+/* The alignment classes are pure markers in CSS; actual left/right/top/bottom
+   placement is computed via the useMenuPlacement hook and applied inline. */
+.menuAlignLeft {}
 
-/* Right-aligned: menu's right edge aligns with trigger's right edge (opens
-   leftward). Use when the select sits on the right side of a row so the
-   menu doesn't overflow the card/container. */
-.menuAlignRight {
-  right: 0;
-  left: auto;
-}
+.menuAlignRight {}
 
+/* --- Options --- */
 .option {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-in-out);
+  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
 .option:hover,
@@ -117,6 +209,7 @@
 
 .optionSelected {
   background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .optionDisabled {
@@ -134,6 +227,10 @@
   color: var(--color-text);
 }
 
+.optionSelected .optionLabel {
+  color: var(--color-primary);
+}
+
 .checkMark {
   width: var(--space-4);
   height: var(--space-4);
@@ -141,24 +238,10 @@
   flex-shrink: 0;
 }
 
-.error .trigger {
-  border-color: var(--color-error);
-}
-
-.error .trigger:focus-visible,
-.error:focus-within .trigger {
-  outline: var(--space-0-5) solid var(--color-error);
-  outline-offset: var(--space-0-5);
-}
-
-.disabled .trigger {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .trigger,
-  .chevron {
+  .chevron,
+  .option {
     transition: none;
   }
 }

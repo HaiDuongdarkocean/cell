@@ -65,6 +65,8 @@ export function UniversalPanelHeader({
       {languageProfiles.length > 0 && (
         <Select
           className={styles.profileSelect}
+          variant="ghost"
+          size="sm"
           value={activeProfileId ?? ''}
           options={profileOptions}
           placeholder={placeholder}
@@ -96,7 +98,7 @@ export function UniversalPanelHeader({
         })}
       </HStack>
 
-      <IconButton
+      <IconButton material="solid"
         size="sm"
         variant="ghost"
         aria-label="Close panel"

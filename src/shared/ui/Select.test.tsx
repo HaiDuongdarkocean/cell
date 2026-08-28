@@ -7,6 +7,11 @@ const options = [
   { value: 'c', label: 'Option C' },
 ];
 
+const longOptions = Array.from({ length: 20 }, (_, i) => ({
+  value: `opt-${i}`,
+  label: `Option ${i + 1}`,
+}));
+
 describe('Select', () => {
   it('renders trigger with selected label', () => {
     render(<Select options={options} value="a" />);
@@ -69,8 +74,57 @@ describe('Select', () => {
     expect(menu.className).toMatch(/menuAlignRight/);
   });
 
-  // Note: menu width behavior (width: max-content, min-width: 100%,
-  // max-width: 320px) is asserted via MCP browser verification because
-  // jsdom does not compute styles from external CSS modules. See
-  // Select.module.css `.menu` for the implementation.
+  it('applies size variant classes', () => {
+    const { rerender } = render(<Select options={options} size="sm" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerSm/);
+
+    rerender(<Select options={options} size="md" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerMd/);
+
+    rerender(<Select options={options} size="lg" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerLg/);
+  });
+
+  it('applies trigger variant classes', () => {
+    const { rerender } = render(<Select options={options} variant="outline" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerOutline/);
+
+    rerender(<Select options={options} variant="filled" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerFilled/);
+
+    rerender(<Select options={options} variant="ghost" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerGhost/);
+  });
+
+  it('applies validation state classes', () => {
+    const { rerender } = render(<Select options={options} state="error" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerError/);
+
+    rerender(<Select options={options} state="success" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerSuccess/);
+
+    rerender(<Select options={options} state="warning" />);
+    expect(screen.getByRole('button').className).toMatch(/triggerWarning/);
+  });
+
+  it('keeps error prop backward compatibility', () => {
+    render(<Select options={options} error />);
+    expect(screen.getByRole('button')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button').className).toMatch(/triggerError/);
+  });
+
+  it('applies an alignment class when menuAlign is auto', () => {
+    render(<Select options={options} value="a" menuAlign="auto" />);
+    fireEvent.click(screen.getByRole('button'));
+    const menu = screen.getByRole('listbox');
+    expect(menu.className).toMatch(/menuAlignLeft|menuAlignRight/);
+  });
+
+  it('sets dynamic placement styles when open', () => {
+    render(<Select options={longOptions} value="opt-0" />);
+    fireEvent.click(screen.getByRole('button'));
+    const menu = screen.getByRole('listbox');
+    expect(menu.style.getPropertyValue('max-width')).toBeTruthy();
+    expect(menu.style.getPropertyValue('max-height')).toBeTruthy();
+  });
 });
