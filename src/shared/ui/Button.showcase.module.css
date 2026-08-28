@@ -39,3 +39,19 @@
   align-items: flex-start;
   max-width: min(100%, 25rem);
 }
+
+.surface {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+}
+
+.surfaceWhite {
+  background: var(--color-surface);
+}
+
+.surfaceBlack {
+  background: var(--overlay-background);
+}
