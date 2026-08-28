@@ -72,6 +72,8 @@ export function Toggle({
   const tweenRef = useRef<ReturnType<typeof gsap.to> | null>(null);
   const mountedRef = useRef(true);
   const pathRef = useRef<SVGPathElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const labelRef = useRef<HTMLLabelElement>(null);
 
   const runToggleAnimation = (target: boolean): void => {
     const path = pathRef.current;
@@ -91,9 +93,10 @@ export function Toggle({
           ease: 'elastic.out(1, 0.8)',
           onComplete: () => {
             if (!mountedRef.current) return;
+            labelRef.current?.classList.toggle(styles.checked, target);
             gsap.set(path, { morphSVG: DOT_BASE });
-            isAnimatingRef.current = false;
             setVisualChecked(target);
+            isAnimatingRef.current = false;
           },
         },
       ],
@@ -105,6 +108,7 @@ export function Toggle({
     if (!pathRef.current) return;
 
     if (prefersReducedMotion()) {
+      labelRef.current?.classList.toggle(styles.checked, checked);
       setVisualChecked(checked);
       return;
     }
@@ -125,7 +129,12 @@ export function Toggle({
   const triggerToggle = (next: boolean): void => {
     if (disabled || isAnimatingRef.current) return;
 
+    const input = inputRef.current;
+    if (input) input.checked = next;
+
     if (prefersReducedMotion() || !pathRef.current) {
+      labelRef.current?.classList.toggle(styles.checked, next);
+      setVisualChecked(next);
       onChange(next);
       return;
     }
@@ -165,6 +174,7 @@ export function Toggle({
 
   return (
     <label
+      ref={labelRef}
       className={className}
       htmlFor={inputId}
       title={title}
@@ -172,6 +182,7 @@ export function Toggle({
       onMouseLeave={handleMouseLeave}
     >
       <input
+        ref={inputRef}
         id={inputId}
         data-cell-id={dataTestId}
         className={styles.input}
