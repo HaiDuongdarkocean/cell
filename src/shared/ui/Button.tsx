@@ -3,7 +3,7 @@ import { Spinner } from './Spinner';
 import { getButtonGlassFilter } from './ButtonGlassFilter';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success' | 'transparent';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'solid' | 'destructive' | 'link' | 'success' | 'transparent';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
 type ButtonLiquidStyle = 'regular' | 'clear' | 'prominent';

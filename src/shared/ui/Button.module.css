@@ -233,6 +233,42 @@
   display: none;
 }
 
+/* Solid — flat, opaque material for non-glass contexts. */
+.solid {
+  background: var(--button-solid-surface);
+  color: var(--button-solid-foreground);
+  border: var(--border-width-hairline) solid var(--button-solid-border);
+  box-shadow: var(--button-solid-shadow);
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .solid:hover {
+    background: var(--button-solid-surface-hover);
+  }
+}
+
+.solid:active {
+  background: var(--button-solid-surface-active);
+  transform: scale(var(--button-press-scale));
+}
+
+.solid:focus-visible {
+  outline: 2px solid var(--button-solid-focus-ring);
+  outline-offset: 3px;
+}
+
+.solid:disabled {
+  background: var(--button-solid-surface-disabled);
+  opacity: var(--button-disabled-opacity);
+}
+
+.solid::before {
+  display: none;
+}
+
 /* Link — inline text, no glass. */
 .link {
   display: inline-flex;
