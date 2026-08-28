@@ -1,5 +1,6 @@
-import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
+import { Children, forwardRef, isValidElement, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
+import { getButtonGlassFilter } from './ButtonGlassFilter';
 import styles from './Button.module.css';
 
 type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success' | 'transparent';
@@ -74,10 +75,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   children,
   disabled,
   className,
+  style,
   onPointerDown,
   ...rest
 }: ButtonProps, ref): React.JSX.Element {
   const [pulsing, setPulsing] = useState(false);
+  const rawFilterId = useId();
+  const filterId = rawFilterId.replace(/[^a-zA-Z0-9]/g, '');
+  const filterSvg = getButtonGlassFilter(filterId);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
@@ -144,12 +149,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type="button"
       className={cls}
+      style={{ ...style, ['--button-liquid-filter-url' as string]: `url(#${filterId})` }}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-invalid={error || undefined}
       onPointerDown={handlePointerDown}
       {...rest}
     >
+      <span
+        className={styles.glassFilter}
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: filterSvg }}
+      />
       {loading && <Spinner size="md" color="current" aria-hidden="true" />}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}
       {children && <span className={styles.label}>{children}</span>}
