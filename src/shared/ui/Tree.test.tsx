@@ -12,6 +12,20 @@ const nodes = [
   },
 ];
 
+const nestedNodes = [
+  {
+    id: 'level-0',
+    label: 'Atoms',
+    children: [
+      {
+        id: 'cat-actions',
+        label: 'Actions',
+        children: [{ id: 'leaf-button', label: 'Button' }],
+      },
+    ],
+  },
+];
+
 describe('Tree', () => {
   it('renders tree with accessible role and label', () => {
     render(
@@ -70,6 +84,58 @@ describe('Tree', () => {
     if (!root) throw new Error('treeitem not found');
     fireEvent.keyDown(root, { key: 'Enter' });
     expect(onSelect).toHaveBeenCalledWith('root', expect.objectContaining({ id: 'root', label: 'Root' }));
+  });
+
+  it('toggles only the clicked branch, not its ancestors, on click', () => {
+    const onToggle = jest.fn();
+    const onSelect = jest.fn();
+    render(
+      <Tree
+        nodes={nestedNodes}
+        expandedIds={['level-0', 'cat-actions']}
+        onSelect={onSelect}
+        onToggle={onToggle}
+      />,
+    );
+    fireEvent.click(screen.getByText('Actions'));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledWith('cat-actions', false);
+    expect(onSelect).toHaveBeenCalledWith('cat-actions', expect.objectContaining({ id: 'cat-actions' }));
+  });
+
+  it('toggles only the activated branch, not its ancestors, via keyboard', () => {
+    const onToggle = jest.fn();
+    const onSelect = jest.fn();
+    render(
+      <Tree
+        nodes={nestedNodes}
+        expandedIds={['level-0', 'cat-actions']}
+        onSelect={onSelect}
+        onToggle={onToggle}
+      />,
+    );
+    const branch = screen.getByText('Actions').closest('[role="treeitem"]');
+    if (!branch) throw new Error('treeitem not found');
+    fireEvent.keyDown(branch, { key: 'Enter' });
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledWith('cat-actions', false);
+    expect(onSelect).toHaveBeenCalledWith('cat-actions', expect.objectContaining({ id: 'cat-actions' }));
+  });
+
+  it('never toggles when a leaf is clicked', () => {
+    const onToggle = jest.fn();
+    const onSelect = jest.fn();
+    render(
+      <Tree
+        nodes={nestedNodes}
+        expandedIds={['level-0', 'cat-actions']}
+        onSelect={onSelect}
+        onToggle={onToggle}
+      />,
+    );
+    fireEvent.click(screen.getByText('Button'));
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledWith('leaf-button', expect.objectContaining({ id: 'leaf-button' }));
   });
 
   it('marks the active node with aria-selected', () => {
