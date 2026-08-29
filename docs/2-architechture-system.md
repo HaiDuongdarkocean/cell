@@ -614,7 +614,8 @@ e2e/                                  # Playwright E2E specs (browser, layout, i
 | `shared/ui/FormGroup.tsx` | — | — | Label + children wrapper with consistent spacing |
 | `shared/ui/Header.tsx` | — | App.redesigned | Top chrome with title and actions |
 | `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard, OptionsApp, UniversalPanel | Icon-only transparent button (22 call sites) |
-| `shared/ui/Sidebar.tsx` | — | — | Vertical nav container with optional collapse |
+| `shared/ui/Sidebar.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` | — | SettingsDialogContent | **Template shell**: Layout container (`container > header + body`), co giãn linh hoạt theo content bên trong, quản lý `collapsible` và toggle button. |
+| `shared/ui/Navigation.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` | — | SettingsDialogContent, showcase | **Organism**: Self-contained navigation organism (active state, floating pill rAF water-flow animation, scroll-spy, scroll-to-active, event delegation, supports `orientation="vertical" | "horizontal"`). |
 | `shared/ui/useFocusTrap.ts` | — | OptionsApp, Drawer, BottomSheet, UniversalPanel | WCAG focus trap for modal drawers/dialogs |
 | `shared/ui/Input.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` + `.showcase.module.css` | — | InputField, SearchField, design-system showcase | Liquid-glass text input: glass/filled/outline/ghost variants; sm/md/lg sizes; default/hover/focus/filled/error/loading/disabled/read-only/success states; prefix/suffix slots with icons; inline nature-palette focus override via CSS custom properties |
 | `shared/ui/InputField.tsx` + `.module.css` + `.test.tsx` + `.showcase.tsx` + `.showcase.module.css` | Label | SettingsDialog, forms | Label + Input + helper/error text; uses `Input` + `Label` |

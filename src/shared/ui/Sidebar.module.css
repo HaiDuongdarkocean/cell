@@ -1,196 +1,68 @@
-/* === Sidebar — responsive navigation container ===
-   <600px:    horizontal scrollable chip bar at TOP (icon + label).
-   600-839px: bottom tab bar (icon-only, 48px touch target).
-   840px+:    vertical sidebar on left, collapsible to icon-only.
-   Consumes tokens only — no raw hex/radius. */
+/* === Sidebar — responsive layout shell container ===
+   Structure: container > header + body.
+   Co giãn linh hoạt theo kích thước phần tử bên trong (fit-content).
+   Consumes design tokens only — no raw hex/radius. */
 
-/* ─── Mobile base (<600px): horizontal chip bar at TOP ─── */
 .sidebar {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   flex-shrink: 0;
+  width: max-content;
+  min-width: var(--space-16);
+  height: 100%;
   background: var(--color-surface);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-right: var(--border-width-hairline) solid var(--color-border-subtle);
   overflow: hidden;
+  transition: width var(--duration-normal) ease-in-out, min-width var(--duration-normal) ease-in-out;
 }
 
+/* ─── Header bar (desktop / default) ─── */
 .topbar {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  min-height: var(--touch-target);
+  flex-shrink: 0;
 }
 
-.nav {
+.headerContent {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* ─── Body slot ─── */
+.body {
   flex: 1;
   display: flex;
-  flex-direction: row;
-  gap: var(--space-0-5);
-  padding: var(--space-0-5) var(--space-2);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-  scrollbar-width: none;
+  flex-direction: column;
+  overflow: auto;
+  min-width: 0;
 }
 
-.nav::-webkit-scrollbar {
-  display: none;
+/* ─── Collapsed state (icon-only width) ─── */
+.collapsed {
+  width: var(--space-16);
+  min-width: var(--space-16);
 }
 
-/* Chip-style items: icon + label compact, touch-target height */
-.nav :global(button) {
-  height: var(--touch-target);
-  min-height: var(--touch-target);
-  width: auto;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
-  gap: var(--space-1);
-  justify-content: flex-start;
-  flex-shrink: 0;
-  transition: background-color var(--duration-fast) var(--ease-standard);
-}
-
-.nav :global(button[aria-current="true"]) {
-  background: var(--color-surface-hover);
-}
-
-/* ─── 600-839px: bottom tab bar (icon-only) ─── */
-@media (min-width: 600px) and (max-width: 839px) {
-  .sidebar {
-    border-bottom: none;
-    border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-
-  .nav {
-    justify-content: space-around;
-    padding: var(--space-1);
-  }
-
-  .nav :global(button) {
-    width: var(--touch-target);
-    min-width: var(--touch-target);
-    padding: 0;
-    border-radius: 50%;
-    gap: 0;
-    justify-content: center;
-  }
-
-  .nav :global([class*="label"]) {
-    display: none;
-  }
-}
-
-/* ─── Desktop: vertical sidebar ─── */
-@media (min-width: 840px) {
-  .sidebar {
-    flex-direction: column;
-    width: calc(var(--space-5) * 8);
-    height: 100%;
-    border-top: none;
-    border-bottom: none;
-    border-right: var(--border-width-hairline) solid var(--color-border-subtle);
-    transition: width var(--duration-normal) ease-in-out;
-  }
-
-  .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-
-  .header {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .nav {
-    flex: 1;
-    flex-direction: column;
-    gap: var(--space-0-5);
-    padding: var(--space-2);
-    overflow-x: visible;
-    overflow-y: auto;
-    touch-action: auto;
-    scroll-behavior: smooth;
-    scroll-padding: var(--space-2);
-    position: relative;
-    /* Nav is container — button circle morph + floating bg morph
-       driven by nav width, not .collapsed class. */
-    container-type: inline-size;
-  }
-
-  /* Floating active bg — slides between items like water flow.
-     JS-driven (rAF) for click; CSS transition for scroll-driven (observer). */
-  .nav::before {
-    content: '';
-    position: absolute;
-    left: var(--space-2);
-    right: var(--space-2);
-    top: 0;
-    height: var(--active-h, 0px);
-    transform: translateY(var(--active-y, 0px));
-    background: var(--color-surface-hover);
-    border-radius: var(--radius-xs);
-    transition: transform var(--duration-normal) ease-in-out,
-                height var(--duration-normal) ease-in-out,
-                border-radius var(--duration-normal) ease-in-out,
-                left var(--duration-normal) ease-in-out,
-                right var(--duration-normal) ease-in-out,
-                width var(--duration-normal) ease-in-out;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  /* JS-driven animation — disable CSS transition, rAF handles it */
-  .nav[data-animating]::before {
-    transition: none;
-  }
-
-  /* Items above floating bg */
-  .nav :global(button) {
-    position: relative;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  /* === Container query: circle morph (threshold 2) ===
-     Triggers AFTER NavItem label retract (threshold 1 at <=80px button).
-     Nav width <=64px → button ~48px → circle morph.
-     Sequence: label retracts first → then circle morph = water flow. */
-  @container (width <= 64px) {
-    .nav::before {
-      left: 50%;
-      right: auto;
-      width: var(--touch-target);
-      height: var(--touch-target);
-      transform: translateX(-50%) translateY(var(--active-y, 0px));
-      border-radius: 50%;
-    }
-
-    .nav :global(button) {
-      height: var(--touch-target);
-      min-height: var(--touch-target);
-      padding: 0 calc((var(--space-16) - var(--space-2) * 2 - var(--space-5)) / 2);
-      border-radius: 50%;
-      gap: 0;
-    }
-  }
-}
-
-/* ─── Collapsed (desktop only) — hide header text, keep icon ─── */
-.collapsed .header {
+.collapsed .headerContent {
   display: none;
 }
 
 .collapsed .topbar {
   justify-content: center;
+  padding: var(--space-2);
 }
 
-/* Flip collapse icon — chevron points outward when collapsed. */
+/* Flip collapse chevron icon */
 .collapsed .topbar :global(svg) {
   transform: scaleX(-1);
 }
@@ -199,24 +71,30 @@
   transition: transform var(--duration-normal) var(--ease-spring);
 }
 
-/* ─── Collapsed (desktop only) — icon-only width ─── */
-.collapsed {
-  width: var(--space-16);
-}
-
+/* ─── Mobile responsiveness (<840px) ─── */
 @media (max-width: 839px) {
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    border-right: none;
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+
+  .topbar {
+    padding: var(--space-1) var(--space-2);
+  }
+
   .collapsed {
-    width: auto;
+    width: 100%;
+    min-width: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .topbar :global(svg),
-  .nav :global(button),
-  .nav :global([class*="label"]) {
+  .topbar :global(svg) {
     transition: none;
     animation: none;
   }
-  .nav { scroll-behavior: auto; }
 }
