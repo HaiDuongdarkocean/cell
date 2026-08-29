@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './ViewportFrame.module.css';
 
-export type ViewportWidth = 'full' | 320 | 360 | 390 | 430 | 768 | 1024 | 1280 | 1920;
+export type ViewportWidth = 'full' | 320 | 360 | 375 | 390 | 430 | 600 | 768 | 840 | 1024 | 1200 | 1280 | 1920;
 
 export interface ViewportPreset {
   label: string;
@@ -13,10 +13,14 @@ export interface ViewportPreset {
 export const VIEWPORT_PRESETS: readonly ViewportPreset[] = [
   { label: '320', value: 320, height: 568 },
   { label: '360', value: 360, height: 800 },
+  { label: '375', value: 375, height: 667 },
   { label: '390', value: 390, height: 844 },
   { label: '430', value: 430, height: 932 },
+  { label: '600', value: 600, height: 750 },
   { label: '768', value: 768, height: 1024 },
+  { label: '840', value: 840, height: 850 },
   { label: '1024', value: 1024, height: 768 },
+  { label: '1200', value: 1200, height: 850 },
   { label: '1280', value: 1280, height: 800 },
   { label: '1920', value: 1920, height: 1080 },
   { label: 'Fit', value: 'full' },
