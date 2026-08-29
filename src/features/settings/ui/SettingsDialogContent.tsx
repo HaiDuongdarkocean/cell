@@ -27,6 +27,7 @@ import { Card } from '@/shared/ui/Card';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { Icon } from '@/shared/ui/Icon';
 import { NavItem } from '@/shared/ui/NavItem';
+import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
 import { VStack } from '@/shared/ui/Stack';
 
@@ -130,26 +131,31 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
 
   return (
         <div className={[styles.popoverBody, className].filter(Boolean).join(' ')}>
-          {/* === Sidebar — SSOT Sidebar component (responsive + collapsible) === */}
+          {/* === Sidebar — SSOT Sidebar container + Navigation organism === */}
           <Sidebar
-            ariaLabel="Settings sections"
+            ariaLabel="Settings sidebar"
             collapsible
             header="Settings"
-            activeId={activeSection}
-            onActiveChange={setActiveSection}
-            contentRef={mainColRef}
-            sectionRefs={sectionRefs}
             className={styles.sidebarWidth}
           >
-            {sidebarItems.map((item) => (
-              <NavItem
-                key={item.id}
-                data-section-id={item.id}
-                icon={<Icon name={item.icon as never} size="sm" />}
-                label={item.label}
-                orientation="horizontal"
-              />
-            ))}
+            <Navigation
+              ariaLabel="Settings sections"
+              orientation="vertical"
+              activeId={activeSection}
+              onActiveChange={setActiveSection}
+              contentRef={mainColRef}
+              sectionRefs={sectionRefs}
+            >
+              {sidebarItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  data-section-id={item.id}
+                  icon={<Icon name={item.icon as never} size="sm" />}
+                  label={item.label}
+                  orientation="horizontal"
+                />
+              ))}
+            </Navigation>
           </Sidebar>
 
           {/* === Main column (cards, scrollable) === */}

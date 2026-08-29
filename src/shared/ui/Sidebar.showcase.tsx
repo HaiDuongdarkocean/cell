@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactElement } from 'react';
 import { Sidebar } from './Sidebar';
+import { Navigation } from './Navigation';
 import { NavItem } from './NavItem';
 import { Icon } from '@/shared/icons/Icon';
 
@@ -23,20 +24,23 @@ function SidebarDemo({ collapsible }: { collapsible?: boolean }): ReactElement {
         ariaLabel="Demo sections"
         collapsible={collapsible}
         header="Settings"
-        activeId={activeId}
-        onActiveChange={setActiveId}
-        contentRef={contentRef}
-        sectionRefs={sectionRefs}
       >
-        {ITEMS.map((item) => (
-          <NavItem
-            key={item.id}
-            data-section-id={item.id}
-            icon={<Icon name={item.icon as never} size={18} />}
-            label={item.label}
-            orientation="horizontal"
-          />
-        ))}
+        <Navigation
+          activeId={activeId}
+          onActiveChange={setActiveId}
+          contentRef={contentRef}
+          sectionRefs={sectionRefs}
+        >
+          {ITEMS.map((item) => (
+            <NavItem
+              key={item.id}
+              data-section-id={item.id}
+              icon={<Icon name={item.icon as never} size={18} />}
+              label={item.label}
+              orientation="horizontal"
+            />
+          ))}
+        </Navigation>
       </Sidebar>
       <div
         ref={contentRef}
@@ -61,20 +65,44 @@ function SidebarDemo({ collapsible }: { collapsible?: boolean }): ReactElement {
   );
 }
 
+function SidebarCustomContentDemo(): ReactElement {
+  return (
+    <div style={{ display: 'flex', gap: 'var(--space-4)', height: 260 }}>
+      <Sidebar header="Filters & Actions" collapsible>
+        <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Custom Body Slot</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
+            <input type="checkbox" defaultChecked /> Auto-refresh
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
+            <input type="checkbox" /> High priority
+          </label>
+          <button type="button" style={{ marginTop: 'var(--space-2)', padding: 'var(--space-1) var(--space-2)', borderRadius: 'var(--radius-xs)' }}>
+            Apply Filter
+          </button>
+        </div>
+      </Sidebar>
+      <div style={{ flex: 1, padding: 'var(--space-4)', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-card)' }}>
+        <p>Sidebar co giãn tự nhiên theo custom content bên trong mà không phụ thuộc vào menu navigation.</p>
+      </div>
+    </div>
+  );
+}
+
 export function Showcase(): ReactElement {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <div>
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-          Collapsible sidebar with scroll-spy + floating active indicator
+          Sidebar as Shell (wrapping Navigation with scroll-spy)
         </h3>
         <SidebarDemo collapsible />
       </div>
       <div>
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-          Non-collapsible sidebar
+          Sidebar with Custom Body Content (Form / Filters)
         </h3>
-        <SidebarDemo />
+        <SidebarCustomContentDemo />
       </div>
     </div>
   );
@@ -82,8 +110,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Sidebar',
-  description: 'Self-contained navigation organism: owns active state, floating bg rAF animation (ease-in-out cubic, water-flow), IntersectionObserver scroll-spy, scroll-to-active, collapse morph. Consumer chỉ truyền activeId + contentRef + sectionRefs. Event delegation — NavItem children không cần onClick/active/aria-current.',
-  level: 'organisms' as const,
-  category: 'Navigation',
+  description: 'Responsive layout shell container (container > header + body). Co giãn theo content bên trong, quản lý collapsible + toggle.',
+  level: 'templates' as const,
+  category: 'Layout',
   order: 10,
 };
