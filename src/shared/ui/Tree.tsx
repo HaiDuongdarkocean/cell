@@ -46,21 +46,27 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
   const isActive = activeId === node.id;
   const itemRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = useCallback((): void => {
-    if (hasChildren) {
-      onToggle(node.id);
-    }
-    onSelect(node.id, node);
-  }, [hasChildren, node, onSelect, onToggle]);
+  const handleActivate = useCallback(
+    (e: React.SyntheticEvent): void => {
+      // Node consumes the activation fully — stop bubbling so ancestor treeitems
+      // don't re-run their own toggle/select (which collapsed the whole expanded path).
+      e.stopPropagation();
+      if (hasChildren) {
+        onToggle(node.id);
+      }
+      onSelect(node.id, node);
+    },
+    [hasChildren, node, onSelect, onToggle],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>): void => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleClick();
+        handleActivate(e);
       }
     },
-    [handleClick],
+    [handleActivate],
   );
 
   return (
@@ -71,7 +77,7 @@ function TreeItem({ node, depth, activeId, expandedSet, onSelect, onToggle }: Tr
       tabIndex={0}
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isActive}
-      onClick={handleClick}
+      onClick={handleActivate}
       onKeyDown={handleKeyDown}
     >
       <div
