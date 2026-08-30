@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { Button } from '@/shared/ui/Button';
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Spinner } from '@/shared/ui';
@@ -51,8 +52,7 @@ export function PronunciationButton({
   const cls = [styles.btn, className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={cls}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
@@ -65,6 +65,6 @@ export function PronunciationButton({
       ) : (
         <Icon name="volumeHigh"  />
       )}
-    </button>
+    </Button>
   );
 }

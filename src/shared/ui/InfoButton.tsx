@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './InfoButton.module.css';
 
@@ -33,13 +34,12 @@ export function InfoButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <button
-      type="button"
+    <IconButton material="solid" variant={variant}
       className={cls}
       aria-label={ariaLabel}
       {...rest}
     >
       <Icon name="info" size={ICON_SIZE[size]} />
-    </button>
+    </IconButton>
   );
 }
