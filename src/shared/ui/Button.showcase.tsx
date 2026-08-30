@@ -1,5 +1,15 @@
 import { Button } from './Button';
-import { Icon } from '@/shared/icons/Icon';
+import {
+  Check,
+  ChevronRight,
+  Download,
+  EyeOff,
+  Image,
+  Search,
+  SlidersHorizontal,
+  Sun,
+  X,
+} from 'lucide-react';
 import { useId, type ReactElement, type ReactNode } from 'react';
 import styles from './Button.showcase.module.css';
 
@@ -50,10 +60,10 @@ export function Showcase(): ReactElement {
         title="1-item & 2-item"
         caption="1-item: icon only or label only. 2-item horizontal: icon + label inline. 2-item vertical: icon stacked above label."
       >
-        <Button variant="primary" aria-label="Download"><Icon name="download" size={18} /></Button>
+        <Button variant="primary" aria-label="Download"><Download size={18} aria-hidden="true" /></Button>
         <Button variant="primary">Label only</Button>
-        <Button variant="glass" leadingIcon={<Icon name="download" size={18} />}>Horizontal</Button>
-        <Button variant="outline" trailingIcon={<Icon name="chevronRight" size={18} />}>Next</Button>
+        <Button variant="glass" leadingIcon={<Download size={18} aria-hidden="true" />}>Horizontal</Button>
+        <Button variant="outline" trailingIcon={<ChevronRight size={18} aria-hidden="true" />}>Next</Button>
       </Section>
 
       <Section
@@ -61,10 +71,10 @@ export function Showcase(): ReactElement {
         caption="ZaloPay-style bottom navigation: icon stacked above a short label. fullWidth keeps each item the same width."
         vertical
       >
-        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="search" size={20} />}>Search</Button>
-        <Button variant="ghost" orientation="vertical" fullWidth active leadingIcon={<Icon name="eyeOff" size={20} />}>Hide</Button>
-        <Button variant="success" orientation="vertical" fullWidth leadingIcon={<Icon name="check" size={20} />}>Done</Button>
-        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Icon name="slidersHorizontal" size={20} />}>Custom</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<Search size={20} aria-hidden="true" />}>Search</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth active leadingIcon={<EyeOff size={20} aria-hidden="true" />}>Hide</Button>
+        <Button variant="success" orientation="vertical" fullWidth leadingIcon={<Check size={20} aria-hidden="true" />}>Done</Button>
+        <Button variant="ghost" orientation="vertical" fullWidth leadingIcon={<SlidersHorizontal size={20} aria-hidden="true" />}>Custom</Button>
       </Section>
 
       <Section
@@ -83,11 +93,11 @@ export function Showcase(): ReactElement {
         title="Liquid Glass — Apple materials"
         caption="3 material directions, switched through one API. Use the showcase preset switcher above to preview Dawn, Forest, Ocean, and Warmth."
       >
-        <Button variant="glass" liquidStyle="regular" leadingIcon={<Icon name="search" size={18} />}>Regular</Button>
-        <Button variant="glass" liquidStyle="clear" leadingIcon={<Icon name="image" size={18} />}>Clear</Button>
-        <Button variant="glass" liquidStyle="prominent" leadingIcon={<Icon name="sun" size={18} />}>Prominent</Button>
+        <Button variant="glass" liquidStyle="regular" leadingIcon={<Search size={18} aria-hidden="true" />}>Regular</Button>
+        <Button variant="glass" liquidStyle="clear" leadingIcon={<Image size={18} aria-hidden="true" />}>Clear</Button>
+        <Button variant="glass" liquidStyle="prominent" leadingIcon={<Sun size={18} aria-hidden="true" />}>Prominent</Button>
         <Button variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
-        <Button variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Icon name="download" size={20} />}>Download video</Button>
+        <Button variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Download size={20} aria-hidden="true" />}>Download video</Button>
       </Section>
 
       <Section
@@ -110,14 +120,14 @@ export function Showcase(): ReactElement {
         caption="Extreme white and black surfaces to verify the conic rim and contact shadow remain visible; solid stays opaque and legible."
       >
         <div data-theme="light" className={styles.surfaceWhite}>
-          <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>White</Button>
-          <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
+          <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>White</Button>
+          <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
           <Button variant="glass" size="lg">Large</Button>
           <Button material="solid" variant="primary">Solid</Button>
         </div>
         <div data-theme="dark" className={styles.surfaceBlack}>
-          <Button variant="primary" leadingIcon={<Icon name="download" size={18} />}>Black</Button>
-          <Button variant="ghost" aria-label="Close"><Icon name="x" size={18} /></Button>
+          <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>Black</Button>
+          <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
           <Button variant="glass" size="lg">Large</Button>
           <Button material="solid" variant="primary">Solid</Button>
         </div>

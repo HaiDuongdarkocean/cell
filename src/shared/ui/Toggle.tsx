@@ -36,15 +36,11 @@ const DOT_BASE =
 const DOT_HOVER =
   'M20 9C20 13.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 20 5.02944 20 9Z';
 
-/** Final dot shape used at the end of the click animation. */
-const DOT_FINAL =
-  'M36 9C36 13.9706 31.9706 18 27 18C22.0294 18 18 13.9706 18 9C18 4.02944 22.0294 0 27 0C31.9706 0 36 4.02944 36 9Z';
-
 /** Mid-animated dot shapes for the elastic click. */
 const CLICK_KEYFRAMES: string[] = [
   'M36 9C36 15.9706 13.9706 18 9 18C4.02944 18 0 13.9706 0 9C0 4.02944 4.02944 0 9 0C13.9706 0 36 2.02944 36 9Z',
   'M35.9954 9C35.9954 13.9706 31.9659 18 26.9954 18C22.0248 18 23.9954 12.9706 23.9954 9C23.9954 5.02944 22.0248 0 26.9954 0C31.9659 0 35.9954 4.02944 35.9954 9Z',
-  DOT_FINAL,
+  'M36 9C36 13.9706 31.9706 18 27 18C22.0294 18 18 13.9706 18 9C18 4.02944 22.0294 0 27 0C31.9706 0 36 4.02944 36 9Z',
 ];
 
 function prefersReducedMotion(): boolean {
@@ -72,7 +68,6 @@ export function Toggle({
   const tweenRef = useRef<ReturnType<typeof gsap.to> | null>(null);
   const mountedRef = useRef(true);
   const pathRef = useRef<SVGPathElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const labelRef = useRef<HTMLLabelElement>(null);
 
   const runToggleAnimation = (target: boolean): void => {
@@ -94,7 +89,7 @@ export function Toggle({
           onComplete: () => {
             if (!mountedRef.current) return;
             labelRef.current?.classList.toggle(styles.checked, target);
-            gsap.set(path, { morphSVG: DOT_BASE });
+            path.setAttribute('d', DOT_BASE);
             setVisualChecked(target);
             isAnimatingRef.current = false;
           },
@@ -109,6 +104,7 @@ export function Toggle({
 
     if (prefersReducedMotion()) {
       labelRef.current?.classList.toggle(styles.checked, checked);
+      pathRef.current?.setAttribute('d', DOT_BASE);
       setVisualChecked(checked);
       return;
     }
@@ -126,32 +122,9 @@ export function Toggle({
     [],
   );
 
-  const triggerToggle = (next: boolean): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (disabled || isAnimatingRef.current) return;
-
-    const input = inputRef.current;
-    if (input) input.checked = next;
-
-    if (prefersReducedMotion() || !pathRef.current) {
-      labelRef.current?.classList.toggle(styles.checked, next);
-      setVisualChecked(next);
-      onChange(next);
-      return;
-    }
-
-    runToggleAnimation(next);
-    onChange(next);
-  };
-
-  const handleClick = (e: React.MouseEvent<HTMLInputElement>): void => {
-    e.preventDefault();
-    triggerToggle(!checked);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key !== ' ' && e.key !== 'Enter') return;
-    e.preventDefault();
-    triggerToggle(!checked);
+    onChange(e.target.checked);
   };
 
   const handleMouseEnter = (): void => {
@@ -182,7 +155,6 @@ export function Toggle({
       onMouseLeave={handleMouseLeave}
     >
       <input
-        ref={inputRef}
         id={inputId}
         data-cell-id={dataTestId}
         className={styles.input}
@@ -193,9 +165,7 @@ export function Toggle({
         name={name}
         checked={checked}
         disabled={disabled}
-        onChange={() => {}}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
+        onChange={handleInputChange}
       />
       <svg
         className={styles.thumb}

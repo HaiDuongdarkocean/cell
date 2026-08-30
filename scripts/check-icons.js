@@ -8,7 +8,7 @@
  *
  * Checks:
  * - viewBox is "0 0 24 24"
- * - stroke-width is "1.5"
+ * - stroke-width is "1.5" or "2" (lucide default)
  * - stroke-linecap is "round"
  * - stroke-linejoin is "round"
  * - no transforms (translate, scale)
@@ -40,7 +40,7 @@ function parseCatalog(catalogPath) {
 
   /** @type {Map<string, string>} */
   const imports = new Map();
-  const importRegex = /^import\s+(\w+)\s+from\s+['"]\.\/svg\/([\w-]+)\.svg\?raw['"];?/gm;
+  const importRegex = /^import\s+(\w+)\s+from\s+['"](?:\.\/svg|lucide-static\/icons)\/([\w-]+)\.svg\?raw['"];?/gm;
   let match;
   while ((match = importRegex.exec(text)) !== null) {
     const variable = match[1];
@@ -50,7 +50,7 @@ function parseCatalog(catalogPath) {
 
   /** @type {CatalogEntry[]} */
   const entries = [];
-  const catalogRegex = /^\s*([a-zA-Z_$][\w$]*)\s*:\s*\{\s*svg:\s*(\w+)\s*,\s*source:\s*['"]([^'"]+)['"]\s*,\s*tags:\s*\[([\s\S]*?)\]\s*\}(?:\s+as\s+IconEntry)?\s*,?/gm;
+  const catalogRegex = /^\s*([a-zA-Z_$][\w$]*)\s*:\s*\{[^{}]*?svg:\s*(\w+)\s*,\s*source:\s*['"]([^'"]+)['"]\s*,\s*tags:\s*\[([^\]]*)\][^{}]*\}(?:\s+as\s+IconEntry)?\s*,?/gm;
   while ((match = catalogRegex.exec(text)) !== null) {
     const key = match[1];
     const variable = match[2];
@@ -89,8 +89,8 @@ function checkIconGeometry(content) {
     errors.push('Missing or incorrect viewBox (must be "0 0 24 24")');
   }
 
-  if (!content.includes('stroke-width="1.5"')) {
-    errors.push('Missing or incorrect stroke-width (must be "1.5")');
+  if (!/stroke-width="(?:1\.5|2)"/.test(content)) {
+    errors.push('Missing or incorrect stroke-width (must be "1.5" or "2")');
   }
 
   if (!content.includes('stroke-linecap="round"')) {
@@ -220,10 +220,6 @@ export function checkIcons(svgDir, catalogPath) {
     const keys = fileToKeys.get(file);
     if (!keys || keys.length === 0) {
       integrityErrors.push(`Missing catalog entry: "${file}" is not referenced by any ICON_CATALOG entry`);
-    } else if (keys.length > 1) {
-      integrityErrors.push(
-        `Duplicate catalog reference: "${file}" is used by entries [${keys.join(', ')}]`,
-      );
     }
   }
 

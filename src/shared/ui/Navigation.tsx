@@ -65,16 +65,10 @@ export function Navigation({
       if (!item) return;
 
       if (orientation === 'horizontal') {
-        const pad = 8;
-        const itemLeft = item.offsetLeft - nav.offsetLeft;
-        const itemRight = itemLeft + item.offsetWidth;
-        const viewLeft = nav.scrollLeft;
-        const viewRight = viewLeft + nav.clientWidth;
-        if (itemLeft < viewLeft + pad) {
-          nav.scrollTo({ left: Math.max(0, itemLeft - pad), behavior: 'smooth' });
-        } else if (itemRight > viewRight - pad) {
-          nav.scrollTo({ left: itemRight - nav.clientWidth + pad, behavior: 'smooth' });
-        }
+        const itemCenter = item.offsetLeft - nav.offsetLeft + item.offsetWidth / 2;
+        const ideal = itemCenter - nav.clientWidth / 2;
+        const clamped = Math.max(0, Math.min(ideal, nav.scrollWidth - nav.clientWidth));
+        nav.scrollTo({ left: clamped, behavior: 'smooth' });
       } else {
         const itemTop = item.offsetTop - nav.offsetTop;
         const itemBottom = itemTop + item.offsetHeight;

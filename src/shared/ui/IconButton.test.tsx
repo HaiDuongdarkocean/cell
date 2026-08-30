@@ -1,12 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Icon } from '@/shared/icons/Icon';
+import { Settings, Trash } from 'lucide-react';
 import { IconButton } from './IconButton';
 
 describe('IconButton', () => {
   it('renders an accessible button with aria-label', () => {
     render(
       <IconButton aria-label="Settings">
-        <Icon name="settings" size={20} />
+        <Settings size={20} aria-hidden="true" />
       </IconButton>,
     );
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument();
@@ -17,7 +17,7 @@ describe('IconButton', () => {
     for (const size of sizes) {
       const { unmount } = render(
         <IconButton size={size} aria-label={`Size ${size}`}>
-          <Icon name="settings" size={20} />
+          <Settings size={20} aria-hidden="true" />
         </IconButton>,
       );
       expect(screen.getByRole('button')).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe('IconButton', () => {
     for (const variant of variants) {
       const { unmount } = render(
         <IconButton variant={variant} aria-label={variant}>
-          <Icon name="trash" size={20} />
+          <Trash size={20} aria-hidden="true" />
         </IconButton>,
       );
       expect(screen.getByRole('button')).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('IconButton', () => {
     const onClick = jest.fn();
     render(
       <IconButton aria-label="Click" onClick={onClick}>
-        <Icon name="settings" size={20} />
+        <Settings size={20} aria-hidden="true" />
       </IconButton>,
     );
     fireEvent.click(screen.getByRole('button'));
@@ -52,7 +52,7 @@ describe('IconButton', () => {
   it('disables interaction when disabled', () => {
     render(
       <IconButton aria-label="Disabled" disabled>
-        <Icon name="settings" size={20} />
+        <Settings size={20} aria-hidden="true" />
       </IconButton>,
     );
     expect(screen.getByRole('button')).toBeDisabled();
@@ -68,7 +68,7 @@ describe('IconButton', () => {
   it('applies active state', () => {
     const { container } = render(
       <IconButton active aria-label="Active">
-        <Icon name="settings" size={20} />
+        <Settings size={20} aria-hidden="true" />
       </IconButton>,
     );
     expect(container.firstChild).toHaveClass('active');
@@ -77,7 +77,7 @@ describe('IconButton', () => {
   it('merges custom className', () => {
     const { container } = render(
       <IconButton className="extra" aria-label="Custom">
-        <Icon name="settings" size={20} />
+        <Settings size={20} aria-hidden="true" />
       </IconButton>,
     );
     expect(container.firstChild).toHaveClass('extra');

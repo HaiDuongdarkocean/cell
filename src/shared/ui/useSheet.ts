@@ -180,7 +180,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
       return;
     }
     // Spring back to resting position.
-    setTransition('transform var(--duration-200) var(--ease-spring)');
+    setTransition('transform var(--duration-normal) var(--ease-spring)');
     setTransform('translateY(0)');
     if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
     snapBackTimerRef.current = setTimeout(() => {

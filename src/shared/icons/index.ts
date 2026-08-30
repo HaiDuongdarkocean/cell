@@ -1,45 +1,121 @@
 // SVG icon registry — single source of truth for icons in the codebase.
 //
-// Workflow (AGENTS.md): icon task → query ICON_CATALOG first → reuse or add new.
-// Do NOT search the web before checking this catalog. Do NOT inline SVG in
-// components — import from here so the catalog stays complete.
+// Most icons are sourced from lucide-react and vendored as raw SVGs under ./svg.
+// Each catalog entry exposes a React component for JSX and a raw SVG string for non-React DOM.
 //
-// Convention: 24×24, stroke 1.5, currentColor, round caps, round joins.
-// - Grid: 24×24px canvas with 2px padding (20×20px live area)
-// - Stroke: 1.5px unified across all icons (minimalist, dense UI)
-// - Caps/Joins: Round for friendly, approachable feel
-// - Color: currentColor (inherits from text color)
-// - Fill: none (outline style) unless explicitly filled (e.g., play icon)
+// Convention: 24×24, stroke 2, currentColor, round caps, round joins.
 //
-// Add new icon:
-//   1. Drop .svg into ./svg/ with stroke-width="1.5"
-//   2. Re-export raw string below
-//   3. Add entry to ICON_CATALOG with semantic tags + source
-//   4. Component imports from ICON_CATALOG, not the .svg?raw directly
+// Nav cluster media controls use Phosphor `fill` weight components for visibility on
+// translucent liquid-glass buttons, while their raw SVGs remain lucide for non-React DOM.
 
-// === Original 4 icons ===
+import type { ComponentType, CSSProperties } from 'react';
+import {
+  AlertCircle,
+  AlertTriangle,
+  AppWindow,
+  ArrowLeftRight,
+  ArrowUpDown,
+  Atom,
+  AudioLines,
+  BookOpen,
+  Captions,
+  Check,
+  CheckCheck,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Component,
+  Copy,
+  Crop,
+  Download,
+  EllipsisVertical,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileVideo,
+  Flag,
+  FolderOpen,
+  Gauge,
+  Image,
+  Info,
+  Languages,
+  Layers,
+  LayoutTemplate,
+  Library,
+  Link,
+  Loader,
+  Maximize,
+  Maximize2,
+  Menu,
+  MessageSquare,
+  Mic,
+  Minimize,
+  Minus,
+  Moon,
+  Move,
+  PanelBottomClose,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRight,
+  PanelRightOpen,
+  Pause,
+  Pencil,
+  PictureInPicture,
+  Pin,
+  PinOff,
+  Play,
+  PlaySquare,
+  Plus,
+  Power,
+  Repeat,
+  RotateCcw,
+  ScanText,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Sun,
+  Trash,
+  Users,
+  Video,
+  Volume1,
+  Volume2,
+  VolumeX,
+  Wrench,
+  X,
+  Zap,
+} from 'lucide-react';
+
+import {
+  NavForward,
+  NavNext,
+  NavPause,
+  NavPlay,
+  NavPrev,
+  NavRepeat,
+  NavRepeatA,
+  NavRepeatB,
+  NavRepeatCancel,
+  NavRewind,
+} from './phosphorNavIcons';
+
 import settingsSvg from './svg/settings.svg?raw';
 import pencilSvg from './svg/pencil.svg?raw';
 import zapSvg from './svg/zap.svg?raw';
-import resizeSvg from './svg/resize.svg?raw';
-
-// === Popup dictionary toolbar (5 tabs) ===
-import audioWaveSvg from './svg/audio-wave.svg?raw';
+import resizeSvg from './svg/maximize-2.svg?raw';
+import audioWaveSvg from './svg/audio-lines.svg?raw';
 import imageSvg from './svg/image.svg?raw';
 import languagesSvg from './svg/languages.svg?raw';
 import linkSvg from './svg/link.svg?raw';
-
-// === None / hide panel variants (popup toolbar) ===
-import eyeOffSvg from './svg/eye-off.svg?raw';
 import eyeSvg from './svg/eye.svg?raw';
+import eyeOffSvg from './svg/eye-off.svg?raw';
 import chevronDownSvg from './svg/chevron-down.svg?raw';
 import panelBottomCloseSvg from './svg/panel-bottom-close.svg?raw';
-
-// === Panel left variants ===
-import panelLeftCollapseSvg from './svg/panel-left-collapse.svg?raw';
-import panelLeftExpandSvg from './svg/panel-left-expand.svg?raw';
-
-// === General UI icons ===
+import panelLeftCollapseSvg from './svg/panel-left-close.svg?raw';
+import panelLeftExpandSvg from './svg/panel-left-open.svg?raw';
 import xSvg from './svg/x.svg?raw';
 import downloadSvg from './svg/download.svg?raw';
 import searchSvg from './svg/search.svg?raw';
@@ -66,161 +142,71 @@ import panelRightSvg from './svg/panel-right.svg?raw';
 import chevronLeftSvg from './svg/chevron-left.svg?raw';
 import chevronRightSvg from './svg/chevron-right.svg?raw';
 import repeatSvg from './svg/repeat.svg?raw';
-import triangleAlertSvg from './svg/triangle-alert.svg?raw';
+import triangleAlertSvg from './svg/alert-triangle.svg?raw';
 import circleCheckSvg from './svg/circle-check.svg?raw';
 import circleXSvg from './svg/circle-x.svg?raw';
-import circleInfoSvg from './svg/circle-info.svg?raw';
+import circleInfoSvg from './svg/circle-alert.svg?raw';
 import messageSquareSvg from './svg/message-square.svg?raw';
 import bookOpenSvg from './svg/book-open.svg?raw';
-
-// === Local player icons ===
 import folderOpenSvg from './svg/folder-open.svg?raw';
 import librarySvg from './svg/library.svg?raw';
 import fileVideoSvg from './svg/file-video.svg?raw';
-import playRoundedRectSvg from './svg/play-rounded-rect.svg?raw';
-
-// === Media / window control icons ===
+import playRoundedRectSvg from './svg/play-square.svg?raw';
+import navPrevSvg from './svg/circle-chevron-left.svg?raw';
+import navNextSvg from './svg/circle-chevron-right.svg?raw';
+import navRepeatSvg from './svg/repeat.svg?raw';
+import navRepeatASvg from './svg/repeat-1.svg?raw';
+import navRepeatBSvg from './svg/repeat-2.svg?raw';
+import navRepeatCancelSvg from './svg/repeat-off.svg?raw';
+import navRewindSvg from './svg/rewind.svg?raw';
+import navForwardSvg from './svg/fast-forward.svg?raw';
+import navPlaySvg from './svg/circle-play.svg?raw';
+import navPauseSvg from './svg/circle-pause.svg?raw';
+import generateNativeSvg from './svg/languages.svg?raw';
+import sidePanelSvg from './svg/panel-right-open.svg?raw';
+import subtitleManagerSvg from './svg/library.svg?raw';
+import resetOffsetSvg from './svg/rotate-ccw.svg?raw';
+import slidersHorizontalSvg from './svg/sliders-horizontal.svg?raw';
 import externalLinkSvg from './svg/external-link.svg?raw';
-import checkDoubleSvg from './svg/check-double.svg?raw';
+import checkDoubleSvg from './svg/check-check.svg?raw';
 import wrenchSvg from './svg/wrench.svg?raw';
-import microphoneSvg from './svg/microphone.svg?raw';
-import volumeHighSvg from './svg/volume-high.svg?raw';
-import volumeLowSvg from './svg/volume-low.svg?raw';
-import volumeMuteSvg from './svg/volume-mute.svg?raw';
+import microphoneSvg from './svg/mic.svg?raw';
+import volumeHighSvg from './svg/volume-2.svg?raw';
+import volumeLowSvg from './svg/volume-1.svg?raw';
+import volumeMuteSvg from './svg/volume-x.svg?raw';
 import captionsSvg from './svg/captions.svg?raw';
 import maximizeSvg from './svg/maximize.svg?raw';
+import cropSvg from './svg/crop.svg?raw';
+import moveSvg from './svg/move.svg?raw';
+import moveVerticalSvg from './svg/arrow-up-down.svg?raw';
+import moveHorizontalSvg from './svg/arrow-left-right.svg?raw';
+import scanTextSvg from './svg/scan-text.svg?raw';
 import minimizeSvg from './svg/minimize.svg?raw';
-import pipSvg from './svg/pip.svg?raw';
+import pipSvg from './svg/picture-in-picture.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
 import gaugeSvg from './svg/gauge.svg?raw';
-import cropSvg from './svg/crop.svg?raw';
-import moveSvg from './svg/move.svg?raw';
-import moveVerticalSvg from './svg/move-vertical.svg?raw';
-import moveHorizontalSvg from './svg/move-horizontal.svg?raw';
-import scanTextSvg from './svg/scan-text.svg?raw';
-
-// === Design system showcase — atomic design level icons ===
 import layersSvg from './svg/layers.svg?raw';
 import atomSvg from './svg/atom.svg?raw';
-import moleculeSvg from './svg/molecule.svg?raw';
-import organismSvg from './svg/organism.svg?raw';
-import wireframeSvg from './svg/wireframe.svg?raw';
-import windowPageSvg from './svg/window-page.svg?raw';
-
-// === Nav cluster icons ===
-import navPrevSvg from './svg/nav-prev.svg?raw';
-import navNextSvg from './svg/nav-next.svg?raw';
-import navRepeatSvg from './svg/nav-repeat.svg?raw';
-import navRepeatASvg from './svg/nav-repeat-a.svg?raw';
-import navRepeatBSvg from './svg/nav-repeat-b.svg?raw';
-import navRepeatCancelSvg from './svg/nav-repeat-cancel.svg?raw';
-import navRewindSvg from './svg/nav-rewind.svg?raw';
-import navForwardSvg from './svg/nav-forward.svg?raw';
-import navPlaySvg from './svg/nav-play.svg?raw';
-import navPauseSvg from './svg/nav-pause.svg?raw';
-
-// === Subtitle overlay icons ===
-import generateNativeSvg from './svg/generate-native.svg?raw';
-import sidePanelSvg from './svg/side-panel.svg?raw';
-import subtitleManagerSvg from './svg/subtitle-manager.svg?raw';
-import resetOffsetSvg from './svg/reset-offset.svg?raw';
-import slidersHorizontalSvg from './svg/sliders-horizontal.svg?raw';
-
-// Re-export individual icons for backward compat (existing imports).
-export { default as settingsIcon } from './svg/settings.svg?raw';
-export { default as pencilIcon } from './svg/pencil.svg?raw';
-export { default as zapIcon } from './svg/zap.svg?raw';
-export { default as resizeIcon } from './svg/resize.svg?raw';
-export { default as audioWaveIcon } from './svg/audio-wave.svg?raw';
-export { default as imageIcon } from './svg/image.svg?raw';
-export { default as languagesIcon } from './svg/languages.svg?raw';
-export { default as linkIcon } from './svg/link.svg?raw';
-export { default as eyeOffIcon } from './svg/eye-off.svg?raw';
-export { default as eyeIcon } from './svg/eye.svg?raw';
-export { default as chevronDownIcon } from './svg/chevron-down.svg?raw';
-export { default as panelBottomCloseIcon } from './svg/panel-bottom-close.svg?raw';
-export { default as panelLeftCollapseIcon } from './svg/panel-left-collapse.svg?raw';
-export { default as panelLeftExpandIcon } from './svg/panel-left-expand.svg?raw';
-export { default as xIcon } from './svg/x.svg?raw';
-export { default as downloadIcon } from './svg/download.svg?raw';
-export { default as searchIcon } from './svg/search.svg?raw';
-export { default as loaderIcon } from './svg/loader.svg?raw';
-export { default as playIcon } from './svg/play.svg?raw';
-export { default as pauseIcon } from './svg/pause.svg?raw';
-export { default as plusIcon } from './svg/plus.svg?raw';
-export { default as minusIcon } from './svg/minus.svg?raw';
-export { default as checkIcon } from './svg/check.svg?raw';
-export { default as infoIcon } from './svg/info.svg?raw';
-export { default as alertCircleIcon } from './svg/alert-circle.svg?raw';
-export { default as moonIcon } from './svg/moon.svg?raw';
-export { default as sunIcon } from './svg/sun.svg?raw';
-export { default as powerIcon } from './svg/power.svg?raw';
-export { default as trashIcon } from './svg/trash.svg?raw';
-export { default as copyIcon } from './svg/copy.svg?raw';
-export { default as clockIcon } from './svg/clock.svg?raw';
-export { default as menuIcon } from './svg/menu.svg?raw';
-export { default as ellipsisVerticalIcon } from './svg/ellipsis-vertical.svg?raw';
-export { default as videoIcon } from './svg/video.svg?raw';
-export { default as flagIcon } from './svg/flag.svg?raw';
-export { default as rotateCcwIcon } from './svg/rotate-ccw.svg?raw';
-export { default as panelRightIcon } from './svg/panel-right.svg?raw';
-export { default as chevronLeftIcon } from './svg/chevron-left.svg?raw';
-export { default as chevronRightIcon } from './svg/chevron-right.svg?raw';
-export { default as repeatIcon } from './svg/repeat.svg?raw';
-export { default as triangleAlertIcon } from './svg/triangle-alert.svg?raw';
-export { default as circleCheckIcon } from './svg/circle-check.svg?raw';
-export { default as circleXIcon } from './svg/circle-x.svg?raw';
-export { default as circleInfoIcon } from './svg/circle-info.svg?raw';
-export { default as messageSquareIcon } from './svg/message-square.svg?raw';
-export { default as bookOpenIcon } from './svg/book-open.svg?raw';
-export { default as folderOpenIcon } from './svg/folder-open.svg?raw';
-export { default as libraryIcon } from './svg/library.svg?raw';
-export { default as fileVideoIcon } from './svg/file-video.svg?raw';
-export { default as playRoundedRectIcon } from './svg/play-rounded-rect.svg?raw';
-export { default as navPrevIcon } from './svg/nav-prev.svg?raw';
-export { default as navNextIcon } from './svg/nav-next.svg?raw';
-export { default as navRepeatIcon } from './svg/nav-repeat.svg?raw';
-export { default as navRepeatAIcon } from './svg/nav-repeat-a.svg?raw';
-export { default as navRepeatBIcon } from './svg/nav-repeat-b.svg?raw';
-export { default as navRepeatCancelIcon } from './svg/nav-repeat-cancel.svg?raw';
-export { default as navRewindIcon } from './svg/nav-rewind.svg?raw';
-export { default as navForwardIcon } from './svg/nav-forward.svg?raw';
-export { default as navPlayIcon } from './svg/nav-play.svg?raw';
-export { default as navPauseIcon } from './svg/nav-pause.svg?raw';
-export { default as generateNativeIcon } from './svg/generate-native.svg?raw';
-export { default as sidePanelIcon } from './svg/side-panel.svg?raw';
-export { default as subtitleManagerIcon } from './svg/subtitle-manager.svg?raw';
-export { default as resetOffsetIcon } from './svg/reset-offset.svg?raw';
-export { default as externalLinkIcon } from './svg/external-link.svg?raw';
-export { default as checkDoubleIcon } from './svg/check-double.svg?raw';
-export { default as wrenchIcon } from './svg/wrench.svg?raw';
-export { default as microphoneIcon } from './svg/microphone.svg?raw';
-export { default as volumeHighIcon } from './svg/volume-high.svg?raw';
-export { default as volumeLowIcon } from './svg/volume-low.svg?raw';
-export { default as volumeMuteIcon } from './svg/volume-mute.svg?raw';
-export { default as captionsIcon } from './svg/captions.svg?raw';
-export { default as maximizeIcon } from './svg/maximize.svg?raw';
-export { default as minimizeIcon } from './svg/minimize.svg?raw';
-export { default as pipIcon } from './svg/pip.svg?raw';
-export { default as pinIcon } from './svg/pin.svg?raw';
-export { default as pinOffIcon } from './svg/pin-off.svg?raw';
-export { default as gaugeIcon } from './svg/gauge.svg?raw';
-export { default as layersIcon } from './svg/layers.svg?raw';
-export { default as atomIcon } from './svg/atom.svg?raw';
-export { default as moleculeIcon } from './svg/molecule.svg?raw';
-export { default as organismIcon } from './svg/organism.svg?raw';
-export { default as wireframeIcon } from './svg/wireframe.svg?raw';
-export { default as cropIcon } from './svg/crop.svg?raw';
-export { default as moveVerticalIcon } from './svg/move-vertical.svg?raw';
-export { default as scanTextIcon } from './svg/scan-text.svg?raw';
-export { default as windowPageIcon } from './svg/window-page.svg?raw';
+import moleculeSvg from './svg/component.svg?raw';
+import organismSvg from './svg/users.svg?raw';
+import wireframeSvg from './svg/layout-template.svg?raw';
+import windowPageSvg from './svg/app-window.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
+interface IconRenderProps {
+  size?: number | string;
+  className?: string;
+  style?: CSSProperties;
+  'aria-hidden'?: boolean;
+}
+
 export interface IconEntry {
+  /** React icon component (lucide, phosphor, or custom). */
+  readonly component: ComponentType<IconRenderProps>;
   /** Raw SVG markup string (inject via innerHTML). */
   readonly svg: string;
-  /** Lucide icon name or custom source label. */
+  /** Icon name or custom source label. */
   readonly source: string;
   /** Semantic tags for discovery (lowercase). */
   readonly tags: readonly string[];
@@ -232,125 +218,108 @@ export interface IconEntry {
  *
  * Usage:
  *   import { ICON_CATALOG } from '@/shared/icons';
- *   const audio = ICON_CATALOG.audioWave.svg;
- *
- *   // Or search by tag:
- *   const hide = Object.values(ICON_CATALOG).find(e => e.tags.includes('hide'));
+ *   const icon = ICON_CATALOG.check;
+ *   const svg = icon.svg;
+ *   const Component = icon.component;
  */
 export const ICON_CATALOG = {
-  // === Action icons ===
-  settings:    { svg: settingsSvg,    source: 'lucide/settings',    tags: ['settings','gear','config','preferences'] } as IconEntry,
-  pencil:      { svg: pencilSvg,      source: 'lucide/pencil',      tags: ['edit','write','pencil','modify'] } as IconEntry,
-  zap:         { svg: zapSvg,         source: 'lucide/zap',         tags: ['quick','fast','lightning','bolt','instant'] } as IconEntry,
-  resize:      { svg: resizeSvg,      source: 'custom/resize',      tags: ['resize','drag','handle','diagonal'] } as IconEntry,
-
-  // === Popup dictionary toolbar ===
-  audioWave:   { svg: audioWaveSvg,   source: 'cardCreator/MediaList ThumbIcon', tags: ['audio','waveform','sound','voice','tts','play-audio'] } as IconEntry,
-  image:       { svg: imageSvg,       source: 'lucide/image',       tags: ['image','picture','photo','gallery'] } as IconEntry,
-  languages:   { svg: languagesSvg,   source: 'lucide/languages',   tags: ['translate','languages','i18n','localize'] } as IconEntry,
-  link:        { svg: linkSvg,        source: 'lucide/link',        tags: ['link','chain','url','external','hyperlink'] } as IconEntry,
-
-  // === None / hide panel variants ===
-  eye:              { svg: eyeSvg,              source: 'lucide/eye',                tags: ['show','eye','visible','reveal','view'] } as IconEntry,
-  eyeOff:           { svg: eyeOffSvg,           source: 'lucide/eye-off',            tags: ['hide','eye-off','invisible','none','conceal'] } as IconEntry,
-  chevronDown:      { svg: chevronDownSvg,      source: 'lucide/chevron-down',       tags: ['collapse','chevron','down','arrow-down','fold','dropdown','expand'] } as IconEntry,
-  panelBottomClose: { svg: panelBottomCloseSvg, source: 'lucide/panel-bottom-close', tags: ['panel','hide','close','bottom','collapse-panel'] } as IconEntry,
-  panelLeftCollapse: { svg: panelLeftCollapseSvg, source: 'custom/panel-left-collapse', tags: ['panel','left','collapse','sidebar','hide'] } as IconEntry,
-  panelLeftExpand:   { svg: panelLeftExpandSvg,   source: 'custom/panel-left-expand',   tags: ['panel','left','expand','sidebar','show'] } as IconEntry,
-
-  // === General UI ===
-  x:           { svg: xSvg,           source: 'lucide/x',           tags: ['close','dismiss','cancel','x','clear'] } as IconEntry,
-  download:    { svg: downloadSvg,    source: 'lucide/download',    tags: ['download','save','arrow-down-tray'] } as IconEntry,
-  search:      { svg: searchSvg,      source: 'lucide/search',      tags: ['search','magnifier','find','lookup'] } as IconEntry,
-  loader:      { svg: loaderSvg,      source: 'lucide/loader',      tags: ['loading','spinner','pending','progress'] } as IconEntry,
-  play:        { svg: playSvg,        source: 'lucide/play',        tags: ['play','start','media','video','resume'] } as IconEntry,
-  pause:       { svg: pauseSvg,       source: 'lucide/pause',       tags: ['pause','hold','media'] } as IconEntry,
-  plus:        { svg: plusSvg,        source: 'lucide/plus',        tags: ['add','plus','new','create'] } as IconEntry,
-  minus:       { svg: minusSvg,       source: 'lucide/minus',       tags: ['minus','subtract','decrease','remove'] } as IconEntry,
-  check:       { svg: checkSvg,       source: 'lucide/check',       tags: ['check','confirm','selected','done','tick'] } as IconEntry,
-  info:        { svg: infoSvg,        source: 'lucide/info',        tags: ['info','information','hint','help'] } as IconEntry,
-  alertCircle: { svg: alertCircleSvg, source: 'lucide/alert-circle', tags: ['alert','error','warning','exclamation','circle'] } as IconEntry,
-  moon:        { svg: moonSvg,        source: 'lucide/moon',        tags: ['moon','dark','night','theme-dark'] } as IconEntry,
-  sun:         { svg: sunSvg,         source: 'lucide/sun',         tags: ['sun','light','day','theme-light'] } as IconEntry,
-  power:       { svg: powerSvg,       source: 'lucide/power',       tags: ['power','on','off','toggle','enable','disable'] } as IconEntry,
-  trash:       { svg: trashSvg,       source: 'lucide/trash',       tags: ['trash','delete','remove','bin'] } as IconEntry,
-  copy:        { svg: copySvg,        source: 'lucide/copy',        tags: ['copy','clipboard','duplicate'] } as IconEntry,
-  clock:       { svg: clockSvg,       source: 'lucide/clock',       tags: ['clock','time','duration','queued','timer'] } as IconEntry,
-  menu:        { svg: menuSvg,        source: 'lucide/menu',        tags: ['menu','hamburger','sidebar','toggle'] } as IconEntry,
-  ellipsisVertical: { svg: ellipsisVerticalSvg, source: 'lucide/ellipsis-vertical', tags: ['ellipsis','vertical','kebab','more','dots','three-dots','menu'] } as IconEntry,
-  video:       { svg: videoSvg,       source: 'lucide/video',       tags: ['video','media','player','film'] } as IconEntry,
-  flag:        { svg: flagSvg,        source: 'lucide/flag',        tags: ['flag','subtitle','caption','mark'] } as IconEntry,
-  rotateCcw:   { svg: rotateCcwSvg,   source: 'lucide/rotate-ccw',  tags: ['rotate','retry','reset','undo','refresh'] } as IconEntry,
-  panelRight:  { svg: panelRightSvg,  source: 'lucide/panel-right', tags: ['panel','side','sidebar','toggle'] } as IconEntry,
-  chevronLeft: { svg: chevronLeftSvg, source: 'lucide/chevron-left', tags: ['chevron','left','back','arrow-left','prev'] } as IconEntry,
-  chevronRight:{ svg: chevronRightSvg, source: 'lucide/chevron-right', tags: ['chevron','right','forward','arrow-right','next'] } as IconEntry,
-  repeat:      { svg: repeatSvg,      source: 'lucide/repeat',      tags: ['repeat','loop','cycle'] } as IconEntry,
-
-  // === Status / toast ===
-  triangleAlert: { svg: triangleAlertSvg, source: 'lucide/triangle-alert', tags: ['warning','alert','triangle','caution'] } as IconEntry,
-  circleCheck:   { svg: circleCheckSvg,   source: 'lucide/circle-check',   tags: ['success','check','circle','done','ok'] } as IconEntry,
-  circleX:       { svg: circleXSvg,       source: 'lucide/circle-x',       tags: ['error','fail','circle','x','close'] } as IconEntry,
-  circleInfo:    { svg: circleInfoSvg,    source: 'lucide/circle-info',    tags: ['info','toast','circle','i'] } as IconEntry,
-  messageSquare: { svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message','sentence','text','speech','bubble','chat','audio-sentence'] } as IconEntry,
-  bookOpen:    { svg: bookOpenSvg,    source: 'lucide/book-open',    tags: ['dictionary','book','lexicon'] } as IconEntry,
-
-  // === Local player ===
-  folderOpen:  { svg: folderOpenSvg,  source: 'lucide/folder-open',  tags: ['folder','open','file','directory','browse'] } as IconEntry,
-  library:     { svg: librarySvg,     source: 'lucide/library',      tags: ['library','collection','history','list','book-stack'] } as IconEntry,
-  fileVideo:   { svg: fileVideoSvg,   source: 'lucide/file-video',   tags: ['file','video','media','document','filename'] } as IconEntry,
-  playRoundedRect: { svg: playRoundedRectSvg, source: 'custom/play-rounded-rect', tags: ['play','video','media','player','local-player','rounded','rectangle'] } as IconEntry,
-
-  // === Nav cluster ===
-  navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,
-  navNext:         { svg: navNextSvg,         source: 'svgrepo/round-alt-arrow-right', tags: ['nav','next','forward','sentence','chevron-right','circle'] } as IconEntry,
-  navRepeat:       { svg: navRepeatSvg,       source: 'svgrepo/restart',               tags: ['nav','repeat','loop','cycle','restart','circular-arrow'] } as IconEntry,
-  navRepeatA:      { svg: navRepeatASvg,      source: 'custom/nav-cluster',            tags: ['nav','repeat','loop','start','a','loop-start'] } as IconEntry,
-  navRepeatB:      { svg: navRepeatBSvg,      source: 'custom/nav-cluster',            tags: ['nav','repeat','loop','end','b','loop-end'] } as IconEntry,
-  navRepeatCancel: { svg: navRepeatCancelSvg, source: 'custom/nav-cluster',            tags: ['nav','repeat','cancel','stop','loop-stop','x'] } as IconEntry,
-  navRewind:       { svg: navRewindSvg,       source: 'svgrepo/rewind-5-seconds-back', tags: ['nav','rewind','back','5','seconds','seek'] } as IconEntry,
-  navForward:      { svg: navForwardSvg,      source: 'svgrepo/rewind-10-seconds-forward', tags: ['nav','forward','skip','10','seconds','seek'] } as IconEntry,
-  navPlay:         { svg: navPlaySvg,         source: 'custom/nav-cluster (Bootstrap play-circle)', tags: ['nav','play','start','media','video','resume','circle'] } as IconEntry,
-  navPause:        { svg: navPauseSvg,        source: 'custom/nav-cluster (Bootstrap pause-circle)', tags: ['nav','pause','hold','media','video','circle'] } as IconEntry,
-
-  // === Subtitle overlay ===
-  generateNative:  { svg: generateNativeSvg,  source: 'custom/subtitle-block',      tags: ['generate','native','translate','exchange','bidirectional','arrows'] } as IconEntry,
-  sidePanel:       { svg: sidePanelSvg,       source: 'custom/subtitle-panel',      tags: ['side','panel','toggle','split','rect'] } as IconEntry,
-  subtitleManager: { svg: subtitleManagerSvg, source: 'custom/subtitle-manager',    tags: ['subtitle','manager','list','panel','lines'] } as IconEntry,
-  resetOffset:     { svg: resetOffsetSvg,     source: 'custom/subtitle-offset',     tags: ['reset','offset','circular-arrow','hook','undo'] } as IconEntry,
-  slidersHorizontal: { svg: slidersHorizontalSvg, source: 'lucide/sliders-horizontal', tags: ['sliders','customize','appearance','settings','adjust','tune','levels'] } as IconEntry,
-
-  // === Media / window control ===
-  externalLink: { svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external','link','open','new-tab','outbound'] } as IconEntry,
-  checkDouble:  { svg: checkDoubleSvg,  source: 'lucide/check-check',   tags: ['check','double','done','confirm','verified','all'] } as IconEntry,
-  wrench:       { svg: wrenchSvg,       source: 'lucide/wrench',        tags: ['wrench','settings','config','tool','fix','repair'] } as IconEntry,
-  microphone:   { svg: microphoneSvg,   source: 'lucide/microphone',    tags: ['microphone','voice','audio','record','speak','mic'] } as IconEntry,
-  volumeHigh:   { svg: volumeHighSvg,   source: 'lucide/volume-2',      tags: ['volume','high','loud','sound','audio','speaker'] } as IconEntry,
-  volumeLow:    { svg: volumeLowSvg,    source: 'lucide/volume-1',      tags: ['volume','low','quiet','sound','audio','speaker'] } as IconEntry,
-  volumeMute:   { svg: volumeMuteSvg,   source: 'lucide/volume-x',      tags: ['volume','mute','silent','off','sound','audio','speaker'] } as IconEntry,
-  captions:     { svg: captionsSvg,     source: 'lucide/captions',      tags: ['captions','subtitle','cc','closed-caption','text','accessibility'] } as IconEntry,
-  maximize:     { svg: maximizeSvg,     source: 'lucide/maximize',      tags: ['maximize','expand','fullscreen','enlarge','scale-up'] } as IconEntry,
-  crop:         { svg: cropSvg,         source: 'lucide/crop',          tags: ['crop','select-region','area','frame','capture','marquee'] } as IconEntry,
-  move:         { svg: moveSvg,         source: 'lucide/move',          tags: ['move','drag','reposition','pan','all-directions'] } as IconEntry,
-  moveVertical: { svg: moveVerticalSvg, source: 'lucide/move-vertical', tags: ['move','vertical','height','resize-vertical','up-down'] } as IconEntry,
-  moveHorizontal: { svg: moveHorizontalSvg, source: 'lucide/move-horizontal', tags: ['move','horizontal','width','resize-horizontal','left-right'] } as IconEntry,
-  scanText:     { svg: scanTextSvg,     source: 'lucide/scan-text',     tags: ['scan','text','ocr','detect-text','frame-text','recognize'] } as IconEntry,
-  minimize:     { svg: minimizeSvg,     source: 'lucide/minimize',      tags: ['minimize','collapse','shrink','scale-down','reduce'] } as IconEntry,
-  pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
-  pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,
-  pinOff:       { svg: pinOffSvg,       source: 'lucide/pin-off',       tags: ['pin','off','unpin','detach','release','unlock-position'] } as IconEntry,
-  gauge:        { svg: gaugeSvg,        source: 'lucide/gauge',         tags: ['gauge','speed','meter','playback-speed','rate','fast','slow'] } as IconEntry,
-
-  // === Design system showcase — atomic design level icons ===
-  layers:       { svg: layersSvg,       source: 'custom/design-system', tags: ['layers','stack','foundation','design-tokens','base','tier'] } as IconEntry,
-  atom:         { svg: atomSvg,         source: 'lucide/atom',           tags: ['atom','orbital','electron','nucleus','particle','smallest-unit'] } as IconEntry,
-  molecule:     { svg: moleculeSvg,     source: 'custom/design-system',  tags: ['molecule','bond','triangle','atoms-combined','compound'] } as IconEntry,
-  organism:     { svg: organismSvg,     source: 'custom/design-system',  tags: ['organism','cell','organelles','complex-unit','biological'] } as IconEntry,
-  wireframe:    { svg: wireframeSvg,    source: 'custom/design-system',  tags: ['wireframe','template','layout','scaffold','blueprint','sections'] } as IconEntry,
-  windowPage:   { svg: windowPageSvg,   source: 'custom/design-system',  tags: ['page','window','browser','document','final','complete'] } as IconEntry,
+  settings: { component: Settings, svg: settingsSvg, source: 'lucide/settings', tags: ['settings', 'gear', 'config', 'preferences'] } as IconEntry,
+  pencil: { component: Pencil, svg: pencilSvg, source: 'lucide/pencil', tags: ['edit', 'write', 'pencil', 'modify'] } as IconEntry,
+  zap: { component: Zap, svg: zapSvg, source: 'lucide/zap', tags: ['quick', 'fast', 'lightning', 'bolt', 'instant'] } as IconEntry,
+  resize: { component: Maximize2, svg: resizeSvg, source: 'lucide/maximize-2', tags: ['resize', 'drag', 'handle', 'diagonal'] } as IconEntry,
+  audioWave: { component: AudioLines, svg: audioWaveSvg, source: 'lucide/audio-lines', tags: ['audio', 'waveform', 'sound', 'voice', 'tts', 'play-audio'] } as IconEntry,
+  image: { component: Image, svg: imageSvg, source: 'lucide/image', tags: ['image', 'picture', 'photo', 'gallery'] } as IconEntry,
+  languages: { component: Languages, svg: languagesSvg, source: 'lucide/languages', tags: ['translate', 'languages', 'i18n', 'localize'] } as IconEntry,
+  link: { component: Link, svg: linkSvg, source: 'lucide/link', tags: ['link', 'chain', 'url', 'external', 'hyperlink'] } as IconEntry,
+  eye: { component: Eye, svg: eyeSvg, source: 'lucide/eye', tags: ['show', 'eye', 'visible', 'reveal', 'view'] } as IconEntry,
+  eyeOff: { component: EyeOff, svg: eyeOffSvg, source: 'lucide/eye-off', tags: ['hide', 'eye-off', 'invisible', 'none', 'conceal'] } as IconEntry,
+  chevronDown: { component: ChevronDown, svg: chevronDownSvg, source: 'lucide/chevron-down', tags: ['collapse', 'chevron', 'down', 'arrow-down', 'fold', 'dropdown', 'expand'] } as IconEntry,
+  panelBottomClose: { component: PanelBottomClose, svg: panelBottomCloseSvg, source: 'lucide/panel-bottom-close', tags: ['panel', 'hide', 'close', 'bottom', 'collapse-panel'] } as IconEntry,
+  panelLeftCollapse: { component: PanelLeftClose, svg: panelLeftCollapseSvg, source: 'lucide/panel-left-close', tags: ['panel', 'left', 'collapse', 'sidebar', 'hide'] } as IconEntry,
+  panelLeftExpand: { component: PanelLeftOpen, svg: panelLeftExpandSvg, source: 'lucide/panel-left-open', tags: ['panel', 'left', 'expand', 'sidebar', 'show'] } as IconEntry,
+  x: { component: X, svg: xSvg, source: 'lucide/x', tags: ['close', 'dismiss', 'cancel', 'x', 'clear'] } as IconEntry,
+  download: { component: Download, svg: downloadSvg, source: 'lucide/download', tags: ['download', 'save', 'arrow-down-tray'] } as IconEntry,
+  search: { component: Search, svg: searchSvg, source: 'lucide/search', tags: ['search', 'magnifier', 'find', 'lookup'] } as IconEntry,
+  loader: { component: Loader, svg: loaderSvg, source: 'lucide/loader', tags: ['loading', 'spinner', 'pending', 'progress'] } as IconEntry,
+  play: { component: Play, svg: playSvg, source: 'lucide/play', tags: ['play', 'start', 'media', 'video', 'resume'] } as IconEntry,
+  pause: { component: Pause, svg: pauseSvg, source: 'lucide/pause', tags: ['pause', 'hold', 'media'] } as IconEntry,
+  plus: { component: Plus, svg: plusSvg, source: 'lucide/plus', tags: ['add', 'plus', 'new', 'create'] } as IconEntry,
+  minus: { component: Minus, svg: minusSvg, source: 'lucide/minus', tags: ['minus', 'subtract', 'decrease', 'remove'] } as IconEntry,
+  check: { component: Check, svg: checkSvg, source: 'lucide/check', tags: ['check', 'confirm', 'selected', 'done', 'tick'] } as IconEntry,
+  info: { component: Info, svg: infoSvg, source: 'lucide/info', tags: ['info', 'information', 'hint', 'help'] } as IconEntry,
+  alertCircle: { component: AlertCircle, svg: alertCircleSvg, source: 'lucide/alert-circle', tags: ['alert', 'error', 'warning', 'exclamation', 'circle'] } as IconEntry,
+  moon: { component: Moon, svg: moonSvg, source: 'lucide/moon', tags: ['moon', 'dark', 'night', 'theme-dark'] } as IconEntry,
+  sun: { component: Sun, svg: sunSvg, source: 'lucide/sun', tags: ['sun', 'light', 'day', 'theme-light'] } as IconEntry,
+  power: { component: Power, svg: powerSvg, source: 'lucide/power', tags: ['power', 'on', 'off', 'toggle', 'enable', 'disable'] } as IconEntry,
+  trash: { component: Trash, svg: trashSvg, source: 'lucide/trash', tags: ['trash', 'delete', 'remove', 'bin'] } as IconEntry,
+  copy: { component: Copy, svg: copySvg, source: 'lucide/copy', tags: ['copy', 'clipboard', 'duplicate'] } as IconEntry,
+  clock: { component: Clock, svg: clockSvg, source: 'lucide/clock', tags: ['clock', 'time', 'duration', 'queued', 'timer'] } as IconEntry,
+  menu: { component: Menu, svg: menuSvg, source: 'lucide/menu', tags: ['menu', 'hamburger', 'sidebar', 'toggle'] } as IconEntry,
+  ellipsisVertical: { component: EllipsisVertical, svg: ellipsisVerticalSvg, source: 'lucide/ellipsis-vertical', tags: ['ellipsis', 'vertical', 'kebab', 'more', 'dots', 'three-dots', 'menu'] } as IconEntry,
+  video: { component: Video, svg: videoSvg, source: 'lucide/video', tags: ['video', 'media', 'player', 'film'] } as IconEntry,
+  flag: { component: Flag, svg: flagSvg, source: 'lucide/flag', tags: ['flag', 'subtitle', 'caption', 'mark'] } as IconEntry,
+  rotateCcw: { component: RotateCcw, svg: rotateCcwSvg, source: 'lucide/rotate-ccw', tags: ['rotate', 'retry', 'reset', 'undo', 'refresh'] } as IconEntry,
+  panelRight: { component: PanelRight, svg: panelRightSvg, source: 'lucide/panel-right', tags: ['panel', 'side', 'sidebar', 'toggle'] } as IconEntry,
+  chevronLeft: { component: ChevronLeft, svg: chevronLeftSvg, source: 'lucide/chevron-left', tags: ['chevron', 'left', 'back', 'arrow-left', 'prev'] } as IconEntry,
+  chevronRight: { component: ChevronRight, svg: chevronRightSvg, source: 'lucide/chevron-right', tags: ['chevron', 'right', 'forward', 'arrow-right', 'next'] } as IconEntry,
+  repeat: { component: Repeat, svg: repeatSvg, source: 'lucide/repeat', tags: ['repeat', 'loop', 'cycle'] } as IconEntry,
+  triangleAlert: { component: AlertTriangle, svg: triangleAlertSvg, source: 'lucide/alert-triangle', tags: ['warning', 'alert', 'triangle', 'caution'] } as IconEntry,
+  circleCheck: { component: CircleCheck, svg: circleCheckSvg, source: 'lucide/circle-check', tags: ['success', 'check', 'circle', 'done', 'ok'] } as IconEntry,
+  circleX: { component: CircleX, svg: circleXSvg, source: 'lucide/circle-x', tags: ['error', 'fail', 'circle', 'x', 'close'] } as IconEntry,
+  circleInfo: { component: CircleAlert, svg: circleInfoSvg, source: 'lucide/circle-alert', tags: ['info', 'toast', 'circle', 'i'] } as IconEntry,
+  messageSquare: { component: MessageSquare, svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message', 'sentence', 'text', 'speech', 'bubble', 'chat', 'audio-sentence'] } as IconEntry,
+  bookOpen: { component: BookOpen, svg: bookOpenSvg, source: 'lucide/book-open', tags: ['dictionary', 'book', 'lexicon'] } as IconEntry,
+  folderOpen: { component: FolderOpen, svg: folderOpenSvg, source: 'lucide/folder-open', tags: ['folder', 'open', 'file', 'directory', 'browse'] } as IconEntry,
+  library: { component: Library, svg: librarySvg, source: 'lucide/library', tags: ['library', 'collection', 'history', 'list', 'book-stack'] } as IconEntry,
+  fileVideo: { component: FileVideo, svg: fileVideoSvg, source: 'lucide/file-video', tags: ['file', 'video', 'media', 'document', 'filename'] } as IconEntry,
+  playRoundedRect: { component: PlaySquare, svg: playRoundedRectSvg, source: 'lucide/play-square', tags: ['play', 'video', 'media', 'player', 'local-player', 'rounded', 'rectangle'] } as IconEntry,
+  navPrev: { component: NavPrev, svg: navPrevSvg, source: 'phosphor/arrow-circle-left', tags: ['nav', 'prev', 'previous', 'back', 'sentence', 'arrow-circle-left', 'circle'] } as IconEntry,
+  navNext: { component: NavNext, svg: navNextSvg, source: 'phosphor/arrow-circle-right', tags: ['nav', 'next', 'forward', 'sentence', 'arrow-circle-right', 'circle'] } as IconEntry,
+  navRepeat: { component: NavRepeat, svg: navRepeatSvg, source: 'phosphor/repeat', tags: ['nav', 'repeat', 'loop', 'cycle', 'restart', 'circular-arrow'] } as IconEntry,
+  navRepeatA: { component: NavRepeatA, svg: navRepeatASvg, source: 'phosphor/repeat-once', tags: ['nav', 'repeat', 'loop', 'start', 'a', 'loop-start', 'once'] } as IconEntry,
+  navRepeatB: { component: NavRepeatB, svg: navRepeatBSvg, source: 'phosphor/repeat', tags: ['nav', 'repeat', 'loop', 'end', 'b', 'loop-end'] } as IconEntry,
+  navRepeatCancel: { component: NavRepeatCancel, svg: navRepeatCancelSvg, source: 'phosphor/prohibit', tags: ['nav', 'repeat', 'cancel', 'stop', 'loop-stop', 'prohibit'] } as IconEntry,
+  navRewind: { component: NavRewind, svg: navRewindSvg, source: 'phosphor/arrow-counter-clockwise', tags: ['nav', 'rewind', 'back', '5', 'seconds', 'seek'] } as IconEntry,
+  navForward: { component: NavForward, svg: navForwardSvg, source: 'phosphor/arrow-clockwise', tags: ['nav', 'forward', 'skip', '10', 'seconds', 'seek'] } as IconEntry,
+  navPlay: { component: NavPlay, svg: navPlaySvg, source: 'phosphor/play-circle', tags: ['nav', 'play', 'start', 'media', 'video', 'resume', 'circle'] } as IconEntry,
+  navPause: { component: NavPause, svg: navPauseSvg, source: 'phosphor/pause-circle', tags: ['nav', 'pause', 'hold', 'media', 'video', 'circle'] } as IconEntry,
+  generateNative: { component: Languages, svg: generateNativeSvg, source: 'lucide/languages', tags: ['generate', 'native', 'translate', 'exchange', 'bidirectional', 'arrows'] } as IconEntry,
+  sidePanel: { component: PanelRightOpen, svg: sidePanelSvg, source: 'lucide/panel-right-open', tags: ['side', 'panel', 'toggle', 'split', 'rect'] } as IconEntry,
+  subtitleManager: { component: Library, svg: subtitleManagerSvg, source: 'lucide/library', tags: ['subtitle', 'manager', 'list', 'panel', 'lines'] } as IconEntry,
+  resetOffset: { component: RotateCcw, svg: resetOffsetSvg, source: 'lucide/rotate-ccw', tags: ['reset', 'offset', 'circular-arrow', 'hook', 'undo'] } as IconEntry,
+  slidersHorizontal: { component: SlidersHorizontal, svg: slidersHorizontalSvg, source: 'lucide/sliders-horizontal', tags: ['sliders', 'customize', 'appearance', 'settings', 'adjust', 'tune', 'levels'] } as IconEntry,
+  externalLink: { component: ExternalLink, svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external', 'link', 'open', 'new-tab', 'outbound'] } as IconEntry,
+  checkDouble: { component: CheckCheck, svg: checkDoubleSvg, source: 'lucide/check-check', tags: ['check', 'double', 'done', 'confirm', 'verified', 'all'] } as IconEntry,
+  wrench: { component: Wrench, svg: wrenchSvg, source: 'lucide/wrench', tags: ['wrench', 'settings', 'config', 'tool', 'fix', 'repair'] } as IconEntry,
+  microphone: { component: Mic, svg: microphoneSvg, source: 'lucide/mic', tags: ['microphone', 'voice', 'audio', 'record', 'speak', 'mic'] } as IconEntry,
+  volumeHigh: { component: Volume2, svg: volumeHighSvg, source: 'lucide/volume-2', tags: ['volume', 'high', 'loud', 'sound', 'audio', 'speaker'] } as IconEntry,
+  volumeLow: { component: Volume1, svg: volumeLowSvg, source: 'lucide/volume-1', tags: ['volume', 'low', 'quiet', 'sound', 'audio', 'speaker'] } as IconEntry,
+  volumeMute: { component: VolumeX, svg: volumeMuteSvg, source: 'lucide/volume-x', tags: ['volume', 'mute', 'silent', 'off', 'sound', 'audio', 'speaker'] } as IconEntry,
+  captions: { component: Captions, svg: captionsSvg, source: 'lucide/captions', tags: ['captions', 'subtitle', 'cc', 'closed-caption', 'text', 'accessibility'] } as IconEntry,
+  maximize: { component: Maximize, svg: maximizeSvg, source: 'lucide/maximize', tags: ['maximize', 'expand', 'fullscreen', 'enlarge', 'scale-up'] } as IconEntry,
+  crop: { component: Crop, svg: cropSvg, source: 'lucide/crop', tags: ['crop', 'select-region', 'area', 'frame', 'capture', 'marquee'] } as IconEntry,
+  move: { component: Move, svg: moveSvg, source: 'lucide/move', tags: ['move', 'drag', 'reposition', 'pan', 'all-directions'] } as IconEntry,
+  moveVertical: { component: ArrowUpDown, svg: moveVerticalSvg, source: 'lucide/arrow-up-down', tags: ['move', 'vertical', 'height', 'resize-vertical', 'up-down'] } as IconEntry,
+  moveHorizontal: { component: ArrowLeftRight, svg: moveHorizontalSvg, source: 'lucide/arrow-left-right', tags: ['move', 'horizontal', 'width', 'resize-horizontal', 'left-right'] } as IconEntry,
+  scanText: { component: ScanText, svg: scanTextSvg, source: 'lucide/scan-text', tags: ['scan', 'text', 'ocr', 'detect-text', 'frame-text', 'recognize'] } as IconEntry,
+  minimize: { component: Minimize, svg: minimizeSvg, source: 'lucide/minimize', tags: ['minimize', 'collapse', 'shrink', 'scale-down', 'reduce'] } as IconEntry,
+  pip: { component: PictureInPicture, svg: pipSvg, source: 'lucide/picture-in-picture', tags: ['pip', 'picture-in-picture', 'overlay', 'mini-player', 'video'] } as IconEntry,
+  pin: { component: Pin, svg: pinSvg, source: 'lucide/pin', tags: ['pin', 'attach', 'anchor', 'fixed', 'lock-position'] } as IconEntry,
+  pinOff: { component: PinOff, svg: pinOffSvg, source: 'lucide/pin-off', tags: ['pin', 'off', 'unpin', 'detach', 'release', 'unlock-position'] } as IconEntry,
+  gauge: { component: Gauge, svg: gaugeSvg, source: 'lucide/gauge', tags: ['gauge', 'speed', 'meter', 'playback-speed', 'rate', 'fast', 'slow'] } as IconEntry,
+  layers: { component: Layers, svg: layersSvg, source: 'lucide/layers', tags: ['layers', 'stack', 'foundation', 'design-tokens', 'base', 'tier'] } as IconEntry,
+  atom: { component: Atom, svg: atomSvg, source: 'lucide/atom', tags: ['atom', 'orbital', 'electron', 'nucleus', 'particle', 'smallest-unit'] } as IconEntry,
+  molecule: { component: Component, svg: moleculeSvg, source: 'lucide/component', tags: ['molecule', 'bond', 'triangle', 'atoms-combined', 'compound'] } as IconEntry,
+  organism: { component: Users, svg: organismSvg, source: 'lucide/users', tags: ['organism', 'cell', 'organelles', 'complex-unit', 'biological'] } as IconEntry,
+  wireframe: { component: LayoutTemplate, svg: wireframeSvg, source: 'lucide/layout-template', tags: ['wireframe', 'template', 'layout', 'scaffold', 'blueprint', 'sections'] } as IconEntry,
+  windowPage: { component: AppWindow, svg: windowPageSvg, source: 'lucide/app-window', tags: ['page', 'window', 'browser', 'document', 'final', 'complete'] } as IconEntry,
 } as const;
 
-/** Find icon entries by tag (fuzzy semantic search). */
-export function findIconsByTag(tag: string): readonly IconEntry[] {
+/** Type-safe catalog key. */
+export type IconCatalogKey = keyof typeof ICON_CATALOG;
+
+/** Find an icon by a tag keyword. */
+export function findIconByTag(tag: string): IconEntry | undefined {
   const lower = tag.toLowerCase();
-  return Object.values(ICON_CATALOG).filter(e => e.tags.includes(lower));
+  return Object.values(ICON_CATALOG).find(e => e.tags.includes(lower));
 }
