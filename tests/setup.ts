@@ -27,6 +27,29 @@ if (typeof HTMLMediaElement !== 'undefined') {
   HTMLMediaElement.prototype.pause = jest.fn();
 }
 
+// Polyfill AudioContext + fetch for PronunciationPanel decodeAudioUrl tests in jsdom.
+if (typeof globalThis.AudioContext === 'undefined') {
+  globalThis.AudioContext = jest.fn().mockImplementation(() => ({
+    decodeAudioData: jest.fn().mockResolvedValue({
+      numberOfChannels: 1,
+      length: 22050,
+      sampleRate: 22050,
+      duration: 1,
+      getChannelData: jest.fn().mockReturnValue(new Float32Array(22050).fill(0)),
+    }),
+    close: jest.fn().mockResolvedValue(undefined),
+  })) as unknown as typeof AudioContext;
+}
+
+if (typeof globalThis.fetch === 'undefined') {
+  globalThis.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(0)),
+  }) as unknown as typeof fetch;
+}
+
 // Polyfill ResizeObserver for jsdom (used by OrbitalBadge to detect scrollbar
 // appearance). No-op by default; tests that need to trigger it override this.
 if (typeof globalThis.ResizeObserver === 'undefined') {
@@ -50,4 +73,10 @@ if (!existingCrypto?.subtle) {
     writable: true,
     configurable: true,
   });
+}
+
+// Polyfill URL.createObjectURL/revokeObjectURL for jsdom (used by local audio blob URLs).
+if (typeof URL.createObjectURL !== 'function') {
+  URL.createObjectURL = () => 'blob:mock';
+  URL.revokeObjectURL = () => {};
 }
