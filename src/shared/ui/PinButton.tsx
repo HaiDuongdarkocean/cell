@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './PinButton.module.css';
 
@@ -30,14 +31,13 @@ export function PinButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <button
-      type="button"
+    <IconButton material="solid" variant="ghost"
       className={cls}
       aria-pressed={pinned}
       aria-label={pinned ? 'Unpin' : 'Pin'}
       {...rest}
     >
       <Icon name={pinned ? 'pinOff' : 'pin'} size={ICON_SIZE[size]} />
-    </button>
+    </IconButton>
   );
 }

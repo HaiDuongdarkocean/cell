@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './CollapseButton.module.css';
 
@@ -50,8 +51,7 @@ export function CollapseButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={cls}
       aria-expanded={!collapsed}
       aria-controls={controlsId}
@@ -62,6 +62,6 @@ export function CollapseButton({
       {showLabel && (
         <span className={styles.label}>{collapsed ? 'Expand' : 'Collapse'}</span>
       )}
-    </button>
+    </Button>
   );
 }

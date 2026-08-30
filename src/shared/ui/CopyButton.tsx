@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/shared/ui/Button';
 import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './CopyButton.module.css';
@@ -56,7 +57,7 @@ export function CopyButton({
   const cls = [styles.copyBtn, copied ? styles.copied : '', className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <button type="button" className={cls} aria-label={ariaLabel} onClick={handleClick} {...rest}>
+    <Button material="solid" variant="secondary" className={cls} aria-label={ariaLabel} onClick={handleClick} {...rest}>
       <span className={styles.icon}>
         <Icon name={copied ? 'checkDouble' : 'copy'}  />
       </span>
@@ -64,6 +65,6 @@ export function CopyButton({
       <span className={styles.srOnly} aria-live="polite">
         {copied ? 'Copied' : ''}
       </span>
-    </button>
+    </Button>
   );
 }

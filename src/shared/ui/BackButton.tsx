@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './BackButton.module.css';
 
@@ -33,8 +34,7 @@ export function BackButton({
 }: BackButtonProps): React.JSX.Element {
   const cls = [styles.backBtn, styles[size], className ?? ''].filter(Boolean).join(' ');
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={cls}
       aria-label="Go back"
       {...rest}
@@ -42,6 +42,6 @@ export function BackButton({
       <Icon name="chevronLeft" size={ICON_SIZE[size]} />
       {showLabel && <span className={styles.label}>{label}</span>}
       {children}
-    </button>
+    </Button>
   );
 }

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './CloseButton.module.css';
 
@@ -25,8 +26,8 @@ export function CloseButton({
   const cls = [styles.closeBtn, styles[size], styles[variant], className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <button type="button" className={cls} aria-label={ariaLabel} {...rest}>
+    <IconButton material="solid" variant={variant} className={cls} aria-label={ariaLabel} {...rest}>
       <Icon name="x"  />
-    </button>
+    </IconButton>
   );
 }
