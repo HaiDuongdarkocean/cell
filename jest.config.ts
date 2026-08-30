@@ -6,6 +6,11 @@ import type { Config } from 'jest';
  * so we factor them into a constant and spread it into each project.
  */
 const moduleNameMapper = {
+  // Mock @jocelyn-stericker/espeak-phonemes and its assets (WASM cannot run in jsdom).
+  '^@jocelyn-stericker/espeak-phonemes$': '<rootDir>/tests/__mocks__/espeakPhonemes.ts',
+  '^@jocelyn-stericker/espeak-phonemes/espeak-phonemes\\.js$': '<rootDir>/tests/__mocks__/espeakPhonemesWasm.ts',
+  '^@jocelyn-stericker/espeak-phonemes/espeak-phonemes\\.wasm\\?url$': '<rootDir>/tests/__mocks__/espeakPhonemesUrl.ts',
+  '^@jocelyn-stericker/espeak-phonemes/espeak-ng-data\\.tar\\?url$': '<rootDir>/tests/__mocks__/espeakPhonemesUrl.ts',
   // Mock Vite ?raw CSS imports — returns empty CSS string for tests.
   '\\.css\\?raw$': '<rootDir>/tests/cssRawMock.ts',
   // Mock Vite ?raw SVG imports — must be BEFORE @/ alias so ?raw suffixes don't
