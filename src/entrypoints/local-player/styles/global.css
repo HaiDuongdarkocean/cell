@@ -1,6 +1,4 @@
-@import '../../../shared/styles/fonts.css';
-@import '../../../shared/styles/tokens.css';
-@import '../../../shared/styles/scrollbars-document.css';
+@import '../../../shared/styles/document.css';
 
 :root { --scrollbar-track: transparent; }
 

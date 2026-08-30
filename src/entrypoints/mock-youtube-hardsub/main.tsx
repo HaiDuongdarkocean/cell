@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import '@/shared/styles/document.css';
 import { YouTubeHardsubPlayer } from './YouTubeHardsubPlayer';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
