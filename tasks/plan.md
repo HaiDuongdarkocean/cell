@@ -1,162 +1,154 @@
-# Implementation Plan: Orca OCR Layer
-
-> Spec: `docs/specs/orca-ocr-layer.md` (revised after 3-layer adversarial review)
-> Review: `docs/specs/orca-ocr-review-final.md`
-> Prototype benchmark: validated 2026-08-21 (WebGPU warm 134ms, mixed CN+EN+JA score 0.93-1.00)
+# Implementation Plan: Ocean Pronunciation Engine
 
 ## Overview
 
-OCR layer cho Cell — biến text trong hard-sub video thành interactive text. User toggle trong Manager Panel. Per-origin persistence. PaddleOCR.js PP-OCRv5 mobile (1 model CN+EN+JA, 21.5MB). Reuse existing `subtitleTriggerController.attach()`/`lookupOrchestrator`/`cardCreator`.
+Tích hợp `@jocelyn-stericker/espeak-phonemes` vào Cell để biến text tiếng Anh thành IPA + phoneme sequence, hiển thị trong dictionary popup, và cho phép user nhấn từng phoneme để play/highlight. Audio cả từ/sentence dùng fallback chain user-selectable: native → Supertonic → browser TTS → eSpeak.
 
 ## Architecture Decisions
 
-### AD1 — OcrEngine abstraction
-
-```typescript
-interface OcrEngine {
-  initialize(config: OcrConfig): Promise<void>;
-  recognize(image: ImageSource, options?: OcrOptions): Promise<OcrResult[]>;
-  dispose(): Promise<void>;
-}
-```
-
-`PaddleOcrEngine` primary. `TesseractEngine`/`ChromeLensEngine` = future stubs.
-
-### AD2 — OCR trong offscreen document + Worker (extend ffmpeg.html)
-
-Offscreen document đã có (ffmpeg.html + transmuxWorker). Thêm `ocr-worker.ts` vào cùng html. `offscreenManager.ts` đã cover `reasons.WORKERS + reasons.BLOBS`. `OCR_DISPOSE` free ORT session + model, KHÔNG gọi `closeOffscreenDocument()`.
-
-### AD3 — WebGPU preferred, WASM fallback, dummy warmup
-
-WebGPU 3.7-4.3x faster sau warmup nhưng 5s shader JIT first run. Strategy: init → dummy-frame warmup (hide JIT) → READY. Fallback WASM nếu WebGPU unavailable. **Spike test**: WebGPU + WASM multithread trong offscreen (cần COOP/COEP cho SharedArrayBuffer).
-
-### AD4 — Per-origin persistence (SSOT — reuse existing pattern)
-
-`ocrPreference: Record<origin, OcrOriginState>` trong settings. Reuse `extractOrigin()` + `tokenizeSettingsStore` pattern. KHÔNG tạo key ad-hoc `ocrState:<origin>`.
-
-### AD5 — Frame transport: ImageData via Port (KHÔNG ImageBitmap)
-
-`chrome.runtime.sendMessage` dùng JSON serialization → ImageBitmap/ArrayBuffer thành `{}`. Dùng `chrome.runtime.connect` Port → `port.postMessage(imageData, [imageData.data.buffer])` (structured clone + transfer).
-
-### AD6 — Script-run segmentation (SSOT — upgrade detectLangCode)
-
-`detectLangCode` hiện chỉ zh/en, 4 call site. Upgrade thành `scriptRunSegmenter` (state machine ~50-80 LOC): tách text thành script-runs (zh/en/ja/ko). Mixed intra-box (CN+EN cùng dòng) → per-token routing. Cả 4 call site cùng hưởng.
-
-### AD7 — WASM bundle + model weights CDN
-
-`.wasm` files (ORT + OpenCV.js) bundle trong extension (MV3 cấm remotely-hosted code). Set `env.wasm.wasmPaths` trỏ nội bộ. Model weights (.onnx) lazy-load từ CDN → IndexedDB cache (data, không phải code).
-
-### AD8 — Frame dedup: rVFC + time gate 3fps + luma-diff 32x8 + text dedup
-
-KHÔNG pHash (overkill). rVFC + time gate 3fps (Netflix cue tối thiểu 0.83s → 3fps đủ). Luma-diff 32x8 trên crop (rẻ hơn pHash 5-10x). Text-level dedup (OCR xong so chuỗi). Ponytail: nền video chuyển động → false positive, text-dedup fallback.
-
-### AD9 — DRM black-frame detect + abort
-
-Chrome vẽ Widevine video lên canvas ra khung ĐEN, không throw. `drmGuard`: mean pixel < threshold → abort OCR → báo user. Không waste 21.5MB model.
+1. **Phoneme engine chạy trong content/popup**, không offscreen. Vì `@jocelyn-stericker/espeak-phonemes` chỉ ~500 KB (WASM + English data) và không cần audio, nó có thể chạy trực tiếp trong UI context. Điều này giảm độ phức tạp MV3 message và giảm latency IPA.
+2. **eSpeak TTS audio (nếu được chọn) chạy trong offscreen document** cùng pattern với Supertonic TTS, vì MV3 service worker không chạy WASM/audio synthesis.
+3. **Audio source chain tận dụng `TtsEngine` interface hiện có**. Mỗi audio source implement `TtsEngine`; `PronunciationEngine` chọn source theo user settings + availability.
+4. **Phoneme timeline là estimated trong MVP**. Không sample-accurate; chia audio duration theo số phoneme, uniform weighting với accepted risk.
+5. **Settings lưu trong `Settings` object**, không tách riêng. Bump schema version từ 24 → 25, thêm `pronunciation` slice (nếu là top-level) hoặc `dictionaryPopup.pronunciation` (nếu là per-profile). Quyết định cụ thể ở Task 6.
 
 ## Task List
 
-### Phase 0: Spike — verify blockers trước khi implement
+### Phase 1: Foundation
 
-- [ ] T0: Spike WebGPU + WASM trong offscreen document + frame capture trên site thật
+- [ ] **Task 1: Add dependency + types**
+  - Cài `@jocelyn-stericker/espeak-phonemes` (pinned). Cấu hình Vite để bundle/copy `.wasm` + `.tar`.
+  - Tạo `src/features/pronunciation/types.ts` với `Phoneme`, `PronunciationResult`, `PronunciationAudio`, `AudioEngineKind`.
+  - Files: `package.json`, `vite.config.ts` (assets), `src/features/pronunciation/types.ts`.
+  - Verify: `npm install` OK, `npm run typecheck` pass.
 
-### Checkpoint 0: Spike pass
-- [ ] WebGPU chạy trong offscreen (hoặc xác nhận WASM-only)
-- [ ] Frame capture thành công trên themoviebox.xyz (no DRM)
-- [ ] Frame capture fail trên Netflix (DRM black frame) → drmGuard detect
-- [ ] ImageData transfer qua Port hoạt động
+- [ ] **Task 2: IPA segmenter + tests**
+  - Implement `src/features/pronunciation/services/ipaSegmenter.ts` phân tích IPA string thành mảng `Phoneme`.
+  - Xử lý stress marks (`ˈ` `ˌ`) là token riêng; complex phonemes (`tʃ`, `dʒ`, `əʊ`, `aɪ`, `oʊ`, `eə`, `ɪə`, `ʊə`, `ɔɪ`, `aʊ`) là single unit; dùng lookup table.
+  - Tests: `src/features/pronunciation/services/ipaSegmenter.test.ts`.
+  - Verify: `npm run test:unit -- ipaSegmenter` pass.
 
-### Phase 1: Foundation — types + script-run segmenter + persistence
+- [ ] **Task 3: Phoneme timeline estimator + tests**
+  - Implement `src/features/pronunciation/services/phonemeTimelineEstimator.ts`: nhận `Phoneme[]` + audio duration, trả về `Phoneme[]` với `startMs`/`endMs`.
+  - Bắt đầu uniform weighting; stress marks không chiếm thời gian audio.
+  - Tests: `src/features/pronunciation/services/phonemeTimelineEstimator.test.ts`.
+  - Verify: tổng `startMs`/`endMs` bằng audio duration.
 
-- [ ] T1: OcrEngine interface + types (`src/features/ocr/engine/`)
-- [ ] T2: Script-run segmenter — upgrade detectLangCode (SSOT, 4 call site)
-- [ ] T3: Per-origin OCR state — reuse tokenizeSettingsStore pattern
+### Checkpoint 1
 
-### Checkpoint 1: Foundation
-- [ ] `npm run typecheck` pass
-- [ ] `npm run test:unit` pass (T1-T3 tests)
-- [ ] `npm run build` pass
-- [ ] 4 existing call site của detectLangCode vẫn hoạt động
+- [ ] `npm run test:unit` pass cho 3 task trên.
+- [ ] `npm run typecheck` pass.
 
-### Phase 2: PaddleOcrEngine + offscreen OCR
+### Phase 2: Engine
 
-- [ ] T4: PaddleOcrEngine implementation (WebGPU/WASM, bundle wasm, wasmPaths)
-- [ ] T5: Offscreen OCR Worker (extend ffmpeg.html, KHÔNG close offscreen)
-- [ ] T6: Background OCR message handler (Port-based, route to offscreen)
-- [ ] T7: Content-script OCR controller (Port client, ImageData transport)
+- [ ] **Task 4: eSpeak phoneme engine wrapper**
+  - Implement `src/features/pronunciation/services/espeakPhonemeEngine.ts` gọi `textToIPA` từ `@jocelyn-stericker/espeak-phonemes`.
+  - Handle init/lazy singleton; catch Windows ESM path bug (dùng `createESpeak` với `moduleFactory` + `data.archive`).
+  - Files: `espeakPhonemeEngine.ts`.
+  - Verify: spike-style unit/browser verify: `hello` → `həlˈəʊ`.
 
-### Checkpoint 2: Engine works
-- [ ] Load extension → OCR init → model load → recognize 1 ImageData → return text+bbox
-- [ ] Browser test: stealth-chrome-devtools
+- [ ] **Task 5: Pronunciation engine orchestrator**
+  - Implement `src/features/pronunciation/services/pronunciationEngine.ts`: gọi `espeakPhonemeEngine` → `ipaSegmenter` → `phonemeTimelineEstimator`, trả về `PronunciationResult`.
+  - `PronunciationAudio` được lấy qua audio source chain (Task 7). Trong task này có thể mock audio = null.
+  - Tests: `src/features/pronunciation/services/pronunciationEngine.test.ts`.
+  - Verify: PronunciationResult shape đúng.
 
-### Phase 3: Video OCR pipeline
+- [ ] **Task 6: Settings schema migration**
+  - Thêm `PronunciationSettings` + `AudioEngineKind` vào `src/entities/settings/types.ts`.
+  - Thêm defaults vào `src/shared/config/config.ts` (`DEFAULT_SETTINGS` hoặc `DEFAULT_DICTIONARY_POPUP_SETTINGS` nếu là per-profile).
+  - Bump `CURRENT_SCHEMA_VERSION` 24 → 25 trong `src/shared/lib/storage/settingsStore.ts`; viết migration v24 → v25.
+  - Tests: cập nhật/settings tests hiện có nếu cần.
+  - Verify: `loadSettings()` migrate old settings với default pronunciation.
 
-- [ ] T8: Subtitle region detector (bottom % configurable)
-- [ ] T9: DRM guard (black-frame detect → abort + user error)
-- [ ] T10: Frame sampler (rVFC + time gate 3fps + luma-diff 32x8 + text dedup)
-- [ ] T11: OCR cache (videoId, timestampBucket, LRU)
-- [ ] T12: Video OCR controller (wire sampler + guard + orchestrator + cache)
+### Checkpoint 2
 
-### Checkpoint 3: Video OCR works
-- [ ] Hard-sub video → OCR runs → dedup works → subtitle change detected
-- [ ] DRM video → black frame detect → abort + user error
-- [ ] Browser test: mock YouTube hard-sub
+- [ ] Phoneme engine có thể tạo PronunciationResult từ text.
+- [ ] Settings migration pass tests.
 
-### Phase 4: Overlay + dictionary integration
+### Phase 3: Audio Source Abstraction
 
-- [ ] T13: OCR token wrap — bbox + script-run → hitbox spans
-- [ ] T14: OCR overlay mount/unmount (transparent, pointer-events)
-- [ ] T15: Language router — script-run → language plugin
-- [ ] T16: Wire OCR → subtitleTriggerController.attach() → dictionary
+- [ ] **Task 7: Refactor `TtsEngine` / `ttsEngineService` cho audio source chain**
+  - Định nghĩa `TtsEngine` interface: `{ speak(text, lang): Promise<PronunciationAudio | null>; isAvailable(): boolean; kind: AudioEngineKind }`.
+  - Tạo các engines: `NativeAudioEngine`, `SupertonicAudioEngine`, `BrowserTtsEngine`, `EspeakAudioEngine`.
+  - `ttsEngineService.ts` chọn engine theo settings fallback chain; trả về `PronunciationAudio` (Float32Array + sampleRate + kind + maybe sourceUrl).
+  - Files: `src/features/dictionaryPopup/services/ttsEngineService.ts`, mới `src/features/dictionaryPopup/services/*AudioEngine.ts`.
+  - Verify: unit tests pass; không phá vỡ TTS hiện tại.
 
-### Checkpoint 4: Click → dictionary
-- [ ] OCR hitbox click → dictionary popup → correct word
-- [ ] Mixed: click "北京" → Chinese dict, click "watching" → English dict (same box)
-- [ ] Browser test
+- [ ] **Task 8: eSpeak TTS audio runner (offscreen)**
+  - Tạo `src/entrypoints/offscreen/pronunciationRunner.ts` load `espeakng.js-cdn`, synthesize audio.
+  - Thêm message handler background: `PRONUNCIATION_ESPEAK_TTS`.
+  - Download eSpeak TTS data on-demand, lưu OPFS/Cache.
+  - Files: `src/entrypoints/offscreen/pronunciationRunner.ts`, `src/entrypoints/background/handlers/pronunciation.ts`, `src/entities/message/types.ts`.
+  - Verify: eSpeak audio synthesis trong offscreen document.
 
-### Phase 5: Manager Panel UI + persistence
+### Checkpoint 3
 
-- [ ] T17: OcrSettingsPanel component (toggle + status + language mode + region)
-- [ ] T18: Add OCR tab to SubtitleManagerPanel
-- [ ] T19: Wire toggle → settings → OCR init/dispose
-- [ ] T20: Per-origin persistence — reload/SPA-nav handling
+- [ ] Audio cả từ có thể phát qua chain.
+- [ ] eSpeak audio source hoạt động (nếu được chọn).
 
-### Checkpoint 5: Manager Panel works
-- [ ] Toggle ON/OFF works, persistence across reload/SPA-nav
-- [ ] Browser test
+### Phase 4: UI
 
-### Phase 6: Polish + verify
+- [ ] **Task 9: PronunciationPanel component**
+  - Tạo `src/features/dictionaryPopup/ui/PronunciationPanel.tsx` + `.module.css`.
+  - Hiển thị `PronunciationResult.phonemes` dạng các segment có thể click. Highlight segment đang active.
+  - Props: `result: PronunciationResult`, `onPlay(phoneme)`, `activePhoneme`.
+  - Files: 2 files.
+  - Verify: design-system showcase hoặc storybook.
 
-- [ ] T21: WebGPU shader JIT warmup (dummy frame during init)
-- [ ] T22: Error handling — OCR_ERROR → RETRY/FALLBACK
-- [ ] T23: Dictionary probe cache (createDictionaryProbeAsync)
-- [ ] T24: Update docs/2-architechture-system.md
-- [ ] T25: Full browser test — hard-sub video + mixed-language + DRM
+- [ ] **Task 10: Integrate PronunciationPanel into popup**
+  - Quyết định vị trí: tích hợp vào `AudioPanel` dưới audio list (MVP) hoặc tab riêng.
+  - Cập nhật `CandidateView` để truyền `PronunciationResult` xuống `AudioPanel`.
+  - Cập nhật `useCandidate`/`useDictionaryToolbar` để fetch `PronunciationResult` khi term thay đổi.
+  - Files: `AudioPanel.tsx`, `CandidateView.tsx`, `useCandidate.ts` hoặc `useDictionaryToolbar.ts`, `types.ts`.
+  - Verify: popup hiển thị phoneme list.
 
-### Checkpoint 6: Complete
-- [ ] All success criteria in spec met
-- [ ] `npm run build` + `typecheck` + `test:unit` pass
-- [ ] Browser verify pass
-- [ ] Ready for review
+- [ ] **Task 11: Phoneme click play/highlight**
+  - Implement logic trong `PronunciationPanel` hoặc hook: khi click phoneme, play contextual segment từ `PronunciationAudio`.
+  - Dùng `AudioBufferSourceNode` hoặc `<audio>` với `mediaFragment`? Vì audio là Float32Array, dùng Web Audio API.
+  - Edge case: audio null → chỉ highlight.
+  - Files: `PronunciationPanel.tsx`, helper `src/features/pronunciation/services/phonemeAudioPlayer.ts`.
+  - Verify: click phoneme play/highlight; no audio → only highlight.
+
+- [ ] **Task 12: Pronunciation settings UI**
+  - Tạo `src/features/settings/ui/PronunciationSettingsPanel.tsx` cho phép reorder `AudioEngineKind[]` và toggle download eSpeak TTS.
+  - Wire vào options page (tìm nơi settings panel được đăng ký).
+  - Files: 2-3 files.
+  - Verify: settings persist + migrate.
+
+### Checkpoint 4
+
+- [ ] Phoneme click play/highlight hoạt động.
+- [ ] Settings UI cho phép chọn/reorder audio engines.
+
+### Phase 5: Verify & Polish
+
+- [ ] **Task 13: E2E / browser verify**
+  - Viết Playwright test hoặc dùng `testing-extension-browser` skill: mở mock page, mở popup, tra từ, thấy phoneme list, click phoneme, nghe audio.
+  - Files: `e2e/pronunciation.spec.ts` hoặc tương đương.
+  - Verify: test pass.
+
+- [ ] **Task 14: Pre-commit gate**
+  - `npm run lint`, `npx tsc --noEmit`, `npm run test:unit`, `npm run build`.
+  - `design-system-guardian` nếu UI thay đổi.
+  - Update `docs/2-architechture-system.md` nếu cần.
+
+### Checkpoint 5
+
+- [ ] All gates pass.
+- [ ] PR ready.
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation | Status |
-|---|---|---|---|
-| WebGPU không hoạt động trong offscreen | High | Spike T0b PASS — WebGPU works. Fallback WASM (validated). | ✅ Resolved |
-| WASM multithread cần COOP/COEP (SharedArrayBuffer) | Med | WASM single-thread đã đủ (3493ms cold, 263ms warm). Multithread = future optimization. | ✅ Mitigated |
-| DRM black frame im lặng | High | drmGuard T9 detect + abort. themoviebox.xyz NOT DRM (verified T0b). DRM guard cho Netflix/Disney+ only. | ✅ Scoped |
-| Remotely-hosted WASM → CWS reject | High | Bundle .wasm T4, set wasmPaths. | ⏳ T4 |
-| Offscreen conflict ffmpeg | Med | Extend cùng html, KHÔNG close offscreen. | ⏳ T5 |
-| luma-diff false positive (nền chuyển động) | Med | Text-level dedup fallback. | ⏳ T10 |
-| Model download fail (CDN slow/blocked) | Low | T0b verified CDN works (11147ms). IndexedDB cache (951ms cached). | ✅ Resolved |
-| Mixed intra-box segment quality | Med | Script-run segmenter (state machine). Ponytail: hasTerm:()=>false. | ⏳ T2 |
-| Memory > 150MB trên low-end | Med | Dispose khi OCR disable. WebGPU 84-105MB (verified T0b). | ✅ Within budget |
+| Risk | Impact | Mitigation |
+|---|---|---|
+| `@jocelyn-stericker/espeak-phonemes` ESM path bug trên Windows dev | High | Dùng `createESpeak` với `moduleFactory` + `data.archive` thay vì `textToIPA`. |
+| Vite không bundle `.wasm`/`.tar` đúng | High | Test build dev + production, dùng `?url` hoặc copy plugin nếu cần. |
+| eSpeak TTS data download lớn/lỗi | Med | Download on-demand; fallback lên browser TTS; không bundle. |
+| Estimated timeline không chính xác, user cảm thấy click phoneme không khớp audio | Med | Document accepted risk; để user feedback trước khi cải tiến. |
+| Offscreen document conflict với existing runners | Med | Add runner vào `ffmpeg.html` và queue messages; test cùng TTS/ocr/ffmpeg. |
+| Settings schema migration lỗi trên users cũ | Med | Unit test migration v24→v25; forward-compat via `mergeNestedObjectDefaults`. |
 
-## Open Questions
+## Open Questions (to resolve in Task 6 or Task 10)
 
-1. ~~WebGPU + WASM multithread trong offscreen~~ — **RESOLVED T0b**: WebGPU works. WASM single-thread đủ.
-2. ~~Model hosting~~ — **RESOLVED T0b**: CDN lazy-load works (11147ms), IndexedDB cache (951ms).
-3. luma-diff threshold — tune sau T10
-4. videoId cho non-YouTube — hash(src + duration)
-5. DRM scope — themoviebox.xyz NOT DRM (verified). DRM guard cho Netflix/Disney+ only.
+1. **Pronunciation settings nằm top-level (`settings.pronunciation`) hay trong `dictionaryPopup` (`settings.dictionaryPopup.pronunciation`)?** — Gợi ý: nếu pronunciation là global, top-level; nếu per-language-profile, lồng trong `LanguageProfile.dictionaryPopup`. Do MVP English-only, top-level đơn giản hơn.
+2. **PronunciationPanel hiển thị trong tab Audio hay tab mới?** — Task 10 quyết định khi có prototype; gợi ý trong Audio tab trước.
