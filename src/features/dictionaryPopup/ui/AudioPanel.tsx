@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
+import type { AudioEngineKind } from '@/features/pronunciation/types';
 import type { PronunciationResult } from '@/features/pronunciation/types';
 import type { AudioItem } from '../types';
 
@@ -23,6 +24,21 @@ export interface AudioPanelProps {
 const TTS_WORD_ID = '__tts_word__';
 const TTS_SENTENCE_ID = '__tts_sentence__';
 
+function toAudioEngineKind(source: AudioItem['source']): AudioEngineKind {
+  switch (source) {
+    case 'community':
+      return 'native';
+    case 'system-tts':
+      return 'browserTts';
+    case 'cloud-tts':
+      return 'supertonic';
+    case 'local':
+      return 'localFile';
+    default:
+      return 'native';
+  }
+}
+
 export function AudioPanel({
   items,
   loading,
@@ -36,6 +52,15 @@ export function AudioPanel({
 }: AudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
+  const [activeAudioUrl, setActiveAudioUrl] = useState<string | undefined>();
+  const [activeAudioSource, setActiveAudioSource] = useState<AudioEngineKind>('native');
+
+  // Phoneme playback only makes sense for word audio; clear it on sentence tab.
+  useEffect(() => {
+    if (activeGroup !== 'word') {
+      setActiveAudioUrl(undefined);
+    }
+  }, [activeGroup]);
 
   // Build display list: real items + TTS fallback item if no real items for group
   const selectedWordUrl = useMemo(() => {
@@ -43,6 +68,11 @@ export function AudioPanel({
     const selected = wordItems.find((item) => selection.get(item.id) ?? item.defaultSelected);
     return selected?.url ?? wordItems[0]?.url;
   }, [items, selection]);
+
+  // The URL fed to the pronunciation panel: prefer the item the user just played,
+  // otherwise fall back to the selected/first word audio.
+  const pronunciationAudioUrl = activeAudioUrl ?? selectedWordUrl;
+  const pronunciationAudioSource = activeAudioUrl ? activeAudioSource : 'native';
 
   const displayItems = useMemo(() => {
     const real = items.filter((item) => item.kind === activeGroup).slice(0, 3);
@@ -83,8 +113,8 @@ export function AudioPanel({
 
           <PronunciationPanel
             pronunciation={pronunciation}
-            audioUrl={selectedWordUrl}
-            audioSource="native"
+            audioUrl={pronunciationAudioUrl}
+            audioSource={pronunciationAudioSource}
           />
 
           {displayItems.map((item) => {
@@ -102,6 +132,10 @@ export function AudioPanel({
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();
                       return;
+                    }
+                    if (activeGroup === 'word' && item.url) {
+                      setActiveAudioUrl(item.url);
+                      setActiveAudioSource(toAudioEngineKind(item.source));
                     }
                     if (audioRef.current) {
                       audioRef.current.pause();

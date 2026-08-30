@@ -12,7 +12,7 @@ export const WordStatusSchema = z.enum(['unknown', 'known', 'tracking', 'ignore'
 export const ReadingKindSchema = z.enum(['ipa', 'pinyin', 'none']);
 export const MatchSourceSchema = z.enum(['dictionary', 'plugin', 'fallback']);
 export const AudioKindSchema = z.enum(['word', 'sentence']);
-export const AudioSourceKindSchema = z.enum(['community', 'system-tts', 'cloud-tts']);
+export const AudioSourceKindSchema = z.enum(['community', 'system-tts', 'cloud-tts', 'local']);
 export const AudioStateSchema = z.enum([
   'idle',
   'loading',

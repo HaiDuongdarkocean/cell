@@ -40,6 +40,7 @@ export interface PronunciationAudio {
 
 /** Available audio engines, ordered by default fallback priority. */
 export type AudioEngineKind =
+  | 'localFile'
   | 'native'
   | 'supertonic'
   | 'browserTts'
