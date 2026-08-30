@@ -111,6 +111,9 @@ dist.zip
 /tmp
 /tmp-*
 
+# Root-level prototype mockups and temp media downloads.
+/mockup-*.html
+/tmp_*
 
 # Private keys & CRX binaries (test signing artifacts — NEVER commit secrets).
 *-key.pem
