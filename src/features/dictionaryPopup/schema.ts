@@ -51,6 +51,7 @@ export const AudioItemSchema = z.object({
   accentId: z.string().optional(),
   state: AudioStateSchema,
   url: z.string().optional(),
+  audioBytes: z.instanceof(Uint8Array).optional(),
   defaultSelected: z.boolean(),
 });
 

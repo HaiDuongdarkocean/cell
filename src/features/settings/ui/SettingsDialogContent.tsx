@@ -15,6 +15,7 @@ import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from './MultiSelect';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
+import { PronunciationSettingsPanel } from './PronunciationSettingsPanel';
 import { LocalPronunciationSettingsPanel } from './LocalPronunciationSettingsPanel';
 
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
@@ -110,11 +111,12 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
   // Navigation orientation: horizontal chip bar on mobile (< 600px), vertical sidebar on desktop.
   // Uses native matchMedia — no dependency, O(1) listener.
   const [navOrientation, setNavOrientation] = useState<'vertical' | 'horizontal'>(() =>
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 599px)').matches
       ? 'horizontal'
       : 'vertical',
   );
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const mq = window.matchMedia('(max-width: 599px)');
     const handleChange = (e: MediaQueryListEvent): void =>
       setNavOrientation(e.matches ? 'horizontal' : 'vertical');
@@ -141,7 +143,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
     { id: 'download', label: 'Download', icon: 'download' },
     { id: 'cardCreator', label: 'Card Creator', icon: 'layers' },
     { id: 'dictionaryPopup', label: 'Dictionary Popup', icon: 'bookOpen' },
-    { id: 'localPronunciation', label: 'Local Pronunciation', icon: 'waveform' },
+    { id: 'pronunciation', label: 'Pronunciation', icon: 'audioWave' },
+    { id: 'localPronunciation', label: 'Local Pronunciation', icon: 'audioWave' },
     { id: 'localPlayer', label: 'Local Player', icon: 'playRoundedRect' },
     { id: 'theme', label: 'Theme', icon: 'sun' },
     { id: 'tts', label: 'TTS Voices', icon: 'volumeHigh' },
@@ -474,6 +477,24 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <DictionaryPopupSettingsPanel
                   settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
+                />
+              </VStack>
+            </Card>
+
+            {/* === Card 7.4: Pronunciation === */}
+            <Card
+              ref={(el: HTMLDivElement) => { sectionRefs.current.pronunciation = el; }}
+              className={styles.sectionCard}
+              data-section="pronunciation"
+            >
+              <div className={styles.cardHeader}>
+                <h4 className={styles.cardTitle}>Pronunciation</h4>
+                <p className={styles.cardDesc}>Choose and reorder the audio source fallback chain.</p>
+              </div>
+              <VStack gap="0" className={styles.cardBody}>
+                <PronunciationSettingsPanel
+                  settings={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
+                  onChange={(p) => onChange({ ...settings, pronunciation: p })}
                 />
               </VStack>
             </Card>

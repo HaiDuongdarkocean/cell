@@ -7,10 +7,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 import { translateSentence } from '@/features/cardCreator/media/translation';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { MessageResponse } from '@/entities/message/types';
 import { pronunciationEngine } from '@/features/pronunciation/services/pronunciationEngineSingleton';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
 import type { PronunciationResult } from '@/features/pronunciation/types';
 import type {
   LookupResult,
@@ -18,10 +20,8 @@ import type {
   AudioItem,
   ImageItem,
   ExternalDictLink,
-  FetchCommunityAudioResponse,
   FetchImagesResponse,
   TtsFetchAudioResponse,
-  FetchLocalAudioResponse,
 } from '../types';
 
 export interface UseDictionaryToolbarOptions {
@@ -178,28 +178,19 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
-        const [localRes, communityRes, ttsRes] = await Promise.all([
-          sendMessage<MessageResponse<FetchLocalAudioResponse>>({
-            type: MESSAGE_TYPES.FETCH_LOCAL_AUDIO,
-            payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
-          }),
-          sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
-            type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
-            payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
-          }),
+        const settings = await loadSettings();
+        const pronunciationSettings = settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS;
+        const orchestrator = new PronunciationAudioOrchestrator(pronunciationSettings);
+
+        const [wordItems, ttsRes] = await Promise.all([
+          orchestrator.resolve(result.term, result.langCode),
           sendMessage<MessageResponse<TtsFetchAudioResponse>>({
             type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
             payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
           }),
         ]);
 
-        const items: AudioItem[] = [];
-        if (localRes?.success && localRes.data?.items) {
-          items.push(...localRes.data.items);
-        }
-        if (communityRes?.success && communityRes.data?.items) {
-          items.push(...communityRes.data.items);
-        }
+        const items: AudioItem[] = [...wordItems];
 
         if (ttsRes?.success && ttsRes.data?.url) {
           items.push({
@@ -214,7 +205,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         }
 
         if (items.length === 0) {
-          setAudioError(communityRes?.error ?? 'Audio fetch failed');
+          setAudioError(ttsRes?.error ?? 'Audio fetch failed');
         }
 
         if (mountedRef.current) {

@@ -216,6 +216,32 @@ export interface PronunciationResult {
 
 ## Open Questions
 
-1. **Vị trí PronunciationPanel:** Hiển thị trong tab **Audio** hiện có (dưới audio list) hay tạo tab **Pronunciation** riêng? — *Accepted risk: quyết định trong phase design-system-guardian khi có prototype.*
-2. **Duration weighting:** Uniform per phoneme hay vowel/diphthong dài hơn consonant? — *Accepted risk: bắt đầu uniform, tuning sau khi có user feedback.*
-3. **eSpeak TTS data delivery:** Bundle toàn bộ 3.25 MB hay download on-demand khi user chọn eSpeak audio source? — *Accepted risk: download on-demand, bundle chỉ English phoneme data.*
+1. **Vị trí PronunciationPanel:** Hiển thị trong tab **Audio** hiện có (dưới audio list) hay tạo tab **Pronunciation** riêng? — *Resolved: PronunciationPanel renders inside the existing Audio tab, below the audio source list.*
+2. **Duration weighting:** Uniform per phoneme hay vowel/diphthong dài hơn consonant? — *Resolved: `phonemeTimelineEstimator` uses a weighted heuristic (vowels/diphthongs longer than consonants) and re-estimates once the decoded audio duration is known.*
+3. **eSpeak TTS data delivery:** Bundle toàn bộ 3.25 MB hay download on-demand khi user chọn eSpeak audio source? — *Resolved: download on-demand, controlled by `PronunciationSettings.downloadEspeakTtsData`; English phoneme data is bundled via `@jocelyn-stericker/espeak-phonemes`.*
+
+---
+
+## Implementation Status
+
+Implemented as **Ocean Pronunciation Engine v1**:
+
+- **Audio fallback orchestration** — `PronunciationAudioOrchestrator` resolves word/sentence audio through `localFile → native → supertonic → browserTts → espeak` in user-configurable order.
+- **Local audio bytes** — `FETCH_LOCAL_AUDIO` message + `localAudio.ts` handler stream user-supplied `.zip`/`.dsl`/audio packages through the message bus.
+- **Phoneme engine** — `@jocelyn-stericker/espeak-phonemes` wrapped in `espeakPhonemeEngine.ts`; `ipaSegmenter.ts` splits IPA into single phoneme units (e.g. `tʃ`, `dʒ`, `əʊ`); `phonemeTimelineEstimator.ts` produces weighted start/end times.
+- **Phoneme playback** — `PronunciationPanel.tsx` displays clickable phonemes; `phonemeAudioPlayer.ts` slices decoded word audio or falls back to eSpeak robot phoneme synthesis.
+- **Settings UI** — `PronunciationSettingsPanel.tsx` (and `LocalPronunciationSettingsPanel.tsx`) lets users reorder fallback engines and toggle eSpeak TTS data download.
+- **Dictionary popup integration** — `AudioPanel.tsx` and `useDictionaryToolbar.ts` use the orchestrator to supply `wordAudioUrls`/`sentenceAudioUrls` for the card creator.
+
+### Verification
+
+- `npx tsc --noEmit` ✅
+- `npm run build` ✅
+- `npx playwright test e2e/extension-local-pronunciation-audio.spec.ts` ✅
+- Targeted unit tests for pronunciation, settings, and dictionary popup pass ✅
+- `design-system-guardian` audit for new UI files ✅
+
+### Notes
+
+- Full `npm run lint` still reports pre-existing errors in files outside the pronunciation scope (e.g. `subtitleDiscovery`, `supertonicInference`, `subtitle` modules).
+- Full `npm run test:unit` still has pre-existing failures in `sentenceModule`, `resolveWordAtTip`, `webTriggerController`, `PopupDictionary`, `OcrSettingsPanel`, and `chinesePlugin.fixture` tests unrelated to this feature.

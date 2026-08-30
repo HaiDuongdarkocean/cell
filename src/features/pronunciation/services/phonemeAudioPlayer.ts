@@ -41,12 +41,13 @@ export function playPhoneme(
   source.buffer = buffer;
   source.connect(ctx.destination);
 
-  if (ctx.state === 'suspended') {
-    void ctx.resume();
-  }
-
-  return new Promise<void>((resolve) => {
-    source.onended = () => resolve();
-    source.start(0);
-  });
+  return (async (): Promise<void> => {
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    return new Promise<void>((resolve) => {
+      source.onended = () => resolve();
+      source.start(0);
+    });
+  })();
 }

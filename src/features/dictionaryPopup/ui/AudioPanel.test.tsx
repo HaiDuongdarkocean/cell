@@ -3,14 +3,15 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { AudioPanel } from './AudioPanel';
 import type { AudioItem } from '../types';
 
-function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: string, selected = false): AudioItem {
+function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: string, selected = false, audioBytes?: Uint8Array): AudioItem {
   return {
     id,
     kind,
     label,
     url,
-    source: 'community',
-    state: url ? 'idle' : 'error',
+    source: audioBytes ? 'local' : 'community',
+    state: url || audioBytes ? 'idle' : 'error',
+    audioBytes,
     defaultSelected: selected,
   };
 }
@@ -50,9 +51,9 @@ describe('AudioPanel', () => {
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    // TTS item label: "hello · TTS"
-    expect(within(panel).getByText('hello')).toBeInTheDocument();
+    // TTS and eSpeak fallback items are shown when no real word audio exists.
     expect(within(panel).getByText('TTS')).toBeInTheDocument();
+    expect(within(panel).getByText('eSpeak')).toBeInTheDocument();
   });
 
   it('triggers onTtsWord when clicking play on TTS word fallback item', () => {
@@ -66,7 +67,7 @@ describe('AudioPanel', () => {
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
+    const playBtn = within(panel).getByRole('button', { name: /Play TTS: hello · TTS/i });
     fireEvent.click(playBtn);
     expect(onTtsWord).toHaveBeenCalled();
   });
@@ -140,5 +141,38 @@ describe('AudioPanel', () => {
     // TTS fallback for sentence: "hello world · TTS"
     expect(within(panel).getByText('hello world')).toBeInTheDocument();
     expect(within(panel).getByText('TTS')).toBeInTheDocument();
+  });
+
+  it('creates a blob URL from audioBytes for local items and passes it to the pronunciation panel', () => {
+    const createObjectURL = jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-audio');
+    const localItem = makeAudio('local-1', 'word', 'Local · forvo', undefined, false, new Uint8Array([1, 2, 3]));
+    const onTtsWord = jest.fn();
+
+    const { rerender } = render(
+      <AudioPanel
+        {...baseProps}
+        items={[localItem]}
+        onTtsWord={onTtsWord}
+      />,
+    );
+
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    createObjectURL.mockRestore();
+
+    // PronunciationPanel should receive the blob URL once the effect has run.
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    expect(panel.querySelector('[data-cell-id="pronunciation-no-audio"]')).toBeNull();
+
+    // When unmounting / changing items, the old blob URL is revoked.
+    const revokeObjectURL = jest.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
+    rerender(
+      <AudioPanel
+        {...baseProps}
+        items={[]}
+        onTtsWord={onTtsWord}
+      />,
+    );
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:local-audio');
+    revokeObjectURL.mockRestore();
   });
 });

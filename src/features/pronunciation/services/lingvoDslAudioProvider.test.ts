@@ -31,8 +31,6 @@ jest.mock('./zipAudioResolver', () => ({
 }));
 
 describe('LingvoDslAudioProvider', () => {
-  const createObjectURLSpy = jest.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetFileHandle.mockReset();
@@ -40,7 +38,6 @@ describe('LingvoDslAudioProvider', () => {
     mockGetLingvoDslAudioPaths.mockReset();
     mockSingleResolveAudio.mockReset();
     mockSplitResolveAudio.mockReset();
-    createObjectURLSpy.mockReturnValue('blob:mock');
   });
 
   it('returns empty array when no local package is configured', async () => {
@@ -63,7 +60,7 @@ describe('LingvoDslAudioProvider', () => {
     mockVerifyPermission.mockResolvedValue(true);
     mockGetLingvoDslAudioPaths.mockResolvedValue(['hello.mp3', 'hello2.mp3']);
     mockSingleResolveAudio
-      .mockResolvedValueOnce(new Blob(['a'], { type: 'audio/mpeg' }))
+      .mockResolvedValueOnce(new Uint8Array([1, 2, 3]))
       .mockResolvedValueOnce(undefined);
 
     const settings: LocalFileAudioSettings = {
@@ -83,7 +80,8 @@ describe('LingvoDslAudioProvider', () => {
     expect(items).toHaveLength(1);
     expect(items[0].source).toBe('local');
     expect(items[0].kind).toBe('word');
-    expect(items[0].url).toBe('blob:mock');
+    expect(items[0].audioBytes).toEqual(new Uint8Array([1, 2, 3]));
+    expect(items[0].url).toBeUndefined();
   });
 
   it('resolves audio items for a split package', async () => {
@@ -91,7 +89,7 @@ describe('LingvoDslAudioProvider', () => {
     mockGetFileHandle.mockResolvedValue(dirHandle);
     mockVerifyPermission.mockResolvedValue(true);
     mockGetLingvoDslAudioPaths.mockResolvedValue(['hello.mp3']);
-    mockSplitResolveAudio.mockResolvedValue(new Blob(['a'], { type: 'audio/mpeg' }));
+    mockSplitResolveAudio.mockResolvedValue(new Uint8Array([4, 5, 6]));
 
     const settings: LocalFileAudioSettings = {
       packageType: 'split',
