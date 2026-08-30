@@ -34,11 +34,11 @@ function makeResult(term: string, overrides: Partial<LookupResult> = {}): Lookup
   };
 }
 
-function makeAudio(id: string, selected = false): AudioItem {
+function makeAudio(id: string, selected = false, source: AudioItem['source'] = 'community'): AudioItem {
   return {
     id,
     kind: 'word',
-    source: 'community',
+    source,
     label: 'Test audio',
     state: 'idle',
     url: `https://example.com/${id}.mp3`,
@@ -61,6 +61,9 @@ describe('useDictionaryToolbar', () => {
     mockSendMessage.mockReset();
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [] } } as T;
       }
@@ -128,6 +131,34 @@ describe('useDictionaryToolbar', () => {
     await waitFor(() => expect(result.current.audioItems.length).toBe(1));
     expect(result.current.audioItems[0].id).toBe('a1');
     expect(result.current.selectedAudioCount).toBe(1);
+  });
+
+  it('includes local audio items when FETCH_LOCAL_AUDIO returns them', async () => {
+    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+      const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [makeAudio('local-1', false, 'local'), makeAudio('local-2', false, 'local')] } } as T;
+      }
+      if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
+      if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
+        return { success: false, error: 'tts failed' } as T;
+      }
+      return { success: true } as T;
+    });
+
+    const { result } = renderHook(() => useDictionaryToolbar({
+      result: makeResult('hello'),
+      contextSentence: '',
+      sourceLang: 'en',
+      targetLang: 'vi',
+    }));
+
+    act(() => { result.current.setActiveTab('audio'); });
+
+    await waitFor(() => expect(result.current.audioItems.length).toBe(2));
+    expect(result.current.audioItems[0].id).toBe('local-1');
   });
 
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {
