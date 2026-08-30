@@ -117,10 +117,30 @@ export interface TtsVoiceRow {
 
 /** Available audio sources for pronunciation, ordered by fallback priority. */
 export type AudioEngineKind =
+  | 'localFile'
   | 'native'
   | 'supertonic'
   | 'browserTts'
   | 'espeak';
+
+/** Local audio package layout. */
+export type LocalPackageType = 'single' | 'split';
+
+/** Settings for the local-file pronunciation audio provider. */
+export interface LocalFileAudioSettings {
+  /** Package layout. 'single' = one .dsl.files.zip; 'split' = many zips by pattern. */
+  readonly packageType: LocalPackageType;
+  /** Persisted file-handle id for the .dsl index. */
+  readonly dslFileHandleId: string | null;
+  /** Persisted file-handle id for the single .dsl.files.zip (packageType 'single'). */
+  readonly audioArchiveHandleId: string | null;
+  /** Persisted directory-handle id for split archives (packageType 'split'). */
+  readonly splitArchiveDirectoryHandleId: string | null;
+  /** Filename pattern for split archives, e.g. 'ForvoEnglish_{firstLetter}.zip'. */
+  readonly splitArchivePattern: string;
+  /** Last time the .dsl index was (re)built. */
+  readonly lastIndexedAt: number | null;
+}
 
 /** Pronunciation engine settings slice (spec ocean-pronunciation-engine). */
 export interface PronunciationSettings {
@@ -128,6 +148,8 @@ export interface PronunciationSettings {
   readonly fallbackEngines: readonly AudioEngineKind[];
   /** Whether to download eSpeak TTS voice data on demand. */
   readonly downloadEspeakTtsData: boolean;
+  /** Local Forvo/Lingvo DSL audio package settings. */
+  readonly localFile: LocalFileAudioSettings;
 }
 
 /** TTS settings slice (spec popup-dictionary-4tab-logic). */

@@ -4,6 +4,7 @@ import { NetworkInterceptor } from '@/entrypoints/background/networkInterceptor'
 import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
@@ -654,12 +655,12 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→...→v24 which stamps schemaVersion: 24
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang, V17 remove orbital badge pointer trigger, V18 popupSheetHeightVh per-mode size persistence, V19 play-pause shortcut, V20 generate-native, V21 subtitleApiKeys, V22 localPlayerSettings, V23 Language Profile, V24 nested defaults merge).
+    // loadSettings() runs migration v0→v1→...→v26 which stamps schemaVersion: CURRENT_SCHEMA_VERSION
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang, V17 remove orbital badge pointer trigger, V18 popupSheetHeightVh per-mode size persistence, V19 play-pause shortcut, V20 generate-native, V21 subtitleApiKeys, V22 localPlayerSettings, V23 Language Profile, V24 nested defaults merge, V26 localFile audio package).
     // V9 migration rebuilds subtitleBlockSettings from legacy layer yOffsetPercent (defaults 18/6 → 12).
     expect(response.data).toMatchObject({
       ...storedSettings,
-      schemaVersion: 24,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       subtitleBlockSettings: { yOffsetPercent: 12, globalScale: 1, bgOpacity: 0.7 },
       localPlayerSettings: { subtitleMatchEnabled: true, resumePromptEnabled: true, lastDirectoryId: null },
       universalNativeLanguage: 'vi',

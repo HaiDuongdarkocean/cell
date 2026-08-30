@@ -26,7 +26,7 @@ afterAll(() => {
 });
 
 describe('loadSettings migration', () => {
-  it('migrates v24 settings to v25 and adds pronunciation defaults', async () => {
+  it('migrates v24 settings to v26 and adds pronunciation defaults', async () => {
     const v24Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 24,
@@ -43,7 +43,7 @@ describe('loadSettings migration', () => {
     expect(settings.pronunciation).toEqual(DEFAULT_PRONUNCIATION_SETTINGS);
   });
 
-  it('keeps stored pronunciation values when already v25', async () => {
+  it('keeps stored pronunciation values when migrating v25 to v26', async () => {
     const storedSettings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 25,
@@ -59,8 +59,9 @@ describe('loadSettings migration', () => {
 
     const settings = await loadSettings();
 
-    expect(settings.schemaVersion).toBe(25);
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(settings.pronunciation?.fallbackEngines).toEqual(['browserTts', 'espeak']);
     expect(settings.pronunciation?.downloadEspeakTtsData).toBe(true);
+    expect(settings.pronunciation?.localFile).toEqual(DEFAULT_PRONUNCIATION_SETTINGS.localFile);
   });
 });

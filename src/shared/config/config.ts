@@ -201,10 +201,18 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   audioFallback: 'community-then-tts',
 };
 
-/** Default Pronunciation settings (spec ocean-pronunciation-engine — schema v25). */
+/** Default Pronunciation settings (spec ocean-pronunciation-engine + local-pronunciation-audio — schema v26). */
 export const DEFAULT_PRONUNCIATION_SETTINGS: PronunciationSettings = {
-  fallbackEngines: ['native', 'supertonic', 'browserTts', 'espeak'],
+  fallbackEngines: ['localFile', 'native', 'supertonic', 'browserTts', 'espeak'],
   downloadEspeakTtsData: false,
+  localFile: {
+    packageType: 'single',
+    dslFileHandleId: null,
+    audioArchiveHandleId: null,
+    splitArchiveDirectoryHandleId: null,
+    splitArchivePattern: '',
+    lastIndexedAt: null,
+  },
 };
 
 /** Default Local Player settings (spec local-video-player.md — schema v22). */

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { CURRENT_SCHEMA_VERSION, loadSettings } from '@/shared/lib/storage/settingsStore';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 
 const storage: Record<string, unknown> = {};
@@ -43,7 +43,7 @@ describe('settingsStore keyboard shortcut migrations', () => {
       ]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(24);
+    expect(stored.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(stored.keyboardShortcuts).toEqual(
       expect.arrayContaining([
         { action: 'generate-native', key: 'h' },
@@ -93,7 +93,7 @@ describe('settingsStore keyboard shortcut migrations', () => {
       expect.arrayContaining([{ action: 'play-pause', key: ' ' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(24);
+    expect(stored.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     const playPauseBindings = stored.keyboardShortcuts.filter((s) => s.action === 'play-pause');
     expect(playPauseBindings.length).toBe(1);
     expect(playPauseBindings[0].key).toBe(' ');

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { CURRENT_SCHEMA_VERSION, loadSettings } from '@/shared/lib/storage/settingsStore';
 import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_LOCAL_PLAYER_SETTINGS } from '@/shared/config/config';
 
 const storage: Record<string, unknown> = {};
@@ -33,7 +33,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(24);
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(loaded.localPlayerSettings).toEqual(DEFAULT_LOCAL_PLAYER_SETTINGS);
   });
 
@@ -51,7 +51,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(24);
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     // Existing fields preserved.
     expect(loaded.concurrentDownloads).toBe(7);
     expect(loaded.defaultQuality).toBe('720p');
@@ -83,7 +83,7 @@ describe('settingsStore v21→v22 migration (localPlayerSettings)', () => {
 
     const loaded = await loadSettings();
 
-    expect(loaded.schemaVersion).toBe(24);
+    expect(loaded.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(loaded.localPlayerSettings.subtitleMatchEnabled).toBe(true);
     expect(loaded.localPlayerSettings.resumePromptEnabled).toBe(true);
     expect(loaded.localPlayerSettings.lastDirectoryId).toBeNull();
