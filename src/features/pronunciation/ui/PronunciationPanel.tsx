@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/shared/ui/Button';
 import { decodeAudioUrl } from '../services/audioDecoder';
 import { playPhoneme } from '../services/phonemeAudioPlayer';
 import type { AudioEngineKind, Phoneme, PronunciationAudio, PronunciationResult } from '../types';
@@ -84,16 +85,19 @@ export function PronunciationPanel({
             return <span key={idx} className={styles.separator} />;
           }
           return (
-            <button
+            <Button
               key={idx}
-              type="button"
-              className={`${styles.phoneme} ${isStress ? styles.phonemeStress : ''} ${activeIndex === idx ? styles.phonemeActive : ''}`}
+              variant="outline"
+              size="sm"
+              material="solid"
+              active={activeIndex === idx}
+              className={`${styles.phoneme} ${isStress ? styles.phonemeStress : ''}`}
               onClick={() => handleClick(phoneme, idx)}
               aria-label={`Phoneme ${phoneme.ipa}`}
               data-cell-id="pronunciation-phoneme"
             >
               {phoneme.ipa}
-            </button>
+            </Button>
           );
         })}
       </div>
