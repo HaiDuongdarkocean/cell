@@ -75,6 +75,7 @@ export type MessageType =
   | 'TRANSLATE'
   | 'CARD_CREATOR_REQUEST'
   | 'FETCH_COMMUNITY_AUDIO'
+  | 'FETCH_LOCAL_AUDIO'
   | 'FETCH_IMAGES'
   | 'TTS_SPEAK'
   | 'TTS_FETCH_AUDIO'

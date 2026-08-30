@@ -14,7 +14,7 @@ export type WordStatus = 'unknown' | 'known' | 'tracking' | 'ignore';
 export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
 export type PopupTab = 'audio' | 'image' | 'translate' | 'links';
 export type SrsDestination = 'anki';
-export type AudioSourceKind = 'community' | 'system-tts' | 'cloud-tts' | 'local';
+export type AudioSourceKind = 'community' | 'system-tts' | 'cloud-tts' | 'local' | 'espeak';
 export type AudioKind = 'word' | 'sentence';
 export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'unavailable' | 'error';
 export type MatchSource = 'dictionary' | 'plugin' | 'fallback';
@@ -221,6 +221,17 @@ export interface FetchCommunityAudioPayload {
 }
 
 export interface FetchCommunityAudioResponse {
+  readonly items: readonly AudioItem[];
+}
+
+export interface FetchLocalAudioPayload {
+  readonly tabId: number;
+  readonly term: string;
+  readonly langCode: string;
+  readonly kind: AudioKind;
+}
+
+export interface FetchLocalAudioResponse {
   readonly items: readonly AudioItem[];
 }
 

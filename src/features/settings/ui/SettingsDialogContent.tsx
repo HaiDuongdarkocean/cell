@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
 import type { CardCreatorSettings } from '@/entities/settings';
 import {
@@ -6,6 +6,7 @@ import {
   MAX_PARALLEL_WORKERS,
   MAX_CONVERT_BYTES,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  DEFAULT_PRONUNCIATION_SETTINGS,
 } from '@/shared/config/config';
 // ADR-029: language dropdown lists now come from the single-source-of-truth
 // registry. The hardcoded SUBTITLE_LANGUAGES + OVERLAY_LANGUAGE_OPTIONS arrays
@@ -14,6 +15,7 @@ import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from './MultiSelect';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
+import { LocalPronunciationSettingsPanel } from './LocalPronunciationSettingsPanel';
 
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
 import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
@@ -105,6 +107,22 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
 
+  // Navigation orientation: horizontal chip bar on mobile (< 600px), vertical sidebar on desktop.
+  // Uses native matchMedia — no dependency, O(1) listener.
+  const [navOrientation, setNavOrientation] = useState<'vertical' | 'horizontal'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 599px)').matches
+      ? 'horizontal'
+      : 'vertical',
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 599px)');
+    const handleChange = (e: MediaQueryListEvent): void =>
+      setNavOrientation(e.matches ? 'horizontal' : 'vertical');
+    mq.addEventListener('change', handleChange);
+    setNavOrientation(mq.matches ? 'horizontal' : 'vertical');
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
+
   const update = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     onChange({ ...settings, [key]: value });
   };
@@ -123,6 +141,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
     { id: 'download', label: 'Download', icon: 'download' },
     { id: 'cardCreator', label: 'Card Creator', icon: 'layers' },
     { id: 'dictionaryPopup', label: 'Dictionary Popup', icon: 'bookOpen' },
+    { id: 'localPronunciation', label: 'Local Pronunciation', icon: 'waveform' },
     { id: 'localPlayer', label: 'Local Player', icon: 'playRoundedRect' },
     { id: 'theme', label: 'Theme', icon: 'sun' },
     { id: 'tts', label: 'TTS Voices', icon: 'volumeHigh' },
@@ -140,11 +159,11 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
           >
             <Navigation
               ariaLabel="Settings sections"
-              orientation="vertical"
+              orientation={navOrientation}
               activeId={activeSection}
               onActiveChange={setActiveSection}
-              contentRef={mainColRef}
-              sectionRefs={sectionRefs}
+              contentRef={navOrientation === 'vertical' ? mainColRef : undefined}
+              sectionRefs={navOrientation === 'vertical' ? sectionRefs : undefined}
             >
               {sidebarItems.map((item) => (
                 <NavItem
@@ -455,6 +474,24 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <DictionaryPopupSettingsPanel
                   settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
+                />
+              </VStack>
+            </Card>
+
+            {/* === Card 7.5: Local Pronunciation === */}
+            <Card
+              ref={(el: HTMLDivElement) => { sectionRefs.current.localPronunciation = el; }}
+              className={styles.sectionCard}
+              data-section="localPronunciation"
+            >
+              <div className={styles.cardHeader}>
+                <h4 className={styles.cardTitle}>Local Pronunciation</h4>
+                <p className={styles.cardDesc}>Use a local Forvo/Lingvo DSL audio package.</p>
+              </div>
+              <VStack gap="0" className={styles.cardBody}>
+                <LocalPronunciationSettingsPanel
+                  settings={settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS}
+                  onChange={(p) => onChange({ ...settings, pronunciation: p })}
                 />
               </VStack>
             </Card>
