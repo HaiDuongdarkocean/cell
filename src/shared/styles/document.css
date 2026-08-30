@@ -1,0 +1,9 @@
+/* Document-level design-system shell.
+   Single source of truth for the base stylesheet loaded in every
+   extension page: fonts, tokens, and themed scrollbars.
+   Entrypoints that need page-specific resets can import this file and
+   layer their own rules on top. */
+
+@import './fonts.css';
+@import './tokens.css';
+@import './scrollbars-document.css';

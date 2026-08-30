@@ -8,7 +8,7 @@
  */
 import { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@/shared/styles/tokens.css';
+import '@/shared/styles/document.css';
 import { CardCreatorDialog } from '@/features/cardCreator/ui/CardCreatorDialog';
 import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBottomSheet';
 import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';

@@ -3,9 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
-import '@/shared/styles/tokens.css';
-import '@/shared/styles/fonts.css';
-import '@/shared/styles/scrollbars-document.css';
+import '@/shared/styles/document.css';
 
 // Set initial theme before React renders to avoid flash of unstyled content.
 // Defaults mirror DEFAULT_THEME_MODE and DEFAULT_THEME_CONFIG.preset.

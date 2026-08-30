@@ -5,8 +5,7 @@ import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/entities/settings';
-import '@/shared/styles/tokens.css';
-import '@/shared/styles/scrollbars-document.css';
+import '@/shared/styles/document.css';
 
 document.documentElement.setAttribute('data-theme', 'light');
 
