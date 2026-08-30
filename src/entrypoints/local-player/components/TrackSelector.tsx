@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Button } from '@/shared/ui/Button';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './TrackSelector.module.css';
@@ -30,9 +31,8 @@ function TrackSelectorInner({
         {options.map((opt) => {
           const isActive = opt.filename === currentTarget || opt.filename === currentNative;
           return (
-            <button
+            <Button material="solid" variant="secondary"
               key={opt.filename}
-              type="button"
               className={`${styles.item} ${isActive ? styles.active : ''}`}
               onClick={() => onSelectTrack(opt)}
               aria-pressed={isActive}
@@ -40,7 +40,7 @@ function TrackSelectorInner({
               <Icon name={isActive ? 'check' : 'captions'} size={16} />
               <span className={styles.filename}>{opt.filename}</span>
               {opt.languageCode && <span className={styles.lang}>{opt.languageCode}</span>}
-            </button>
+            </Button>
           );
         })}
       </div>

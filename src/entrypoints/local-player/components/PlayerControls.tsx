@@ -10,6 +10,7 @@ import {
   Timeline,
   VolumeControl,
 } from '@/shared/domain/video/atoms';
+import { Button } from '@/shared/ui';
 import { IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './PlayerControls.module.css';
@@ -219,8 +220,7 @@ export function PlayerControls({
                     />
                   </div>
                   {hasMultipleTracks && onToggleTrackSelector && (
-                    <button
-                      type="button"
+                    <Button material="solid" variant="secondary"
                       role="menuitem"
                       className={styles.settingsMenuItem}
                       onClick={() => {
@@ -230,7 +230,7 @@ export function PlayerControls({
                     >
                       <Icon name="languages" className={styles.settingsMenuIcon} />
                       <span>Tracks</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}

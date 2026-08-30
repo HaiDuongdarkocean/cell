@@ -1,4 +1,5 @@
 import type { SubtitleRecord } from '@/features/local-player/services/mediaLibraryRepository';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './LibraryCard.module.css';
 
@@ -10,8 +11,7 @@ interface SubtitleCardProps {
 /** SubtitleCard — single subtitle entry in the Subtitles tab. */
 export function SubtitleCard({ subtitle, onClick }: SubtitleCardProps): React.JSX.Element {
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={styles.card}
       data-cell-id="subtitle-card"
       onClick={onClick}
@@ -25,6 +25,6 @@ export function SubtitleCard({ subtitle, onClick }: SubtitleCardProps): React.JS
           {subtitle.languageCode ?? '—'}
         </span>
       </span>
-    </button>
+    </Button>
   );
 }
