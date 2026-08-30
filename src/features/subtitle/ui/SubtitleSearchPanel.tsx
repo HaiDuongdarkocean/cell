@@ -89,8 +89,7 @@ function SearchResultRow({ result, index, onClick }: {
 }): React.JSX.Element {
   return (
     <li className={styles.resultItem} role="option" data-cell-id={`search-result-${index}`}>
-      <button
-        type="button"
+      <Button material="solid" variant="secondary"
         className={styles.resultButton}
         onClick={onClick}
         data-cell-id={`search-result-button-${index}`}
@@ -103,7 +102,7 @@ function SearchResultRow({ result, index, onClick }: {
           {result.sdh && <span className={styles.resultBadge}>SDH</span>}
           {result.forced && <span className={styles.resultBadge}>Forced</span>}
         </span>
-      </button>
+      </Button>
     </li>
   );
 }

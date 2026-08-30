@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
+import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
@@ -57,16 +59,15 @@ export function AudioPanel({
         <>
           <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups">
             {(['word', 'sentence'] as const).map((group) => (
-              <button
+              <Button material="solid" variant="secondary"
                 key={group}
-                type="button"
                 role="tab"
                 aria-selected={activeGroup === group}
                 className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
                 onClick={(): void => setActiveGroup(group)}
               >
                 Play {group}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -76,8 +77,7 @@ export function AudioPanel({
             const isTts = item.source === 'tts';
             return (
               <div key={item.id} className={styles.cellAudioItem}>
-                <button
-                  type="button"
+                <IconButton material="solid" variant="ghost"
                   className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
@@ -99,9 +99,8 @@ export function AudioPanel({
                   }}
                 >
                   <Icon name="audioWave"  />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <Button material="solid" variant="secondary"
                   className={styles.cellAudioLabel}
                   aria-pressed={selected}
                   onClick={(): void => onToggle(item.id, !selected)}
@@ -110,7 +109,7 @@ export function AudioPanel({
                   {parts.length > 1 && (
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
-                </button>
+                </Button>
                 <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                   <Icon name="check"  />
                 </span>

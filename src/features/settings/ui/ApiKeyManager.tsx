@@ -13,6 +13,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Input } from '@/shared/ui/Input';
@@ -212,8 +213,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         <span className={styles.headerCount}>
           {totalKeys === 0 ? 'No API keys' : `${totalKeys} key${totalKeys > 1 ? 's' : ''}`}
         </span>
-        <button
-          type="button"
+        <Button material="solid" variant="secondary"
           className={styles.addToggle}
           onClick={() => setAddOpen((v) => !v)}
           aria-expanded={addOpen}
@@ -222,7 +222,7 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
         >
           <Icon name={addOpen ? 'x' : 'plus'}  />
           <span>{addOpen ? 'Cancel' : 'Add key'}</span>
-        </button>
+        </Button>
       </div>
 
       {/* Add-key form — collapsible, slides down */}
@@ -338,24 +338,22 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                         )}
                       </div>
                       <div className={styles.keyActions}>
-                        <button
-                          type="button"
+                        <IconButton material="solid" variant="ghost"
                           className={styles.iconAction}
                           onClick={() => startEdit(k)}
                           aria-label={`Edit key ${k.label ?? k.id}`}
                           data-cell-id={`key-edit-${k.id}`}
                         >
                           <Icon name="pencil"  />
-                        </button>
-                        <button
-                          type="button"
+                        </IconButton>
+                        <IconButton material="solid" variant="ghost"
                           className={`${styles.iconAction} ${styles.iconActionDanger}`}
                           onClick={() => setDeleteTarget(k)}
                           aria-label={`Delete key ${k.label ?? k.id}`}
                           data-cell-id={`key-delete-${k.id}`}
                         >
                           <Icon name="trash"  />
-                        </button>
+                        </IconButton>
                       </div>
                     </>
                   )}

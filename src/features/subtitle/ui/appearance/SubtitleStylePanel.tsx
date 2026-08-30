@@ -218,9 +218,8 @@ export function SubtitleStylePanel({
           <label className={styles.label}>Alignment</label>
           <div className={styles.segmented} role="radiogroup" aria-label="Alignment">
             {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
-              <button
+              <Button material="solid" variant="secondary"
                 key={align}
-                type="button"
                 role="radio"
                 aria-checked={style.horizontalAlign === align}
                 aria-label={`Align ${align}`}
@@ -228,7 +227,7 @@ export function SubtitleStylePanel({
                 onClick={() => onChange({ horizontalAlign: align })}
               >
                 {ALIGN_LABELS[align]}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -238,9 +237,8 @@ export function SubtitleStylePanel({
           <label className={styles.label}>Shadow</label>
           <div className={styles.segmented} role="radiogroup" aria-label="Shadow style">
             {TEXT_SHADOW_PRESETS.map((preset) => (
-              <button
+              <Button material="solid" variant="secondary"
                 key={preset}
-                type="button"
                 role="radio"
                 aria-checked={style.textShadow.preset === preset}
                 aria-label={`${TEXT_SHADOW_LABELS[preset]} shadow`}
@@ -248,7 +246,7 @@ export function SubtitleStylePanel({
                 onClick={() => handleShadowPresetChange(preset)}
               >
                 {TEXT_SHADOW_LABELS[preset]}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

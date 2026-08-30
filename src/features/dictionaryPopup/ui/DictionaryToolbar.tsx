@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui/Button';
 import styles from './DictionaryPanelView.module.css';
 import type { PopupTab } from '../types';
 
@@ -33,9 +34,8 @@ export function DictionaryToolbar({
         const active = activeTab === tab.key;
         const count = counts[tab.key] ?? 0;
         return (
-          <button
+          <Button material="solid" variant="secondary"
             key={tab.key}
-            type="button"
             role="tab"
             aria-selected={active}
             aria-pressed={active}
@@ -48,7 +48,7 @@ export function DictionaryToolbar({
             <Icon name={tab.icon}  />
             <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
             {count > 0 && tab.key !== 'links' && <span className={styles.cellToolbarBadge}>{count}</span>}
-          </button>
+          </Button>
         );
       })}
     </div>

@@ -9,6 +9,8 @@
  * BEM block: .cc-queue
  */
 import type { ReactElement } from 'react';
+import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { useRef, useCallback } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import type { CardCreatorQueueItem, Toast } from '../types';
@@ -131,7 +133,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
       data-index={index}
       data-cell-id={`cc-queue-item-${index}`}
     >
-      <button
+      <Button material="solid" variant="secondary"
         className={styles['cc-queue__item-btn']}
         onClick={onSelect}
         aria-label={`Select ${item.term}`}
@@ -143,15 +145,15 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
         >
           {item.status}
         </span>
-      </button>
-      <button
+      </Button>
+      <IconButton material="solid" variant="ghost"
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={`Remove ${item.term} from queue`}
         data-cell-id={`cc-queue-delete-${index}`}
       >
         <Icon name="x" className={styles['cc-queue__item-delete-icon']} />
-      </button>
+      </IconButton>
     </li>
   );
 }
@@ -168,7 +170,7 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
   const lastToast = toasts[toasts.length - 1];
   if (!lastToast || lastToast.kind !== 'warning' || !lastToast.message.includes('Removed')) return null;
   return (
-    <button
+    <Button material="solid" variant="secondary"
       className={styles['cc-queue__undo']}
       onClick={() => {
         onUndo();
@@ -179,6 +181,6 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
     >
       <Icon name="rotateCcw" className={styles['cc-queue__undo-icon']} />
       Undo
-    </button>
+    </Button>
   );
 }

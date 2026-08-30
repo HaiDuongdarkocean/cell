@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { useDictionaryPanel } from './useDictionaryPanel';
 import { Alert } from '@/shared/ui/Alert';
 import { HStack } from '@/shared/ui/Stack';
@@ -259,8 +261,7 @@ export function DictionaryPanelView({
 
       {variant !== 'popup' && searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
-          <button
-            type="button"
+          <IconButton material="solid" variant="ghost"
             className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
             aria-label="Clear recent searches"
             title="Clear recent searches"
@@ -268,12 +269,11 @@ export function DictionaryPanelView({
             data-cell-id="dictionary-search-history-clear"
           >
             <Icon name="trash"  />
-          </button>
+          </IconButton>
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => (
               <li key={term} className={styles.searchHistoryItem}>
-                <button
-                  type="button"
+                <Button material="solid" variant="secondary"
                   className={styles.searchHistoryTerm}
                   onClick={() => {
                     setSearchTerm(term);
@@ -281,16 +281,15 @@ export function DictionaryPanelView({
                   }}
                 >
                   {term}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <IconButton material="solid" variant="ghost"
                   className={styles.searchHistoryRemove}
                   aria-label={`Remove ${term} from recent searches`}
                   title={`Remove ${term}`}
                   onClick={() => handleRemoveHistory(term)}
                 >
                   <Icon name="x"  />
-                </button>
+                </IconButton>
               </li>
             ))}
           </ul>
@@ -350,16 +349,15 @@ export function DictionaryPanelView({
             <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll}>
                 {allCandidates.map((c, idx) => (
-                  <button
+                  <Button material="solid" variant="secondary"
                     key={`${c.term}-${idx}`}
-                    type="button"
                     className={`btn ${idx === activeChipIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
                     onClick={() => handleChipClick(idx)}
                     data-cell-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
