@@ -109,6 +109,8 @@ dist.zip
 /prototype/
 /seed/
 /tmp
+/tmp-*
+
 
 # Private keys & CRX binaries (test signing artifacts — NEVER commit secrets).
 *-key.pem
