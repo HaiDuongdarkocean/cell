@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import { Button } from '@/shared/ui/Button';
 import styles from './Chip.module.css';
 
 export type ChipColor = 'success' | 'error' | 'primary' | 'warning' | 'muted';
@@ -56,10 +57,10 @@ export function Chip({
     const { as: _as, ...buttonRest } = rest;
     void _as;
     return (
-      <button type="button" className={cls} aria-pressed={selected} {...buttonRest}>
+      <Button material="solid" variant="secondary" className={cls} aria-pressed={selected} {...buttonRest}>
         {icon}
         <span className={styles.label}>{children}</span>
-      </button>
+      </Button>
     );
   }
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect, type KeyboardEvent, type ReactElement } from 'react';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchableSelect.module.css';
 
@@ -141,8 +142,7 @@ export function SearchableSelect({
   return (
     <div className={styles.container} ref={menuRef}>
       {/* Trigger button */}
-      <button
-        type="button"
+      <Button material="solid" variant="secondary"
         id={id}
         data-cell-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
@@ -156,7 +156,7 @@ export function SearchableSelect({
           {selectedOption?.label || placeholder}
         </span>
         <Icon name="chevronDown" className={styles.chevron} />
-      </button>
+      </Button>
 
       {/* Menu */}
       {isOpen && (
