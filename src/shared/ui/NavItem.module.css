@@ -97,6 +97,23 @@
   }
 }
 
+/* === Mobile chip bar (<600px): icon-only, no label ===
+   Chip bar ngang trên mobile chỉ hiển thị icon — label ẩn đi.
+   NavItem thu về hình vuông touch-target, justify center. */
+@media (max-width: 599px) {
+  .item {
+    width: auto;
+    min-width: var(--touch-target);
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .label {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .item { transition: none; animation: none; }
   .label { transition: none; }

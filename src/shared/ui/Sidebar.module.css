@@ -71,7 +71,7 @@
   transition: transform var(--duration-normal) var(--ease-spring);
 }
 
-/* ─── Mobile responsiveness (<840px) ─── */
+/* ─── Tablet: 600–839px — horizontal bar (bottom of stacking order in DOM) ─── */
 @media (max-width: 839px) {
   .sidebar {
     width: 100%;
@@ -88,6 +88,52 @@
   .collapsed {
     width: 100%;
     min-width: 0;
+  }
+}
+
+/* ─── Mobile: < 600px — Sticky Horizontal Chip Bar ─── */
+@media (max-width: 599px) {
+  .sidebar {
+    /* Ghim cố định đầu trang — không cuộn cùng content */
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky, 10);
+
+    /* Layout ngang cuộn được */
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: calc(var(--touch-target) + var(--space-2) * 2);
+
+    /* Kính mờ: tạo chiều sâu layering khi cuộn content qua phía dưới */
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    backdrop-filter: blur(12px) saturate(1.6);
+    -webkit-backdrop-filter: blur(12px) saturate(1.6);
+
+    border-right: none;
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  }
+
+  /* Ẩn header title trên mobile — chip bar đủ compact, không cần label */
+  .topbar {
+    display: none;
+  }
+
+  /* Body = chip bar cuộn ngang */
+  .body {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    padding: var(--space-1) var(--space-2);
+    gap: var(--space-1);
+    align-items: center;
+  }
+
+  .body::-webkit-scrollbar {
+    display: none;
   }
 }
 

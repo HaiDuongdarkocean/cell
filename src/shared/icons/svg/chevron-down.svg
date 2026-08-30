@@ -1,6 +1,4 @@
-<!-- @license lucide-static - ISC -->
-<!-- Chevron-down — down arrow = collapse/expand. Used by dropdowns, accordions, expand buttons.
-     Match VideoCard.tsx L177, subtitleSelector.ts L77, subtitleOffsetPanel.ts L48. -->
+<!-- @license lucide-static v1.34.0 - ISC -->
 <svg
   class="lucide lucide-chevron-down"
   xmlns="http://www.w3.org/2000/svg"
@@ -9,7 +7,7 @@
   viewBox="0 0 24 24"
   fill="none"
   stroke="currentColor"
-  stroke-width="1.5"
+  stroke-width="2"
   stroke-linecap="round"
   stroke-linejoin="round"
 >
