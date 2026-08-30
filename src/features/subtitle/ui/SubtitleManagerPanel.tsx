@@ -322,6 +322,7 @@ function TrackList({
         className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
         onClick={() => onSelect(role, -1)}
         data-cell-id={`manager-off-${role}`}
+        data-testid={`manager-off-${role}`}
       >
         <span
           aria-hidden="true"
