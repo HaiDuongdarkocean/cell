@@ -56,6 +56,7 @@ export const MESSAGE_TYPES = {
   // === Popup Dictionary (spec §9.4 B) — scrape / status / Anki ===
   // Worker dict match uses the dedicated requestId bridge, NOT this fan-out.
   FETCH_COMMUNITY_AUDIO: 'FETCH_COMMUNITY_AUDIO',
+  FETCH_LOCAL_AUDIO: 'FETCH_LOCAL_AUDIO',
   FETCH_IMAGES: 'FETCH_IMAGES',
   TTS_SPEAK: 'TTS_SPEAK',
   TTS_FETCH_AUDIO: 'TTS_FETCH_AUDIO',

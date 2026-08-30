@@ -12,7 +12,7 @@ export const WordStatusSchema = z.enum(['unknown', 'known', 'tracking', 'ignore'
 export const ReadingKindSchema = z.enum(['ipa', 'pinyin', 'none']);
 export const MatchSourceSchema = z.enum(['dictionary', 'plugin', 'fallback']);
 export const AudioKindSchema = z.enum(['word', 'sentence']);
-export const AudioSourceKindSchema = z.enum(['community', 'system-tts', 'cloud-tts', 'local']);
+export const AudioSourceKindSchema = z.enum(['community', 'system-tts', 'cloud-tts', 'local', 'espeak']);
 export const AudioStateSchema = z.enum([
   'idle',
   'loading',
@@ -202,6 +202,19 @@ export const FetchCommunityAudioPayloadSchema = z.object({
 });
 
 export const FetchCommunityAudioResponseSchema = z.object({
+  items: z.array(AudioItemSchema),
+});
+
+// === Local audio fetch (FETCH_LOCAL_AUDIO) ===
+
+export const FetchLocalAudioPayloadSchema = z.object({
+  tabId: z.number().int(),
+  term: z.string().min(1).max(200),
+  langCode: z.string().length(2),
+  kind: AudioKindSchema,
+});
+
+export const FetchLocalAudioResponseSchema = z.object({
   items: z.array(AudioItemSchema),
 });
 

@@ -76,6 +76,7 @@ import { registerLocalTtsHandlers } from './handlers/localTts';
 import { registerTtsDownloadHandlers } from './handlers/ttsDownload';
 import { registerTtsFetchAudioHandlers } from './handlers/ttsFetchAudio';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
+import { registerLocalAudioHandlers } from './handlers/localAudio';
 import { registerImageSearchHandlers } from './handlers/images';
 import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
@@ -271,6 +272,7 @@ export class BackgroundService implements BackgroundContext {
     registerTtsDownloadHandlers(this);
     registerTtsFetchAudioHandlers(this);
     registerForvoAudioHandlers(this);
+    registerLocalAudioHandlers(this);
     registerImageSearchHandlers(this);
     registerFetchMediaUrlHandlers(this);
     registerScreenshotHandlers(this);

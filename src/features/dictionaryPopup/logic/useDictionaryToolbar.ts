@@ -21,6 +21,7 @@ import type {
   FetchCommunityAudioResponse,
   FetchImagesResponse,
   TtsFetchAudioResponse,
+  FetchLocalAudioResponse,
 } from '../types';
 
 export interface UseDictionaryToolbarOptions {
@@ -177,7 +178,11 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
-        const [communityRes, ttsRes] = await Promise.all([
+        const [localRes, communityRes, ttsRes] = await Promise.all([
+          sendMessage<MessageResponse<FetchLocalAudioResponse>>({
+            type: MESSAGE_TYPES.FETCH_LOCAL_AUDIO,
+            payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
+          }),
           sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
             type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
             payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
@@ -189,6 +194,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         ]);
 
         const items: AudioItem[] = [];
+        if (localRes?.success && localRes.data?.items) {
+          items.push(...localRes.data.items);
+        }
         if (communityRes?.success && communityRes.data?.items) {
           items.push(...communityRes.data.items);
         }
