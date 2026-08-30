@@ -30,6 +30,9 @@ const moduleNameMapper = {
   '^@/shared/lib/env/devMode$': '<rootDir>/tests/__mocks__/devMode.ts',
   // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)
   '@/features/transmux/merging/workerFactory': '<rootDir>/tests/workerMock.ts',
+  // unzipit uses DecompressionStream which is not available in jsdom/Node;
+  // use an fflate-based mock for unit tests.
+  '^unzipit$': '<rootDir>/tests/__mocks__/unzipit.ts',
 };
 
 const transform = {
