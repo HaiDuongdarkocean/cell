@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Button } from '@/shared/ui/Button';
 import styles from './NavItem.module.css';
 
 type NavItemOrientation = 'horizontal' | 'vertical';
@@ -33,9 +34,9 @@ export function NavItem({
     .join(' ');
 
   return (
-    <button type="button" className={cls} disabled={disabled} {...rest}>
+    <Button material="solid" variant="secondary" shape="pill" className={cls} disabled={disabled} {...rest}>
       {icon && <span className={styles.icon}>{icon}</span>}
       {label && <span className={styles.label}>{label}</span>}
-    </button>
+    </Button>
   );
 }

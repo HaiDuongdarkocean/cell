@@ -1,4 +1,5 @@
 import { createContext, useContext, useRef, useState, useCallback, useMemo, type ReactNode, type ButtonHTMLAttributes, type HTMLAttributes, type KeyboardEvent } from 'react';
+import { Button } from '@/shared/ui/Button';
 import styles from './Tabs.module.css';
 
 interface TabsContextValue {
@@ -109,8 +110,7 @@ function TabsTrigger({ value: tabValue, children, className, ...rest }: TabsTrig
   const isActive = value === tabValue;
 
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={[styles.trigger, isActive ? styles.active : '', className ?? ''].filter(Boolean).join(' ')}
       role="tab"
       aria-selected={isActive}
@@ -120,7 +120,7 @@ function TabsTrigger({ value: tabValue, children, className, ...rest }: TabsTrig
       {...rest}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 

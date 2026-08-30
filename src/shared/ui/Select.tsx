@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
 import styles from './Select.module.css';
@@ -344,9 +345,8 @@ export function Select({
   return (
     <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
       {name && <input type="hidden" name={name} value={value ?? ''} />}
-      <button
+      <Button material="solid" variant="secondary"
         ref={triggerRef}
-        type="button"
         id={id}
         className={triggerClass}
         disabled={disabled}
@@ -362,7 +362,7 @@ export function Select({
           name="chevronDown"
           className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
         />
-      </button>
+      </Button>
 
       {isOpen && (
         <div
