@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings } from '@/entities/settings';
 import tokensJson from '@/shared/styles/tokens.json';
 
 // === Default Configuration ===
@@ -201,6 +201,12 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   audioFallback: 'community-then-tts',
 };
 
+/** Default Pronunciation settings (spec ocean-pronunciation-engine — schema v25). */
+export const DEFAULT_PRONUNCIATION_SETTINGS: PronunciationSettings = {
+  fallbackEngines: ['native', 'supertonic', 'browserTts', 'espeak'],
+  downloadEspeakTtsData: false,
+};
+
 /** Default Local Player settings (spec local-video-player.md — schema v22). */
 export const DEFAULT_LOCAL_PLAYER_SETTINGS: LocalPlayerSettings = {
   subtitleMatchEnabled: true,
@@ -273,6 +279,8 @@ export const DEFAULT_SETTINGS: Settings = {
   dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
   // === Subtitle Search (spec subtitle-search.md) — schema v21 ===
   subtitleApiKeys: [],
+  // === Pronunciation (spec ocean-pronunciation-engine — schema v25) ===
+  pronunciation: DEFAULT_PRONUNCIATION_SETTINGS,
   // === Local Player (spec local-video-player.md) — schema v22 ===
   localPlayerSettings: DEFAULT_LOCAL_PLAYER_SETTINGS,
 };

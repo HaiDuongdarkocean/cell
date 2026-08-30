@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 24;
+export const CURRENT_SCHEMA_VERSION = 25;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -437,6 +437,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // from breaking downstream UI that expects the latest default fields.
   23: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 24 } as Record<string, unknown>;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v24 → v25: add pronunciation settings slice (fallback engine chain + eSpeak
+  // TTS download toggle). Merge nested defaults to fill missing fields.
+  24: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 25 } as Record<string, unknown>;
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

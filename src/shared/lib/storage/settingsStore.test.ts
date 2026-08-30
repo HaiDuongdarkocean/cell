@@ -1,0 +1,66 @@
+import { loadSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
+import { DEFAULT_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+
+const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
+const storageLocalSetMock = jest.fn<Promise<void>, [Record<string, unknown>]>();
+
+beforeAll(() => {
+  global.chrome = {
+    storage: {
+      local: {
+        get: storageLocalGetMock as unknown as typeof chrome.storage.local.get,
+        set: storageLocalSetMock as unknown as typeof chrome.storage.local.set,
+      },
+    },
+  } as unknown as typeof chrome;
+});
+
+beforeEach(() => {
+  storageLocalGetMock.mockReset();
+  storageLocalSetMock.mockReset();
+  storageLocalSetMock.mockResolvedValue(undefined);
+});
+
+afterAll(() => {
+  delete (global as { chrome?: unknown }).chrome;
+});
+
+describe('loadSettings migration', () => {
+  it('migrates v24 settings to v25 and adds pronunciation defaults', async () => {
+    const v24Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 24,
+    };
+    delete (v24Settings as Record<string, unknown>).pronunciation;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v24Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(settings.pronunciation).toEqual(DEFAULT_PRONUNCIATION_SETTINGS);
+  });
+
+  it('keeps stored pronunciation values when already v25', async () => {
+    const storedSettings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 25,
+      pronunciation: {
+        fallbackEngines: ['browserTts', 'espeak'],
+        downloadEspeakTtsData: true,
+      },
+    };
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: storedSettings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(25);
+    expect(settings.pronunciation?.fallbackEngines).toEqual(['browserTts', 'espeak']);
+    expect(settings.pronunciation?.downloadEspeakTtsData).toBe(true);
+  });
+});

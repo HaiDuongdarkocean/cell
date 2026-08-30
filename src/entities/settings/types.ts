@@ -115,6 +115,21 @@ export interface TtsVoiceRow {
   readonly order: number;
 }
 
+/** Available audio sources for pronunciation, ordered by fallback priority. */
+export type AudioEngineKind =
+  | 'native'
+  | 'supertonic'
+  | 'browserTts'
+  | 'espeak';
+
+/** Pronunciation engine settings slice (spec ocean-pronunciation-engine). */
+export interface PronunciationSettings {
+  /** Ordered fallback chain for word/sentence audio. */
+  readonly fallbackEngines: readonly AudioEngineKind[];
+  /** Whether to download eSpeak TTS voice data on demand. */
+  readonly downloadEspeakTtsData: boolean;
+}
+
 /** TTS settings slice (spec popup-dictionary-4tab-logic). */
 export interface TtsSettings {
   /** Master toggle. Default true. */
@@ -361,6 +376,9 @@ export interface Settings {
   // === Local Player (spec local-video-player.md) — schema v22 ===
   /** Local player settings (subtitle match, resume prompt, last directory). */
   readonly localPlayerSettings: LocalPlayerSettings;
+  // === Pronunciation (spec ocean-pronunciation-engine — schema v25) ===
+  /** Pronunciation engine fallback chain and eSpeak data download setting. */
+  readonly pronunciation?: PronunciationSettings;
 }
 
 // === Subtitle Search API Key (schema v21) ===
