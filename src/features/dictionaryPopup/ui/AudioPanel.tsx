@@ -4,6 +4,8 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
+import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
+import type { PronunciationResult } from '@/features/pronunciation/types';
 import type { AudioItem } from '../types';
 
 export interface AudioPanelProps {
@@ -15,6 +17,7 @@ export interface AudioPanelProps {
   readonly onTtsSentence: () => void;
   readonly term: string;
   readonly sentence: string;
+  readonly pronunciation: PronunciationResult | null;
 }
 
 const TTS_WORD_ID = '__tts_word__';
@@ -29,11 +32,18 @@ export function AudioPanel({
   onTtsSentence,
   term,
   sentence,
+  pronunciation,
 }: AudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
 
   // Build display list: real items + TTS fallback item if no real items for group
+  const selectedWordUrl = useMemo(() => {
+    const wordItems = items.filter((item) => item.kind === 'word' && item.url);
+    const selected = wordItems.find((item) => selection.get(item.id) ?? item.defaultSelected);
+    return selected?.url ?? wordItems[0]?.url;
+  }, [items, selection]);
+
   const displayItems = useMemo(() => {
     const real = items.filter((item) => item.kind === activeGroup).slice(0, 3);
     if (real.length > 0) return real;
@@ -70,6 +80,12 @@ export function AudioPanel({
               </Button>
             ))}
           </div>
+
+          <PronunciationPanel
+            pronunciation={pronunciation}
+            audioUrl={selectedWordUrl}
+            audioSource="native"
+          />
 
           {displayItems.map((item) => {
             const selected = selection.get(item.id) ?? item.defaultSelected;

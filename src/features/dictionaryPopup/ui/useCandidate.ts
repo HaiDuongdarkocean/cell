@@ -7,6 +7,7 @@ import { setWordStatus } from '../services/wordStatusClient';
 import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
+import type { PronunciationResult } from '@/features/pronunciation/types';
 import type {
   LookupResult,
   DefinitionEntry,
@@ -41,6 +42,7 @@ export interface UseCandidateReturn {
   readonly toggleDefinition: (id: string, selected: boolean) => void;
   readonly selectedDefinitions: readonly DefinitionEntry[];
   readonly selectedDefinitionCount: number;
+  readonly pronunciation: PronunciationResult | null;
   readonly audioItems: readonly AudioItem[];
   readonly audioLoading: boolean;
   readonly audioError: string | null;
@@ -184,6 +186,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     cycleStatus,
     activeTab: toolbar.activeTab,
     setActiveTab: toolbar.setActiveTab,
+    pronunciation: toolbar.pronunciation,
     definitionSelection,
     toggleDefinition,
     selectedDefinitions,

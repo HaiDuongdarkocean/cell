@@ -10,6 +10,8 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import type { MessageResponse } from '@/entities/message/types';
+import { pronunciationEngine } from '@/features/pronunciation/services/pronunciationEngineSingleton';
+import type { PronunciationResult } from '@/features/pronunciation/types';
 import type {
   LookupResult,
   PopupTab,
@@ -39,6 +41,10 @@ export interface UseDictionaryToolbarReturn {
   readonly activeTab: PopupTab | null;
   /** Open or close a media tab. */
   readonly setActiveTab: (tab: PopupTab | null) => void;
+
+  readonly pronunciation: PronunciationResult | null;
+  readonly pronunciationLoading: boolean;
+  readonly pronunciationError: string | null;
 
   readonly audioItems: readonly AudioItem[];
   readonly audioLoading: boolean;
@@ -93,6 +99,10 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [audioSelection, setAudioSelection] = useState<Map<string, boolean>>(new Map());
+
+  const [pronunciation, setPronunciation] = useState<PronunciationResult | null>(null);
+  const [pronunciationLoading, setPronunciationLoading] = useState(false);
+  const [pronunciationError, setPronunciationError] = useState<string | null>(null);
   const [imageItems, setImageItems] = useState<readonly ImageItem[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -120,6 +130,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setTranslation('');
     setTranslationError(null);
     setTranslationSelected(false);
+    setPronunciation(null);
+    setPronunciationLoading(false);
+    setPronunciationError(null);
   }, []);
 
   // Reset tab + media data when the looked-up result changes.
@@ -127,6 +140,34 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setActiveTab(defaultActiveTab ?? null);
     resetMediaState();
   }, [result?.term, result?.langCode, defaultActiveTab, resetMediaState]);
+
+  // Fetch eSpeak IPA/phonemes whenever the result term changes.
+  useEffect(() => {
+    const term = result?.term;
+    const langCode = result?.langCode;
+    if (!term || !langCode) {
+      setPronunciation(null);
+      return;
+    }
+    let cancelled = false;
+    setPronunciationLoading(true);
+    setPronunciationError(null);
+    pronunciationEngine
+      .toPronunciation(term, langCode)
+      .then((p) => {
+        if (cancelled) return;
+        setPronunciation(p);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setPronunciationError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setPronunciationLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [result?.term, result?.langCode]);
 
   const fetchAudio = useCallback((): Promise<readonly AudioItem[]> => {
     if (!result) return Promise.resolve([]);
@@ -286,7 +327,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   const selectedTranslationCount = translationSelected ? 1 : 0;
 
   const links = useMemo(
-    () => (result
+    () => (result?.term && result?.langCode
       ? fillExternalDictLinks(DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks, result.term, result.langCode)
       : []),
     [result?.term, result?.langCode],
@@ -295,6 +336,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   return {
     activeTab,
     setActiveTab,
+    pronunciation,
+    pronunciationLoading,
+    pronunciationError,
     audioItems,
     audioLoading,
     audioError,
