@@ -448,15 +448,14 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                       onChange={(e) => handleOrderChange(row.voiceName, Number(e.target.value))}
                       aria-label="Thứ tự"
                     />
-                    <button
-                      type="button"
+                    <IconButton material="solid" variant="ghost"
                       className={styles.voicePlayBtn}
                       onClick={() => void handlePlayVoice(row.voiceName)}
                       disabled={playing}
                       aria-label={`Phát giọng ${row.voiceName}`}
                     >
                       <Icon name="play"  />
-                    </button>
+                    </IconButton>
                     <label className={styles.voiceCheckbox}>
                       <input
                         type="checkbox"

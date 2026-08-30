@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/ui';
 import styles from './LauncherSearchBar.module.css';
 
@@ -49,8 +50,7 @@ export function LauncherSearchBar({
         spellCheck={false}
       />
       {displayValue.length > 0 && (
-        <button
-          type="button"
+        <IconButton material="solid" variant="ghost"
           className={styles.clear}
           onClick={() => {
             inputRef.current?.focus();
@@ -60,7 +60,7 @@ export function LauncherSearchBar({
           aria-label="Clear search"
         >
           <Icon name="x" size="sm" />
-        </button>
+        </IconButton>
       )}
     </div>
   );

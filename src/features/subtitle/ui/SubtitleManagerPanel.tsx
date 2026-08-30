@@ -316,8 +316,7 @@ function TrackList({
 }): React.JSX.Element {
   return (
     <div className={styles.trackList} data-cell-id="manager-section-body" data-role={role}>
-      <button
-        type="button"
+      <Button material="solid" variant="secondary"
         role="option"
         aria-selected={activeIndex === -1}
         className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
@@ -333,7 +332,7 @@ function TrackList({
         <span className={styles.trackCopy}>
           <span className={styles.offLabel}>Off</span>
         </span>
-      </button>
+      </Button>
       {items.map((item, index) => (
         <ItemRow
           key={item.id}

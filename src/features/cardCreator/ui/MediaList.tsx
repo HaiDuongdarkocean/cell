@@ -12,6 +12,8 @@
  * BEM block: .cc-media
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { Button } from '@/shared/ui/Button';
+import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import type { MediaFile } from '../media/mediaFile';
 import styles from './MediaList.module.css';
@@ -110,14 +112,13 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       aria-label="Image preview"
       data-cell-id="media-image-preview"
     >
-      <button
-        type="button"
+      <Button material="solid" variant="secondary"
         className={styles['cc-media__preview-close']}
         onClick={onClose}
         aria-label="Close preview"
       >
         ×
-      </button>
+      </Button>
       {url && <img className={styles['cc-media__preview-img']} src={url} alt={file.filename} />}
     </div>
   );
@@ -139,8 +140,7 @@ function EmptyDropzone({
 }): ReactElement {
   const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
   return (
-    <button
-      type="button"
+    <Button material="solid" variant="secondary"
       className={styles['cc-media__empty']}
       onClick={onAdd}
       disabled={addDisabled}
@@ -149,7 +149,7 @@ function EmptyDropzone({
     >
       <ThumbIcon kind={kind} size={24} />
       <span>{text}</span>
-    </button>
+    </Button>
   );
 }
 
@@ -212,8 +212,7 @@ function ImageThumb({
       data-cell-id={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
-      <button
-        type="button"
+      <Button material="solid" variant="secondary"
         className={styles['cc-media__thumb-remove']}
         aria-label={`Remove ${file.filename}`}
         onClick={(e) => {
@@ -223,7 +222,7 @@ function ImageThumb({
         data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
         ×
-      </button>
+      </Button>
     </div>
   );
 }
@@ -343,8 +342,7 @@ function ImageGallery({
           dataId={dataId}
         />
       ))}
-      <button
-        type="button"
+      <IconButton material="solid" variant="ghost"
         className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
@@ -352,7 +350,7 @@ function ImageGallery({
         data-cell-id={dataId ? `${dataId}-add` : undefined}
       >
         <PlusIcon />
-      </button>
+      </IconButton>
     </div>
   );
 }
@@ -480,38 +478,35 @@ function AudioList({
             onDragEnd={handleDragEnd}
             data-index={index}
           >
-            <button
-              type="button"
+            <IconButton material="solid" variant="ghost"
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
               <ThumbIcon kind="audio" size={16} />
-            </button>
+            </IconButton>
             <span className={styles['cc-media__name']}>{file.filename}</span>
-            <button
-              type="button"
+            <Button material="solid" variant="secondary"
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
               ×
-            </button>
+            </Button>
           </div>
         );
       })}
       {files.length > 0 && (
-        <button
-          type="button"
+        <Button material="solid" variant="secondary"
           className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}
           data-cell-id={dataId ? `${dataId}-add` : undefined}
         >
           + {addLabel}
-        </button>
+        </Button>
       )}
     </div>
   );

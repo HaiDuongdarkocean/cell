@@ -1,4 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
@@ -68,9 +69,8 @@ export function ImagePanel({
         {items.map((item) => {
           const selected = selection.get(item.id) ?? item.defaultSelected;
           return (
-            <button
+            <Button material="solid" variant="secondary"
               key={item.id}
-              type="button"
               className={`${styles.cellImageCard} ${selected ? styles['cellImageCard--selected'] : ''}`}
               role="checkbox"
               aria-checked={selected}
@@ -85,7 +85,7 @@ export function ImagePanel({
               <span className={styles.cellDefCheckBox} aria-hidden="true">
                 <Icon name="check"  />
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
