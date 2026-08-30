@@ -1,0 +1,78 @@
+.pronunciation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.ipa {
+  font-family: inherit;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.phonemeList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.phoneme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-mobile);
+  min-height: var(--touch-target-mobile);
+  padding: var(--space-1) var(--space-1-5);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out),
+    color var(--duration-fast) var(--ease-in-out);
+}
+
+.phoneme:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+}
+
+.phonemeStress {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.phonemeActive,
+.phoneme:active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.separator {
+  display: inline-block;
+  width: var(--space-2);
+}
+
+.meta,
+.error {
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.meta {
+  color: var(--color-text-tertiary);
+}
+
+.error {
+  color: var(--color-error);
+}

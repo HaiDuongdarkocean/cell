@@ -161,6 +161,7 @@ export function CandidateView({
             onTtsSentence={panel.playSentence}
             term={candidate.term}
             sentence={contextSentence}
+            pronunciation={panel.pronunciation}
           />
         )}
         {panel.activeTab === 'image' && (
