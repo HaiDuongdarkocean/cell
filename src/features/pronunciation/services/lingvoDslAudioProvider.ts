@@ -4,7 +4,8 @@
  * Bridges the stored file handles, the `.dsl` index, and the zip resolver to
  * produce `AudioItem`s for the dictionary popup. When a term is present in the
  * local index, each referenced audio path is extracted from the configured zip
- * package and returned as a blob URL.
+ * package and returned as raw `audioBytes`. The UI context is responsible for
+ * creating and revoking blob URLs from these bytes.
  */
 
 import type { LocalFileAudioSettings } from '@/entities/settings';
@@ -13,11 +14,7 @@ import { getFileHandle, verifyPermission } from '@/shared/lib/storage/localFileH
 import { getLingvoDslAudioPaths } from '../repositories/lingvoDslIndexRepository';
 import { SingleZipAudioResolver, SplitZipAudioResolver, type ZipAudioResolver } from './zipAudioResolver';
 import type { AudioEngineKind } from '../types';
-
-export interface PronunciationAudioProvider {
-  readonly kind: AudioEngineKind;
-  resolve(term: string, langCode: string): Promise<readonly AudioItem[]>;
-}
+import type { PronunciationAudioProvider } from './pronunciationAudioOrchestrator';
 
 export class LingvoDslAudioProvider implements PronunciationAudioProvider {
   readonly kind: AudioEngineKind = 'localFile';
@@ -37,16 +34,15 @@ export class LingvoDslAudioProvider implements PronunciationAudioProvider {
 
     const items: AudioItem[] = [];
     for (const path of paths) {
-      const blob = await resolver.resolveAudio(term, path);
-      if (!blob) continue;
-      const url = URL.createObjectURL(blob);
+      const audioBytes = await resolver.resolveAudio(term, path);
+      if (!audioBytes) continue;
       items.push({
         id: `local-${packageId}-${term}-${path}`,
         kind: 'word',
         source: 'local',
         label: `Forvo · ${path}`,
         state: 'idle',
-        url,
+        audioBytes,
         defaultSelected: false,
       });
     }

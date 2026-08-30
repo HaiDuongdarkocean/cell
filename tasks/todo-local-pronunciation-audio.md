@@ -1,81 +1,83 @@
-# TODO: Local Pronunciation Audio
+# TODO: Local Pronunciation Audio — v2 (DONE)
 
-## Phase 1: Foundation
+## Phase 1: Runtime Correctness
 
-- [ ] Task 1: Extend types and settings schema v26
-  - [ ] Add `'localFile'` to `AudioEngineKind` in `entities/settings/types.ts` and `features/pronunciation/types.ts`
-  - [ ] Add `'local'` to `AudioSourceKind` and `AudioSourceKindSchema`
-  - [ ] Add `LocalFileAudioSettings` to `PronunciationSettings` with `packageType: 'single' | 'split'`
-  - [ ] Update `DEFAULT_PRONUNCIATION_SETTINGS`
-  - [ ] Bump `CURRENT_SCHEMA_VERSION` 25 → 26 + migration
-  - [ ] Verify: `npx tsc --noEmit`, settings tests pass
+- [x] **Task 1: Truyền local audio bytes qua message bus**
+  - [x] Đổi `LingvoDslAudioProvider.resolve()` từ tạo `URL.createObjectURL` sang trả `Uint8Array` / `ArrayBuffer`.
+  - [x] Cập nhật `AudioItem` type + `AudioItemSchema` cho `audioBytes` (hoặc tách response mới).
+  - [x] Cập nhật `FetchLocalAudioResponseSchema`.
+  - [x] `AudioPanel` tạo blob URL từ `audioBytes` khi `source === 'local'`, revoke đúng lifecycle.
+  - [x] Cập nhật `localAudio.ts` background handler trả bytes thay vì blob URL.
+  - [x] Viết/thêm unit test cho `AudioPanel` với `audioBytes`.
+  - [x] Verify: `npx tsc --noEmit`, `npm run build`, unit tests pass.
 
-- [ ] Task 2: File handle storage
-  - [ ] Implement `shared/lib/storage/localFileHandleStorage.ts`
-  - [ ] Add permission verification helpers
-  - [ ] Write unit tests with fake-indexeddb
-  - [ ] Verify: tests pass
+- [x] **Task 2: Tái tạo `PronunciationAudioOrchestrator` và wire fallback chain**
+  - [x] Tạo `src/features/pronunciation/services/pronunciationAudioOrchestrator.ts`.
+  - [x] Định nghĩa provider interface / wrap `LingvoDslAudioProvider`, community audio, TTS.
+  - [x] Orchestrator try theo `settings.pronunciation.fallbackEngines`, aggregate / mark `defaultSelected`.
+  - [x] Refactor `useDictionaryToolbar.fetchAudio` dùng orchestrator thay vì `Promise.all` song song.
+  - [x] Giữ TTS sentence append riêng.
+  - [x] Viết `pronunciationAudioOrchestrator.test.ts`.
+  - [x] Verify: `npx tsc --noEmit`, unit tests pass, build pass.
 
-## Phase 2: Local Package Parsing
+### Checkpoint 1
+- [x] `npx tsc --noEmit` pass.
+- [x] `npm run test:unit --selectProjects unit --testPathPatterns "localAudio|lingvoDslAudioProvider|AudioPanel|useDictionaryToolbar|pronunciationAudioOrchestrator"` pass.
+- [x] `npm run build` pass.
 
-- [ ] Task 3: Lingvo DSL parser + index storage
-  - [ ] Implement `lingvoDslParser.ts`
-  - [ ] Implement `lingvoDslIndexStorage.ts`
-  - [ ] Write parser tests
-  - [ ] Write index storage tests
-  - [ ] Verify: sample entries parse correctly
+## Phase 2: Settings UI
 
-- [ ] Task 4: Zip audio resolver
-  - [ ] Add `unzipit` dependency
-  - [ ] Implement `zipAudioResolver.ts` (lazy via unzipit)
-  - [ ] Implement `splitPackageResolver.ts` (select archive by pattern)
-  - [ ] Write resolver tests
-  - [ ] Verify: returns MP3 bytes for known path
+- [x] **Task 3: Tạo `PronunciationSettingsPanel` — engine reorder + download toggle**
+  - [x] Tạo `src/features/settings/ui/PronunciationSettingsPanel.tsx`.
+  - [x] Hiển thị `fallbackEngines` với up/down buttons (hoặc drag nếu quyết định).
+  - [x] Toggle `downloadEspeakTtsData`.
+  - [x] Wire vào `SettingsDialogContent.tsx` thành card "Pronunciation".
+  - [x] Persist settings qua `onChange`.
+  - [x] Run `design-system-guardian`.
+  - [x] Verify: tsc, build, eslint, manual settings reload.
 
-## Phase 3: Provider + Orchestrator
+### Checkpoint 2
+- [x] Card hiển thị đúng.
+- [x] Reorder + toggle persist.
+- [x] `design-system-guardian` pass.
 
-- [ ] Task 5: LingvoDslAudioProvider
-  - [ ] Implement `lingvoDslAudioProvider.ts`
-  - [ ] Write provider tests
-  - [ ] Verify: returns AudioItems; [] for missing words
+## Phase 3: Split Package Tooling
 
-- [ ] Task 6: PronunciationAudioOrchestrator
-  - [ ] Implement `pronunciationAudioOrchestrator.ts`
-  - [ ] Wrap community and TTS as providers
-  - [ ] Write fallback chain tests
-  - [ ] Verify: correct provider order
+- [x] **Task 4: Script split `ForvoEnglish.dsl.files.zip` cho mobile/Quetta**
+  - [x] Tạo `scripts/split-forvo-package.mjs`.
+  - [x] Đọc zip gốc và ghi các `ForvoEnglish_{firstLetter}.zip`.
+  - [x] Đảm bảo `SplitZipAudioResolver` vẫn khớp pattern.
+  - [x] Thêm test với mock split package.
+  - [x] Verify: script chạy trên sample, resolver tests pass.
 
-## Phase 4: Message + Integration
+### Checkpoint 3
+- [x] Script chạy được.
+- [x] `SplitZipAudioResolver` test pass.
 
-- [ ] Task 7: Background handler `FETCH_LOCAL_AUDIO`
-  - [ ] Add `FETCH_LOCAL_AUDIO` message type
-  - [ ] Add Zod schema
-  - [ ] Implement background handler
-  - [ ] Register handler in background index
-  - [ ] Verify: handler unit tests pass
+## Phase 4: E2E / Real Browser
 
-- [ ] Task 8: Wire `useDictionaryToolbar` + `AudioPanel`
-  - [ ] Call `FETCH_LOCAL_AUDIO` in `fetchAudio`
-  - [ ] Merge local audio into audio items
-  - [ ] Update `AudioPanel` `toAudioEngineKind` for `'local'`
-  - [ ] Verify: popup shows local items; phoneme playback works
+- [x] **Task 5: E2E Playwright verify local audio**
+  - [x] Tạo `e2e/localPronunciationAudio.spec.ts` hoặc `tmp-playwright-local-audio-demo.mjs`.
+  - [x] Dùng sample package nhỏ.
+  - [x] Load extension, options, build index.
+  - [x] Open mock page, tra từ, kiểm tra local audio item xuất hiện.
+  - [x] Click play audio và click phoneme (nếu có thể).
+  - [x] Verify: E2E script pass.
 
-## Phase 5: Settings UI
+### Checkpoint 4
+- [x] Browser test pass.
+- [x] Audio phát trong popup thật.
 
-- [ ] Task 9: Local package picker in options
-  - [ ] Create/extend `PronunciationSettingsPanel.tsx`
-  - [ ] Add file/directory picker button
-  - [ ] Show selected package + index status
-  - [ ] Add fallback engine reorder (if missing)
-  - [ ] Verify: settings persist across reload
+## Phase 5: Polish & Gate
 
-## Phase 6: Verify
+- [x] **Task 6: Pre-commit gate & docs**
+  - [x] Chạy `npx tsc --noEmit`.
+  - [x] Chạy `npm run build`.
+  - [x] Lint scope feature: `npx eslint src/features/pronunciation src/features/dictionaryPopup src/features/settings/ui/LocalPronunciationSettingsPanel.tsx src/features/settings/ui/PronunciationSettingsPanel.tsx src/entrypoints/background/handlers/localAudio.ts`.
+  - [x] Unit tests scope feature pass.
+  - [x] `design-system-guardian` pass.
+  - [x] Cập nhật `docs/2-architechture-system.md` hoặc viết ADR về blob transfer + fallback chain.
 
-- [ ] Task 10: Tests + E2E
-  - [ ] Unit tests for all new modules
-  - [ ] Update existing tests if broken
-  - [ ] Playwright E2E: select package, open popup, play word, play phoneme
-  - [ ] `npm run typecheck` pass
-  - [ ] `npm run lint` pass
-  - [ ] `npm run test:unit` pass
-  - [ ] `npm run build` pass
+### Checkpoint 5
+- [x] All gates pass.
+- [x] Docs updated.

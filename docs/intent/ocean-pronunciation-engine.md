@@ -101,3 +101,14 @@ User confirmed:
 - **Edge case:** when no audio source is available, phoneme click only highlights.
 - **MVP language:** English only.
 - **T0 spike is a hard prerequisite** before writing the production spec.
+
+---
+
+## Post-implementation notes
+
+Implementation completed. See `docs/specs/ocean-pronunciation-engine.md` for the final architecture and verification status. Key adjustments from the original intent:
+
+- The fallback audio chain was extended to include **local/community audio** at the top (`localFile → native → supertonic → browserTts → espeak`).
+- A dedicated `PronunciationAudioOrchestrator` resolves both word and sentence audio through the user-configurable fallback chain, rather than a single `PronunciationEngine`.
+- Settings UI adds a `Pronunciation` card in the existing settings dialog with engine reordering and an eSpeak TTS data download toggle.
+- E2E Playwright test `e2e/extension-local-pronunciation-audio.spec.ts` verifies the settings card renders and engine reordering persists.

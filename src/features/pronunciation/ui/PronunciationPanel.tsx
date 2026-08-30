@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { decodeAudioUrl } from '../services/audioDecoder';
 import { playPhoneme } from '../services/phonemeAudioPlayer';
+import { estimateTimeline } from '../services/phonemeTimelineEstimator';
 import type { AudioEngineKind, Phoneme, PronunciationAudio, PronunciationResult } from '../types';
 import styles from './PronunciationPanel.module.css';
 
@@ -11,12 +12,20 @@ export interface PronunciationPanelProps {
   readonly audioUrl?: string;
   /** Source kind for the provided audio URL. */
   readonly audioSource?: AudioEngineKind;
+  /**
+   * Optional custom phoneme playback handler.
+   * When provided (e.g. for the eSpeak robot source), it is called instead of
+   * slicing the decoded word audio. The handler is responsible for playing the
+   * phoneme and returning a promise that resolves when playback ends.
+   */
+  readonly onPlayPhoneme?: (phoneme: Phoneme) => Promise<void>;
 }
 
 export function PronunciationPanel({
   pronunciation,
   audioUrl,
   audioSource = 'native',
+  onPlayPhoneme,
 }: PronunciationPanelProps): React.JSX.Element | null {
   const [audio, setAudio] = useState<PronunciationAudio | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,17 +63,42 @@ export function PronunciationPanel({
     };
   }, [audioUrl, audioSource]);
 
+  // Re-estimate phoneme timeline once the decoded audio duration is known.
+  const phonemes = useMemo(() => {
+    if (!pronunciation) return [];
+    if (!audio) return pronunciation.phonemes;
+    return estimateTimeline(pronunciation.phonemes, audio.duration * 1000);
+  }, [pronunciation, audio]);
+
   const handleClick = useCallback(
-    (phoneme: Phoneme, index: number) => {
+    async (phoneme: Phoneme, index: number) => {
       setActiveIndex(index);
-      if (!audio) return;
+
+      if (onPlayPhoneme) {
+        try {
+          await onPlayPhoneme(phoneme);
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : 'Phoneme playback failed');
+        } finally {
+          setActiveIndex((current) => (current === index ? null : current));
+        }
+        return;
+      }
+
+      if (!audio) {
+        // No word audio decoded yet; keep the visual highlight as feedback.
+        setTimeout(() => setActiveIndex((current) => (current === index ? null : current)), 200);
+        return;
+      }
       void playPhoneme(audio, phoneme)
-        .catch(() => { /* best-effort; highlight is already shown */ })
+        .catch((err: unknown) => {
+          setError(err instanceof Error ? err.message : 'Phoneme playback failed');
+        })
         .finally(() => {
           setActiveIndex((current) => (current === index ? null : current));
         });
     },
-    [audio],
+    [audio, onPlayPhoneme],
   );
 
   if (!pronunciation) return null;
@@ -78,7 +112,7 @@ export function PronunciationPanel({
       )}
 
       <div className={styles.phonemeList} data-cell-id="pronunciation-phoneme-list">
-        {pronunciation.phonemes.map((phoneme, idx) => {
+        {phonemes.map((phoneme, idx) => {
           const isStress = phoneme.type === 'stress';
           const isSeparator = phoneme.type === 'separator';
           if (isSeparator) {

@@ -14,8 +14,8 @@ import { unzip } from 'unzipit';
 import type { ZipInfo, ZipEntry } from 'unzipit';
 
 export interface ZipAudioResolver {
-  /** Return the audio file as a Blob, or undefined if not found. */
-  resolveAudio(term: string, audioPath: string): Promise<Blob | undefined>;
+  /** Return the audio file as raw bytes, or undefined if not found. */
+  resolveAudio(term: string, audioPath: string): Promise<Uint8Array | undefined>;
 }
 
 function basename(path: string): string {
@@ -58,11 +58,12 @@ export class SingleZipAudioResolver implements ZipAudioResolver {
     this.zip = new LazyZip(getFile);
   }
 
-  async resolveAudio(_term: string, audioPath: string): Promise<Blob | undefined> {
+  async resolveAudio(_term: string, audioPath: string): Promise<Uint8Array | undefined> {
     const entries = await this.zip.entries();
     const entry = entries[audioPath] ?? findEntryByBasename(entries, audioPath);
     if (!entry) return undefined;
-    return entry.blob('audio/mpeg');
+    const buffer = await entry.arrayBuffer();
+    return new Uint8Array(buffer);
   }
 }
 
@@ -105,12 +106,13 @@ export class SplitZipAudioResolver implements ZipAudioResolver {
     return zip;
   }
 
-  async resolveAudio(term: string, audioPath: string): Promise<Blob | undefined> {
+  async resolveAudio(term: string, audioPath: string): Promise<Uint8Array | undefined> {
     const zip = await this.getArchive(term);
     if (!zip) return undefined;
     const entries = await zip.entries();
     const entry = entries[audioPath] ?? findEntryByBasename(entries, audioPath);
     if (!entry) return undefined;
-    return entry.blob('audio/mpeg');
+    const buffer = await entry.arrayBuffer();
+    return new Uint8Array(buffer);
   }
 }

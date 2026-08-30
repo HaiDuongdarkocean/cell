@@ -22,24 +22,24 @@ describe('SingleZipAudioResolver', () => {
   it('resolves an audio file by exact path', async () => {
     const file = makeZip({ 'hello.mp3': strToU8('mp3-bytes') });
     const resolver = new SingleZipAudioResolver(async () => file);
-    const blob = await resolver.resolveAudio('hello', 'hello.mp3');
-    expect(blob).toBeDefined();
-    expect(blob!.size).toBe(9);
+    const bytes = await resolver.resolveAudio('hello', 'hello.mp3');
+    expect(bytes).toBeDefined();
+    expect(bytes!.length).toBe(9);
   });
 
   it('resolves an audio file by basename if the path differs', async () => {
     const file = makeZip({ 'audio/world.mp3': strToU8('mp3-bytes-for-world') });
     const resolver = new SingleZipAudioResolver(async () => file);
-    const blob = await resolver.resolveAudio('world', 'world.mp3');
-    expect(blob).toBeDefined();
-    expect(blob!.size).toBe(19);
+    const bytes = await resolver.resolveAudio('world', 'world.mp3');
+    expect(bytes).toBeDefined();
+    expect(bytes!.length).toBe(19);
   });
 
   it('returns undefined when the audio path is not in the archive', async () => {
     const file = makeZip({ 'other.mp3': strToU8('x') });
     const resolver = new SingleZipAudioResolver(async () => file);
-    const blob = await resolver.resolveAudio('missing', 'missing.mp3');
-    expect(blob).toBeUndefined();
+    const bytes = await resolver.resolveAudio('missing', 'missing.mp3');
+    expect(bytes).toBeUndefined();
   });
 });
 
@@ -50,19 +50,39 @@ describe('SplitZipAudioResolver', () => {
     const dir = makeDirHandle({ 'ForvoEnglish_h.zip': hZip, 'ForvoEnglish_w.zip': wZip });
     const resolver = new SplitZipAudioResolver(dir, 'ForvoEnglish_{firstLetter}.zip');
 
-    const helloBlob = await resolver.resolveAudio('hello', 'hello.mp3');
-    expect(helloBlob).toBeDefined();
-    expect(helloBlob!.size).toBe(11);
+    const helloBytes = await resolver.resolveAudio('hello', 'hello.mp3');
+    expect(helloBytes).toBeDefined();
+    expect(helloBytes!.length).toBe(11);
 
-    const worldBlob = await resolver.resolveAudio('world', 'world.mp3');
-    expect(worldBlob).toBeDefined();
-    expect(worldBlob!.size).toBe(11);
+    const worldBytes = await resolver.resolveAudio('world', 'world.mp3');
+    expect(worldBytes).toBeDefined();
+    expect(worldBytes!.length).toBe(11);
   });
 
   it('returns undefined when the archive for the first letter is missing', async () => {
     const dir = makeDirHandle({});
     const resolver = new SplitZipAudioResolver(dir, 'ForvoEnglish_{firstLetter}.zip');
-    const blob = await resolver.resolveAudio('hello', 'hello.mp3');
-    expect(blob).toBeUndefined();
+    const bytes = await resolver.resolveAudio('hello', 'hello.mp3');
+    expect(bytes).toBeUndefined();
+  });
+
+  it('resolves entries grouped by first letter in split package output', async () => {
+    const aZip = makeZip({ 'audio/apple.mp3': strToU8('apple-bytes') });
+    const hZip = makeZip({ 'audio/hello.mp3': strToU8('hello-bytes') });
+    const wZip = makeZip({ 'audio/world.mp3': strToU8('world-bytes') });
+    const dir = makeDirHandle({
+      'ForvoEnglish_a.zip': aZip,
+      'ForvoEnglish_h.zip': hZip,
+      'ForvoEnglish_w.zip': wZip,
+    });
+    const resolver = new SplitZipAudioResolver(dir, 'ForvoEnglish_{firstLetter}.zip');
+
+    const apple = await resolver.resolveAudio('apple', 'audio/apple.mp3');
+    expect(apple).toBeDefined();
+    expect(apple!.length).toBe(11);
+
+    const world = await resolver.resolveAudio('world', 'audio/world.mp3');
+    expect(world).toBeDefined();
+    expect(world!.length).toBe(11);
   });
 });

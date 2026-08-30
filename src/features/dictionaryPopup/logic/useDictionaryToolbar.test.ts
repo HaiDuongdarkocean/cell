@@ -4,7 +4,9 @@ import type { LookupResult, AudioItem, ImageItem } from '../types';
 import { useDictionaryToolbar } from './useDictionaryToolbar';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
@@ -14,8 +16,13 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
   translateSentence: jest.fn(),
 }));
 
+jest.mock('@/shared/lib/storage/settingsStore', () => ({
+  loadSettings: jest.fn(),
+}));
+
 const mockSendMessage = jest.mocked(sendMessage);
 const mockTranslateSentence = jest.mocked(translateSentence);
+const mockLoadSettings = jest.mocked(loadSettings);
 
 function makeResult(term: string, overrides: Partial<LookupResult> = {}): LookupResult {
   return {
@@ -59,6 +66,8 @@ describe('useDictionaryToolbar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSendMessage.mockReset();
+    mockLoadSettings.mockReset();
+    mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
       if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
@@ -184,9 +193,10 @@ describe('useDictionaryToolbar', () => {
 
     act(() => { result.current.setActiveTab('audio'); });
 
-    await waitFor(() => expect(result.current.audioItems.length).toBe(1));
+    // The chain includes a TTS word provider, plus the explicit sentence TTS.
+    await waitFor(() => expect(result.current.audioItems.length).toBe(2));
     expect(ttsCalls.some((c) => c.text === 'hello world this is a sentence')).toBe(true);
-    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(false);
+    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(true);
     const sentenceItem = result.current.audioItems.find((i) => i.kind === 'sentence');
     expect(sentenceItem?.url).toBe('data:audio/wav;base64,AAA');
   });

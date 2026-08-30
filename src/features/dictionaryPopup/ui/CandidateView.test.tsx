@@ -3,7 +3,9 @@ import { render, screen, waitFor, fireEvent, within, act } from '@testing-librar
 import { CandidateView } from './CandidateView';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
@@ -14,8 +16,13 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
   translateSentence: jest.fn(),
 }));
 
+jest.mock('@/shared/lib/storage/settingsStore', () => ({
+  loadSettings: jest.fn(),
+}));
+
 const mockSendMessage = jest.mocked(sendMessage);
 const mockTranslateSentence = jest.mocked(translateSentence);
+const mockLoadSettings = jest.mocked(loadSettings);
 
 function makeResult(term: string, overrides?: Partial<LookupResult>): LookupResult {
   return {
@@ -57,8 +64,12 @@ function makeImage(id: string, selected = false): ImageItem {
 
 function setupMocks(): void {
   jest.clearAllMocks();
+  mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
   mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
     const message = msg as { type: string };
+    if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+      return { success: true, data: { items: [] } } as T;
+    }
     if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
       return { success: true, data: { items: [makeAudio('a1', 'word', 'https://audio/1', true)] } } as T;
     }

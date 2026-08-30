@@ -83,6 +83,9 @@ card-creator-desktop.png
 daemons-ep1.vtt
 player_state.png
 
+# eSpeak TTS voice data is downloaded on demand, not committed.
+public/espeakng/
+
 # Build artifacts that leak to repo root (vite build output, not source).
 # Real source lives in src/ + public/; these are generated into dist/ on build.
 /assets/

@@ -15,6 +15,7 @@ import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframeP
 import { initOcrContentScript } from './ocrContentScript';
 import { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -40,6 +41,10 @@ let hostSheetRoot: ReturnType<typeof createRoot> | null = null;
 let hostSheetHost: HTMLDivElement | null = null;
 let hostSheetInner: HTMLDivElement | null = null;
 let sheetCssCleanup: (() => void) | null = null;
+// Guard: runPageScan is invoked both on DOMContentLoaded and from
+// findAndInitOverlay when a video appears late. The flag prevents duplicate
+// initial PAGE_SCAN_RESULT sends and observer restarts.
+let pageScanObserverStarted = false;
 let currentFrameSrc = '';
 let currentState: SerializedManagerState | null = null;
 
@@ -47,6 +52,7 @@ function renderHostSheet(): void {
   if (!hostSheetRoot || !currentState || !hostSheetInner) return;
   const frameSrc = currentFrameSrc;
   hostSheetRoot.render(
+    // eslint-disable-next-line react/no-children-prop
     createElement(ShadowThemeProvider, {
       container: hostSheetInner,
       children: createElement(HostManagerSheet, {
@@ -253,7 +259,7 @@ window.addEventListener('message', (event) => {
   }
   // === Generic subtitle-list discovery bridge (MAIN-world → background) ===
   if (data?.type === '__CELL_SUBTITLE_DISCOVERY' && (data as { signal?: unknown }).signal) {
-    const signal = (data as { signal: import('@/features/detection/subtitleDiscovery').SubtitleSignal }).signal;
+    const signal = (data as { signal: SubtitleSignal }).signal;
     const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -478,10 +484,6 @@ import { isVideoReady } from '@/shared/lib/dom/videoReady';
 // is removed by the framework's re-render, but document/onMessage listeners
 // would otherwise accumulate.
 let currentOverlayCleanup: (() => void) | null = null;
-// Guard: runPageScan is invoked both on DOMContentLoaded and from
-// findAndInitOverlay when a video appears late. The flag prevents duplicate
-// initial PAGE_SCAN_RESULT sends and observer restarts.
-let pageScanObserverStarted = false;
 // Track the video element the overlay is currently attached to, so we only
 // re-init when the <video> element identity actually changes (Angular may
 // mount/unmount the same element multiple times during phase render).

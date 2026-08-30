@@ -51,6 +51,8 @@ export interface AudioItem {
   readonly accentId?: string;
   readonly state: AudioState;
   readonly url?: string;
+  /** Raw audio bytes for sources that cannot provide a cross-context URL (e.g. local File System Access). */
+  readonly audioBytes?: Uint8Array;
   /** Server hint; UI selection state ở Zustand (O10). */
   readonly defaultSelected: boolean;
 }

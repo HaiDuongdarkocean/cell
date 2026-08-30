@@ -23,12 +23,23 @@ export interface EspeakEngineInitializer {
   }>;
 }
 
+function resolveExtensionUrl(relativeUrl: string): string {
+  // Vite's ?url import returns a root-relative path (e.g. /assets/...wasm).
+  // In an extension content script, fetch() resolves it against the host page
+  // and gets a 404. Use chrome.runtime.getURL() to get the chrome-extension
+  // absolute URL when available.
+  if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+    return chrome.runtime.getURL(relativeUrl.replace(/^\//, ''));
+  }
+  return relativeUrl;
+}
+
 async function defaultInit(): Promise<ReturnType<EspeakEngineInitializer> extends Promise<infer T> ? T : never> {
-  const dataResp = await fetch(dataUrl);
+  const dataResp = await fetch(resolveExtensionUrl(dataUrl));
   const archive = await dataResp.arrayBuffer();
   const engine = await createESpeak({
     moduleFactory: initWasm,
-    moduleOverrides: { locateFile: () => wasmUrl },
+    moduleOverrides: { locateFile: () => resolveExtensionUrl(wasmUrl) },
     data: { archive },
   });
   return engine;

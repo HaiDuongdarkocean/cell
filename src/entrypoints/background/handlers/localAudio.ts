@@ -3,11 +3,8 @@
  *
  * Reads the user's configured local Forvo package, queries the `.dsl` index,
  * and resolves audio entries from the zip archive. Returns `AudioItem[]` with
- * blob URLs created in the extension origin.
- *
- * ponytail: we currently create object URLs in the background and never revoke
- * them. The extension's single-origin blob store is short-lived; if memory
- * pressure appears, add URL.revokeObjectURL when the popup closes.
+ * raw `audioBytes` (Uint8Array). The content script creates and revokes blob
+ * URLs so object lifetimes stay in the same context as the audio element.
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';

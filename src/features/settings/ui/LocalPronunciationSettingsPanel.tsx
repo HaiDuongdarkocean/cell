@@ -6,6 +6,9 @@ import type { LocalFileAudioSettings, PronunciationSettings } from '@/entities/s
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
+import { SettingsRow } from '@/shared/ui/SettingsRow';
+import { VStack } from '@/shared/ui/Stack';
+import styles from './SettingsDialog.module.css';
 
 interface LocalPronunciationSettingsPanelProps {
   settings: PronunciationSettings;
@@ -95,10 +98,11 @@ export function LocalPronunciationSettingsPanel({
   };
 
   return (
-    <div>
-      <div className="field">
-        <label>Package type</label>
+    <VStack gap="0">
+      <SettingsRow dense stacked>
+        <label className={styles.rowLabel} htmlFor="local-package-type">Package type</label>
         <Select
+          id="local-package-type"
           value={local.packageType}
           options={[
             { value: 'single', label: 'Single .dsl.files.zip' },
@@ -106,47 +110,62 @@ export function LocalPronunciationSettingsPanel({
           ]}
           onChange={(value) => updateLocal({ packageType: value as 'single' | 'split' })}
         />
-      </div>
+      </SettingsRow>
 
-      <div className="field">
-        <Button onClick={pickDsl}>Choose .dsl file</Button>
-        {local.dslFileHandleId && <span> DSL handle: {local.dslFileHandleId.slice(0, 16)}…</span>}
-      </div>
+      <SettingsRow dense>
+        <span className={styles.rowLabel}>Lingvo DSL index</span>
+        <Button onClick={pickDsl}>
+          {local.dslFileHandleId ? 'Change .dsl file' : 'Choose .dsl file'}
+        </Button>
+      </SettingsRow>
 
       {local.packageType === 'single' ? (
-        <div className="field">
-          <Button onClick={pickArchive}>Choose .dsl.files.zip</Button>
-          {local.audioArchiveHandleId && <span> Archive handle: {local.audioArchiveHandleId.slice(0, 16)}…</span>}
-        </div>
+        <SettingsRow dense>
+          <span className={styles.rowLabel}>Audio archive</span>
+          <Button onClick={pickArchive}>
+            {local.audioArchiveHandleId ? 'Change .zip' : 'Choose .dsl.files.zip'}
+          </Button>
+        </SettingsRow>
       ) : (
         <>
-          <div className="field">
-            <Button onClick={pickSplitDirectory}>Choose split zip directory</Button>
-            {local.splitArchiveDirectoryHandleId && <span> Directory handle: {local.splitArchiveDirectoryHandleId.slice(0, 16)}…</span>}
-          </div>
-          <div className="field">
-            <label htmlFor="split-pattern">Archive name pattern</label>
+          <SettingsRow dense>
+            <span className={styles.rowLabel}>Split zip directory</span>
+            <Button onClick={pickSplitDirectory}>
+              {local.splitArchiveDirectoryHandleId ? 'Change directory' : 'Choose split zip directory'}
+            </Button>
+          </SettingsRow>
+          <SettingsRow dense stacked>
+            <label className={styles.rowLabel} htmlFor="split-pattern">Archive name pattern</label>
             <Input
               id="split-pattern"
               value={local.splitArchivePattern}
               onChange={(e) => updateLocal({ splitArchivePattern: e.target.value })}
               placeholder="ForvoEnglish_{firstLetter}.zip"
             />
-          </div>
+          </SettingsRow>
         </>
       )}
 
-      <div className="field">
+      <SettingsRow dense>
+        <span className={styles.rowLabel}>Index build</span>
         <Button onClick={buildIndex} disabled={!local.dslFileHandleId}>
           Build index
         </Button>
-      </div>
+      </SettingsRow>
 
-      {status && <p>{status}</p>}
+      {status && (
+        <SettingsRow dense>
+          <span className={styles.rowLabel}>Status</span>
+          <span>{status}</span>
+        </SettingsRow>
+      )}
 
       {local.lastIndexedAt && (
-        <p>Last indexed: {new Date(local.lastIndexedAt).toLocaleString()}</p>
+        <SettingsRow dense>
+          <span className={styles.rowLabel}>Last indexed</span>
+          <span>{new Date(local.lastIndexedAt).toLocaleString()}</span>
+        </SettingsRow>
       )}
-    </div>
+    </VStack>
   );
 }

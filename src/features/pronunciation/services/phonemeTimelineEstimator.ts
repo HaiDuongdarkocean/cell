@@ -1,12 +1,25 @@
-import type { Phoneme } from '../types';
+import type { Phoneme, PhonemeType } from '../types';
+
+/**
+ * Relative acoustic duration weights for each phoneme type.
+ * Vowels and diphthongs carry more energy and duration than consonants;
+ * stress marks and separators are visual-only and consume no time.
+ */
+const PHONEME_TYPE_WEIGHTS: Record<PhonemeType, number> = {
+  consonant: 1.0,
+  vowel: 2.0,
+  diphthong: 2.5,
+  stress: 0,
+  separator: 0,
+};
 
 /**
  * Estimate per-phoneme start/end times from the total audio duration.
  *
- * MVP uses uniform weighting: every non-stress, non-separator phoneme gets
- * an equal share of the audio duration. Stress marks and separators consume
- * no time, which means the stressed vowel/diphthong still receives its full
- * share (the stress marker is visually attached, not acoustically separate).
+ * Uses weighted duration by phoneme type so vowels/diphthongs receive a
+ * larger share of the audio than consonants, while stress marks and
+ * separators consume no time. This is still an estimate, not sample-accurate
+ * alignment.
  *
  * @param phonemes - phonemes without meaningful start/end values.
  * @param audioDurationMs - total word audio duration in milliseconds.
@@ -17,17 +30,14 @@ export function estimateTimeline(phonemes: readonly Phoneme[], audioDurationMs: 
     throw new RangeError(`audioDurationMs must be non-negative, got ${audioDurationMs}`);
   }
 
-  const soundPhonemes = phonemes.filter(
-    (p) => p.type !== 'stress' && p.type !== 'separator',
-  );
-
-  const shareMs = soundPhonemes.length > 0 ? audioDurationMs / soundPhonemes.length : 0;
+  const totalWeight = phonemes.reduce((sum, p) => sum + PHONEME_TYPE_WEIGHTS[p.type], 0);
 
   const result: Phoneme[] = [];
   let cursorMs = 0;
 
   for (const p of phonemes) {
-    if (p.type === 'stress' || p.type === 'separator') {
+    const weight = PHONEME_TYPE_WEIGHTS[p.type];
+    if (weight === 0 || totalWeight === 0) {
       result.push({
         ...p,
         startMs: cursorMs,
@@ -36,6 +46,7 @@ export function estimateTimeline(phonemes: readonly Phoneme[], audioDurationMs: 
       continue;
     }
 
+    const shareMs = (weight / totalWeight) * audioDurationMs;
     const endMs = Math.min(cursorMs + shareMs, audioDurationMs);
     result.push({
       ...p,

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
-import { synthesizeEspeakWordUrl, playEspeakPhoneme } from '@/features/pronunciation/services/espeakAudioEngine';
+import { playEspeakWord, playEspeakPhoneme } from '@/features/pronunciation/services/espeakAudioEngine';
 import type { AudioEngineKind, Phoneme } from '@/features/pronunciation/types';
 import type { PronunciationResult } from '@/features/pronunciation/types';
 import type { AudioItem } from '../types';
@@ -58,6 +58,47 @@ export function AudioPanel({
   const [activeAudioUrl, setActiveAudioUrl] = useState<string | undefined>();
   const [activeAudioSource, setActiveAudioSource] = useState<AudioEngineKind>('native');
   const [espeakError, setEspeakError] = useState<string | null>(null);
+  const localBlobUrlsRef = useRef<Map<string, string>>(new Map());
+
+  // Manage object URLs for items that carry raw audio bytes (local File System Access).
+  // The background sends Uint8Array; the content-script creates blob URLs locally.
+  useEffect(() => {
+    const next = new Map<string, string>();
+    const current = localBlobUrlsRef.current;
+    const toRevoke: string[] = [];
+
+    for (const item of items) {
+      if (item.audioBytes) {
+        const existing = current.get(item.id);
+        if (existing) {
+          next.set(item.id, existing);
+        } else {
+          next.set(item.id, URL.createObjectURL(new Blob([item.audioBytes.buffer as ArrayBuffer], { type: 'audio/mpeg' })));
+        }
+      }
+    }
+
+    for (const [id, url] of current) {
+      if (!next.has(id)) {
+        toRevoke.push(url);
+      }
+    }
+
+    toRevoke.forEach(URL.revokeObjectURL);
+    localBlobUrlsRef.current = next;
+
+    return () => {
+      for (const url of localBlobUrlsRef.current.values()) {
+        URL.revokeObjectURL(url);
+      }
+      localBlobUrlsRef.current = new Map();
+    };
+  }, [items]);
+
+  const getAudioUrl = useCallback((item?: AudioItem): string | undefined => {
+    if (!item) return undefined;
+    return item.url ?? localBlobUrlsRef.current.get(item.id);
+  }, []);
 
   const onPlayEspeakPhoneme = useCallback(
     async (phoneme: Phoneme): Promise<void> => {
@@ -82,15 +123,15 @@ export function AudioPanel({
 
   // Build display list: real items + TTS fallback item if no real items for group
   const selectedWordUrl = useMemo(() => {
-    const wordItems = items.filter((item) => item.kind === 'word' && item.url);
+    const wordItems = items.filter((item) => item.kind === 'word' && (item.url ?? localBlobUrlsRef.current.get(item.id)));
     const selected = wordItems.find((item) => selection.get(item.id) ?? item.defaultSelected);
-    return selected?.url ?? wordItems[0]?.url;
-  }, [items, selection]);
+    return getAudioUrl(selected) ?? getAudioUrl(wordItems[0]);
+  }, [items, selection, getAudioUrl]);
 
   // The URL fed to the pronunciation panel: prefer the item the user just played,
   // otherwise fall back to the selected/first word audio.
   const pronunciationAudioUrl = activeAudioUrl ?? selectedWordUrl;
-  const pronunciationAudioSource = activeAudioUrl ? activeAudioSource : 'native';
+  const pronunciationAudioSource = activeAudioSource;
 
   const displayItems = useMemo(() => {
     const real = items.filter((item) => item.kind === activeGroup).slice(0, 3);
@@ -163,41 +204,43 @@ export function AudioPanel({
                 <IconButton material="solid" variant="ghost"
                   className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
                   aria-label={isTts || isEspeak ? `Play TTS: ${item.label}` : `Play ${item.label}`}
-                  onClick={(): void => {
-                    (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, isEspeak, hasUrl: !!item.url, url: item.url?.substring(0,50), activeGroup}));
+                  onClick={(e: MouseEvent<HTMLButtonElement>): void => {
+                    (e.currentTarget as HTMLElement).setAttribute('data-debug-click', JSON.stringify({isTts, isEspeak, hasUrl: !!getAudioUrl(item), url: getAudioUrl(item)?.substring(0,50), activeGroup}));
                     if (isEspeak) {
+                      setActiveAudioSource('espeak');
+                      if (audioRef.current) {
+                        audioRef.current.pause();
+                        audioRef.current = null;
+                      }
                       void (async (): Promise<void> => {
                         try {
-                          const url = await synthesizeEspeakWordUrl(term);
-                          setActiveAudioUrl(url);
-                          setActiveAudioSource('espeak');
-                          if (audioRef.current) {
-                            audioRef.current.pause();
-                            audioRef.current = null;
-                          }
-                          const audio = new Audio(url);
-                          audioRef.current = audio;
-                          audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
-                          audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-                          void audio.play().catch(() => { /* best-effort */ });
-                        } catch { /* best-effort */ }
+                          await playEspeakWord(term);
+                        } catch (err: unknown) {
+                          setEspeakError(err instanceof Error ? err.message : 'eSpeak playback failed');
+                        }
                       })();
                       return;
                     }
-                    if (isTts || !item.url) {
+                    if (isTts) {
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();
                       return;
                     }
-                    if (activeGroup === 'word' && item.url) {
-                      setActiveAudioUrl(item.url);
+                    const itemUrl = getAudioUrl(item);
+                    if (activeGroup === 'word' && itemUrl) {
+                      setActiveAudioUrl(itemUrl);
                       setActiveAudioSource(toAudioEngineKind(item.source));
                     }
                     if (audioRef.current) {
                       audioRef.current.pause();
                       audioRef.current = null;
                     }
-                    const audio = new Audio(item.url);
+                    if (!itemUrl) {
+                      if (activeGroup === 'word') onTtsWord();
+                      else onTtsSentence();
+                      return;
+                    }
+                    const audio = new Audio(itemUrl);
                     audioRef.current = audio;
                     audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
                     audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });

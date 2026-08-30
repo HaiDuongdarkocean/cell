@@ -44,7 +44,7 @@
   overflow: hidden;
   scroll-margin-top: var(--space-3);
   flex-shrink: 0;
-  animation: cardEnter var(--duration-short4) var(--ease-emphasized-decelerate) both;
+  animation: cardEnter var(--duration-normal) var(--ease-out) both;
 }
 
 /* === Card header (title + description grouped) — mobile: 12px vertical, 16px horizontal === */
@@ -232,6 +232,37 @@
     animation: none;
   }
   .mainCol { scroll-behavior: auto; }
+}
+
+/* === Pronunciation engine priority list === */
+.engineList {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.engineItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+.engineLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.engineActions {
+  display: flex;
+  gap: var(--space-1);
 }
 
 /* === Language Profile panel === */
