@@ -35,6 +35,7 @@ import {
   parseSubtitle,
 } from '@/features/subtitle';
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
+import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
@@ -49,7 +50,7 @@ import type { WebTextDictionaryController } from '@/features/dictionaryPopup/con
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
-import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult, ResolveSubtitleDownloadResult } from '@/entities/message';
+import type { AutoLoadSubtitlesPayload, ResolveSubtitleDownloadResult } from '@/entities/message';
 import type { SubtitlePanelItem, ParsedFile } from '@/features/subtitle';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 // === Subtitle Overlay Integration ===
@@ -160,8 +161,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let offsetController: ReactSubtitleController | null = null;
   // Shared web-text dictionary controller (owned by top-level content-script).
   const sharedWebTextCtrl = webTextCtrl;
-  // Track the latest target/native cues for the block controller and side panel.
-  let latestTargetCues: SrtCue[] = [];
+  // Subtitle sync state (source/cue/panel) is owned by SubtitleSyncController.
   // Track the URL the overlay currently shows cues for. On SPA navigation the
   // URL changes but `loadBilingualCues` uses ADR-014 D1 merge semantics (keep
   // old side when new side empty — designed for same-video incremental re-push).
@@ -184,17 +184,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   /** Update generate-native button disabled state based on target cues + settings. */
   function updateGenerateNativeEnabled(): void {
     const settings = currentSettings;
-    const hasTarget = latestTargetCues.length > 0;
+    const hasTarget = syncController.latestTargetCues.length > 0;
     const sl = settings?.subtitleOverlayTargetLanguage ?? '';
     const tl = settings?.subtitleOverlayNativeLanguage ?? '';
     const validLang = sl.length > 0 && tl.length > 0 && sl !== tl;
     blockController.setGenerateNativeEnabled(hasTarget && validLang && settingsLoaded);
-  }
-
-  /** Clear the in-memory translated native slot (used when target changes or SPA nav). */
-  function clearTranslatedNativeState(): void {
-    translatedNativeSlot = null;
-    activeGenerateRunId = -1;
   }
 
   const blockController = new ReactSubtitleController(
@@ -207,6 +201,23 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     (action) => { void handleCardCreatorAction(action); },
     () => { void handleGenerateNative(); },
   );
+
+  // Subtitle sync controller owns active source, panel items, cue snapshots,
+  // and virtual replacement slots. contentScriptController remains the
+  // side-effect boundary: it fetches, parses, translates, and loads.
+  const syncController = new SubtitleSyncController({
+    getBlockController: () => blockController,
+    showOverlay: () => { showOverlay(); },
+    syncSidePanelFromBlock: () => { syncSidePanelFromBlock(); },
+    getContainer: () => container,
+    getCurrentSettings: () => currentSettings,
+  });
+
+  /** Clear the in-memory translated native slot (used when target changes or SPA nav). */
+  function clearTranslatedNativeState(): void {
+    syncController.clearTranslatedNativeState();
+    activeGenerateRunId = -1;
+  }
 
   // Apply the active study mode to the current video, and keep it in sync
   // when the user changes it from the panel. P1: subtitle visibility + speed.
@@ -332,53 +343,28 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     translatePrefill?.clear();
     translatePrefill = null;
 
-    // Snapshot the active native slot before we create the new virtual slot.
-    const baseNativeItems = [...autoNativeItems, ...importedNativeItems];
-    let replacedSource: 'auto' | 'imported' | null;
-    let replacedIndex: number;
-    if (activeNativeSource === 'translated' && translatedNativeSlot) {
-      replacedSource = translatedNativeSlot.replacedSource;
-      replacedIndex = translatedNativeSlot.replacedIndex;
-    } else if (activeNativeSource === 'imported' && importedNativeItems.length > 0) {
-      replacedSource = 'imported';
-      replacedIndex = autoNativeItems.length + activeImportNativeIndex;
-    } else if (autoNativeItems.length > 0) {
-      replacedSource = 'auto';
-      replacedIndex = activeNativeIndex;
-    } else {
-      replacedSource = null;
-      replacedIndex = 0;
-    }
-    replacedIndex = Math.min(Math.max(0, replacedIndex), baseNativeItems.length);
-
-    // Snapshot the active target item for format propagation.
-    const targetInfo = mergedPanelItems('target');
-    const targetItem = targetInfo.items[targetInfo.activeIndex];
-
-    // Snapshot target cues before async gap (latestTargetCues may change).
-    const targetCues = [...latestTargetCues];
-    const targetFormat = targetItem?.format ?? 'srt';
-    const targetSize = targetItem?.size;
+    // Snapshot current state before the async generate-native gap.
+    const snapshot = syncController.getGenerateNativeSnapshot();
 
     // Create the translated manager entry upfront (shown as "translating…").
     // The actual cues arrive via onChunkTranslated callback.
-    const result = await startGenerateNative(targetCues, {
+    const result = await startGenerateNative(snapshot.targetCues, {
       onChunkTranslated: (translatedCues: SrtCue[]) => {
-        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
-        translatedNativeSlot.cues = translatedCues;
-        blockController?.loadBilingualCues(targetCues, translatedCues);
+        if (activeGenerateRunId !== runId || !syncController.translatedNativeSlot || syncController.translatedNativeSlot.runId !== runId) return;
+        syncController.translatedNativeSlot.cues = translatedCues;
+        blockController?.loadBilingualCues(snapshot.targetCues, translatedCues);
         showOverlay();
-        bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
+        bilingualCues = mergeCuesForPanel(snapshot.targetCues, translatedCues);
         broadcastCues(bilingualCues);
         refreshPanel('native');
       },
       onError: (msg: string) => {
-        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
+        if (activeGenerateRunId !== runId || !syncController.translatedNativeSlot || syncController.translatedNativeSlot.runId !== runId) return;
         showToast(msg, container, { variant: 'error' });
         updateGenerateNativeEnabled();
       },
       onComplete: () => {
-        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
+        if (activeGenerateRunId !== runId || !syncController.translatedNativeSlot || syncController.translatedNativeSlot.runId !== runId) return;
         showToast('Native subtitle generated', container, { variant: 'success' });
         updateGenerateNativeEnabled();
       },
@@ -405,20 +391,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const translatedItem: SubtitlePanelItem = {
       id: 'translated-native',
       name: `${result.nativeLabel} (translated)`,
-      format: targetFormat,
-      size: targetSize,
+      format: snapshot.targetFormat,
+      size: snapshot.targetSize,
       source: 'translated',
       role: 'native',
       index: 0,
     };
-    translatedNativeSlot = {
-      replacedSource,
-      replacedIndex,
+    syncController.translatedNativeSlot = {
+      replacedSource: snapshot.replacedSource,
+      replacedIndex: snapshot.replacedIndex,
       item: translatedItem,
       cues: [],
       runId,
     };
-    activeNativeSource = 'translated';
+    syncController.activeNativeSource = 'translated';
     refreshPanel('native');
     showToast('Generating native subtitle…', container, { variant: 'info' });
     blockController.setGenerateNativeEnabled(false);
@@ -652,131 +638,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     return videoMs + offsetMs;
   };
 
-  // Track active sub indices + all matches for re-fetch on dropdown select
-  let activeTargetIndex = 0;
-  let activeNativeIndex = 0;
-  let targetMatches: readonly SubtitleForOverlayResult[] = [];
-  let nativeMatches: readonly SubtitleForOverlayResult[] = [];
-  // ADR-015 T10: imported subtitle items per role (for panel display + select)
-  let importedTargetItems: SubtitlePanelItem[] = [];
-  let importedNativeItems: SubtitlePanelItem[] = [];
-  let activeImportTargetIndex = 0;
-  let activeImportNativeIndex = 0;
-  // Subtitle search: items per role (panel display + select), parsed cue cache.
-  let searchedTargetItems: SubtitlePanelItem[] = [];
-  let searchedNativeItems: SubtitlePanelItem[] = [];
-  let activeSearchedTargetIndex = 0;
-  let activeSearchedNativeIndex = 0;
-  // Cache parsed cues by search result.id — avoids re-fetch + re-parse on reselect.
-  const parsedSearchCache = new Map<string, SrtCue[]>();
-  // ADR-015: auto-detected subtitle items per role (panel display + refresh after select)
-  let autoTargetItems: SubtitlePanelItem[] = [];
-  let autoNativeItems: SubtitlePanelItem[] = [];
-  // Track which source is currently active per role (so merged panel highlights
-  // the correct item when both auto + imported exist).
-  let activeTargetSource: 'auto' | 'imported' | 'searched' | 'ocr' = 'auto';
-  let activeNativeSource: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr' = 'auto';
-  // Generate-native: virtual replacement slot in the native manager panel.
-  // Underlying auto/imported arrays are not mutated; this slot replaces the
-  // active native item in the merged panel display and provides translated cues.
-  interface TranslatedNativeSlot {
-    readonly replacedSource: 'auto' | 'imported' | null;
-    readonly replacedIndex: number;
-    readonly item: SubtitlePanelItem;
-    cues: SrtCue[];
-    readonly runId: number;
-  }
-  let translatedNativeSlot: TranslatedNativeSlot | null = null;
-  // OCR split dual-stream (spec ocr-split-dual-stream): two virtual slots fed by
-  // the OCR content script via window.postMessage('__CELL_OCR_TRACKS'). Like the
-  // translated slot, underlying auto/imported/searched arrays are not mutated —
-  // the OCR items are appended to the merged panel and replace the active source.
-  interface OcrTrackSlot {
-    readonly item: SubtitlePanelItem;
-    cues: SrtCue[];
-  }
-  let ocrTargetSlot: OcrTrackSlot | null = null;
-  let ocrNativeSlot: OcrTrackSlot | null = null;
-  // Active sources before the first OCR tracks message — restored on END.
-  type PreOcrSources = {
-    target: 'auto' | 'imported' | 'searched' | 'ocr';
-    native: 'auto' | 'imported' | 'translated' | 'searched' | 'ocr';
-  };
-  let preOcrSources: PreOcrSources | null = null;
-  const makeOcrPanelItem = (id: string, name: string, role: 'target' | 'native'): SubtitlePanelItem => ({
-    id,
-    name,
-    format: 'live',
-    source: 'ocr',
-    role,
-    index: 0,
-  });
-
   /**
-   * Build merged panel items for a role: auto items first, then imported items.
-   * Returns the merged list + the active index in the merged space.
-   * ADR-015 T10 fix: previously import REPLACED auto items in the panel (bug:
-   * auto-loaded subtitles vanished after import). Now both coexist — user can
-   * switch between auto-detected and imported subtitles freely.
+   * Build merged panel items for a role and push them into the React manager.
+   * SubtitleSyncController owns the source/panel state; this thin wrapper
+   * applies the side effect to the block controller.
    */
-  const mergedPanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
-    const base = basePanelItems(role);
-    // OCR dual-stream: append the live OCR item at the end (existing indices
-    // unchanged) and highlight it while the OCR source is active.
-    const ocrSlot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
-    if (!ocrSlot) return base;
-    const source = role === 'target' ? activeTargetSource : activeNativeSource;
-    const items = [...base.items, ocrSlot.item];
-    return { items, activeIndex: source === 'ocr' ? items.length - 1 : base.activeIndex };
-  };
-
-  const basePanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
-    const autoItems = role === 'target' ? autoTargetItems : autoNativeItems;
-    const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
-    const searchedItems = role === 'target' ? searchedTargetItems : searchedNativeItems;
-    const autoActive = role === 'target' ? activeTargetIndex : activeNativeIndex;
-    const importActive = role === 'target' ? activeImportTargetIndex : activeImportNativeIndex;
-    const searchedActive = role === 'target' ? activeSearchedTargetIndex : activeSearchedNativeIndex;
-    const source = role === 'target' ? activeTargetSource : activeNativeSource;
-    const baseItems = [...autoItems, ...importedItems, ...searchedItems];
-
-    // No subtitles → default to Off (index -1)
-    if (baseItems.length === 0 && !(role === 'native' && translatedNativeSlot)) {
-      return { items: [], activeIndex: -1 };
-    }
-
-    // Generate-native: always include the translated virtual entry in the panel
-    // so the user can switch back to it; highlight it when activeNativeSource
-    // is 'translated'.
-    if (role === 'native' && translatedNativeSlot) {
-      const idx = Math.min(Math.max(0, translatedNativeSlot.replacedIndex), baseItems.length);
-      const items = [...baseItems.slice(0, idx), translatedNativeSlot.item, ...baseItems.slice(idx + 1)];
-      if (source === 'translated') {
-        return { items, activeIndex: idx };
-      }
-      if (source === 'searched' && searchedItems.length > 0) {
-        const baseIdx = autoItems.length + importedItems.length + searchedActive;
-        return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
-      }
-      if (source === 'imported' && importedItems.length > 0) {
-        const baseIdx = autoItems.length + importActive;
-        return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
-      }
-      const baseIdx = autoActive;
-      return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
-    }
-
-    if (source === 'searched' && searchedItems.length > 0) {
-      return { items: baseItems, activeIndex: autoItems.length + importedItems.length + searchedActive };
-    }
-    if (source === 'imported' && importedItems.length > 0) {
-      return { items: baseItems, activeIndex: autoItems.length + importActive };
-    }
-    return { items: baseItems, activeIndex: autoActive };
-  };
-
   const refreshPanel = (role: 'target' | 'native'): void => {
-    const { items, activeIndex } = mergedPanelItems(role);
+    const { items, activeIndex } = syncController.getPanelState(role);
     blockController.updateManagerItems(role, items, activeIndex);
   };
 
@@ -792,9 +660,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     );
     broadcastCues(bilingualCues);
   };
-  // ADR-015 T10: parsed files side-map (panel items don't carry cues)
-  let importedParsedTarget: ParsedFile[] = [];
-  let importedParsedNative: ParsedFile[] = [];
   // ADR-015 T7: debounced toast (collapses rapid import/switch messages)
   const debouncedToast = createDebouncedToast(showToast, 500);
 
@@ -959,12 +824,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         if (translatePrefill?.isRunning) {
           translatePrefill.clear();
           translatePrefill = null;
-          blockController?.loadBilingualCues(latestTargetCues, []);
-          bilingualCues = mergeCuesForPanel(latestTargetCues, []);
+          blockController?.loadBilingualCues(syncController.latestTargetCues, []);
+          bilingualCues = mergeCuesForPanel(syncController.latestTargetCues, []);
           // latestNativeCues tracked by blockController — no longer needed here
-          // updateCues(latestTargetCues, []);
+          // updateCues(syncController.latestTargetCues, []);
           showToast('Auto-translate off', container, { variant: 'info' });
-        } else if (latestTargetCues.length > 0) {
+        } else if (syncController.latestTargetCues.length > 0) {
           void (async () => {
             const s = await loadSettings();
             const sl = s.subtitleOverlayTargetLanguage;
@@ -974,17 +839,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
             translatePrefill = new BackgroundPrefillController({
               translate: createTranslateFunction(sl, tl),
               onChunkTranslated: (translatedCues: SrtCue[]) => {
-                blockController?.loadBilingualCues(latestTargetCues, translatedCues);
+                blockController?.loadBilingualCues(syncController.latestTargetCues, translatedCues);
                 showOverlay();
-                bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
-                // updateCues(latestTargetCues, translatedCues);
+                bilingualCues = mergeCuesForPanel(syncController.latestTargetCues, translatedCues);
+                // updateCues(syncController.latestTargetCues, translatedCues);
                 broadcastCues(bilingualCues);
               },
               onError: (msg: string) => {
                 showToast(msg, container, { variant: 'error' });
               },
             });
-            translatePrefill.start(latestTargetCues, sl, tl);
+            translatePrefill.start(syncController.latestTargetCues, sl, tl);
             showToast('Auto-translate on', container, { variant: 'success' });
           })();
         }
@@ -1164,17 +1029,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           }
         case 'toggle-translate': {
           // ADR-021 D7: temporary toggle (no setting change).
-          // If prefill running → clear + hide native overlay. If not → restart from latestTargetCues.
+          // If prefill running → clear + hide native overlay. If not → restart from syncController.latestTargetCues.
           if (translatePrefill?.isRunning) {
             translatePrefill.clear();
             translatePrefill = null;
             // Reload target-only (no native) to hide translated overlay
-            blockController?.loadBilingualCues(latestTargetCues, []);
-            bilingualCues = mergeCuesForPanel(latestTargetCues, []);
+            blockController?.loadBilingualCues(syncController.latestTargetCues, []);
+            bilingualCues = mergeCuesForPanel(syncController.latestTargetCues, []);
             // latestNativeCues tracked by blockController — no longer needed here
-            // updateCues(latestTargetCues, []);
+            // updateCues(syncController.latestTargetCues, []);
             showToast('Auto-translate off', container, { variant: 'info' });
-          } else if (latestTargetCues.length > 0) {
+          } else if (syncController.latestTargetCues.length > 0) {
             // Restart prefill — load settings for sl/tl
             void (async () => {
               const s = await loadSettings();
@@ -1185,16 +1050,16 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
               translatePrefill = new BackgroundPrefillController({
                 translate: createTranslateFunction(sl, tl),
                 onChunkTranslated: (translatedCues: SrtCue[]) => {
-                  blockController?.loadBilingualCues(latestTargetCues, translatedCues);
-                  bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
-                  // updateCues(latestTargetCues, translatedCues);
+                  blockController?.loadBilingualCues(syncController.latestTargetCues, translatedCues);
+                  bilingualCues = mergeCuesForPanel(syncController.latestTargetCues, translatedCues);
+                  // updateCues(syncController.latestTargetCues, translatedCues);
                   broadcastCues(bilingualCues);
                 },
                 onError: (msg: string) => {
                   showToast(msg, container, { variant: 'error' });
                 },
               });
-              translatePrefill.start(latestTargetCues, sl, tl);
+              translatePrefill.start(syncController.latestTargetCues, sl, tl);
               showToast('Auto-translate on', container, { variant: 'success' });
             })();
           }
@@ -1289,7 +1154,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         blockController?.clearCues();
         offsetController?.loadCues(false);
         // updateCues([], []);
-        latestTargetCues = [];
+        syncController.latestTargetCues = [];
         // Reset inline load status so stale messages from the previous video
         // don't persist into the new one (auto-load will set 'loading' or 'none').
         useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
@@ -1307,7 +1172,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         translatePrefill?.clear();
         translatePrefill = null;
         clearTranslatedNativeState();
-        activeNativeSource = 'auto';
+        syncController.activeNativeSource = 'auto';
         updateGenerateNativeEnabled();
         useCuesStore.getState().setLoadStatus('target', { state: 'none' });
         useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
@@ -1316,12 +1181,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         // already cleared these (proactive clear on yt-navigate-finish), but
         // if onSpaNav didn't fire (lastAutoLoadUrl was undefined) this is the
         // only clear path.
-        autoTargetItems = [];
-        autoNativeItems = [];
-        targetMatches = [];
-        nativeMatches = [];
-        activeTargetIndex = 0;
-        activeNativeIndex = 0;
+        syncController.autoTargetItems = [];
+        syncController.autoNativeItems = [];
+        syncController.targetMatches = [];
+        syncController.nativeMatches = [];
+        syncController.activeTargetIndex = 0;
+        syncController.activeNativeIndex = 0;
         refreshPanel('target');
         refreshPanel('native');
       }
@@ -1330,7 +1195,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         translatePrefill?.clear();
         translatePrefill = null;
         clearTranslatedNativeState();
-        activeNativeSource = 'auto';
+        syncController.activeNativeSource = 'auto';
         updateGenerateNativeEnabled();
       }
       void (async () => {
@@ -1344,7 +1209,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
             // ADR-019: subtitles cleared → reset offset + cancel lazy
             offsetController?.loadCues(false);
             clearTranslatedNativeState();
-            activeNativeSource = 'auto';
+            syncController.activeNativeSource = 'auto';
             updateGenerateNativeEnabled();
           },
         },
@@ -1353,10 +1218,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
           // (4↔6 nút transition when subtitles become available).
-          latestTargetCues = targetCues;
+          syncController.latestTargetCues = targetCues;
           // Auto-load resets the translated native slot; native active is auto.
           clearTranslatedNativeState();
-          activeNativeSource = 'auto';
+          syncController.activeNativeSource = 'auto';
           updateGenerateNativeEnabled();
           // updateCues(targetCues, nativeCues);
           // ADR-019: notify offset controller that subtitles loaded
@@ -1374,7 +1239,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           if (!sl || !tl || sl === tl) return;
           // If a manual generate-native is already active, don't overwrite it with
           // auto-translate. Manual generate is the user's explicit choice.
-          if (translatedNativeSlot && activeNativeSource === 'translated') return;
+          if (syncController.translatedNativeSlot && syncController.activeNativeSource === 'translated') return;
           // Inline load status: native language label for the translating state.
           const nativeLabel = isoCodeToLabel(tl);
           const label = nativeLabel ? nativeLabel.charAt(0).toUpperCase() + nativeLabel.slice(1) : tl;
@@ -1388,7 +1253,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
               showOverlay();
               // Update panel + nav cluster with bilingual cues
               bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
-              latestTargetCues = targetCues;
+              syncController.latestTargetCues = targetCues;
               // updateCues(targetCues, translatedCues);
               broadcastCues(bilingualCues);
               useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: translatePrefill?.cacheSize ?? 0, total: targetCues.length } });
@@ -1405,36 +1270,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           translatePrefill.start(targetCues, sl, tl);
         },
         onSubtitleMatches: (targetM, nativeM) => {
-          targetMatches = targetM;
-          nativeMatches = nativeM;
-          // ADR-015 T4: update-in-place (bug #5 fix — no flicker, no stale index)
-          // V1 destroyed + re-created dropdown on every push → flicker + stale
-          // index when matches reordered. V2 calls update() to refresh list
-          // items in-place, preserving icon element identity + activeIndex.
-          // ADR-015: legacy target/native dropdowns removed. The unified manager
-          // panel handles selection for both auto-detected and imported subs.
-          // ADR-015: update manager panel with auto-detected matches (1+ subs).
-          // Build panel items from matches so panel shows even with 1 sub.
-          autoTargetItems = targetM.map((m, i) => ({
-            id: `auto-target-${i}`,
-            name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
-            format: m.format,
-            source: 'auto' as const,
-            role: 'target' as const,
-            index: i,
-            isAsr: m.isAsr,
-          }));
-          autoNativeItems = nativeM.map((m, i) => ({
-            id: `auto-native-${i}`,
-            name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
-            format: m.format,
-            source: 'auto' as const,
-            role: 'native' as const,
-            index: i,
-            isAsr: m.isAsr,
-          }));
-          // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
-          // Previously: imported items replaced auto items → auto subtitles vanished.
+          // ADR-015 T4/T10: build auto panel items from matches in-place.
+          syncController.setAutoMatches([...targetM], [...nativeM]);
           refreshPanel('target');
           refreshPanel('native');
         },
@@ -1474,10 +1311,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const isDuplicate = (file: File, format: string, existing: ParsedFile[]): boolean =>
       existing.some(p => p.file.name === file.name && p.format === format && p.file.size === file.size);
 
-    const dupTarget = assignment.target.filter(f => isDuplicate(f.file, f.format, importedParsedTarget));
-    const dupNative = assignment.native.filter(f => isDuplicate(f.file, f.format, importedParsedNative));
-    const newTarget = assignment.target.filter(f => !isDuplicate(f.file, f.format, importedParsedTarget));
-    const newNative = assignment.native.filter(f => !isDuplicate(f.file, f.format, importedParsedNative));
+    const dupTarget = assignment.target.filter(f => isDuplicate(f.file, f.format, syncController.importedParsedTarget));
+    const dupNative = assignment.native.filter(f => isDuplicate(f.file, f.format, syncController.importedParsedNative));
+    const newTarget = assignment.target.filter(f => !isDuplicate(f.file, f.format, syncController.importedParsedTarget));
+    const newNative = assignment.native.filter(f => !isDuplicate(f.file, f.format, syncController.importedParsedNative));
     const totalDups = dupTarget.length + dupNative.length;
 
     if (newTarget.length === 0 && newNative.length === 0) {
@@ -1488,8 +1325,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
 
     // Build panel items — APPEND to existing imported items (not overwrite).
-    const existingTargetCount = importedParsedTarget.length;
-    const existingNativeCount = importedParsedNative.length;
+    const existingTargetCount = syncController.importedParsedTarget.length;
+    const existingNativeCount = syncController.importedParsedNative.length;
     const newTargetItems = newTarget.map((f, i) => ({
       id: `imported-target-${existingTargetCount + i}`,
       name: formatSubtitleName('imported', '', existingTargetCount + i, f.file.name),
@@ -1508,16 +1345,16 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       role: 'native' as const,
       index: existingNativeCount + i,
     }));
-    importedTargetItems = [...importedTargetItems, ...newTargetItems];
-    importedNativeItems = [...importedNativeItems, ...newNativeItems];
-    importedParsedTarget = [...importedParsedTarget, ...newTarget];
-    importedParsedNative = [...importedParsedNative, ...newNative];
-    activeImportTargetIndex = existingTargetCount;
-    activeImportNativeIndex = existingNativeCount;
+    syncController.importedTargetItems = [...syncController.importedTargetItems, ...newTargetItems];
+    syncController.importedNativeItems = [...syncController.importedNativeItems, ...newNativeItems];
+    syncController.importedParsedTarget = [...syncController.importedParsedTarget, ...newTarget];
+    syncController.importedParsedNative = [...syncController.importedParsedNative, ...newNative];
+    syncController.activeImportTargetIndex = existingTargetCount;
+    syncController.activeImportNativeIndex = existingNativeCount;
     // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
     // Mark active source as imported for roles that got new (non-duplicate) files.
-    if (newTarget.length > 0) { activeTargetSource = 'imported'; useCuesStore.getState().setLoadStatus('target', { state: 'loaded', source: 'imported' }); }
-    if (newNative.length > 0) { activeNativeSource = 'imported'; useCuesStore.getState().setLoadStatus('native', { state: 'loaded', source: 'imported' }); }
+    if (newTarget.length > 0) { syncController.activeTargetSource = 'imported'; useCuesStore.getState().setLoadStatus('target', { state: 'loaded', source: 'imported' }); }
+    if (newNative.length > 0) { syncController.activeNativeSource = 'imported'; useCuesStore.getState().setLoadStatus('native', { state: 'loaded', source: 'imported' }); }
     // Import resets the translated native slot (new target/native sources).
     clearTranslatedNativeState();
     refreshPanel('target');
@@ -1529,14 +1366,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     if (targetCues.length > 0 || nativeCues.length > 0) {
       blockController?.loadBilingualCues(targetCues, nativeCues);
       showOverlay();
-      latestTargetCues = targetCues;
+      syncController.latestTargetCues = targetCues;
       offsetController?.loadCues(true);
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
       broadcastCues(bilingualCues);
     } else if (newTarget.length === 0 && newNative.length === 0) {
       blockController?.loadCues(parsed[0].cues); // fallback: single mode
       showOverlay();
-      latestTargetCues = parsed[0].cues;
+      syncController.latestTargetCues = parsed[0].cues;
       offsetController?.loadCues(true);
     }
     updateGenerateNativeEnabled();
@@ -1562,26 +1399,26 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * Loads cues from the stored parsed file + toast.
    */
   async function onPanelSelect(role: 'target' | 'native', index: number): Promise<void> {
-    const items = role === 'target' ? importedTargetItems : importedNativeItems;
+    const items = role === 'target' ? syncController.importedTargetItems : syncController.importedNativeItems;
     if (index >= items.length) return;
-    if (role === 'target') { activeImportTargetIndex = index; activeTargetSource = 'imported'; }
-    else { activeImportNativeIndex = index; activeNativeSource = 'imported'; }
+    if (role === 'target') { syncController.activeImportTargetIndex = index; syncController.activeTargetSource = 'imported'; }
+    else { syncController.activeImportNativeIndex = index; syncController.activeNativeSource = 'imported'; }
 
     // Refresh manager panel active state immediately so the UI reflects the click.
     refreshPanel(role);
 
     // Retrieve cues from the parsed file (stored in a side map)
     const parsed = role === 'target'
-      ? importedParsedTarget[index]
-      : importedParsedNative[index];
+      ? syncController.importedParsedTarget[index]
+      : syncController.importedParsedNative[index];
     if (!parsed) return;
 
     if (role === 'target') {
       blockController?.loadBilingualCues(parsed.cues, []);
-      latestTargetCues = parsed.cues;
+      syncController.latestTargetCues = parsed.cues;
       clearTranslatedNativeState();
-      activeNativeSource = 'auto';
-      activeNativeIndex = 0;
+      syncController.activeNativeSource = 'auto';
+      syncController.activeNativeIndex = 0;
       refreshPanel('native');
       updateGenerateNativeEnabled();
     } else {
@@ -1593,7 +1430,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
-  // ADR-015 T10: side maps moved to state block above (importedParsedTarget/Native)
+  // ADR-015 T10: side maps moved to state block above (syncController.importedParsedTarget/Native)
 
   /**
    * ADR-015: unified manager panel selection handler. The panel shows a merged
@@ -1605,13 +1442,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Off option (index -1): clear cues for this role, mark as Off
     if (index === -1) {
       if (role === 'target') {
-        activeTargetSource = 'auto';
-        activeTargetIndex = -1;
-        latestTargetCues = [];
+        syncController.activeTargetSource = 'auto';
+        syncController.activeTargetIndex = -1;
+        syncController.latestTargetCues = [];
         clearTranslatedNativeState();
       } else {
-        activeNativeSource = 'auto';
-        activeNativeIndex = -1;
+        syncController.activeNativeSource = 'auto';
+        syncController.activeNativeIndex = -1;
       }
       blockController?.loadBilingualCues(
         role === 'target' ? [] : (blockController.getTargetCues() as SrtCue[]),
@@ -1622,7 +1459,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       syncSidePanelFromBlock();
       return;
     }
-    const { items } = mergedPanelItems(role);
+    const { items } = syncController.mergedPanelItems(role);
     const item = items[index];
     if (!item) return;
     if (item.source === 'imported') {
@@ -1635,10 +1472,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
     if (item.source === 'ocr') {
       // OCR dual-stream: re-activate the live OCR track for this role.
-      const slot = role === 'target' ? ocrTargetSlot : ocrNativeSlot;
+      const slot = role === 'target' ? syncController.ocrTargetSlot : syncController.ocrNativeSlot;
       if (slot) {
-        if (role === 'target') activeTargetSource = 'ocr';
-        else activeNativeSource = 'ocr';
+        if (role === 'target') syncController.activeTargetSource = 'ocr';
+        else syncController.activeNativeSource = 'ocr';
         refreshPanel(role);
         // D1 merge: empty other side keeps the existing side (onSubtitleSelect pattern).
         blockController?.loadBilingualCues(role === 'target' ? slot.cues : [], role === 'native' ? slot.cues : []);
@@ -1648,10 +1485,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       return;
     }
     if (item.source === 'translated') {
-      if (role === 'native' && translatedNativeSlot) {
-        activeNativeSource = 'translated';
+      if (role === 'native' && syncController.translatedNativeSlot) {
+        syncController.activeNativeSource = 'translated';
         refreshPanel('native');
-        blockController?.loadBilingualCues([...blockController.getTargetCues()], translatedNativeSlot.cues);
+        blockController?.loadBilingualCues([...blockController.getTargetCues()], syncController.translatedNativeSlot.cues);
         showOverlay();
         syncSidePanelFromBlock();
       }
@@ -1666,11 +1503,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * + save preference to chrome.storage.local (origin → lang → index).
    */
   async function onSubtitleSelect(role: 'target' | 'native', index: number): Promise<void> {
-    const matches = role === 'target' ? targetMatches : nativeMatches;
+    const matches = role === 'target' ? syncController.targetMatches : syncController.nativeMatches;
     if (index >= matches.length) return;
     const sub = matches[index];
-    if (role === 'target') { activeTargetIndex = index; activeTargetSource = 'auto'; }
-    else { activeNativeIndex = index; activeNativeSource = 'auto'; }
+    if (role === 'target') { syncController.activeTargetIndex = index; syncController.activeTargetSource = 'auto'; }
+    else { syncController.activeNativeIndex = index; syncController.activeNativeSource = 'auto'; }
 
     // Refresh manager panel active state immediately so the UI reflects the click
     // before the async fetch. The fetch can fail (CORS/offline), but the selected
@@ -1689,17 +1526,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       if (role === 'target') {
         blockController?.loadBilingualCues(result.cues, []);
         // ADR-018: update nav cluster — keep native side, replace target
-        latestTargetCues = result.cues;
+        syncController.latestTargetCues = result.cues;
         clearTranslatedNativeState();
-        activeNativeSource = 'auto';
-        activeNativeIndex = 0;
+        syncController.activeNativeSource = 'auto';
+        syncController.activeNativeIndex = 0;
         refreshPanel('native');
         updateGenerateNativeEnabled();
-        // updateCues(latestTargetCues, latestNativeCues);
+        // updateCues(syncController.latestTargetCues, latestNativeCues);
       } else {
         blockController?.loadBilingualCues([], result.cues);
         // ADR-018: update nav cluster — keep target side, replace native
-        // updateCues(latestTargetCues, latestNativeCues);
+        // updateCues(syncController.latestTargetCues, latestNativeCues);
       }
       showOverlay();
       syncSidePanelFromBlock();
@@ -1730,11 +1567,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
    * Subtitle search: user selected a search result from SubtitleSearchPanel.
    * Sends RESOLVE_SUBTITLE_DOWNLOAD to background → parses content → caches
    * cues by result.id → creates a 'searched' panel item → loads bilingual cues.
-   * Re-selecting the same result uses the parsedSearchCache (no re-fetch).
+   * Re-selecting the same result uses the syncController.parsedSearchCache (no re-fetch).
    */
   async function handleSearchResultSelect(result: SubtitleSearchResult, role: 'target' | 'native'): Promise<void> {
     // Cache hit: reuse parsed cues (user re-selected a previously loaded result).
-    const cachedCues = parsedSearchCache.get(result.id);
+    const cachedCues = syncController.parsedSearchCache.get(result.id);
     let cues: SrtCue[];
     if (cachedCues) {
       cues = cachedCues;
@@ -1755,11 +1592,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         return;
       }
       cues = parsed.cues;
-      parsedSearchCache.set(result.id, cues);
+      syncController.parsedSearchCache.set(result.id, cues);
     }
 
     // Build panel item + append to the searched items array for this role.
-    const items = role === 'target' ? searchedTargetItems : searchedNativeItems;
+    const items = role === 'target' ? syncController.searchedTargetItems : syncController.searchedNativeItems;
     const existingIdx = items.findIndex((it) => it.id === `searched-${role}-${result.id}`);
     if (existingIdx >= 0) {
       // Already in the panel — just select it.
@@ -1775,13 +1612,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       index: items.length,
     };
     if (role === 'target') {
-      searchedTargetItems = [...searchedTargetItems, item];
-      activeSearchedTargetIndex = item.index;
-      activeTargetSource = 'searched';
+      syncController.searchedTargetItems = [...syncController.searchedTargetItems, item];
+      syncController.activeSearchedTargetIndex = item.index;
+      syncController.activeTargetSource = 'searched';
     } else {
-      searchedNativeItems = [...searchedNativeItems, item];
-      activeSearchedNativeIndex = item.index;
-      activeNativeSource = 'searched';
+      syncController.searchedNativeItems = [...syncController.searchedNativeItems, item];
+      syncController.activeSearchedNativeIndex = item.index;
+      syncController.activeNativeSource = 'searched';
     }
     // Search selection resets the translated native slot (new native source).
     if (role === 'native') clearTranslatedNativeState();
@@ -1791,7 +1628,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Load cues (D1 merge keeps the other side).
     if (role === 'target') {
       blockController?.loadBilingualCues(cues, []);
-      latestTargetCues = cues;
+      syncController.latestTargetCues = cues;
     } else {
       blockController?.loadBilingualCues([], cues);
     }
@@ -1804,27 +1641,27 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
 
   /**
    * User selected an already-loaded searched subtitle via the manager panel.
-   * Loads cues from parsedSearchCache by the searched item index.
+   * Loads cues from syncController.parsedSearchCache by the searched item index.
    */
   async function onSearchedSelect(role: 'target' | 'native', index: number): Promise<void> {
-    const items = role === 'target' ? searchedTargetItems : searchedNativeItems;
+    const items = role === 'target' ? syncController.searchedTargetItems : syncController.searchedNativeItems;
     if (index >= items.length) return;
     const item = items[index];
-    if (role === 'target') { activeSearchedTargetIndex = index; activeTargetSource = 'searched'; }
-    else { activeSearchedNativeIndex = index; activeNativeSource = 'searched'; }
+    if (role === 'target') { syncController.activeSearchedTargetIndex = index; syncController.activeTargetSource = 'searched'; }
+    else { syncController.activeSearchedNativeIndex = index; syncController.activeNativeSource = 'searched'; }
     refreshPanel(role);
 
     // Retrieve cues from cache by result.id (encoded in item.id).
     const resultId = item.id.replace(`searched-${role}-`, '');
-    const cues = parsedSearchCache.get(resultId);
+    const cues = syncController.parsedSearchCache.get(resultId);
     if (!cues) return;
 
     if (role === 'target') {
       blockController?.loadBilingualCues(cues, []);
-      latestTargetCues = cues;
+      syncController.latestTargetCues = cues;
       clearTranslatedNativeState();
-      activeNativeSource = 'auto';
-      activeNativeIndex = 0;
+      syncController.activeNativeSource = 'auto';
+      syncController.activeNativeIndex = 0;
       refreshPanel('native');
       updateGenerateNativeEnabled();
     } else {
@@ -1881,11 +1718,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === location.href) return;
     blockController?.clearCues();
     offsetController?.loadCues(false);
-    latestTargetCues = [];
+    syncController.latestTargetCues = [];
     translatePrefill?.clear();
     translatePrefill = null;
     clearTranslatedNativeState();
-    activeNativeSource = 'auto';
+    syncController.activeNativeSource = 'auto';
     updateGenerateNativeEnabled();
     lastAutoLoadKey = undefined;
     lastAutoLoadUrl = undefined;
@@ -1893,12 +1730,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // previous video don't persist. Without this, the SubtitleManagerPanel
     // keeps showing the old video's tracks after SPA nav to a video with no
     // subtitles (onSpaNav cleared overlay cues but not the panel items).
-    autoTargetItems = [];
-    autoNativeItems = [];
-    targetMatches = [];
-    nativeMatches = [];
-    activeTargetIndex = 0;
-    activeNativeIndex = 0;
+    syncController.autoTargetItems = [];
+    syncController.autoNativeItems = [];
+    syncController.targetMatches = [];
+    syncController.nativeMatches = [];
+    syncController.activeTargetIndex = 0;
+    syncController.activeNativeIndex = 0;
     refreshPanel('target');
     refreshPanel('native');
     useCuesStore.getState().setLoadStatus('target', { state: 'none' });
@@ -1916,18 +1753,18 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     if (e.source !== window) return;
     const d = e.data as { type?: string; targetCues?: SrtCue[]; nativeCues?: SrtCue[] };
     if (d?.type === '__CELL_OCR_TRACKS' && d.targetCues && d.nativeCues) {
-      if (!ocrTargetSlot || !ocrNativeSlot) {
-        preOcrSources = { target: activeTargetSource, native: activeNativeSource };
-        ocrTargetSlot = { item: makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
-        ocrNativeSlot = { item: makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
+      if (!syncController.ocrTargetSlot || !syncController.ocrNativeSlot) {
+        syncController.preOcrSources = { target: syncController.activeTargetSource, native: syncController.activeNativeSource };
+        syncController.ocrTargetSlot = { item: syncController.makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
+        syncController.ocrNativeSlot = { item: syncController.makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
       }
-      ocrTargetSlot.cues = d.targetCues;
-      ocrNativeSlot.cues = d.nativeCues;
-      activeTargetSource = 'ocr';
-      activeNativeSource = 'ocr';
+      syncController.ocrTargetSlot.cues = d.targetCues;
+      syncController.ocrNativeSlot.cues = d.nativeCues;
+      syncController.activeTargetSource = 'ocr';
+      syncController.activeNativeSource = 'ocr';
       blockController?.loadBilingualCues(d.targetCues, d.nativeCues);
       showOverlay();
-      latestTargetCues = d.targetCues;
+      syncController.latestTargetCues = d.targetCues;
       offsetController?.loadCues(true);
       bilingualCues = mergeCuesForPanel(d.targetCues, d.nativeCues);
       broadcastCues(bilingualCues);
@@ -1936,12 +1773,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       return;
     }
     if (d?.type === '__CELL_OCR_TRACKS_END') {
-      ocrTargetSlot = null;
-      ocrNativeSlot = null;
-      if (preOcrSources) {
-        activeTargetSource = preOcrSources.target;
-        activeNativeSource = preOcrSources.native;
-        preOcrSources = null;
+      syncController.ocrTargetSlot = null;
+      syncController.ocrNativeSlot = null;
+      if (syncController.preOcrSources) {
+        syncController.activeTargetSource = syncController.preOcrSources.target;
+        syncController.activeNativeSource = syncController.preOcrSources.native;
+        syncController.preOcrSources = null;
       }
       refreshPanel('target');
       refreshPanel('native');

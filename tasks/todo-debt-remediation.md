@@ -20,8 +20,8 @@
 - [x] Task 5: Characterization tests `reactSubtitleController`
 - [x] Task 6: Extract `StudyModeController` (`SubtitleStudyModeController` extracted; `reactSubtitleController.ts` còn 881 dòng, cần Task 6b để xuống < 800)
 - [x] Task 6b: Tách manager/style state để `reactSubtitleController.ts` < 800 dòng
-- [ ] Task 7: Characterization tests `contentScriptController`
-- [ ] Task 8: Tách `subtitleSyncController`
+- [x] Task 7: Characterization tests `contentScriptController`
+- [x] Task 8: Tách `subtitleSyncController`
 
 ## Phase 3: Build & Dependency
 

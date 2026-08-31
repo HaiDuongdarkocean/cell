@@ -18,3 +18,4 @@ export * from './netflixPlayback';
 export * from './subtitleControllerHelpers';
 export * from './shortcutActionDispatcher';
 export { init as initContentScriptController } from './contentScriptController';
+export * from './subtitleSyncController';
