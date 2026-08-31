@@ -7,14 +7,14 @@ import {
   DEFAULT_OVERLAY_STYLE_NATIVE,
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
-import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
+import { mountSubtitle, type MountSubtitleResult, type ManagerState } from './mountSubtitle';
+import { SubtitleStyleController } from './subtitleStyleController';
 import {
   SubtitleStudyModeController,
   type SubtitleStudyModeTimeState,
 } from '@/features/studyModes/lib/subtitleStudyModeController';
 import type { PlaybackAction } from '@/features/studyModes/lib/studyModePlaybackController';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
-import type { AppearanceState } from './SubtitleManagerPanel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
@@ -57,7 +57,6 @@ export class ReactSubtitleController {
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
-  private yOffsetPersistTimer: ReturnType<typeof setTimeout> | null = null;
   private isPlaying = false;
   private repeatActive = false;
   private repeatIcon: IconCatalogKey = 'navRepeat';
@@ -67,15 +66,12 @@ export class ReactSubtitleController {
   private managerTargetActiveIndex = 0;
   private managerNativeActiveIndex = 0;
   private generateNativeEnabled = true;
-  private stylePersistTimer: ReturnType<typeof setTimeout> | null = null;
-  private blockPersistTimer: ReturnType<typeof setTimeout> | null = null;
-  private clusterPersistTimer: ReturnType<typeof setTimeout> | null = null;
-  private previewTextPersistTimer: ReturnType<typeof setTimeout> | null = null;
-  private previewTargetText = 'This is how the target subtitle will look.';
-  private previewNativeText = 'This is how the native subtitle will look.';
   private hasSearchKeys = false;
   private searchApiKeys: readonly SubtitleApiKey[] = [];
   private onApiKeysChangeCallback: ((keys: SubtitleApiKey[]) => void) | null = null;
+
+  /** Style/manager state lives in a dedicated controller. */
+  private styleController: SubtitleStyleController | undefined;
 
   private playerModeResizeHandler: (() => void) | null = null;
   /** Study mode playback coordinator. Null when no study mode is active. */
@@ -102,11 +98,6 @@ export class ReactSubtitleController {
   public onHideSection?: (role: 'target' | 'native') => void;
   /** Called when the user toggles hide/show for both subtitles in the overlay. */
   public onHideBoth?: () => void;
-
-  /** Whether target subtitle is currently hidden from the overlay. */
-  private targetHidden = false;
-  /** Whether native subtitle is currently hidden from the overlay. */
-  private nativeHidden = false;
 
   /** Whether Player Mode overlay is currently active. */
   public isPlayerModeActive = false;
@@ -145,7 +136,7 @@ export class ReactSubtitleController {
       () => this.getOffsetMs(),
       {
         onCuesUpdated: () => this.syncFromEngine(),
-        onStyleUpdated: () => this.updateStylesFromEngine(),
+        onStyleUpdated: () => this.styleController?.updateStylesFromEngine(),
         onPlayPause: (playing) => this.setIsPlaying(playing),
         onGenerateNativeEnabled: (enabled) => this.applyGenerateNativeEnabled(enabled),
       },
@@ -165,9 +156,7 @@ export class ReactSubtitleController {
       repeatIcon: this.repeatIcon,
       repeatLabel: this.repeatLabel,
       yOffsetPercent: blockSettings.yOffsetPercent,
-      onDragReposition: (y) => this.handleDragReposition(y),
-      manager: this.buildManagerState(),
-      offset: this.buildOffsetState(),
+      onDragReposition: (y) => this.styleController?.handleDragReposition(y),
       generateNativeEnabled: this.generateNativeEnabled,
       videoAspectRatio: this.videoAspectRatio,
       onTogglePlayerMode: (active) => this.handlePlayerModeToggle(active),
@@ -190,6 +179,17 @@ export class ReactSubtitleController {
       offsetMs: this.offsetMs,
       onSeek: (timeMs: number) => this.handleCueSeek(timeMs),
     });
+
+    this.styleController = new SubtitleStyleController({
+      engine: this.engine,
+      mount: this.mount,
+      getOffsetMs: () => this.getOffsetMs(),
+      onOffsetChange: (ms) => this.setOffsetMs(ms),
+      onManagerUpdate: () => this.mount.setManager(this.buildManagerState()),
+    });
+
+    this.mount.setManager(this.buildManagerState());
+    this.mount.setOffset(this.styleController.buildOffsetState());
 
     // Wire video timeupdate → engine.onTimeUpdate so active cue index tracks
     // playback. Without this, loadBilingualCues sets index=-1 and the block
@@ -224,15 +224,15 @@ export class ReactSubtitleController {
           // OffsetLayer display + manager panel show 0 after a controller
           // re-init (SPA episode switch) even though the engine's offset
           // provider would eventually pick up the new value.
-          this.mount.setOffset(this.buildOffsetState());
+          this.mount.setOffset(this.styleController!.buildOffsetState());
           this.mount.setManager(this.buildManagerState());
           this.engine.onTimeUpdate();
         }
         if (typeof settings.subtitlePreviewTargetText === 'string' && settings.subtitlePreviewTargetText) {
-          this.previewTargetText = settings.subtitlePreviewTargetText;
+          this.styleController?.setPreviewText('target', settings.subtitlePreviewTargetText);
         }
         if (typeof settings.subtitlePreviewNativeText === 'string' && settings.subtitlePreviewNativeText) {
-          this.previewNativeText = settings.subtitlePreviewNativeText;
+          this.styleController?.setPreviewText('native', settings.subtitlePreviewNativeText);
         }
       });
     } catch {
@@ -257,19 +257,9 @@ export class ReactSubtitleController {
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }
 
-  /** ADR-025: drag reposition → update engine block settings + persist yOffsetPercent. */
-  private handleDragReposition(yOffsetPercent: number): void {
-    this.engine.updateBlockSettings({ yOffsetPercent });
-    this.mount.setYOffsetPercent(yOffsetPercent);
-    if (this.yOffsetPersistTimer) clearTimeout(this.yOffsetPersistTimer);
-    this.yOffsetPersistTimer = setTimeout(() => {
-      this.yOffsetPersistTimer = null;
-      const current = this.engine.getBlockSettings();
-      saveSettings({ subtitleBlockSettings: { ...current, yOffsetPercent } } as Partial<Settings>).catch(() => undefined);
-    }, OFFSET_PERSIST_DEBOUNCE_MS);
-  }
-
   private buildManagerState(): ManagerState {
+    const styleController = this.styleController;
+    if (!styleController) throw new Error('style controller not initialized');
     return {
       targetItems: this.managerTargetItems,
       nativeItems: this.managerNativeItems,
@@ -280,35 +270,17 @@ export class ReactSubtitleController {
       onGenerateNative: () => this.onGenerateNative(),
       onOffsetChange: (_role, ms) => this.setOffsetMs(ms),
       offsetMs: this.offsetMs,
-      appearance: this.buildAppearanceState(),
+      appearance: styleController.buildAppearanceState(),
       hasSearchKeys: this.hasSearchKeys,
       apiKeys: this.searchApiKeys,
       onApiKeysChange: (keys) => this.onApiKeysChangeCallback?.(keys),
       onSearchResultSelect: (result, role) => this.onSearchResultSelect?.(result, role),
       onDownload: (role, index) => this.handleDownloadItem(role, index),
-      onHideSection: (role) => this.handleHideSection(role),
-      onHideBoth: () => this.handleHideBoth(),
-      targetHidden: this.targetHidden,
-      nativeHidden: this.nativeHidden,
-      bothHidden: this.targetHidden && this.nativeHidden,
-    };
-  }
-
-  private buildAppearanceState(): AppearanceState {
-    return {
-      targetStyle: this.engine.getTargetStyle(),
-      nativeStyle: this.engine.getNativeStyle(),
-      blockSettings: this.engine.getBlockSettings(),
-      clusterSettings: this.engine.getClusterSettings(),
-      defaultTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
-      defaultNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
-      previewTargetText: this.previewTargetText,
-      previewNativeText: this.previewNativeText,
-      onStyleChange: (role, partial) => this.handleStyleChange(role, partial),
-      onBlockSettingsChange: (partial) => this.handleBlockSettingsChange(partial),
-      onClusterSettingsChange: (partial) => this.handleClusterSettingsChange(partial),
-      onResetStyle: (role) => this.handleResetStyle(role),
-      onPreviewTextChange: (role, text) => this.handlePreviewTextChange(role, text),
+      onHideSection: (role) => styleController.handleHideSection(role),
+      onHideBoth: () => styleController.handleHideBoth(),
+      targetHidden: styleController.getTargetHidden(),
+      nativeHidden: styleController.getNativeHidden(),
+      bothHidden: styleController.getTargetHidden() && styleController.getNativeHidden(),
     };
   }
 
@@ -327,124 +299,6 @@ export class ReactSubtitleController {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  /** Toggle hide/show for a section's subtitle in the overlay. */
-  private handleHideSection(role: 'target' | 'native'): void {
-    if (role === 'target') {
-      this.targetHidden = !this.targetHidden;
-      const style = this.engine.getTargetStyle();
-      this.engine.updateSettings({ targetStyle: { ...style, visible: !this.targetHidden } });
-    } else {
-      this.nativeHidden = !this.nativeHidden;
-      const style = this.engine.getNativeStyle();
-      this.engine.updateSettings({ nativeStyle: { ...style, visible: !this.nativeHidden } });
-    }
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-  }
-
-  /** Toggle hide/show for both target + native subtitles in the overlay. */
-  private handleHideBoth(): void {
-    const bothHidden = this.targetHidden && this.nativeHidden;
-    if (bothHidden) {
-      // Show both
-      this.targetHidden = false;
-      this.nativeHidden = false;
-    } else {
-      // Hide both
-      this.targetHidden = true;
-      this.nativeHidden = true;
-    }
-    const targetStyle = this.engine.getTargetStyle();
-    const nativeStyle = this.engine.getNativeStyle();
-    this.engine.updateSettings({
-      targetStyle: { ...targetStyle, visible: !this.targetHidden },
-      nativeStyle: { ...nativeStyle, visible: !this.nativeHidden },
-    });
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-  }
-
-  /** Merge partial style with current engine style, apply to engine, debounced persist. */
-  private handleStyleChange(role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void {
-    const current = role === 'target' ? this.engine.getTargetStyle() : this.engine.getNativeStyle();
-    const merged = { ...current, ...partial };
-    if (role === 'target') this.engine.updateSettings({ targetStyle: merged });
-    else this.engine.updateSettings({ nativeStyle: merged });
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-
-    if (this.stylePersistTimer) clearTimeout(this.stylePersistTimer);
-    this.stylePersistTimer = setTimeout(() => {
-      const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-      saveSettings({ [key]: merged } as Partial<Settings>).catch(() => undefined);
-      this.stylePersistTimer = null;
-    }, OFFSET_PERSIST_DEBOUNCE_MS);
-  }
-
-  private handleBlockSettingsChange(partial: Partial<SubtitleBlockSettings>): void {
-    const current = this.engine.getBlockSettings();
-    const merged = { ...current, ...partial };
-    this.engine.updateSettings({ blockSettings: merged });
-    if (partial.yOffsetPercent !== undefined) {
-      this.mount.setYOffsetPercent(partial.yOffsetPercent);
-    }
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-
-    if (this.blockPersistTimer) clearTimeout(this.blockPersistTimer);
-    this.blockPersistTimer = setTimeout(() => {
-      saveSettings({ subtitleBlockSettings: merged } as Partial<Settings>).catch(() => undefined);
-      this.blockPersistTimer = null;
-    }, OFFSET_PERSIST_DEBOUNCE_MS);
-  }
-
-  private handleClusterSettingsChange(partial: Partial<NavClusterSettings>): void {
-    const current = this.engine.getClusterSettings();
-    const merged = { ...current, ...partial };
-    this.engine.updateSettings({ clusterSettings: merged });
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-
-    if (this.clusterPersistTimer) clearTimeout(this.clusterPersistTimer);
-    this.clusterPersistTimer = setTimeout(() => {
-      saveSettings({ navClusterSettings: merged } as Partial<Settings>).catch(() => undefined);
-      this.clusterPersistTimer = null;
-    }, OFFSET_PERSIST_DEBOUNCE_MS);
-  }
-
-  private handleResetStyle(role: 'target' | 'native'): void {
-    const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
-    if (role === 'target') this.engine.updateSettings({ targetStyle: defaults });
-    else this.engine.updateSettings({ nativeStyle: defaults });
-    this.updateStylesFromEngine();
-    this.mount.setManager(this.buildManagerState());
-
-    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    saveSettings({ [key]: defaults } as Partial<Settings>).catch(() => undefined);
-  }
-
-  private handlePreviewTextChange(role: 'target' | 'native', text: string): void {
-    if (role === 'target') this.previewTargetText = text;
-    else this.previewNativeText = text;
-    this.mount.setManager(this.buildManagerState());
-
-    if (this.previewTextPersistTimer) clearTimeout(this.previewTextPersistTimer);
-    this.previewTextPersistTimer = setTimeout(() => {
-      const key = role === 'target' ? 'subtitlePreviewTargetText' : 'subtitlePreviewNativeText';
-      saveSettings({ [key]: text } as Partial<Settings>).catch(() => undefined);
-      this.previewTextPersistTimer = null;
-    }, OFFSET_PERSIST_DEBOUNCE_MS);
-  }
-
-  private buildOffsetState(): OffsetState {
-    return {
-      targetMs: this.offsetMs,
-      nativeMs: this.offsetMs,
-      onTargetChange: (ms) => this.setOffsetMs(ms),
-      onNativeChange: (ms) => this.setOffsetMs(ms),
-    };
   }
 
   private openImportFileInput(role: 'target' | 'native'): void {
@@ -468,12 +322,6 @@ export class ReactSubtitleController {
   private syncFromEngine(): void {
     this.setIsPlaying(!this.video.paused);
     this.onCuesUpdated?.();
-  }
-
-  private updateStylesFromEngine(): void {
-    this.mount.setStyles(this.engine.getTargetStyle(), this.engine.getNativeStyle());
-    this.mount.setClusterSettings(this.engine.getClusterSettings());
-    this.mount.setBlockSettings(this.engine.getBlockSettings());
   }
 
   private setIsPlaying(playing: boolean): void {
@@ -536,7 +384,7 @@ export class ReactSubtitleController {
 
   updateSettings(update: SubtitleCueEngineUpdate): void {
     this.engine.updateSettings(update);
-    this.updateStylesFromEngine();
+    this.styleController?.updateStylesFromEngine();
   }
 
   loadCues(cues: readonly SrtCue[]): void;
@@ -594,7 +442,7 @@ export class ReactSubtitleController {
   setOffsetMs(ms: number): void {
     this.offsetMs = clampOffsetMs(ms);
     this.persistOffset();
-    this.mount.setOffset(this.buildOffsetState());
+    this.mount.setOffset(this.styleController!.buildOffsetState());
     // Refresh manager state so the panel's offsetMs prop stays current —
     // the panel mounts fresh on each open and reads this prop as its initial
     // Latency value. Without this, reopening after a change shows the stale
@@ -628,8 +476,10 @@ export class ReactSubtitleController {
    *  when overlay visibility is toggled externally (shortcut, showOverlay, etc.).
    *  Keeps the manager panel's hide buttons in sync with the actual overlay state. */
   syncHiddenState(): void {
-    this.targetHidden = !this.engine.getTargetStyle().visible;
-    this.nativeHidden = !this.engine.getNativeStyle().visible;
+    this.styleController?.setHidden(
+      !this.engine.getTargetStyle().visible,
+      !this.engine.getNativeStyle().visible,
+    );
     this.mount.setManager(this.buildManagerState());
   }
 
@@ -663,13 +513,14 @@ export class ReactSubtitleController {
     for (const action of actions) {
       switch (action.type) {
         case 'setSubtitle': {
-          this.targetHidden = action.subtitle === 'none' || action.subtitle === 'native';
-          this.nativeHidden = action.subtitle === 'none' || action.subtitle === 'target';
+          const targetHidden = action.subtitle === 'none' || action.subtitle === 'native';
+          const nativeHidden = action.subtitle === 'none' || action.subtitle === 'target';
+          this.styleController?.setHidden(targetHidden, nativeHidden);
           this.engine.updateSettings({
-            targetStyle: { ...this.engine.getTargetStyle(), visible: !this.targetHidden },
-            nativeStyle: { ...this.engine.getNativeStyle(), visible: !this.nativeHidden },
+            targetStyle: { ...this.engine.getTargetStyle(), visible: !targetHidden },
+            nativeStyle: { ...this.engine.getNativeStyle(), visible: !nativeHidden },
           });
-          this.updateStylesFromEngine();
+          this.styleController?.updateStylesFromEngine();
           this.mount.setManager(this.buildManagerState());
           break;
         }
@@ -866,12 +717,8 @@ export class ReactSubtitleController {
     this.playerModeHost?.restore();
     this.playerModeHost = null;
     this.clearPlayerModeBounds();
+    this.styleController?.destroy();
     if (this.persistTimer) { clearTimeout(this.persistTimer); this.persistTimer = null; }
-    if (this.yOffsetPersistTimer) { clearTimeout(this.yOffsetPersistTimer); this.yOffsetPersistTimer = null; }
-    if (this.stylePersistTimer) { clearTimeout(this.stylePersistTimer); this.stylePersistTimer = null; }
-    if (this.blockPersistTimer) { clearTimeout(this.blockPersistTimer); this.blockPersistTimer = null; }
-    if (this.clusterPersistTimer) { clearTimeout(this.clusterPersistTimer); this.clusterPersistTimer = null; }
-    if (this.previewTextPersistTimer) { clearTimeout(this.previewTextPersistTimer); this.previewTextPersistTimer = null; }
     this.video.removeEventListener('play', this.onVideoPlay);
     this.video.removeEventListener('pause', this.onVideoPause);
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
