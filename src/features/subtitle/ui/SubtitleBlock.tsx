@@ -119,8 +119,12 @@ function SubtitleBlockInner({
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];
 
-  const targetText = removeBracketed ? removeBracketedText(targetCue?.text ?? '') : (targetCue?.text ?? '');
-  const nativeText = removeBracketed ? removeBracketedText(nativeCue?.text ?? '') : (nativeCue?.text ?? '');
+  const targetText = targetCue
+    ? (removeBracketed ? removeBracketedText(targetCue.text) : targetCue.text)
+    : null;
+  const nativeText = nativeCue
+    ? (removeBracketed ? removeBracketedText(nativeCue.text) : nativeCue.text)
+    : null;
 
   // Inline load status — shown only when no active cue. When cues arrive,
   // setCues clears the status → subtitle text takes over.
