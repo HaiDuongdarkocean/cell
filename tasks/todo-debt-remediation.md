@@ -26,4 +26,4 @@
 ## Phase 3: Build & Dependency
 
 - [x] Task 9: Sửa `INEFFECTIVE_DYNAMIC_IMPORT`
-- [ ] Task 10: Upgrade dependencies
+- [x] Task 10: Upgrade dependencies
