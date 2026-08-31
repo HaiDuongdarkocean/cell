@@ -4,6 +4,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings } from '@/entities/media';
 import { useCuesStore, type LoadErrorType, type LoadStatus, type SubtitleSource } from '@/stores/cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
+import { removeBracketedText } from '../logic/removeBracketed';
 import styles from './SubtitleBlock.module.css';
 
 interface SubtitleBlockCues {
@@ -21,6 +22,8 @@ interface SubtitleBlockProps {
   /** Optional appearance-preview editing; production overlay leaves this disabled. */
   editable?: boolean;
   onTextChange?: (role: 'target' | 'native', text: string) => void;
+  /** Strip content inside parentheses, brackets, or braces when rendering. */
+  removeBracketed?: boolean;
 }
 
 const selectTargetCues = (state: { targetCues: SrtCue[] }): SrtCue[] => state.targetCues;
@@ -99,6 +102,7 @@ function SubtitleBlockInner({
   blockSettings,
   editable = false,
   onTextChange,
+  removeBracketed = false,
 }: SubtitleBlockProps): React.JSX.Element | null {
   const storeTargetCues = useCuesStore(selectTargetCues);
   const storeNativeCues = useCuesStore(selectNativeCues);
@@ -114,6 +118,9 @@ function SubtitleBlockInner({
 
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];
+
+  const targetText = removeBracketed ? removeBracketedText(targetCue?.text ?? '') : (targetCue?.text ?? '');
+  const nativeText = removeBracketed ? removeBracketedText(nativeCue?.text ?? '') : (nativeCue?.text ?? '');
 
   // Inline load status — shown only when no active cue. When cues arrive,
   // setCues clears the status → subtitle text takes over.
@@ -194,7 +201,7 @@ function SubtitleBlockInner({
           suppressContentEditableWarning={editable}
           onBlur={editable ? (event) => handleTextBlur('target', event) : undefined}
         >
-          {targetCue?.text ?? targetStatusText ?? ''}
+          {targetText ?? targetStatusText ?? ''}
         </span>
       </div>
       {(hasNativeCue || hasNativeStatus) && (
@@ -215,7 +222,7 @@ function SubtitleBlockInner({
             suppressContentEditableWarning={editable}
             onBlur={editable ? (event) => handleTextBlur('native', event) : undefined}
           >
-            {nativeCue?.text ?? nativeStatusText ?? ''}
+            {nativeText ?? nativeStatusText ?? ''}
           </span>
         </div>
       )}

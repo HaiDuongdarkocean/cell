@@ -617,9 +617,11 @@ export class ReactSubtitleController {
 
   /** Apply a study mode to the current playback.
    *  P1: subtitle visibility + playback speed from the first step.
+   *  removeBracketed is applied to overlay rendering.
    *  Pause/repeat/after/loop state machine is a known ceiling (ponytail). */
-  applyStudyMode(activeMode: StudyMode, _advanced: StudyModeAdvancedSettings): void {
+  applyStudyMode(activeMode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     if (this.destroyed) return;
+    this.mount.setRemoveBracketed(advanced.removeBracketed);
     const step = activeMode.steps[0] ?? { subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' };
     const subtitle = step.subtitle;
     this.targetHidden = subtitle === 'none' || subtitle === 'native';

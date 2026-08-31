@@ -15,7 +15,7 @@ import type { ReactNode, RefObject } from 'react';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
@@ -119,6 +119,8 @@ export interface SubtitlePanelsRef {
   setCues: (cues: BilingualCue[]) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
+  /** Toggle whether bracketed content is stripped from the overlay. */
+  setRemoveBracketed: (enabled: boolean) => void;
   /** Toggle Player Mode (same as clicking the Player Mode button). */
   togglePlayerMode: () => void;
   /** Toggle Split View — CueList panel beside video container (page thường only). */
@@ -179,6 +181,8 @@ export interface SubtitlePanelsProps {
   cues?: BilingualCue[];
   /** Current video time in ms (for CueList highlight). */
   currentTimeMs?: number;
+  /** Strip bracketed content from the overlay. */
+  removeBracketed?: boolean;
   /** Subtitle offset in ms (ADR-019 sync). */
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue. */
