@@ -75,7 +75,7 @@ export type {
 function svLog(event: string, data?: Record<string, unknown>): void {
   const ts = new Date().toISOString().slice(11, 23);
   const line = `[Cell:SplitView ${ts}] ${event}`;
-  // eslint-disable-next-line no-console
+   
   console.log(line, data ?? '');
   const payload = {
     type: '__CELL_SPLIT_VIEW_LOG',
@@ -142,6 +142,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       playlistContent,
       filename,
       fallbackPlayerContainerRef,
+      removeBracketed: initialRemoveBracketed = false,
     },
     ref,
   ): React.JSX.Element {
@@ -163,6 +164,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // callbacks stay stale.
     useEffect(() => { setManager(initialManager); }, [initialManager]);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
+    const [removeBracketed, setRemoveBracketed] = useState(initialRemoveBracketed);
     const [managerOpen, setManagerOpen] = useState(false);
     const [managerExiting, setManagerExiting] = useState(false);
     const [managerOpenOnHost, setManagerOpenOnHost] = useState(false);
@@ -386,7 +388,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         closeManager();
       });
       return cleanup;
-    }, [managerOpenOnHost]);
+    }, [managerOpenOnHost, closeManager]);
 
     // State sync: push serialized state to host on change (throttled 100ms).
     const stateSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -397,7 +399,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         sendManagerStateUpdate(serializeManagerState(manager, offset, !generateNativeEnabled));
       }, 100);
       return () => { if (stateSyncRef.current) clearTimeout(stateSyncRef.current); };
-    }, [managerOpenOnHost, manager?.targetItems, manager?.nativeItems, manager?.targetActiveIndex, manager?.nativeActiveIndex, manager?.targetHidden, manager?.nativeHidden, manager?.bothHidden, manager?.appearance, offset?.targetMs, offset?.nativeMs]);
+    }, [managerOpenOnHost, manager, offset, generateNativeEnabled]);
 
     // Cleanup on close: notify host the child closed the manager + reset flag.
     useEffect(() => {
@@ -495,6 +497,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setYOffsetPercent,
         setCues,
         setCurrentTimeMs,
+        setRemoveBracketed,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
         setSplitViewOpen: (open: boolean) => { setSplitViewOpen(open); },
@@ -657,7 +660,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // fullscreen element. On some browsers YouTube requests fullscreen on
       // document.documentElement (an ANCESTOR of #movie_player) — detect that
       // too so the fullscreen branch runs instead of the normal wrapper branch.
-      let fsEl = document.fullscreenElement;
+      const fsEl = document.fullscreenElement;
       let isPlayerFullscreen = !!fsEl
         && (fsEl === playerShell
           || playerShell.contains(fsEl)
@@ -1153,7 +1156,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setSplitViewPortalTarget(null);
         }, ANIM_MS);
       };
-    }, [splitViewOpen, playerMode, isFullscreen]);
+    }, [splitViewOpen, playerMode, isFullscreen, fallbackPlayerContainerRef, splitViewPct]);
 
     // Load persisted splitViewPct on mount.
     useEffect(() => {
@@ -1309,7 +1312,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         <div className={styles.blockLayer}>
-          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} blockSettings={blockSettings} />
+          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} blockSettings={blockSettings} removeBracketed={removeBracketed} />
         </div>
 
         {!collapsed && (
@@ -1387,7 +1390,7 @@ class PlayerModeErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error): void {
-    // eslint-disable-next-line no-console
+     
     console.error('[PlayerModeErrorBoundary]', error.message, error.stack);
   }
 

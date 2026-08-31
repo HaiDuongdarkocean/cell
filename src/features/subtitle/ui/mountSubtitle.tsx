@@ -36,7 +36,7 @@ import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
 import ocrSettingsPanelCss from '@/features/ocr/ui/OcrSettingsPanel.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { appearanceShadowCss } from './appearance/appearanceShadowCss';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
 
@@ -107,6 +107,8 @@ export interface MountSubtitleResult {
   setCues: (cues: BilingualCue[]) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
+  /** Toggle whether bracketed content is stripped from the overlay. */
+  setRemoveBracketed: (enabled: boolean) => void;
   togglePlayerMode: () => void;
   /** Toggle Split View — CueList panel beside video container (page thường only). */
   toggleSplitView: () => void;
@@ -261,7 +263,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
   // inside the shadow boundary. Without this, [data-theme="dark"] selectors
   // never match and buttons fall back to light-theme colors (invisible on dark dock).
   root.render(
-    createElement(ShadowThemeProvider, { container: rootEl, children: buildComponent() }),
+    createElement(ShadowThemeProvider, { container: rootEl }, buildComponent()),
   );
 
   // Host fills the video container but lets clicks pass through to player controls.
@@ -292,6 +294,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     clearToasts: () => controllerRef?.clearToasts(),
     setCues: (cues) => controllerRef?.setCues(cues),
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
+    setRemoveBracketed: (enabled) => controllerRef?.setRemoveBracketed(enabled),
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),
     toggleSplitView: () => controllerRef?.toggleSplitView(),
     setOcrEnabled: (enabled) => controllerRef?.setOcrEnabled(enabled),
