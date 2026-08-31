@@ -8,7 +8,11 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
-import { StudyModePlaybackController, type PlaybackAction } from '@/features/studyModes/lib/studyModePlaybackController';
+import {
+  SubtitleStudyModeController,
+  type SubtitleStudyModeTimeState,
+} from '@/features/studyModes/lib/subtitleStudyModeController';
+import type { PlaybackAction } from '@/features/studyModes/lib/studyModePlaybackController';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { AppearanceState } from './SubtitleManagerPanel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
@@ -74,10 +78,8 @@ export class ReactSubtitleController {
   private onApiKeysChangeCallback: ((keys: SubtitleApiKey[]) => void) | null = null;
 
   private playerModeResizeHandler: (() => void) | null = null;
-  /** Study mode playback state machine. Null when no study mode is active. */
-  private studyModePlayback: StudyModePlaybackController | null = null;
-  /** Last cue index seen by the study mode state machine (for enter/exit detection). */
-  private lastStudyModeCueIndex = -1;
+  /** Study mode playback coordinator. Null when no study mode is active. */
+  private studyMode: SubtitleStudyModeController = new SubtitleStudyModeController();
 
   /** Called when the user selects a subtitle track from the manager panel. */
   public onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -484,14 +486,14 @@ export class ReactSubtitleController {
   // icon luôn sync. Trước đó chỉ engine.handlePlayPause callback mới update.
   private readonly onVideoPlay = (): void => {
     this.setIsPlaying(true);
-    const actions = this.studyModePlayback?.continue();
-    if (actions) this.applyPlaybackActions(actions);
+    const actions = this.studyMode.continue();
+    if (actions.length) this.applyPlaybackActions(actions);
   };
   private readonly onVideoPause = (): void => this.setIsPlaying(false);
   private readonly onVideoTimeUpdate = (): void => {
     this.engine.onTimeUpdate();
     this.mount.setCurrentTimeMs(this.video.currentTime * 1000);
-    this.onStudyModeTimeUpdate();
+    this.syncStudyMode();
   };
 
   private applyGenerateNativeEnabled(enabled: boolean): void {
@@ -544,8 +546,8 @@ export class ReactSubtitleController {
     this.engine.loadCues([...arg]);
     this.engine.onTimeUpdate();
     this.syncFromEngine();
-    this.studyModePlayback?.setCues(this.engine.getTargetCues(), this.getOffsetMs());
-    this.onStudyModeTimeUpdate();
+    this.studyMode.setCues(this.engine.getTargetCues(), this.getOffsetMs());
+    this.syncStudyMode();
   }
 
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
@@ -554,16 +556,15 @@ export class ReactSubtitleController {
     this.syncFromEngine();
     // Sync CueList in Player Mode with merged bilingual cues.
     this.mount.setCues(mergeCuesForPanel(targetCues, nativeCues));
-    this.studyModePlayback?.setCues(this.engine.getTargetCues(), this.getOffsetMs());
-    this.onStudyModeTimeUpdate();
+    this.studyMode.setCues(this.engine.getTargetCues(), this.getOffsetMs());
+    this.syncStudyMode();
   }
 
   clearCues(): void {
     this.engine.clearCues();
     this.syncFromEngine();
     this.mount.setCues([]);
-    this.studyModePlayback?.setCues([], this.getOffsetMs());
-    this.lastStudyModeCueIndex = -1;
+    this.studyMode.clearCues(this.getOffsetMs());
   }
 
   getTargetCues(): readonly SrtCue[] {
@@ -637,35 +638,25 @@ export class ReactSubtitleController {
    *  removeBracketed is applied to overlay rendering. */
   applyStudyMode(activeMode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     if (this.destroyed) return;
-    this.studyModePlayback = new StudyModePlaybackController(
-      activeMode,
-      advanced,
-      this.engine.getTargetCues(),
-      this.getOffsetMs(),
-    );
-    this.lastStudyModeCueIndex = -1;
+    this.studyMode.applyStudyMode(activeMode, advanced, this.engine.getTargetCues(), this.getOffsetMs());
     this.mount.setRemoveBracketed(advanced.removeBracketed);
 
     // Apply first step immediately if a cue is currently active.
-    this.onStudyModeTimeUpdate();
+    this.syncStudyMode();
   }
 
   /** Drive the study-mode state machine on every time update. */
-  private onStudyModeTimeUpdate(): void {
-    if (!this.studyModePlayback) return;
+  private syncStudyMode(): void {
+    if (!this.studyMode.isActive) return;
 
-    const indices = this.engine.getActiveIndices();
-    const targetIndex = indices.target;
-    const cues = this.engine.getTargetCues();
-    if (targetIndex !== this.lastStudyModeCueIndex && targetIndex >= 0 && cues[targetIndex]) {
-      this.lastStudyModeCueIndex = targetIndex;
-      const actions = this.studyModePlayback.enterCue(cues[targetIndex], targetIndex);
-      this.applyPlaybackActions(actions);
-    }
-
-    const timeMs = this.video.currentTime * 1000;
-    const actions = this.studyModePlayback.onTimeUpdate(timeMs);
-    this.applyPlaybackActions(actions);
+    const { target } = this.engine.getActiveIndices();
+    const state: SubtitleStudyModeTimeState = {
+      targetIndex: target,
+      targetCues: this.engine.getTargetCues(),
+      currentTimeMs: this.video.currentTime * 1000,
+    };
+    const actions = this.studyMode.onTimeUpdate(state);
+    if (actions.length) this.applyPlaybackActions(actions);
   }
 
   private applyPlaybackActions(actions: readonly PlaybackAction[]): void {
@@ -884,6 +875,7 @@ export class ReactSubtitleController {
     this.video.removeEventListener('play', this.onVideoPlay);
     this.video.removeEventListener('pause', this.onVideoPause);
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
+    this.studyMode.destroy();
     this.mount.unmount();
   }
 }
