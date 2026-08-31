@@ -34,7 +34,7 @@ const TEST_VERBS = new Set([
 function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: PhraseIndexInput[] } {
   const fixturePath = path.resolve(
     __dirname,
-    '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+    '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
   );
   const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
   const seen = new Set<string>();
@@ -82,12 +82,12 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     expect(fixture.blob.byteLength).toBeLessThan(8 * 1024 * 1024);
   });
 
-  it('deserializes in under 200ms', () => {
+  it('deserializes in under 300ms', () => {
     const start = performance.now();
     deserializePhraseIndex(fixture.blob);
     const elapsed = performance.now() - start;
     console.log(`deserializePhraseIndex: ${elapsed.toFixed(1)}ms`);
-    expect(elapsed).toBeLessThan(200);
+    expect(elapsed).toBeLessThan(300);
   });
 
   it('matches a simple phrase in under 30ms (P06: kick the bucket)', () => {

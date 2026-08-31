@@ -111,4 +111,25 @@ describe('CustomModeBuilder', () => {
 
     expect(useStudyModeStore.getState().customModes).toHaveLength(0);
   });
+
+  it('adds and reorders steps via the cue strip', async () => {
+    render(<CustomModeBuilder open={true} onOpenChange={onOpenChange} editingId={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('cue-add-step'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cue-step-1')).toBeInTheDocument();
+    });
+
+    const cue = screen.getByTestId('cue-step-1');
+    fireEvent.keyDown(cue, { key: 'ArrowLeft', shiftKey: true });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('step-row-0')).toBeInTheDocument();
+    });
+  });
 });
