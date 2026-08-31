@@ -97,7 +97,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Maintenance mode khi tất cả component đạt threshold.
 - Offline-first; no AI.
 - New `srs-study` entrypoint.
-- Default notetype seed với 7 front templates cơ bản.
+- Default notetype seed với 8 front templates cơ bản.
 
 ### Out of scope
 
@@ -221,7 +221,6 @@ export interface SrsStudyConfig {
   readonly targetThreshold: number; // 0–100, default 90
   readonly learningPath: SrsLearningPathConfig;
   readonly progressConstants: SrsProgressConstants;
-  readonly newCardsPerDay: number; // default 20
 }
 
 export interface SrsProgressConstants {
@@ -261,7 +260,8 @@ export type StimulusType =
   | 'example-sentence'
   | 'word-audio'
   | 'sentence-audio'
-  | 'context';
+  | 'context'
+  | 'ipa';
 
 export interface SrsFrontTemplate {
   readonly id: string;
@@ -302,7 +302,7 @@ export interface SrsCard {
   readonly deckId: string;
   readonly components: Record<ComponentType, SrsMemoryComponent>;
   readonly studyAgainDue: Record<ComponentType, string | null>;
-  readonly createdAt: string; // ISO, dùng làm nextDue cho new card
+  readonly createdAt: number; // epoch ms; `nextDue` initialized to `new Date(createdAt).toISOString()`
   readonly nextDue: string;    // ISO, = min(effectiveDue across components)
   readonly maintenanceMode: boolean; // persisted, derived on write
 }
@@ -354,6 +354,7 @@ export interface SrsReviewSession {
   readonly template: SrsFrontTemplate;
   readonly stimulus: SrsStimulus;
   readonly mode: ReviewMode;
+  readonly startedAt: number;
 }
 
 export interface SrsStimulus {
@@ -401,6 +402,46 @@ export interface SrsFsrsAdapter {
 - `ReviewRecord` append-only.
 - `maintenanceMode` lưu trên `Card` nhưng được tính lại mỗi khi component thay đổi.
 - **Mọi write lên `Card` đều phải gọi `recalcCard(card, config)`** để cập nhật `nextDue`, `maintenanceMode`, và `studyAgainDue`.
+
+### Shared helpers
+
+```ts
+const COMPONENT_TYPES: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
+const FUTURE_ISO = '9999-12-31T23:59:59.999Z';
+
+function minISO(...values: string[]): string {
+  return values.reduce((min, v) => (v < min ? v : min), values[0] ?? FUTURE_ISO);
+}
+
+function normalizeSpelling(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/^[^\w\s]+|[^\w\s]+$/g, '');
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function audioAssetId(noteId: string, fieldId: string, source: string): string {
+  // stable hash of noteId + fieldId + source
+  return hashString(`${noteId}:${fieldId}:${source}`);
+}
+
+function imageAssetId(noteId: string, fieldId: string): string {
+  return hashString(`${noteId}:${fieldId}`);
+}
+
+function isDataUrl(s: string): boolean {
+  return s.startsWith('data:');
+}
+
+function generateId(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+```
 
 ---
 
@@ -496,26 +537,31 @@ function selectNextExploreComponent(card: SrsCard, config: SrsStudyConfig): Comp
 ### `recalcCard` (mandatory on every card write)
 
 ```ts
-function recalcCard(card: SrsCard, config: SrsStudyConfig, now: string): SrsCard {
+function recalcCard(
+  card: SrsCard,
+  config: SrsStudyConfig,
+  now: string,
+  adapter: SrsFsrsAdapter,
+): SrsCard {
   const comps = { ...card.components };
   const types = Object.keys(comps) as ComponentType[];
   const studyAgainDue = { ...card.studyAgainDue };
 
   for (const t of types) {
-    const comp = comps[t];
-    // Study Again chỉ có hiệu lực nếu <= now; nếu đã quá hạn hoặc user đã review thì clear
-    if (studyAgainDue[t] && studyAgainDue[t] > now) {
+    const due = studyAgainDue[t];
+    // Study Again chỉ có hiệu lực nếu <= now; nếu trong tương lai hoặc null thì bỏ qua
+    if (due && due <= now) {
       // còn hiệu lực, giữ
-    } else if (studyAgainDue[t]) {
+    } else if (due) {
       studyAgainDue[t] = null;
     }
   }
 
   const effectiveDues = types.map((t) => {
-    const due = adapter.getDue(comps[t].fsrsState);
+    const fsrsDue = adapter.getDue(comps[t].fsrsState);
     const study = studyAgainDue[t];
-    if (study && study <= due) return study;
-    return due;
+    if (study && study <= fsrsDue) return study;
+    return fsrsDue;
   });
 
   const exploreType = selectNextExploreComponent(card, config);
@@ -552,14 +598,13 @@ function recalcCard(card: SrsCard, config: SrsStudyConfig, now: string): SrsCard
 ```ts
 function applyReview(
   session: SrsReviewSession,
-  note: SrsNote,
   judgment: ReviewJudgment,
   typedInput: string | undefined,
   now: Date,
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): { card: SrsCard; record: SrsReviewRecord } {
-  const { card, componentType, template, mode } = session;
+  const { card, note, componentType, template, mode } = session;
   const comp = card.components[componentType];
 
   const isSpellingCorrect =
@@ -583,7 +628,7 @@ function applyReview(
   const newComp: SrsMemoryComponent = {
     ...comp,
     progress: newProgress,
-    exploreCount: comp.exploreCount + 1, // tăng mỗi lần show
+    exploreCount: comp.exploreCount + (mode === 'explore' ? 1 : 0),
     fsrsState: newFsrsState,
     reviewCount: comp.reviewCount + 1,
   };
@@ -599,7 +644,7 @@ function applyReview(
   }
 
   // Recalc derived fields
-  newCard = recalcCard(newCard, config, now.toISOString());
+  newCard = recalcCard(newCard, config, now.toISOString(), adapter);
 
   const record: SrsReviewRecord = {
     id: generateId(),
@@ -626,12 +671,18 @@ function applyReview(
 ### `studyAgain`
 
 ```ts
-function studyAgain(card: SrsCard, type: ComponentType, now: string, config: SrsStudyConfig): SrsCard {
+function studyAgain(
+  card: SrsCard,
+  type: ComponentType,
+  now: string,
+  config: SrsStudyConfig,
+  adapter: SrsFsrsAdapter,
+): SrsCard {
   const updated: SrsCard = {
     ...card,
     studyAgainDue: { ...card.studyAgainDue, [type]: now },
   };
-  return recalcCard(updated, config, now);
+  return recalcCard(updated, config, now, adapter);
 }
 ```
 
@@ -660,7 +711,7 @@ function resetComponent(
     },
     studyAgainDue: { ...card.studyAgainDue, [type]: null },
   };
-  return recalcCard(updated, config, now);
+  return recalcCard(updated, config, now, adapter);
 }
 ```
 
@@ -678,7 +729,37 @@ function resetCard(card: SrsCard, now: string, config: SrsStudyConfig, adapter: 
     },
     studyAgainDue: { meaning: null, sound: null, spelling: null },
   };
-  return recalcCard(updated, config, now);
+  return recalcCard(updated, config, now, adapter);
+}
+```
+
+### `createCard`
+
+```ts
+function createCard(
+  note: SrsNote,
+  deckId: string,
+  config: SrsStudyConfig,
+  now: Date,
+  adapter: SrsFsrsAdapter,
+): SrsCard {
+  const empty = adapter.createEmpty(now);
+  const createdAt = now.getTime();
+  const raw: SrsCard = {
+    id: generateId(),
+    noteId: note.id,
+    deckId,
+    components: {
+      meaning: { type: 'meaning', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
+      sound: { type: 'sound', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
+      spelling: { type: 'spelling', progress: 0, exploreCount: 0, fsrsState: empty, reviewCount: 0 },
+    },
+    studyAgainDue: { meaning: null, sound: null, spelling: null },
+    createdAt,
+    nextDue: now.toISOString(),
+    maintenanceMode: false,
+  };
+  return recalcCard(raw, config, now.toISOString(), adapter);
 }
 ```
 
@@ -706,7 +787,7 @@ function resetCard(card: SrsCard, now: string, config: SrsStudyConfig, adapter: 
 ### `resolvePool`
 
 ```ts
-type Pool = 'explore' | 'active' | 'satisfied' | 'maintenance';
+type Pool = 'explore' | 'studyAgain' | 'active' | 'satisfied' | 'maintenance';
 
 interface PoolCandidate {
   readonly card: SrsCard;
@@ -723,16 +804,23 @@ function resolvePool(
   note: SrsNote,
   notetype: SrsNotetype,
   type: ComponentType,
-  effectiveDue: string,
   now: string,
   config: SrsStudyConfig,
+  adapter: SrsFsrsAdapter,
 ): Pool | null {
   const comp = card.components[type];
+
   const exploreType = selectNextExploreComponent(card, config);
   if (exploreType === type) return 'explore';
 
+  const fsrsDue = adapter.getDue(comp.fsrsState);
+  const studyAgain = card.studyAgainDue[type];
+  const effectiveDue = minISO(fsrsDue, studyAgain ?? FUTURE_ISO);
+
   if (effectiveDue > now) return null;
   if (isLocked(comp, card, config)) return null;
+
+  if (studyAgain && studyAgain <= now) return 'studyAgain';
 
   if (comp.progress >= config.targetThreshold) {
     return card.maintenanceMode ? 'maintenance' : 'satisfied';
@@ -750,6 +838,7 @@ export async function selectNextReview(
   includeSubdecks: boolean,
   config: SrsStudyConfig,
   now: string,
+  adapter: SrsFsrsAdapter,
   maxScan = 1000,
 ): Promise<SrsReviewSession | null> {
   const deckIds = await resolveDeckIds(db, rootDeckId, includeSubdecks);
@@ -785,15 +874,16 @@ export async function selectNextReview(
 
   const candidates: PoolCandidate[] = [];
   for (const card of cards) {
-    const note = notes.find((n) => n.id === card.noteId)!;
-    const notetype = notetypes.find((nt) => nt.id === note.notetypeId)!;
+    const note = notes.find((n) => n.id === card.noteId);
+    const notetype = note ? notetypes.find((nt) => nt.id === note.notetypeId) : undefined;
+    if (!note || !notetype) continue;
     for (const type of COMPONENT_TYPES) {
+      const pool = resolvePool(card, note, notetype, type, now, config, adapter);
+      if (!pool) continue;
       const comp = card.components[type];
       const studyAgain = card.studyAgainDue[type] ?? FUTURE_ISO;
       const fsrsDue = adapter.getDue(comp.fsrsState);
       const effectiveDue = minISO(fsrsDue, studyAgain);
-      const pool = resolvePool(card, note, notetype, type, effectiveDue, now, config);
-      if (!pool) continue;
       candidates.push({ card, note, notetype, componentType: type, effectiveDue, progress: comp.progress, pool });
     }
   }
@@ -804,11 +894,12 @@ export async function selectNextReview(
   const stimulus = selectStimulus(winner.note, winner.notetype, winner.componentType, audioCache, imageCache);
   const template = selectTemplate(winner.notetype, winner.componentType, stimulus);
   const mode = poolToMode(winner.pool);
-  return { card: winner.card, note: winner.note, notetype: winner.notetype, componentType: winner.componentType, template, stimulus, mode };
+  const startedAt = Date.now();
+  return { card: winner.card, note: winner.note, notetype: winner.notetype, componentType: winner.componentType, template, stimulus, mode, startedAt };
 }
 
 function pickHighestPriority(candidates: PoolCandidate[]): PoolCandidate | null {
-  const poolOrder: Pool[] = ['explore', 'active', 'satisfied', 'maintenance'];
+  const poolOrder: Pool[] = ['explore', 'studyAgain', 'active', 'satisfied', 'maintenance'];
   for (const pool of poolOrder) {
     const poolList = candidates.filter((c) => c.pool === pool);
     if (poolList.length === 0) continue;
@@ -823,7 +914,9 @@ function pickHighestPriority(candidates: PoolCandidate[]): PoolCandidate | null 
 }
 
 function poolToMode(pool: Pool): ReviewMode {
-  return pool === 'explore' ? 'explore' : 'normal';
+  if (pool === 'explore') return 'explore';
+  if (pool === 'studyAgain') return 'studyAgain';
+  return 'normal';
 }
 ```
 
@@ -832,6 +925,83 @@ function poolToMode(pool: Pool): ReviewMode {
 - Mỗi deck query: bounded `by_deck_due` cursor, tối đa `maxScan` cards.
 - `resolvePool` là O(1) với 3 components.
 - `pickHighestPriority` là O(n) bucketed, không sort.
+
+### `selectStimulus` / `selectTemplate`
+
+```ts
+function selectStimulus(
+  note: SrsNote,
+  notetype: SrsNotetype,
+  type: ComponentType,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): SrsStimulus | null {
+  const template = selectTemplate(notetype, type, null); // pre-select template for stimulus resolution
+  if (!template) return null;
+
+  const payload: Record<string, SrsFieldValue> = {};
+  for (const fieldId of template.fieldIds) {
+    const value = note.fields[fieldId];
+    if (!value) continue;
+
+    if (value.kind === 'audio') {
+      const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source));
+      if (cached) {
+        payload[fieldId] = { ...value, value: URL.createObjectURL(new Blob([cached.bytes], { type: cached.mimeType })) };
+      } else {
+        // cache miss → fallback to non-audio template
+        return selectFallbackStimulus(note, notetype, type);
+      }
+    } else if (value.kind === 'image') {
+      const cached = imageCache.get(imageAssetId(note.id, fieldId));
+      if (cached) {
+        payload[fieldId] = { ...value, value: URL.createObjectURL(new Blob([cached.bytes], { type: cached.mimeType })) };
+      } else if (isDataUrl(value.value)) {
+        payload[fieldId] = value;
+      } else {
+        throw new SrsError('SRS_IMAGE_OFFLINE', `Image ${fieldId} is not cached for offline use.`);
+      }
+    } else if (template.maskTarget && template.maskFieldId === fieldId && value.kind === 'text') {
+      payload[fieldId] = { kind: 'text', value: maskSentence(value.value, note.targetWord) };
+    } else {
+      payload[fieldId] = value;
+    }
+  }
+
+  return { type: template.stimulusType, payload };
+}
+
+function selectFallbackStimulus(
+  note: SrsNote,
+  notetype: SrsNotetype,
+  type: ComponentType,
+): SrsStimulus | null {
+  // Pick the first template for this component that does NOT require audio
+  const fallback = notetype.frontTemplates.find(
+    (t) => t.componentType === type && t.stimulusType !== 'word-audio' && t.stimulusType !== 'sentence-audio'
+  );
+  if (!fallback) throw new SrsError('SRS_AUDIO_UNAVAILABLE', `No offline fallback for ${type} review.`);
+  return selectStimulus(note, notetype, type, new Map(), new Map()); // skip audio fields in fallback
+}
+
+function selectTemplate(
+  notetype: SrsNotetype,
+  type: ComponentType,
+  currentStimulus: SrsStimulus | null,
+): SrsFrontTemplate | null {
+  const candidates = notetype.frontTemplates.filter((t) => t.componentType === type);
+  if (candidates.length === 0) return null;
+
+  // Priority: non-audio fallback when currentStimulus signals audio miss (currentStimulus === null)
+  if (currentStimulus === null) {
+    return candidates.find((t) => t.stimulusType !== 'word-audio' && t.stimulusType !== 'sentence-audio') ?? null;
+  }
+
+  // Round-robin / least recently used per component for variety
+  // V1: simple deterministic pick by template id hash stable per card
+  return candidates[0];
+}
+```
 
 ---
 
@@ -1182,15 +1352,16 @@ Mặc định cho mỗi `SrsCollection` mới:
 ```ts
 const DEFAULT_FIELDS: SrsField[] = [
   { id: 'target',   name: 'Target word',   order: 0, type: 'text' },
-  { id: 'sentence', name: 'Sentence',      order: 1, type: 'text' },
-  { id: 'def',      name: 'Definition',    order: 2, type: 'text' },
-  { id: 'wordAudio',  name: 'Word audio',  order: 3, type: 'audio' },
-  { id: 'sentAudio',  name: 'Sentence audio', order: 4, type: 'audio' },
-  { id: 'image',    name: 'Image',         order: 5, type: 'image' },
-  { id: 'examples', name: 'Examples',      order: 6, type: 'list' },
-  { id: 'notes',    name: 'Notes',         order: 7, type: 'text' },
-  { id: 'translation', name: 'Translation', order: 8, type: 'translation' },
-  { id: 'context',  name: 'Context',       order: 9, type: 'context' },
+  { id: 'ipa',      name: 'IPA',           order: 1, type: 'text' },
+  { id: 'sentence', name: 'Sentence',      order: 2, type: 'text' },
+  { id: 'def',      name: 'Definition',    order: 3, type: 'text' },
+  { id: 'wordAudio',  name: 'Word audio',  order: 4, type: 'audio' },
+  { id: 'sentAudio',  name: 'Sentence audio', order: 5, type: 'audio' },
+  { id: 'image',    name: 'Image',         order: 6, type: 'image' },
+  { id: 'examples', name: 'Examples',      order: 7, type: 'list' },
+  { id: 'notes',    name: 'Notes',         order: 8, type: 'text' },
+  { id: 'translation', name: 'Translation', order: 9, type: 'translation' },
+  { id: 'context',  name: 'Context',       order: 10, type: 'context' },
 ];
 
 const DEFAULT_NOTETYPE: SrsNotetype = {
@@ -1204,20 +1375,20 @@ const DEFAULT_NOTETYPE: SrsNotetype = {
     { id: 'sound-word-audio', componentType: 'sound', stimulusType: 'word-audio', fieldIds: ['wordAudio'], requiresInput: false },
     // 2. Sound — sentence audio
     { id: 'sound-sentence-audio', componentType: 'sound', stimulusType: 'sentence-audio', fieldIds: ['sentAudio'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
-    // 3. Sound — IPA/text fallback
-    { id: 'sound-ipa', componentType: 'sound', stimulusType: 'context', fieldIds: ['context'], requiresInput: false, prompt: 'Pronounce this word' },
+    // 3. Sound — IPA fallback
+    { id: 'sound-ipa', componentType: 'sound', stimulusType: 'ipa', fieldIds: ['ipa'], requiresInput: false, prompt: 'Pronounce: /{ipa}/' },
     // 4. Meaning — image
     { id: 'meaning-image', componentType: 'meaning', stimulusType: 'image', fieldIds: ['image'], requiresInput: false },
     // 5. Meaning — definition
     { id: 'meaning-definition', componentType: 'meaning', stimulusType: 'definition', fieldIds: ['def'], requiresInput: false },
     // 6. Meaning — sentence
     { id: 'meaning-sentence', componentType: 'meaning', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
-    // 7. Spelling — audio + input
-    { id: 'spelling-audio', componentType: 'spelling', stimulusType: 'word-audio', fieldIds: ['wordAudio'], requiresInput: true },
-    // 8. Spelling — image + input
+    // 7. Spelling — image + input
     { id: 'spelling-image', componentType: 'spelling', stimulusType: 'image', fieldIds: ['image'], requiresInput: true },
+    // 8. Spelling — sentence + input
+    { id: 'spelling-sentence', componentType: 'spelling', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: true },
   ],
-  backTemplate: { fieldIds: ['target', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'], showAll: true },
+  backTemplate: { fieldIds: ['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'], showAll: true },
 };
 ```
 
@@ -1230,7 +1401,7 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 1. `ts-fsrs` bundle/compat → T0 spike quyết định.
 2. Audio fallback chain chi tiết khi Pronunciation Engine chậm.
 3. Android IME cho spelling recall.
-4. Review event prune policy (giữ toàn bộ hay prune theo `dataLifecycle`).
+4. Review event prune policy — đã quyết: prune theo `dataLifecycle` (max age + max count).
 5. Image import flow từ reader/dictionary (Slice 11).
 
 ---
