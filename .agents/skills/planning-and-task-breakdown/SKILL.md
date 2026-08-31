@@ -103,6 +103,52 @@ Each task follows this structure:
 **Estimated scope:** [Small: 1-2 files | Medium: 3-5 files | Large: 5+ files]
 ```
 
+### Debt Remediation Task Template
+
+When the plan comes from an `audit-technical-debt` output, use this structure:
+
+```markdown
+## Task [N]: [Short title — e.g., "Strangle subtitle sync state from contentScriptController"]
+
+**Debt type:** [Testing | Architectural | Dependency | Code quality | Process]
+
+**Island:** [Module or feature boundary]
+
+**Description:** What behavior will move, replace, or clean up.
+
+**Before state:**
+- File size: [X] lines
+- Coverage: [Y]%
+- Audit score: [Z]
+
+**After state:**
+- File size target: [X - delta]
+- Coverage target: [≥ 80% for changed paths]
+- Audit score target: [Z + delta]
+
+**Acceptance criteria:**
+- [ ] Old behavior preserved (characterization or contract test passes)
+- [ ] New code is behind an abstraction, flag, or separate module
+- [ ] `pre-commit-gate` passes
+- [ ] No new `TODO`/`FIXME` without owner/ticket
+
+**Verification:**
+- [ ] Unit tests: `npm run test:unit -- <pattern>`
+- [ ] Build: `npm run build`
+- [ ] Debt smell check: changed files < 500 lines or extraction documented
+
+**Rollback signal:** Stop and revert if [specific test/build failure].
+
+**Dependencies:** [Task numbers]
+
+**Files likely touched:**
+- `src/path/to/old.ts`
+- `src/path/to/new.ts`
+- `tests/path/to/new.test.ts`
+
+**Estimated scope:** [Small | Medium | Large]
+```
+
 ### Step 5: Order and Checkpoint
 
 Arrange tasks so that:
@@ -111,6 +157,11 @@ Arrange tasks so that:
 2. Each task leaves the system in a working state
 3. Verification checkpoints occur after every 2-3 tasks
 4. High-risk tasks are early (fail fast)
+5. **For debt remediation:** Order by audit score (highest first) and by quick-win vs. pay-down.
+   - Quick wins (low cost, medium-high score) go first to build momentum.
+   - High-score, high-cost pay-down items come next, scheduled across sprints.
+   - Watch-list items are tracked but not scheduled until they become active blockers.
+6. **For each island (module),** complete stabilization (tests, characterization) before structural changes.
 
 Add explicit checkpoints:
 
@@ -217,6 +268,9 @@ When multiple agents or sessions are available:
 - All tasks are XL-sized
 - No checkpoints between tasks
 - Dependency order isn't considered
+- Debt plan has no before/after state (file size, coverage, audit score)
+- High-score debt items are scheduled last while low-score items come first
+- A task mixes structural refactor with new feature work
 
 ## Verification
 
@@ -232,6 +286,8 @@ Before starting implementation, confirm:
 ## See Also
 
 Acceptance criteria are per-task and answer "did we build the right thing?". They sit on top of the project-wide Definition of Done, the standing bar every task clears before it counts as done. See `references/definition-of-done.md`.
+
+For technical debt plans, start with `audit-technical-debt` to produce the inventory, then use `incremental-implementation` to execute slices and `pre-commit-gate` to verify each one.
 
 
 ---

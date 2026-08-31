@@ -30,6 +30,8 @@ Task arrives
     ├── Have a rough concept, need variants? → idea-refine
     ├── New project/feature/change? ──→ spec-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
+    ├── Audit or assess technical debt? ─→ audit-technical-debt
+    │   └── Need to plan remediation? ──→ planning-and-task-breakdown
     ├── Implementing code? ────────────→ learning-and-apply (APPLY) ← grep knowledge first
     │   └── incremental-implementation
     │       ├── UI work? ─────────────────→ frontend-ui-engineering
@@ -49,6 +51,7 @@ Task arrives
     ├── Committing/branching? ─────────→ git-workflow-and-versioning
     ├── CI/CD pipeline work? ──────────→ ci-cd-and-automation
     ├── Deprecating/migrating? ────────→ deprecation-and-migration
+    ├── Paying down technical debt? ───→ audit-technical-debt → planning-and-task-breakdown → incremental-implementation
     ├── Writing docs/ADRs? ───────────→ documentation-and-adrs
     ├── Adding logs/metrics/alerts? ───→ observability-and-instrumentation
     └── Deploying/launching? ─────────→ shipping-and-launch
@@ -154,6 +157,21 @@ These are the subtle errors that look like productivity but create problems:
 
 For a complete feature, the typical skill sequence is:
 
+For paying down technical debt, the typical skill sequence is:
+
+```
+1.  audit-technical-debt         → Score and rank debt items
+2.  planning-and-task-breakdown  → Turn inventory into island/slice tasks
+3.  test-driven-development      → Write characterization/contract tests
+4.  incremental-implementation   → Strangler Fig / Branch by Abstraction slices
+5.  pre-commit-gate              → Lint, typecheck, test, build, debt smell
+6.  code-simplification          → Clean up after each slice
+7.  git-workflow-and-versioning  → Atomic debt payback commits
+8.  documentation-and-adrs       → Debt Payback ADR / update audit RUNBOOK
+```
+
+For a complete feature, the typical skill sequence is:
+
 ```
 1.  elicitation                → Orchestrate: idea → observation → interview → confirmed 8-field frame
 2.  interview-me                → Extract what the user actually wants (interview mode: CAN articulate / elicitation mode: CANNOT + context + domain scoping + prototype)
@@ -187,6 +205,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Define | interview-me | Surface what the user actually wants — interview mode (CAN articulate) + elicitation mode (CANNOT: context + domain scoping + dependency mapping + prototype) |
 | Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
+| Plan | audit-technical-debt | Score and prioritize technical debt with a remediation roadmap |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
 | Build | learning-and-apply (APPLY) | Grep knowledge index.json, check bad patterns before coding |
 | Build | incremental-implementation | Thin vertical slices, test each before expanding |

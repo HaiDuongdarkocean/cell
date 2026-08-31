@@ -89,6 +89,7 @@ update auth.ts
 - `feat` — New feature
 - `fix` — Bug fix
 - `refactor` — Code change that neither fixes a bug nor adds a feature
+- `debt` — Paying down technical debt (extract, coverage, upgrade, cleanup)
 - `test` — Adding or updating tests
 - `docs` — Documentation only
 - `chore` — Tooling, dependencies, config
@@ -118,6 +119,22 @@ Target ~100 lines per commit/PR. Changes over ~1000 lines should be split. See t
 ~1000 lines → Split into smaller changes
 ```
 
+### Debt Payback Commits
+
+For technical debt work, each slice gets a `debt:` commit that includes the audit context:
+
+```
+debt(subtitle): extract sync state from contentScriptController
+
+- Moves playback state transitions into useSubtitlePlaybackState.
+- Characterization test for legacy output included.
+- Before: contentScriptController.ts 1951 lines.
+- After: contentScriptController.ts 1780 lines; new hook 220 lines.
+- Audit item: #2, score 3.80.
+```
+
+This makes every debt payback commit self-documenting and measurable.
+
 ## Branching Strategy
 
 ### Feature Branches
@@ -142,6 +159,8 @@ feature/<short-description>   → feature/task-creation
 fix/<short-description>       → fix/duplicate-tasks
 chore/<short-description>     → chore/update-deps
 refactor/<short-description>  → refactor/auth-module
+debt/<island-or-slice>        → debt/subtitle-controller-split
+debt/<dependency>             → debt/upgrade-jest-30
 ```
 
 ## Working with Worktrees

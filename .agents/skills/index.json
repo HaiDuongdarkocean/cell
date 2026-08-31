@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "generated": "2026-08-25T13:35:26.451Z",
-  "count": 45,
+  "count": 46,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -227,6 +227,11 @@
       "name": "write-skill",
       "description": "Guides agents through writing, reviewing, refactoring, and self-correcting agent SKILL.md workflow files. Use when creating a new skill, updating an existing skill, splitting an oversized skill, diagnosing why a skill fails to trigger, or making a skill self-correcting. Not for writing general documentation, one-off prompts, or implementation code.",
       "path": ".agents/skills/write-skill/SKILL.md"
+    },
+    {
+      "name": "audit-technical-debt",
+      "description": "Audit technical debt in a codebase, score it, and produce a prioritized remediation roadmap. Use when the user asks to assess, prioritize, audit, or reduce technical debt. Not for one-off bug fixes, new features, or simple code review.",
+      "path": ".agents/skills/audit-technical-debt/SKILL.md"
     }
   ]
 }

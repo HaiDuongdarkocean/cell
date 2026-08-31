@@ -80,6 +80,44 @@ Use PostgreSQL with Prisma ORM.
 - Hosting on managed service (Supabase, Neon, or RDS)
 ```
 
+### Debt Payback ADR Template
+
+Use this when a significant technical-debt remediation starts (e.g., extracting a large controller, replacing a dependency, raising coverage for a whole module).
+
+```markdown
+# ADR-XXX: Pay down [debt item] in [module]
+
+## Status
+Proposed
+
+## Date
+2025-06-22
+
+## Context
+- Audit item: #[N] in [audit file or date]
+- Debt type: [Testing | Architectural | Dependency | Code quality | Process]
+- Current state: [file size, coverage, score, risk]
+- Trigger: [feature blocked, flaky tests, bundle size, etc.]
+
+## Decision
+[What strategy: Strangler Fig / Branch by Abstraction / Boy Scout / dedicated test sprint]
+
+## Alternatives Considered
+### [Alternative 1]
+- Pros: ...
+- Cons: ...
+- Rejected because: ...
+
+## Temporary Abstractions
+- [Abstraction name] introduced in [file]; will be removed when [condition].
+- Tracking issue: [ticket or task].
+
+## Consequences
+- [Expected state after: file size, coverage, score]
+- [Risks and rollback plan]
+- [When the old implementation will be deleted]
+```
+
 ### ADR Lifecycle
 
 ```
