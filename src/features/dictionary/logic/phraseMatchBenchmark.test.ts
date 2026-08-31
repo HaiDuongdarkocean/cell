@@ -73,12 +73,12 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     const start = performance.now();
     compilePhraseIndex(fixture.inputs);
     const elapsed = performance.now() - start;
-    console.log(`compilePhraseIndex: ${elapsed.toFixed(1)}ms for ${fixture.inputs.length} terms`);
+
     expect(elapsed).toBeLessThan(2000);
   });
 
   it('serializes to under 8MB', () => {
-    console.log(`blob size: ${(fixture.blob.byteLength / 1024 / 1024).toFixed(2)}MB`);
+
     expect(fixture.blob.byteLength).toBeLessThan(8 * 1024 * 1024);
   });
 
@@ -86,7 +86,7 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     const start = performance.now();
     deserializePhraseIndex(fixture.blob);
     const elapsed = performance.now() - start;
-    console.log(`deserializePhraseIndex: ${elapsed.toFixed(1)}ms`);
+
     expect(elapsed).toBeLessThan(300);
   });
 
@@ -99,9 +99,9 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     // Warm up.
     matchPhrase(request, index);
     const start = performance.now();
-    const result = matchPhrase(request, index);
+    matchPhrase(request, index); // measured for timing only
     const elapsed = performance.now() - start;
-    console.log(`matchPhrase (kick the bucket): ${elapsed.toFixed(2)}ms, match=${result?.dictionaryTerm ?? 'null'}`);
+
     // Latency budget for a 34k-template fixture with high-frequency anchors
     // ('the' has 1137 postings). Candidate cap + anchor-overlap sort is
     // O(candidates × anchors) — still well under 30ms.
@@ -116,9 +116,9 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
       cursorOffset: 11,
     };
     const start = performance.now();
-    const result = matchPhrase(request, index);
+    matchPhrase(request, index); // measured for timing only
     const elapsed = performance.now() - start;
-    console.log(`matchPhrase (be under your nose): ${elapsed.toFixed(2)}ms, result=${result?.dictionaryTerm ?? 'null'}`);
+
     // This may not match if the fixture doesn't contain this exact template.
     // The benchmark is about latency, not correctness here.
     expect(elapsed).toBeLessThan(30);
@@ -133,7 +133,7 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     const start = performance.now();
     matchPhrase(request, index);
     const elapsed = performance.now() - start;
-    console.log(`matchPhrase (no match): ${elapsed.toFixed(2)}ms`);
+
     expect(elapsed).toBeLessThan(30);
   });
 
@@ -142,7 +142,7 @@ describe('phraseMatch benchmark (ADR-037 §11)', () => {
     const start = performance.now();
     tokenizeSentence(sentence);
     const elapsed = performance.now() - start;
-    console.log(`tokenizeSentence (50 words): ${elapsed.toFixed(3)}ms`);
+
     expect(elapsed).toBeLessThan(1);
   });
 });
