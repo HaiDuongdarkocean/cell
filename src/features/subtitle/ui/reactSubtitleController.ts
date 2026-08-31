@@ -193,11 +193,7 @@ export class ReactSubtitleController {
     // playback. Without this, loadBilingualCues sets index=-1 and the block
     // stays empty until the next load/offset change.
     // Also update CueList currentTimeMs for highlight sync in Player Mode.
-    video.addEventListener('timeupdate', () => {
-      this.engine.onTimeUpdate();
-      this.mount.setCurrentTimeMs(video.currentTime * 1000);
-      this.onStudyModeTimeUpdate();
-    });
+    video.addEventListener('timeupdate', this.onVideoTimeUpdate);
   }
 
   /** Resolve the storage key for subtitle offset. Prefer the site origin so
@@ -492,6 +488,11 @@ export class ReactSubtitleController {
     if (actions) this.applyPlaybackActions(actions);
   };
   private readonly onVideoPause = (): void => this.setIsPlaying(false);
+  private readonly onVideoTimeUpdate = (): void => {
+    this.engine.onTimeUpdate();
+    this.mount.setCurrentTimeMs(this.video.currentTime * 1000);
+    this.onStudyModeTimeUpdate();
+  };
 
   private applyGenerateNativeEnabled(enabled: boolean): void {
     this.generateNativeEnabled = enabled;
@@ -874,16 +875,15 @@ export class ReactSubtitleController {
     this.playerModeHost?.restore();
     this.playerModeHost = null;
     this.clearPlayerModeBounds();
-    if (this.persistTimer) {
-      clearTimeout(this.persistTimer);
-      this.persistTimer = null;
-    }
-    if (this.yOffsetPersistTimer) {
-      clearTimeout(this.yOffsetPersistTimer);
-      this.yOffsetPersistTimer = null;
-    }
+    if (this.persistTimer) { clearTimeout(this.persistTimer); this.persistTimer = null; }
+    if (this.yOffsetPersistTimer) { clearTimeout(this.yOffsetPersistTimer); this.yOffsetPersistTimer = null; }
+    if (this.stylePersistTimer) { clearTimeout(this.stylePersistTimer); this.stylePersistTimer = null; }
+    if (this.blockPersistTimer) { clearTimeout(this.blockPersistTimer); this.blockPersistTimer = null; }
+    if (this.clusterPersistTimer) { clearTimeout(this.clusterPersistTimer); this.clusterPersistTimer = null; }
+    if (this.previewTextPersistTimer) { clearTimeout(this.previewTextPersistTimer); this.previewTextPersistTimer = null; }
     this.video.removeEventListener('play', this.onVideoPlay);
     this.video.removeEventListener('pause', this.onVideoPause);
+    this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
     this.mount.unmount();
   }
 }
