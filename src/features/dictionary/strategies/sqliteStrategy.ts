@@ -11,6 +11,8 @@
 import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
 import { DatabaseError, ParseError } from '../logic/importErrors';
+import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
+import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
 import type { FrequencyEntry, DictionaryEntry, ResourceType } from '@/entities/dictionary';
 
 // Local type stubs for sql.js (avoid `import type from 'sql.js'` — ts-jest
@@ -178,16 +180,12 @@ export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDi
   }
 
   protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>>): Promise<void> {
-    // Dynamic imports — avoid static import of repositories to prevent
-    // jest CJS transform issues with transitive ESM deps (ADR-023 D3).
     if (this.resourceType === 'DICTIONARY') {
-      const { bulkInsertDictionaryEntries } = await import('../repositories/dictionaryRepository');
       await bulkInsertDictionaryEntries(
         this.options.langCode,
         batch as ReadonlyArray<Omit<DictionaryEntry, 'id'>>,
       );
     } else {
-      const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
       await bulkInsertFrequencyEntries(
         this.options.langCode,
         batch as ReadonlyArray<Omit<FrequencyEntry, 'id'>>,

@@ -22,7 +22,10 @@
 import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource } from '../types';
 import type { Token, TermProbe, LanguagePlugin } from '../plugins/languagePlugin';
 import { pluginRegistry } from '../plugins/pluginRegistry';
-import { findDictionaryByTerm } from '@/features/dictionary/repositories/dictionaryRepository';
+import {
+  findDictionaryByTerm,
+  findDictionaryByResource,
+} from '@/features/dictionary/repositories/dictionaryRepository';
 import { findFrequencyByTerm } from '@/features/dictionary/repositories/frequencyRepository';
 import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
 import { getWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
@@ -135,9 +138,6 @@ export async function createDictionaryProbeAsync(langCode: string): Promise<Term
   // Load all dictionary terms. For CEDICT this is ~120k entries.
   for (const r of dictResources) {
     if (r.id === undefined) continue;
-    const { findDictionaryByResource } = await import(
-      '@/features/dictionary/repositories/dictionaryRepository'
-    );
     const entries = await findDictionaryByResource(langCode, r.id);
     for (const e of entries) {
       terms.add(e.term.trim().toLowerCase());
