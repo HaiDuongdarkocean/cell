@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { readFileSync, cpSync, rmSync } from 'node:fs';
 
 const SHOWCASE_HTML_PATH = resolve(
-  __dirname,
+  import.meta.dirname,
   'src/entrypoints/design-system-showcase/index.html',
 );
 
@@ -21,7 +21,7 @@ const showcaseOutputMover = (): Plugin => ({
   name: 'showcase-output-mover',
   apply: 'build',
   closeBundle() {
-    const outDir = resolve(__dirname, 'dist/design-system-showcase');
+    const outDir = resolve(import.meta.dirname, 'dist/design-system-showcase');
     const deep = resolve(outDir, 'src/entrypoints/design-system-showcase/index.html');
     const flat = resolve(outDir, 'design-system-showcase.html');
     try {
@@ -65,7 +65,7 @@ const showcaseSpaRewrite = (): Plugin => ({
 export default defineConfig({
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(import.meta.dirname, 'src'),
     },
   },
   optimizeDeps: {

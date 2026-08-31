@@ -96,14 +96,14 @@ function autoSeedAssets(mode: string): Plugin {
   // Dev builds (`npx vite build --mode development`) keep seeds so the
   // extension works out-of-the-box when loaded from `dist/`.
   if (mode !== 'development') return { name: 'auto-seed-assets' };
-  const primaryRoot = resolve(__dirname, 'data', 'resource');
-  const fallbackRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
+  const primaryRoot = resolve(import.meta.dirname, 'data', 'resource');
+  const fallbackRoot = resolve(import.meta.dirname, 'tests', 'data-test', 'resource');
   const seedRoot = existsSync(primaryRoot) ? primaryRoot : fallbackRoot;
   return {
     name: 'auto-seed-assets',
     apply: 'build',
     closeBundle() {
-      const destRoot = resolve(__dirname, 'dist', 'seed');
+      const destRoot = resolve(import.meta.dirname, 'dist', 'seed');
       try {
         for (const relPath of SEED_ASSET_FILES) {
           const src = resolve(seedRoot, relPath);
@@ -131,7 +131,7 @@ export default defineConfig(({ mode }) => ({
   legacy: { inconsistentCjsInterop: true },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
+      '@': resolve(import.meta.dirname, 'src'),
     },
   },
   server: {
@@ -151,19 +151,19 @@ export default defineConfig(({ mode }) => ({
         // The CRX plugin handles the popup and background entries; add the
         // offscreen document and side panel explicitly so they are built
         // and emitted as loadable chrome-extension:// pages.
-        offscreen: resolve(__dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
-        sidepanel: resolve(__dirname, 'src/entrypoints/sidepanel/index.html'),
-        cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
-        mockStreamingPage: resolve(__dirname, 'src/entrypoints/mock-streaming-page/index.html'),
-        mockStreamingIframePage: resolve(__dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
-        mockIframePlayer: resolve(__dirname, 'src/entrypoints/mock-iframe-player/index.html'),
-        mockYouTube: resolve(__dirname, 'src/entrypoints/mock-youtube/index.html'),
-        mockHardSubPage: resolve(__dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
-        mockYouTubeHardsub: resolve(__dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
-        localPlayer: resolve(__dirname, 'src/entrypoints/local-player/index.html'),
-        reader: resolve(__dirname, 'src/entrypoints/reader/index.html'),
-        mockupLanguageProfile: resolve(__dirname, 'src/entrypoints/mockup-language-profile/index.html'),
-        launcherDashboard: resolve(__dirname, 'src/entrypoints/launcher-dashboard/index.html'),
+        offscreen: resolve(import.meta.dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
+        sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
+        cardCreatorTest: resolve(import.meta.dirname, 'src/entrypoints/test/cardCreatorTest.html'),
+        mockStreamingPage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-page/index.html'),
+        mockStreamingIframePage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
+        mockIframePlayer: resolve(import.meta.dirname, 'src/entrypoints/mock-iframe-player/index.html'),
+        mockYouTube: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube/index.html'),
+        mockHardSubPage: resolve(import.meta.dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
+        mockYouTubeHardsub: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
+        localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
+        reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
+        mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
+        launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
       },
       output: {
         manualChunks(id) {
