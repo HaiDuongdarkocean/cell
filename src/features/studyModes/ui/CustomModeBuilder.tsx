@@ -1,12 +1,13 @@
 import { useEffect, useId, useMemo, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, Chip, HStack, VStack, FormGroup, Dialog } from '@/shared/ui';
+import { Heading, Text, Button, HStack, VStack, FormGroup, Dialog } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Input } from '@/shared/ui/Input';
-import { Icon } from '@/shared/icons/Icon';
 import { useStudyModeStore } from '../studyModeStore';
 import { validateModeName } from '../lib/validateModeName';
 import { formatModeDescription } from '../lib/formatStepSummary';
 import type { StudyStep, StudyMode } from '@/entities/studyMode';
+import { CueStrip } from './CueStrip';
+import { StepEditor } from './StepEditor';
 import styles from './StudyModesTab.module.css';
 
 interface CustomModeBuilderProps {
@@ -14,12 +15,6 @@ interface CustomModeBuilderProps {
   readonly onOpenChange: (open: boolean) => void;
   readonly editingId: string | null;
 }
-
-const SUBTITLE_OPTIONS: StudyStep['subtitle'][] = ['none', 'native', 'target', 'both'];
-const PAUSE_OPTIONS: StudyStep['pause'][] = ['none', 'start', 'end'];
-const REPEAT_OPTIONS: StudyStep['repeat'][] = [1, 2, 3];
-const SPEED_OPTIONS: StudyStep['speed'][] = [0.5, 0.75, 1, 1.25, 1.5];
-const AFTER_OPTIONS: StudyStep['after'][] = ['continue', 'wait', 'loop'];
 
 const EMPTY_STEP: StudyStep = {
   subtitle: 'target',
@@ -131,6 +126,15 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     }
   };
 
+  const moveStep = (from: number, to: number): void => {
+    if (to < 0 || to >= steps.length || from === to) return;
+    const next = [...steps];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setSteps(next);
+    setSelectedStepIndex(to);
+  };
+
   const selectedStep = steps[selectedStepIndex];
 
   return (
@@ -188,6 +192,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               selectedIndex={selectedStepIndex}
               onSelect={setSelectedStepIndex}
               onAdd={addStep}
+              onReorder={moveStep}
             />
 
             {selectedStep && (
@@ -227,118 +232,5 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
         />
       )}
     </>
-  );
-}
-
-interface CueStripProps {
-  readonly steps: readonly StudyStep[];
-  readonly selectedIndex: number;
-  readonly onSelect: (index: number) => void;
-  readonly onAdd: () => void;
-}
-
-function CueStrip({ steps, selectedIndex, onSelect, onAdd }: CueStripProps): ReactElement {
-  return (
-    <HStack
-      gap="2"
-      className={styles.cueStrip}
-      role="group"
-      aria-label="Steps"
-    >
-      {steps.map((step, index) => (
-        <button
-          key={index}
-          type="button"
-          className={`${styles.cueBlock} ${index === selectedIndex ? styles.cueBlockSelected : ''}`}
-          onClick={() => onSelect(index)}
-          data-cell-id={`cue-step-${index}`}
-          aria-current={index === selectedIndex ? 'true' : undefined}
-        >
-          <Text as="span" variant="label" className={styles.cueIndex}>
-            {index + 1}
-          </Text>
-          <Text as="span" className={styles.cueSubtitle}>
-            {step.subtitle}
-          </Text>
-          <Text as="span" className={styles.cueSpeed}>
-            {step.speed}x
-          </Text>
-          {step.repeat > 1 && (
-            <Text as="span" className={styles.cueRepeat}>
-              ×{step.repeat}
-            </Text>
-          )}
-        </button>
-      ))}
-      <button
-        type="button"
-        className={styles.cueAdd}
-        onClick={onAdd}
-        data-cell-id="cue-add-step"
-      >
-        <Icon name="plus" size={16} />
-        <Text as="span">Add</Text>
-      </button>
-    </HStack>
-  );
-}
-
-interface StepEditorProps {
-  readonly index: number;
-  readonly step: StudyStep;
-  readonly onChange: (step: StudyStep) => void;
-  readonly onRemove?: () => void;
-}
-
-function StepEditor({ index, step, onChange, onRemove }: StepEditorProps): ReactElement {
-  const OptionGroup = <K extends keyof StudyStep>(
-    label: string,
-    options: readonly StudyStep[K][],
-    current: StudyStep[K],
-    field: K,
-  ): ReactElement => (
-    <div className={styles.stepOption} role="group" aria-label={label}>
-      <Text as="span" variant="label" color="secondary" className={styles.stepOptionLabel}>
-        {label}
-      </Text>
-      <HStack gap="1" className={styles.stepChipGroup}>
-        {options.map((option) => (
-          <Chip
-            key={String(option)}
-            as="button"
-            size="sm"
-            selected={current === option}
-            onClick={() => onChange({ ...step, [field]: option })}
-            data-cell-id={`step-${index}-${field}-${option}`}
-          >
-            {String(option)}
-          </Chip>
-        ))}
-      </HStack>
-    </div>
-  );
-
-  return (
-    <div className={styles.stepRow} data-cell-id={`step-row-${index}`}>
-      <Text as="span" variant="label" className={styles.stepIndex}>
-        {index + 1}
-      </Text>
-      <VStack gap="2" className={styles.stepOptions}>
-        {OptionGroup('Subtitle', SUBTITLE_OPTIONS, step.subtitle, 'subtitle')}
-        {OptionGroup('Pause', PAUSE_OPTIONS, step.pause, 'pause')}
-        {OptionGroup('Repeat', REPEAT_OPTIONS, step.repeat, 'repeat')}
-        {OptionGroup('Speed', SPEED_OPTIONS, step.speed, 'speed')}
-        {OptionGroup('After', AFTER_OPTIONS, step.after, 'after')}
-      </VStack>
-      {onRemove && (
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={onRemove}
-          data-cell-id={`remove-step-${index}`}
-          leadingIcon={<Icon name="trash" size={14} />}
-        />
-      )}
-    </div>
   );
 }
