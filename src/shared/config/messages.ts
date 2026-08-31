@@ -93,4 +93,6 @@ export const MESSAGE_TYPES = {
   OCR_GET_STATE: 'OCR_GET_STATE',
   OCR_SET_STATE: 'OCR_SET_STATE',
   OCR_REGION_COMMAND: 'OCR_REGION_COMMAND',
+  // === Study Modes (spec media-study-modes.md) ===
+  APPLY_STUDY_MODE: 'APPLY_STUDY_MODE',
 } as const satisfies Record<string, MessageType>;

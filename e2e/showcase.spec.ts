@@ -26,4 +26,35 @@ test.describe('Design System Showcase', () => {
     await expect(showcasePage.getByRole('heading', { name: 'Button', level: 1 })).toBeVisible();
     await expect(showcasePage.locator('main').first()).toContainText('Primary');
   });
+
+  test('loads the Study Modes Panel showcase', async ({ showcasePage }) => {
+    await showcasePage.goto('?showcase=Study Modes Panel');
+
+    await expect(showcasePage.getByRole('heading', { name: 'Study Modes Panel', level: 1 })).toBeVisible();
+
+    // Preset section visible with all expected cards.
+    const presets = showcasePage.getByLabel('Preset study modes');
+    await expect(presets).toBeVisible();
+    await expect(presets.getByText('Normal', { exact: true })).toBeVisible();
+    await expect(presets.getByText('Listen', { exact: true })).toBeVisible();
+    await expect(presets.getByText('Read', { exact: true })).toBeVisible();
+
+    // Custom section visible and the "New mode" card is offered.
+    await expect(showcasePage.getByRole('heading', { name: 'Custom' })).toBeVisible();
+    await expect(showcasePage.locator('[data-cell-id="new-mode-card"]')).toBeVisible();
+
+    // Advanced section is collapsed by default; toggle it on.
+    const advancedToggle = showcasePage.locator('[data-cell-id="advanced-toggle"]');
+    await expect(advancedToggle).toBeVisible();
+
+    const advancedSection = showcasePage.locator('[data-cell-id="advanced-settings"]');
+    await expect(advancedSection).not.toBeVisible();
+
+    await advancedToggle.click();
+    await expect(advancedSection).toBeVisible();
+    await expect(showcasePage.getByText('Skip when there is no dialogue')).toBeVisible();
+
+    await advancedToggle.click();
+    await expect(advancedSection).not.toBeVisible();
+  });
 });

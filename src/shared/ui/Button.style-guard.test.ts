@@ -17,14 +17,9 @@ describe('Button style contract guard', () => {
     }
   });
 
-  it('forces zero border-radius for vertical buttons', () => {
-    const verticalBlock = css.match(/\.vertical\s*\{[^{}]*\}/)?.[0] ?? '';
-    expect(verticalBlock).toMatch(/border-radius\s*:\s*0\b/);
-  });
-
-  it('forces zero border-radius for full-width buttons', () => {
-    const fullWidthBlock = css.match(/\.fullWidth\s*\{[^{}]*\}/)?.[0] ?? '';
-    expect(fullWidthBlock).toMatch(/border-radius\s*:\s*0\b/);
+  it('forces zero border-radius for solid vertical and full-width buttons', () => {
+    const block = css.match(/\.solid\.(?:vertical|fullWidth)\s*\{[^{}]*\}/)?.[0] ?? '';
+    expect(block).toMatch(/border-radius\s*:\s*0\b/);
   });
 
   it('has no semantic color fill on liquid/glass variants', () => {

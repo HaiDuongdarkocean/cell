@@ -21,6 +21,7 @@ import type {
   SearchError,
   KeyQuotaInfo,
 } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 
 // === Message Types ===
 
@@ -111,7 +112,9 @@ export type MessageType =
   | 'OCR_GET_STATE'
   | 'OCR_SET_STATE'
   | 'OCR_REGION_COMMAND'
-  | 'OPEN_READER';
+  | 'OPEN_READER'
+  // Study Modes (spec media-study-modes.md)
+  | 'APPLY_STUDY_MODE';
 
 // === Message Request ===
 
@@ -805,4 +808,12 @@ export interface LocalPlayerVideoOpenedPayload {
   readonly filename: string;
   readonly title: string;
   readonly durationMs: number;
+}
+
+// === Study Modes messages (spec media-study-modes.md) ===
+
+/** Panel → content/background: apply active study mode to the current player. */
+export interface ApplyStudyModePayload {
+  readonly activeMode: StudyMode;
+  readonly advanced: StudyModeAdvancedSettings;
 }

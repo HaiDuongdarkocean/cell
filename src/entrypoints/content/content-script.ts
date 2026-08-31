@@ -13,6 +13,7 @@ import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleToken
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import { initOcrContentScript } from './ocrContentScript';
+import { initializeStudyModeController } from '@/features/studyModes/content/studyModeController';
 import { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
@@ -1167,8 +1168,12 @@ function createOcrTriggerController(): SubtitleTriggerController | null {
 
 if (isTopFrame) {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initOcrContentScript(createOcrTriggerController));
+    document.addEventListener('DOMContentLoaded', () => {
+      initOcrContentScript(createOcrTriggerController);
+      initializeStudyModeController();
+    });
   } else {
     initOcrContentScript(createOcrTriggerController);
+    initializeStudyModeController();
   }
 }

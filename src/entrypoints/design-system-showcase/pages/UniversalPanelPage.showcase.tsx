@@ -64,6 +64,7 @@ export function Showcase(): ReactElement {
               initialTerm="serendipity"
             />
           }
+          studyModesPanel={<div data-cell-id="study-modes-panel">Study Modes</div>}
           settingsPanel={<SettingsTab />}
         />
       </div>

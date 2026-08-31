@@ -1,5 +1,6 @@
 import type { SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import {
   DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   DEFAULT_OVERLAY_STYLE_TARGET,
@@ -7,6 +8,7 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
+import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { AppearanceState } from './SubtitleManagerPanel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
@@ -19,7 +21,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 
 const OFFSET_SETTINGS_KEY = 'subtitleOffset';
 const OFFSET_PERSIST_DEBOUNCE_MS = 300;
@@ -55,8 +57,8 @@ export class ReactSubtitleController {
   private repeatActive = false;
   private repeatIcon: IconCatalogKey = 'navRepeat';
   private repeatLabel = 'Repeat current sentence';
-  private managerTargetItems: import('./subtitlePanelModel').SubtitlePanelItem[] = [];
-  private managerNativeItems: import('./subtitlePanelModel').SubtitlePanelItem[] = [];
+  private managerTargetItems: SubtitlePanelItem[] = [];
+  private managerNativeItems: SubtitlePanelItem[] = [];
   private managerTargetActiveIndex = 0;
   private managerNativeActiveIndex = 0;
   private generateNativeEnabled = true;
@@ -613,9 +615,29 @@ export class ReactSubtitleController {
     this.mount.setManager(this.buildManagerState());
   }
 
+  /** Apply a study mode to the current playback.
+   *  P1: subtitle visibility + playback speed from the first step.
+   *  Pause/repeat/after/loop state machine is a known ceiling (ponytail). */
+  applyStudyMode(activeMode: StudyMode, _advanced: StudyModeAdvancedSettings): void {
+    if (this.destroyed) return;
+    const step = activeMode.steps[0] ?? { subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' };
+    const subtitle = step.subtitle;
+    this.targetHidden = subtitle === 'none' || subtitle === 'native';
+    this.nativeHidden = subtitle === 'none' || subtitle === 'target';
+    const targetStyle = this.engine.getTargetStyle();
+    const nativeStyle = this.engine.getNativeStyle();
+    this.engine.updateSettings({
+      targetStyle: { ...targetStyle, visible: !this.targetHidden },
+      nativeStyle: { ...nativeStyle, visible: !this.nativeHidden },
+    });
+    this.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+    this.video.playbackRate = step.speed;
+  }
+
   // === Subtitle manager panel (legacy managerPanel replacement) ===
 
-  updateManagerItems(role: 'target' | 'native', items: import('./subtitlePanelModel').SubtitlePanelItem[], activeIndex: number): void {
+  updateManagerItems(role: 'target' | 'native', items: SubtitlePanelItem[], activeIndex: number): void {
     if (role === 'target') {
       this.managerTargetItems = items;
       this.managerTargetActiveIndex = activeIndex;

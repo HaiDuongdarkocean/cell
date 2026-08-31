@@ -3,7 +3,7 @@ import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 
-export type UniversalPanelTab = 'dictionary' | 'settings';
+export type UniversalPanelTab = 'dictionary' | 'settings' | 'studyModes';
 
 export interface UniversalPanelController {
   readonly open: (tab?: UniversalPanelTab) => Promise<void>;

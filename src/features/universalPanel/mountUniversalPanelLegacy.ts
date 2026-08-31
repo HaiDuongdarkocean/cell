@@ -7,6 +7,7 @@ import { createElement, type ReactElement } from 'react';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
+import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
@@ -191,6 +192,7 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
       prefill: pendingCardCreatorContext,
     }) as ReactElement;
 
+  const studyModesPanel = createElement(StudyModesTab) as ReactElement;
   const settingsPanel = createElement(SettingsTab) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
@@ -224,6 +226,7 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
           options.panel?.onToggle(key);
         },
         dictionaryPanel: renderDictionaryPanel(open),
+        studyModesPanel,
         settingsPanel,
       }) as ReactElement,
     );

@@ -2,6 +2,8 @@ import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } fro
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
+import type { ApplyStudyModePayload } from '@/entities/message';
+import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { useCuesStore } from '@/stores/cuesStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
@@ -204,6 +206,17 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     (action) => { void handleCardCreatorAction(action); },
     () => { void handleGenerateNative(); },
   );
+
+  // Apply the active study mode to the current video, and keep it in sync
+  // when the user changes it from the panel. P1: subtitle visibility + speed.
+  // Pause/repeat/after/loop state machine is a known ceiling (ponytail).
+  const initialStudyMode = getActiveStudyMode();
+  if (initialStudyMode) {
+    blockController.applyStudyMode(initialStudyMode.activeMode, initialStudyMode.advanced);
+  }
+  const unsubscribeStudyMode = subscribeToStudyMode((next) => {
+    if (next) blockController.applyStudyMode(next.activeMode, next.advanced);
+  });
 
   /** Build SubtitleActionContext from current controller state — shared action
    *  functions (cardActions.ts) use this to access video, cues, settings, etc.
@@ -1188,6 +1201,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         }
       }
     }
+    if (m?.type === MESSAGE_TYPES.APPLY_STUDY_MODE) {
+      const payload = m.payload as ApplyStudyModePayload | undefined;
+      if (payload?.activeMode) {
+        blockController?.applyStudyMode(payload.activeMode, payload.advanced);
+      }
+    }
     return false; // synchronous listener
   };
   onMessage(onRuntimeMessage);
@@ -1946,6 +1965,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
     blockController?.destroy();
+    unsubscribeStudyMode();
   };
 }
 

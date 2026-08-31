@@ -123,7 +123,7 @@ export function Toggle({
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    if (disabled || isAnimatingRef.current) return;
+    if (disabled) return;
     onChange(e.target.checked);
   };
 
