@@ -57,4 +57,26 @@ test.describe('Design System Showcase', () => {
     await advancedToggle.click();
     await expect(advancedSection).not.toBeVisible();
   });
+
+  test('creates a custom study mode from the builder', async ({ showcasePage }) => {
+    await showcasePage.goto('?showcase=Study Modes Panel');
+
+    await expect(showcasePage.getByRole('heading', { name: 'Study Modes Panel', level: 1 })).toBeVisible();
+
+    await showcasePage.locator('[data-cell-id="new-mode-card"]').click();
+
+    await expect(showcasePage.getByRole('dialog')).toBeVisible();
+
+    await showcasePage.locator('[data-cell-id="builder-title-input"]').fill('Shadowing');
+
+    // Add an extra step via the cue strip, then save.
+    await showcasePage.locator('[data-cell-id="cue-add-step"]').click();
+
+    await showcasePage.locator('[data-cell-id="builder-save"]').click();
+
+    await expect(showcasePage.getByRole('dialog')).not.toBeVisible();
+
+    await expect(showcasePage.getByLabel('Custom study modes')).toContainText('Shadowing');
+    await expect(showcasePage.locator('[data-cell-id^="mode-card-custom-"]')).toHaveCount(1);
+  });
 });

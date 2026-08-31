@@ -122,7 +122,7 @@ export function StudyModesTab(): ReactElement {
               New mode
             </Button>
           </HStack>
-          <div className={styles.grid} role="radiogroup" aria-label="Custom study modes">
+          <div className={styles.grid} role="group" aria-label="Custom study modes">
             {store.customModes.map((mode) => (
               <ModeCard
                 key={mode.id}
@@ -138,6 +138,15 @@ export function StudyModesTab(): ReactElement {
               className={styles.newModeCard}
               onClick={handleNewMode}
               data-cell-id="new-mode-card"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleNewMode();
+                }
+              }}
+              aria-label="New mode"
             >
               <Icon name="plus" size={32} className={styles.newModeIcon} />
               <Text variant="heading-2" as="p">New mode</Text>
@@ -193,40 +202,42 @@ interface ModeCardProps {
 
 function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps): ReactElement {
   const isCustom = mode.type === 'custom';
-  const description = useMemo(() => formatModeDescription(mode), [mode]);
+  const description = useMemo(
+    () => (mode.description ? mode.description : formatModeDescription(mode)),
+    [mode],
+  );
 
   return (
-    <Card
-      variant={selected ? 'selected' : 'interactive'}
-      className={styles.modeCard}
-      onClick={() => onSelect(mode)}
-      data-cell-id={`mode-card-${mode.id}`}
-      role="radio"
-      aria-checked={selected}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(mode);
-        }
-      }}
-    >
-      <Icon name={mode.icon} size={28} className={styles.modeIcon} />
-      <Text variant="heading-2" as="p" className={styles.modeTitle}>
-        {mode.title}
-      </Text>
-      <Text color="secondary" as="p" className={styles.modeDesc}>
-        {description}
-      </Text>
+    <div className={styles.modeCardWrapper}>
+      <Card
+        variant={selected ? 'selected' : 'interactive'}
+        className={styles.modeCard}
+        onClick={() => onSelect(mode)}
+        data-cell-id={`mode-card-${mode.id}`}
+        role="radio"
+        aria-checked={selected}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(mode);
+          }
+        }}
+      >
+        <Icon name={mode.icon} size={28} className={styles.modeIcon} />
+        <Text variant="heading-2" as="p" className={styles.modeTitle}>
+          {mode.title}
+        </Text>
+        <Text color="secondary" as="p" className={styles.modeDesc}>
+          {description}
+        </Text>
+      </Card>
       {isCustom && (
-        <HStack gap="2" className={styles.modeActions} onClick={(e) => e.stopPropagation()}>
+        <HStack gap="2" className={styles.modeActions}>
           <Button
             size="xs"
             variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit?.(mode);
-            }}
+            onClick={() => onEdit?.(mode)}
             data-cell-id={`edit-mode-${mode.id}`}
             leadingIcon={<Icon name="pencil" size={14} />}
           >
@@ -235,10 +246,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
           <Button
             size="xs"
             variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete?.(mode);
-            }}
+            onClick={() => onDelete?.(mode)}
             data-cell-id={`delete-mode-${mode.id}`}
             leadingIcon={<Icon name="trash" size={14} />}
           >
@@ -246,7 +254,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
           </Button>
         </HStack>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -266,7 +274,12 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           <Text as="p" className={styles.advancedLabel}>
             Skip when there is no dialogue
           </Text>
-          <HStack gap="2" className={styles.chipRow}>
+          <HStack
+            gap="2"
+            className={styles.chipRow}
+            role="group"
+            aria-label="Skip scenes with no dialogue"
+          >
             {SKIP_OPTIONS.map((option) => (
               <Chip
                 key={option}
@@ -281,7 +294,7 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           </HStack>
         </div>
         <Checkbox
-          label="Remove text in brackets [ ] from target subtitle"
+          label="Remove text in brackets ( ), [ ], { } from target subtitle"
           checked={advanced.removeBracketed}
           onChange={(e) => onChange({ ...advanced, removeBracketed: e.target.checked })}
           data-cell-id="remove-bracketed-checkbox"
