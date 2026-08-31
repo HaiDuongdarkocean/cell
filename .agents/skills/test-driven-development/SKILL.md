@@ -15,6 +15,8 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 - Fixing any bug (the Prove-It Pattern)
 - Modifying existing functionality
 - Adding edge case handling
+- Refactoring large or legacy code (use Characterization Tests first)
+- Replacing an implementation behind an abstraction or feature flag (use Contract Tests)
 - Any change that could break existing behavior
 
 **When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact.
@@ -126,6 +128,59 @@ export async function completeTask(id: string): Promise<Task> {
 
 // Step 3: Test passes → bug fixed, regression guarded
 ```
+
+## Characterization Tests (Legacy Code)
+
+Use this before refactoring code whose exact behavior is not fully specified, especially large controllers or code with low coverage.
+
+A characterization test documents what the code actually does right now, not what it should do. It is the only honest test for legacy code because the current behavior is the de facto specification.
+
+### Steps
+
+1. Get the code into a test harness.
+2. Write an assertion you **know** is wrong.
+3. Run it. Let the failure message tell you what the code actually does.
+4. Change the assertion to expect the observed value.
+5. Repeat until every behavior you are about to touch is pinned.
+
+```typescript
+// Example: pinning contentScriptController subtitle sync behavior
+it('characterizes applySubtitleSync output', () => {
+  const controller = createTestController();
+  controller.applySubtitleSync({ offset: -200, speed: 1.2 });
+
+  // Start with a deliberately wrong expectation
+  // expect(controller.targetHidden).toBe(true);
+
+  // Run, let the failure tell you the real value, then lock it in
+  expect(controller.targetHidden).toBe(false);
+  expect(controller.video.playbackRate).toBe(1.2);
+});
+```
+
+**Rule:** Never "fix" a quirk you discover during characterization mid-refactor. Pin it first, then decide separately whether the quirk is a bug.
+
+## Contract Tests (Strangler Fig / Branch by Abstraction)
+
+When replacing an implementation behind an abstraction, write a contract test that runs both the old and new code with the same inputs and compares outputs.
+
+```typescript
+it('new subtitle sync service matches legacy controller output', () => {
+  const legacy = createLegacyController();
+  const modern = createSubtitleSyncService();
+
+  const input = { offset: -200, speed: 1.2, visible: 'both' };
+
+  legacy.applySubtitleSync(input);
+  modern.apply(input);
+
+  expect(modern.targetHidden).toBe(legacy.targetHidden);
+  expect(modern.nativeHidden).toBe(legacy.nativeHidden);
+  expect(modern.playbackRate).toBe(legacy.video.playbackRate);
+});
+```
+
+**Rule:** The contract test must pass for every caller you migrate. Only remove it after the old implementation is deleted and the abstraction is gone.
 
 ## The Test Pyramid
 
@@ -379,6 +434,8 @@ After completing any implementation:
 - [ ] Test names describe the behavior being verified
 - [ ] No tests were skipped or disabled
 - [ ] Coverage hasn't decreased (if tracked)
+- [ ] Refactors include a characterization or contract test before behavior is moved
+- [ ] Legacy controller changes include contract tests comparing old and new outputs
 
 **Note:** Run each test command after a change that could affect the result. After a clean run, don't repeat the same command unless the code has changed since — re-running on unchanged code adds no confidence.
 

@@ -228,11 +228,34 @@ If 3 cycles is "obviously insufficient" because the artifact is large: the artif
 - **`debugging-and-error-recovery`**: when the reviewer surfaces a real failure mode, drop into the debugging skill to localize and fix.
 - **Repo orchestration rules** (`references/orchestration-patterns.md`): this skill orchestrates from the main session. A persona calling another persona is anti-pattern B — see Loading Constraints above.
 
+## Debt Remediation Cross-Examination
+
+When the task is paying down technical debt, run this adversarial review before each slice:
+
+```
+DEBT SLICE CLAIM:
+"Extracting [X] from [large file] and adding [Y] is safe and preserves behavior."
+
+WHY IT MATTERS:
+This file is on the audit top-10 list; any regression here affects [user flow].
+
+FRESH-CONTEXT REVIEWER PROMPT:
+You are a fresh-context reviewer. Disprove this claim:
+- Does the new abstraction cover every existing caller's needs?
+- Is there a characterization or contract test proving behavior preservation?
+- Can this slice be reverted independently without breaking the build?
+- Are we adding new behavior to a file that is still over 500 lines?
+- Is the old code actually going to be deleted, or will it run alongside forever?
+```
+
+**Stop condition:** The slice may proceed only when every question has a concrete, evidence-based answer (test, diff, or tracked removal task).
+
 ## Verification
 
 After applying doubt-driven development:
 
 - [ ] Every non-trivial decision (per the definition above) was named explicitly as a CLAIM before standing
+- [ ] Debt remediation slices passed the Debt Remediation Cross-Examination
 - [ ] At least one fresh-context review per non-trivial artifact (a failing test produced by TDD's RED step satisfies this for behavioral claims, per Interaction with Other Skills)
 - [ ] The reviewer received ARTIFACT + CONTRACT — NOT the CLAIM, NOT your reasoning
 - [ ] The reviewer's prompt was adversarial ("find issues"), not validating ("is it good")

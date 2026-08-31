@@ -35,6 +35,11 @@ Change ready
     │
     ▼
 ┌─────────────────────┐
+│ 1.5 Debt smell      │ Large files, TODO/FIXME, 0% coverage?
+└─────────────────────┘
+    │
+    ▼
+┌─────────────────────┐
 │ 2. Lint             │ npm run lint (if .ts/.tsx/.css changed)
 └─────────────────────┘
     │
@@ -82,6 +87,22 @@ git status --short
 | `tokens.json` | build (regenerates tokens.css), typecheck |
 | `package.json`, `*.config.*` | build, typecheck |
 | `.md`, `.txt` | skip (no build impact) |
+
+## Step 1.5: Debt Smell Check
+
+**Purpose:** Catch new or worsening technical debt before it reaches the commit.
+
+**Actions:**
+- For every changed `*.ts`/`*.tsx` in `src/`, check line count (`wc -l`).
+  - If a file is > 500 lines and you are adding behavior, stop and extract a small piece first (see `incremental-implementation` Rule 0.6).
+- `grep` for new `TODO`/`FIXME`/`HACK`/`console.log` you introduced.
+  - Each must have a ticket, an owner, or be removed before commit.
+- Check whether changed files have any unit test coverage.
+  - If a changed logic file has 0% coverage, add at least one test before commit (use `test-driven-development`).
+
+**Guard:** No new behavior is added to files > 500 lines without a documented extraction plan; no new `TODO`/`FIXME` without a tracking item; no 0% coverage logic changes without a test.
+
+**Loop back:** If a debt smell is found, re-route to `incremental-implementation` or `test-driven-development` before continuing the gate.
 
 ## Step 2: Lint
 
@@ -132,6 +153,12 @@ npx jest path/to/File.test.tsx
 Then run full suite.
 
 **Guard:** All pass → pass.
+
+**Flaky test check:** After a full pass, run the changed file's test (if any) a second time with `--coverage`:
+```bash
+npx jest --selectProjects unit --coverage --testPathPattern "path/to/File" --passWithNoTests
+```
+- If it fails here but passes without `--coverage`, flag it as a timing/coverage-flaky test and fix before commit (or isolate it from coverage).
 
 ## Step 5: Build
 
@@ -210,9 +237,14 @@ Fix `src/features/X.tsx:42` then re-run pre-commit gate.
 | Skip build because typecheck passed | tsc ≠ Vite build | Always run build for src/ changes |
 | Run only changed file's test | May miss integration issues | Run full suite after targeted test |
 | Commit before gate | Broken code enters repo | Gate pass before `git commit` |
+| Add behavior to large files | Inflates technical debt and makes review hard | Extract a small piece first per `incremental-implementation` |
+| Leave new TODO/FIXME without tracking | Becomes forgotten debt | Add ticket/owner or remove before commit |
+| Skip tests for 0% coverage files | Keeps coverage gap open | Add at least one test for changed logic |
+| Ignore test that fails under coverage | Will break CI gate later | Fix or isolate the flaky test |
 
 ## Router boomerang
 
 If gate fails and needs debugging → `/debugging-and-error-recovery`.
 If gate passes and ready to commit → `/git-workflow-and-versioning`.
 If gate reveals missing tests → `/test-driven-development`.
+If gate reveals new debt smells → `/audit-technical-debt` (to re-score and plan) or `/incremental-implementation` (to slice a safe extraction).

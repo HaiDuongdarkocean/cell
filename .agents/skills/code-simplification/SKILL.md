@@ -294,6 +294,47 @@ function UserBadge({ user }: Props) {
 // This is a judgment call — flag it, don't auto-refactor.
 ```
 
+## Preparatory Refactoring & Large File Splits
+
+Use this pattern when you need to add behavior to an already-large file (500+ lines) or to make a large change feasible.
+
+### Preparatory Refactoring
+
+Before adding the new feature, clean up just enough to make the new feature easy:
+
+1. Find the seam — the place where the new feature will connect.
+2. Extract the existing logic around that seam into a small, named, testable function or hook.
+3. Write a characterization test for the extracted behavior.
+4. Add the new feature using the cleaned seam.
+
+```typescript
+// Before: new feature is added directly to a 900-line controller
+function BigController() {
+  // ... 800 lines ...
+  applyStudyMode(mode) { /* new code */ }  // ❌ inflates the file
+}
+
+// After: move existing playback state logic into a hook first
+function usePlaybackState() { /* extracted */ }
+function BigController() {
+  const playback = usePlaybackState();
+  applyStudyMode(mode) { /* calls playback.set... */ }  // ✅ small and clear
+}
+```
+
+### Large File Split
+
+If a file is over 500 lines, split it before adding to it:
+
+1. Identify a domain boundary inside the file (state, rendering, API, I/O).
+2. Extract that boundary into its own module.
+3. Update imports and re-export from the original file if needed.
+4. Delete the old inline code only after the new module is fully wired and tested.
+
+**Guard:** Each split must leave the system buildable and behavior-identical. If you cannot extract a piece without changing callers, use Branch by Abstraction (see `incremental-implementation`) rather than a direct cut.
+
+**Anti-pattern:** "I'll just add 20 more lines, the file is already big." Every line added to a large file makes the next change harder.
+
 ## Common Rationalizations
 
 | Rationalization | Reality |
@@ -315,6 +356,8 @@ function UserBadge({ user }: Props) {
 - Simplifying code you don't fully understand
 - Batching many simplifications into one large, hard-to-review commit
 - Refactoring code outside the scope of the current task without being asked
+- Adding new behavior to a file over 500 lines without first extracting a seam
+- Splitting a large file without a characterization test for the extracted behavior
 
 ## Verification
 

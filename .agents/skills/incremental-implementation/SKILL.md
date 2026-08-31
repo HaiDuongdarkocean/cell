@@ -86,6 +86,32 @@ Slice 3: Add offline support and reconnection
 
 If Slice 1 fails, you discover it before investing in Slices 2 and 3.
 
+### Debt Slicing (Divide & Conquer)
+
+Use this when the task is to pay down technical debt in a large or tangled area:
+
+- **Strangler Fig slice:** Build a new component/hook/service next to the old one, route one caller at a time, then remove the old code once no one uses it.
+  ```
+  Slice 1: Introduce new SubtitleSyncService behind an interface
+  Slice 2: Move one caller from contentScriptController to SubtitleSyncService
+  Slice 3: Move the next caller
+  Slice 4: Delete the old inline logic
+  ```
+- **Branch by Abstraction slice:** Create an abstraction over a dependency or module you want to replace, then swap implementations incrementally.
+  ```
+  Slice 1: Define IOcrEngine interface and wrap the current engine
+  Slice 2: Add a new engine implementing the interface
+  Slice 3: Switch one language/model to the new engine behind the abstraction
+  Slice 4: Remove the old engine when all clients have moved
+  ```
+- **Boy Scout slice:** When touching a file, leave it a little cleaner, but only within the scope of your current task.
+  ```
+  Slice 1: Rename a misleading variable while fixing a bug in the same function
+  Slice 2: Extract a pure helper for the logic you are already changing
+  ```
+
+**Debt slicing guard:** Every slice must leave the codebase buildable and the old behavior intact. If you are replacing behavior, have a contract or characterization test that proves old and new outputs match before switching callers.
+
 ## Implementation Rules
 
 ### Rule 0: Simplicity First
@@ -131,6 +157,14 @@ NOTICED BUT NOT TOUCHING:
 - The auth middleware could use better error messages (separate task)
 → Want me to create tasks for these?
 ```
+
+### Rule 0.6: Large File Guard
+
+If your slice touches a file over 500 lines, you must extract at least one small, focused, testable piece before adding new behavior. Do not keep inflating large controllers and panels.
+
+**Bad:** Add `applyStudyMode` directly into `reactSubtitleController.ts` (806+ lines) without first moving the existing subtitle state machine into a smaller hook/service.
+
+**Good:** Extract the subtitle state transitions into `useSubtitlePlaybackState.ts`, write tests for it, then call it from `reactSubtitleController.ts` and from the new `StudyModeController`.
 
 ### Rule 1: One Thing at a Time
 
@@ -233,6 +267,8 @@ After each increment, verify:
 - Touching files outside the task scope "while I'm here"
 - Creating new utility files for one-time operations
 - Running the same build/test command twice in a row without any intervening code change
+- Adding new behavior to a file over 500 lines without extracting a testable piece first
+- Refactoring legacy code without a characterization or contract test
 
 ## Verification
 
@@ -247,6 +283,8 @@ After completing all increments for a task:
 ## See Also
 
 Per-increment verification is the local check. Before declaring a task done, apply the project-wide Definition of Done as the final gate, the standing bar every increment clears regardless of the task. See `references/definition-of-done.md`.
+
+For paying down technical debt, also see `audit-technical-debt` (how to find and score debt), `planning-and-task-breakdown` (how to turn an audit into tasks), and `pre-commit-gate` (how to verify each slice).
 
 
 ---
