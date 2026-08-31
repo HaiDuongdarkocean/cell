@@ -18,7 +18,8 @@
 ## Phase 2: Subtitle Island
 
 - [x] Task 5: Characterization tests `reactSubtitleController`
-- [ ] Task 6: Extract `StudyModeController`
+- [x] Task 6: Extract `StudyModeController` (`SubtitleStudyModeController` extracted; `reactSubtitleController.ts` còn 881 dòng, cần Task 6b để xuống < 800)
+- [ ] Task 6b: Tách manager/style state để `reactSubtitleController.ts` < 800 dòng
 - [ ] Task 7: Characterization tests `contentScriptController`
 - [ ] Task 8: Tách `subtitleSyncController`
 
