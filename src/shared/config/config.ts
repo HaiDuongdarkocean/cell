@@ -345,6 +345,8 @@ export const STORAGE_KEYS = {
   LOCAL_PLAYER_SUBTITLE_PANEL_OPEN: 'localPlayerSubtitlePanelOpen',
   /** Per-origin OCR preference (spec orca-ocr-layer.md). Map origin → OcrOriginState. */
   OCR_SETTINGS: 'ocrSettings',
+  /** Study Modes state (spec media-study-modes.md). */
+  STUDY_MODES: 'studyModes',
 } as const;
 
 // === Popup Dimensions ===

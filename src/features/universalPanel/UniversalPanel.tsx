@@ -31,12 +31,15 @@ export interface UniversalPanelProps {
   readonly onProfileChange?: (profileId: string) => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
+  /** Content for the Study Modes tab. */
+  readonly studyModesPanel: ReactNode;
   /** Content for the Settings tab. */
   readonly settingsPanel: ReactNode;
 }
 
-const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings'; label: string }[] = [
+const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings' | 'slidersHorizontal'; label: string }[] = [
   { key: 'dictionary', icon: 'bookOpen', label: 'Dictionary' },
+  { key: 'studyModes', icon: 'slidersHorizontal', label: 'Study Modes' },
   { key: 'settings', icon: 'settings', label: 'Settings' },
 ];
 
@@ -57,6 +60,7 @@ export function UniversalPanel({
   activeProfileId = null,
   onProfileChange = () => {},
   dictionaryPanel,
+  studyModesPanel,
   settingsPanel,
 }: UniversalPanelProps): ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -181,7 +185,9 @@ export function UniversalPanel({
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
-            {activeTab === 'dictionary' ? dictionaryPanel : settingsPanel}
+            {activeTab === 'dictionary' && dictionaryPanel}
+            {activeTab === 'studyModes' && studyModesPanel}
+            {activeTab === 'settings' && settingsPanel}
           </div>
         </div>
       </div>

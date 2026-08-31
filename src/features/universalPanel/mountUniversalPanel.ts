@@ -13,6 +13,7 @@ import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
+import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
@@ -25,6 +26,7 @@ import universalPanelCss from './UniversalPanel.module.css?inline';
 import universalPanelHeaderCss from './UniversalPanelHeader.module.css?inline';
 import cardCreatorPanelCss from './tabs/CardCreatorPanel.module.css?inline';
 import dictionaryTabCss from './tabs/DictionaryTab.module.css?inline';
+import studyModesTabCss from '@/features/studyModes/ui/StudyModesTab.module.css?inline';
 import settingsTabCss from './tabs/SettingsTab.module.css?inline';
 
 import popupDictionaryCss from '@/features/dictionaryPopup/ui/PopupDictionary.module.css?inline';
@@ -121,6 +123,7 @@ const SHADOW_CSS = [
   universalPanelHeaderCss,
   cardCreatorPanelCss,
   dictionaryTabCss,
+  studyModesTabCss,
   settingsTabCss,
 
   popupDictionaryCss,
@@ -196,7 +199,7 @@ async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
     const data = await getSessionStorage<Record<string, string>>(STORAGE_KEYS.UNIVERSAL_PANEL_TAB);
     const tab = data[STORAGE_KEYS.UNIVERSAL_PANEL_TAB];
-    return tab === 'dictionary' || tab === 'settings' ? tab : null;
+    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' ? tab : null;
   } catch {
     return null;
   }
@@ -307,6 +310,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       prefill: pendingCardCreatorContext,
     }) as ReactElement;
 
+  const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;
   const settingsPanel = createElement(ErrorBoundary, null, createElement(SettingsTab)) as ReactElement;
 
   // ADR-061: tokenize state lives in the universal header (above content),
@@ -326,30 +330,29 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     mount.root.render(
       createElement(
         ShadowThemeProvider,
-        {
-          container: mount.rootEl,
-          children: createElement(UniversalPanel, {
-            isOpen: open,
-            activeTab: currentTab,
-            onTabChange: (tab: UniversalPanelTab) => {
-              void controller.switchTab(tab);
-            },
-            onClose: () => controller.close(),
-            tokenizeState,
-            onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
-              options.panel?.onToggle(key);
-            },
-            languageProfiles,
-            activeProfileId,
-            onProfileChange: (id: string) => {
-              activeProfileId = id;
-              if (!isUnmounted) render();
-              void saveSettings({ activeProfileId: id });
-            },
-            dictionaryPanel: renderDictionaryPanel(open),
-            settingsPanel,
-          }) as ReactElement,
-        },
+        { container: mount.rootEl },
+        createElement(UniversalPanel, {
+          isOpen: open,
+          activeTab: currentTab,
+          onTabChange: (tab: UniversalPanelTab) => {
+            void controller.switchTab(tab);
+          },
+          onClose: () => controller.close(),
+          tokenizeState,
+          onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
+            options.panel?.onToggle(key);
+          },
+          languageProfiles,
+          activeProfileId,
+          onProfileChange: (id: string) => {
+            activeProfileId = id;
+            if (!isUnmounted) render();
+            void saveSettings({ activeProfileId: id });
+          },
+          dictionaryPanel: renderDictionaryPanel(open),
+          studyModesPanel,
+          settingsPanel,
+        }) as ReactElement,
       ) as ReactElement,
     );
   };

@@ -458,7 +458,6 @@
   padding: var(--button-vertical-padding-y) var(--button-vertical-padding-x);
   height: auto;
   min-height: var(--touch-target);
-  border-radius: 0;
 }
 
 .vertical .label {
@@ -594,6 +593,11 @@
 
 .fullWidth {
   width: 100%;
+}
+
+/* In the liquid glass concept, buttons must stay pill-shaped. Solid bars can still be flat. */
+.solid.fullWidth,
+.solid.vertical {
   border-radius: 0;
 }
 
