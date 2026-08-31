@@ -1,4 +1,4 @@
-import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
@@ -179,6 +179,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // callbacks from a run that has been superseded while loading settings.
   let nextGenerateRunId = 0;
   let activeGenerateRunId = -1;
+  let onStorageChangedCallback: ((changes: Record<string, chrome.storage.StorageChange>, area: string) => void) | null = null;
 
   /** Update generate-native button disabled state based on target cues + settings. */
   function updateGenerateNativeEnabled(): void {
@@ -508,7 +509,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     });
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
-    onStorageChanged((changes, area) => {
+    onStorageChangedCallback = (changes, area) => {
       if (area !== 'local') return;
       const newSettings = changes.settings?.newValue as Settings | undefined;
       if (newSettings) {
@@ -586,7 +587,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           blockController.disableDictionaryPopup();
         }
       }
-    });
+    };
+    onStorageChanged(onStorageChangedCallback);
   }).catch((err) => {
     console.error('[content-script] Failed to load overlay settings:', err);
   });
@@ -1962,6 +1964,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
+    if (onStorageChangedCallback) removeOnStorageChangedListener(onStorageChangedCallback);
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
     blockController?.destroy();
