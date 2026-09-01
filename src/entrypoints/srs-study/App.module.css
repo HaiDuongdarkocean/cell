@@ -116,3 +116,7 @@
   color: var(--color-text-primary, #f7f8f8);
   font-weight: var(--font-weight-semibold, 600);
 }
+
+.manageButton {
+  margin-top: var(--space-3, 0.75rem);
+}
