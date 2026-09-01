@@ -56,8 +56,6 @@ export interface CandidateViewProps {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
-  /** Called when the user adds this word to Ocean SRS. */
-  readonly onAddToSrs?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Default media tab to open when this candidate first appears. */
   readonly defaultActiveTab?: PopupTab | null;
@@ -71,7 +69,6 @@ export function CandidateView({
   targetLang,
   onSendToCard,
   onQuickAdd,
-  onAddToSrs,
   onStatusChange,
   defaultActiveTab,
 }: CandidateViewProps): React.JSX.Element {
@@ -82,7 +79,6 @@ export function CandidateView({
     targetLang,
     onSendToCard,
     onQuickAdd,
-    onAddToSrs,
     onStatusChange,
     defaultActiveTab,
   });
@@ -126,24 +122,12 @@ export function CandidateView({
               <button
                 type="button"
                 className={`icon-btn icon-btn--sm icon-btn--filled ${styles.cellHeaderQuickAdd}`}
-                aria-label="Quick Add to Anki"
-                title="Quick Add to Anki"
+                aria-label="Quick Add"
+                title="Quick Add"
                 onClick={panel.quickAdd}
                 data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
-              </button>
-            )}
-            {onAddToSrs && (
-              <button
-                type="button"
-                className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellHeaderSrs}`}
-                aria-label="Add to Ocean SRS"
-                title="Add to Ocean SRS"
-                onClick={panel.addToSrs}
-                data-cell-id="dictionary-add-to-srs"
-              >
-                <Icon name="plus"  />
               </button>
             )}
           </div>
