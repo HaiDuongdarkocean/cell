@@ -113,15 +113,20 @@ export class PronunciationAudioOrchestrator {
     let selectedSet = false;
 
     for (const provider of this.providers) {
-      const items = await provider.resolve(term, langCode);
-      if (items.length === 0) continue;
+      try {
+        const items = await provider.resolve(term, langCode);
+        if (items.length === 0) continue;
 
-      const withSelection = items.map((item, index) => ({
-        ...item,
-        defaultSelected: !selectedSet && index === 0,
-      }));
-      all.push(...withSelection);
-      selectedSet = true;
+        const withSelection = items.map((item, index) => ({
+          ...item,
+          defaultSelected: !selectedSet && index === 0,
+        }));
+        all.push(...withSelection);
+        selectedSet = true;
+      } catch {
+        // A single provider failing should not break the fallback chain.
+        // The next provider in the user-configured order is tried instead.
+      }
     }
 
     return all;

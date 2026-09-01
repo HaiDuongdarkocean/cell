@@ -7,8 +7,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
+import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   LookupResult,
@@ -16,7 +18,6 @@ import type {
   AudioItem,
   ImageItem,
   ExternalDictLink,
-  FetchCommunityAudioResponse,
   FetchImagesResponse,
   TtsFetchAudioResponse,
 } from '../types';
@@ -136,36 +137,36 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
-        const [communityRes, ttsRes] = await Promise.all([
-          sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
-            type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
-            payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
-          }),
+        const [settings, sentenceTtsRes] = await Promise.all([
+          loadSettings(),
           sendMessage<MessageResponse<TtsFetchAudioResponse>>({
             type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
             payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
           }),
         ]);
 
-        const items: AudioItem[] = [];
-        if (communityRes?.success && communityRes.data?.items) {
-          items.push(...communityRes.data.items);
-        }
+        const orchestrator = new PronunciationAudioOrchestrator(
+          settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
+        );
+        const wordItems = await orchestrator.resolve(result.term, result.langCode);
 
-        if (ttsRes?.success && ttsRes.data?.url) {
-          items.push({
+        const sentenceItems: AudioItem[] = [];
+        if (sentenceTtsRes?.success && sentenceTtsRes.data?.url) {
+          sentenceItems.push({
             id: `tts-sentence-${result.term}`,
             kind: 'sentence',
             source: 'system-tts',
             label: 'System TTS · Sentence',
             state: 'idle',
-            url: ttsRes.data.url,
+            url: sentenceTtsRes.data.url,
             defaultSelected: false,
           });
         }
 
+        const items: AudioItem[] = [...wordItems, ...sentenceItems];
+
         if (items.length === 0) {
-          setAudioError(communityRes?.error ?? 'Audio fetch failed');
+          setAudioError(sentenceTtsRes?.error ?? 'Audio fetch failed');
         }
 
         if (mountedRef.current) {

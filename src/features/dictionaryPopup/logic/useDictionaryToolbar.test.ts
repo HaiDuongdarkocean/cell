@@ -3,11 +3,17 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import type { LookupResult, AudioItem, ImageItem } from '../types';
 import { useDictionaryToolbar } from './useDictionaryToolbar';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
+}));
+
+jest.mock('@/shared/lib/storage/settingsStore', () => ({
+  loadSettings: jest.fn(),
 }));
 
 jest.mock('@/features/cardCreator/media/translation', () => ({
@@ -15,6 +21,7 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
 }));
 
 const mockSendMessage = jest.mocked(sendMessage);
+const mockLoadSettings = jest.mocked(loadSettings);
 const mockTranslateSentence = jest.mocked(translateSentence);
 
 function makeResult(term: string, overrides: Partial<LookupResult> = {}): LookupResult {
@@ -55,26 +62,33 @@ function makeImage(id: string, selected = false): ImageItem {
   };
 }
 
-describe('useDictionaryToolbar', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockSendMessage.mockReset();
-    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
-      const message = msg as { type: string };
-      if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
-        return { success: true, data: { items: [] } } as T;
-      }
-      if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
-        return { success: true, data: {} } as T;
-      }
-      if (message.type === MESSAGE_TYPES.FETCH_IMAGES) {
-        return { success: true, data: { items: [] } } as T;
-      }
-      return { success: true } as T;
-    });
-    mockTranslateSentence.mockReset();
-    mockTranslateSentence.mockResolvedValue('');
+function setupMocks(): void {
+  jest.clearAllMocks();
+  mockSendMessage.mockReset();
+  mockLoadSettings.mockReset();
+  mockLoadSettings.mockResolvedValue({ pronunciation: DEFAULT_PRONUNCIATION_SETTINGS } as never);
+  mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
+    const message = msg as { type: string };
+    if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+      return { success: true, data: { items: [] } } as T;
+    }
+    if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
+      return { success: true, data: { items: [] } } as T;
+    }
+    if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
+      return { success: true, data: {} } as T;
+    }
+    if (message.type === MESSAGE_TYPES.FETCH_IMAGES) {
+      return { success: true, data: { items: [] } } as T;
+    }
+    return { success: true } as T;
   });
+  mockTranslateSentence.mockReset();
+  mockTranslateSentence.mockResolvedValue('');
+}
+
+describe('useDictionaryToolbar', () => {
+  beforeEach(setupMocks);
 
   it('starts with no active tab and empty media', () => {
     const { result } = renderHook(() => useDictionaryToolbar({
@@ -107,6 +121,9 @@ describe('useDictionaryToolbar', () => {
   it('fetches audio when the audio tab is opened', async () => {
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
       }
@@ -132,8 +149,14 @@ describe('useDictionaryToolbar', () => {
 
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {
     const ttsCalls: { text: string }[] = [];
+    mockLoadSettings.mockResolvedValue({
+      pronunciation: { ...DEFAULT_PRONUNCIATION_SETTINGS, fallbackEngines: ['native'] },
+    } as never);
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string; payload?: { text?: string } };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [] } } as T;
       }
@@ -163,6 +186,9 @@ describe('useDictionaryToolbar', () => {
   it('fetches images when the image tab is opened', async () => {
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_IMAGES) {
         return { success: true, data: { items: [makeImage('i1'), makeImage('i2', true)] } } as T;
       }
@@ -206,6 +232,9 @@ describe('useDictionaryToolbar', () => {
   it('resets media state when result changes', async () => {
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
       }
@@ -233,6 +262,9 @@ describe('useDictionaryToolbar', () => {
   it('toggles audio and image selection and updates counts', async () => {
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
+      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
+        return { success: true, data: { items: [] } } as T;
+      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [makeAudio('a1', true)] } } as T;
       }
