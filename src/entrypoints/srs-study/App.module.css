@@ -5,16 +5,13 @@
   background-color: var(--color-background, #0f1011);
 }
 
-.hero {
-  flex: 1;
-}
-
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-4, 1rem);
   width: 100%;
   max-width: 32rem;
+  margin: auto;
   padding: var(--space-6, 1.5rem);
   border-radius: var(--radius-lg, 0.5rem);
   background-color: var(--color-surface, #18191a);
@@ -33,4 +30,71 @@
 
 .studyButton {
   align-self: center;
+}
+
+.finishedText {
+  text-align: center;
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.error {
+  text-align: center;
+  color: var(--color-error, #ff6b6b);
+}
+
+.componentType {
+  text-align: center;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs, 0.75rem);
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.stimulus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-4, 1rem);
+  border-radius: var(--radius-md, 0.375rem);
+  background-color: var(--color-surface-elevated, #222325);
+}
+
+.stimulusType {
+  text-transform: uppercase;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.stimulusField {
+  display: flex;
+  flex-direction: column;
+}
+
+.stimulusText {
+  color: var(--color-text, #f7f8f8);
+  font-size: var(--font-size-lg, 1.125rem);
+  text-align: center;
+}
+
+.stimulusImage {
+  max-width: 100%;
+  border-radius: var(--radius-md, 0.375rem);
+}
+
+.stimulusAudio {
+  width: 100%;
+}
+
+.spellingInput {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3, 0.75rem);
+}
+
+.forgetButton {
+  background-color: var(--color-surface-hover, #2b2d2f);
 }
