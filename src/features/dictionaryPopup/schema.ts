@@ -231,6 +231,17 @@ export const TtsFetchAudioResponseSchema = z.object({
   url: z.string().min(1),
 });
 
+// === eSpeak offscreen TTS (PRONUNCIATION_ESPEAK_TTS) — returns WAV bytes ===
+
+export const PronunciationEspeakTtsPayloadSchema = z.object({
+  text: z.string().min(1).max(2000),
+  langCode: z.string().length(2),
+});
+
+export const PronunciationEspeakTtsResponseSchema = z.object({
+  audioBytes: z.instanceof(Uint8Array),
+});
+
 // === Media URL fetch (FETCH_MEDIA_URL) — fetch external URL via background (CSP bypass) ===
 
 export const FetchMediaUrlPayloadSchema = z.object({
