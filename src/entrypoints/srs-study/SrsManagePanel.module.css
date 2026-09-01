@@ -1,0 +1,133 @@
+.panel {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding: var(--space-4, 1rem);
+  background: var(--color-surface, #18191a);
+  border-radius: var(--radius-card, 0.75rem);
+  color: var(--color-text-primary, #f7f8f8);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 0.75rem);
+  margin-bottom: var(--space-4, 1rem);
+}
+
+.title {
+  font-size: var(--font-size-2xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.section {
+  margin-top: var(--space-4, 1rem);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  margin-bottom: var(--space-3, 0.75rem);
+  color: var(--color-text-secondary, #8b949e);
+}
+
+.createRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.createRow > *:first-child {
+  flex: 1 1 200px;
+}
+
+.deckList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.deckRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+}
+
+.deckChildren {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+  margin-top: var(--space-2, 0.5rem);
+  margin-left: var(--space-6, 1.5rem);
+}
+
+.deckButton {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+}
+
+.deckDelete {
+  flex: 0 0 auto;
+}
+
+.noteList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 0.5rem);
+}
+
+.noteRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem);
+  border: 1px solid var(--color-border, #2b2d2f);
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--color-background, #0d1117);
+}
+
+.noteInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 0.25rem);
+  min-width: 0;
+}
+
+.targetWord {
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-primary, #f7f8f8);
+}
+
+.progress {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #8b949e);
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+}
+
+.noteActions {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+  flex-shrink: 0;
+}
+
+.error {
+  color: var(--color-danger, #f87171);
+  text-align: center;
+  margin-bottom: var(--space-3, 0.75rem);
+}
+
+.loading {
+  color: var(--color-text-secondary, #8b949e);
+  text-align: center;
+}
+
+.empty {
+  color: var(--color-text-secondary, #8b949e);
+  font-size: var(--font-size-sm, 0.875rem);
+}

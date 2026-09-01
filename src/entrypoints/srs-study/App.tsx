@@ -4,6 +4,7 @@ import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { normalizeSpelling } from '@/features/srs/lib/helpers';
 import type { SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
 import { UserCssPanel } from './UserCssPanel';
+import { SrsManagePanel } from './SrsManagePanel';
 import styles from './App.module.css';
 
 function formatFieldValue(value: SrsFieldValue): string {
@@ -113,6 +114,7 @@ function SrsReviewCard() {
 
 export function App() {
   const { loading, error, finished, start, session, stats } = useSrsStudy();
+  const [view, setView] = useState<'study' | 'manage'>('study');
 
   return (
     <Box className={styles.page}>
@@ -122,6 +124,8 @@ export function App() {
         </Box>
       ) : session ? (
         <SrsReviewCard />
+      ) : view === 'manage' ? (
+        <SrsManagePanel onBack={() => { setView('study'); }} />
       ) : (
         <Box className={styles.card}>
           <Heading level={1} className={styles.title}>
@@ -146,6 +150,15 @@ export function App() {
             aria-label="Start study session"
           >
             {loading ? 'Loading…' : 'Study'}
+          </Button>
+          <Button
+            className={styles.manageButton}
+            variant="secondary"
+            material="solid"
+            onClick={() => { setView('manage'); }}
+            aria-label="Open SRS management"
+          >
+            Manage
           </Button>
           {finished && (
             <Text className={styles.finishedText}>All caught up for now.</Text>

@@ -1916,11 +1916,20 @@ Feature được coi là hoàn thành khi:
 - [x] S11 — Cross-context dictionary popup "Add to Ocean SRS" (`SRS_ADD_NOTE`, background handlers).
 - [x] S12 — User CSS panel in dashboard.
 - [x] S13 — Dashboard analytics (due now, due 24h, total, studied today).
+- [x] S14 — Management UI (deck/subdeck CRUD + note/card list & delete) in `srs-study` dashboard.
+
+### Management UI status
+
+> User requested: tab “Manage” trong `srs-study` dashboard.
+
+- [x] **Deck / subdeck CRUD**: list root/sub decks, create deck, create subdeck, delete deck (cascade).
+- [x] **Note / card CRUD (inside)**: list notes/cards per deck, view target + progress, delete note/card (cascade).
+- [ ] **Notetype manager**: deferred — V1 uses default notetype.
 
 ### Known ceilings / next steps
 
 - Multi-language collection auto-creation on add-from-dictionary (V1 falls back to active language profile).
 - `SRS_GET_DECKS_NOTETYPES` currently returns decks/notetypes for a given collection; caller must supply `collectionId`.
-- E2E smoke (`e2e/ocean-srs.spec.ts`) chưa viết.
+- [x] E2E smoke (`e2e/extension-ocean-srs.spec.ts`) đã viết và pass.
 - Card Creator destination selector "Anki / Ocean SRS" chưa tích hợp; dictionary popup add là quick-add trực tiếp.
 
