@@ -25,6 +25,8 @@ export interface UseCandidateOptions {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user adds this word to Ocean SRS. */
+  readonly onAddToSrs?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles the word status inside this candidate. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Default media tab to open when this candidate first appears. */
@@ -66,10 +68,11 @@ export interface UseCandidateReturn {
   readonly playSentence: () => void;
   readonly sendToCard: () => Promise<void>;
   readonly quickAdd: () => Promise<void>;
+  readonly addToSrs: () => Promise<void>;
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
-  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onStatusChange, defaultActiveTab } = options;
+  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onAddToSrs, onStatusChange, defaultActiveTab } = options;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(() => initDefinitionSelection(candidate));
@@ -166,6 +169,31 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     ));
   }, [onQuickAdd, toolbar, candidate, selectedDefinitions, contextSentence]);
 
+  const addToSrs = useCallback(async (): Promise<void> => {
+    if (!onAddToSrs) return;
+    const [loadedAudioItems, loadedImageItems, loadedTranslation] = await Promise.all([
+      toolbar.fetchAudio(),
+      toolbar.fetchImages(),
+      toolbar.translate(),
+    ]);
+    const audioSelection = loadedAudioItems.length === toolbar.audioItems.length
+      ? toolbar.audioSelection
+      : new Map(loadedAudioItems.map((item) => [item.id, item.defaultSelected]));
+    const imageSelection = loadedImageItems.length === toolbar.imageItems.length
+      ? toolbar.imageSelection
+      : new Map(loadedImageItems.map((item) => [item.id, item.defaultSelected]));
+    onAddToSrs(buildPrefill(
+      candidate,
+      selectedDefinitions,
+      contextSentence,
+      loadedTranslation,
+      loadedAudioItems,
+      audioSelection,
+      loadedImageItems,
+      imageSelection,
+    ));
+  }, [onAddToSrs, toolbar, candidate, selectedDefinitions, contextSentence]);
+
   return {
     status,
     cycleStatus,
@@ -201,5 +229,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     playSentence,
     sendToCard,
     quickAdd,
+    addToSrs,
   };
 }

@@ -146,7 +146,7 @@
 }
 
 /* Placeholders for JSX-only class references that have no popup-specific styles. */
-.cellHeaderSend, .cellHeaderQuickAdd {
+.cellHeaderSend, .cellHeaderQuickAdd, .cellHeaderSrs {
   /* relies on global .icon-btn/.btn classes */
   display: flex;
   align-items: center;

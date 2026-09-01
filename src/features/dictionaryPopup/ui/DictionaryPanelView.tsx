@@ -36,6 +36,8 @@ interface DictionaryPanelViewProps {
   readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user adds a candidate to Ocean SRS. */
+  readonly onAddToSrs?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles a candidate's word status. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate (chip click). */
@@ -64,6 +66,7 @@ export function DictionaryPanelView({
   onResult,
   onSendToCard,
   onQuickAdd,
+  onAddToSrs,
   onStatusChange,
   onCandidateChange,
   defaultActiveTab,
@@ -339,6 +342,7 @@ export function DictionaryPanelView({
                 targetLang={targetLang}
                 onSendToCard={onSendToCard}
                 onQuickAdd={onQuickAdd}
+                onAddToSrs={onAddToSrs}
                 onStatusChange={onStatusChange}
                 defaultActiveTab={defaultActiveTab}
               />
