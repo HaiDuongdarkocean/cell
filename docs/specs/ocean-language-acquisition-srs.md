@@ -15,7 +15,7 @@
 5. **Card source V1**: Notes/Learning Objects được tạo qua universal dictionary panel / site dictionary panel (reuse UI sẵn có), có thể chỉnh sửa thủ công trước khi lưu. Import nhanh từ reader / video là Slice 11 (post-MVP core V1).
 6. **Spelling recall** là exact match với normalization tối thiểu (lowercase, trim, collapse whitespace, strip leading/trailing punctuation). V1 không cho partial credit.
 7. **V1 dùng entrypoint mới** `src/entrypoints/srs-study/`, đăng ký trong `vite.config.ts` `rollupOptions.input` và `manifest.json` `web_accessible_resources`.
-8. **Ocean SRS cùng tồn tại với Card Creator / AnkiConnect**. `DictionaryPopupSettings.srsDestination` mở rộng thành `'anki' | 'ocean-srs'`, nhưng việc tích hợp export thực tế là Slice 11.
+8. **Ocean SRS cùng tồn tại với Card Creator / AnkiConnect**. `DictionaryPopupSettings.srsDestination` mở rộng thành `'anki' | 'ocean-srs'`. Trong dictionary popup / universal panel, user chọn destination (Anki hoặc SRS) trước khi thêm từ. V1 hỗ trợ single-word add từ dictionary tab.
 
 ---
 
@@ -89,7 +89,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Binary Forget/Remember judgment.
 - Notetype / Field / Front template / Back template CRUD.
 - Deck / Subdeck CRUD; Collection hierarchy.
-- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel).
+- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel, single-word add from dictionary popup / universal panel).
 - Scheduler: select component, stimulus, template, present review, update FSRS + progress.
 - Review UI: Front, Back, input field, Forget/Remember, progress bars.
 - User controls: Study Again, Reset Component (confirm), Reset Card (confirm).
@@ -110,7 +110,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Native-language translation as the primary learning path.
 - Neural TTS, advanced adaptive learning beyond FSRS.
 - Multi-user sync, backend sync, Anki/CSV full import.
-- Import từ dictionary popup / reader (Slice 11).
+- Bulk / batch import từ dictionary popup / reader (Slice 11).
 
 ---
 
@@ -184,7 +184,7 @@ src/
 
 - `vite.config.ts`: thêm `srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html')`.
 - `public/manifest.json`: thêm `src/entrypoints/srs-study/index.html` vào `web_accessible_resources`.
-- `src/entities/message/types.ts`: thêm `SRS_*` message types (Slice 11).
+- `src/entities/message/types.ts`: thêm `SRS_ADD_NOTE` message type (V1) và `SRS_*` types (Slice 11).
 - `src/entities/settings/types.ts`: mở rộng `srsDestination` `'anki' | 'ocean-srs'`.
 - `src/shared/lib/storage/settingsStore.ts`: bump `CURRENT_SCHEMA_VERSION` lên 27, thêm migration v26→v27 cho `Settings.srs` slice.
 
@@ -1042,7 +1042,21 @@ function maskSentence(sentence: string, targetWord: string): string {
 
 ### V1
 
-Data operations chạy trong `srs-study` entrypoint (extension origin → IndexedDB). Không cần message bus để ghi.
+Data operations chạy trong `srs-study` entrypoint (extension origin → IndexedDB). Tuy nhiên, dictionary popup / universal panel cần gửi dữ liệu từ content context để tạo note:
+
+```ts
+export interface SrsAddNotePayload {
+  readonly type: 'SRS_ADD_NOTE';
+  readonly payload: {
+    readonly deckId: string;
+    readonly notetypeId: string;
+    readonly targetWord: string;
+    readonly fields: Record<string, SrsFieldValue>; // pre-fill từ dictionary + user edit
+  };
+}
+```
+
+Background / offscreen handler nhận message, mở `srs-study` tab nếu chưa mở, và proxy request để `srs-study` ghi vào IndexedDB. Đảm bảo `srs-study` entrypoint là origin duy nhất đọc/ghi SRS DB.
 
 ### Cross-context (Slice 11)
 
@@ -1292,6 +1306,8 @@ Spelling ━━━━━░░░  61%
 | A15 | No cards due | User opens study | Empty state "No cards due." |
 | A16 | Maintenance card; one component Forget | Review completes | Component đó trở lại active; `maintenanceMode` recalc. |
 | A17 | Study Again for future-due component | Review completes | Component xuất hiện ngay; due không đổi. |
+| A18 | User in dictionary popup; selects "Add to Ocean SRS" | Chooses deck + notetype, then confirms | Note + Card được tạo với pre-fill fields; card appears in selected deck. |
+| A19 | No Collection exists | User tries to add from dictionary popup | System auto-creates default Collection + deck + notetype, then adds the card. |
 
 ### Failure catalog (`SrsError` codes)
 
@@ -1332,8 +1348,8 @@ Spelling ━━━━━░░░  61%
 
 1. **S0 — T0 spike**: `ts-fsrs` bundle + API mapping.
 2. **S1 — Domain model + storage**: types, baseRepository, IndexedDB schema, settings v26→v27.
-3. **S2 — Notetype/Deck CRUD + default seed**: notetype manager, default notetype (7 templates), deck/subdeck manager.
-4. **S3 — Note/Card creation**: create note manually, generate 3 components, default study config.
+3. **S2 — Notetype/Deck CRUD + default seed**: notetype manager, default notetype (8 templates), deck/subdeck manager.
+4. **S3 — Note/Card creation**: create note manually OR add from dictionary popup/universal panel, deck/notetype selector, generate 3 components, default study config.
 5. **S4 — Progress & learning path**: progress formula, `isLocked`, `recalcCard`, explore mode, maintenance.
 6. **S5 — Scheduler**: `by_deck_due`, `resolvePool`, `pickHighestPriority`, deck scoping, batch fetch.
 7. **S6 — Review engine + FSRS integration**: `srsFsrsAdapter`, `applyReview`, `reset*`, `studyAgain`, reschedule.
@@ -1344,7 +1360,7 @@ Spelling ━━━━━░░░  61%
 ### Should
 
 11. **S10 — Audio/image asset cache**: offline audio/image, LRU/quota, population at note creation.
-12. **S11 — Cross-context import**: dictionary popup / reader → SRS (`srsDestination` expansion, message bus).
+12. **S11 — Cross-context bulk import**: batch add from reader / video / word-list (`srsDestination` expansion, message bus).
 
 ### Could
 
@@ -1438,31 +1454,45 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 ```
 1. Linh mở extension popup → chọn tab "Ocean SRS".
    - Hoặc: Linh mở universal panel trên trang web → chọn tab "Ocean SRS".
-2. Màn hình đầu tiên: "Chào mừng. Dữ liệu SRS chỉ lưu trên máy." + nút "Tạo Collection".
-3. Linh tạo Collection "English Daily" (target language = English).
-4. Hệ thống tự động tạo:
-   - 1 default notetype "Word (default)" với 8 front templates.
-   - 1 default study config (threshold 90, parallel, min explore 1).
-   - 1 root deck "Default".
-5. Linh xem hướng dẫn ngắn: "Thêm từ → Học → Ôn tập".
+2. Màn hình đầu tiên:
+   - Nếu chưa có Collection nào:
+     - Thông báo "Chào mừng. Dữ liệu SRS chỉ lưu trên máy."
+     - Hệ thống tự động tạo Collection default "My SRS" + default deck "Default" + default notetype "Word (default)" + default study config.
+     - User có thể đổi tên hoặc tạo mới sau.
+   - Nếu đã có Collection: hiển thị dashboard/study.
+3. Linh xem hướng dẫn ngắn: "Thêm từ → Học → Ôn tập".
 ```
 
-### Flow 2 — Add a Learning Object (reuse universal dictionary panel)
+### Flow 2 — Add a Learning Object từ dictionary panel
 
 ```
-1. Linh mở universal dictionary panel trên trang web.
-   - Tra từ "abandon" → panel hiển thị definition, sentence, audio, image, IPA.
-2. Linh chuyển sang tab "Ocean SRS" trong panel.
-3. Panel tái sử dụng giao diện sẵn có (target word, sentence, definition, IPA, audio, image).
-   - Các trường tự động pre-fill từ kết quả dictionary lookup.
-   - Linh có thể chỉnh sửa/ thêm example sentence, notes, translation.
-4. Linh click "Add to Ocean SRS".
-5. Hệ thống validate:
-   - targetWord không được rỗng.
-   - không có card nào khác cho note này trong deck đích.
-6. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
-7. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
-8. Linh thấy card xuất hiện trong deck, status "New".
+1. Linh đang đọc web, gặp từ "abandon".
+2. Linh mở dictionary popup / universal panel.
+3. Panel hiển thị definition, sentence, audio, image, IPA.
+4. Ở tab bên phải (hoặc bottom action bar), Linh chọn destination:
+   - "Add to Anki" (mặc định nếu srsDestination='anki')
+   - "Add to Ocean SRS" (nếu srsDestination='ocean-srs' hoặc chọn thủ công)
+5. Linh chọn "Ocean SRS".
+6. Hệ thống kiểm tra Collection/Deck mặc định:
+   - Nếu chưa có → tự động tạo "My SRS" + "Default" deck + "Word (default)" notetype.
+7. Hệ thống hiển thị quick-add panel:
+   - Deck selector (default deck hoặc chọn deck khác).
+   - Notetype selector (default notetype hoặc chọn khác).
+   - Preview field values từ dictionary lookup:
+     - target word, sentence, definition, IPA, audio, image, translation.
+   - Toggle/option: "Use dictionary data" vs "Fill manually".
+8. Linh chọn "Use dictionary data".
+   - Các field được pre-fill; Linh có thể chỉnh sửa hoặc thêm example sentence, notes, context.
+9. Hoặc Linh chọn "Fill manually".
+   - Form rỗng; Linh nhập target word, sentence, definition, IPA, upload audio/image.
+10. Linh click "Add to SRS".
+11. Hệ thống validate:
+    - targetWord không rỗng.
+    - deck + notetype hợp lệ.
+    - chưa có card nào khác cho note này trong deck đích.
+12. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
+13. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
+14. Panel đóng hoặc reset, Linh thấy toast "Đã thêm vào Ocean SRS".
 ```
 
 ### Flow 3 — Explore (first exposure)
