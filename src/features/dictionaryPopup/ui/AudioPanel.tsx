@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import styles from './DictionaryPanelView.module.css';
 import type { AudioItem } from '../types';
 
@@ -30,6 +31,7 @@ export function AudioPanel({
 }: AudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
+  const { getUrl } = useAudioItemUrlMap(items);
 
   // Build display list: real items + TTS fallback item if no real items for group
   const displayItems = useMemo(() => {
@@ -43,7 +45,7 @@ export function AudioPanel({
       kind: activeGroup,
       label: ttsLabel,
       url: undefined,
-      source: 'tts' as const,
+      source: 'system-tts' as const,
       state: 'idle' as const,
       defaultSelected: false,
     }];
@@ -73,7 +75,8 @@ export function AudioPanel({
           {displayItems.map((item) => {
             const selected = selection.get(item.id) ?? item.defaultSelected;
             const parts = item.label.split(' · ');
-            const isTts = item.source === 'tts';
+            const itemUrl = getUrl(item);
+            const isTts = !itemUrl;
             return (
               <div key={item.id} className={styles.cellAudioItem}>
                 <button
@@ -81,8 +84,8 @@ export function AudioPanel({
                   className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
-                    (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, hasUrl: !!item.url, url: item.url?.substring(0,50), activeGroup}));
-                    if (isTts || !item.url) {
+                    (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, hasUrl: !!itemUrl, url: itemUrl?.substring(0,50), activeGroup}));
+                    if (isTts || !itemUrl) {
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();
                       return;
@@ -91,7 +94,7 @@ export function AudioPanel({
                       audioRef.current.pause();
                       audioRef.current = null;
                     }
-                    const audio = new Audio(item.url);
+                    const audio = new Audio(itemUrl);
                     audioRef.current = audio;
                     audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
                     audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
