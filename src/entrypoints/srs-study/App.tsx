@@ -111,7 +111,7 @@ function SrsReviewCard() {
 }
 
 export function App() {
-  const { loading, error, finished, start, session } = useSrsStudy();
+  const { loading, error, finished, start, session, stats } = useSrsStudy();
 
   return (
     <Box className={styles.page}>
@@ -130,6 +130,14 @@ export function App() {
             Spaced repetition for language acquisition. Data is stored locally in this
             browser — uninstalling the extension will delete it.
           </Text>
+          {stats && (
+            <Box className={styles.stats}>
+              <Text className={styles.statLabel}>Due now: <span className={styles.statValue}>{stats.dueNow}</span></Text>
+              <Text className={styles.statLabel}>Due in 24h: <span className={styles.statValue}>{stats.dueNext24h}</span></Text>
+              <Text className={styles.statLabel}>Total: <span className={styles.statValue}>{stats.totalCards}</span> cards / {stats.totalNotes} notes</Text>
+              <Text className={styles.statLabel}>Studied today: <span className={styles.statValue}>{stats.studiedToday}</span></Text>
+            </Box>
+          )}
           <Button
             className={styles.studyButton}
             onClick={start}

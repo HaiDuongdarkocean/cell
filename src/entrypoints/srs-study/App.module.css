@@ -98,3 +98,21 @@
 .forgetButton {
   background-color: var(--color-surface-hover, #2b2d2f);
 }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3, 0.75rem);
+  margin-block: var(--space-4, 1rem);
+  text-align: center;
+}
+
+.statLabel {
+  color: var(--color-text-secondary, #8b949e);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.statValue {
+  color: var(--color-text-primary, #f7f8f8);
+  font-weight: var(--font-weight-semibold, 600);
+}
