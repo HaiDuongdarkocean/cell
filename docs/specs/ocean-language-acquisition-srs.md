@@ -89,7 +89,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Binary Forget/Remember judgment.
 - Notetype / Field / Front template / Back template CRUD.
 - Deck / Subdeck CRUD; Collection hierarchy.
-- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel, single-word add from dictionary popup / universal panel).
+- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel, single-word add from dictionary popup / universal panel, multi-language collection).
 - Scheduler: select component, stimulus, template, present review, update FSRS + progress.
 - Review UI: Front, Back, input field, Forget/Remember, progress bars.
 - User controls: Study Again, Reset Component (confirm), Reset Card (confirm).
@@ -1238,8 +1238,9 @@ reviewEvents       keyPath: id, index: by_card, by_component, by_timestamp
 ```ts
 export interface SrsSettingsSlice {
   readonly defaultStudyConfigId: string | null;
-  readonly activeCollectionId: string | null;
-  readonly activeDeckId: string | null;
+  readonly activeCollectionId: string | null;     // collection đang active
+  readonly activeDeckId: string | null;            // deck đang active
+  readonly activeLanguageProfileId: string | null; // language profile đang active trong SRS
   readonly dataLifecycle: SrsDataLifecycleConfig;
 }
 
@@ -1260,6 +1261,7 @@ readonly srs: SrsSettingsSlice;
     defaultStudyConfigId: null,
     activeCollectionId: null,
     activeDeckId: null,
+    activeLanguageProfileId: null,
     dataLifecycle: { reviewEventMaxAgeDays: 365, reviewEventMaxCount: 10000, audioQuotaMb: 50, imageQuotaMb: 50 },
   },
 }
@@ -1312,6 +1314,12 @@ Sound   ━━━━━━━━━━ 100%
 Meaning ━━━━━━━━━  92%
 Spelling ━━━━━░░░  61%
 ```
+
+### Dashboard header
+
+- **Language profile selector**: dropdown chọn language profile; mỗi profile tương ứng 1 `targetLanguage`. Khi chuyển profile, SRS dashboard/study chuyển sang Collection của language đó (auto-create nếu chưa có).
+- **Collection summary**: số cards due, new, in maintenance, tổng review hôm nay.
+- **Quick action**: "Study", "Add word", "Manage".
 
 ### Management UI
 
@@ -1460,6 +1468,7 @@ Spelling ━━━━━░░░  61%
 | A17 | Study Again for future-due component | Review completes | Component xuất hiện ngay; due không đổi. |
 | A18 | User in dictionary popup; selects "Add to Ocean SRS" | Chooses deck + notetype, then confirms | Note + Card được tạo với pre-fill fields; card appears in selected deck. |
 | A19 | No Collection exists | User tries to add from dictionary popup | System auto-creates default Collection + deck + notetype, then adds the card. |
+| A20 | User switches language profile in SRS dashboard | Selects Spanish | Dashboard switches to Spanish Collection (auto-create if missing); study scheduler uses Spanish cards. |
 
 ### Failure catalog (`SrsError` codes)
 
@@ -1610,15 +1619,15 @@ Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollectio
 1. Linh mở extension popup → chọn tab "Ocean SRS".
    - Hoặc: Linh mở universal panel trên trang web → chọn tab "Ocean SRS".
 2. Màn hình đầu tiên:
-   - Nếu chưa có Collection nào:
+   - Header có **language profile selector** (dropdown) cho phép Linh chuyển đổi giữa các profile language đã có trong Cell.
+   - Nếu chưa có Collection nào cho language đang chọn:
      - Thông báo "Chào mừng. Dữ liệu SRS chỉ lưu trên máy."
-     - Hệ thống lấy active language profile từ `settingsStore`:
-       - `targetLanguage` = `profile.targetLanguage` (ví dụ 'en').
-       - `languageProfileId` = `profile.id`.
+     - Hệ thống lấy `targetLanguage` và `languageProfileId` từ profile đang chọn.
      - Hệ thống tự động tạo Collection default "My SRS" + default deck "Default" + default notetype "Word (default)" + default study config.
      - User có thể đổi tên hoặc tạo mới sau.
-   - Nếu đã có Collection: hiển thị dashboard/study.
-3. Linh xem hướng dẫn ngắn: "Thêm từ → Học → Ôn tập".
+   - Nếu đã có Collection cho language đang chọn: hiển thị dashboard/study.
+3. Linh có thể đổi language profile bất cứ lúc nào; SRS sẽ chuyển sang Collection/Deck tương ứng.
+4. Linh xem hướng dẫn ngắn: "Chọn language → Thêm từ → Học → Ôn tập".
 ```
 
 ### Flow 2 — Add a Learning Object từ dictionary panel
@@ -1633,13 +1642,14 @@ Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollectio
 5. Linh chọn "Ocean SRS".
 6. Hệ thống xác định target language:
    - Từ lookup result: `targetLanguage = result.langCode` (ví dụ 'en').
-   - Tìm Collection đã tồn tại với `targetLanguage` này.
-   - Nếu không có → tự động tạo:
-     - Collection "My SRS — en" với `targetLanguage='en'` và `languageProfileId` từ settings hoặc `null` nếu chưa có.
-     - Default deck "Default".
-     - Default notetype "Word (default)".
-     - Default study config.
+   - Nếu `targetLanguage` khác active SRS language, quick-add panel hiển thị cảnh báo và cho phép Linh:
+     - Thêm vào collection của language này (auto-create nếu chưa có).
+     - Chuyển active SRS language sang language này.
+     - Chọn collection khác đã có.
 7. Hệ thống hiển thị quick-add panel:
+   - **Language / Collection selector**.
+   - **Deck selector** (default deck hoặc chọn deck khác).
+   - **Notetype selector** (default notetype hoặc chọn khác).
    - Deck selector (default deck hoặc chọn deck khác).
    - Notetype selector (default notetype hoặc chọn khác).
    - Preview field values từ dictionary lookup:
@@ -1794,6 +1804,22 @@ Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollectio
    - Progress trung bình theo component.
    - Số cards due ngày mai.
 3. Linh đóng tab. Hệ thống lưu review events append-only.
+```
+
+### Flow 11 — Switch language profile
+
+```
+1. Linh đang ở SRS dashboard, đang học tiếng Anh.
+2. Linh click **language profile selector** ở header.
+3. Danh sách hiển thị các language profile đã có trong Cell (en, ja, es, ...).
+4. Linh chọn "Spanish".
+5. Hệ thống:
+   - Đặt `activeLanguageProfileId = 'es'` trong `Settings.srs` slice.
+   - Tìm Collection nào có `targetLanguage='es'`.
+   - Nếu chưa có → auto-create default "My SRS — es" + deck + notetype + study config.
+   - Dashboard reload, hiển thị cards của Spanish.
+6. Linh có thể review tiếng Spanish ngay; scheduler chỉ chọn cards thuộc collection của Spanish.
+7. Linh có thể thêm từ từ dictionary popup vào collection Spanish (nếu lookup language là es hoặc chọn manual).
 ```
 
 ---
