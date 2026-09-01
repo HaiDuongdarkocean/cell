@@ -9,7 +9,7 @@ import type { SubtitleEngineControls } from '@/entrypoints/local-player/hooks/us
 import { SubtitlePanels } from '@/features/subtitle/ui/SubtitlePanels';
 import { hostManagerSheetShadowCss } from '@/features/subtitle/ui/hostManagerSheetShadowCss';
 import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subtitleShortcuts';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import type { SubtitleActionHandlers } from '@/entrypoints/local-player/hooks/useSubtitleActions';
 import type { SubtitlePanelsRef, ManagerState } from '@/features/subtitle/ui/subtitlePanelsTypes';
 import { useCuesStore } from '@/stores/cuesStore';
@@ -315,7 +315,7 @@ export function PlayerView({
     };
     window.addEventListener('keydown', onKeydown);
     return (): void => window.removeEventListener('keydown', onKeydown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [subtitleEngine, subtitleActions]);
 
   const effectiveTargetStyle: OverlayStyleConfig = { ...targetStyle, visible: overlayVisible };

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { NavClusterSettings } from '@/entities/media';
 import { Icon } from '@/shared/icons/Icon';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import { IconButton } from '@/shared/ui';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './NavCluster.module.css';

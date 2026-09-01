@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { useStudyModeStore, loadStudyModeState } from './studyModeStore';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { findActiveMode } from './lib/findActiveMode';

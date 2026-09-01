@@ -54,7 +54,9 @@ describe('PopupDictionary', () => {
     expect(screen.queryByTestId('popup-dictionary-header')).not.toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-content')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-resize')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-sheet-handle')).toBeInTheDocument();
+    // Sheet handle only renders in sheet mode (via shared Sheet atom); in
+    // popup mode (desktop viewport) it is absent.
+    expect(screen.queryByTestId('popup-dictionary-sheet-handle')).not.toBeInTheDocument();
     expect(screen.getByTestId('dictionary-panel-mock')).toBeInTheDocument();
     expect(screen.getByTestId('mock-lang')).toHaveTextContent('en');
   });
@@ -119,8 +121,10 @@ describe('PopupDictionary', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    expect(dialog.className).toContain('isSheet');
-    expect(dialog).toHaveStyle({ width: '100%' });
+    // Sheet mode renders the shared Sheet atom — no resize handle (popup-only).
+    expect(screen.queryByTestId('popup-dictionary-resize')).not.toBeInTheDocument();
+    // Sheet inline style includes height (from useSheet), not width: 100%.
+    expect(dialog).toHaveStyle({ height: '300px' });
   });
 
 });

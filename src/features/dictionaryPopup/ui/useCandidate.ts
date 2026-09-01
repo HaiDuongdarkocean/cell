@@ -1,13 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { nextStatus } from '../services/wordStatusStore';
 import { setWordStatus } from '../services/wordStatusClient';
 import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
-import type { PronunciationResult } from '@/features/pronunciation/types';
 import type {
   LookupResult,
   DefinitionEntry,
@@ -42,7 +40,6 @@ export interface UseCandidateReturn {
   readonly toggleDefinition: (id: string, selected: boolean) => void;
   readonly selectedDefinitions: readonly DefinitionEntry[];
   readonly selectedDefinitionCount: number;
-  readonly pronunciation: PronunciationResult | null;
   readonly audioItems: readonly AudioItem[];
   readonly audioLoading: boolean;
   readonly audioError: string | null;
@@ -104,31 +101,19 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   }, []);
 
   const playTerm = useCallback((): void => {
-    const text = candidate.term;
-    const langCode = candidate.langCode;
-    void (async (): Promise<void> => {
-      const settings = await loadSettings();
-      const localTts = settings.dictionaryPopup?.tts?.localTtsEnabled ?? false;
-      const type = localTts ? MESSAGE_TYPES.TTS_SPEAK_LOCAL : MESSAGE_TYPES.TTS_SPEAK;
-      void sendMessage({
-        type,
-        payload: { text, langCode },
-      });
-    })();
+    void sendMessage({
+      type: MESSAGE_TYPES.TTS_SPEAK,
+      payload: { text: candidate.term, langCode: candidate.langCode },
+    });
   }, [candidate.langCode, candidate.term]);
 
   const playSentence = useCallback((): void => {
-    const text = contextSentence.trim() || candidate.term;
-    if (!text) return;
-    void (async (): Promise<void> => {
-      const settings = await loadSettings();
-      const localTts = settings.dictionaryPopup?.tts?.localTtsEnabled ?? false;
-      const type = localTts ? MESSAGE_TYPES.TTS_SPEAK_LOCAL : MESSAGE_TYPES.TTS_SPEAK;
-      void sendMessage({
-        type,
-        payload: { text, langCode: candidate.langCode },
-      });
-    })();
+    const sentence = contextSentence.trim() || candidate.term;
+    if (!sentence) return;
+    void sendMessage({
+      type: MESSAGE_TYPES.TTS_SPEAK,
+      payload: { text: sentence, langCode: candidate.langCode },
+    });
   }, [candidate.langCode, candidate.term, contextSentence]);
 
   const sendToCard = useCallback(async (): Promise<void> => {
@@ -186,7 +171,6 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     cycleStatus,
     activeTab: toolbar.activeTab,
     setActiveTab: toolbar.setActiveTab,
-    pronunciation: toolbar.pronunciation,
     definitionSelection,
     toggleDefinition,
     selectedDefinitions,

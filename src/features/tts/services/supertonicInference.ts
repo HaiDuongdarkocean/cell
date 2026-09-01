@@ -157,7 +157,7 @@ class UnicodeProcessor {
 
     text = text.replace(/\s+/g, ' ').trim();
 
-    if (!/[.!?;:,'\"')\]}…。\」』】〉》›»]$/.test(text)) {
+    if (!/[.!?;:,'"')\]}…。」』】〉》›»]$/.test(text)) {
       text += '.';
     }
 
@@ -303,13 +303,15 @@ class TextToSpeech {
     });
     const textEmb = textEncOutputs.text_emb;
 
-    let { xt, latentMask } = this.sampleNoisyLatent(
+    const latentResult = this.sampleNoisyLatent(
       duration,
       this.sampleRate,
       this.cfgs.ae.base_chunk_size,
       this.cfgs.ttl.chunk_compress_factor,
       this.cfgs.ttl.latent_dim,
     );
+    let { xt } = latentResult;
+    const { latentMask } = latentResult;
 
     const latentMaskFlat = new Float32Array(latentMask.flat(2));
     const latentMaskTensor = new (await getOrt()).Tensor('float32', latentMaskFlat, [

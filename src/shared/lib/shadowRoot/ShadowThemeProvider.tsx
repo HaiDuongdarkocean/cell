@@ -10,7 +10,7 @@ interface ShadowThemeProviderProps {
    */
   container: HTMLElement;
   /** Children rendered inside the shadow root. */
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 /**

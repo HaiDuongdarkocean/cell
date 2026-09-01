@@ -21,7 +21,7 @@ export function SynonymChip({
   onLookup,
   onClick,
   size = 'md',
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   color: _color,
   ...rest
 }: SynonymChipProps): React.JSX.Element {

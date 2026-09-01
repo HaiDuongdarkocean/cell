@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import {
   compilePhraseIndex,
@@ -9,11 +9,13 @@ import {
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
 
 describe('DEBUG roundtrip full Cambridge fixture', () => {
-  it('serializes and deserializes without throwing', () => {
-    const fixturePath = path.resolve(
-      __dirname,
-      '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
-    );
+  const fixturePath = path.resolve(
+    __dirname,
+    '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  );
+  const FIXTURE_EXISTS = existsSync(fixturePath);
+
+  (FIXTURE_EXISTS ? it : it.skip)('serializes and deserializes without throwing', () => {
     const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
     const seen = new Set<string>();
     const inputs: PhraseIndexInput[] = [];

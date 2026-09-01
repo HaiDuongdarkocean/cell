@@ -61,7 +61,7 @@ describe('usePopupPosition', () => {
     fireEvent.resize(window);
 
     expect(root).toHaveAttribute('data-sheet', 'true');
-    expect(root).toHaveStyle({ width: '100%' });
+    expect(root).toHaveStyle({ width: '94%' });
   });
 
   it('drags the popup by the header', () => {

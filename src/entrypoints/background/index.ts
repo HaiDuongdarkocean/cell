@@ -175,7 +175,7 @@ export class BackgroundService implements BackgroundContext {
       if (typeof msg !== 'object' || msg === null) return;
       const m = msg as { type?: string; line?: string; data?: unknown; url?: string; isChildFrame?: boolean };
       if (m.type !== '__CELL_SPLIT_VIEW_LOG') return;
-      // eslint-disable-next-line no-console
+       
       console.log(m.line ?? '[Cell:SplitView]', m.data ?? '', {
         url: m.url,
         isChildFrame: m.isChildFrame,

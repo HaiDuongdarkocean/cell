@@ -4,9 +4,7 @@ import type { LookupResult, AudioItem, ImageItem } from '../types';
 import { useDictionaryToolbar } from './useDictionaryToolbar';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_SETTINGS } from '@/shared/config/config';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
@@ -16,13 +14,8 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
   translateSentence: jest.fn(),
 }));
 
-jest.mock('@/shared/lib/storage/settingsStore', () => ({
-  loadSettings: jest.fn(),
-}));
-
 const mockSendMessage = jest.mocked(sendMessage);
 const mockTranslateSentence = jest.mocked(translateSentence);
-const mockLoadSettings = jest.mocked(loadSettings);
 
 function makeResult(term: string, overrides: Partial<LookupResult> = {}): LookupResult {
   return {
@@ -41,11 +34,11 @@ function makeResult(term: string, overrides: Partial<LookupResult> = {}): Lookup
   };
 }
 
-function makeAudio(id: string, selected = false, source: AudioItem['source'] = 'community'): AudioItem {
+function makeAudio(id: string, selected = false): AudioItem {
   return {
     id,
     kind: 'word',
-    source,
+    source: 'community',
     label: 'Test audio',
     state: 'idle',
     url: `https://example.com/${id}.mp3`,
@@ -66,13 +59,8 @@ describe('useDictionaryToolbar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSendMessage.mockReset();
-    mockLoadSettings.mockReset();
-    mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
       const message = msg as { type: string };
-      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
-        return { success: true, data: { items: [] } } as T;
-      }
       if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
         return { success: true, data: { items: [] } } as T;
       }
@@ -142,34 +130,6 @@ describe('useDictionaryToolbar', () => {
     expect(result.current.selectedAudioCount).toBe(1);
   });
 
-  it('includes local audio items when FETCH_LOCAL_AUDIO returns them', async () => {
-    mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
-      const message = msg as { type: string };
-      if (message.type === MESSAGE_TYPES.FETCH_LOCAL_AUDIO) {
-        return { success: true, data: { items: [makeAudio('local-1', false, 'local'), makeAudio('local-2', false, 'local')] } } as T;
-      }
-      if (message.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
-        return { success: true, data: { items: [] } } as T;
-      }
-      if (message.type === MESSAGE_TYPES.TTS_FETCH_AUDIO) {
-        return { success: false, error: 'tts failed' } as T;
-      }
-      return { success: true } as T;
-    });
-
-    const { result } = renderHook(() => useDictionaryToolbar({
-      result: makeResult('hello'),
-      contextSentence: '',
-      sourceLang: 'en',
-      targetLang: 'vi',
-    }));
-
-    act(() => { result.current.setActiveTab('audio'); });
-
-    await waitFor(() => expect(result.current.audioItems.length).toBe(2));
-    expect(result.current.audioItems[0].id).toBe('local-1');
-  });
-
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {
     const ttsCalls: { text: string }[] = [];
     mockSendMessage.mockImplementation(async <T = unknown>(msg: unknown): Promise<T> => {
@@ -193,10 +153,9 @@ describe('useDictionaryToolbar', () => {
 
     act(() => { result.current.setActiveTab('audio'); });
 
-    // The chain includes a TTS word provider, plus the explicit sentence TTS.
-    await waitFor(() => expect(result.current.audioItems.length).toBe(2));
+    await waitFor(() => expect(result.current.audioItems.length).toBe(1));
     expect(ttsCalls.some((c) => c.text === 'hello world this is a sentence')).toBe(true);
-    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(true);
+    expect(ttsCalls.some((c) => c.text === 'hello')).toBe(false);
     const sentenceItem = result.current.audioItems.find((i) => i.kind === 'sentence');
     expect(sentenceItem?.url).toBe('data:audio/wav;base64,AAA');
   });

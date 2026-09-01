@@ -1,6 +1,4 @@
 import { Icon } from '@/shared/icons/Icon';
-import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { rankToBand } from '@/shared/lib/frequencyBand';
 import { nextStatus } from '../services/wordStatusStore';
@@ -72,7 +70,8 @@ export function CandidateView({
             </div>
           </div>
           <div className={styles.cellHeaderActions}>
-            <IconButton material="solid" variant="ghost"
+            <button
+              type="button"
               className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellHeaderSend}`}
               aria-label="Send to Card Creator"
               title="Send to Card Creator"
@@ -80,9 +79,10 @@ export function CandidateView({
               data-cell-id="dictionary-send-to-card"
             >
               <Icon name="pencil"  />
-            </IconButton>
+            </button>
             {onQuickAdd && (
-              <IconButton material="solid" variant="ghost"
+              <button
+                type="button"
                 className={`icon-btn icon-btn--sm icon-btn--filled ${styles.cellHeaderQuickAdd}`}
                 aria-label="Quick Add to Anki"
                 title="Quick Add to Anki"
@@ -90,7 +90,7 @@ export function CandidateView({
                 data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
-              </IconButton>
+              </button>
             )}
           </div>
         </div>
@@ -104,7 +104,8 @@ export function CandidateView({
             </span>
           )}
           <span className={styles.cellHeaderAudioGroup}>
-            <IconButton material="solid" variant="ghost"
+            <button
+              type="button"
               className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
               aria-label="Play word audio"
               title="Play word audio"
@@ -112,26 +113,28 @@ export function CandidateView({
               data-cell-id="dictionary-play-term"
             >
               <Icon name="audioWave"  />
-            </IconButton>
-            <IconButton material="solid" variant="ghost"
+            </button>
+            <button
+              type="button"
               className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
               aria-label="Play sentence audio"
               title="Play sentence audio"
               onClick={panel.playSentence}
             >
               <Icon name="messageSquare"  />
-            </IconButton>
+            </button>
           </span>
         </div>
         <div className={styles.cellHeaderSecond}>
-          <Button material="solid" variant="secondary"
+          <button
+            type="button"
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
             onClick={panel.cycleStatus}
             title={`Click to cycle: ${panel.status} → ${nextStatus(panel.status)}`}
             data-cell-id="dictionary-status-cycle"
           >
             {panel.status}
-          </Button>
+          </button>
           {candidate.frequency && (
             <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-cell-id="dictionary-frequency">
               <span className={styles.cellHeaderFrequencySource}>{candidate.frequency.source}</span>
@@ -161,7 +164,6 @@ export function CandidateView({
             onTtsSentence={panel.playSentence}
             term={candidate.term}
             sentence={contextSentence}
-            pronunciation={panel.pronunciation}
           />
         )}
         {panel.activeTab === 'image' && (

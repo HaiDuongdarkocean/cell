@@ -162,7 +162,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   const render = (): void => {
     if (destroyed) return;
     mount.root.render(
-      createElement(ShadowThemeProvider, { container: mount.rootEl, children: createElement(PopupDictionary, buildProps()) }),
+      createElement(ShadowThemeProvider, { container: mount.rootEl }, createElement(PopupDictionary, buildProps())),
     );
   };
 

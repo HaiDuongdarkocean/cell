@@ -11,6 +11,7 @@ const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showF
 describe('UniversalPanel component', () => {
   const dictionaryPanel = <div data-cell-id="dict-content">Dictionary Content</div>;
   const settingsPanel = <div data-cell-id="settings-content">Settings Content</div>;
+  const studyModesPanel = <div data-cell-id="study-modes-content">Study Modes</div>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -27,6 +28,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     expect(screen.queryByTestId('universal-panel')).not.toBeInTheDocument();
@@ -43,6 +45,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     expect(screen.getByTestId('universal-panel')).toBeInTheDocument();
@@ -62,6 +65,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     fireEvent.click(screen.getByTestId('universal-panel-tab-settings'));
@@ -80,6 +84,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     fireEvent.click(screen.getByTestId('universal-panel-close'));
@@ -98,6 +103,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     fireEvent.click(screen.getByTestId('universal-panel-backdrop'));
@@ -116,6 +122,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     fireEvent.keyDown(screen.getByTestId('universal-panel'), { key: 'Escape' });
@@ -133,6 +140,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     expect(screen.getByTestId('universal-panel-header')).toBeInTheDocument();
@@ -154,6 +162,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
@@ -174,6 +183,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
@@ -193,6 +203,7 @@ describe('UniversalPanel component', () => {
         onToggleTokenize={onToggleTokenize}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
       />,
     );
     fireEvent.click(screen.getByTestId('universal-panel-header-toggle-enabled'));

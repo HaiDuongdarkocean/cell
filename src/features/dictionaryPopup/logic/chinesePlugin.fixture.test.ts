@@ -9,7 +9,7 @@
 // MoedictSimplified.json format: [{term, altterm, pronunciation, definition, pos, examples, audio}, ...]
 // Same shape as Cambridge JSON — the CambridgeJsonStrategy can import it.
 
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from '@jest/globals';
@@ -55,6 +55,7 @@ beforeAll(() => {
   } as unknown as typeof chrome;
   storageLocalGetMock.mockResolvedValue({});
 
+  if (!existsSync(FIXTURE_PATH)) return;
   const raw = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')) as MoedictEntry[];
   allEntries = raw;
   cjkEntries = raw.filter((e) => CJK_RE.test(e.term));
@@ -106,7 +107,7 @@ async function seedSubset(terms: string[]): Promise<number> {
   return resourceId;
 }
 
-describe('chinesePlugin fixture — MoedictSimplified (162k CJK terms)', () => {
+(existsSync(FIXTURE_PATH) ? describe : describe.skip)('chinesePlugin fixture — MoedictSimplified (162k CJK terms)', () => {
   describe('fixture shape', () => {
     it('loads and has ≥100k entries', () => {
       expect(allEntries.length).toBeGreaterThan(100_000);

@@ -5,7 +5,7 @@
 // This is the "fixture strict test" gate: if the fixture shape changes or
 // the parser/compiler/matcher regress, this file catches it.
 
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import {
   compilePhraseIndex,
@@ -63,7 +63,7 @@ function loadFixtureInputs(): PhraseIndexInput[] {
   return inputs;
 }
 
-describe('phraseMatcher fixture strict test (ADR-037 §14)', () => {
+(existsSync(FIXTURE_PATH) ? describe : describe.skip)('phraseMatcher fixture strict test (ADR-037 §14)', () => {
   let inputs: PhraseIndexInput[];
   let blob: ArrayBuffer;
 

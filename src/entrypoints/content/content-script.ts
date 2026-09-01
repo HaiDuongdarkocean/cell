@@ -53,16 +53,16 @@ function renderHostSheet(): void {
   if (!hostSheetRoot || !currentState || !hostSheetInner) return;
   const frameSrc = currentFrameSrc;
   hostSheetRoot.render(
-    // eslint-disable-next-line react/no-children-prop
-    createElement(ShadowThemeProvider, {
-      container: hostSheetInner,
-      children: createElement(HostManagerSheet, {
+    createElement(
+      ShadowThemeProvider,
+      { container: hostSheetInner },
+      createElement(HostManagerSheet, {
         state: currentState,
         onAction: (action: ManagerAction, args: Record<string, unknown>) =>
           sendManagerActionToChild(frameSrc, action, args),
         onClose: () => sendManagerCloseToChild(frameSrc),
       }),
-    }),
+    ),
   );
 }
 

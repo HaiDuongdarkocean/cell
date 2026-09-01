@@ -1,4 +1,4 @@
-import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 import type { ActiveStudyMode } from '@/features/studyModes/content/studyModeController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
@@ -22,6 +22,8 @@ import {
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { handleShortcutKey, toggleOverlayState, seekVideo, handleAutoLoadSubtitles } from '@/features/subtitle';
+import type { AutoLoadSubtitlesPayload } from '@/entities/message';
+import type { AutoLoadDeps } from '@/features/subtitle/logic/subtitleAutoLoad';
 
 jest.mock('./reactSubtitleController');
 
@@ -35,7 +37,7 @@ jest.mock('@/features/studyModes/content/studyModeController', () => ({
 }));
 
 jest.mock('@/shared/lib/chrome-apis', () => ({
-  sendMessage: jest.fn().mockResolvedValue(undefined),
+  sendMessage: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
   onMessage: jest.fn().mockReturnValue(jest.fn()),
   onStorageChanged: jest.fn().mockReturnValue(jest.fn()),
   removeOnMessageListener: jest.fn(),
@@ -72,7 +74,7 @@ jest.mock('@/features/subtitle/actions/cardActions', () => ({
 }));
 
 jest.mock('@/features/subtitle/actions/generateNativeAction', () => ({
-  startGenerateNative: jest.fn().mockResolvedValue(null),
+  startGenerateNative: jest.fn<Promise<unknown>, []>().mockResolvedValue(null),
 }));
 
 jest.mock('@/features/detection/logic/languageDetector', () => ({
@@ -80,13 +82,13 @@ jest.mock('@/features/detection/logic/languageDetector', () => ({
 }));
 
 jest.mock('@/features/subtitle', () => ({
-  parseAndDetectFiles: jest.fn().mockResolvedValue([]),
+  parseAndDetectFiles: jest.fn<Promise<unknown>, []>().mockResolvedValue([]),
   assignImportRole: jest.fn().mockReturnValue({ target: [], native: [], ignored: [] }),
   createDragHint: jest.fn().mockImplementation(() => document.createElement('div')),
   showToast: jest.fn(),
   createDebouncedToast: jest.fn().mockReturnValue(jest.fn()),
-  handleAutoLoadSubtitles: jest.fn().mockResolvedValue(undefined),
-  fetchAndParseSubtitle: jest.fn().mockResolvedValue({ success: true, cues: [] }),
+  handleAutoLoadSubtitles: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
+  fetchAndParseSubtitle: jest.fn<Promise<unknown>, []>().mockResolvedValue({ success: true, cues: [] }),
   resolveFormat: jest.fn().mockReturnValue('srt'),
   mergeCuesForPanel: jest.fn().mockReturnValue([]),
   handleShortcutKey: jest.fn().mockReturnValue(null),
@@ -95,11 +97,11 @@ jest.mock('@/features/subtitle', () => ({
   isInsideCellUi: jest.fn().mockReturnValue(false),
   formatSubtitleName: jest.fn().mockReturnValue('Subtitle'),
   seekVideo: jest.fn(),
-  playVideo: jest.fn().mockResolvedValue(undefined),
+  playVideo: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
   pauseVideo: jest.fn(),
   createTranslateFunction: jest.fn().mockReturnValue(jest.fn()),
   broadcastCues: jest.fn(),
-  loadSettingsOrToast: jest.fn().mockResolvedValue({}),
+  loadSettingsOrToast: jest.fn<Promise<unknown>, []>().mockResolvedValue({}),
   navigateCue: jest.fn(),
   toggleOverlayState: jest.fn().mockImplementation((overlayVisible: boolean, targetStyle: unknown, nativeStyle: unknown) => ({
     overlayVisible: !overlayVisible,
@@ -159,7 +161,7 @@ interface MockController {
   onSearchResultSelect?: (result: unknown, role: 'target' | 'native') => void;
 }
 
-const MockedReactSubtitleController = jest.mocked(ReactSubtitleController);
+const MockedReactSubtitleController = jest.mocked(ReactSubtitleController) as unknown as jest.Mock;
 const mockFindVideoContainer = jest.mocked(findVideoContainer);
 const mockGetActiveStudyMode = jest.mocked(getActiveStudyMode);
 const mockSubscribeToStudyMode = jest.mocked(subscribeToStudyMode);
@@ -281,8 +283,8 @@ describe('contentScriptController', () => {
     mockIsSubtitleTokenizeEnabledForUrl.mockReturnValue(false);
 
     mockGetActiveStudyMode.mockReturnValue(null);
-    mockSubscribeToStudyMode.mockImplementation((cb) => {
-      studyModeCallback = cb as (state: ActiveStudyMode | null) => void;
+    mockSubscribeToStudyMode.mockImplementation((cb: (state: ActiveStudyMode | null) => void) => {
+      studyModeCallback = cb;
       return unsubscribeStudyMode as () => void;
     });
 
@@ -321,10 +323,10 @@ describe('contentScriptController', () => {
     expect(MockedReactSubtitleController).toHaveBeenCalledWith(
       video,
       container,
-      expect.objectContaining(DEFAULT_SUBTITLE_BLOCK_SETTINGS),
+      expect.objectContaining({ ...DEFAULT_SUBTITLE_BLOCK_SETTINGS } as Record<string, unknown>),
       expect.objectContaining({ ...DEFAULT_OVERLAY_STYLE_TARGET, visible: false }),
       expect.objectContaining({ ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: false }),
-      expect.objectContaining(DEFAULT_NAV_CLUSTER_SETTINGS),
+      expect.objectContaining({ ...DEFAULT_NAV_CLUSTER_SETTINGS } as Record<string, unknown>),
       expect.any(Function),
       expect.any(Function),
     );
@@ -477,21 +479,9 @@ describe('contentScriptController', () => {
     cleanup = init(video);
     await flushPromises();
 
-    interface AutoLoadControllerLike {
-      loadBilingualCues: (t: unknown[], n: unknown[]) => void;
-      loadCues: (c: unknown[]) => void;
-      clearCues: () => void;
-    }
-
-    interface AutoLoadDepsLike {
-      controller: AutoLoadControllerLike;
-      onPanelRender: (t: unknown[], n: unknown[]) => void;
-      onSubtitleMatches: (t: unknown[], n: unknown[]) => void;
-    }
-
-    mockHandleAutoLoadSubtitles.mockImplementation((_payload: unknown, deps: AutoLoadDepsLike) => {
-      deps.onPanelRender([], []);
-      deps.onSubtitleMatches([], []);
+    mockHandleAutoLoadSubtitles.mockImplementation((_payload: AutoLoadSubtitlesPayload, deps: AutoLoadDeps) => {
+      deps.onPanelRender?.([], []);
+      deps.onSubtitleMatches?.([], []);
       deps.controller.loadBilingualCues([], []);
       return Promise.resolve();
     });
@@ -564,7 +554,7 @@ describe('contentScriptController', () => {
       jest.fn(),
     );
 
-    expect(seekVideo).toHaveBeenCalledWith(video, 12.345);
+    expect(seekVideo as unknown as jest.Mock).toHaveBeenCalledWith(video, 12.345);
 
     cleanup!();
     cleanupCalled = true;

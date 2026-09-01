@@ -194,23 +194,21 @@ export function mountSettingsDialog(
     mount.root.render(
       createElement(
         ShadowThemeProvider,
-        {
-          container: mount.rootEl,
-          children: createElement(SettingsDialog, {
-            isOpen: open,
-            settings,
-            onChange: (next: Settings) => {
-              settings = next;
-              void saveSettings(next);
-              render();
-            },
-            onClose: () => {
-              open = false;
-              render();
-              options.onClose();
-            },
-          }) as ReactElement,
-        },
+        { container: mount.rootEl },
+        createElement(SettingsDialog, {
+          isOpen: open,
+          settings,
+          onChange: (next: Settings) => {
+            settings = next;
+            void saveSettings(next);
+            render();
+          },
+          onClose: () => {
+            open = false;
+            render();
+            options.onClose();
+          },
+        }) as ReactElement,
       ) as ReactElement,
     );
   };

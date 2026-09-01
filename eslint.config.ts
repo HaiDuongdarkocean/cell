@@ -26,10 +26,12 @@ export default tseslint.config(
       'sql-wasm.wasm',
       'test-scroll-up.js',
       'test-verify.js',
+      'public/options.js',
       // Generated design-system showcase assets (hashed JS/CSS from build).
       'docs/design-system/assets/',
       // Third-party uBlock extension used only as a browser-test helper (AGENTS.md).
       'tests/data-test/extension-phụ-trợ/',
+      'data/extension/uBOLite/',
       // Local-only prototype/seed scratch dirs (not committed).
       'prototype/',
       'seed/',
@@ -75,7 +77,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      '@typescript-eslint/consistent-type-imports': 'error',
+      '@typescript-eslint/consistent-type-imports': ['error', { disallowTypeAnnotations: false }],
       // Empty catch clauses are intentionally used at extension API boundaries
       // where the only safe recovery is to fall through (e.g. chrome.storage).
       'no-empty': ['error', { allowEmptyCatch: true }],
@@ -112,7 +114,7 @@ export default tseslint.config(
 
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
     languageOptions: {
       globals: {
         ...globals.node,

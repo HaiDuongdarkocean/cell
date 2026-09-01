@@ -318,6 +318,17 @@ export const ICON_CATALOG = {
 /** Type-safe catalog key. */
 export type IconCatalogKey = keyof typeof ICON_CATALOG;
 
+/** Raw SVG strings for non-React DOM (e.g. OCR region selector toolbar). */
+export {
+  checkSvg as checkIcon,
+  chevronLeftSvg as chevronLeftIcon,
+  cropSvg as cropIcon,
+  moveVerticalSvg as moveVerticalIcon,
+  pencilSvg as pencilIcon,
+  rotateCcwSvg as rotateCcwIcon,
+  xSvg as xIcon,
+};
+
 /** Find an icon by a tag keyword. */
 export function findIconByTag(tag: string): IconEntry | undefined {
   const lower = tag.toLowerCase();

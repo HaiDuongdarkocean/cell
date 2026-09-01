@@ -1,4 +1,4 @@
-import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, it, beforeEach, afterEach } from '@jest/globals';
 import { ReactSubtitleController } from './reactSubtitleController';
 import { mountSubtitle, type MountSubtitleResult } from './mountSubtitle';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate } from './subtitleCueEngine';
@@ -25,7 +25,7 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
 }));
 
 const mockMountSubtitle = jest.mocked(mountSubtitle);
-const mockSubtitleCueEngine = jest.mocked(SubtitleCueEngine);
+const mockSubtitleCueEngine = jest.mocked(SubtitleCueEngine) as unknown as jest.Mock;
 const mockLoadSettings = jest.mocked(loadSettings);
 const mockSaveSettings = jest.mocked(saveSettings);
 
@@ -171,7 +171,7 @@ describe('ReactSubtitleController', () => {
   let video: HTMLVideoElement;
   let container: HTMLDivElement;
   let controller: ReactSubtitleController;
-  let fakeMount: MountSubtitleResult;
+  let fakeMount: jest.Mocked<MountSubtitleResult>;
   let fakeEngine: FakeEngine;
   let addEventListenerSpy: jest.SpyInstance;
   let removeEventListenerSpy: jest.SpyInstance;
@@ -195,7 +195,7 @@ describe('ReactSubtitleController', () => {
     mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
     mockSaveSettings.mockResolvedValue(undefined);
 
-    fakeMount = createFakeMount();
+    fakeMount = createFakeMount() as unknown as jest.Mocked<MountSubtitleResult>;
     fakeEngine = createFakeEngine();
     mockMountSubtitle.mockReturnValue(fakeMount);
     mockSubtitleCueEngine.mockImplementation(() => fakeEngine as unknown as SubtitleCueEngine);
@@ -447,7 +447,7 @@ describe('ReactSubtitleController', () => {
     controller.closeManager();
     controller.setHasSearchKeys(true);
     controller.setSearchApiKeys([apiKey]);
-    controller.onApiKeysChange([apiKey]);
+    controller.onApiKeysChange(jest.fn());
 
     expect(fakeMount.setManager).toHaveBeenCalled();
     expect(fakeMount.setManagerOpen).toHaveBeenCalledWith(true);

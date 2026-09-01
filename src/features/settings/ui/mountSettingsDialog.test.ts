@@ -53,7 +53,7 @@ jest.mock('@/shared/lib/shadowRoot/ShadowThemeProvider', () => {
 jest.mock('@/shared/lib/shadowRoot/mountReactShadow', () => {
   const { createRoot } = require('react-dom/client');
   return {
-    mountReactShadow: (component: React.ReactElement, options: { parent?: HTMLElement; [key: string]: unknown }) => {
+    mountReactShadow: (_component: React.ReactElement, options: { parent?: HTMLElement; [key: string]: unknown }) => {
       const host = document.createElement('div');
       const rootEl = document.createElement('div');
       host.appendChild(rootEl);
@@ -98,7 +98,7 @@ jest.mock('@/shared/lib/themeTokens', () => ({
 }));
 
 jest.mock('@/shared/config/config', () => ({
-  ...jest.requireActual('@/shared/config/config'),
+  ...(jest.requireActual('@/shared/config/config') as Record<string, unknown>),
   get USE_LEGACY_SETTINGS() {
     return Boolean(global.__useLegacySettings);
   },
@@ -145,7 +145,7 @@ afterEach(() => {
 
 describe('mountSettingsDialog', () => {
   it('returns a controller with open, close, isOpen and unmount', () => {
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose: jest.fn() });
     });
@@ -160,7 +160,7 @@ describe('mountSettingsDialog', () => {
 
   it('loads settings, renders the dialog on open and hides on close', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose });
     });
@@ -190,7 +190,7 @@ describe('mountSettingsDialog', () => {
 
   it('unmount removes the host and detaches the storage listener', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose });
     });
@@ -211,7 +211,7 @@ describe('mountSettingsDialog', () => {
 
   it('saves settings and closes via the dialog callbacks', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose });
     });
@@ -238,7 +238,7 @@ describe('mountSettingsDialog', () => {
 
   it('reloads settings when chrome storage changes for the settings key', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose });
     });
@@ -268,7 +268,7 @@ describe('mountSettingsDialog', () => {
     global.__useLegacySettings = true;
 
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialog>;
+    let controller!: ReturnType<typeof mountSettingsDialog>;
     act(() => {
       controller = mountSettingsDialog({ onClose });
     });
@@ -287,7 +287,7 @@ describe('mountSettingsDialog', () => {
 
 describe('mountSettingsDialogLegacy', () => {
   it('returns a controller with open, close, isOpen and unmount', () => {
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose: jest.fn() });
     });
@@ -302,7 +302,7 @@ describe('mountSettingsDialogLegacy', () => {
 
   it('loads settings, renders the dialog on open and hides on close', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });
@@ -332,7 +332,7 @@ describe('mountSettingsDialogLegacy', () => {
 
   it('unmount removes the host and cleans up listeners and tokens', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });
@@ -357,7 +357,7 @@ describe('mountSettingsDialogLegacy', () => {
 
   it('saves settings and closes via the dialog callbacks', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });
@@ -381,7 +381,7 @@ describe('mountSettingsDialogLegacy', () => {
 
   it('reloads settings when chrome storage changes for the settings key', async () => {
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });
@@ -419,7 +419,7 @@ describe('mountSettingsDialogLegacy', () => {
     const removeSpy = jest.spyOn(document, 'removeEventListener');
 
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });
@@ -470,7 +470,7 @@ describe('mountSettingsDialogLegacy', () => {
     document.head.appendChild(style);
 
     const onClose = jest.fn();
-    let controller: ReturnType<typeof mountSettingsDialogLegacy>;
+    let controller!: ReturnType<typeof mountSettingsDialogLegacy>;
     act(() => {
       controller = mountSettingsDialogLegacy({ onClose });
     });

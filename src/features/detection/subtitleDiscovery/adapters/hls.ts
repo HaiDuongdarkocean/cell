@@ -17,7 +17,7 @@ const MEDIA_TAG = /#EXT-X-MEDIA:TYPE=SUBTITLES/i;
 
 function parseHlsAttributes(line: string): Map<string, string> {
   const map = new Map<string, string>();
-  const regex = /([A-Z0-9\-]+)=("([^"]*)"|([^,\s]+))/g;
+  const regex = /([A-Z0-9-]+)=("([^"]*)"|([^,\s]+))/g;
   let m: RegExpExecArray | null;
   while ((m = regex.exec(line)) !== null) {
     const value = m[3] ?? m[4] ?? '';
