@@ -200,10 +200,12 @@ export type ReviewMode = 'explore' | 'normal' | 'studyAgain';
 
 export interface SrsCollection {
   readonly id: string;
-  readonly languageProfileId: string;
+  readonly languageProfileId: string | null;
   readonly targetLanguage: string;
   readonly name: string;
   readonly defaultStudyConfigId: string;
+  readonly defaultDeckId: string;
+  readonly defaultNotetypeId: string;
   readonly createdAt: number;
 }
 
@@ -275,8 +277,8 @@ export interface SrsFrontTemplate {
 }
 
 export interface SrsBackTemplate {
-  readonly fieldIds: readonly string[];
-  readonly showAll: boolean;
+  readonly fieldIds: readonly string[]; // danh sách field hiển thị trên Back, theo thứ tự
+  readonly showAll: boolean;            // V1: true = hiển thị tất cả fieldIds (không fold); false = compact (reserved)
 }
 
 export interface SrsNote {
@@ -388,6 +390,7 @@ export interface SrsImageAsset {
 export interface SrsFsrsAdapter {
   readonly createEmpty: (now: Date) => SrsFsrsSerializedState; // due = now
   readonly next: (state: SrsFsrsSerializedState, now: Date, judgment: ReviewJudgment, preserveDue: boolean) => SrsFsrsSerializedState;
+  // preserveDue=true: giữ nguyên `state.due`, chỉ cập nhật `reps`, `lastReview`.
   readonly isDue: (state: SrsFsrsSerializedState, now: Date) => boolean;
   readonly getDue: (state: SrsFsrsSerializedState) => string;
   readonly migrate: (state: unknown, fromVersion: number) => SrsFsrsSerializedState;
@@ -440,6 +443,80 @@ function isDataUrl(s: string): boolean {
 
 function generateId(): string {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function mapDictionaryToSrsFields(
+  notetype: SrsNotetype,
+  result: {
+    readonly term: string;
+    readonly reading?: string;
+    readonly sentence?: string;
+    readonly definitions?: readonly string[];
+    readonly audioUrl?: string;
+    readonly sentenceAudioUrl?: string;
+    readonly imageUrl?: string;
+    readonly translation?: string;
+  },
+): Record<string, SrsFieldValue> {
+  const fields: Record<string, SrsFieldValue> = {};
+
+  for (const field of notetype.fields) {
+    switch (field.id) {
+      case 'target':
+        fields['target'] = { kind: 'text', value: result.term };
+        break;
+      case 'ipa':
+        if (result.reading) fields['ipa'] = { kind: 'text', value: result.reading };
+        break;
+      case 'sentence':
+        if (result.sentence) fields['sentence'] = { kind: 'text', value: result.sentence };
+        break;
+      case 'def':
+        if (result.definitions?.length) fields['def'] = { kind: 'text', value: result.definitions[0] };
+        break;
+      case 'wordAudio':
+        if (result.audioUrl) fields['wordAudio'] = { kind: 'audio', value: result.audioUrl, source: 'pronunciation' };
+        break;
+      case 'sentAudio':
+        if (result.sentenceAudioUrl) fields['sentAudio'] = { kind: 'audio', value: result.sentenceAudioUrl, source: 'tts' };
+        break;
+      case 'image':
+        if (result.imageUrl) fields['image'] = { kind: 'image', value: result.imageUrl };
+        break;
+      case 'translation':
+        if (result.translation) fields['translation'] = { kind: 'translation', value: result.translation };
+        break;
+    }
+  }
+
+  return fields;
+}
+
+async function cacheDictionaryMedia(
+  noteId: string,
+  fields: Record<string, SrsFieldValue>,
+): Promise<void> {
+  for (const [fieldId, value] of Object.entries(fields)) {
+    if (value.kind === 'audio') {
+      // Download/cache audio; if fail, keep URL as value; SRS will fallback offline.
+      try {
+        const bytes = await fetchAudioBytes(value.value);
+        await putAudioAsset({ id: audioAssetId(noteId, fieldId, value.source), noteId, fieldId, source: value.source, mimeType: 'audio/mpeg', bytes, size: bytes.byteLength, lastAccessed: Date.now(), createdAt: Date.now() });
+        fields[fieldId] = { ...value, value: 'cached' }; // placeholder, actual url generated at review time
+      } catch {
+        // keep external URL; offline review will use fallback template
+      }
+    } else if (value.kind === 'image') {
+      if (isDataUrl(value.value)) {
+        // decode and cache
+        const bytes = await dataUrlToBytes(value.value);
+        await putImageAsset({ id: imageAssetId(noteId, fieldId), noteId, fieldId, mimeType: 'image/png', bytes, size: bytes.byteLength, lastAccessed: Date.now(), createdAt: Date.now() });
+      } else {
+        // external image URL; reject because SRS is offline-first
+        throw new SrsError('SRS_IMAGE_OFFLINE', 'Cannot use external image URL for offline SRS.');
+      }
+    }
+  }
 }
 ```
 
@@ -678,6 +755,12 @@ function studyAgain(
   config: SrsStudyConfig,
   adapter: SrsFsrsAdapter,
 ): SrsCard {
+  const comp = card.components[type];
+
+  // Study Again chỉ áp dụng khi component đã qua explore (exploreCount >= minExplores).
+  // Nếu component còn locked/explore, hàm này no-op (UI disable nút Study Again trong explore).
+  if (comp.exploreCount < config.learningPath.minExplores) return card;
+
   const updated: SrsCard = {
     ...card,
     studyAgainDue: { ...card.studyAgainDue, [type]: now },
@@ -760,6 +843,49 @@ function createCard(
     maintenanceMode: false,
   };
   return recalcCard(raw, config, now.toISOString(), adapter);
+}
+```
+
+### Note/Card creation service
+
+```ts
+async function addNoteAndCard(
+  db: IDBDatabase,
+  collection: SrsCollection,
+  deckId: string,
+  notetypeId: string,
+  targetWord: string,
+  fields: Record<string, SrsFieldValue>,
+  config: SrsStudyConfig,
+  now: Date,
+  adapter: SrsFsrsAdapter,
+): Promise<{ note: SrsNote; card: SrsCard }> {
+  // 1. Tránh duplicate note trong collection cho cùng target word + notetype
+  const existingNote = await getNoteByTargetAndNotetype(db, collection.id, notetypeId, targetWord);
+  if (existingNote) {
+    const existingCard = await getCardByNoteAndDeck(db, existingNote.id, deckId);
+    if (existingCard) throw new SrsError('SRS_DUPLICATE_CARD', 'Card already exists in this deck.');
+    const card = createCard(existingNote, deckId, config, now, adapter);
+    await putCard(db, card);
+    return { note: existingNote, card };
+  }
+
+  // 2. Tạo note mới
+  const note: SrsNote = {
+    id: generateId(),
+    notetypeId,
+    deckId,
+    targetWord,
+    fields,
+    createdAt: now.getTime(),
+  };
+  await putNote(db, note);
+
+  // 3. Tạo card
+  const card = createCard(note, deckId, config, now, adapter);
+  await putCard(db, card);
+
+  return { note, card };
 }
 ```
 
@@ -891,8 +1017,9 @@ export async function selectNextReview(
   const winner = pickHighestPriority(candidates);
   if (!winner) return null;
 
-  const stimulus = selectStimulus(winner.note, winner.notetype, winner.componentType, audioCache, imageCache);
-  const template = selectTemplate(winner.notetype, winner.componentType, stimulus);
+  const surface = resolveReviewSurface(winner.note, winner.notetype, winner.componentType, audioCache, imageCache);
+  if (!surface) return null;
+  const { template, stimulus } = surface;
   const mode = poolToMode(winner.pool);
   const startedAt = Date.now();
   return { card: winner.card, note: winner.note, notetype: winner.notetype, componentType: winner.componentType, template, stimulus, mode, startedAt };
@@ -926,31 +1053,48 @@ function poolToMode(pool: Pool): ReviewMode {
 - `resolvePool` là O(1) với 3 components.
 - `pickHighestPriority` là O(n) bucketed, không sort.
 
-### `selectStimulus` / `selectTemplate`
+### `resolveReviewSurface`
+
+Mục tiêu: chọn **một template** và **một stimulus** khớp nhau, có thể render offline. Không gọi `selectStimulus` và `selectTemplate` riêng rẽ.
 
 ```ts
-function selectStimulus(
+function resolveReviewSurface(
   note: SrsNote,
   notetype: SrsNotetype,
   type: ComponentType,
   audioCache: ReadonlyMap<string, SrsAudioAsset>,
   imageCache: ReadonlyMap<string, SrsImageAsset>,
-): SrsStimulus | null {
-  const template = selectTemplate(notetype, type, null); // pre-select template for stimulus resolution
-  if (!template) return null;
+): { template: SrsFrontTemplate; stimulus: SrsStimulus } | null {
+  const candidates = notetype.frontTemplates.filter((t) => t.componentType === type);
+  if (candidates.length === 0) return null;
 
+  for (const template of candidates) {
+    const stimulus = buildStimulus(note, notetype, template, audioCache, imageCache);
+    if (stimulus) return { template, stimulus };
+  }
+
+  return null;
+}
+
+function buildStimulus(
+  note: SrsNote,
+  notetype: SrsNotetype,
+  template: SrsFrontTemplate,
+  audioCache: ReadonlyMap<string, SrsAudioAsset>,
+  imageCache: ReadonlyMap<string, SrsImageAsset>,
+): SrsStimulus | null {
   const payload: Record<string, SrsFieldValue> = {};
+
   for (const fieldId of template.fieldIds) {
     const value = note.fields[fieldId];
-    if (!value) continue;
+    if (!value) return null; // required field missing → template not usable
 
     if (value.kind === 'audio') {
       const cached = audioCache.get(audioAssetId(note.id, fieldId, value.source));
       if (cached) {
         payload[fieldId] = { ...value, value: URL.createObjectURL(new Blob([cached.bytes], { type: cached.mimeType })) };
       } else {
-        // cache miss → fallback to non-audio template
-        return selectFallbackStimulus(note, notetype, type);
+        return null; // audio cache miss → try next template
       }
     } else if (value.kind === 'image') {
       const cached = imageCache.get(imageAssetId(note.id, fieldId));
@@ -959,7 +1103,7 @@ function selectStimulus(
       } else if (isDataUrl(value.value)) {
         payload[fieldId] = value;
       } else {
-        throw new SrsError('SRS_IMAGE_OFFLINE', `Image ${fieldId} is not cached for offline use.`);
+        return null; // image not cached / not data URL → try next template
       }
     } else if (template.maskTarget && template.maskFieldId === fieldId && value.kind === 'text') {
       payload[fieldId] = { kind: 'text', value: maskSentence(value.value, note.targetWord) };
@@ -970,38 +1114,9 @@ function selectStimulus(
 
   return { type: template.stimulusType, payload };
 }
-
-function selectFallbackStimulus(
-  note: SrsNote,
-  notetype: SrsNotetype,
-  type: ComponentType,
-): SrsStimulus | null {
-  // Pick the first template for this component that does NOT require audio
-  const fallback = notetype.frontTemplates.find(
-    (t) => t.componentType === type && t.stimulusType !== 'word-audio' && t.stimulusType !== 'sentence-audio'
-  );
-  if (!fallback) throw new SrsError('SRS_AUDIO_UNAVAILABLE', `No offline fallback for ${type} review.`);
-  return selectStimulus(note, notetype, type, new Map(), new Map()); // skip audio fields in fallback
-}
-
-function selectTemplate(
-  notetype: SrsNotetype,
-  type: ComponentType,
-  currentStimulus: SrsStimulus | null,
-): SrsFrontTemplate | null {
-  const candidates = notetype.frontTemplates.filter((t) => t.componentType === type);
-  if (candidates.length === 0) return null;
-
-  // Priority: non-audio fallback when currentStimulus signals audio miss (currentStimulus === null)
-  if (currentStimulus === null) {
-    return candidates.find((t) => t.stimulusType !== 'word-audio' && t.stimulusType !== 'sentence-audio') ?? null;
-  }
-
-  // Round-robin / least recently used per component for variety
-  // V1: simple deterministic pick by template id hash stable per card
-  return candidates[0];
-}
 ```
+
+`selectNextReview` gọi `resolveReviewSurface(...)` và dùng kết quả làm `template` + `stimulus` trong `SrsReviewSession`.
 
 ---
 
@@ -1048,15 +1163,33 @@ Data operations chạy trong `srs-study` entrypoint (extension origin → Indexe
 export interface SrsAddNotePayload {
   readonly type: 'SRS_ADD_NOTE';
   readonly payload: {
-    readonly deckId: string;
-    readonly notetypeId: string;
     readonly targetWord: string;
+    readonly targetLanguage: string;           // để chọn / auto-create Collection
+    readonly collectionId?: string;            // nếu user đã chọn collection
+    readonly deckId?: string;                  // nếu user đã chọn deck; nếu undefined, dùng default deck
+    readonly notetypeId?: string;              // nếu user đã chọn notetype; nếu undefined, dùng default notetype
     readonly fields: Record<string, SrsFieldValue>; // pre-fill từ dictionary + user edit
   };
 }
 ```
 
 Background / offscreen handler nhận message, mở `srs-study` tab nếu chưa mở, và proxy request để `srs-study` ghi vào IndexedDB. Đảm bảo `srs-study` entrypoint là origin duy nhất đọc/ghi SRS DB.
+
+```ts
+export interface SrsGetDecksNotetypesPayload {
+  readonly type: 'SRS_GET_DECKS_NOTETYPES';
+  readonly payload: {
+    readonly targetLanguage: string;
+  };
+}
+
+export interface SrsGetDecksNotetypesResponse {
+  readonly collections: readonly SrsCollection[];
+  readonly defaultCollectionId?: string;
+  readonly defaultDeckId?: string;
+  readonly defaultNotetypeId?: string;
+}
+```
 
 ### Cross-context (Slice 11)
 
@@ -1162,7 +1295,7 @@ readonly srs: SrsSettingsSlice;
    - **Meaning/Sound**: 2 nút Forget/Remember.
    - **Spelling**: input + live check.
      - Nút `Remember` bị disabled cho đến khi `typedInput` khớp `targetWord` sau normalization.
-     - Input sai hiển thị phản hồi trực quan (red underline, shake, highlight ký tự sai) và user phải sửa cho đúng.
+     - Input sai hiển thị phản hồi trực quan (red underline / shake / "Try again") và user phải sửa cho đúng. V1 không so sánh từng ký tự; chỉ so khớp toàn bộ input sau normalization.
      - Khi input khớp, hệ thống tự động:
        1. Bật `Remember`.
        2. Sau 1 khoảng delay (configurable, default 800ms) auto-submit `Remember`.
@@ -1186,9 +1319,28 @@ Spelling ━━━━━░░░  61%
 - **Notetype Manager**: CRUD notetype, fields, front/back templates.
 - **SRS Settings**: threshold, learning path, progress constants, study config.
 
+### Add to SRS from dictionary
+
+1. Trong dictionary popup / universal panel, user chọn destination **Anki** hoặc **Ocean SRS** (dropdown hoặc toggle).
+2. Nếu chọn **Ocean SRS**:
+   - Gửi message `SRS_GET_DECKS_NOTETYPES` với `targetLanguage`.
+   - Nhận về list collections + decks + notetypes; chọn default nếu user chưa chỉ định.
+   - Hiển thị quick-add panel:
+     - **Collection/Deck/Notetype selectors**.
+     - **Toggle** "Use dictionary data" / "Fill manually".
+     - **Field preview** (read-only khi use dictionary):
+       - target, sentence, definition, IPA, word audio, sentence audio, image, translation.
+     - **Edit fields** (khi fill manually hoặc override dictionary data).
+     - Nút "Add to SRS".
+3. Khi click "Add to SRS":
+   - Validate targetWord, deck, notetype.
+   - Resolve audio/image URLs thành `ArrayBuffer` cache trước khi tạo Note (hoặc mark as pending download; SRS tự resolve lần đầu review nếu thiếu).
+   - Gọi `addNoteAndCard`.
+   - Toast success / error.
+
 ### Empty / loading / error / first-run
 
-- First-run: hướng dẫn tạo Collection → Notetype → Note; seed default notetype nếu chưa có.
+- First-run: nếu chưa có Collection, hệ thống auto-create default Collection + deck + notetype + study config, sau đó hiển thị hướng dẫn "Thêm từ → Học".
 - Loading: skeleton.
 - Error: `Alert` + retry.
 - No due cards: thông báo "No cards due."
@@ -1388,45 +1540,48 @@ const DEFAULT_FIELDS: SrsField[] = [
   { id: 'context',  name: 'Context',       order: 10, type: 'context' },
 ];
 
-const DEFAULT_NOTETYPE: SrsNotetype = {
-  id: 'default-word',
-  collectionId: '<collectionId>',
-  name: 'Word (default)',
-  targetFieldId: 'target',
-  fields: DEFAULT_FIELDS,
-  frontTemplates: [
-    // 1. Sound — word audio
-    { id: 'sound-word-audio', componentType: 'sound', stimulusType: 'word-audio', fieldIds: ['wordAudio'], requiresInput: false },
-    // 2. Sound — sentence audio
-    { id: 'sound-sentence-audio', componentType: 'sound', stimulusType: 'sentence-audio', fieldIds: ['sentAudio'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
-    // 3. Sound — IPA fallback
-    { id: 'sound-ipa', componentType: 'sound', stimulusType: 'ipa', fieldIds: ['ipa'], requiresInput: false, prompt: 'Pronounce: /{ipa}/' },
-    // 4. Meaning — image
-    { id: 'meaning-image', componentType: 'meaning', stimulusType: 'image', fieldIds: ['image'], requiresInput: false },
-    // 5. Meaning — definition
-    { id: 'meaning-definition', componentType: 'meaning', stimulusType: 'definition', fieldIds: ['def'], requiresInput: false },
-    // 6. Meaning — sentence
-    { id: 'meaning-sentence', componentType: 'meaning', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
-    // 7. Spelling — image + input
-    { id: 'spelling-image', componentType: 'spelling', stimulusType: 'image', fieldIds: ['image'], requiresInput: true },
-    // 8. Spelling — sentence + input
-    { id: 'spelling-sentence', componentType: 'spelling', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: true },
-  ],
-  backTemplate: { fieldIds: ['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'], showAll: true },
-};
-```
+function createDefaultNotetype(collectionId: string): SrsNotetype {
+  return {
+    id: `default-word-${collectionId}`,
+    collectionId,
+    name: 'Word (default)',
+    targetFieldId: 'target',
+    fields: DEFAULT_FIELDS,
+    frontTemplates: [
+      // 1. Sound — word audio
+      { id: `sound-word-audio-${collectionId}`, componentType: 'sound', stimulusType: 'word-audio', fieldIds: ['wordAudio'], requiresInput: false },
+      // 2. Sound — sentence audio
+      { id: `sound-sentence-audio-${collectionId}`, componentType: 'sound', stimulusType: 'sentence-audio', fieldIds: ['sentAudio'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
+      // 3. Sound — IPA fallback
+      { id: `sound-ipa-${collectionId}`, componentType: 'sound', stimulusType: 'ipa', fieldIds: ['ipa'], requiresInput: false, prompt: 'Pronounce this word' },
+      // 4. Meaning — image
+      { id: `meaning-image-${collectionId}`, componentType: 'meaning', stimulusType: 'image', fieldIds: ['image'], requiresInput: false },
+      // 5. Meaning — definition
+      { id: `meaning-definition-${collectionId}`, componentType: 'meaning', stimulusType: 'definition', fieldIds: ['def'], requiresInput: false },
+      // 6. Meaning — sentence
+      { id: `meaning-sentence-${collectionId}`, componentType: 'meaning', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: false },
+      // 7. Spelling — image + input
+      { id: `spelling-image-${collectionId}`, componentType: 'spelling', stimulusType: 'image', fieldIds: ['image'], requiresInput: true },
+      // 8. Spelling — sentence + input
+      { id: `spelling-sentence-${collectionId}`, componentType: 'spelling', stimulusType: 'sentence', fieldIds: ['sentence'], maskFieldId: 'sentence', maskTarget: true, requiresInput: true },
+    ],
+    backTemplate: { fieldIds: ['target', 'ipa', 'sentence', 'def', 'wordAudio', 'sentAudio', 'image', 'examples', 'notes', 'translation'], showAll: true },
+  };
+}
 
-Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection` đầu tiên (first-run hoặc manual).
+
+Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollection`; lưu id trả về vào `collection.defaultNotetypeId`. Template ids được gắn prefix `collectionId` để tránh xung đột cross-collection.
 
 ---
 
 ## Open Questions
 
-1. `ts-fsrs` bundle/compat → T0 spike quyết định.
+1. `ts-fsrs` bundle/compat + `preserveDue` implementation → T0 spike quyết định.
 2. Audio fallback chain chi tiết khi Pronunciation Engine chậm.
 3. Android IME cho spelling recall.
 4. Review event prune policy — đã quyết: prune theo `dataLifecycle` (max age + max count).
 5. Image import flow từ reader/dictionary (Slice 11).
+6. Cross-collection default notetype / template id generation scheme.
 
 ---
 
@@ -1457,6 +1612,9 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 2. Màn hình đầu tiên:
    - Nếu chưa có Collection nào:
      - Thông báo "Chào mừng. Dữ liệu SRS chỉ lưu trên máy."
+     - Hệ thống lấy active language profile từ `settingsStore`:
+       - `targetLanguage` = `profile.targetLanguage` (ví dụ 'en').
+       - `languageProfileId` = `profile.id`.
      - Hệ thống tự động tạo Collection default "My SRS" + default deck "Default" + default notetype "Word (default)" + default study config.
      - User có thể đổi tên hoặc tạo mới sau.
    - Nếu đã có Collection: hiển thị dashboard/study.
@@ -1473,8 +1631,14 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
    - "Add to Anki" (mặc định nếu srsDestination='anki')
    - "Add to Ocean SRS" (nếu srsDestination='ocean-srs' hoặc chọn thủ công)
 5. Linh chọn "Ocean SRS".
-6. Hệ thống kiểm tra Collection/Deck mặc định:
-   - Nếu chưa có → tự động tạo "My SRS" + "Default" deck + "Word (default)" notetype.
+6. Hệ thống xác định target language:
+   - Từ lookup result: `targetLanguage = result.langCode` (ví dụ 'en').
+   - Tìm Collection đã tồn tại với `targetLanguage` này.
+   - Nếu không có → tự động tạo:
+     - Collection "My SRS — en" với `targetLanguage='en'` và `languageProfileId` từ settings hoặc `null` nếu chưa có.
+     - Default deck "Default".
+     - Default notetype "Word (default)".
+     - Default study config.
 7. Hệ thống hiển thị quick-add panel:
    - Deck selector (default deck hoặc chọn deck khác).
    - Notetype selector (default notetype hoặc chọn khác).
@@ -1510,9 +1674,9 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
    - FSRS state không đổi
 6. Back hiện đầy đủ target word, sentence, definition, audio, image.
 7. Linh click "Next".
-8. Scheduler chọn tiếp Meaning → explore, rồi Spelling → explore.
+8. Scheduler chọn tiếp component tiếp theo trong `stages` chưa đủ `minExplores`.
    - Mỗi lần exploreCount tăng, progress vẫn 0.
-9. Sau 3 lần explore, card chuyển sang active (các component bắt đầu lấy progress).
+9. Sau khi tất cả component trong `stages` đạt `exploreCount >= minExplores`, card chuyển sang active (các component bắt đầu lấy progress).
 ```
 
 ### Flow 4 — Active review (normal mode)
@@ -1537,23 +1701,26 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 1. Scheduler chọn Spelling (progress = 40, due).
 2. Front hiện stimulus (image / audio / sentence masked) + input field.
 3. Linh bắt đầu gõ:
-   - Mỗi ký tự được so sánh real-time với target word (sau normalization).
+   - Sau mỗi lần input thay đổi, hệ thống so sánh toàn bộ normalized input với target word.
    - Nếu input chưa đúng:
-     - UI hiển thị phản hồi "sai" (red underline/shake/highlight wrong chars).
+     - UI hiển thị phản hồi "sai" (red underline / shake / "Try again").
      - Nút "Remember" disabled.
      - Nút "Forget" vẫn available để user bỏ cuộc / không biết.
    - Linh phải sửa lại cho đúng (hoặc click Forget).
 4. Linh gõ đúng "abandon":
    - Input khớp target word.
    - Hệ thống tự động chuyển hành động:
-     - Đánh dấu Remember.
-     - Hiện Back ngắn gọn (target word, sentence, definition).
-     - Tự động advance sang card / component tiếp theo sau 800ms.
+     - Auto-submit judgment = 'remember'.
+     - isSpellingCorrect = true.
+     - Reveal Back (theo `backTemplate.showAll`).
+     - Hiển thị inline badge "Correct" / "Good job".
+     - Sau delay 800ms, auto-advance sang card / component tiếp theo.
 5. Nếu Linh click "Forget" (không biết):
    - applyReview với judgment = 'forget'.
+   - isSpellingCorrect = false.
    - progress[spelling] -= penalty(40)
    - FSRS next with rating Again
-   - Back hiện target word đúng.
+   - Reveal Back (theo `backTemplate.showAll`).
 6. applyReview khi đúng (auto):
    - isSpellingCorrect = true
    - progress[spelling] += gain(40)
@@ -1582,12 +1749,12 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 ### Flow 7 — Maintenance mode
 
 ```
-1. Sau nhiều lần ôn, Meaning=95, Sound=96, Spelling=92.
+1. Sau nhiều lần ôn, Meaning=94, Sound=96, Spelling=92.
 2. recalcCard thấy tất cả >= threshold (90) → maintenanceMode = true.
 3. Scheduler vẫn schedule card, nhưng ở pool maintenance (ưu tiên thấp).
 4. Front có thể là bất kỳ component nào due.
 5. Nếu Linh click "Forget" trên Meaning:
-   - progress[meaning] giảm xuống 80 (< 90)
+   - progress[meaning] -= penalty(94) = 5 → 89 (< 90)
    - recalcCard → maintenanceMode = false
    - component Meaning trở lại active.
 ```
