@@ -2,6 +2,7 @@ import { Icon } from '@/shared/icons/Icon';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { rankToBand } from '@/shared/lib/frequencyBand';
 import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciation';
+import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
 import type { AudioEngineKind } from '@/features/pronunciation/types';
 import { nextStatus } from '../services/wordStatusStore';
@@ -89,6 +90,7 @@ export function CandidateView({
   });
 
   const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
+  const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';
 
@@ -231,7 +233,7 @@ export function CandidateView({
         {panel.activeTab === 'pronunciation' && (
           <PronunciationPanel
             pronunciation={pronunciation}
-            audioUrl={selectedWordAudio?.url}
+            audioUrl={selectedWordAudioUrl}
             audioSource={selectedWordAudio ? toAudioEngineKind(selectedWordAudio.source) : undefined}
           />
         )}
