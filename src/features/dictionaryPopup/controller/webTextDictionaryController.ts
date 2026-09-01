@@ -783,7 +783,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onSizeChange: handlePopupSizeChange,
         onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
-        onAddToSrs: (prefill) => { void handlePopupAddToSrs(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         dismissOnOutsideClick: !isSheetMode(),
@@ -926,7 +925,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onSizeChange: handlePopupSizeChange,
         onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
-        onAddToSrs: (prefill) => { void handlePopupAddToSrs(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         dismissOnOutsideClick: !isSheetMode(),
@@ -1374,6 +1372,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
+    const destination = deps.dictionaryPopupSettings.srsDestination ?? 'anki';
+    if (destination === 'ocean-srs') {
+      return handlePopupAddToSrs(prefill);
+    }
+    return handlePopupAnkiQuickAdd(prefill);
+  }
+
+  async function handlePopupAnkiQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
     // Capture subtitle context BEFORE any await / close.
     const fromSubtitle = isLookupFromSubtitle();
     closePopup();

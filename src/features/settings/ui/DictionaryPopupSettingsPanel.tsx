@@ -180,12 +180,12 @@ export function DictionaryPopupSettingsPanel({
           id="dp-srs"
           value={settings.srsDestination}
           onChange={(e) => update({ srsDestination: e.target.value as DictionaryPopupSettings['srsDestination'] })}
-          disabled
         >
           <option value="anki">Anki</option>
+          <option value="ocean-srs">Ocean SRS</option>
         </select>
         <small className={styles.hint}>
-          Cell Memory integration coming soon.
+          Choose where Quick Add sends cards.
         </small>
       </div>
     </div>
