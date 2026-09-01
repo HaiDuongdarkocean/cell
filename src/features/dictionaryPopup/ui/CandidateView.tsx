@@ -1,6 +1,9 @@
 import { Icon } from '@/shared/icons/Icon';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { rankToBand } from '@/shared/lib/frequencyBand';
+import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciation';
+import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
+import type { AudioEngineKind } from '@/features/pronunciation/types';
 import { nextStatus } from '../services/wordStatusStore';
 import { useCandidate } from './useCandidate';
 import { AudioPanel } from './AudioPanel';
@@ -9,7 +12,7 @@ import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import styles from './DictionaryPanelView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind } from '../types';
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
   if (!reading) return '';
@@ -17,6 +20,31 @@ function formatReading(reading: string, readingKind: LookupResult['readingKind']
     return `/${reading}/`;
   }
   return reading;
+}
+
+function toAudioEngineKind(source: AudioSourceKind): AudioEngineKind {
+  switch (source) {
+    case 'local':
+      return 'localFile';
+    case 'espeak':
+      return 'espeak';
+    case 'cloud-tts':
+      return 'supertonic';
+    case 'system-tts':
+      return 'browserTts';
+    case 'community':
+    default:
+      return 'native';
+  }
+}
+
+function findSelectedWordAudio(
+  items: readonly AudioItem[],
+  selection: Map<string, boolean>,
+): AudioItem | undefined {
+  return items.find(
+    (item) => item.kind === 'word' && (selection.get(item.id) ?? item.defaultSelected),
+  );
 }
 
 export interface CandidateViewProps {
@@ -53,6 +81,14 @@ export function CandidateView({
     onStatusChange,
     defaultActiveTab,
   });
+
+  const { pronunciation } = usePronunciation({
+    term: candidate.term,
+    langCode: candidate.langCode,
+    enabled: panel.activeTab === 'pronunciation',
+  });
+
+  const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';
 
@@ -151,6 +187,7 @@ export function CandidateView({
             image: panel.selectedImageCount,
             translate: panel.selectedTranslationCount,
             links: panel.selectedLinkCount,
+            pronunciation: pronunciation ? 1 : 0,
           }}
         />
 
@@ -191,6 +228,13 @@ export function CandidateView({
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
+        {panel.activeTab === 'pronunciation' && (
+          <PronunciationPanel
+            pronunciation={pronunciation}
+            audioUrl={selectedWordAudio?.url}
+            audioSource={selectedWordAudio ? toAudioEngineKind(selectedWordAudio.source) : undefined}
+          />
+        )}
 
         <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
