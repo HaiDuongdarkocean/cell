@@ -16,6 +16,7 @@ import type {
   FetchLocalAudioResponse,
   TtsFetchAudioResponse,
 } from '@/features/dictionaryPopup/types';
+import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { AudioEngineKind } from '../types';
 import type { PronunciationSettings } from '@/entities/settings/types';
 
@@ -81,12 +82,28 @@ export class SupertonicAudioProvider implements PronunciationAudioProvider {
   }
 }
 
-/** Placeholder provider for the on-device eSpeak TTS engine. */
+/** Provider backed by the offscreen eSpeak TTS engine. */
 export class EspeakAudioProvider implements PronunciationAudioProvider {
   readonly kind: AudioEngineKind = 'espeak';
 
-  resolve(): Promise<readonly AudioItem[]> {
-    return Promise.resolve([]);
+  resolve(term: string, langCode: string): Promise<readonly AudioItem[]> {
+    return sendMessage<MessageResponse<PronunciationEspeakTtsResult>>({
+      type: MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS,
+      payload: { text: term, langCode },
+    }).then((res) => {
+      if (!res?.success || !res.data?.audioBytes) return [];
+      return [
+        {
+          id: `espeak-word-${term}-${langCode}`,
+          kind: 'word' as const,
+          source: 'espeak' as const,
+          label: `${term} · eSpeak`,
+          state: 'idle' as const,
+          audioBytes: res.data.audioBytes,
+          defaultSelected: false,
+        },
+      ];
+    });
   }
 }
 
@@ -104,6 +121,7 @@ export class PronunciationAudioOrchestrator {
 
   constructor(settings: PronunciationSettings) {
     this.providers = settings.fallbackEngines
+      .filter((kind) => kind !== 'espeak' || settings.downloadEspeakTtsData)
       .map((kind) => providerFactories[kind]?.())
       .filter((p): p is PronunciationAudioProvider => p !== undefined);
   }

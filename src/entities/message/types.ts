@@ -84,6 +84,7 @@ export type MessageType =
   | 'TTS_DOWNLOAD_VOICE'
   | 'TTS_DOWNLOAD_PROGRESS'
   | 'FETCH_MEDIA_URL'
+  | 'PRONUNCIATION_ESPEAK_TTS'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
@@ -633,6 +634,17 @@ export interface FetchMediaUrlPayload {
 /** Background → content: media fetch result (data URL). */
 export interface FetchMediaUrlResponse {
   readonly url: string;
+}
+
+/** Content → background → offscreen: synthesize eSpeak TTS audio. */
+export interface PronunciationEspeakTtsPayload {
+  readonly text: string;
+  readonly langCode: string;
+}
+
+/** Offscreen → background → content: eSpeak TTS result. */
+export interface PronunciationEspeakTtsResult {
+  readonly audioBytes: Uint8Array;
 }
 
 /** Content → background: get word status. */

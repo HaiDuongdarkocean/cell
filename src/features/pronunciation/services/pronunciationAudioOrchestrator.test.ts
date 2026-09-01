@@ -85,4 +85,21 @@ describe('PronunciationAudioOrchestrator', () => {
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('l1');
   });
+
+  it('skips eSpeak provider when downloadEspeakTtsData is false', () => {
+    const orchestrator = new PronunciationAudioOrchestrator(
+      makeSettings(['espeak', 'localFile']),
+    );
+    // espeak should be filtered out, leaving only localFile.
+    expect((orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers).toHaveLength(1);
+  });
+
+  it('includes eSpeak provider when downloadEspeakTtsData is true', () => {
+    const settings = makeSettings(['espeak', 'localFile']);
+    const orchestrator = new PronunciationAudioOrchestrator({
+      ...settings,
+      downloadEspeakTtsData: true,
+    });
+    expect((orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers).toHaveLength(2);
+  });
 });
