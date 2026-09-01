@@ -12,6 +12,7 @@
     "postbuild": "node scripts/patch-ocr-csp.mjs",
     "design-system": "npx http-server dist/design-system-showcase -p 8123 -c-1 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
+    "design-system:open:universal-panel": "start \"Cell\" chrome \"http://localhost:5180/src/entrypoints/design-system-showcase/index.html?showcase=Universal+Panel+Page&mode=light&viewport=full\"",
     "build:design-system": "vite build --config vite.showcase.config.ts",
     "preview": "vite preview",
     "test": "jest --passWithNoTests",
@@ -78,6 +79,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sql.js": "^1.14.1",
+    "ts-fsrs": "5.4.1",
     "unzipit": "2.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
