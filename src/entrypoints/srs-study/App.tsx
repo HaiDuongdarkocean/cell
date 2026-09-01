@@ -1,30 +1,128 @@
 import { useState } from 'react';
-import { Box, Button, Center, Container, Heading, Text } from '@/shared/ui';
+import { Box, Button, Heading, InputField, Text } from '@/shared/ui';
+import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
+import { normalizeSpelling } from '@/features/srs/lib/helpers';
+import type { SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
 import styles from './App.module.css';
 
-export function App() {
-  const [count, setCount] = useState(0);
+function formatFieldValue(value: SrsFieldValue): string {
+  if (value.kind === 'list') return value.value.join(', ');
+  return value.value;
+}
+
+function StimulusView({ stimulus }: { stimulus: SrsStimulus }) {
+  const entries = Object.entries(stimulus.payload);
 
   return (
-    <Container maxWidth="md" className={styles.page}>
-      <Center className={styles.hero}>
+    <Box className={styles.stimulus}>
+      <Text className={styles.stimulusType}>{stimulus.type}</Text>
+      {entries.map(([fieldId, value]) => (
+        <Box key={fieldId} className={styles.stimulusField}>
+          {value.kind === 'image' ? (
+            <img src={value.value} alt="" className={styles.stimulusImage} />
+          ) : value.kind === 'audio' ? (
+            <audio controls src={value.value} className={styles.stimulusAudio} />
+          ) : (
+            <Text className={styles.stimulusText}>{formatFieldValue(value)}</Text>
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function SrsReviewCard() {
+  const { session, submit, markStudyAgain } = useSrsStudy();
+  const [typedInput, setTypedInput] = useState('');
+
+  if (!session) return null;
+
+  const isSpelling = session.componentType === 'spelling';
+  const inputMatches =
+    !isSpelling || normalizeSpelling(typedInput) === normalizeSpelling(session.note.targetWord);
+
+  return (
+    <Box className={styles.card}>
+      <Heading level={2} className={styles.title}>
+        {session.note.targetWord}
+      </Heading>
+      <Text className={styles.componentType}>{session.componentType}</Text>
+      <StimulusView stimulus={session.stimulus} />
+      {isSpelling && (
+        <InputField
+          id="spelling-input"
+          label="Type the word"
+          value={typedInput}
+          onChange={(e) => setTypedInput(e.currentTarget.value)}
+          className={styles.spellingInput}
+        />
+      )}
+      <Box className={styles.actions}>
+        <Button
+          className={styles.forgetButton}
+          onClick={() => {
+            setTypedInput('');
+            void submit('forget', typedInput || undefined);
+          }}
+        >
+          Forget
+        </Button>
+        <Button
+          className={styles.studyButton}
+          disabled={!inputMatches}
+          onClick={() => {
+            setTypedInput('');
+            void submit('remember', typedInput || undefined);
+          }}
+        >
+          Remember
+        </Button>
+      </Box>
+      <Box className={styles.actions}>
+        <Button
+          variant="ghost"
+          onClick={() => markStudyAgain(session.componentType)}
+        >
+          Study again
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+export function App() {
+  const { loading, error, finished, start, session } = useSrsStudy();
+
+  return (
+    <Box className={styles.page}>
+      {error ? (
+        <Box className={styles.card}>
+          <Text className={styles.error}>{error}</Text>
+        </Box>
+      ) : session ? (
+        <SrsReviewCard />
+      ) : (
         <Box className={styles.card}>
           <Heading level={1} className={styles.title}>
             Ocean SRS
           </Heading>
           <Text className={styles.subtitle}>
-            Spaced repetition for language acquisition. Data is stored locally in
-            this browser — uninstalling the extension will delete it.
+            Spaced repetition for language acquisition. Data is stored locally in this
+            browser — uninstalling the extension will delete it.
           </Text>
           <Button
             className={styles.studyButton}
-            onClick={() => setCount((c) => c + 1)}
+            onClick={start}
+            disabled={loading}
             aria-label="Start study session"
           >
-            Study ({count})
+            {loading ? 'Loading…' : 'Study'}
           </Button>
+          {finished && (
+            <Text className={styles.finishedText}>All caught up for now.</Text>
+          )}
         </Box>
-      </Center>
-    </Container>
+      )}
+    </Box>
   );
 }
