@@ -93,6 +93,10 @@
     {
       "resources": ["src/entrypoints/local-player/index.html"],
       "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["src/entrypoints/srs-study/index.html"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

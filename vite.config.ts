@@ -164,6 +164,7 @@ export default defineConfig(({ mode }) => ({
         reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
         mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
         launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
+        srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
       },
       output: {
         manualChunks(id) {
