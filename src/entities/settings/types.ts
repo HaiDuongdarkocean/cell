@@ -192,6 +192,7 @@ export interface SrsSettingsSlice {
   readonly defaultStudyConfigId: string | null;
   readonly activeCollectionId: string | null;
   readonly activeDeckId: string | null;
+  readonly activeNotetypeId: string | null;
   readonly activeLanguageProfileId: string | null;
   readonly dataLifecycle: SrsDataLifecycleConfig;
 }
