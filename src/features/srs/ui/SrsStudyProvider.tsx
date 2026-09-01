@@ -15,6 +15,7 @@ import { putReviewEvent } from '@/features/srs/repositories/reviewEventRepositor
 import { getStudyConfig } from '@/features/srs/repositories/studyConfigRepository';
 import { selectNextReview } from '@/features/srs/logic/selectNextReview';
 import { applyReview, resetCard, resetComponent, studyAgain } from '@/features/srs/logic/reviewEngine';
+import { getSrsStats, type SrsDeckStats } from '@/features/srs/services/getSrsStats';
 
 interface SrsStudyContextValue {
   readonly ready: boolean;
@@ -23,6 +24,7 @@ interface SrsStudyContextValue {
   readonly session: SrsReviewSession | null;
   readonly finished: boolean;
   readonly deckId: string | null;
+  readonly stats: SrsDeckStats | null;
   readonly audioCache: ReadonlyMap<string, SrsAudioAsset>;
   readonly imageCache: ReadonlyMap<string, SrsImageAsset>;
   readonly start: () => Promise<void>;
@@ -59,6 +61,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [finished, setFinished] = useState(false);
   const [deckId, setDeckId] = useState<string | null>(null);
   const [config, setConfig] = useState<SrsStudyConfig | null>(null);
+  const [stats, setStats] = useState<SrsDeckStats | null>(null);
   const [audioCache] = useState(() => new Map<string, SrsAudioAsset>());
   const [imageCache] = useState(() => new Map<string, SrsImageAsset>());
 
@@ -76,14 +79,26 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const ensureDeck = useCallback(async () => {
-    if (deckId && config) return { deckId, config };
+    if (deckId && config && stats) return { deckId, config, stats };
     const result = await ensureFirstRun();
     const studyConfig = await getStudyConfig(result.studyConfigId);
+    const deckStats = await getSrsStats(result.deckId);
     setDeckId(result.deckId);
     setConfig(studyConfig);
+    setStats(deckStats);
     setReady(true);
-    return { deckId: result.deckId, config: studyConfig };
-  }, [deckId, config]);
+    return { deckId: result.deckId, config: studyConfig, stats: deckStats };
+  }, [deckId, config, stats]);
+
+  const refreshStats = useCallback(async () => {
+    if (!deckId) return;
+    try {
+      const nextStats = await getSrsStats(deckId);
+      setStats(nextStats);
+    } catch {
+      // ignore transient stats refresh errors
+    }
+  }, [deckId]);
 
   const start = useCallback(async () => {
     setLoading(true);
@@ -115,6 +130,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         const result = applyReview(session, judgment, typedInput, new Date(nowISO()), config, adapter);
         await putCard(result.card);
         await putReviewEvent(result.record);
+        void refreshStats();
         const next = await selectNextReview(
           session.card.deckId,
           false,
@@ -136,7 +152,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [session, config, audioCache, imageCache],
+    [session, config, audioCache, imageCache, refreshStats],
   );
 
   const markStudyAgain = useCallback(
@@ -144,24 +160,27 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       if (!session || !config) return;
       const updated = studyAgain(session.card, componentType, nowISO(), config, adapter);
       await putCard(updated);
+      void refreshStats();
       setSession({ ...session, card: updated });
     },
-    [session, config],
+    [session, config, refreshStats],
   );
 
   const resetCurrentComponent = useCallback(async () => {
     if (!session || !config) return;
     const updated = resetComponent(session.card, session.componentType, nowISO(), config, adapter);
     await putCard(updated);
+    void refreshStats();
     setSession({ ...session, card: updated });
-  }, [session, config]);
+  }, [session, config, refreshStats]);
 
   const resetCurrentCard = useCallback(async () => {
     if (!session || !config) return;
     const updated = resetCard(session.card, nowISO(), config, adapter);
     await putCard(updated);
+    void refreshStats();
     setSession({ ...session, card: updated });
-  }, [session, config]);
+  }, [session, config, refreshStats]);
 
   const value: SrsStudyContextValue = useMemo(
     () => ({
@@ -171,6 +190,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       session,
       finished,
       deckId,
+      stats,
       audioCache,
       imageCache,
       start,
@@ -186,6 +206,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       session,
       finished,
       deckId,
+      stats,
       audioCache,
       imageCache,
       start,
