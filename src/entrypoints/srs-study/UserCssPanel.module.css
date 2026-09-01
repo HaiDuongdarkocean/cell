@@ -1,0 +1,31 @@
+.panel {
+  margin-top: var(--space-6, 1.5rem);
+  width: 100%;
+}
+
+.title {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #8b949e);
+  margin-bottom: var(--space-2, 0.5rem);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--space-3, 0.75rem);
+  border-radius: var(--radius-card, 0.75rem);
+  border: 1px solid var(--color-border, #2b2d2f);
+  background-color: var(--color-surface, #18191a);
+  color: var(--color-text-primary, #f7f8f8);
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: var(--font-size-sm, 0.875rem);
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.save {
+  margin-top: var(--space-3, 0.75rem);
+}

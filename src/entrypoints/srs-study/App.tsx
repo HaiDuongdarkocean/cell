@@ -3,6 +3,7 @@ import { Box, Button, Heading, InputField, Text } from '@/shared/ui';
 import { useSrsStudy } from '@/features/srs/ui/SrsStudyProvider';
 import { normalizeSpelling } from '@/features/srs/lib/helpers';
 import type { SrsFieldValue, SrsStimulus } from '@/entities/srs/types';
+import { UserCssPanel } from './UserCssPanel';
 import styles from './App.module.css';
 
 function formatFieldValue(value: SrsFieldValue): string {
@@ -149,6 +150,7 @@ export function App() {
           {finished && (
             <Text className={styles.finishedText}>All caught up for now.</Text>
           )}
+          <UserCssPanel />
         </Box>
       )}
     </Box>
