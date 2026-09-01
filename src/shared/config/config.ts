@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice } from '@/entities/settings';
 import tokensJson from '@/shared/styles/tokens.json';
 
 // === Default Configuration ===
@@ -222,6 +222,20 @@ export const DEFAULT_LOCAL_PLAYER_SETTINGS: LocalPlayerSettings = {
   lastDirectoryId: null,
 };
 
+/** Default Ocean SRS settings (spec ocean-language-acquisition-srs — schema v27). */
+export const DEFAULT_SRS_SETTINGS: SrsSettingsSlice = {
+  defaultStudyConfigId: null,
+  activeCollectionId: null,
+  activeDeckId: null,
+  activeLanguageProfileId: null,
+  dataLifecycle: {
+    reviewEventMaxAgeDays: 365,
+    reviewEventMaxCount: 10000,
+    audioQuotaMb: 50,
+    imageQuotaMb: 50,
+  },
+};
+
 /** Default Dictionary Popup settings (spec §9.3 — schema v14). */
 export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   enabled: true,
@@ -291,6 +305,8 @@ export const DEFAULT_SETTINGS: Settings = {
   pronunciation: DEFAULT_PRONUNCIATION_SETTINGS,
   // === Local Player (spec local-video-player.md) — schema v22 ===
   localPlayerSettings: DEFAULT_LOCAL_PLAYER_SETTINGS,
+  // === Ocean Language Acquisition SRS (schema v27) ===
+  srs: DEFAULT_SRS_SETTINGS,
 };
 
 /**

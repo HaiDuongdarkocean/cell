@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 26;
+export const CURRENT_SCHEMA_VERSION = 27;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -450,6 +450,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // merge nested defaults fills the new localFile slice.
   25: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 26 } as Record<string, unknown>;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v26 → v27: add Ocean SRS settings slice.
+  // Existing users get null active IDs + default dataLifecycle quota.
+  26: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 27 } as Record<string, unknown>;
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

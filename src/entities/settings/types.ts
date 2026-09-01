@@ -176,6 +176,26 @@ export interface TtsSettings {
   readonly hiddenLanguages: readonly string[];
 }
 
+/** SRS destination for dictionary popup / universal panel add actions. */
+export type SrsDestination = 'anki' | 'ocean-srs';
+
+/** Ocean SRS data lifecycle / quota settings. */
+export interface SrsDataLifecycleConfig {
+  readonly reviewEventMaxAgeDays: number;
+  readonly reviewEventMaxCount: number;
+  readonly audioQuotaMb: number;
+  readonly imageQuotaMb: number;
+}
+
+/** Ocean SRS settings slice (schema v27). */
+export interface SrsSettingsSlice {
+  readonly defaultStudyConfigId: string | null;
+  readonly activeCollectionId: string | null;
+  readonly activeDeckId: string | null;
+  readonly activeLanguageProfileId: string | null;
+  readonly dataLifecycle: SrsDataLifecycleConfig;
+}
+
 /** Dictionary Popup settings slice (spec §9.3 — schema v14). */
 export interface DictionaryPopupSettings {
   /** Feature flag. Default false. */
@@ -188,7 +208,7 @@ export interface DictionaryPopupSettings {
   /** Per-language override for default active tab. */
   readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | 'pronunciation' | null>;
   /** SRS destination. Default 'anki'. */
-  readonly srsDestination: 'anki';
+  readonly srsDestination: SrsDestination;
   /** Popup width in px (popover mode). Default 560. */
   readonly popupWidthPx: number;
   /** Popup max height in px (popover mode). Default 480. */
@@ -401,6 +421,9 @@ export interface Settings {
   // === Pronunciation (spec ocean-pronunciation-engine — schema v25) ===
   /** Pronunciation engine fallback chain and eSpeak data download setting. */
   readonly pronunciation?: PronunciationSettings;
+  // === Ocean Language Acquisition SRS (schema v27) ===
+  /** SRS active collection/deck/study config and data lifecycle quota. */
+  readonly srs: SrsSettingsSlice;
 }
 
 // === Subtitle Search API Key (schema v21) ===

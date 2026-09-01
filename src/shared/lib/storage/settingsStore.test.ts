@@ -1,5 +1,5 @@
 import { loadSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
-import { DEFAULT_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SRS_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 const storageLocalSetMock = jest.fn<Promise<void>, [Record<string, unknown>]>();
@@ -63,5 +63,19 @@ describe('loadSettings migration', () => {
     expect(settings.pronunciation?.fallbackEngines).toEqual(['browserTts', 'espeak']);
     expect(settings.pronunciation?.downloadEspeakTtsData).toBe(true);
     expect(settings.pronunciation?.localFile).toEqual(DEFAULT_PRONUNCIATION_SETTINGS.localFile);
+  });
+
+  it('migrates v26 settings to v27 and adds SRS settings slice', async () => {
+    const v26Settings = { ...DEFAULT_SETTINGS, schemaVersion: 26 } as Record<string, unknown>;
+    delete v26Settings.srs;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v26Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(settings.srs).toEqual(DEFAULT_SRS_SETTINGS);
   });
 });
