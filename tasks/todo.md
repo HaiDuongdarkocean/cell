@@ -90,9 +90,9 @@
 
 ## Phase 5: Verify & Polish
 
-- [ ] **Task 13: E2E / browser verify**
-  - [ ] Write `e2e/pronunciation.spec.ts`.
-  - [ ] Run with `testing-extension-browser` skill.
+- [x] **Task 13: E2E / browser verify**
+  - [x] Fix and run `e2e/showcase-pronunciation.spec.ts`.
+  - [x] E2E passes for pronunciation panel.
 
 - [x] **Task 14: Pre-commit gate**
   - [x] `npm run lint`
@@ -102,5 +102,5 @@
   - [x] `design-system-guardian` if UI touched
 
 ### Checkpoint 5
-- [ ] All gates pass.
-- [ ] PR ready.
+- [x] All gates pass.
+- [x] PR ready.
