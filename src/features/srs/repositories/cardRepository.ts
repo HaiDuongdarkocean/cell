@@ -59,6 +59,23 @@ export async function getCardByNoteAndDeck(noteId: string, deckId: string): Prom
   });
 }
 
+/** Collect card IDs from a deck with nextDue <= before, up to maxResults. */
+export async function getCardIdsByDeckDueBefore(deckId: string, before: string, maxResults: number): Promise<string[]> {
+  return withReadonlyStore(SRS_STORES.CARDS, async (store) => {
+    const range = IDBKeyRange.bound([deckId, ''], [deckId, before]);
+    const records = await getAllByIndex<SrsCard>(store, SRS_INDEXES.by_deck_due, range, maxResults);
+    return records.map((c) => c.id);
+  });
+}
+
+/** Batch fetch cards by id. */
+export async function getCardsByIds(ids: readonly string[]): Promise<SrsCard[]> {
+  return withReadonlyStore(SRS_STORES.CARDS, async (store) => {
+    const records = await Promise.all(ids.map((id) => getById<SrsCard>(store, id)));
+    return records.filter((c): c is SrsCard => c !== undefined).map((c) => Object.freeze(c));
+  });
+}
+
 async function getCardByNoteAndDeckInStore(
   store: IDBObjectStore,
   noteId: string,

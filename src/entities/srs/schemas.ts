@@ -222,7 +222,7 @@ export const SrsReviewRecordSchema = z.object({
 
 export const SrsStimulusSchema = z.object({
   type: StimulusTypeSchema,
-  payload: z.union([SrsFieldValueSchema, z.record(z.string(), SrsFieldValueSchema)]),
+  payload: z.record(z.string(), SrsFieldValueSchema),
 });
 
 export const SrsReviewSessionSchema = z.object({
