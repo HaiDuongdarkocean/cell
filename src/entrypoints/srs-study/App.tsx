@@ -32,7 +32,7 @@ function StimulusView({ stimulus }: { stimulus: SrsStimulus }) {
 }
 
 function SrsReviewCard() {
-  const { session, submit, markStudyAgain } = useSrsStudy();
+  const { session, submit, markStudyAgain, resetCurrentComponent, resetCurrentCard } = useSrsStudy();
   const [typedInput, setTypedInput] = useState('');
 
   if (!session) return null;
@@ -84,6 +84,26 @@ function SrsReviewCard() {
           onClick={() => markStudyAgain(session.componentType)}
         >
           Study again
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (window.confirm(`Reset progress for ${session.componentType}?`)) {
+              void resetCurrentComponent();
+            }
+          }}
+        >
+          Reset component
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (window.confirm('Reset all components for this card?')) {
+              void resetCurrentCard();
+            }
+          }}
+        >
+          Reset card
         </Button>
       </Box>
     </Box>
