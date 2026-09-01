@@ -1887,3 +1887,40 @@ Feature được coi là hoàn thành khi:
 - SRS study page entrypoint: `chrome-extension://<id>/src/entrypoints/srs-study/index.html`.
 - (Slice 11) Dictionary popup / reader → "Add to Ocean SRS".
 
+---
+
+## Implementation Status
+
+> Last updated: current session.
+
+### Build / quality gates
+
+- [x] `npm run typecheck` 0 error.
+- [x] `npm run build` pass.
+- [x] `npm run lint` pass.
+- [x] `npm run test:unit` pass cho SRS tests (122 tests).
+
+### Slices completed
+
+- [x] S0 — T0 spike `ts-fsrs` + `SrsFsrsAdapter`.
+- [x] S1 — Domain model, IndexedDB schema, settings v26→v27.
+- [x] S2 — Notetype/Deck CRUD + default notetype seed.
+- [x] S3 — Note/Card creation (`addNoteAndCard`) + first-run bootstrap.
+- [x] S4 — Progress/learning path, `isLocked`, `recalcCard`, explore/maintenance.
+- [x] S5 — Scheduler `by_deck_due`, `resolvePool`, `pickHighestPriority`.
+- [x] S6 — Review engine + FSRS integration, `applyReview`, `reset*`, `studyAgain`.
+- [x] S7 — Review UI Front/Back, input, Forget/Remember.
+- [x] S8 — User controls: Study Again, Reset Component, Reset Card with confirm.
+- [x] S9 — `srs-study` entrypoint, `vite.config.ts`, `manifest.json`.
+- [x] S10 — Audio/image asset cache + population at note creation.
+- [x] S11 — Cross-context dictionary popup "Add to Ocean SRS" (`SRS_ADD_NOTE`, background handlers).
+- [x] S12 — User CSS panel in dashboard.
+- [x] S13 — Dashboard analytics (due now, due 24h, total, studied today).
+
+### Known ceilings / next steps
+
+- Multi-language collection auto-creation on add-from-dictionary (V1 falls back to active language profile).
+- `SRS_GET_DECKS_NOTETYPES` currently returns decks/notetypes for a given collection; caller must supply `collectionId`.
+- E2E smoke (`e2e/ocean-srs.spec.ts`) chưa viết.
+- Card Creator destination selector "Anki / Ocean SRS" chưa tích hợp; dictionary popup add là quick-add trực tiếp.
+
