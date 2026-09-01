@@ -190,7 +190,7 @@ export function ReaderApp(): React.JSX.Element {
     if (element) {
       element.scrollIntoView({ behavior: 'auto', block: 'start' });
     }
-  }, [selectedBook]);
+  }, [selectedBook, selectedParagraph]);
 
   // Load the user's native/target language for dictionary translation
   useEffect(() => {
@@ -254,12 +254,15 @@ export function ReaderApp(): React.JSX.Element {
     return () => clearInterval(id);
   }, [selectedBook]);
 
+  // `tick` is the intentional render trigger for the live timer; refs hold
+  // the actual cumulative time so the value recomputes once per second.
   const readTimeSeconds = useMemo(() => {
     const elapsed = isReadPausedRef.current
       ? 0
       : Date.now() - readStartAtRef.current;
     return Math.floor((cumulativeReadTimeRef.current + elapsed) / 1000);
-  }, [tick, selectedBook]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]);
 
   const progressPercent = useMemo(() => {
     if (!selectedBook || selectedParagraph === null) return 0;

@@ -268,7 +268,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       resizeObserver?.disconnect();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [viewport, badgeSize, setCenter, setDragCenter, persist]);
+  }, [viewport, badgeSize, setCenter, setDragCenter, persist, userPreset]);
 
   const handleDrag = useCallback(
     (dx: number, dy: number): void => {

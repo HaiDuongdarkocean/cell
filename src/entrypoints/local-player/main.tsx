@@ -302,6 +302,8 @@ function LocalPlayerApp(): React.JSX.Element {
     if (videoPicks.length > 0) {
       await loadVideo(videoPicks[0].file, videoPicks[0].handle);
     }
+    // ponytail: loadVideo is a hoisted helper used in one-shot file open flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savePickedMedia]);
 
   // ── Drag-and-drop: accept video + subtitle files (any mix) ─────────────
@@ -371,6 +373,8 @@ function LocalPlayerApp(): React.JSX.Element {
       const videos = await getAllVideos();
       setLibrary(videos);
     })();
+    // ponytail: hoisted helpers used by multiple drag/drop/folder flows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentVideo, setLibrary, setSubtitlesLibrary]);
 
   /** Load a video + match it against pending subtitles (no folder scan needed). */
@@ -721,7 +725,9 @@ function LocalPlayerApp(): React.JSX.Element {
       native: null,
       others: [],
     });
-  }, [subtitleEngine]);
+    // ponytail: loadAndParseSubtitle is a hoisted helper; setSubtitles is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtitleEngine, setSubtitles]);
 
   // ── Track selector: user picks a different subtitle from the matched list ─
   const handleSelectTrack = useCallback(
@@ -740,7 +746,9 @@ function LocalPlayerApp(): React.JSX.Element {
         : undefined;
       await loadAndParseSubtitle(targetFile, nativeFile);
     },
-    [subtitles, subtitleEngine],
+    // ponytail: loadAndParseSubtitle is a hoisted helper.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [subtitles, subtitleEngine, setSubtitles],
   );
 
   // ── Subtitle select from library: load subtitle file + apply to current video ──
@@ -770,7 +778,9 @@ function LocalPlayerApp(): React.JSX.Element {
       setSubtitleStatus('loaded');
       await loadAndParseSubtitle(file);
     },
-    [],
+    // ponytail: loadAndParseSubtitle is a hoisted helper.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setSubtitles, setSubtitleStatus],
   );
 
   // ── Resume position: throttled save on timeupdate ──────────────────────
@@ -820,6 +830,8 @@ function LocalPlayerApp(): React.JSX.Element {
       }
       await loadVideo(file, record.fileHandle);
     },
+    // ponytail: loadVideo is a hoisted helper used by multiple selection flows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

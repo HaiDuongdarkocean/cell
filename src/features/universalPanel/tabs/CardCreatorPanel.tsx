@@ -87,6 +87,7 @@ function CardCreatorPanelCore({
 
   const initialAction = context?.initialAction;
   const state = useCardCreatorState(settings, openContext, initialAction);
+  const { loadStatus, submitting, submit } = state;
 
   // Quick Add from the dictionary header: auto-submit the prefilled card as soon
   // as the form data is loaded. This mirrors the popup dictionary Quick Add
@@ -94,10 +95,10 @@ function CardCreatorPanelCore({
   const quickAddContextRef = useRef<DictionaryPanelPrefill | null>(null);
   useEffect(() => {
     if (initialAction !== 'quick-add' || !context || context === quickAddContextRef.current) return;
-    if (state.loadStatus === 'idle' || state.submitting) return;
+    if (loadStatus === 'idle' || submitting) return;
     quickAddContextRef.current = context;
-    void state.submit('add');
-  }, [initialAction, context, state.loadStatus, state.submitting, state.submit]);
+    void submit('add');
+  }, [initialAction, context, loadStatus, submitting, submit]);
 
   // The Cancel button is part of the shared CardCreatorDialogContent. In a
   // right-side panel there is no dialog to close; pressing it intentionally

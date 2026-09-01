@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type ReactElement } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, type ReactElement } from 'react';
 import { Card } from '@/shared/ui/Card';
 import { Button } from '@/shared/ui/Button';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -106,9 +106,10 @@ export function Showcase(): ReactElement {
 
   const selectedItem = items.find((i) => i.id === selectedItemId) ?? null;
   const currentText = editedText || selectedItem?.text || '';
-  const sentences = currentText
-    ? currentText.split(/(?<=\. )/).filter((s) => s.trim().length > 0)
-    : [];
+  const sentences = useMemo(
+    () => (currentText ? currentText.split(/(?<=\. )/).filter((s) => s.trim().length > 0) : []),
+    [currentText],
+  );
 
   // Height-based pagination: measure each unit, group into pages that fit container
   // Split ON: paginate sentences. Split OFF: paginate by word chunks (text has no newlines)
