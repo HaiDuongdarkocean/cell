@@ -96,4 +96,8 @@ export const MESSAGE_TYPES = {
   OCR_REGION_COMMAND: 'OCR_REGION_COMMAND',
   // === Study Modes (spec media-study-modes.md) ===
   APPLY_STUDY_MODE: 'APPLY_STUDY_MODE',
+  // === Ocean SRS (spec ocean-language-acquisition-srs.md) ===
+  SRS_ADD_NOTE: 'SRS_ADD_NOTE',
+  SRS_GET_DECKS_NOTETYPES: 'SRS_GET_DECKS_NOTETYPES',
+  SRS_OPEN_STUDY_PAGE: 'SRS_OPEN_STUDY_PAGE',
 } as const satisfies Record<string, MessageType>;

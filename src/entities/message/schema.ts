@@ -5,6 +5,7 @@
 
 import { z } from 'zod';
 import type { Settings } from '@/entities/media';
+import { SrsFieldValueSchema } from '@/entities/srs/schemas';
 
 // === Reusable primitives ===
 
@@ -206,3 +207,22 @@ export const GetKeyQuotaPayloadSchema = z.object({
 export const OpenReaderPayloadSchema = z.object({
   bookId: z.string().optional(),
 }).optional();
+
+// === Ocean SRS payloads (spec ocean-language-acquisition-srs.md) ===
+
+export const SrsAddNotePayloadSchema = z.object({
+  targetLanguage: z.string().min(1),
+  collectionId: z.string().optional(),
+  deckId: z.string().optional(),
+  targetWord: z.string().min(1),
+  notetypeId: z.string().optional(),
+  fields: z.record(z.string(), SrsFieldValueSchema),
+});
+
+export const SrsOpenStudyPagePayloadSchema = z.object({
+  deckId: z.string().optional(),
+});
+
+export const SrsGetDecksNotetypesPayloadSchema = z.object({
+  collectionId: z.string().min(1),
+});

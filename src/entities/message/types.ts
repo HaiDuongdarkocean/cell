@@ -115,7 +115,11 @@ export type MessageType =
   | 'OCR_REGION_COMMAND'
   | 'OPEN_READER'
   // Study Modes (spec media-study-modes.md)
-  | 'APPLY_STUDY_MODE';
+  | 'APPLY_STUDY_MODE'
+  // Ocean SRS (spec ocean-language-acquisition-srs.md)
+  | 'SRS_ADD_NOTE'
+  | 'SRS_GET_DECKS_NOTETYPES'
+  | 'SRS_OPEN_STUDY_PAGE';
 
 // === Message Request ===
 
@@ -828,4 +832,45 @@ export interface LocalPlayerVideoOpenedPayload {
 export interface ApplyStudyModePayload {
   readonly activeMode: StudyMode;
   readonly advanced: StudyModeAdvancedSettings;
+}
+
+// === Ocean SRS messages (spec ocean-language-acquisition-srs.md) ===
+
+/** Content/dictionary → background → srs-study: create a note + 3-component card. */
+export interface SrsAddNotePayload {
+  /** Target language, used to find or auto-create the collection. */
+  readonly targetLanguage: string;
+  /** Optional collection id; if omitted, defaults to the active collection for targetLanguage. */
+  readonly collectionId?: string;
+  /** Optional deck id; if omitted, defaults to the collection's default deck. */
+  readonly deckId?: string;
+  /** Canonical target word/phrase. */
+  readonly targetWord: string;
+  /** Notetype id; if omitted, defaults to the collection's default notetype. */
+  readonly notetypeId?: string;
+  /** Field values keyed by field id. */
+  readonly fields: Record<string, import('@/entities/srs/types').SrsFieldValue>;
+}
+
+/** Background → caller: result of SRS_ADD_NOTE. */
+export interface SrsAddNoteResult {
+  readonly noteId: string;
+  readonly cardId: string;
+}
+
+/** Content/dictionary → background: open the srs-study page in a new tab. */
+export interface SrsOpenStudyPagePayload {
+  /** Optional deck id to scope the study session. */
+  readonly deckId?: string;
+}
+
+/** Background → srs-study: list decks and notetypes for a collection. */
+export interface SrsGetDecksNotetypesPayload {
+  readonly collectionId: string;
+}
+
+/** Background → caller: decks and notetypes. */
+export interface SrsGetDecksNotetypesResult {
+  readonly decks: readonly { id: string; name: string }[];
+  readonly notetypes: readonly { id: string; name: string }[];
 }
