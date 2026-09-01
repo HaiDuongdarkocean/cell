@@ -89,7 +89,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Binary Forget/Remember judgment.
 - Notetype / Field / Front template / Back template CRUD.
 - Deck / Subdeck CRUD; Collection hierarchy.
-- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel, single-word add from dictionary popup / universal panel, multi-language collection).
+- Note / Learning Object / Card creation (manual V1, reuse Card Creator UI, single-word add from dictionary popup / universal panel, multi-language collection).
 - Scheduler: select component, stimulus, template, present review, update FSRS + progress.
 - Review UI: Front, Back, input field, Forget/Remember, progress bars.
 - User controls: Study Again, Reset Component (confirm), Reset Card (confirm).
@@ -1331,20 +1331,20 @@ Spelling ━━━━━░░░  61%
 
 1. Trong dictionary popup / universal panel, user chọn destination **Anki** hoặc **Ocean SRS** (dropdown hoặc toggle).
 2. Nếu chọn **Ocean SRS**:
-   - Gửi message `SRS_GET_DECKS_NOTETYPES` với `targetLanguage`.
-   - Nhận về list collections + decks + notetypes; chọn default nếu user chưa chỉ định.
-   - Hiển thị quick-add panel:
-     - **Collection/Deck/Notetype selectors**.
-     - **Toggle** "Use dictionary data" / "Fill manually".
-     - **Field preview** (read-only khi use dictionary):
-       - target, sentence, definition, IPA, word audio, sentence audio, image, translation.
-     - **Edit fields** (khi fill manually hoặc override dictionary data).
-     - Nút "Add to SRS".
-3. Khi click "Add to SRS":
+   - Hệ thống gửi message `SRS_GET_DECKS_NOTETYPES` với `targetLanguage` để lấy list collections + decks + notetypes.
+   - Mở **Card Creator** (reuse `src/features/cardCreator`) với destination `ocean-srs`.
+   - Card Creator pre-fill fields từ dictionary lookup (target, sentence, definition, IPA, audio, image, translation) theo mapping `mapDictionaryToSrsFields`.
+   - UI hiển thị:
+     - **Destination selector**: Anki / Ocean SRS.
+     - **Language / Collection / Deck / Notetype selectors**.
+     - **Field editor** theo notetype đã chọn; user có thể chỉnh sửa/override từng field.
+     - **Media capture/upload**: reuse media handling của Card Creator.
+     - Nút "Add".
+3. Khi click "Add" trong Card Creator:
    - Validate targetWord, deck, notetype.
-   - Resolve audio/image URLs thành `ArrayBuffer` cache trước khi tạo Note (hoặc mark as pending download; SRS tự resolve lần đầu review nếu thiếu).
-   - Gọi `addNoteAndCard`.
-   - Toast success / error.
+   - Resolve audio/image URLs thành `ArrayBuffer` cache trước khi tạo Note (hoặc mark as pending download).
+   - Gửi `SRS_ADD_NOTE` message từ Card Creator.
+   - Hệ thống tạo Note + Card rồi toast success / error.
 
 ### Empty / loading / error / first-run
 
@@ -1510,7 +1510,7 @@ Spelling ━━━━━░░░  61%
 1. **S0 — T0 spike**: `ts-fsrs` bundle + API mapping.
 2. **S1 — Domain model + storage**: types, baseRepository, IndexedDB schema, settings v26→v27.
 3. **S2 — Notetype/Deck CRUD + default seed**: notetype manager, default notetype (8 templates), deck/subdeck manager.
-4. **S3 — Note/Card creation**: create note manually OR add from dictionary popup/universal panel, deck/notetype selector, generate 3 components, default study config.
+4. **S3 — Note/Card creation**: create note manually OR add from dictionary popup/universal panel **qua Card Creator reuse**, deck/notetype selector, generate 3 components, default study config.
 5. **S4 — Progress & learning path**: progress formula, `isLocked`, `recalcCard`, explore mode, maintenance.
 6. **S5 — Scheduler**: `by_deck_due`, `resolvePool`, `pickHighestPriority`, deck scoping, batch fetch.
 7. **S6 — Review engine + FSRS integration**: `srsFsrsAdapter`, `applyReview`, `reset*`, `studyAgain`, reschedule.
@@ -1642,30 +1642,24 @@ Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollectio
 5. Linh chọn "Ocean SRS".
 6. Hệ thống xác định target language:
    - Từ lookup result: `targetLanguage = result.langCode` (ví dụ 'en').
-   - Nếu `targetLanguage` khác active SRS language, quick-add panel hiển thị cảnh báo và cho phép Linh:
+   - Nếu `targetLanguage` khác active SRS language, panel hiển thị cảnh báo và cho phép Linh:
      - Thêm vào collection của language này (auto-create nếu chưa có).
      - Chuyển active SRS language sang language này.
      - Chọn collection khác đã có.
-7. Hệ thống hiển thị quick-add panel:
-   - **Language / Collection selector**.
-   - **Deck selector** (default deck hoặc chọn deck khác).
-   - **Notetype selector** (default notetype hoặc chọn khác).
-   - Deck selector (default deck hoặc chọn deck khác).
-   - Notetype selector (default notetype hoặc chọn khác).
-   - Preview field values từ dictionary lookup:
-     - target word, sentence, definition, IPA, audio, image, translation.
-   - Toggle/option: "Use dictionary data" vs "Fill manually".
-8. Linh chọn "Use dictionary data".
-   - Các field được pre-fill; Linh có thể chỉnh sửa hoặc thêm example sentence, notes, context.
-9. Hoặc Linh chọn "Fill manually".
-   - Form rỗng; Linh nhập target word, sentence, definition, IPA, upload audio/image.
-10. Linh click "Add to SRS".
-11. Hệ thống validate:
+7. Hệ thống mở **Card Creator** (reuse component `src/features/cardCreator`) ở chế độ **Ocean SRS destination**:
+   - Pre-fill target word, sentence, definition, IPA, audio, image, translation từ dictionary lookup.
+   - **Language / Collection selector** (Ocean SRS collection tương đương deck group).
+   - **Deck selector** (SRS deck).
+   - **Notetype selector** (SRS notetype; default là "Word (default)").
+   - **Field editor**: các field của notetype đã chọn; Linh có thể chỉnh sửa hoặc override dictionary data.
+8. Linh chỉnh sửa nếu cần, click "Add".
+9. Card Creator gửi message `SRS_ADD_NOTE` với payload gồm `targetLanguage`, `collectionId`/`deckId`/`notetypeId`, và fields.
+10. Hệ thống validate:
     - targetWord không rỗng.
     - deck + notetype hợp lệ.
     - chưa có card nào khác cho note này trong deck đích.
-12. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
-13. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
+11. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
+12. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
 14. Panel đóng hoặc reset, Linh thấy toast "Đã thêm vào Ocean SRS".
 ```
 
