@@ -60,6 +60,8 @@ export interface MountPopupDictionaryOptions {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user triggers a quick add. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user adds the word to Ocean SRS. */
+  readonly onAddToSrs?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles a word's status inside the popup. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate. */
@@ -153,6 +155,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onSizeChange: current.onSizeChange,
     onSendToCard: current.onSendToCard,
     onQuickAdd: current.onQuickAdd,
+    onAddToSrs: current.onAddToSrs,
     onStatusChange: current.onStatusChange,
     onCandidateChange: current.onCandidateChange,
     defaultActiveTab: current.defaultActiveTab,

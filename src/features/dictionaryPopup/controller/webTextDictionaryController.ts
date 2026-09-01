@@ -53,6 +53,7 @@ import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
+import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
@@ -782,6 +783,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onSizeChange: handlePopupSizeChange,
         onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
+        onAddToSrs: (prefill) => { void handlePopupAddToSrs(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         dismissOnOutsideClick: !isSheetMode(),
@@ -924,6 +926,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onSizeChange: handlePopupSizeChange,
         onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
+        onAddToSrs: (prefill) => { void handlePopupAddToSrs(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         dismissOnOutsideClick: !isSheetMode(),
@@ -1457,8 +1460,18 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     } else {
       showToast(`Quick Add failed: ${result.error}`, deps.container, { variant: 'error' });
     }
-    if (warnings.length > 0) {
-      showToast(`Skipped: ${warnings.join(', ')}`, deps.container, { variant: 'warning' });
+  }
+
+  async function handlePopupAddToSrs(prefill: PopupCardCreatorPrefill): Promise<void> {
+    closePopup();
+    showToast('Adding to Ocean SRS…', deps.container, { variant: 'info' });
+    try {
+      await addToOceanSrs(prefill);
+      showToast('Added to Ocean SRS.', deps.container, { variant: 'success' });
+      await openSrsStudyPage();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(`Add to Ocean SRS failed: ${msg}`, deps.container, { variant: 'error' });
     }
   }
 
