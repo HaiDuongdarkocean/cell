@@ -1,4 +1,4 @@
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
 
@@ -20,7 +20,7 @@ function loadMultiwordTerms(): string[] {
   )];
 }
 
-describe('phraseTemplateParser Cambridge fixture', () => {
+(existsSync(fixturePath) ? describe : describe.skip)('phraseTemplateParser Cambridge fixture', () => {
   it('compiles every normalized multiword term without throwing', () => {
     const terms = loadMultiwordTerms();
     const results = terms.map((term) => parsePhraseTemplate(term));

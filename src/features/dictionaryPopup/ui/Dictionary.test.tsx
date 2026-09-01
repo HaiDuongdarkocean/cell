@@ -47,7 +47,9 @@ describe('Dictionary', () => {
     expect(screen.queryByTestId('popup-dictionary-header')).not.toBeInTheDocument();
     expect(screen.queryByTestId('popup-dictionary-content')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-resize')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-sheet-handle')).toBeInTheDocument();
+    // Sheet handle only renders in sheet mode (via shared Sheet atom); in
+    // popup mode (isSheet=false from the mock) it is absent.
+    expect(screen.queryByTestId('popup-dictionary-sheet-handle')).not.toBeInTheDocument();
 
     const panel = screen.getByTestId('dictionary-panel');
     expect(panel).toBeInTheDocument();

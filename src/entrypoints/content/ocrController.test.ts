@@ -6,6 +6,17 @@ import type { ImageSource } from '@/features/ocr/engine/types';
 
 const sendMessageMock = jest.fn((_msg?: unknown) => Promise.resolve(undefined as unknown));
 
+/** Mirror the base64 serialization OcrController uses for image data. */
+function imageDataToBase64(data: Uint8ClampedArray | number[]): string {
+  const bytes = data instanceof Uint8ClampedArray ? new Uint8Array(data.buffer) : new Uint8Array(data);
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK) as unknown as number[]);
+  }
+  return btoa(binary);
+}
+
 beforeAll(() => {
   const g = global as unknown as { __cellSendMessage?: unknown };
   g.__cellSendMessage = sendMessageMock;
@@ -74,11 +85,11 @@ describe('OcrController (T7)', () => {
     const results = await ctrl.recognize(image, 0.5);
     expect(results).toHaveLength(1);
     expect(results[0]!.items[0]!.text).toBe('test');
-    // chrome.runtime.sendMessage uses JSON serialization — Uint8ClampedArray
-    // becomes {}, so OcrController converts to a regular Array before sending.
+    // chrome.runtime.sendMessage uses JSON serialization — OcrController converts
+    // the typed array to a base64 string before sending.
     expect(sendMessageMock).toHaveBeenLastCalledWith({
       type: 'OCR_RECOGNIZE',
-      payload: { image: { data: Array.from(image.data), width: image.width, height: image.height }, minScore: 0.5 },
+      payload: { image: { data: imageDataToBase64(image.data), width: image.width, height: image.height }, minScore: 0.5 },
     });
   });
 
@@ -143,7 +154,7 @@ describe('OcrController engineKey routing (Task 5)', () => {
     await ctrl.recognize(image, 0.5, 'eslav');
     expect(sendMessageMock).toHaveBeenLastCalledWith({
       type: 'OCR_RECOGNIZE',
-      payload: { image: { data: Array.from(image.data), width: 2, height: 2 }, minScore: 0.5, engineKey: 'eslav' },
+      payload: { image: { data: imageDataToBase64(image.data), width: 2, height: 2 }, minScore: 0.5, engineKey: 'eslav' },
     });
   });
 

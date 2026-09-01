@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { formatStepSummary, formatModeDescription } from './formatStepSummary';
-import type { StudyStep } from '@/entities/studyMode';
+import type { StudyMode, StudyStep } from '@/entities/studyMode';
 
 const step: StudyStep = {
   subtitle: 'target',
@@ -23,7 +23,7 @@ describe('formatStepSummary', () => {
 
 describe('formatModeDescription', () => {
   it('joins step summaries with arrows', () => {
-    const mode = {
+    const mode: StudyMode = {
       id: 'x',
       type: 'custom' as const,
       icon: 'play' as const,

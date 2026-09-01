@@ -49,7 +49,7 @@ describe('playPhoneme', () => {
     expect(source.start).toHaveBeenCalledWith(0);
 
     // Simulate playback ended.
-    if (source.onended) source.onended();
+    if (source.onended) source.onended({} as Event);
     await expect(promise).resolves.toBeUndefined();
   });
 });

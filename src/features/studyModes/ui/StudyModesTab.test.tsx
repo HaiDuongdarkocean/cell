@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { StudyModesTab } from './StudyModesTab';
 import { useStudyModeStore } from '../studyModeStore';

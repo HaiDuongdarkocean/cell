@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import {
@@ -19,11 +19,13 @@ describe('DEBUG IDB roundtrip full Cambridge fixture', () => {
     await clearAllStores('en');
   });
 
-  it('builds, stores, retrieves and deserializes without throwing', async () => {
-    const fixturePath = path.resolve(
-      __dirname,
-      '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
-    );
+  const fixturePath = path.resolve(
+    __dirname,
+    '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  );
+  const FIXTURE_EXISTS = existsSync(fixturePath);
+
+  (FIXTURE_EXISTS ? it : it.skip)('builds, stores, retrieves and deserializes without throwing', async () => {
     const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
     const seen = new Set<string>();
     const inputs: PhraseIndexInput[] = [];

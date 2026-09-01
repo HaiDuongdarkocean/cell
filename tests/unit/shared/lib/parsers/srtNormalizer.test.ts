@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 
@@ -261,8 +261,11 @@ describe('normalizeSrt', () => {
     expect(normalizeSrt('Just some random text\nwithout any timing')).toBe('');
   });
 
-  it('converts the real English.eng VTT fixture to clean SRT', () => {
-    const vttPath = join(__dirname, '..', '..', '..', '..', 'data-test', 'English.eng (1).vtt');
+  const vttFixturePath = join(__dirname, '..', '..', '..', '..', 'data-test', 'English.eng (1).vtt');
+  const VTT_FIXTURE_EXISTS = existsSync(vttFixturePath);
+
+  (VTT_FIXTURE_EXISTS ? it : it.skip)('converts the real English.eng VTT fixture to clean SRT', () => {
+    const vttPath = vttFixturePath;
     const vtt = readFileSync(vttPath, 'utf-8');
 
     const result = normalizeSrt(vtt);

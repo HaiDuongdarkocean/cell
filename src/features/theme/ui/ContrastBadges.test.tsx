@@ -10,7 +10,7 @@ describe('ContrastBadges', () => {
     expect(screen.getByTestId('contrast-badges')).toBeInTheDocument();
     expect(screen.getByTestId('contrast-badge-Text / Canvas')).toBeInTheDocument();
     expect(screen.getByTestId('contrast-badge-Text Secondary / Canvas')).toBeInTheDocument();
-    expect(screen.getByTestId('contrast-badge-White / Primary')).toBeInTheDocument();
+    expect(screen.getByTestId('contrast-badge-Primary Foreground / Primary')).toBeInTheDocument();
   });
 
   it('badge title shows ratio + level', () => {

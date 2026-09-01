@@ -12,7 +12,7 @@ import { RegionSelector, defaultBottomRegion, type RegionSelectorMode } from '@/
 import { OcrPipelineState, runPipelineStep, DEFAULT_PIPELINE_CONFIG, type OcrPipelineConfig } from '@/features/ocr/pipeline/ocrPipeline';
 import { captureFrame, scheduleNextFrame } from '@/features/ocr/pipeline/frameCapture';
 import { computeSubtitleRegion } from '@/features/ocr/pipeline/cropRegion';
-import { computeSplitHalves, type SplitHalf } from '@/features/ocr/pipeline/splitRegion';
+import { computeSplitHalves, type SplitHalf, SPLIT_DEFAULT_REGION_PCT } from '@/features/ocr/pipeline/splitRegion';
 import { ocrTextToCues, type OcrDetection } from '@/features/ocr/pipeline/ocrToCues';
 import type { SrtCue } from '@/entities/media/types';
 import { resolveOcrLang, ENGINE_KEY_FOR_LANG, type ResolvedOcrLang } from '@/features/ocr/engine/paddleOcrLanguages';
@@ -59,8 +59,11 @@ export function planSplitEngines(targetLang: ResolvedOcrLang, nativeLang: Resolv
   return { targetKey, nativeKey: dualEngine ? nativeKey : targetKey, dualEngine };
 }
 
-/** Region height % — same regardless of split mode (user controls via slider). */
+/** Region height % — bump to 40% on first split enable if the user hasn't set a custom region. */
 export function effectiveSplitRegionPct(originState: OcrOriginState): number {
+  if (originState.splitEnabled && !originState.customRegion) {
+    return SPLIT_DEFAULT_REGION_PCT;
+  }
   return originState.subtitleRegionPct;
 }
 

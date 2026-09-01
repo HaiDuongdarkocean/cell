@@ -102,7 +102,7 @@ export function markKeyStatus(
     return { ...key, status, rateLimitedUntil: Date.now() + retryAfterMs };
   }
   if (status === 'active') {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { rateLimitedUntil: _omit, ...rest } = key;
     return { ...rest, status };
   }

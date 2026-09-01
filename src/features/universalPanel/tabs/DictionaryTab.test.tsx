@@ -137,16 +137,22 @@ describe('DictionaryTab', () => {
   });
 
   it('opens translate tab and translates the search term', async () => {
-    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
+    mockSendMessage.mockResolvedValue({ success: true, data: [makeResult('hello')] });
     mockTranslateSentence.mockResolvedValueOnce('xin chào');
 
     render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" initialTerm="hello" />);
 
     await waitFor(() => expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello'));
 
-    fireEvent.click(screen.getByTestId('dictionary-tab-translate'));
-    fireEvent.click(screen.getByTestId('dictionary-translate-panel').querySelector('button')!);
+    // Wait for the toolbar reset effect to settle (fires on candidate mount
+    // and resets activeTab). Using waitFor with a microtask delay ensures
+    // the effect has flushed before we click.
+    await waitFor(() => expect(screen.getByTestId('dictionary-toolbar')).toBeInTheDocument());
 
+    fireEvent.click(screen.getByTestId('dictionary-tab-translate'));
+
+    // Auto-translate fires on TranslatePanel mount (useEffect) — no manual
+    // button click needed. Wait for the translation to appear.
     await waitFor(() => expect(screen.getByTestId('dictionary-translate-panel')).toHaveTextContent('xin chào'));
   });
 });

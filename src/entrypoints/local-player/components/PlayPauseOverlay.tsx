@@ -1,5 +1,5 @@
 import { Icon } from '@/shared/icons/Icon';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './PlayPauseOverlay.module.css';
 
 export interface PlayPauseOverlayProps {

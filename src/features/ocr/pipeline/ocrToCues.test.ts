@@ -56,7 +56,8 @@ describe('ocrTextToCues — 10 subtitle dedup scenarios', () => {
     ]);
     expect(cues).toHaveLength(2);
     expect(cues[0]).toMatchObject({ text: 'a', start: 1000 });
-    expect(cues[1]).toMatchObject({ text: 'b', start: 1660 });
+    // Backfill: prevEnd = 1330+500 = 1830 → start = 1830
+    expect(cues[1]).toMatchObject({ text: 'b', start: 1830 });
   });
 
   // 6. Same text beyond merge gap, NOTHING between → 1 cue (post-dedup merges
@@ -218,8 +219,10 @@ describe('ocrTextToCues — 10 subtitle dedup scenarios', () => {
       expect(normalizeText('Hello.')).toBe('hello');
       expect(normalizeText('Hello?')).toBe('hello');
     });
-    it('preserves internal punctuation', () => {
-      expect(normalizeText("don't worry")).toBe("don't worry");
+    it('strips apostrophes + diacritics (OCR misread tolerance)', () => {
+      expect(normalizeText("don't worry")).toBe('dont worry');
+      expect(normalizeText('Có phải')).toBe('co phai');
+      expect(normalizeText("I'll be there")).toBe('ill be there');
     });
     it('strips trailing single-char OCR garbage (digits/letters)', () => {
       expect(normalizeText('emotions 4')).toBe('emotions');
@@ -229,13 +232,15 @@ describe('ocrTextToCues — 10 subtitle dedup scenarios', () => {
   });
 
   // ─── Legacy tests (backward compat) ───
-  it('text change closes cue and opens new one; timeline continuity extends cue[0].end to cue[1].start', () => {
+  it('text change closes cue and opens new one; prevEnd backfill + timeline continuity', () => {
     const cues = ocrTextToCues([
       { text: 'a', timeMs: 1000 }, { text: 'b', timeMs: 2000 },
     ]);
     expect(cues).toHaveLength(2);
-    expect(cues[0]!.end).toBe(2000);
-    expect(cues[1]!.start).toBe(2000);
+    // Backfill: prevEnd = 1000+500 = 1500 → start = 1500
+    // Timeline continuity: cue[0].end = cue[1].start = 1500
+    expect(cues[0]!.end).toBe(1500);
+    expect(cues[1]!.start).toBe(1500);
   });
 
   it('empty detections → empty cues; single detection → single cue', () => {

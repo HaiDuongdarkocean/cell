@@ -33,11 +33,15 @@ class MockZipEntry {
   }
 
   async blob(type?: string): Promise<Blob> {
-    return new Blob([this.data], { type });
+    const buffer = await this.arrayBuffer();
+    return new Blob([buffer], { type });
   }
 
   async arrayBuffer(): Promise<ArrayBuffer> {
-    return this.data.buffer.slice(this.data.byteOffset, this.data.byteOffset + this.data.byteLength);
+    return (this.data.buffer as ArrayBuffer).slice(
+      this.data.byteOffset,
+      this.data.byteOffset + this.data.byteLength,
+    );
   }
 
   async text(): Promise<string> {

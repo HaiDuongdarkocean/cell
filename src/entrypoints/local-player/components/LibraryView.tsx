@@ -63,7 +63,7 @@ export function LibraryView({
   currentSubtitles,
   onVideoDelete,
   onClearAll,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   onSubtitleSelect: _onSubtitleSelect,
 }: LibraryViewProps): React.JSX.Element {
   const subtitleFilenames = useMemo(

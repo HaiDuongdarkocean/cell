@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
@@ -49,9 +49,10 @@ describe('SubtitleManagerPanel', () => {
 
     expect(screen.getByText('Subtitle Manager')).toBeInTheDocument();
     expect(screen.getByText('Target')).toBeInTheDocument();
-    expect(screen.getByText('2 subtitles')).toBeInTheDocument();
+    // Counts are rendered as badge numbers next to tab labels
+    expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('Native')).toBeInTheDocument();
-    expect(screen.getByText('1 subtitle')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
   });
 
   it('calls onSelect when an item is clicked', () => {
@@ -92,6 +93,8 @@ describe('SubtitleManagerPanel', () => {
     );
 
     expect(screen.getByTestId('manager-item-target-0')).toBeInTheDocument();
+    // Tabs only renders the active tab's content — switch to Native to verify.
+    fireEvent.click(screen.getByRole('tab', { name: /Native/ }));
     expect(screen.getByTestId('manager-item-native-0')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Target · English/ })).not.toBeInTheDocument();
   });
@@ -162,7 +165,7 @@ describe('SubtitleManagerPanel', () => {
     expect(onOffsetChange).toHaveBeenCalledWith('target', 1500);
   });
 
-  it('calls onOffsetChange when stepper + button is clicked', () => {
+  it('calls onOffsetChange when stepper + button is clicked', async () => {
     const onOffsetChange = jest.fn();
     render(
       <SubtitleManagerPanel
@@ -181,10 +184,11 @@ describe('SubtitleManagerPanel', () => {
     );
 
     fireEvent.click(screen.getByTestId('manager-offset-inc-target'));
-    expect(onOffsetChange).toHaveBeenCalledWith('target', 500);
+    // scheduleSave debounces commitOffset with 800ms delay
+    await waitFor(() => expect(onOffsetChange).toHaveBeenCalledWith('target', 500));
   });
 
-  it('calls onOffsetChange when stepper − button is clicked', () => {
+  it('calls onOffsetChange when stepper − button is clicked', async () => {
     const onOffsetChange = jest.fn();
     render(
       <SubtitleManagerPanel
@@ -203,10 +207,11 @@ describe('SubtitleManagerPanel', () => {
     );
 
     fireEvent.click(screen.getByTestId('manager-offset-dec-target'));
-    expect(onOffsetChange).toHaveBeenCalledWith('target', -500);
+    // scheduleSave debounces commitOffset with 800ms delay
+    await waitFor(() => expect(onOffsetChange).toHaveBeenCalledWith('target', -500));
   });
 
-  it('calls onOffsetChange with 0 when Reset is clicked', () => {
+  it('calls onOffsetChange with 0 when Reset is clicked', async () => {
     const onOffsetChange = jest.fn();
     render(
       <SubtitleManagerPanel
@@ -224,11 +229,11 @@ describe('SubtitleManagerPanel', () => {
       />,
     );
 
-    // First bump to non-zero
+    // First bump to non-zero (debounced)
     fireEvent.click(screen.getByTestId('manager-offset-inc-target'));
-    expect(onOffsetChange).toHaveBeenCalledWith('target', 500);
+    await waitFor(() => expect(onOffsetChange).toHaveBeenCalledWith('target', 500));
 
-    // Then reset
+    // Then reset (immediate, no debounce)
     fireEvent.click(screen.getByTestId('manager-offset-reset-target'));
     expect(onOffsetChange).toHaveBeenLastCalledWith('target', 0);
   });
@@ -426,7 +431,7 @@ describe('SubtitleManagerPanel', () => {
       />,
     );
 
-    expect(screen.getByTestId('manager-hide-both')).toHaveTextContent('Show both');
+    expect(screen.getByTestId('manager-hide-both')).toHaveTextContent('Show');
   });
 
   it('calls onGenerateNative when generate button is clicked', () => {
@@ -468,6 +473,8 @@ describe('SubtitleManagerPanel', () => {
     );
 
     expect(screen.getByTestId('manager-off-target')).toBeInTheDocument();
+    // Tabs only renders the active tab's content — switch to Native to verify.
+    fireEvent.click(screen.getByRole('tab', { name: /Native/ }));
     expect(screen.getByTestId('manager-off-native')).toBeInTheDocument();
   });
 
@@ -510,6 +517,8 @@ describe('SubtitleManagerPanel', () => {
 
     const offTarget = screen.getByTestId('manager-off-target');
     expect(offTarget).toHaveAttribute('aria-selected', 'true');
+    // Tabs only renders the active tab's content — switch to Native to verify.
+    fireEvent.click(screen.getByRole('tab', { name: /Native/ }));
     const offNative = screen.getByTestId('manager-off-native');
     expect(offNative).toHaveAttribute('aria-selected', 'true');
   });
@@ -586,7 +595,7 @@ describe('SubtitleManagerPanel', () => {
     expect(screen.getByTestId('nav-cluster-settings-panel')).toBeInTheDocument();
   });
 
-  it('switches back to tracks view when Back to subtitles is clicked', () => {
+  it('switches back to tracks view when Back to subtitles is clicked', async () => {
     render(
       <SubtitleManagerPanel
         targetItems={targetItems}
@@ -606,7 +615,9 @@ describe('SubtitleManagerPanel', () => {
 
     fireEvent.click(screen.getByTestId('manager-customize-appearance'));
     fireEvent.click(screen.getByTestId('manager-back-to-subtitles'));
-    expect(screen.queryByTestId('manager-back-to-subtitles')).not.toBeInTheDocument();
+    // The header transition keeps the exiting view for 380ms — wait for it
+    // to be removed before asserting the back button is gone.
+    await waitFor(() => expect(screen.queryByTestId('manager-back-to-subtitles')).not.toBeInTheDocument());
     expect(screen.getByTestId('manager-customize-appearance')).toBeInTheDocument();
   });
 

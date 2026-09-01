@@ -1,6 +1,9 @@
-import { PronunciationAudioOrchestrator } from './pronunciationAudioOrchestrator';
+import {
+  PronunciationAudioOrchestrator,
+  type PronunciationAudioProvider,
+} from './pronunciationAudioOrchestrator';
 import type { AudioItem } from '@/features/dictionaryPopup/types';
-import type { PronunciationSettings } from '../types';
+import type { PronunciationSettings } from '@/entities/settings/types';
 
 class MockProvider {
   constructor(private readonly items: AudioItem[]) {}
@@ -45,7 +48,7 @@ describe('PronunciationAudioOrchestrator', () => {
 
   it('marks the first item from the first non-empty provider as defaultSelected', async () => {
     const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['localFile', 'native']));
-    (orchestrator as unknown as { providers: { resolve: () => Promise<AudioItem[]> }[] }).providers = [
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
       new MockProvider([]),
       new MockProvider([makeItem('c1', 'community')]),
     ];
@@ -58,7 +61,7 @@ describe('PronunciationAudioOrchestrator', () => {
 
   it('respects the fallback engine order', async () => {
     const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['native', 'localFile']));
-    (orchestrator as unknown as { providers: { resolve: () => Promise<AudioItem[]> }[] }).providers = [
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
       new MockProvider([makeItem('n1', 'community'), makeItem('n2', 'community')]),
       new MockProvider([makeItem('l1', 'local')]),
     ];
@@ -74,7 +77,7 @@ describe('PronunciationAudioOrchestrator', () => {
     const orchestrator = new PronunciationAudioOrchestrator(
       makeSettings(['localFile', 'native', 'supertonic', 'browserTts', 'espeak']),
     );
-    (orchestrator as unknown as { providers: { resolve: () => Promise<AudioItem[]> }[] }).providers = [
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
       new MockProvider([makeItem('l1', 'local')]),
     ];
 

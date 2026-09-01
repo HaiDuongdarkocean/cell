@@ -86,7 +86,8 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   mount.root.render(
     createElement(
       ShadowThemeProvider,
-      { container: mount.rootEl, children: badgeElement(initialPreset) },
+      { container: mount.rootEl },
+      badgeElement(initialPreset),
     ),
   );
 

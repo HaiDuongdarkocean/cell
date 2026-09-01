@@ -31,7 +31,7 @@ function murmurMix(e: number): number {
 }
 
 function rotateLeft(e: number, t: number): number {
-  let n = e >>> 0;
+  const n = e >>> 0;
   const shift = t & 31;
   if (shift === 0) return n >>> 0;
   return ((n << shift) | (n >>> (32 - shift))) >>> 0;
@@ -156,7 +156,7 @@ export function decryptVideasyResponse(
 
   try {
     return JSON.parse(plain) as VideasyListing;
-  } catch (err) {
+  } catch {
     throw new Error('Videasy decrypt failed: payload is not valid JSON');
   }
 }

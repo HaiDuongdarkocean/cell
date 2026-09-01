@@ -21,7 +21,7 @@ export function AntonymChip({
   onLookup,
   onClick,
   size = 'md',
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   color: _color,
   ...rest
 }: AntonymChipProps): React.JSX.Element {
