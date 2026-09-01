@@ -7,9 +7,10 @@ configure({ testIdAttribute: 'data-cell-id' });
 
 // Polyfill structuredClone for jsdom (Node has it, jsdom env doesn't expose).
 // Used by fake-indexeddb for cloning values during IDB operations.
+import { deserialize, serialize } from 'node:v8';
 if (typeof globalThis.structuredClone !== 'function') {
   globalThis.structuredClone = (val: unknown): unknown => {
-    return JSON.parse(JSON.stringify(val));
+    return deserialize(serialize(val));
   };
 }
 
