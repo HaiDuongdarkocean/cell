@@ -230,7 +230,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     setStatus(newStatus);
     setCurrentResult({ ...result, status: newStatus });
     void sendMessage({ type: MESSAGE_TYPES.WORD_STATUS_SET, payload: { term: result.term, langCode: result.langCode, status: newStatus } });
-  }, [currentResult, status, langCode]);
+  }, [currentResult, status]);
 
   const toggleDefinition = useCallback((id: string, selected: boolean): void => {
     setDefinitionSelection((prev) => new Map(prev).set(id, selected));

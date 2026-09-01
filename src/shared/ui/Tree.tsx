@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './Tree.module.css';
@@ -129,7 +129,7 @@ export function Tree({
   className,
   ariaLabel,
 }: TreeProps): React.JSX.Element {
-  const expandedSet = new Set(expandedIds);
+  const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
 
   const handleToggle = useCallback(
     (id: string): void => {

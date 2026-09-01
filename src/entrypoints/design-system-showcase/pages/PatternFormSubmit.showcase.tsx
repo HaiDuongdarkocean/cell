@@ -79,7 +79,7 @@ export function Showcase(): ReactElement {
         }
       }, SUBMIT_DELAY_MS);
     },
-    [name, language, validate, focusFirstInvalid],
+    [name, validate, focusFirstInvalid],
   );
 
   const handleDeleteConfirm = useCallback((): void => {

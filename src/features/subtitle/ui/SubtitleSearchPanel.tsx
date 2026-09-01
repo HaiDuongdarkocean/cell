@@ -199,7 +199,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         setLoading(false);
       }
     }
-  }, []);
+  }, [mockResults]);
 
   // Cleanup abort controller on unmount.
   useEffect(() => {
