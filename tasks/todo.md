@@ -34,34 +34,34 @@
   - [x] Write `src/features/pronunciation/services/pronunciationEngine.test.ts`.
   - [x] Verify PronunciationResult shape.
 
-- [ ] **Task 6: Settings schema migration**
-  - [ ] Add `PronunciationSettings` + `AudioEngineKind` to `src/entities/settings/types.ts`.
-  - [ ] Add defaults to `src/shared/config/config.ts`.
-  - [ ] Bump `CURRENT_SCHEMA_VERSION` 24 → 25 + migration in `src/shared/lib/storage/settingsStore.ts`.
-  - [ ] Update tests.
-  - [ ] Verify migration.
+- [x] **Task 6: Settings schema migration**
+  - [x] Add `PronunciationSettings` + `AudioEngineKind` to `src/entities/settings/types.ts`.
+  - [x] Add defaults to `src/shared/config/config.ts`.
+  - [x] Bump `CURRENT_SCHEMA_VERSION` 24 → 26 + migration in `src/shared/lib/storage/settingsStore.ts`.
+  - [x] Update tests.
+  - [x] Verify migration.
 
 ### Checkpoint 2
-- [ ] Phoneme engine creates PronunciationResult from text.
-- [ ] Settings migration tests pass.
+- [x] Phoneme engine creates PronunciationResult from text.
+- [x] Settings migration tests pass.
 
 ## Phase 3: Audio Source Abstraction
 
-- [ ] **Task 7: Refactor TtsEngine / audio source chain**
-  - [ ] Define `TtsEngine` interface with `PronunciationAudio`.
-  - [ ] Implement engines: `NativeAudioEngine`, `SupertonicAudioEngine`, `BrowserTtsEngine`, `EspeakAudioEngine`.
-  - [ ] Update `ttsEngineService.ts`.
-  - [ ] Verify no TTS regression.
+- [x] **Task 7: Refactor TtsEngine / audio source chain**
+  - [x] Define `PronunciationAudioOrchestrator` with provider chain.
+  - [x] Implement providers: `LocalAudioProvider`, `CommunityAudioProvider`, `TtsAudioProvider`, `SupertonicAudioProvider`, `EspeakAudioProvider`.
+  - [x] Support `audioBytes` (local audio) in AudioPanel/PronunciationPanel.
+  - [x] Verify no TTS regression.
 
-- [ ] **Task 8: eSpeak TTS audio runner (offscreen)**
-  - [ ] Create `src/entrypoints/offscreen/pronunciationRunner.ts`.
-  - [ ] Add background handler `PRONUNCIATION_ESPEAK_TTS`.
-  - [ ] Download eSpeak TTS data on-demand.
-  - [ ] Verify eSpeak audio synthesis in offscreen.
+- [x] **Task 8: eSpeak TTS audio runner (offscreen)**
+  - [x] Create `src/entrypoints/offscreen/pronunciationRunner.ts`.
+  - [x] Add background handler `PRONUNCIATION_ESPEAK_TTS`.
+  - [x] Load eSpeak TTS data on-demand from jsDelivr CDN.
+  - [x] Encode eSpeak samples to WAV in offscreen document.
 
 ### Checkpoint 3
-- [ ] Word/sentence audio plays through chain.
-- [ ] eSpeak audio source works when selected.
+- [x] Word/sentence audio plays through chain.
+- [x] eSpeak audio source works when selected.
 
 ## Phase 4: UI
 
@@ -79,10 +79,10 @@
   - [x] Wire click in `PronunciationPanel`.
   - [x] Edge case: no audio → only highlight.
 
-- [ ] **Task 12: Pronunciation settings UI**
-  - [ ] Create `src/features/settings/ui/PronunciationSettingsPanel.tsx`.
-  - [ ] Allow reorder fallback engines + toggle eSpeak download.
-  - [ ] Wire into options page.
+- [x] **Task 12: Pronunciation settings UI**
+  - [x] Create `src/features/settings/ui/PronunciationSettingsPanel.tsx`.
+  - [x] Allow reorder fallback engines + toggle eSpeak download.
+  - [x] Wire into options page.
 
 ### Checkpoint 4
 - [ ] Phoneme click play/highlight works.
@@ -100,7 +100,6 @@
   - [x] `npm run test:unit`
   - [x] `npm run build`
   - [x] `design-system-guardian` if UI touched
-  - [ ] Update `docs/2-architechture-system.md` if needed
 
 ### Checkpoint 5
 - [ ] All gates pass.
