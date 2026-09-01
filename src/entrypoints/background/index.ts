@@ -83,6 +83,7 @@ import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
 import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
 import { registerLocalPlayerHandlers } from './handlers/localPlayer';
+import { registerSrsHandlers } from './handlers/srs';
 import { registerOcrHandlers } from './handlers/ocr';
 import { registerReaderHandlers } from './handlers/reader';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
@@ -280,6 +281,7 @@ export class BackgroundService implements BackgroundContext {
     registerScreenshotHandlers(this);
     registerSubtitleDiscoveryHandlers(this);
     registerLocalPlayerHandlers(this);
+    registerSrsHandlers(this);
     registerReaderHandlers(this);
     registerOcrHandlers(this);
   }
