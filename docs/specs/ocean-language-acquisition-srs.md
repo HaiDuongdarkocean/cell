@@ -12,7 +12,7 @@
 2. **FSRS engine** sử dụng `ts-fsrs` v5.x như scheduler boundary, trừ khi T0 spike cho thấy bundle/compat không ổn. User judgment là binary (Forget/Remember); adapter map sang `Rating.Again` / `Rating.Good`.
 3. **Audio stimulus** tái dùng Ocean Pronunciation Engine (`docs/specs/ocean-pronunciation-engine.md`) và TTS fallback chain (`fnc_tts.md`); SRS không tự tổng hợp audio.
 4. **Storage** cho notes/cards/reviews ở IndexedDB `cell-srs-{hash}`, copy pattern `baseRepository` từ `src/features/dictionary/repositories/baseRepository.ts`. Settings/StudyConfig ở `chrome.storage.local` qua `settingsStore`.
-5. **Card source V1**: Notes/Learning Objects được tạo thủ công trong SRS page. Import từ dictionary popup / reader là Slice 11 (post-MVP core V1).
+5. **Card source V1**: Notes/Learning Objects được tạo qua universal dictionary panel / site dictionary panel (reuse UI sẵn có), có thể chỉnh sửa thủ công trước khi lưu. Import nhanh từ reader / video là Slice 11 (post-MVP core V1).
 6. **Spelling recall** là exact match với normalization tối thiểu (lowercase, trim, collapse whitespace, strip leading/trailing punctuation). V1 không cho partial credit.
 7. **V1 dùng entrypoint mới** `src/entrypoints/srs-study/`, đăng ký trong `vite.config.ts` `rollupOptions.input` và `manifest.json` `web_accessible_resources`.
 8. **Ocean SRS cùng tồn tại với Card Creator / AnkiConnect**. `DictionaryPopupSettings.srsDestination` mở rộng thành `'anki' | 'ocean-srs'`, nhưng việc tích hợp export thực tế là Slice 11.
@@ -89,7 +89,7 @@ User mở Ocean SRS, review một từ, thấy Front stimulus (image/audio/sente
 - Binary Forget/Remember judgment.
 - Notetype / Field / Front template / Back template CRUD.
 - Deck / Subdeck CRUD; Collection hierarchy.
-- Note / Learning Object / Card creation (manual V1).
+- Note / Learning Object / Card creation (manual V1, reuse universal dictionary panel).
 - Scheduler: select component, stimulus, template, present review, update FSRS + progress.
 - Review UI: Front, Back, input field, Forget/Remember, progress bars.
 - User controls: Study Again, Reset Component (confirm), Reset Card (confirm).
@@ -478,7 +478,7 @@ function calculateProgress(
 ```
 
 - **Explore mode**: mỗi lần component được show, `exploreCount += 1`; `progress` không đổi. Không gọi `adapter.next`.
-- **Spelling recall**: `Remember` chỉ enable nếu `typedInput` khớp `note.targetWord` sau normalization. Nếu mismatch hoặc `Forget`, đều penalty.
+- **Spelling recall**: `Remember` chỉ enable khi `typedInput` khớp `note.targetWord` sau normalization; user phải sửa input cho đúng trước khi submit. Khi input đúng, hệ thống tự động submit `Remember` và auto-advance. Nếu user click `Forget`, áp penalty.
 - **Threshold**: default 90; `progress >= threshold` → satisfied.
 
 ### Status transition table
@@ -1145,8 +1145,16 @@ readonly srs: SrsSettingsSlice;
 2. **Reveal**: learner nhấn "Show Back" hoặc Enter trong input.
 3. **Back**: target word, sentence, definition, word audio, sentence audio, image, example sentences, notes, translation/reference.
 4. **Self-assessment**:
-   - Meaning/Sound: 2 nút Forget/Remember.
-   - Spelling: input + auto-check; `Remember` chỉ enable khi input khớp target. `Forget` luôn available.
+   - **Meaning/Sound**: 2 nút Forget/Remember.
+   - **Spelling**: input + live check.
+     - Nút `Remember` bị disabled cho đến khi `typedInput` khớp `targetWord` sau normalization.
+     - Input sai hiển thị phản hồi trực quan (red underline, shake, highlight ký tự sai) và user phải sửa cho đúng.
+     - Khi input khớp, hệ thống tự động:
+       1. Bật `Remember`.
+       2. Sau 1 khoảng delay (configurable, default 800ms) auto-submit `Remember`.
+       3. Reveal Back.
+       4. Auto-advance sang card / component tiếp theo.
+     - Nút `Forget` luôn available: nếu user không biết, click Forget để reveal Back ngay và áp penalty.
 5. **Explore mode**: UI đánh dấu "Explore" nhẹ; progress không thay đổi; learner vẫn chọn Forget/Remember để ghi nhận cảm nhận (nhưng không ảnh hưởng progress/FSRS).
 
 ### Progress UI
@@ -1271,8 +1279,8 @@ Spelling ━━━━━░░░  61%
 | A2 | Sound=40, Meaning=95, Spelling=90 | Scheduler runs | Sound được chọn; Meaning/Spelling lower priority. |
 | A3 | Review type = Meaning | User selects Remember | Meaning progress tăng; Sound/Spelling không đổi. |
 | A4 | Review type = Sound; cannot identify | User selects Forget | Only Sound cập nhật. |
-| A5 | Spelling; input matches target word | User selects Remember | Spelling progress tăng. |
-| A6 | Spelling; input does not match | User selects Forget (or Remember disabled) | Spelling penalty. |
+| A5 | Spelling; input matches target word | System auto-submits Remember after match delay | Spelling progress tăng; auto-advance. |
+| A6 | Spelling; input does not match | User either corrects until match, or selects Forget | If Forget: Spelling penalty; if corrected and auto-submitted: Spelling progress tăng. |
 | A7 | Sound=95; user selects Study Sound Again | Review starts | Immediate Sound review; FSRS `due` không đẩy về phía trước. |
 | A8 | Reset Sound confirmed | Reset applied | Sound về 0; Meaning/Spelling không đổi; `nextDue` recalc. |
 | A9 | Reset Card confirmed | Reset applied | All components về 0; `nextDue` recalc. |
@@ -1429,6 +1437,7 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 
 ```
 1. Linh mở extension popup → chọn tab "Ocean SRS".
+   - Hoặc: Linh mở universal panel trên trang web → chọn tab "Ocean SRS".
 2. Màn hình đầu tiên: "Chào mừng. Dữ liệu SRS chỉ lưu trên máy." + nút "Tạo Collection".
 3. Linh tạo Collection "English Daily" (target language = English).
 4. Hệ thống tự động tạo:
@@ -1438,21 +1447,22 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 5. Linh xem hướng dẫn ngắn: "Thêm từ → Học → Ôn tập".
 ```
 
-### Flow 2 — Add a Learning Object
+### Flow 2 — Add a Learning Object (reuse universal dictionary panel)
 
 ```
-1. Linh click "Add word" trong SRS page.
-2. Form hiện ra:
-   - Target word: "abandon"
-   - Sentence: "Don't abandon your dreams."
-   - Definition: "to leave someone or something behind"
-   - IPA: /əˈbændən/
-   - Word audio: [upload/record/leave empty]
-   - Image: [upload/drag]
-3. Linh submit.
-4. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
-5. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
-6. Linh thấy card xuất hiện trong deck, status "New".
+1. Linh mở universal dictionary panel trên trang web.
+   - Tra từ "abandon" → panel hiển thị definition, sentence, audio, image, IPA.
+2. Linh chuyển sang tab "Ocean SRS" trong panel.
+3. Panel tái sử dụng giao diện sẵn có (target word, sentence, definition, IPA, audio, image).
+   - Các trường tự động pre-fill từ kết quả dictionary lookup.
+   - Linh có thể chỉnh sửa/ thêm example sentence, notes, translation.
+4. Linh click "Add to Ocean SRS".
+5. Hệ thống validate:
+   - targetWord không được rỗng.
+   - không có card nào khác cho note này trong deck đích.
+6. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
+7. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
+8. Linh thấy card xuất hiện trong deck, status "New".
 ```
 
 ### Flow 3 — Explore (first exposure)
@@ -1491,19 +1501,34 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 7. Lần sau Sound due, tiếp tục. Meaning cũng bắt đầu due.
 ```
 
-### Flow 5 — Spelling recall
+### Flow 5 — Spelling recall (type-in, correct until right, auto-advance)
 
 ```
 1. Scheduler chọn Spelling (progress = 40, due).
-2. Front hiện image của "abandon" + input field.
-3. Linh gõ "abondon".
-4. Linh click "Remember" (disabled cho đến khi input đúng? V1: auto-check).
-   - V1: input không khớp target word → tự động chuyển thành Forget / penalty.
-5. applyReview:
-   - isSpellingCorrect = false
-   - penalty(40) ≈ 8 → progress[spelling] = 32
+2. Front hiện stimulus (image / audio / sentence masked) + input field.
+3. Linh bắt đầu gõ:
+   - Mỗi ký tự được so sánh real-time với target word (sau normalization).
+   - Nếu input chưa đúng:
+     - UI hiển thị phản hồi "sai" (red underline/shake/highlight wrong chars).
+     - Nút "Remember" disabled.
+     - Nút "Forget" vẫn available để user bỏ cuộc / không biết.
+   - Linh phải sửa lại cho đúng (hoặc click Forget).
+4. Linh gõ đúng "abandon":
+   - Input khớp target word.
+   - Hệ thống tự động chuyển hành động:
+     - Đánh dấu Remember.
+     - Hiện Back ngắn gọn (target word, sentence, definition).
+     - Tự động advance sang card / component tiếp theo sau 800ms.
+5. Nếu Linh click "Forget" (không biết):
+   - applyReview với judgment = 'forget'.
+   - progress[spelling] -= penalty(40)
    - FSRS next with rating Again
-6. Back hiện target word đúng. Linh thấy sai chính tả.
+   - Back hiện target word đúng.
+6. applyReview khi đúng (auto):
+   - isSpellingCorrect = true
+   - progress[spelling] += gain(40)
+   - FSRS next with rating Good
+   - reviewCount += 1
 ```
 
 ### Flow 6 — Study Again
@@ -1592,6 +1617,8 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 ### Entry points
 
 - `chrome-extension://<id>/src/entrypoints/srs-study/index.html`
-- Extension popup → "Ocean SRS" tab
-- (Slice 11) Dictionary popup / reader → "Add to Ocean SRS"
+- Extension popup → tab "Ocean SRS" (mở study page / dashboard).
+- Universal dictionary panel → tab "Ocean SRS" (thêm từ mới vào SRS).
+- SRS study page entrypoint: `chrome-extension://<id>/src/entrypoints/srs-study/index.html`.
+- (Slice 11) Dictionary popup / reader → "Add to Ocean SRS".
 
