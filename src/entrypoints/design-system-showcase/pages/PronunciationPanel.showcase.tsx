@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
-import { playEspeakWord, playEspeakPhoneme } from '@/features/pronunciation/services/espeakAudioEngine';
+import { playEspeakWord } from '@/features/pronunciation/services/espeakAudioEngine';
 import type { Phoneme, PronunciationResult } from '@/features/pronunciation/types';
 
 const SAMPLE: PronunciationResult = {
@@ -20,8 +20,8 @@ const SAMPLE: PronunciationResult = {
 
 export const showcaseMeta = {
   title: 'Pronunciation Panel',
-  category: 'Features',
-  level: 'feature' as const,
+  category: 'Feature',
+  level: 'pages' as const,
   description: 'Pronunciation phoneme list with eSpeak audio fallback.',
 };
 
@@ -37,17 +37,10 @@ export default function PronunciationShowcase() {
     }
   }, []);
 
-  const playPhoneme = useCallback(async (phoneme: Phoneme) => {
-    try {
-      setError(null);
-      await playEspeakPhoneme({
-        ...phoneme,
-        startMs: 0,
-        endMs: 0,
-      });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'eSpeak phoneme playback failed');
-    }
+  const playPhoneme = useCallback(async (_phoneme: Phoneme) => {
+    // In the design-system showcase we don't have the extension offscreen
+    // runner available, so phoneme playback is a no-op to avoid network/CSP
+    // errors in the standalone demo.
   }, []);
 
   return (
