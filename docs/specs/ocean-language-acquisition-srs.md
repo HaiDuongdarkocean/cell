@@ -1583,6 +1583,54 @@ Hệ thống gọi `createDefaultNotetype(collectionId)` khi tạo `SrsCollectio
 
 ---
 
+## Definition of Done
+
+Feature được coi là hoàn thành khi:
+
+- [ ] **Spec đã được review bằng `spec-review-stakeholder`** với kết quả APPROVE hoặc APPROVE WITH CHANGES.
+- [ ] **Tất cả AC A1–A20 pass** trong unit/integration tests hoặc E2E browser test.
+- [ ] **Review engine**:
+  - Unit tests cho `applyReview`, `calculateProgress`, `recalcCard`, `selectNextReview`, `resolveReviewSurface`, `studyAgain`, `resetComponent`, `resetCard`.
+  - Bao phủ explore, normal, studyAgain, maintenance, sequential/parallel, spelling correct/incorrect, auto-advance.
+- [ ] **Scheduler**:
+  - Unit tests cho `resolvePool`, `pickHighestPriority`, `by_deck_due` cursor, batch fetch, deck scoping.
+  - Không có async fetch bên trong IndexedDB cursor.
+- [ ] **Storage & migration**:
+  - IndexedDB schema `cell-srs-{hash}` đúng stores/indexes.
+  - Migration v26 → v27 tạo `Settings.srs` slice với `activeLanguageProfileId`.
+  - Delete-cascade collection/deck/note/card/assets/reviewEvents hoạt động đúng.
+- [ ] **Message bus**:
+  - `SRS_ADD_NOTE`, `SRS_GET_DECKS_NOTETYPES`, `SRS_OPEN_STUDY_PAGE` payload được validate bằng Zod.
+  - Cross-context add từ dictionary popup / Card Creator đến `srs-study` entrypoint hoạt động.
+- [ ] **Card Creator reuse**:
+  - V1 destination `'anki' | 'ocean-srs'` hoạt động.
+  - Pre-fill fields từ dictionary lookup vào Card Creator.
+  - Create Note + Card 3 components qua `addNoteAndCard`.
+- [ ] **Offline review**:
+  - Audio/image cache hit tạo blob URL; cache miss chọn template fallback.
+  - Không có network call trong study session.
+- [ ] **UI/UX**:
+  - Review flow, progress bars, dashboard, language profile selector render đúng trên desktop/tablet/mobile.
+  - Spelling input: red feedback khi sai, auto-submit + auto-advance khi đúng.
+  - Pass `design-system-guardian` audit nếu chạm CSS/TSX.
+- [ ] **E2E / Browser**:
+  - `testing-extension-browser` skill: first-run auto-create collection, add word from dictionary, review Sound/Meaning/Spelling, switch language profile.
+  - Offline smoke test: disable network, review vẫn chạy.
+- [ ] **Quality gates**:
+  - `npx tsc --noEmit` pass.
+  - `npm run lint` pass.
+  - `npm run test:unit` pass.
+  - `npm run build` pass.
+- [ ] **Docs**:
+  - `docs/intent/ocean-language-acquisition-srs.md` và `docs/specs/ocean-language-acquisition-srs.md` đã cập nhật.
+  - `docs/2-architechture-system.md` cập nhật nếu thay đổi kiến trúc lớn.
+  - ADR viết nếu có quyết định kiến trúc non-trivial (ví dụ vendored FSRS adapter, notetype/template id scheme).
+- [ ] **Security / Privacy**:
+  - Không log secrets, không gửi dữ liệu SRS ra network.
+  - IndexedDB chứa dữ liệu local; cảnh báo first-run "Dữ liệu chỉ lưu trên máy".
+
+---
+
 ## Open Questions
 
 1. `ts-fsrs` bundle/compat + `preserveDue` implementation → T0 spike quyết định.
