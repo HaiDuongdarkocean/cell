@@ -3,17 +3,17 @@ import { test } from './extension.fixture';
 
 const SRS_STUDY_PATH = 'src/entrypoints/srs-study/index.html';
 
-async function seedSrsProfile(page: Page, extensionId: string): Promise<void> {
+async function seedSrsProfile(page: Page, extensionId: string, profileId = 'lp-en'): Promise<void> {
   await page.goto(`chrome-extension://${extensionId}/src/entrypoints/popup/index.html`);
   await page.locator('body').waitFor({ state: 'visible' });
-  const result = await page.evaluate(async () =>
+  const result = await page.evaluate(async (profileId: string) =>
     new Promise<{ success: boolean; error?: string }>((resolve) => {
       if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
         resolve({ success: false, error: 'chrome.runtime not available' });
         return;
       }
       const profile = {
-        id: 'lp-en',
+        id: profileId,
         target: 'en',
         native: 'vi',
         name: 'English',
@@ -25,8 +25,9 @@ async function seedSrsProfile(page: Page, extensionId: string): Promise<void> {
           type: 'UPDATE_SETTINGS',
           payload: {
             settings: {
-              activeProfileId: 'lp-en',
+              activeProfileId: profileId,
               languageProfiles: [profile],
+              srs: { activeLanguageProfileId: profileId },
             },
           },
         },
@@ -36,6 +37,7 @@ async function seedSrsProfile(page: Page, extensionId: string): Promise<void> {
         },
       );
     }),
+    profileId,
   );
   expect(result.success).toBe(true);
 }
@@ -100,7 +102,7 @@ test.describe('Ocean SRS smoke', () => {
       });
     });
 
-    expect(result.success).toBe(true);
+    expect(result.success, `SRS_ADD_NOTE failed: ${result.error}`).toBe(true);
     expect(result.data?.noteId).toBeTruthy();
     expect(result.data?.cardId).toBeTruthy();
 
@@ -110,6 +112,60 @@ test.describe('Ocean SRS smoke', () => {
     await expect(page.getByRole('button', { name: 'Forget' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Remember' })).toBeVisible();
 
+    await page.close();
+  });
+
+  test('reviews a card through sound, meaning, and spelling', async ({ context, extensionId }) => {
+    const page = await context.newPage();
+    // Use a fresh language profile so this test owns the SRS collection.
+    const profileId = 'lp-review';
+    await seedSrsProfile(page, extensionId, profileId);
+    await page.goto(`chrome-extension://${extensionId}/${SRS_STUDY_PATH}`);
+    await page.getByRole('heading', { name: 'Ocean SRS' }).waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Seed a note through the background message bus.
+    const result = await page.evaluate(async () => {
+      const payload = {
+        targetLanguage: 'en',
+        targetWord: 'ignite',
+        fields: {
+          target: { kind: 'text', value: 'ignite' },
+          ipa: { kind: 'text', value: '/ɪɡˈnaɪt/' },
+          sentence: { kind: 'text', value: 'The sparks ignite the dry leaves.' },
+          def: { kind: 'text', value: 'to start to burn; to make something start to burn' },
+          examples: { kind: 'list', value: ['the fuel ignited instantly'] },
+          notes: { kind: 'text', value: '' },
+          translation: { kind: 'translation', value: 'đốt cháy' },
+          context: { kind: 'context', value: 'The sparks ignite the dry leaves.' },
+        },
+      };
+      return new Promise<{ success: boolean; data?: { noteId: string; cardId: string }; error?: string }>((resolve) => {
+        if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+          resolve({ success: false, error: 'chrome.runtime not available' });
+          return;
+        }
+        chrome.runtime.sendMessage({ type: 'SRS_ADD_NOTE', payload }, (response: unknown) => {
+          resolve(response as { success: boolean; data?: { noteId: string; cardId: string }; error?: string });
+        });
+      });
+    });
+
+    expect(result.success, `SRS_ADD_NOTE failed: ${result.error}`).toBe(true);
+
+    // Start studying; the new card should be due now.
+    await page.getByRole('button', { name: 'Study' }).click();
+    await expect(page.getByText('SOUND')).toBeVisible({ timeout: 10_000 });
+
+    // Explore SOUND, then scheduler should advance to MEANING.
+    await page.getByRole('button', { name: 'Remember' }).click();
+    await expect(page.getByText('MEANING')).toBeVisible({ timeout: 10_000 });
+
+    // Explore MEANING, then scheduler should advance to SPELLING.
+    await page.getByRole('button', { name: 'Remember' }).click();
+    await expect(page.getByText('SPELLING')).toBeVisible({ timeout: 10_000 });
+
+    // We have now proven the SRS review flow: a card advances through the
+    // explore stage for sound → meaning → spelling when Remember is clicked.
     await page.close();
   });
 });
