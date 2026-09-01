@@ -71,7 +71,7 @@ ASSUMPTIONS I'M MAKING:
 
 Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
 
-**Write a spec document covering these six core areas:**
+**Write a spec document covering these seven core areas:**
 
 1. **Objective** — What are we building and why? Who is the user? What does success look like?
 
@@ -101,6 +101,8 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
    - **Always do:** Run tests before commits, follow naming conventions, validate inputs
    - **Ask first:** Database schema changes, adding dependencies, changing CI config
    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
+
+7. **Definition of Done (DoD)** — The standing bar every increment must clear before it counts as done. Include the project-wide DoD plus any feature-specific gates (e.g., AC pass, E2E flows, design-system audit, offline smoke, ADR).
 
 **Spec template:**
 
@@ -133,6 +135,14 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 ## Success Criteria
 [How we'll know this is done — specific, testable conditions]
 
+## Definition of Done
+- [ ] All acceptance criteria pass
+- [ ] Unit / integration / E2E tests pass
+- [ ] Build, lint, typecheck pass
+- [ ] UI changes pass design-system-guardian if touching CSS/TSX
+- [ ] Feature-specific verification (e.g., offline smoke, browser E2E, migration test)
+- [ ] Docs and ADRs updated for non-trivial decisions
+
 ## Open Questions
 [Anything unresolved that needs human input]
 ```
@@ -153,17 +163,19 @@ This lets you loop, retry, and problem-solve toward a clear goal rather than gue
 
 ### Phase 2: Plan
 
-With the validated spec, generate a technical implementation plan:
+With the validated spec, generate a technical implementation plan. The plan must be detailed enough for subagents to execute tasks in parallel and in the correct order.
 
 1. Identify the major components and their dependencies
 2. Determine the implementation order (what must be built first)
 3. Note risks and mitigation strategies
-4. Identify what can be built in parallel vs. what must be sequential
-5. Define verification checkpoints between phases
+4. **Identify what can be built in parallel vs. what must be sequential; label each task with `parallel: true/false` and its dependency set.**
+5. Break tasks into small, verifiable increments (S/M size preferred; no XL tasks)
+6. Define explicit acceptance criteria and verification steps for every task
+7. Define verification checkpoints between phases
 
-> Follow `planning-and-task-breakdown` for the dependency-graph mapping and vertical-slicing mechanics behind these steps; it is the canonical source. The bullets above are a lightweight summary; if they ever diverge, `planning-and-task-breakdown` takes precedence.
+> Follow `planning-and-task-breakdown` for the dependency-graph mapping, vertical-slicing mechanics, parallelization rules, and task template. It is the canonical source. The bullets above are a lightweight summary; if they ever diverge, `planning-and-task-breakdown` takes precedence.
 >
-> **Output convention:** Save the plan to `tasks/plan.md` and the task list to `tasks/todo.md`, per the `/plan` command convention. Create `tasks/` if it does not exist. Downstream commands (`/build`, etc.) expect these paths.
+> **Output convention:** Save the plan to `tasks/plan.md` and the task list to `tasks/todo.md`, per the `/plan` command convention. When a project already has active `tasks/plan.md` / `tasks/todo.md`, create named variants (e.g. `tasks/plan-<feature>.md` / `tasks/todo-<feature>.md`) to avoid overwriting. Create `tasks/` if it does not exist. Downstream commands (`/build`, etc.) expect these paths.
 
 The plan should be reviewable: the human should be able to read it and say "yes, that's the right approach" or "no, change X."
 
@@ -222,9 +234,10 @@ The spec is a living document, not a one-time artifact:
 
 Before proceeding to implementation, confirm:
 
-- [ ] The spec covers all six core areas
+- [ ] The spec covers all seven core areas (including Definition of Done)
 - [ ] The human has reviewed and approved the spec
 - [ ] Success criteria are specific and testable
+- [ ] Definition of Done is explicit and includes project-wide + feature-specific gates
 - [ ] Boundaries (Always/Ask First/Never) are defined
 - [ ] The spec is saved to a file in the repository
 
