@@ -203,7 +203,7 @@ export interface SrsReviewSession {
 
 export interface SrsStimulus {
   readonly type: StimulusType;
-  readonly payload: SrsFieldValue | Record<string, SrsFieldValue>;
+  readonly payload: Record<string, SrsFieldValue>;
 }
 
 // === Assets ===

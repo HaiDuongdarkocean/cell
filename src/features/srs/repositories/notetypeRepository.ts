@@ -51,6 +51,14 @@ export async function getNotetypesByTargetField(fieldId: string): Promise<readon
   return all.filter((n) => n.targetFieldId === fieldId);
 }
 
+/** Batch fetch notetypes by id. */
+export async function getNotetypesByIds(ids: readonly string[]): Promise<SrsNotetype[]> {
+  return withReadonlyStore(SRS_STORES.NOTETYPES, async (store) => {
+    const records = await Promise.all(ids.map((id) => getById<SrsNotetype>(store, id)));
+    return records.filter((n): n is SrsNotetype => n !== undefined).map((n) => Object.freeze(n));
+  });
+}
+
 export async function getAllNotetypes(): Promise<readonly SrsNotetype[]> {
   return withReadonlyStore(SRS_STORES.NOTETYPES, async (store) => {
     const request = store.getAll();

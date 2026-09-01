@@ -62,6 +62,14 @@ export async function getNoteByTargetAndNotetype(
   });
 }
 
+/** Batch fetch notes by id. */
+export async function getNotesByIds(ids: readonly string[]): Promise<SrsNote[]> {
+  return withReadonlyStore(SRS_STORES.NOTES, async (store) => {
+    const records = await Promise.all(ids.map((id) => getById<SrsNote>(store, id)));
+    return records.filter((n): n is SrsNote => n !== undefined).map((n) => Object.freeze(n));
+  });
+}
+
 async function getNoteByTargetAndNotetypeInStore(
   store: IDBObjectStore,
   targetWord: string,

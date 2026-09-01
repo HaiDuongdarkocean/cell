@@ -60,7 +60,7 @@ const makeSession = (card: SrsCard, componentType: 'meaning' | 'sound' | 'spelli
     fieldIds: ['target'],
     requiresInput: false,
   },
-  stimulus: { type: 'definition', payload: { kind: 'text' as const, value: 'to leave behind' } },
+  stimulus: { type: 'definition', payload: { target: { kind: 'text' as const, value: 'to leave behind' } } },
   mode,
   startedAt: now.getTime(),
 });
