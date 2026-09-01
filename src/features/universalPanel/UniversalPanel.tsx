@@ -161,6 +161,22 @@ export function UniversalPanel({
             >
               <Icon name="library"  />
             </IconButton>
+            <IconButton
+              material="solid"
+              size="md"
+              variant="ghost"
+              aria-label="Open SRS study"
+              title="Open SRS study"
+              onClick={() => {
+                void sendMessage({
+                  type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE,
+                  payload: {},
+                });
+              }}
+              data-cell-id="universal-panel-srs-study"
+            >
+              <Icon name="layers" />
+            </IconButton>
             <IconButton material="solid"
               size="md"
               variant="ghost"
