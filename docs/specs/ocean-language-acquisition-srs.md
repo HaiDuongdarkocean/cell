@@ -1414,3 +1414,184 @@ Hệ thống tự động tạo `DEFAULT_NOTETYPE` khi user tạo `SrsCollection
 - Multi-device sync out-of-scope; data lost on uninstall.
 - Progress formula constants unvalidated; config-tunable, cần đo lường post-V1.
 - Multi-word/inflected target masking là exact string match V1.
+
+---
+
+## User Journey Flow
+
+### Persona
+
+**Linh** — 24 tuổi, đang học tiếng Anh để xem video/đọc báo. Dùng Cell trên Chrome laptop. Chưa từng dùng SRS nào. Mục tiêu: nhớ từ theo **nghĩa, âm, chính tả** thay vì chỉ dịch nghĩa.
+
+---
+
+### Flow 1 — First-run / Onboarding
+
+```
+1. Linh mở extension popup → chọn tab "Ocean SRS".
+2. Màn hình đầu tiên: "Chào mừng. Dữ liệu SRS chỉ lưu trên máy." + nút "Tạo Collection".
+3. Linh tạo Collection "English Daily" (target language = English).
+4. Hệ thống tự động tạo:
+   - 1 default notetype "Word (default)" với 8 front templates.
+   - 1 default study config (threshold 90, parallel, min explore 1).
+   - 1 root deck "Default".
+5. Linh xem hướng dẫn ngắn: "Thêm từ → Học → Ôn tập".
+```
+
+### Flow 2 — Add a Learning Object
+
+```
+1. Linh click "Add word" trong SRS page.
+2. Form hiện ra:
+   - Target word: "abandon"
+   - Sentence: "Don't abandon your dreams."
+   - Definition: "to leave someone or something behind"
+   - IPA: /əˈbændən/
+   - Word audio: [upload/record/leave empty]
+   - Image: [upload/drag]
+3. Linh submit.
+4. Hệ thống tạo Note + Card 3 component (Meaning/Sound/Spelling) với progress 0/0/0.
+5. Hệ thống gọi recalcCard → nextDue = now (vì 3 component đều mới).
+6. Linh thấy card xuất hiện trong deck, status "New".
+```
+
+### Flow 3 — Explore (first exposure)
+
+```
+1. Linh vào study page, click "Study".
+2. Scheduler chọn Card "abandon" ở pool explore.
+3. Front hiện Sound — word audio (nếu có) hoặc IPA fallback.
+   - Dưới cùng có 2 nút: Forget / Remember.
+   - Badge "Explore" màu xám.
+4. Linh click "Remember" (hoặc "Forget").
+5. applyReview chạy ở mode 'explore':
+   - exploreCount[sound] += 1
+   - progress không đổi
+   - FSRS state không đổi
+6. Back hiện đầy đủ target word, sentence, definition, audio, image.
+7. Linh click "Next".
+8. Scheduler chọn tiếp Meaning → explore, rồi Spelling → explore.
+   - Mỗi lần exploreCount tăng, progress vẫn 0.
+9. Sau 3 lần explore, card chuyển sang active (các component bắt đầu lấy progress).
+```
+
+### Flow 4 — Active review (normal mode)
+
+```
+1. Hôm sau Linh mở study page.
+2. Scheduler thấy Card "abandon" due.
+3. Tùy priority, scheduler chọn component cần reinforce nhất:
+   - Sound = 0 (thấp nhất) → chọn Sound.
+4. Front hiện word audio. Linh nghe, tự đánh giá, click "Remember".
+5. applyReview chạy ở mode 'normal':
+   - progress[sound] += gain(0) = 20 → 20
+   - FSRS next(due=now+1d)
+   - recalcCard → nextDue = min(meaning due, spelling due, sound due)
+6. Back hiện. Linh click "Next".
+7. Lần sau Sound due, tiếp tục. Meaning cũng bắt đầu due.
+```
+
+### Flow 5 — Spelling recall
+
+```
+1. Scheduler chọn Spelling (progress = 40, due).
+2. Front hiện image của "abandon" + input field.
+3. Linh gõ "abondon".
+4. Linh click "Remember" (disabled cho đến khi input đúng? V1: auto-check).
+   - V1: input không khớp target word → tự động chuyển thành Forget / penalty.
+5. applyReview:
+   - isSpellingCorrect = false
+   - penalty(40) ≈ 8 → progress[spelling] = 32
+   - FSRS next with rating Again
+6. Back hiện target word đúng. Linh thấy sai chính tả.
+```
+
+### Flow 6 — Study Again
+
+```
+1. Linh đang review Sound "abandon" (progress 95, due hôm nay).
+   - Nghe xong không chắc, muốn ôn lại ngay.
+2. Linh click "Study Again" thay vì Forget/Remember.
+3. studyAgain(card, 'sound', now):
+   - studyAgainDue[sound] = now
+   - recalcCard → nextDue = now
+4. Scheduler chọn lại component Sound ở pool 'studyAgain'.
+5. Front hiện Sound. Linh click "Remember".
+6. applyReview mode 'studyAgain':
+   - progress[sound] += gain(95) = 1 → 96
+   - adapter.next(preserveDue=true): due giữ nguyên, chỉ cập nhật reps
+   - clear studyAgainDue[sound] = null
+7. Card quay lại trạng thái satisfied/maintenance.
+```
+
+### Flow 7 — Maintenance mode
+
+```
+1. Sau nhiều lần ôn, Meaning=95, Sound=96, Spelling=92.
+2. recalcCard thấy tất cả >= threshold (90) → maintenanceMode = true.
+3. Scheduler vẫn schedule card, nhưng ở pool maintenance (ưu tiên thấp).
+4. Front có thể là bất kỳ component nào due.
+5. Nếu Linh click "Forget" trên Meaning:
+   - progress[meaning] giảm xuống 80 (< 90)
+   - recalcCard → maintenanceMode = false
+   - component Meaning trở lại active.
+```
+
+### Flow 8 — Reset
+
+```
+1. Linh vào Card Manager, chọn "abandon".
+2. Click "Reset Sound" → confirm.
+3. resetComponent(card, 'sound'):
+   - progress[sound] = 0, exploreCount[sound] = 0
+   - fsrsState[sound] = createEmpty(now)
+   - studyAgainDue[sound] = null
+   - recalcCard → nextDue, maintenanceMode cập nhật
+4. Card Sound trở về new/explore.
+5. Nếu Linh click "Reset Card" → tất cả 3 component về 0.
+```
+
+### Flow 9 — Offline review
+
+```
+1. Linh rời mạng, mở study page.
+2. Scheduler chỉ scan cards đã due trong IndexedDB.
+3. Với mỗi card, selectStimulus kiểm tra audio/image cache:
+   - Cache hit → tạo blob URL, phát.
+   - Cache miss → chọn template fallback không cần media.
+4. Review tiếp tục bình thường. Không có AI, không có network.
+5. Khi kết thúc session, revoke blob URLs.
+```
+
+### Flow 10 — End-of-session / Daily check
+
+```
+1. Linh học xong 15 phút, click "Done".
+2. Dashboard hiển thị:
+   - Số cards reviewed hôm nay.
+   - Progress trung bình theo component.
+   - Số cards due ngày mai.
+3. Linh đóng tab. Hệ thống lưu review events append-only.
+```
+
+---
+
+### State map across flows
+
+| Flow | User action | System | Card state after |
+|---|---|---|---|
+| Add word | Submit form | createCard | all progress 0, nextDue = now, explore pending |
+| Explore | Remember/Forget | applyReview mode='explore' | exploreCount ↑, progress unchanged |
+| Normal review | Remember/Forget | applyReview mode='normal' | progress ±, FSRS due updated |
+| Spelling | Type + submit | applyReview with isSpellingCorrect | progress ± based on exact match |
+| Study Again | Click "Study Again" | studyAgain + applyReview mode='studyAgain' | progress ↑, FSRS due preserved |
+| Maintenance | Forget on satisfied component | applyReview mode='normal' | maintenanceMode may become false |
+| Reset | Confirm reset | resetComponent / resetCard | progress 0, fsrsState empty |
+| Offline | Open study | selectNextReview + cache fallback | review continues with media fallback |
+
+### Entry points
+
+- `chrome-extension://<id>/src/entrypoints/srs-study/index.html`
+- Extension popup → "Ocean SRS" tab
+- (Slice 11) Dictionary popup / reader → "Add to Ocean SRS"
+
