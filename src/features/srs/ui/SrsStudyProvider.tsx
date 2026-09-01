@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type {
   ComponentType,
   ReviewJudgment,
   SrsAudioAsset,
   SrsImageAsset,
   SrsReviewSession,
+  SrsStimulus,
   SrsStudyConfig,
 } from '@/entities/srs/types';
 import { createSrsFsrsAdapter } from '@/features/srs/services/srsFsrsAdapter';
@@ -39,6 +40,17 @@ function nowISO(): string {
   return new Date().toISOString();
 }
 
+function blobUrlsToRevoke(stimulus: SrsStimulus | null): string[] {
+  if (!stimulus) return [];
+  const urls: string[] = [];
+  for (const v of Object.values(stimulus.payload)) {
+    if ((v.kind === 'audio' || v.kind === 'image') && typeof v.value === 'string' && v.value.startsWith('blob:')) {
+      urls.push(v.value);
+    }
+  }
+  return urls;
+}
+
 export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,6 +61,19 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<SrsStudyConfig | null>(null);
   const [audioCache] = useState(() => new Map<string, SrsAudioAsset>());
   const [imageCache] = useState(() => new Map<string, SrsImageAsset>());
+
+  useEffect(() => {
+    const toRevoke = blobUrlsToRevoke(session?.stimulus ?? null);
+    return () => {
+      for (const url of toRevoke) {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {
+          // ignore invalid or already revoked URLs
+        }
+      }
+    };
+  }, [session]);
 
   const ensureDeck = useCallback(async () => {
     if (deckId && config) return { deckId, config };

@@ -4,6 +4,7 @@ import { SrsError } from '@/features/srs/lib/srsError';
 import { generateId } from '@/features/srs/lib/helpers';
 import { getNoteByTargetAndNotetype, putNote } from '@/features/srs/repositories/noteRepository';
 import { getCardByNoteAndDeck, putCard } from '@/features/srs/repositories/cardRepository';
+import { cacheNoteFields } from '@/features/srs/services/noteAssetLoader';
 import { createCard } from './reviewEngine';
 
 export interface AddNoteAndCardResult {
@@ -44,6 +45,7 @@ export async function addNoteAndCard(
     createdAt: now.getTime(),
   };
   await putNote(note);
+  await cacheNoteFields(note);
 
   const card = createCard(note, deckId, config, now, adapter);
   await putCard(card);
