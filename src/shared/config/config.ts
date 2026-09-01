@@ -227,6 +227,7 @@ export const DEFAULT_SRS_SETTINGS: SrsSettingsSlice = {
   defaultStudyConfigId: null,
   activeCollectionId: null,
   activeDeckId: null,
+  activeNotetypeId: null,
   activeLanguageProfileId: null,
   dataLifecycle: {
     reviewEventMaxAgeDays: 365,
