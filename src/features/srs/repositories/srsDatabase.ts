@@ -133,7 +133,7 @@ function createAllSrsStores(db: IDBDatabase): void {
     const store = db.createObjectStore(SRS_STORES.REVIEW_EVENTS, { keyPath: 'id' });
     store.createIndex(SRS_INDEXES.by_card, 'cardId', { unique: false });
     store.createIndex(SRS_INDEXES.by_component, 'componentType', { unique: false });
-    store.createIndex(SRS_INDEXES.by_timestamp, 'timestamp', { unique: false });
+    store.createIndex(SRS_INDEXES.by_timestamp, 'answeredAt', { unique: false });
   }
 }
 
