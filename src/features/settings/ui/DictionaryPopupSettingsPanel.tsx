@@ -26,12 +26,13 @@ const TRIGGER_LABELS: Record<string, string> = {
   'hover-alt': 'Hover + Alt',
 };
 
-const TAB_OPTIONS = ['audio', 'image', 'translate', 'links'] as const;
+const TAB_OPTIONS = ['audio', 'image', 'translate', 'links', 'pronunciation'] as const;
 const TAB_LABELS: Record<string, string> = {
   audio: 'Audio',
   image: 'Image',
   translate: 'Translate',
   links: 'Links',
+  pronunciation: 'Phonemes',
 };
 
 export function DictionaryPopupSettingsPanel({

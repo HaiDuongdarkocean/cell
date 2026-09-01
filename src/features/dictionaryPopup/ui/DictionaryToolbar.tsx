@@ -10,6 +10,7 @@ const TABS: { key: PopupTab; icon: IconName; label: string }[] = [
   { key: 'image', icon: 'image', label: 'Image' },
   { key: 'translate', icon: 'languages', label: 'Translate' },
   { key: 'links', icon: 'link', label: 'Links' },
+  { key: 'pronunciation', icon: 'microphone', label: 'Phonemes' },
 ];
 
 export interface DictionaryToolbarProps {
@@ -20,6 +21,7 @@ export interface DictionaryToolbarProps {
     readonly image?: number;
     readonly translate?: number;
     readonly links?: number;
+    readonly pronunciation?: number;
   };
 }
 

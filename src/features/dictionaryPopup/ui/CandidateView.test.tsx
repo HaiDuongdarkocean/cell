@@ -8,6 +8,25 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
 
+jest.mock('@/features/pronunciation/services/pronunciationEngineSingleton', () => ({
+  pronunciationEngine: {
+    toPronunciation: jest.fn(async (term: string, langCode: string) => ({
+      text: term,
+      language: langCode,
+      ipa: 'həˈloʊ',
+      phonemes: [
+        { ipa: 'h', startMs: 0, endMs: 50, type: 'consonant' },
+        { ipa: 'ə', startMs: 50, endMs: 100, type: 'vowel' },
+        { ipa: 'ˈ', startMs: 100, endMs: 100, type: 'stress' },
+        { ipa: 'l', startMs: 100, endMs: 150, type: 'consonant' },
+        { ipa: 'oʊ', startMs: 150, endMs: 250, type: 'diphthong' },
+      ],
+      audio: null,
+      metadata: { engine: 'espeak-phonemes', engineVersion: '0.0.5', source: 'espeak' },
+    })),
+  },
+}));
+
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),
 }));
@@ -386,5 +405,24 @@ describe('CandidateView', () => {
       definitions: [{ pos: 'n', text: 'greeting' }],
       contextSentence: 'hello world',
     }));
+  });
+
+  it('fetches and renders the pronunciation panel when the phonemes tab is opened', async () => {
+    const candidate = makeResult('hello', { reading: 'həˈloʊ', readingKind: 'ipa' });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('dictionary-tab-pronunciation'));
+
+    await waitFor(() => expect(screen.getByText('/həˈloʊ/')).toBeInTheDocument());
+    expect(screen.getAllByTestId('pronunciation-phoneme')).toHaveLength(5);
   });
 });

@@ -184,9 +184,9 @@ export interface DictionaryPopupSettings {
    *  is now always mounted when the dictionary popup is enabled. */
   readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
   /** Default active tab (null = chỉ dictionary). Default null. */
-  readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | null;
+  readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | 'pronunciation' | null;
   /** Per-language override for default active tab. */
-  readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | null>;
+  readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | 'pronunciation' | null>;
   /** SRS destination. Default 'anki'. */
   readonly srsDestination: 'anki';
   /** Popup width in px (popover mode). Default 560. */

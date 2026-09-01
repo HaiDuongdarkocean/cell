@@ -3,13 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { DictionaryToolbar } from './DictionaryToolbar';
 
 describe('DictionaryToolbar', () => {
-  it('renders four tab buttons', () => {
+  it('renders five tab buttons', () => {
     render(<DictionaryToolbar activeTab={null} onSelect={jest.fn()} counts={{}} />);
 
     expect(screen.getByTestId('dictionary-tab-audio')).toHaveTextContent('Audio');
     expect(screen.getByTestId('dictionary-tab-image')).toHaveTextContent('Image');
     expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('Translate');
     expect(screen.getByTestId('dictionary-tab-links')).toHaveTextContent('Links');
+    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('Phonemes');
   });
 
   it('calls onSelect with the clicked tab', () => {
@@ -33,13 +34,14 @@ describe('DictionaryToolbar', () => {
       <DictionaryToolbar
         activeTab={null}
         onSelect={jest.fn()}
-        counts={{ audio: 2, image: 0, translate: 1, links: 3 }}
+        counts={{ audio: 2, image: 0, translate: 1, links: 3, pronunciation: 1 }}
       />,
     );
 
     expect(screen.getByTestId('dictionary-tab-audio')).toHaveTextContent('2');
     expect(screen.getByTestId('dictionary-tab-image')).not.toHaveTextContent('0');
     expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('1');
+    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('1');
     // Links tab does not show a badge
     expect(screen.getByTestId('dictionary-tab-links')).not.toHaveTextContent('3');
   });
