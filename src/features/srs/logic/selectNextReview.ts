@@ -9,6 +9,7 @@ import { getNotetypesByIds } from '@/features/srs/repositories/notetypeRepositor
 import { resolvePool } from './resolvePool';
 import { pickHighestPriority } from './pickHighestPriority';
 import { resolveReviewSurface } from './resolveReviewSurface';
+import { loadNoteAssets } from '@/features/srs/services/noteAssetLoader';
 
 const COMPONENT_TYPES: readonly ComponentType[] = ['sound', 'meaning', 'spelling'];
 
@@ -95,7 +96,11 @@ export async function selectNextReview(
   const winner = pickHighestPriority(candidates);
   if (!winner) return null;
 
-  const surface = resolveReviewSurface(winner.note, winner.notetype, winner.componentType, audioCache, imageCache);
+  const audioMap = new Map<string, SrsAudioAsset>(audioCache);
+  const imageMap = new Map<string, SrsImageAsset>(imageCache);
+  await loadNoteAssets(winner.note, audioMap, imageMap);
+
+  const surface = resolveReviewSurface(winner.note, winner.notetype, winner.componentType, audioMap, imageMap);
   if (!surface) {
     throw new SrsError('NO_TEMPLATE', `No usable template for ${winner.componentType} on note ${winner.note.id}`);
   }
