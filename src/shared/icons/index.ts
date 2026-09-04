@@ -49,7 +49,6 @@ import {
   Link,
   Loader,
   Maximize,
-  Maximize2,
   Menu,
   MessageSquare,
   Mic,
@@ -106,7 +105,8 @@ import {
 import settingsSvg from './svg/settings.svg?raw';
 import pencilSvg from './svg/pencil.svg?raw';
 import zapSvg from './svg/zap.svg?raw';
-import resizeSvg from './svg/maximize-2.svg?raw';
+import resizeSvg from './svg/resize.svg?raw';
+import { ResizeIcon } from './ResizeIcon';
 import audioWaveSvg from './svg/audio-lines.svg?raw';
 import imageSvg from './svg/image.svg?raw';
 import languagesSvg from './svg/languages.svg?raw';
@@ -196,7 +196,7 @@ import wireframeSvg from './svg/layout-template.svg?raw';
 import windowPageSvg from './svg/app-window.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
-interface IconRenderProps {
+export interface IconRenderProps {
   size?: number | string;
   className?: string;
   style?: CSSProperties;
@@ -228,7 +228,7 @@ export const ICON_CATALOG = {
   settings: { component: Settings, svg: settingsSvg, source: 'lucide/settings', tags: ['settings', 'gear', 'config', 'preferences'] } as IconEntry,
   pencil: { component: Pencil, svg: pencilSvg, source: 'lucide/pencil', tags: ['edit', 'write', 'pencil', 'modify'] } as IconEntry,
   zap: { component: Zap, svg: zapSvg, source: 'lucide/zap', tags: ['quick', 'fast', 'lightning', 'bolt', 'instant'] } as IconEntry,
-  resize: { component: Maximize2, svg: resizeSvg, source: 'lucide/maximize-2', tags: ['resize', 'drag', 'handle', 'diagonal'] } as IconEntry,
+  resize: { component: ResizeIcon, svg: resizeSvg, source: 'custom/resize', tags: ['resize', 'handle', 'diagonal', 'notches'] } as IconEntry,
   audioWave: { component: AudioLines, svg: audioWaveSvg, source: 'lucide/audio-lines', tags: ['audio', 'waveform', 'sound', 'voice', 'tts', 'play-audio'] } as IconEntry,
   image: { component: Image, svg: imageSvg, source: 'lucide/image', tags: ['image', 'picture', 'photo', 'gallery'] } as IconEntry,
   languages: { component: Languages, svg: languagesSvg, source: 'lucide/languages', tags: ['translate', 'languages', 'i18n', 'localize'] } as IconEntry,
