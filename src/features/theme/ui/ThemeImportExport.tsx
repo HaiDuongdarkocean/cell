@@ -4,7 +4,7 @@
 // textarea → validate shape → onApply(config) hoặc error surface.
 
 import { useState, useRef } from 'react';
-import type { ThemeConfig } from '@/entities/theme';
+import type { ThemeConfig, PresetName } from '@/entities/theme';
 import { Button, Textarea, Alert } from '@/shared/ui';
 import styles from './ThemeImportExport.module.css';
 
@@ -15,10 +15,13 @@ interface ThemeImportExportProps {
   onApply: (config: ThemeConfig) => void;
 }
 
-/** Validate parsed JSON has ThemeConfig shape (customColors.light + dark with 9 tokens). */
+const PRESETS: readonly PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
+
+/** Validate parsed JSON has ThemeConfig shape (preset + customColors.light + dark with 9 tokens). */
 export function isValidThemeConfig(value: unknown): value is ThemeConfig {
   if (typeof value !== 'object' || value === null) return false;
   const cfg = value as Record<string, unknown>;
+  if (!PRESETS.includes(cfg.preset as PresetName)) return false;
   const cc = cfg.customColors;
   if (typeof cc !== 'object' || cc === null) return false;
   const colors = cc as Record<string, unknown>;

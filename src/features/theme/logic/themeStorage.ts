@@ -7,10 +7,12 @@
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
-import type { ThemeMode, ThemeConfig } from '@/entities/theme';
+import type { ThemeMode, ThemeConfig, PresetName } from '@/entities/theme';
 
 /** Default theme mode khi storage absent (V5 default dark — giữ pre-port default). */
 export const DEFAULT_THEME_MODE: ThemeMode = 'dark';
+
+const PRESETS: readonly PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
 
 /**
  * Load themeMode from chrome.storage.local. Returns DEFAULT_THEME_MODE nếu absent.
@@ -31,7 +33,9 @@ export async function loadThemeConfig(): Promise<ThemeConfig> {
   const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.THEME_CONFIG);
   const config = data[STORAGE_KEYS.THEME_CONFIG] as ThemeConfig | undefined;
   if (config && config.customColors && config.customColors.light && config.customColors.dark) {
-    return config;
+    const storedPreset = (config as { preset?: unknown }).preset;
+    const preset = PRESETS.includes(storedPreset as PresetName) ? (storedPreset as PresetName) : 'dawn';
+    return { ...config, preset };
   }
   return DEFAULT_THEME_CONFIG;
 }

@@ -25,8 +25,8 @@ interface ThemeStore {
   switchMode(mode: ThemeMode): void;
   /** Update 1 core color token cho 1 mode (persist config). */
   updateColor(mode: ResolvedMode, token: CoreColorTokenKey, hex: string): void;
-  /** Switch to a named preset (or clear preset). */
-  switchPreset(preset: PresetName | undefined): void;
+  /** Switch to a named preset. */
+  switchPreset(preset: PresetName): void;
   /** Replace whole config (import JSON). */
   setConfig(config: ThemeConfig): void;
   /** Reset config to DEFAULT_THEME_CONFIG (persist). */
@@ -84,10 +84,11 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   },
 
   switchPreset(preset) {
-    const current = get().config;
-    const next: ThemeConfig = preset
-      ? { ...current, preset, customColors: { ...getPresetColors(preset) } }
-      : { ...current, preset: undefined };
+    const next: ThemeConfig = {
+      ...get().config,
+      preset,
+      customColors: { ...getPresetColors(preset) },
+    };
     set({ config: next });
     void saveThemeConfig(next);
   },

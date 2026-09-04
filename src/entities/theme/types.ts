@@ -29,12 +29,12 @@ export interface CoreColorTokens {
 }
 
 /**
- * Theme config — palette data cho 2 mode + optional preset. KHÔNG chứa `mode`
+ * Theme config — palette data cho 2 mode + named preset. KHÔNG chứa `mode`
  * (mode là source of truth ở `themeMode` riêng — ADR-022 D1, Risk #8 fix).
  * Import/export JSON thuần.
  */
 export interface ThemeConfig {
-  readonly preset?: PresetName;
+  readonly preset: PresetName;
   readonly customColors: {
     readonly light: CoreColorTokens;
     readonly dark: CoreColorTokens;

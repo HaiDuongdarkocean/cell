@@ -3,7 +3,7 @@ import { useThemeStore } from '@/stores/themeStore';
 import type { PresetName } from '@/entities/theme';
 import styles from './LauncherUserBar.module.css';
 
-const PRESETS: readonly (PresetName | undefined)[] = ['dawn', 'forest', 'ocean', 'warmth', undefined];
+const PRESETS: readonly PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
 
 export function LauncherUserBar() {
   const mode = useThemeStore((s) => s.mode);
@@ -41,8 +41,8 @@ export function LauncherUserBar() {
         size="lg"
         variant="ghost"
         onClick={cyclePreset}
-        aria-label={`Preset: ${config.preset ?? 'default'}`}
-        title={`Preset: ${config.preset ?? 'default'}`}
+        aria-label={`Preset: ${config.preset}`}
+        title={`Preset: ${config.preset}`}
       >
         <Icon name="layers" size="md" />
       </IconButton>

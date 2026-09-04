@@ -81,6 +81,7 @@ describe('themeManager', () => {
 
     it('overrides previous vars on re-apply (no stale)', () => {
       const custom: ThemeConfig = {
+        preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
           dark: DEFAULT_THEME_CONFIG.customColors.dark,

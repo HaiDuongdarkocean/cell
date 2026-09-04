@@ -27,11 +27,11 @@ export function ShowcaseGallery(): ReactElement | null {
   const [activeShowcaseId, setActiveShowcaseId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [mode, setMode] = useState<ThemeMode>('light');
-  const [preset, setPreset] = useState<PresetName | undefined>('dawn');
+  const [preset, setPreset] = useState<PresetName>('dawn');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
-    document.documentElement.setAttribute('data-preset', preset ?? '');
+    document.documentElement.setAttribute('data-preset', preset);
   }, [mode, preset]);
 
   const allShowcases = useMemo(() => {
