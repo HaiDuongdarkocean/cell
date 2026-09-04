@@ -59,7 +59,6 @@
   color: var(--universal-panel-aside-fg);
   --sidebar-bg: var(--universal-panel-aside-bg);
   --sidebar-fg: var(--universal-panel-aside-fg);
-  --nav-item-hover-bg: transparent;
 }
 
 @media (max-width: 839px) {

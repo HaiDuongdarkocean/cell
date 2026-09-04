@@ -35,7 +35,7 @@
 }
 
 .item:hover:not(:disabled) {
-  background: var(--nav-item-hover-bg, var(--color-surface-hover));
+  background: var(--color-surface-hover);
   color: var(--color-text);
 }
 
