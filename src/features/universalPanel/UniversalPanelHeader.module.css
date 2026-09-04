@@ -2,12 +2,32 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   background: var(--universal-panel-header-bg);
   color: var(--universal-panel-header-fg);
   height: var(--universal-panel-header-height);
+}
+
+.closeButton {
+  margin-left: auto;
+}
+
+/* Profile button is flag-only (no label) — sits at the far left of the header. */
+.profileButton {
+  width: var(--universal-panel-profile-flag-size);
+  height: var(--universal-panel-profile-flag-size);
+  padding: var(--space-0);
+  overflow: hidden;
+}
+
+.profileButton [class*="flag"] {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 @media (max-width: 839px) {
