@@ -85,7 +85,7 @@ export function CollapsibleSidebar({
                   <NavItem
                     key={item.id}
                     data-section-id={item.id}
-                    icon={<Icon name={item.icon} size={20} />}
+                    icon={item.icon}
                     label={item.label}
                     orientation="vertical"
                     data-cell-id={item['data-cell-id']}
@@ -99,7 +99,7 @@ export function CollapsibleSidebar({
               {section.items.map((item) => (
                 <NavItem
                   key={item.id}
-                  icon={<Icon name={item.icon} size={20} />}
+                  icon={item.icon}
                   label={item.label}
                   orientation="vertical"
                   onClick={item.onClick}

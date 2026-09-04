@@ -4,7 +4,7 @@ import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './Icon.module.css';
 
 type IconSize = 'xs' | 'sm' | 'md' | 'lg';
-type IconColor = 'primary' | 'secondary' | 'disabled' | 'inverse';
+type IconColor = 'primary' | 'secondary' | 'disabled' | 'inverse' | 'current';
 
 interface IconProps {
   /** Icon name from ICON_CATALOG. */
