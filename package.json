@@ -1,6 +1,6 @@
 {
   "name": "chrome-extension-video-downloader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Chrome Extension MV3 to detect and download video + subtitle from free streaming sites",
   "type": "module",
   "private": true,

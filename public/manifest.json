@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Video Downloader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Detect and download video + subtitle from free streaming sites for language learners",
   "permissions": [
     "webRequest",
@@ -83,7 +83,7 @@
     "128": "public/icons/icon-128.png"
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://cdn.jsdelivr.net/espeakng.js/"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; connect-src 'self' https://cdn.jsdelivr.net/espeakng.js/ https://commons.wikimedia.org/ https://api.mymemory.translated.net/ https://translate.googleapis.com/"
   },
   "web_accessible_resources": [
     {

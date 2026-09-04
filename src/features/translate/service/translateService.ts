@@ -52,9 +52,52 @@ export function parseGoogleResponse(response: unknown): string[] {
     .map((seg: unknown[]) => (typeof seg[0] === 'string' ? seg[0] : ''));
 }
 
+/** MyMemory Translate API endpoint (free, no key, rate-limited). */
+const MYMEMORY_TRANSLATE_ENDPOINT = 'https://api.mymemory.translated.net/get';
+
+/**
+ * Build the MyMemory Translate request URL.
+ *
+ * @param text - Text to translate.
+ * @param sl - Source language ISO 639-1 code (e.g. 'en'). Use 'en' if 'auto'.
+ * @param tl - Target language ISO 639-1 code (e.g. 'vi').
+ * @returns `https://api.mymemory.translated.net/get?q=<text>&langpair=<sl>|<tl>`
+ */
+export function buildMyMemoryUrl(text: string, sl: string, tl: string): string {
+  const sourceLang = sl === 'auto' ? 'en' : sl;
+  const params = new URLSearchParams({
+    q: text,
+    langpair: `${sourceLang}|${tl}`,
+  });
+  return `${MYMEMORY_TRANSLATE_ENDPOINT}?${params.toString()}`;
+}
+
+/**
+ * Parse a MyMemory Translate JSON response into translated text segments.
+ *
+ * Response shape: `{ responseData: { translatedText: string },
+ * responseStatus: number, quotaFinished: boolean | null }`.
+ *
+ * @param response - Parsed JSON from MyMemory.
+ * @returns Array with a single translated segment, or empty on failure/quota.
+ */
+export function parseMyMemoryResponse(response: unknown): string[] {
+  const typed = response as
+    | {
+        responseData?: { translatedText?: unknown };
+        responseStatus?: unknown;
+        quotaFinished?: unknown;
+      }
+    | undefined;
+  if (typed?.quotaFinished === true) return [];
+  if (typed?.responseStatus !== 200) return [];
+  const text = typed?.responseData?.translatedText;
+  if (typeof text !== 'string' || text.length === 0) return [];
+  return [text];
+}
+
 /**
  * Join cue texts into a single string for one Google request.
- *
  * Each cue is wrapped in marker tags `⟦C{idx}⟧...⟦/C{idx}⟧` so Google cannot
  * merge or split across cue boundaries. Internal `\n` is normalized to a single
  * space to prevent Google from splitting a cue into multiple segments.
