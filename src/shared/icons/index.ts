@@ -77,6 +77,7 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
+  Star,
   Sun,
   Trash,
   Users,
@@ -119,6 +120,7 @@ import panelLeftExpandSvg from './svg/panel-left-open.svg?raw';
 import xSvg from './svg/x.svg?raw';
 import downloadSvg from './svg/download.svg?raw';
 import searchSvg from './svg/search.svg?raw';
+import starSvg from './svg/star.svg?raw';
 import loaderSvg from './svg/loader.svg?raw';
 import playSvg from './svg/play.svg?raw';
 import pauseSvg from './svg/pause.svg?raw';
@@ -250,6 +252,7 @@ export const ICON_CATALOG = {
   alertCircle: { component: AlertCircle, svg: alertCircleSvg, source: 'lucide/alert-circle', tags: ['alert', 'error', 'warning', 'exclamation', 'circle'] } as IconEntry,
   moon: { component: Moon, svg: moonSvg, source: 'lucide/moon', tags: ['moon', 'dark', 'night', 'theme-dark'] } as IconEntry,
   sun: { component: Sun, svg: sunSvg, source: 'lucide/sun', tags: ['sun', 'light', 'day', 'theme-light'] } as IconEntry,
+  star: { component: Star, svg: starSvg, source: 'lucide/star', tags: ['star', 'rating', 'favorite', 'bookmark'] } as IconEntry,
   power: { component: Power, svg: powerSvg, source: 'lucide/power', tags: ['power', 'on', 'off', 'toggle', 'enable', 'disable'] } as IconEntry,
   trash: { component: Trash, svg: trashSvg, source: 'lucide/trash', tags: ['trash', 'delete', 'remove', 'bin'] } as IconEntry,
   copy: { component: Copy, svg: copySvg, source: 'lucide/copy', tags: ['copy', 'clipboard', 'duplicate'] } as IconEntry,

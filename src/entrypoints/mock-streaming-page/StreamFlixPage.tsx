@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   type ReactElement,
@@ -10,7 +11,6 @@ import {
   Badge,
   Breadcrumb,
   Button,
-  Card,
   Container,
   Flex,
   Heading,
@@ -81,6 +81,32 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
   const [playerDisplay, setPlayerDisplay] = useState<PlayerDisplay>(mode === 'iframe-host' ? 'iframe' : 'same');
   const [subMode, setSubMode] = useState<SubMode>('hash');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileNavRef = useRef<HTMLElement>(null);
+  const mobileMenuBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const firstLink = mobileNavRef.current?.querySelector('a') as HTMLElement | null;
+    firstLink?.focus();
+
+    const handleKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setMobileMenuOpen(false);
+    };
+    const handleClick = (e: MouseEvent): void => {
+      const target = e.target as Node;
+      if (mobileNavRef.current?.contains(target)) return;
+      if (mobileMenuBtnRef.current?.contains(target)) return;
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClick);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', handleClick);
+    };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     setThemeAttr(theme);
@@ -142,7 +168,12 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
             <span className={styles.logoText}>StreamFlix</span>
           </a>
 
-          <nav className={`${styles.nav} ${mobileMenuOpen ? styles.navOpen : ''}`} aria-label="Main">
+          <nav
+            id="streamflix-nav"
+            ref={mobileNavRef}
+            className={`${styles.nav} ${mobileMenuOpen ? styles.navOpen : ''}`}
+            aria-label="Main"
+          >
             <a href="#" className={styles.navLink}>Home</a>
             <a href="#" className={styles.navLink}>Movies</a>
             <a href="#" className={styles.navLink}>TV Series</a>
@@ -179,10 +210,14 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
               Login
             </Button>
 
-            <IconButton material="solid"
+            <IconButton
+              ref={mobileMenuBtnRef}
+              material="solid"
               variant="ghost"
               size="md"
               aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="streamflix-nav"
               className={styles.mobileMenuBtn}
               onClick={() => setMobileMenuOpen(v => !v)}
             >
@@ -214,7 +249,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                 </div>
               )}
 
-              <Card className={styles.serverCard}>
+              <div className={styles.serverCard}>
                 <Flex direction="column" gap="3">
                   <Text variant="supporting" color="secondary" as="p">
                     If the current server is not working, try switching to other servers.
@@ -264,7 +299,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                     ))}
                   </Flex>
                 </Flex>
-              </Card>
+              </div>
 
               <Flex align="center" gap="3" className={styles.titleSection}>
                 <Heading level={1} size={3} className={styles.title}>
@@ -273,7 +308,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                 <Badge variant="outline" size="sm">Episode {activeEp}</Badge>
               </Flex>
 
-              <Card className={styles.metadataCard}>
+              <div className={styles.metadataCard}>
                 <div className={styles.metadataGrid}>
                   {METADATA.map((m) => (
                     <div key={m.label} className={styles.metaRow}>
@@ -289,20 +324,23 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                           ))}
                         </span>
                       ) : m.rating ? (
-                        <span className={styles.rating}>⭐ {m.value}</span>
+                        <span className={styles.rating}>
+                          <Icon name="star" size="sm" className={styles.ratingStar} />
+                          <span className={styles.ratingValue}>{m.value}</span>
+                        </span>
                       ) : (
                         <Text as="span" color="primary">{m.value}</Text>
                       )}
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
 
               <Text variant="body" color="secondary" as="p" className={styles.description}>
                 {DESCRIPTION}
               </Text>
 
-              <Card className={styles.commentsCard}>
+              <div className={styles.commentsCard}>
                 <Heading level={3} size={5} className={styles.commentsTitle}>
                   Comments ({COMMENTS.length})
                 </Heading>
@@ -330,11 +368,11 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
 
             <aside className={styles.sidebar}>
-              <Card className={styles.sidebarCard}>
+              <div className={styles.sidebarCard}>
                 <Heading level={3} size={5} className={styles.sidebarTitle}>
                   Episodes
                 </Heading>
@@ -358,7 +396,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                     </ListItem>
                   ))}
                 </div>
-              </Card>
+              </div>
             </aside>
           </div>
 
