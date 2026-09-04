@@ -5,7 +5,8 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-elevated);
+  background: var(--universal-panel-header-bg);
+  color: var(--universal-panel-header-fg);
   height: var(--universal-panel-header-height);
 }
 

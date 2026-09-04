@@ -1,0 +1,70 @@
+.surface {
+  box-sizing: border-box;
+  color: var(--color-text);
+}
+
+.panel {
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  border: var(--border-width-hairline) solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  box-shadow: var(--panel-shadow);
+  overflow: hidden;
+}
+
+.dialog {
+  background: var(--dialog-bg);
+  color: var(--dialog-fg);
+  border: var(--dialog-border);
+  border-radius: var(--dialog-radius);
+  box-shadow: var(--dialog-shadow);
+}
+
+.popover {
+  background: var(--color-surface-popover);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-floating);
+  overflow: hidden;
+}
+
+.card {
+  background: var(--card-background);
+  color: var(--color-text-primary);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+}
+
+/* Glass — translucent frosted surface using liquid-glass tokens */
+.glass {
+  background: var(--color-glass-surface);
+  color: var(--color-glass-text-primary);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow:
+    var(--shadow-floating),
+    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
+  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
+}
+
+/* Padding scale (only applied when prop is passed) */
+.padding0 { padding: var(--space-0); }
+.padding0-5 { padding: var(--space-0-5); }
+.padding1 { padding: var(--space-1); }
+.padding1-5 { padding: var(--space-1-5); }
+.padding2 { padding: var(--space-2); }
+.padding2-5 { padding: var(--space-2-5); }
+.padding3 { padding: var(--space-3); }
+.padding3-5 { padding: var(--space-3-5); }
+.padding4 { padding: var(--space-4); }
+.padding4-5 { padding: var(--space-4-5); }
+.padding5 { padding: var(--space-5); }
+.padding6 { padding: var(--space-6); }
+.padding7 { padding: var(--space-7); }
+.padding8 { padding: var(--space-8); }
+.padding9 { padding: var(--space-9); }
+.padding10 { padding: var(--space-10); }
+.padding12 { padding: var(--space-12); }
+.padding16 { padding: var(--space-16); }
+.padding20 { padding: var(--space-20); }
+.padding24 { padding: var(--space-24); }
