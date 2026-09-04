@@ -70,6 +70,39 @@ describe('SettingsTab', () => {
     await waitFor(() => expect(mockSaveSettings).toHaveBeenCalledWith(DEFAULT_SETTINGS));
   });
 
+  it('syncs flat fields back into the active language profile before saving', async () => {
+    const withProfile: Settings = {
+      ...DEFAULT_SETTINGS,
+      activeProfileId: 'p1',
+      languageProfiles: [{
+        id: 'p1',
+        target: 'en',
+        native: '',
+        name: 'English',
+        order: 1,
+        subtitleOverlayTargetStyle: DEFAULT_SETTINGS.subtitleOverlayTargetStyle!,
+        subtitleOverlayNativeStyle: DEFAULT_SETTINGS.subtitleOverlayNativeStyle!,
+        subtitleOverlayAutoLoad: DEFAULT_SETTINGS.subtitleOverlayAutoLoad,
+        subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
+        subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
+        dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
+        resourceIds: [],
+      }],
+      subtitleOverlayAutoLoad: false,
+    };
+    mockLoadSettings.mockResolvedValueOnce(withProfile);
+    render(<SettingsTab />);
+    await waitFor(() => screen.getByTestId('settings-dialog-content'));
+
+    fireEvent.click(screen.getByTestId('settings-first-control'));
+    await waitFor(() => expect(mockSaveSettings).toHaveBeenCalled());
+
+    const saved = mockSaveSettings.mock.calls[0][0] as Settings;
+    expect(saved.subtitleOverlayAutoLoad).toBe(false);
+    expect(saved.languageProfiles[0]?.subtitleOverlayAutoLoad).toBe(false);
+    expect(saved.languageProfiles[0]?.dictionaryPopup).toEqual(DEFAULT_SETTINGS.dictionaryPopup);
+  });
+
   it('keeps settings in sync via chrome.storage.onChanged', async () => {
     render(<SettingsTab />);
     await waitFor(() => screen.getByTestId('settings-dialog-content'));

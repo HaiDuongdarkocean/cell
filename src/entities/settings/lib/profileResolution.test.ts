@@ -1,4 +1,4 @@
-import { buildProfileName, getActiveProfileSettings, resolveProfile, resolveSettingsFlatFields, validateLanguageProfile } from './profileResolution';
+import { buildProfileName, getActiveProfileSettings, resolveProfile, resolveSettingsFlatFields, syncFlatFieldsToActiveProfile, validateLanguageProfile } from './profileResolution';
 import type { LanguageProfile, Settings } from '../types';
 
 const mockProfile = (overrides: Partial<LanguageProfile> = {}): LanguageProfile => ({
@@ -82,6 +82,56 @@ describe('resolveSettingsFlatFields', () => {
     expect(resolved.subtitleOverlayTargetLanguage).toBe('en');
     expect(resolved.subtitleOverlayNativeLanguage).toBe('vi');
     expect(resolved.subtitleOverlayAutoLoad).toBe(true);
+  });
+
+  it('fills missing nested tts fields from active profile dictionaryPopup', () => {
+    const profile = mockProfile({
+      id: 'p1',
+      dictionaryPopup: { enabled: true, tts: { enabled: false } } as unknown as LanguageProfile['dictionaryPopup'],
+    });
+    const settings = {
+      universalNativeLanguage: 'vi',
+      languageProfiles: [profile],
+      activeProfileId: 'p1',
+    };
+    const resolved = resolveSettingsFlatFields(settings as unknown as Record<string, unknown>) as unknown as Settings;
+    expect(resolved.dictionaryPopup?.tts?.savedVoices).toEqual([]);
+    expect(resolved.dictionaryPopup?.tts?.downloadedLanguages).toEqual([]);
+    expect(resolved.dictionaryPopup?.tts?.hiddenLanguages).toEqual([]);
+    expect(resolved.dictionaryPopup?.tts?.maxDisplay).toBe(3);
+    expect(resolved.dictionaryPopup?.tts?.enabled).toBe(false);
+  });
+});
+
+describe('syncFlatFieldsToActiveProfile', () => {
+  it('copies flat fields from settings into the active language profile', () => {
+    const profile = mockProfile({ id: 'p1' });
+    const settings = {
+      universalNativeLanguage: 'vi',
+      languageProfiles: [profile],
+      activeProfileId: 'p1',
+      subtitleOverlayAutoLoad: false,
+      subtitleOverlayAutoLoadAsr: true,
+      subtitleOverlayAutoTranslate: false,
+      subtitleOverlayTargetStyle: { visible: false } as unknown as Settings['subtitleOverlayTargetStyle'],
+      subtitleOverlayNativeStyle: { visible: false } as unknown as Settings['subtitleOverlayNativeStyle'],
+      dictionaryPopup: { enabled: false, tts: { enabled: false } } as unknown as Settings['dictionaryPopup'],
+    } as unknown as Settings;
+    const synced = syncFlatFieldsToActiveProfile(settings);
+    const active = synced.languageProfiles[0];
+    expect(active.subtitleOverlayAutoLoad).toBe(false);
+    expect(active.subtitleOverlayAutoLoadAsr).toBe(true);
+    expect(active.dictionaryPopup.enabled).toBe(false);
+    expect(active.dictionaryPopup.tts?.enabled ?? false).toBe(false);
+  });
+
+  it('returns settings unchanged when no active profile', () => {
+    const settings = {
+      universalNativeLanguage: 'vi',
+      languageProfiles: [],
+      activeProfileId: null,
+    } as unknown as Settings;
+    expect(syncFlatFieldsToActiveProfile(settings)).toBe(settings);
   });
 });
 

@@ -25,15 +25,15 @@
 
 /* === Elevation (z-index) === */
 .low {
-  z-index: 10;
+  z-index: var(--z-overlay-low);
 }
 
 .med {
-  z-index: 100;
+  z-index: var(--z-overlay-med);
 }
 
 .high {
-  z-index: 1000;
+  z-index: var(--z-overlay-high);
 }
 
 /* === Backdrop blur === */

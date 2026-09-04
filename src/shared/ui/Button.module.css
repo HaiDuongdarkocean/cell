@@ -209,11 +209,23 @@
   color: var(--button-liquid-foreground);
 }
 
-/* Ghost — same liquid-glass material; floats on tinted backgrounds. */
-.ghost,
+/* Ghost — no fill, no border; light opacity on hover. */
+.ghost {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ghost::before {
+  display: none;
+}
+
 .ghost:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
-  color: var(--button-liquid-foreground);
+  opacity: 0.8;
 }
 
 /* Transparent — no fill, no border, no hover surface. */
@@ -336,21 +348,33 @@
   border-color: var(--color-border);
 }
 
+.solid.ghost {
+  border: none;
+}
+
 .solid.link {
   color: var(--color-primary);
   text-decoration: underline;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.outline:hover,
-  .solid.ghost:hover {
+  .solid.outline:hover {
     background: var(--button-solid-surface-hover);
+  }
+
+  .solid.ghost:hover {
+    background: transparent;
+    filter: brightness(0.92);
   }
 }
 
-.solid.outline:active,
-.solid.ghost:active {
+.solid.outline:active {
   background: var(--button-solid-surface-active);
+}
+
+.solid.ghost:active {
+  background: transparent;
+  filter: brightness(0.88);
 }
 
 .solid.link:hover {
@@ -486,6 +510,7 @@
 .circle {
   aspect-ratio: 1 / 1;
   min-width: 0;
+  min-height: 0;
   padding: 0;
   border-radius: var(--radius-full);
 }
