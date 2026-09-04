@@ -88,6 +88,34 @@ describe('ImagePanel', () => {
     expect(onToggle).toHaveBeenCalledWith('i1', true);
   });
 
+  it('renders scroll controls and scrolls the strip', () => {
+    const item = makeImage('i1');
+    render(
+      <ImagePanel
+        items={[item]}
+        loading={false}
+        error={null}
+        selection={selection([['i1', false]])}
+        onToggle={jest.fn()}
+        onImageError={jest.fn()}
+        term="hello"
+      />,
+    );
+
+    const left = screen.getByRole('button', { name: /Scroll images left/i });
+    const right = screen.getByRole('button', { name: /Scroll images right/i });
+    expect(left).toBeDisabled();
+    expect(right).toBeEnabled();
+
+    const strip = screen.getByTestId('dictionary-image-strip');
+    const scrollBy = jest.fn();
+    strip.scrollBy = scrollBy;
+    Object.defineProperty(strip, 'clientWidth', { value: 200, configurable: true });
+
+    fireEvent.click(right);
+    expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 128, behavior: 'smooth' }));
+  });
+
   it('marks selected items', () => {
     const item = makeImage('i1', true);
     render(
