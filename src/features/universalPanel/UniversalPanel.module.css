@@ -50,7 +50,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-surface);
+  background: var(--universal-panel-body-bg, var(--color-surface));
+  color: var(--universal-panel-body-fg, var(--color-text));
 }
 
 .content {
@@ -64,6 +65,10 @@
 
 .desktopSidebar {
   display: flex;
+  background: var(--universal-panel-aside-bg);
+  color: var(--universal-panel-aside-fg);
+  --sidebar-bg: var(--universal-panel-aside-bg);
+  --sidebar-fg: var(--universal-panel-aside-fg);
 }
 
 @media (max-width: 839px) {
