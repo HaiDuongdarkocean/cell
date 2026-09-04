@@ -553,7 +553,6 @@
   color: var(--color-text-inverse);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  /* border: var(--border-width-hairline) solid var(--color-surface); */
   box-sizing: border-box;
   pointer-events: none;
   z-index: var(--z-dropdown);
@@ -599,6 +598,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .cellImageEmptyAction {
@@ -820,7 +820,6 @@
   border-radius: var(--radius-card);
   background: transparent;
   border: var(--border-width-hairline) solid transparent;
-  /* margin: 0 var(--space-2) var(--space-2); */
   transition: background var(--transition), border-color var(--transition);
 }
 
@@ -866,41 +865,65 @@
   composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
   overflow-x: auto;
+  scroll-behavior: smooth;
   -ms-overflow-style: none;
 }
 
 .cellImageSkeletonCard {
   flex: 0 0 auto;
+  width: calc(var(--space-10) * 3);
+  min-width: calc(var(--space-10) * 3);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-2xl);
 }
 
 .cellImageStrip {
   composes: hide from '@/shared/ui/Scrollable.module.css';
   display: flex;
   flex-wrap: nowrap;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
   overflow-x: auto;
+  scroll-behavior: smooth;
   -ms-overflow-style: none;
 }
 
 .cellImageCard {
   flex: 0 0 auto;
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: calc(var(--space-10) * 3);
+  min-width: calc(var(--space-10) * 3);
+  height: auto;
+  min-height: auto;
+  aspect-ratio: 4 / 3;
   padding: 0;
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: var(--radius-2xl);
   background: var(--color-surface);
+  box-shadow: none;
   overflow: hidden;
   cursor: pointer;
 }
 
-.cellImageCard--selected {
-  border-color: var(--color-primary);
+.cellImageCard {
+  transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
+}
+
+.cellImageCard:hover {
+  filter: brightness(1.05);
+}
+
+.cellImageCard:active {
+  transform: scale(var(--button-press-scale));
+  filter: brightness(0.98);
+}
+
+.cellImageCard:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
 }
 
 .cellImageThumb {
@@ -909,11 +932,11 @@
   object-fit: cover;
 }
 
-/* Image panel: absolute position overlay (layout only — visual is unified) */
+/* Image panel: unified cellDefCheckBox pinned to the card's top-right corner. */
 .cellImageCard .cellDefCheckBox {
   position: absolute;
-  top: var(--space-0-5);
-  right: var(--space-0-5);
+  top: var(--space-2);
+  right: var(--space-2);
 }
 
 .cellTranslateSkeleton {
@@ -946,6 +969,25 @@
 /* CandidateSkeleton — skeleton action buttons in header (icon-btn--sm size) */
 .skeletonAction {
   flex-shrink: 0;
+}
+
+/* Image panel scroll controls — arrows overlaid at the two ends, vertically centered on the strip.
+   Centered with negative margin instead of transform so the SSOT Button press
+   transform (scale) is not overridden. Doubled class keeps these rules above `.button`. */
+.cellImageNavLeft.cellImageNavLeft,
+.cellImageNavRight.cellImageNavRight {
+  position: absolute;
+  top: 50%;
+  margin-top: calc(var(--space-3-5) * -1);
+  z-index: var(--z-dropdown);
+}
+
+.cellImageNavLeft.cellImageNavLeft {
+  left: 0;
+}
+
+.cellImageNavRight.cellImageNavRight {
+  right: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
