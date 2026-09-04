@@ -304,7 +304,6 @@ export async function addNoteTags(
  *  by re-checking `modelNames` after the call — if the model still doesn't
  *  exist, we return a helpful error guiding the user to create it manually. */
 export async function ensureDefaultModel(url: string): Promise<Result<void>> {
-  // Check if model exists.
   const modelsR = await listModels(url);
   if (!modelsR.ok) return modelsR;
   if (modelsR.value.includes('Cell Video Card')) return { ok: true, value: undefined };

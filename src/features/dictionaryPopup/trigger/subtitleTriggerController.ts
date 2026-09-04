@@ -86,7 +86,6 @@ export function wrapTokenSpans(
   langCode: string,
 ): HTMLSpanElement[] {
   const tokens = tokenizeSubtitleText(text, langCode);
-  // Clear existing content.
   textSpan.textContent = '';
 
   const tokenSpans: HTMLSpanElement[] = [];

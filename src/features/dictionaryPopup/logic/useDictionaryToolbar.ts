@@ -132,7 +132,6 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setTranslationSelected(false);
   }, []);
 
-  // Reset tab + media data when the looked-up result changes.
   useEffect(() => {
     setActiveTab(defaultActiveTab ?? null);
     resetMediaState();

@@ -89,7 +89,6 @@ export function YouTubeHardsubPlayer(): ReactElement {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Sync playing state.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;

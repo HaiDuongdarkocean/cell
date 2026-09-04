@@ -66,7 +66,6 @@ export function useDownloadProgress(): {
             convertProgress,
           } = payload.progress;
 
-          // Build the update patch with all available fields
           const patch = {
             status,
             progress,
@@ -128,7 +127,6 @@ export function useDownloadProgress(): {
         return;
       }
 
-      // Fetch existing downloads for this tab from the background.
       const request: MessageRequest = {
         type: 'GET_DOWNLOAD_PROGRESS',
         payload: { tabId: activeTabId },

@@ -34,7 +34,6 @@ export function applyStudyModeState(state: StudyModeState): void {
 }
 
 export function initializeStudyModeController(): void {
-  // Load initial state.
   void getStorage<Record<string, unknown>>(STORAGE_KEYS.STUDY_MODES)
     .then((data) => {
       const raw = data[STORAGE_KEYS.STUDY_MODES] as Partial<StudyModeState> | undefined;
@@ -64,7 +63,6 @@ export function initializeStudyModeController(): void {
       });
     });
 
-  // Listen for APPLY_STUDY_MODE messages.
   const remove = onMessage((msg) => {
     if ((msg as { type?: string }).type === MESSAGE_TYPES.APPLY_STUDY_MODE) {
       const payload = (msg as { payload?: unknown }).payload as ActiveStudyMode | undefined;

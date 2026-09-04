@@ -148,14 +148,12 @@ export function AppRedesigned(): React.JSX.Element {
 
   const handleSelectAll = (): void => {
     if (allSelected) {
-      // Deselect all available
       setSelectedIds((prev) => {
         const next = new Set(prev);
         availableMedia.forEach((m) => next.delete(m.id));
         return next;
       });
     } else {
-      // Select all available
       setSelectedIds((prev) => {
         const next = new Set(prev);
         availableMedia.forEach((m) => next.add(m.id));
@@ -166,7 +164,6 @@ export function AppRedesigned(): React.JSX.Element {
 
   const handleDownload = (): void => {
     if (selectionCount > 0) {
-      // Download selected items
       selectedIds.forEach((id) => {
         const video = videos.find((v) => v.id === id);
         const subtitle = subtitles.find((s) => s.id === id);
@@ -174,7 +171,6 @@ export function AppRedesigned(): React.JSX.Element {
         else if (subtitle) handleSubtitleDownload(subtitle.id);
       });
     } else {
-      // Download all available items
       videos.forEach((video) => handleVideoDownload(video.id));
       subtitles.forEach((subtitle) => handleSubtitleDownload(subtitle.id));
     }

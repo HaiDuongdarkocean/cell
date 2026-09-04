@@ -75,12 +75,10 @@ export function updateOverlayWithTokens(
   const tokenSpans = wrapTokenSpans(span, text, langCode);
   overlay.style.display = 'block';
 
-  // Update state.
   state.currentSpans = tokenSpans;
   state.currentSentence = text;
   state.currentLangCode = langCode;
 
-  // Attach trigger listeners.
   if (state.triggerController && tokenSpans.length > 0) {
     state.triggerController.attach(tokenSpans, text, langCode);
   }

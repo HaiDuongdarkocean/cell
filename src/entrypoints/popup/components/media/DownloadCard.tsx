@@ -32,7 +32,6 @@ export function DownloadCard({
   const isConverting = download.status === 'converting';
   const isActive = isDownloading || isConverting || isPaused;
 
-  // Duration: calculate from timestamps if both available
   const durationMs =
     download.startedAt && download.completedAt
       ? download.completedAt - download.startedAt
@@ -44,12 +43,10 @@ export function DownloadCard({
     download.downloadProgress !== undefined &&
     download.downloadProgress >= 100;
 
-  // Phase text for converting status
   const phaseText = isConverting && download.conversionPhase
     ? ` · ${phaseToLabel(download.conversionPhase)}`
     : '';
 
-  // Status text
   const statusText = isDone
     ? 'Done'
     : isError

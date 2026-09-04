@@ -817,8 +817,6 @@ export class Downloader {
 
         const batch = contentSegments.slice(start, start + this.segmentConcurrency);
 
-        // Fetch all segments in the batch concurrently.
-        // Use fetchSegmentWithRange for byte-range support.
         const blobs = await Promise.all(
           batch.map((segment) =>
             this.fetchSegmentWithRange(segment.url, video.tabUrl, segment.byteRange),

@@ -170,7 +170,6 @@ export class OcrSession {
     this.splitDetections = { target: [], native: [] };
     this.processedRanges = [];
 
-    // Init OCR engine in offscreen document.
     try {
       if (originState.splitEnabled) {
         await this.initSplitEngines(originState, systemLangs);
@@ -183,7 +182,6 @@ export class OcrSession {
       throw e;
     }
 
-    // Attach overlay.
     document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
     this.overlay.attach(video);
     document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
@@ -295,11 +293,9 @@ export class OcrSession {
         this.config,
       );
 
-      // Dev debug: log pipeline result status.
       const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
       statuses.push(result.status);
       document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
-      // Also log luma debug from pipeline.
       const lumaDbg = (globalThis as { __ocrLumaDbg?: string[] }).__ocrLumaDbg;
       if (lumaDbg && lumaDbg.length > 0) {
         document.body.dataset.ocrLumaDbg = lumaDbg.join(' | ');
@@ -494,7 +490,6 @@ export class OcrSession {
   async stop(): Promise<void> {
     this.running = false;
     this.endOcrTracks();
-    // Remove video listeners.
     if (this.video) {
       if (this.onSeeked) this.video.removeEventListener('seeked', this.onSeeked);
       if (this.onEnded) this.video.removeEventListener('ended', this.onEnded);

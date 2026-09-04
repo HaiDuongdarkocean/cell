@@ -451,7 +451,6 @@ async function tryEnglishPhraseMatchAll(
   if (deps.phraseIndexes && deps.phraseIndexes.size > 0) {
     indexes = [...deps.phraseIndexes.entries()].map(([resourceId, index]) => ({ resourceId, index }));
   } else {
-    // Load from IndexedDB.
     const stored = await getAllPhraseIndexes(langCode).catch(() => []);
     if (stored.length === 0) return [];
     checkAbort(signal);

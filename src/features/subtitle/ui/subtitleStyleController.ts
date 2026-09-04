@@ -130,11 +130,9 @@ export class SubtitleStyleController {
   handleHideBoth(): void {
     const bothHidden = this.targetHidden && this.nativeHidden;
     if (bothHidden) {
-      // Show both
       this.targetHidden = false;
       this.nativeHidden = false;
     } else {
-      // Hide both
       this.targetHidden = true;
       this.nativeHidden = true;
     }

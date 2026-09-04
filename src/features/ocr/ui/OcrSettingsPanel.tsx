@@ -80,7 +80,6 @@ export function OcrSettingsPanel({
   const targetResolvesNonDefaultModel = engineKeyFor(ocrState?.targetLangOverride ?? null, effectiveTargetLang) !== 'ch';
   const nativeResolvesNonDefaultModel = engineKeyFor(ocrState?.nativeLangOverride ?? null, effectiveNativeLang) !== 'ch';
 
-  // Load settings once on mount.
   useEffect(() => {
     let cancelled = false;
     void (async () => {

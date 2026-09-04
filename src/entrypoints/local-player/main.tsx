@@ -246,7 +246,6 @@ function LocalPlayerApp(): React.JSX.Element {
     subtitles: Map<string, File>,
     dirHandle: FileSystemDirectoryHandle | null,
   ): Promise<void> => {
-    // Save subtitles to library.
     for (const [filename, file] of subtitles) {
       const subRecord = buildSubtitleRecord(file);
       subRecord.id = filename;
@@ -257,7 +256,6 @@ function LocalPlayerApp(): React.JSX.Element {
       });
     }
 
-    // Match + save videos.
     if (videos.length > 0) {
       const matched = matchVideosWithSubtitles(videos, Array.from(subtitles.keys()), 'en', 'vi');
       for (const { video, subtitles: subs } of matched) {
@@ -356,7 +354,6 @@ function LocalPlayerApp(): React.JSX.Element {
       videoFileCacheRef.current.set(`${f.name}-${f.size}-${f.lastModified}`, f);
     }
 
-    // Play first video, queue rest into library.
     const [first, ...rest] = sortedFiles;
     void loadVideoWithPendingSubs(first!);
 
@@ -399,7 +396,6 @@ function LocalPlayerApp(): React.JSX.Element {
     setLibrary(videos);
     saverRef.current = createThrottledSaver(resumeRepo, record.id, 5000);
 
-    // Match against pending + cached subtitles.
     void matchPendingSubsForVideo(file);
   }
 
@@ -491,11 +487,9 @@ function LocalPlayerApp(): React.JSX.Element {
       positionMs: 0,
     });
 
-    // Refresh library list.
     const videos = await getAllVideos();
     setLibrary(videos);
 
-    // Create throttled saver for this video.
     saverRef.current = createThrottledSaver(resumeRepo, record.id, 5000);
 
     // Auto-match subtitles: scan the video's folder for sibling subtitle files.
@@ -620,7 +614,6 @@ function LocalPlayerApp(): React.JSX.Element {
           }
         }
 
-        // No library subtitles matched — show not-found.
         console.log('[Cell:autoMatch] NO MATCH — not-found');
         setSubtitleStatus('not-found');
         setSubtitles({ target: null, native: null, others: [] });
@@ -670,7 +663,6 @@ function LocalPlayerApp(): React.JSX.Element {
         native: result.native ?? null,
         others: result.others,
       });
-      // Parse target subtitle file → load cues into engine.
       const targetFile = subtitleFileMap.get(result.target.filename);
       if (targetFile) {
         await loadAndParseSubtitle(targetFile, result.native?.filename ? subtitleFileMap.get(result.native.filename) : undefined);
@@ -1011,7 +1003,6 @@ function LocalPlayerApp(): React.JSX.Element {
     }, PERSIST_DEBOUNCE_MS);
   }, []);
 
-  // Cleanup persist timers on unmount.
   useEffect(() => {
     return (): void => {
       if (stylePersistRef.current) clearTimeout(stylePersistRef.current);

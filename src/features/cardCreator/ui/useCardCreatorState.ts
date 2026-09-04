@@ -607,7 +607,6 @@ export function useCardCreatorState(
         const mediaFiles = await picked;
         addFiles(kind, mediaFiles);
       } finally {
-        // Clean up the input element from the DOM.
         input.remove();
       }
     },

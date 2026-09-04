@@ -210,7 +210,6 @@ export function useLocalVideo(
     }
   }, [videoRef]);
 
-  // Attach media event listeners to the video element.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;

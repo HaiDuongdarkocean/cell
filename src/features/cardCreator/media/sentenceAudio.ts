@@ -44,7 +44,6 @@ export async function captureSentenceAudio(
     return { ok: false, reason: 'hidden' };
   }
 
-  // Check API support.
   const captureStreamFn = (video as HTMLVideoElement & {
     captureStream?: () => MediaStream;
   }).captureStream;
