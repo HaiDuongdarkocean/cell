@@ -63,6 +63,7 @@ describe('themeStorage', () => {
   describe('loadThemeConfig', () => {
     it('returns stored config when valid', async () => {
       const config: ThemeConfig = {
+        preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
           dark: DEFAULT_THEME_CONFIG.customColors.dark,
@@ -85,6 +86,31 @@ describe('themeStorage', () => {
         [STORAGE_KEYS.THEME_CONFIG]: { customColors: { dark: DEFAULT_THEME_CONFIG.customColors.dark } },
       });
       await expect(loadThemeConfig()).resolves.toEqual(DEFAULT_THEME_CONFIG);
+    });
+    it('defaults missing preset to dawn while preserving customColors', async () => {
+      const config = {
+        customColors: {
+          light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
+        },
+      };
+      storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_CONFIG]: config });
+      const result = await loadThemeConfig();
+      expect(result.preset).toBe('dawn');
+      expect(result.customColors.light.primary).toBe('#ff0000');
+    });
+    it('defaults invalid preset to dawn while preserving customColors', async () => {
+      const config = {
+        preset: 'custom',
+        customColors: {
+          light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+          dark: DEFAULT_THEME_CONFIG.customColors.dark,
+        },
+      };
+      storageLocalGetMock.mockResolvedValue({ [STORAGE_KEYS.THEME_CONFIG]: config });
+      const result = await loadThemeConfig();
+      expect(result.preset).toBe('dawn');
+      expect(result.customColors.light.primary).toBe('#ff0000');
     });
   });
 

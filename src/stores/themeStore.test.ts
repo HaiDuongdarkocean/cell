@@ -45,6 +45,7 @@ describe('useThemeStore', () => {
   describe('init', () => {
     it('loads mode + config from storage', async () => {
       const config: ThemeConfig = {
+        preset: 'dawn',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
           dark: DEFAULT_THEME_CONFIG.customColors.dark,
@@ -129,6 +130,7 @@ describe('useThemeStore', () => {
   describe('setConfig', () => {
     it('replaces whole config + persists', () => {
       const newConfig: ThemeConfig = {
+        preset: 'ocean',
         customColors: {
           light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#123456' },
           dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#abcdef' },

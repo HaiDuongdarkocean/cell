@@ -3,6 +3,7 @@ import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { useThemeStore } from '@/stores/themeStore';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import type { ThemeConfig } from '@/entities/theme';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 const storageLocalSetMock = jest.fn<Promise<void>, [Record<string, unknown>]>();
@@ -107,7 +108,8 @@ describe('ThemeProvider', () => {
     await act(async () => {
       render(<ThemeProvider><Child /></ThemeProvider>);
     });
-    const customConfig = {
+    const customConfig: ThemeConfig = {
+      preset: 'dawn',
       customColors: {
         light: DEFAULT_THEME_CONFIG.customColors.light,
         dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' },
@@ -136,7 +138,8 @@ describe('ThemeProvider', () => {
     await act(async () => {
       render(<ThemeProvider><Child /></ThemeProvider>);
     });
-    const customConfig = {
+    const customConfig: ThemeConfig = {
+      preset: 'dawn',
       customColors: {
         light: DEFAULT_THEME_CONFIG.customColors.light,
         dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#abcdef' },

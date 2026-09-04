@@ -30,7 +30,7 @@ export function applyTheme(
   }
 
   target.setAttribute('data-theme', mode);
-  target.setAttribute('data-preset', config.preset ?? '');
+  target.setAttribute('data-preset', config.preset ?? 'dawn');
 }
 
 /**

@@ -43,10 +43,10 @@ const STYLE_ID = THEME_STYLE_ID;
 function buildStyleContent(config: ThemeConfig): string {
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
-  const preset = config.preset;
+  const preset = config.preset ?? 'dawn';
   const lightTokens = buildColorTokenCSS(config.customColors.light, 'light', preset);
   const darkTokens = buildColorTokenCSS(config.customColors.dark, 'dark', preset);
-  const selectorPrefix = preset ? `[data-preset="${preset}"]` : '';
+  const selectorPrefix = `[data-preset="${preset}"]`;
   return `
 :root {
 ${staticTokens}
@@ -181,11 +181,7 @@ export function injectThemeTokens(container: HTMLElement): () => void {
   const applyResolved = (mode: ThemeMode, config: ThemeConfig): void => {
     const resolved = resolveMode(mode);
     container.setAttribute('data-theme', resolved);
-    if (config.preset) {
-      container.setAttribute('data-preset', config.preset);
-    } else {
-      container.removeAttribute('data-preset');
-    }
+    container.setAttribute('data-preset', config.preset ?? 'dawn');
     // Re-inject <style> with custom palette (if config != default).
     const style = document.getElementById(STYLE_ID);
     if (style) style.textContent = buildStyleContent(config);

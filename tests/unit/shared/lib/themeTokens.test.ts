@@ -139,6 +139,7 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
     injectThemeTokens(container);
     await flushMicrotasks();
     const customConfig: ThemeConfig = {
+      preset: 'dawn',
       customColors: {
         light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
         dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#00ff00' },
@@ -173,6 +174,7 @@ describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
 
   it('applies custom themeConfig from storage on load', async () => {
     const customConfig: ThemeConfig = {
+      preset: 'dawn',
       customColors: {
         light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#abcdef' },
         dark: DEFAULT_THEME_CONFIG.customColors.dark,

@@ -14,7 +14,13 @@ describe('isValidThemeConfig', () => {
     expect(isValidThemeConfig({ foo: 'bar' })).toBe(false);
   });
   it('rejects missing dark', () => {
-    expect(isValidThemeConfig({ customColors: { light: DEFAULT_THEME_CONFIG.customColors.light } })).toBe(false);
+    expect(isValidThemeConfig({ preset: 'dawn', customColors: { light: DEFAULT_THEME_CONFIG.customColors.light } })).toBe(false);
+  });
+  it('rejects missing preset', () => {
+    expect(isValidThemeConfig({ customColors: DEFAULT_THEME_CONFIG.customColors })).toBe(false);
+  });
+  it('rejects invalid preset', () => {
+    expect(isValidThemeConfig({ preset: 'custom', customColors: DEFAULT_THEME_CONFIG.customColors })).toBe(false);
   });
   it('rejects missing token', () => {
     const bad = { customColors: { light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: undefined }, dark: DEFAULT_THEME_CONFIG.customColors.dark } };

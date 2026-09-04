@@ -84,7 +84,10 @@ export function ThemeProvider({ children, container }: ThemeProviderProps): Reac
       }
       if (changes[STORAGE_KEYS.THEME_CONFIG]?.newValue) {
         const newConfig = changes[STORAGE_KEYS.THEME_CONFIG].newValue as ThemeConfig;
-        useThemeStore.setState({ config: newConfig });
+        const preset = (['dawn', 'forest', 'ocean', 'warmth'] as const).includes(newConfig.preset)
+          ? newConfig.preset
+          : 'dawn';
+        useThemeStore.setState({ config: { ...newConfig, preset } });
       }
     };
     onStorageChanged(onChanged);
