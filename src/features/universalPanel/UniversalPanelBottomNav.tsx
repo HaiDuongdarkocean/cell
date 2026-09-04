@@ -54,15 +54,17 @@ export function UniversalPanelBottomNav({
               variant="ghost"
               shape="pill"
               size="md"
+              orientation="vertical"
+              active={isActive}
               aria-pressed={isActive}
               data-active={String(isActive)}
               className={styles.navItem}
               aria-label={tab.label}
               onClick={() => onTabChange(tab.key)}
               data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+              leadingIcon={<Icon name={tab.icon} />}
             >
-              <Icon name={tab.icon} size={20} />
-              <span className={styles.label}>{tab.label}</span>
+              {tab.label}
             </Button>
           );
         })}
@@ -71,14 +73,15 @@ export function UniversalPanelBottomNav({
           variant="ghost"
           shape="pill"
           size="md"
-          className={`${styles.navItem} ${styles.toolsItem}`}
+          orientation="vertical"
+          className={styles.navItem}
           aria-label="Tools"
           aria-expanded={isToolsOpen}
           onClick={() => setIsToolsOpen(true)}
           data-cell-id="universal-panel-mobile-tools"
+          leadingIcon={<Icon name="chevronDown" />}
         >
-          <Icon name="chevronDown" size={20} />
-          <span className={styles.label}>Tools</span>
+          Tools
         </Button>
       </nav>
 
