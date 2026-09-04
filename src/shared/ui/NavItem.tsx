@@ -45,8 +45,27 @@ export function NavItem({
       icon
     );
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    rest.onPointerDown?.(e);
+    if (disabled || e.defaultPrevented) return;
+
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const diameter = Math.max(rect.width, rect.height) * 1.6;
+    const radius = diameter / 2;
+    const x = e.clientX - rect.left - radius;
+    const y = e.clientY - rect.top - radius;
+    const span = btn.ownerDocument.createElement('span');
+    span.className = styles.ripple;
+    span.style.width = span.style.height = `${diameter}px`;
+    span.style.left = `${x}px`;
+    span.style.top = `${y}px`;
+    btn.appendChild(span);
+    span.addEventListener('animationend', () => span.remove(), { once: true });
+  };
+
   return (
-    <button type="button" className={cls} disabled={disabled} {...rest}>
+    <button type="button" className={cls} disabled={disabled} {...rest} onPointerDown={handlePointerDown}>
       <span className={styles.pill} aria-hidden="true" />
       {iconNode && <span className={styles.icon}>{iconNode}</span>}
       {label && <span className={styles.label}>{label}</span>}
