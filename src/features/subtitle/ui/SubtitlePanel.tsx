@@ -56,7 +56,7 @@ function SubtitlePanelImpl({
     <div className={styles.panel} data-cell-id="subtitle-panel">
       {onClose && (
         <div className={styles.header}>
-          <IconButton material="solid" variant="transparent"
+          <IconButton material="liquid" variant="transparent"
             aria-label="Collapse subtitle list"
             title="Collapse (T)"
             data-cell-id="subtitle-panel-close"

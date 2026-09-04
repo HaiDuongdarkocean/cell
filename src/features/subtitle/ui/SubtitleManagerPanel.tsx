@@ -152,7 +152,7 @@ function ItemRow({
       </span>
       {onDownload && (
         <span className={styles.trackActions}>
-          <IconButton material="solid"
+          <IconButton material="liquid"
             size="md"
             variant="ghost"
             aria-label={`Download ${item.name}`}
@@ -251,7 +251,7 @@ function OffsetStepper({
       </div>
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
-          <Button material="solid"
+          <Button material="liquid"
             variant="primary"
             size="md"
             leadingIcon={<Minus aria-hidden="true" />}
@@ -275,7 +275,7 @@ function OffsetStepper({
               data-cell-id={`manager-offset-input-${role}`}
             />
           </label>
-          <Button material="solid"
+          <Button material="liquid"
             variant="primary"
             size="md"
             leadingIcon={<Plus aria-hidden="true" />}
@@ -286,7 +286,7 @@ function OffsetStepper({
             <span className={styles.stepLabel}>+0.5s</span>
           </Button>
         </div>
-        <IconButton material="solid"
+        <IconButton material="liquid"
           size="md"
           variant="outline"
           aria-label="Reset latency"
@@ -316,7 +316,7 @@ function TrackList({
 }): React.JSX.Element {
   return (
     <div className={styles.trackList} data-cell-id="manager-section-body" data-role={role}>
-      <Button material="solid" variant="secondary"
+      <Button material="liquid" variant="secondary"
         role="option"
         aria-selected={activeIndex === -1}
         className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
@@ -533,7 +533,7 @@ export function SubtitleManagerPanel({
     return (
       <>
         {v !== 'tracks' && (
-          <IconButton material="solid"
+          <IconButton material="liquid"
             ref={backBtnRef}
             variant="ghost"
             aria-label="Back to subtitles"
@@ -588,7 +588,7 @@ export function SubtitleManagerPanel({
             {renderHeaderContent(view)}
           </div>
         </div>
-        <IconButton material="solid"
+        <IconButton material="liquid"
           aria-label="Close subtitle manager"
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
@@ -615,7 +615,7 @@ export function SubtitleManagerPanel({
                 </Tabs.List>
                 <div className={styles.sectionActions}>
                   {onImport && (
-                    <IconButton material="solid"
+                    <IconButton material="liquid"
                       size="md"
                       variant="ghost"
                       aria-label={`Import ${activeLabel} subtitle`}
@@ -626,7 +626,7 @@ export function SubtitleManagerPanel({
                     </IconButton>
                   )}
                   {onHideSection && (
-                    <IconButton material="solid"
+                    <IconButton material="liquid"
                       size="md"
                       variant="ghost"
                       active={activeHidden}

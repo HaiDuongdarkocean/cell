@@ -89,7 +89,7 @@ function SearchResultRow({ result, index, onClick }: {
 }): React.JSX.Element {
   return (
     <li className={styles.resultItem} role="option" data-cell-id={`search-result-${index}`}>
-      <Button material="solid" variant="secondary"
+      <Button material="liquid" variant="secondary"
         className={styles.resultButton}
         onClick={onClick}
         data-cell-id={`search-result-button-${index}`}
@@ -255,7 +255,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
-          <IconButton material="solid"
+          <IconButton material="liquid"
             variant="ghost"
             size="md"
             active={manageKeysOpen}
@@ -281,7 +281,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           />
           <div className={styles.searchActions}>
             {query && (
-              <IconButton material="solid"
+              <IconButton material="liquid"
                 variant="ghost"
                 size="md"
                 onClick={handleClearQuery}
@@ -291,7 +291,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 <X aria-hidden="true" />
               </IconButton>
             )}
-            <IconButton material="solid"
+            <IconButton material="liquid"
               variant="ghost"
               size="md"
               onClick={handleSearchClick}
@@ -303,7 +303,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             </IconButton>
           </div>
         </div>
-        <IconButton material="solid"
+        <IconButton material="liquid"
           variant="ghost"
           size="md"
           active={advancedOpen}
@@ -352,7 +352,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         <div className={styles.apiHint} data-cell-id="search-api-hint">
           <Wrench className={styles.apiHintIcon} aria-hidden="true" />
           <span className={styles.apiHintText}>Add an API key to start searching</span>
-          <Button material="solid"
+          <Button material="liquid"
             variant="primary"
             size="sm"
             onClick={() => setManageKeysOpen((v) => !v)}
@@ -413,7 +413,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
         {!loading && error && (
           <div className={styles.errorState} role="alert" data-cell-id="search-error">
             <span className={styles.errorText}>{error}</span>
-            <Button material="solid" variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
+            <Button material="liquid" variant="outline" size="sm" onClick={handleRetry} data-cell-id="search-retry">
               Retry
             </Button>
           </div>

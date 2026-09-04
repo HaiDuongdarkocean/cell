@@ -63,7 +63,7 @@ function NavClusterInner({
   if (collapsed) {
     return (
       <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
-        <IconButton variant="glass"
+        <IconButton material="liquid" variant="glass"
           className={styles.collapsedBtn}
           aria-label="Expand subtitle navigation"
           data-cell-id="nav-expand"
@@ -78,10 +78,10 @@ function NavClusterInner({
   return (
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
       <div className={styles.main} data-cell-id="nav-main">
-        <IconButton variant="glass" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
+        <IconButton material="liquid" variant="glass" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
           <Icon name="navPrev"  />
         </IconButton>
-        <IconButton variant="glass"
+        <IconButton material="liquid" variant="glass"
           aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
           data-cell-id="nav-repeat"
           onClick={onRepeat}
@@ -89,18 +89,18 @@ function NavClusterInner({
         >
           <Icon name={repeatIcon}  />
         </IconButton>
-        <IconButton variant="glass" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
+        <IconButton material="liquid" variant="glass" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
           <Icon name="navNext"  />
         </IconButton>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
-        <IconButton variant="glass" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
+        <IconButton material="liquid" variant="glass" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
           <Icon name="navRewind"  />
         </IconButton>
-        <IconButton variant="glass" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
+        <IconButton material="liquid" variant="glass" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
           <Icon name={isPlaying ? 'navPause' : 'navPlay'}  />
         </IconButton>
-        <IconButton variant="glass" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
+        <IconButton material="liquid" variant="glass" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
           <Icon name="navForward"  />
         </IconButton>
       </div>

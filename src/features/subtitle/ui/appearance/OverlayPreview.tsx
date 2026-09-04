@@ -79,34 +79,34 @@ export function OverlayPreview({
 
         <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
-            <IconButton variant="glass" aria-label="Quick add card" size="sm" onClick={noop}>
+            <IconButton material="liquid" variant="glass" aria-label="Quick add card" size="sm" onClick={noop}>
               <Icon name="zap"  />
             </IconButton>
-            <IconButton variant="glass" aria-label="Edit card" size="sm" onClick={noop}>
+            <IconButton material="liquid" variant="glass" aria-label="Edit card" size="sm" onClick={noop}>
               <Icon name="pencil"  />
             </IconButton>
             <div className={styles.toggleWrap}>
               <div className={styles.extraCol}>
-                <IconButton variant="glass" aria-label="Open subtitle list" size="sm" onClick={noop}>
+                <IconButton material="liquid" variant="glass" aria-label="Open subtitle list" size="sm" onClick={noop}>
                   <Icon name="sidePanel"  />
                 </IconButton>
-                <IconButton variant="glass" aria-label="Generate native subtitle" size="sm" onClick={noop}>
+                <IconButton material="liquid" variant="glass" aria-label="Generate native subtitle" size="sm" onClick={noop}>
                   <Icon name="languages"  />
                 </IconButton>
               </div>
-              <IconButton variant="glass" aria-label="Expand tools" size="sm" onClick={noop}>
+              <IconButton material="liquid" variant="glass" aria-label="Expand tools" size="sm" onClick={noop}>
                 <Icon name="chevronLeft"  />
               </IconButton>
             </div>
           </div>
           <div className={styles.secondaryCol}>
-            <IconButton variant="glass" aria-label="Update current card" size="sm" onClick={noop}>
+            <IconButton material="liquid" variant="glass" aria-label="Update current card" size="sm" onClick={noop}>
               <Icon name="rotateCcw"  />
             </IconButton>
-            <IconButton variant="glass" aria-label="Open subtitle manager" size="sm" onClick={noop}>
+            <IconButton material="liquid" variant="glass" aria-label="Open subtitle manager" size="sm" onClick={noop}>
               <Icon name="subtitleManager"  />
             </IconButton>
-            <IconButton variant="glass" aria-label="Enter player mode" size="sm" onClick={noop}>
+            <IconButton material="liquid" variant="glass" aria-label="Enter player mode" size="sm" onClick={noop}>
               <Icon name="maximize"  />
             </IconButton>
           </div>

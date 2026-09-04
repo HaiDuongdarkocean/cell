@@ -35,11 +35,11 @@ export function Showcase(): ReactElement {
   return (
     <div className={styles.root}>
       <Section
-        title="Variants — Liquid Glass"
-        caption="6 canonical variants. All action variants share the same neutral smoked-blue liquid-glass material; the rim caustics provide the only outline. Pointer-down spawns a water ripple from the touch point; release uses a spring easing for a water-surface rebound. Token-driven, theme-agnostic."
+        title="Variants"
+        caption="6 canonical variants. Primary, Outline, Ghost, Success, and Destructive use the solid material by default; Glass still uses the neutral smoked-blue liquid-glass material. Token-driven, theme-agnostic."
       >
         <Button variant="primary">Primary</Button>
-        <Button variant="glass">Glass</Button>
+        <Button material="liquid" variant="glass">Glass</Button>
         <Button variant="outline">Outline</Button>
         <Button variant="ghost">Ghost</Button>
         <Button variant="success">Success</Button>
@@ -62,7 +62,7 @@ export function Showcase(): ReactElement {
       >
         <Button variant="primary" aria-label="Download"><Download size={18} aria-hidden="true" /></Button>
         <Button variant="primary">Label only</Button>
-        <Button variant="glass" leadingIcon={<Download size={18} aria-hidden="true" />}>Horizontal</Button>
+        <Button material="liquid" variant="glass" leadingIcon={<Download size={18} aria-hidden="true" />}>Horizontal</Button>
         <Button variant="outline" trailingIcon={<ChevronRight size={18} aria-hidden="true" />}>Next</Button>
       </Section>
 
@@ -93,11 +93,11 @@ export function Showcase(): ReactElement {
         title="Liquid Glass — Apple materials"
         caption="3 material directions, switched through one API. Use the showcase preset switcher above to preview Dawn, Forest, Ocean, and Warmth."
       >
-        <Button variant="glass" liquidStyle="regular" leadingIcon={<Search size={18} aria-hidden="true" />}>Regular</Button>
-        <Button variant="glass" liquidStyle="clear" leadingIcon={<Image size={18} aria-hidden="true" />}>Clear</Button>
-        <Button variant="glass" liquidStyle="prominent" leadingIcon={<Sun size={18} aria-hidden="true" />}>Prominent</Button>
-        <Button variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
-        <Button variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Download size={20} aria-hidden="true" />}>Download video</Button>
+        <Button material="liquid" variant="glass" liquidStyle="regular" leadingIcon={<Search size={18} aria-hidden="true" />}>Regular</Button>
+        <Button material="liquid" variant="glass" liquidStyle="clear" leadingIcon={<Image size={18} aria-hidden="true" />}>Clear</Button>
+        <Button material="liquid" variant="glass" liquidStyle="prominent" leadingIcon={<Sun size={18} aria-hidden="true" />}>Prominent</Button>
+        <Button material="liquid" variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
+        <Button material="liquid" variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Download size={20} aria-hidden="true" />}>Download video</Button>
       </Section>
 
       <Section
@@ -122,13 +122,13 @@ export function Showcase(): ReactElement {
         <div data-theme="light" className={styles.surfaceWhite}>
           <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>White</Button>
           <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
-          <Button variant="glass" size="lg">Large</Button>
+          <Button material="liquid" variant="glass" size="lg">Large</Button>
           <Button material="solid" variant="primary">Solid</Button>
         </div>
         <div data-theme="dark" className={styles.surfaceBlack}>
           <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>Black</Button>
           <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
-          <Button variant="glass" size="lg">Large</Button>
+          <Button material="liquid" variant="glass" size="lg">Large</Button>
           <Button material="solid" variant="primary">Solid</Button>
         </div>
       </Section>
