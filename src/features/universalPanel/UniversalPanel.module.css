@@ -47,12 +47,19 @@
   padding: var(--space-4);
 }
 
+/* Tabs that own their own padding leave the content wrapper flush. */
+.content[data-cell-id="universal-panel-content-dictionary"],
+.content[data-cell-id="universal-panel-content-settings"] {
+  padding: var(--space-0);
+}
+
 .desktopSidebar {
   display: flex;
   background: var(--universal-panel-aside-bg);
   color: var(--universal-panel-aside-fg);
   --sidebar-bg: var(--universal-panel-aside-bg);
   --sidebar-fg: var(--universal-panel-aside-fg);
+  --nav-item-hover-bg: transparent;
 }
 
 @media (max-width: 839px) {
