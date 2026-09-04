@@ -13,16 +13,21 @@
 export function getStorage<T extends Record<string, unknown>>(
   keys?: string | string[] | null,
 ): Promise<T> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.local) {
+    return Promise.resolve({} as T);
+  }
   return chrome.storage.local.get(keys ?? null) as Promise<T>;
 }
 
 export async function setStorage(
   items: Record<string, unknown>,
 ): Promise<void> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
   await chrome.storage.local.set(items);
 }
 
 export async function removeStorage(keys: string | string[]): Promise<void> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
   await chrome.storage.local.remove(keys);
 }
 
@@ -31,16 +36,21 @@ export async function removeStorage(keys: string | string[]): Promise<void> {
 export function getSessionStorage<T extends Record<string, unknown>>(
   keys?: string | string[] | null,
 ): Promise<T> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.session) {
+    return Promise.resolve({} as T);
+  }
   return chrome.storage.session.get(keys ?? null) as Promise<T>;
 }
 
 export async function setSessionStorage(
   items: Record<string, unknown>,
 ): Promise<void> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
   await chrome.storage.session.set(items);
 }
 
 export async function removeSessionStorage(keys: string | string[]): Promise<void> {
+  if (typeof chrome === 'undefined' || !chrome.storage?.session) return;
   await chrome.storage.session.remove(keys);
 }
 

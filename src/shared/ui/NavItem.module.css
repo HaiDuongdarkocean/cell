@@ -46,7 +46,7 @@
 
 .item.active,
 .item[aria-current="true"] {
-  background: var(--color-surface-hover);
+  background: var(--color-primary-subtle);
   color: var(--color-text);
   font-weight: var(--font-weight-regular);
 }
