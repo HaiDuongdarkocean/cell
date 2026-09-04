@@ -185,22 +185,19 @@ export function UniversalPanel({
           data-cell-id="universal-panel-tab-bar"
           className={styles.desktopSidebar}
           header={languageProfiles.length > 0 ? (
-            <div className={styles.profileHeader} data-collapsed={isCollapsed}>
-              <Button
-                material="solid"
-                size="md"
-                variant="ghost"
-                shape="pill"
-                fullWidth
-                className={styles.profileButton}
-                onClick={() => setIsProfileDialogOpen(true)}
-                aria-label={`Switch language profile: ${activeProfileName}`}
-                data-cell-id="universal-panel-profile-button"
-              >
-                <FlagIcon lang={activeProfile?.target ?? ''} title={activeProfileName} />
-                <span className={styles.profileLabel}>{activeProfileName}</span>
-              </Button>
-            </div>
+            <Button
+              material="solid"
+              size="md"
+              variant="ghost"
+              shape="circle"
+              className={styles.profileButton}
+              onClick={() => setIsProfileDialogOpen(true)}
+              aria-label={`Switch language profile: ${activeProfileName}`}
+              title={activeProfileName}
+              data-cell-id="universal-panel-profile-button"
+            >
+              <FlagIcon lang={activeProfile?.target ?? ''} title={activeProfileName} />
+            </Button>
           ) : undefined}
           sections={[
             {
