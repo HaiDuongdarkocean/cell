@@ -44,4 +44,12 @@ describe('CollapsibleSidebar', () => {
     fireEvent.click(screen.getByText('Study'));
     expect(onStudy).toHaveBeenCalled();
   });
+
+  it('renders as aside by default and supports nav via as prop', () => {
+    const { container, rerender } = render(<CollapsibleSidebar sections={sections} />);
+    expect(container.firstChild?.nodeName).toBe('ASIDE');
+
+    rerender(<CollapsibleSidebar sections={sections} as="nav" />);
+    expect(container.firstChild?.nodeName).toBe('NAV');
+  });
 });

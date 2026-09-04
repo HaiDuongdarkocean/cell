@@ -40,7 +40,7 @@
   height: var(--active-h, 0px);
   transform: translateY(var(--active-y, 0px));
   background: var(--color-surface-hover);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-md);
   transition: transform var(--duration-normal) ease-in-out,
               height var(--duration-normal) ease-in-out,
               border-radius var(--duration-normal) ease-in-out,
