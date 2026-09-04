@@ -1,16 +1,4 @@
-import {
-  useState,
-  useId,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useCallback,
-  Children,
-  isValidElement,
-  cloneElement,
-  type ReactNode,
-  type Ref,
-} from 'react';
+import { useState, useId, useRef, useEffect, useLayoutEffect, useCallback, Children, isValidElement, cloneElement, type ReactNode, type Ref } from 'react';
 import { NavItem, type NavItemProps } from './NavItem';
 import styles from './Navigation.module.css';
 
@@ -36,14 +24,14 @@ export interface NavigationProps {
 }
 
 /**
- * Navigation — self-contained navigation organism with floating active pill animation (water-flow rAF).
+ * Navigation — self-contained navigation organism.
  *
  * - Supports `orientation="vertical"` (sidebar/drawer) and `orientation="horizontal"` (tabs/chip-bar).
- * - Owns: active state, floating bg animation (rAF ease-in-out cubic), scroll-spy, scroll-to-active.
+ * - Owns: active state, scroll-spy, scroll-to-active.
  * - Consumer provides: contentRef + sectionRefs for scroll-spy integration (optional).
  *
  * Children should be `NavItem` elements with `data-section-id` attribute.
- * Navigation injects `aria-current` + click handler via event delegation.
+ * Navigation injects `aria-current`, `orientation`, and click handler via event delegation.
  */
 export function Navigation({
   children,
@@ -97,12 +85,7 @@ export function Navigation({
     [orientation],
   );
 
-  // Scroll nav container when activeId changes.
-  useLayoutEffect(() => {
-    if (activeId) scrollNavToId(activeId);
-  }, [activeId, scrollNavToId]);
-
-  // Sync aria-current on children + update floating pill CSS custom properties.
+  // Sync aria-current on children and scroll nav container when activeId changes.
   useLayoutEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
@@ -116,17 +99,8 @@ export function Navigation({
       }
     });
 
-    const active = nav.querySelector('[aria-current="true"]') as HTMLElement | null;
-    if (active) {
-      if (orientation === 'horizontal') {
-        nav.style.setProperty('--active-x', `${active.offsetLeft}px`);
-        nav.style.setProperty('--active-w', `${active.offsetWidth}px`);
-      } else {
-        nav.style.setProperty('--active-y', `${active.offsetTop}px`);
-        nav.style.setProperty('--active-h', `${active.offsetHeight}px`);
-      }
-    }
-  }, [activeId, orientation, children]);
+    if (activeId) scrollNavToId(activeId);
+  }, [activeId, scrollNavToId]);
 
   // Scroll-spy: on content scroll, find section closest to viewport top.
   useEffect(() => {
@@ -150,7 +124,6 @@ export function Navigation({
       }
       if (bestId) {
         setActiveId(bestId);
-        scrollNavToId(bestId);
       }
     };
 
@@ -166,104 +139,21 @@ export function Navigation({
     root.addEventListener('scroll', onScroll, { passive: true });
     update();
     return () => root.removeEventListener('scroll', onScroll);
-  }, [contentRef, sectionRefs, setActiveId, scrollNavToId]);
+  }, [contentRef, sectionRefs, setActiveId]);
 
-  // Click-driven: rAF floating indicator animation + content scroll + observer suppression.
+  // Click-driven: set active, scroll content, suppress scroll-spy while scrolling.
   const handleItemClick = (sectionId: string): void => {
-    const nav = navRef.current;
     const root = (contentRef as React.RefObject<HTMLElement> | undefined)?.current;
     const target = sectionRefs?.current[sectionId];
 
     setActiveId(sectionId);
 
-    if (!nav) return;
-
-    const activeEl = nav.querySelector('[aria-current="true"]') as HTMLElement | null;
-    const targetEl = nav.querySelector(`[data-section-id="${sectionId}"]`) as HTMLElement | null;
-
     if (!root || !target) {
-      // Standalone navigation without linked content container
-      if (activeEl && targetEl && typeof requestAnimationFrame !== 'undefined') {
-        nav.setAttribute('data-animating', '');
-        const duration = 200;
-        const startTime = performance.now();
-
-        const animate = (now: number): void => {
-          const elapsed = now - startTime;
-          const t = Math.min(elapsed / duration, 1);
-          const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-          if (orientation === 'horizontal') {
-            const startX = activeEl.offsetLeft;
-            const endX = targetEl.offsetLeft;
-            const x = startX + (endX - startX) * eased;
-            nav.style.setProperty('--active-x', `${x}px`);
-          } else {
-            const startY = activeEl.offsetTop;
-            const endY = targetEl.offsetTop;
-            const y = startY + (endY - startY) * eased;
-            nav.style.setProperty('--active-y', `${y}px`);
-          }
-
-          if (t < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            if (orientation === 'horizontal') {
-              nav.style.setProperty('--active-x', `${targetEl.offsetLeft}px`);
-              nav.style.setProperty('--active-w', `${targetEl.offsetWidth}px`);
-            } else {
-              nav.style.setProperty('--active-y', `${targetEl.offsetTop}px`);
-              nav.style.setProperty('--active-h', `${targetEl.offsetHeight}px`);
-            }
-            nav.removeAttribute('data-animating');
-          }
-        };
-        requestAnimationFrame(animate);
-      }
+      scrollNavToId(sectionId);
       return;
     }
 
     clickScrollingRef.current = true;
-    nav.setAttribute('data-animating', '');
-    const startScroll = root.scrollTop;
-    const endScroll = target.offsetTop - root.offsetTop;
-    const distance = Math.abs(endScroll - startScroll);
-    const duration = Math.min(Math.max(distance * 0.3, 200), 800);
-    const startTime = performance.now();
-
-    const animate = (now: number): void => {
-      const elapsed = now - startTime;
-      const t = Math.min(elapsed / duration, 1);
-      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-      if (orientation === 'horizontal') {
-        const startX = activeEl ? activeEl.offsetLeft : 0;
-        const endX = targetEl ? targetEl.offsetLeft : startX;
-        const x = startX + (endX - startX) * eased;
-        nav.style.setProperty('--active-x', `${x}px`);
-      } else {
-        const startY = activeEl ? activeEl.offsetTop : 0;
-        const endY = targetEl ? targetEl.offsetTop : startY;
-        const y = startY + (endY - startY) * eased;
-        nav.style.setProperty('--active-y', `${y}px`);
-      }
-
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        if (orientation === 'horizontal') {
-          nav.style.setProperty('--active-x', `${targetEl?.offsetLeft ?? 0}px`);
-          nav.style.setProperty('--active-w', `${targetEl?.offsetWidth ?? 40}px`);
-        } else {
-          nav.style.setProperty('--active-y', `${targetEl?.offsetTop ?? 0}px`);
-          nav.style.setProperty('--active-h', `${targetEl?.offsetHeight ?? 40}px`);
-        }
-        nav.removeAttribute('data-animating');
-        setActiveId(sectionId);
-      }
-    };
-
-    requestAnimationFrame(animate);
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     scrollNavToId(sectionId);
 
@@ -285,7 +175,7 @@ export function Navigation({
       requestAnimationFrame(pollScroll);
     };
 
-    window.setTimeout(() => requestAnimationFrame(pollScroll), Math.max(duration * 2, 1200));
+    window.setTimeout(() => requestAnimationFrame(pollScroll), 800);
   };
 
   // Event delegation: click on nav captures [data-section-id]
@@ -296,11 +186,7 @@ export function Navigation({
     if (sectionId) handleItemClick(sectionId);
   };
 
-  const navClasses = [
-    styles.nav,
-    orientation === 'horizontal' ? styles.horizontal : styles.vertical,
-    className ?? '',
-  ]
+  const navClasses = [styles.nav, orientation === 'horizontal' ? styles.horizontal : styles.vertical, className ?? '']
     .filter(Boolean)
     .join(' ');
 
