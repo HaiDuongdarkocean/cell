@@ -23,6 +23,8 @@ const moduleNameMapper = {
   // Mock devMode in tests — source uses import.meta.env which is invalid in Jest's CJS
   // Must be BEFORE the generic '^@/(.*)$' mapper so it takes precedence.
   '^@/shared/lib/env/devMode$': '<rootDir>/tests/__mocks__/devMode.ts',
+  // Shadow DOM CSS bundle uses Vite import.meta.glob; not available in Jest.
+  '^@/shared/lib/shadowRoot/allModuleCss$': '<rootDir>/tests/__mocks__/allModuleCss.ts',
   '^@/(.*)$': '<rootDir>/src/$1',
   // CSS module mock must come BEFORE plain .css mock so module files
   // get the Proxy (class-name passthrough) instead of the empty string.
