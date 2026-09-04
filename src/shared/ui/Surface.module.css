@@ -21,10 +21,11 @@
 }
 
 .popover {
-  background: var(--color-surface-popover);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-  box-shadow: var(--shadow-floating);
+  background: var(--popover-bg);
+  color: var(--popover-fg);
+  border: var(--border-width-hairline) solid var(--popover-border);
+  border-radius: var(--popover-radius);
+  box-shadow: var(--popover-shadow);
   overflow: hidden;
 }
 
