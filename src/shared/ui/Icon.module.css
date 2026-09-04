@@ -26,3 +26,7 @@
 .inverse {
   color: var(--color-text-inverse);
 }
+
+.current {
+  color: currentColor;
+}

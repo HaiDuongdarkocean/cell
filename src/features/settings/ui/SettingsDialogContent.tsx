@@ -28,7 +28,7 @@ import { Select } from '@/shared/ui/Select';
 import { HintIcon } from '@/shared/ui/HintIcon';
 import { Card } from '@/shared/ui/Card';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
-import { Icon } from '@/shared/ui/Icon';
+
 import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
@@ -172,9 +172,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <NavItem
                   key={item.id}
                   data-section-id={item.id}
-                  icon={<Icon name={item.icon as never} size="sm" />}
+                  icon={item.icon}
                   label={item.label}
-                  orientation="horizontal"
                 />
               ))}
             </Navigation>
