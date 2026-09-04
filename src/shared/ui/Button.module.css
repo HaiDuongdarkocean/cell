@@ -32,7 +32,6 @@
     background-color var(--duration-slow) var(--ease-out),
     color var(--duration-slow) var(--ease-out),
     border-color var(--duration-slow) var(--ease-out),
-    transform var(--button-release-duration) var(--button-release-ease),
     box-shadow var(--duration-slow) var(--ease-out);
 }
 
@@ -83,9 +82,8 @@
 }
 
 .button:active {
-  transform: scale(var(--button-press-scale));
   filter: brightness(0.98);
-  transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
+  transition: filter var(--button-press-duration) var(--button-press-ease);
 }
 
 .button:focus-visible {
@@ -268,7 +266,6 @@
 
 .solid:active {
   background: var(--button-solid-surface-active);
-  transform: scale(var(--button-press-scale));
 }
 
 /* Solid + colored variants */
@@ -326,7 +323,6 @@
 .solid.success:active,
 .solid.destructive:active {
   filter: brightness(0.95);
-  transform: scale(var(--button-press-scale));
 }
 
 .solid.error {
