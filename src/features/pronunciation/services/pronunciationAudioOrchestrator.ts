@@ -21,6 +21,7 @@ import type { AudioEngineKind } from '../types';
 import type { PronunciationSettings } from '@/entities/settings/types';
 
 export interface PronunciationAudioProvider {
+  readonly kind: AudioEngineKind;
   resolve(term: string, langCode: string): Promise<readonly AudioItem[]>;
 }
 
@@ -115,6 +116,17 @@ const providerFactories: Record<AudioEngineKind, () => PronunciationAudioProvide
   espeak: () => new EspeakAudioProvider(),
 };
 
+const PROVIDER_TIMEOUT_MS = 7_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
 /** Orchestrate word-audio lookup across the configured fallback chain. */
 export class PronunciationAudioOrchestrator {
   private readonly providers: readonly PronunciationAudioProvider[];
@@ -132,7 +144,11 @@ export class PronunciationAudioOrchestrator {
 
     for (const provider of this.providers) {
       try {
-        const items = await provider.resolve(term, langCode);
+        const items = await withTimeout(
+          provider.resolve(term, langCode),
+          PROVIDER_TIMEOUT_MS,
+          provider.kind,
+        );
         if (items.length === 0) continue;
 
         const withSelection = items.map((item, index) => ({
@@ -141,6 +157,7 @@ export class PronunciationAudioOrchestrator {
         }));
         all.push(...withSelection);
         selectedSet = true;
+        break; // first non-empty provider wins
       } catch {
         // A single provider failing should not break the fallback chain.
         // The next provider in the user-configured order is tried instead.
