@@ -13,11 +13,6 @@
   height: 94%;
   max-width: calc(var(--space-5) * 64);
   display: flex;
-  background: var(--color-background);
-  color: var(--color-text);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-  overflow: hidden;
   will-change: transform, opacity;
 }
 
@@ -33,29 +28,40 @@
   animation: overlay-fade-out var(--duration-normal) var(--ease-standard) both;
 }
 
-.tabBar {
-  flex: 0 0 var(--space-12);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.profileHeader {
+  width: 100%;
+}
+
+.profileButton {
+  height: var(--universal-panel-profile-flag-size);
+  padding: 0 var(--space-3);
   justify-content: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--color-surface);
-  border-right: var(--border-width-hairline) solid var(--color-border);
+  overflow: hidden;
 }
 
-.tabGroup {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.profileButton [class*="flag"] {
+  width: var(--universal-panel-profile-flag-size);
+  height: var(--universal-panel-profile-flag-size);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.closeButton {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  z-index: var(--z-sticky);
+.profileLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity var(--sidebar-transition-duration) ease,
+              max-width var(--sidebar-transition-duration) ease,
+              margin var(--sidebar-transition-duration) ease;
+}
+
+.profileHeader[data-collapsed="true"] .profileLabel {
+  opacity: 0;
+  max-width: 0;
 }
 
 .body {
@@ -64,6 +70,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--color-surface);
 }
 
 .content {
@@ -75,6 +82,14 @@
   padding: var(--space-4);
 }
 
+.desktopSidebar {
+  display: flex;
+}
+
+.mobileBottomNav {
+  display: none;
+}
+
 @media (max-width: 839px) {
   .panel {
     max-width: none;
@@ -82,22 +97,12 @@
     flex-direction: column-reverse;
   }
 
-  .tabBar {
-    flex: 0 0 auto;
-    flex-direction: row;
-    justify-content: space-around;
-    border-right: none;
-    border-top: var(--border-width-hairline) solid var(--color-border);
-    padding: var(--space-2) 0;
+  .desktopSidebar {
+    display: none;
   }
 
-  .tabGroup {
-    flex-direction: row;
-  }
-
-  .closeButton {
-    top: var(--space-2);
-    right: var(--space-2);
+  .mobileBottomNav {
+    display: flex;
   }
 
   .body {

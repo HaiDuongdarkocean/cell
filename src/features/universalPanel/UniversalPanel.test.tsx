@@ -129,7 +129,7 @@ describe('UniversalPanel component', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('renders the universal header with 3 tokenize toggles + close button', () => {
+  it('renders the universal header with split tokenize capsule + close button', () => {
     render(
       <UniversalPanel
         isOpen
@@ -144,14 +144,12 @@ describe('UniversalPanel component', () => {
       />,
     );
     expect(screen.getByTestId('universal-panel-header')).toBeInTheDocument();
-    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).toBeInTheDocument();
-    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeInTheDocument();
-    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeInTheDocument();
-    expect(screen.getByTestId('universal-panel-header-toggle-subtitleEnabled')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-tokenize-text')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-tokenize-media')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-close')).toBeInTheDocument();
   });
 
-  it('disables Status + Frequency toggles when tokenize is off (Subtitle stays independent)', () => {
+  it('disables the Media half when hasMedia is false', () => {
     render(
       <UniversalPanel
         isOpen
@@ -160,38 +158,69 @@ describe('UniversalPanel component', () => {
         onClose={jest.fn()}
         tokenizeState={TOKENIZE_OFF}
         onToggleTokenize={jest.fn()}
+        hasMedia={false}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
         studyModesPanel={studyModesPanel}
       />,
     );
-    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
-    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeDisabled();
-    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeDisabled();
-    // Subtitle toggle is independent — always interactive even when web tokenize is off.
-    expect(screen.getByTestId('universal-panel-header-toggle-subtitleEnabled')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-tokenize-text')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-tokenize-media')).toBeDisabled();
   });
 
-  it('enables Status + Frequency toggles when tokenize is on', () => {
+  it('keeps the Media half enabled when hasMedia is true', () => {
     render(
       <UniversalPanel
         isOpen
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={jest.fn()}
-        tokenizeState={TOKENIZE_ON}
+        tokenizeState={TOKENIZE_OFF}
         onToggleTokenize={jest.fn()}
+        hasMedia
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
         studyModesPanel={studyModesPanel}
       />,
     );
-    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
-    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).not.toBeDisabled();
-    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-tokenize-text')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-tokenize-media')).not.toBeDisabled();
   });
 
-  it('calls onToggleTokenize with the clicked key', () => {
+  it('turns off media tokenize when hasMedia becomes false', () => {
+    const onToggleTokenize = jest.fn();
+    const { rerender } = render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={{ ...TOKENIZE_ON, subtitleEnabled: true }}
+        onToggleTokenize={onToggleTokenize}
+        hasMedia
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    rerender(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={{ ...TOKENIZE_ON, subtitleEnabled: true }}
+        onToggleTokenize={onToggleTokenize}
+        hasMedia={false}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    expect(onToggleTokenize).toHaveBeenCalledWith('subtitleEnabled');
+  });
+
+  it('calls onToggleTokenize with the correct key for each half', () => {
     const onToggleTokenize = jest.fn();
     render(
       <UniversalPanel
@@ -206,8 +235,10 @@ describe('UniversalPanel component', () => {
         studyModesPanel={studyModesPanel}
       />,
     );
-    fireEvent.click(screen.getByTestId('universal-panel-header-toggle-enabled'));
+    fireEvent.click(screen.getByTestId('universal-panel-header-tokenize-text'));
     expect(onToggleTokenize).toHaveBeenCalledWith('enabled');
+    fireEvent.click(screen.getByTestId('universal-panel-header-tokenize-media'));
+    expect(onToggleTokenize).toHaveBeenCalledWith('subtitleEnabled');
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useState, useMemo, type ReactElement } from 'react';
 import { UniversalPanel } from '@/features/universalPanel/UniversalPanel';
 import { DictionaryTab } from '@/features/universalPanel/tabs/DictionaryTab';
 import { SettingsTab } from '@/features/universalPanel/tabs/SettingsTab';
@@ -17,10 +17,31 @@ const INITIAL_TOKENIZE: TokenizePanelState = {
   subtitleEnabled: false,
 };
 
+const LANGUAGE_PROFILES = [
+  { id: 'vi-en', name: 'vietnamese → english', target: 'vi' },
+  { id: 'en-vi', name: 'english → vietnamese', target: 'en' },
+  { id: 'ja-en', name: 'japanese → english', target: 'ja' },
+];
+
+const VALID_TABS: UniversalPanelTab[] = ['dictionary', 'studyModes', 'settings'];
+
+function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab } {
+  const params = new URLSearchParams(window.location.search);
+  const openParam = params.get('open');
+  const tabParam = params.get('tab');
+  return {
+    isOpen: openParam !== 'false',
+    tab: VALID_TABS.includes(tabParam as UniversalPanelTab) ? (tabParam as UniversalPanelTab) : 'dictionary',
+  };
+}
+
 export function Showcase(): ReactElement {
-  const [isOpen, setIsOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<UniversalPanelTab>('dictionary');
+  const initial = useMemo(() => readShowcaseParams(), []);
+  const [isOpen, setIsOpen] = useState(initial.isOpen);
+  const [activeTab, setActiveTab] = useState<UniversalPanelTab>(initial.tab);
   const [tokenizeState, setTokenizeState] = useState<TokenizePanelState>(INITIAL_TOKENIZE);
+  const [hasMedia, setHasMedia] = useState(true);
+  const [activeProfileId, setActiveProfileId] = useState('vi-en');
 
   const handleToggleTokenize = (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled'): void => {
     setTokenizeState((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -43,6 +64,13 @@ export function Showcase(): ReactElement {
         >
           Switch to {activeTab === 'dictionary' ? 'Settings' : 'Dictionary'}
         </button>
+        <button
+          type="button"
+          onClick={() => setHasMedia((v) => !v)}
+          className={styles.toggleBtn}
+        >
+          {hasMedia ? 'Simulate no video' : 'Simulate video present'}
+        </button>
       </div>
       <div className={styles.pageFrame}>
         <div className={styles.pagePlaceholder}>
@@ -55,6 +83,10 @@ export function Showcase(): ReactElement {
           onClose={() => setIsOpen(false)}
           tokenizeState={tokenizeState}
           onToggleTokenize={handleToggleTokenize}
+          hasMedia={hasMedia}
+          languageProfiles={LANGUAGE_PROFILES}
+          activeProfileId={activeProfileId}
+          onProfileChange={setActiveProfileId}
           dictionaryPanel={
             <DictionaryTab
               langCode="en"
@@ -74,7 +106,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Universal Panel Page',
-  description: 'Slide-in side panel with Dictionary tab (DictionaryPanelView + integrated CardCreatorPanel) and Settings tab (12-section SettingsDialogContent). Header has tokenize toggles (Status/Frequency/Tokenize). Desktop: vertical tab bar left. Mobile: full-screen with bottom tabs.',
+  description: 'Slide-in side panel with Dictionary, Study and Settings tabs. Desktop: L-shape collapsible sidebar on the left, surface-elevated header, stretchable tokenize pill. Mobile: bottom nav bar with a tools sheet. Media half disables when no video is present.',
   level: 'pages' as const,
   category: 'Side Panel',
   order: 30,

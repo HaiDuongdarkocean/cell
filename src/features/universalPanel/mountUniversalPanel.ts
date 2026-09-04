@@ -8,6 +8,7 @@
  */
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
@@ -22,80 +23,13 @@ import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
-import universalPanelCss from './UniversalPanel.module.css?inline';
-import universalPanelHeaderCss from './UniversalPanelHeader.module.css?inline';
-import cardCreatorPanelCss from './tabs/CardCreatorPanel.module.css?inline';
-import dictionaryTabCss from './tabs/DictionaryTab.module.css?inline';
-import studyModesTabCss from '@/features/studyModes/ui/StudyModesTab.module.css?inline';
-import settingsTabCss from './tabs/SettingsTab.module.css?inline';
 
-import popupDictionaryCss from '@/features/dictionaryPopup/ui/PopupDictionary.module.css?inline';
-import dictionaryPanelViewCss from '@/features/dictionaryPopup/ui/DictionaryPanelView.module.css?inline';
-import orbitalBadgeCss from '@/features/dictionaryPopup/ui/OrbitalBadge.module.css?inline';
 
-import cardCreatorDialogCss from '@/features/cardCreator/ui/CardCreatorDialog.module.css?inline';
-import queueSidebarCss from '@/features/cardCreator/ui/QueueSidebar.module.css?inline';
-import mediaListCss from '@/features/cardCreator/ui/MediaList.module.css?inline';
-import previewBlockCss from '@/features/cardCreator/ui/PreviewBlock.module.css?inline';
-import fieldRowCss from '@/features/cardCreator/ui/FieldRow.module.css?inline';
 
-import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
-import dictionaryPopupSettingsPanelCss from '@/features/settings/ui/DictionaryPopupSettingsPanel.module.css?inline';
-import multiSelectCss from '@/features/settings/ui/MultiSelect.module.css?inline';
-import settingsDialogCss from '@/features/settings/ui/SettingsDialog.module.css?inline';
-import { appearanceShadowCss } from '@/features/subtitle/ui/appearance/appearanceShadowCss';
 
-import colorCustomizationCss from '@/features/theme/ui/ColorCustomization.module.css?inline';
-import contrastBadgesCss from '@/features/theme/ui/ContrastBadges.module.css?inline';
-import modeCardsCss from '@/features/theme/ui/ModeCards.module.css?inline';
-import themeImportExportCss from '@/features/theme/ui/ThemeImportExport.module.css?inline';
-import themePanelCss from '@/features/theme/ui/ThemePanel.module.css?inline';
-import themePreviewCss from '@/features/theme/ui/ThemePreview.module.css?inline';
 
-import ttsVoiceManagerPanelCss from '@/features/tts/ui/TtsVoiceManagerPanel.module.css?inline';
 
-import dropzoneCss from '@/features/dictionary/ui/Dropzone.module.css?inline';
-import importProgressCss from '@/features/dictionary/ui/ImportProgress.module.css?inline';
-import resourceCardCss from '@/features/dictionary/ui/ResourceCard.module.css?inline';
-import resourcesPanelCss from '@/features/dictionary/ui/ResourcesPanel.module.css?inline';
 
-import iconCss from '@/shared/icons/Icon.module.css?inline';
-
-import accordionCss from '@/shared/ui/Accordion.module.css?inline';
-import alertCss from '@/shared/ui/Alert.module.css?inline';
-import badgeCss from '@/shared/ui/Badge.module.css?inline';
-import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import cardCss from '@/shared/ui/Card.module.css?inline';
-import checkboxCss from '@/shared/ui/Checkbox.module.css?inline';
-import checkboxGroupCss from '@/shared/ui/CheckboxGroup.module.css?inline';
-import dialogCss from '@/shared/ui/Dialog.module.css?inline';
-import drawerCss from '@/shared/ui/Drawer.module.css?inline';
-import emptyStateCss from '@/shared/ui/EmptyState.module.css?inline';
-import errorBoundaryCss from '@/shared/ui/ErrorBoundary.module.css?inline';
-import formGroupCss from '@/shared/ui/FormGroup.module.css?inline';
-import headerCss from '@/shared/ui/Header.module.css?inline';
-import hintIconCss from '@/shared/ui/HintIcon.module.css?inline';
-import inputCss from '@/shared/ui/Input.module.css?inline';
-import inputFieldCss from '@/shared/ui/InputField.module.css?inline';
-import labelCss from '@/shared/ui/Label.module.css?inline';
-import listItemCss from '@/shared/ui/ListItem.module.css?inline';
-import navItemCss from '@/shared/ui/NavItem.module.css?inline';
-import progressCss from '@/shared/ui/Progress.module.css?inline';
-import radioCss from '@/shared/ui/Radio.module.css?inline';
-import radioGroupCss from '@/shared/ui/RadioGroup.module.css?inline';
-import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
-import searchableSelectCss from '@/shared/ui/SearchableSelect.module.css?inline';
-import selectCss from '@/shared/ui/Select.module.css?inline';
-import shortcutInputCss from '@/shared/ui/ShortcutInput.module.css?inline';
-import sidebarCss from '@/shared/ui/Sidebar.module.css?inline';
-import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
-import sliderCss from '@/shared/ui/Slider.module.css?inline';
-import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
-import tabsCss from '@/shared/ui/Tabs.module.css?inline';
-import textareaCss from '@/shared/ui/Textarea.module.css?inline';
-import toggleCss from '@/shared/ui/Toggle.module.css?inline';
-import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
 
 export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
@@ -118,82 +52,7 @@ const PANEL_HOST_ID = 'cell-universal-panel-host';
 const HOST_CLASS_NAME = 'js-cell-universal-panel-host';
 const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
-const SHADOW_CSS = [
-  universalPanelCss,
-  universalPanelHeaderCss,
-  cardCreatorPanelCss,
-  dictionaryTabCss,
-  studyModesTabCss,
-  settingsTabCss,
-
-  popupDictionaryCss,
-  dictionaryPanelViewCss,
-  orbitalBadgeCss,
-
-  cardCreatorDialogCss,
-  queueSidebarCss,
-  mediaListCss,
-  previewBlockCss,
-  fieldRowCss,
-
-  cardCreatorSettingsPanelCss,
-  dictionaryPopupSettingsPanelCss,
-  multiSelectCss,
-  settingsDialogCss,
-  ...appearanceShadowCss,
-
-  colorCustomizationCss,
-  contrastBadgesCss,
-  modeCardsCss,
-  themeImportExportCss,
-  themePanelCss,
-  themePreviewCss,
-
-  ttsVoiceManagerPanelCss,
-
-  dropzoneCss,
-  importProgressCss,
-  resourceCardCss,
-  resourcesPanelCss,
-
-  iconCss,
-
-  accordionCss,
-  alertCss,
-  badgeCss,
-  bottomSheetCss,
-  buttonCss,
-  cardCss,
-  checkboxCss,
-  checkboxGroupCss,
-  dialogCss,
-  drawerCss,
-  emptyStateCss,
-  errorBoundaryCss,
-  formGroupCss,
-  headerCss,
-  hintIconCss,
-  inputCss,
-  inputFieldCss,
-  labelCss,
-  listItemCss,
-  navItemCss,
-  progressCss,
-  radioCss,
-  radioGroupCss,
-  searchFieldCss,
-  searchableSelectCss,
-  selectCss,
-  shortcutInputCss,
-  sidebarCss,
-  skeletonCss,
-  sliderCss,
-  spinnerCss,
-  tabsCss,
-  textareaCss,
-  toggleCss,
-  tooltipCss,
-];
+const SHADOW_CSS = allModuleCss;
 
 async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
@@ -287,7 +146,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let dictionaryLangCode = 'en';
   let dictionarySourceLang = 'en';
   let dictionaryTargetLang = 'vi';
-  let languageProfiles: { readonly id: string; readonly name: string }[] = [];
+  let languageProfiles: { readonly id: string; readonly name: string; readonly target: string }[] = [];
   let activeProfileId: string | null = null;
 
   void loadSettings().then((settings) => {
@@ -295,7 +154,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = dictionarySourceLang;
-    languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name }));
+    languageProfiles = settings.languageProfiles.map((p) => ({ id: p.id, name: p.name, target: p.target }));
     activeProfileId = settings.activeProfileId;
     if (!isUnmounted) render();
   });
@@ -327,6 +186,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     if (isUnmounted) return;
     const open = mountController.isOpen();
     mount.host.style.pointerEvents = open ? 'auto' : 'none';
+    // ponytail: naive hasMedia detection via document.querySelector('video').
+    // Covers HTML5 players in the top-level document; does not detect videos
+    // inside cross-origin iframes or some custom players. Upgrade when needed.
+    const hasMedia = typeof document !== 'undefined' && document.querySelector('video') !== null;
     mount.root.render(
       createElement(
         ShadowThemeProvider,
@@ -339,6 +202,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           },
           onClose: () => controller.close(),
           tokenizeState,
+          hasMedia,
           onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
             options.panel?.onToggle(key);
           },
