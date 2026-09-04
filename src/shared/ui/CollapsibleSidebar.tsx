@@ -1,7 +1,9 @@
-import { useId, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from './Button';
+import { Navigation } from './Navigation';
+import { NavItem } from './NavItem';
 import styles from './CollapsibleSidebar.module.css';
 
 export interface CollapsibleSidebarItem {
@@ -29,6 +31,8 @@ export interface CollapsibleSidebarProps {
   sections: CollapsibleSidebarSection[];
   /** Optional footer node rendered at the bottom, below the collapse toggle. */
   footer?: ReactNode;
+  /** HTML landmark tag. Defaults to 'aside'. */
+  as?: 'aside' | 'nav';
   /** Accessible name for the sidebar. */
   'aria-label'?: string;
   /** Optional class name. */
@@ -42,6 +46,7 @@ export interface CollapsibleSidebarProps {
  * or collapsed (icon only). Designed for reuse across features.
  */
 export function CollapsibleSidebar({
+  as: Tag = 'aside',
   collapsed = false,
   onCollapsedChange,
   header,
@@ -51,42 +56,59 @@ export function CollapsibleSidebar({
   'data-cell-id': dataCellId,
   className,
 }: CollapsibleSidebarProps): React.JSX.Element {
-  const headerId = useId();
-
   return (
-    <nav
+    <Tag
       className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${className ?? ''}`.trim()}
       aria-label={ariaLabel}
       data-cell-id={dataCellId}
     >
       {header && <div className={styles.header}>{header}</div>}
 
-      <div className={styles.sections} role="tablist" aria-labelledby={header ? headerId : undefined}>
-        {sections.map((section) => (
-          <div key={section.id ?? section.items.map((i) => i.id).join('-')} className={styles.section}>
-            {section.items.map((item) => (
-              <Button
-                key={item.id}
-                material="solid"
-                variant="ghost"
-                shape="pill"
-                size="md"
-                fullWidth
-                active={item.active}
-                aria-label={item.label}
-                aria-selected={item.active}
-                role="tab"
-                tabIndex={item.active ? 0 : -1}
-                onClick={item.onClick}
-                data-cell-id={item['data-cell-id']}
-                className={styles.item}
+      <div className={styles.sections}>
+        {sections.map((section) => {
+          const activeItem = section.items.find((i) => i.active);
+          const sectionKey = section.id ?? section.items.map((i) => i.id).join('-');
+          if (activeItem) {
+            return (
+              <Navigation
+                key={sectionKey}
+                className={styles.nav}
+                orientation="vertical"
+                activeId={activeItem.id}
+                onActiveChange={(id) => {
+                  const item = section.items.find((i) => i.id === id);
+                  item?.onClick?.();
+                }}
+                ariaLabel={section.id ? `Sidebar ${section.id}` : 'Sidebar navigation'}
               >
-                <Icon name={item.icon} size={20} />
-                <span className={styles.label}>{item.label}</span>
-              </Button>
-            ))}
-          </div>
-        ))}
+                {section.items.map((item) => (
+                  <NavItem
+                    key={item.id}
+                    data-section-id={item.id}
+                    icon={<Icon name={item.icon} size={20} />}
+                    label={item.label}
+                    orientation="vertical"
+                    data-cell-id={item['data-cell-id']}
+                  />
+                ))}
+              </Navigation>
+            );
+          }
+          return (
+            <div key={sectionKey} className={styles.section} role="group">
+              {section.items.map((item) => (
+                <NavItem
+                  key={item.id}
+                  icon={<Icon name={item.icon} size={20} />}
+                  label={item.label}
+                  orientation="vertical"
+                  onClick={item.onClick}
+                  data-cell-id={item['data-cell-id']}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {onCollapsedChange && (
@@ -99,14 +121,14 @@ export function CollapsibleSidebar({
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           onClick={() => onCollapsedChange(!collapsed)}
           data-cell-id="collapsible-sidebar-toggle"
-          className={styles.item}
+          className={styles.collapseButton}
         >
           <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={20} />
-          <span className={styles.label}>{collapsed ? 'Expand' : 'Collapse'}</span>
+          <span className={styles.collapseLabel}>{collapsed ? 'Expand' : 'Collapse'}</span>
         </Button>
       )}
 
       {footer && <div className={styles.footer}>{footer}</div>}
-    </nav>
+    </Tag>
   );
 }

@@ -34,7 +34,7 @@ export function NavItem({
     .join(' ');
 
   return (
-    <Button material="solid" variant="secondary" shape="pill" className={cls} disabled={disabled} {...rest}>
+    <Button material="solid" variant="ghost" shape="pill" className={cls} disabled={disabled} {...rest}>
       {icon && <span className={styles.icon}>{icon}</span>}
       {label && <span className={styles.label}>{label}</span>}
     </Button>
