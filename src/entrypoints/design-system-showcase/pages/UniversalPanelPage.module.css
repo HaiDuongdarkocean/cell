@@ -29,7 +29,7 @@
   position: relative;
   width: 100%;
   height: 600px;
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-container);
   overflow: hidden;
   background: var(--color-surface);
@@ -41,7 +41,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  background: linear-gradient(135deg, var(--color-background) 0%, var(--color-surface-elevated) 100%);
   color: var(--color-text-secondary);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
