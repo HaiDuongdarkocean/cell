@@ -304,6 +304,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // resize handle gets clipped by .stage's overflow:hidden.
     useEffect(() => {
       if (!managerShadowCss || managerShadowCss.length === 0) return;
+      // Timing gotcha (ADR-097): this effect runs during mountSubtitle's
+      // flushSync commit, BEFORE mountSubtitle assigns host.id, so
+      // getElementById('cell-subtitle-root') is null here and the fallback
+      // below places the portal inside the overlay's shadow root. The panel
+      // renders correctly there (verified by the e2e spec); if the portal
+      // ever needs to live in the light-DOM video container, assign the host
+      // id before the flush instead of changing this fallback order.
       const overlayHost = document.getElementById('cell-subtitle-root');
       const container = isMobile
         ? document.body

@@ -182,7 +182,11 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
   // inside the shadow boundary. Without this, [data-theme="dark"] selectors
   // never match and buttons fall back to light-theme colors (invisible on dark dock).
   // Flushing sync ensures the imperative ref is populated before the caller
-  // (e.g. ReactSubtitleController) starts driving the panel state.
+  // (e.g. ReactSubtitleController) starts driving the panel state. This is a
+  // hard contract (ADR-097): without flushSync the ref is still null when the
+  // caller's first setManager/setManagerOpen fire, and the `controllerRef?.`
+  // optional chaining turns them into silent no-ops — the manager panel never
+  // opens. Guarded by e2e/extension-subtitle-manager.spec.ts.
   flushSync(() => {
     root.render(
       createElement(ShadowThemeProvider, { container: rootEl }, buildComponent()),
