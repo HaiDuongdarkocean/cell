@@ -9,6 +9,7 @@
   padding: var(--space-2) var(--space-1);
   background: var(--universal-panel-bottom-nav-bg);
   border-top: 1px solid var(--universal-panel-bottom-nav-border);
+  --button-vertical-icon-size: var(--iconbutton-icon-lg);
 }
 
 @media (max-width: 839px) {
@@ -21,32 +22,12 @@
   flex: 1;
   min-width: 0;
   height: var(--universal-panel-bottom-nav-item-height);
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-0-5);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-semibold);
+  width: 100%;
 }
 
 /* Override Button.ghost default color and keep the muted look for inactive tabs. */
 .bottomNav .navItem[data-active="false"] {
   color: var(--color-text-secondary);
-}
-
-/* Active tab uses universal panel tokens. */
-.bottomNav .navItem[data-active="true"],
-.bottomNav .navItem[data-active="true"]:hover {
-  color: var(--universal-panel-bottom-nav-active-fg);
-  background: var(--universal-panel-bottom-nav-active-bg);
-  filter: none;
-}
-
-.label {
-  line-height: var(--leading-tight);
-  white-space: nowrap;
 }
 
 .toolsList {
