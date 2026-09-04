@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
@@ -21,6 +21,15 @@ import type {
   FetchImagesResponse,
   TtsFetchAudioResponse,
 } from '../types';
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms),
+    ),
+  ]);
+}
 
 export interface UseDictionaryToolbarOptions {
   /** The candidate/result the toolbar operates on. */
@@ -131,40 +140,31 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
   const fetchAudio = useCallback((): Promise<readonly AudioItem[]> => {
     if (!result) return Promise.resolve([]);
+    if (audioLoading) return Promise.resolve([]);
     if (audioItems.length > 0) return Promise.resolve(audioItems);
     setAudioLoading(true);
     setAudioError(null);
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
-        const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
-          Promise.race([
-            p,
-            new Promise<T>((_, reject) =>
-              setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms),
-            ),
-          ]);
-
-        const [settings, sentenceTtsRes] = await withTimeout(
-          Promise.all([
-            withTimeout(loadSettings(), 5_000),
-            withTimeout(
-              sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-                type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-                payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
-              }),
-              8_000,
-            ).catch(() => undefined),
-          ]),
-          10_000,
-        );
+        // If loadSettings hangs, fall back to defaults so the audio API still gets a chance.
+        const [settings, sentenceTtsRes] = await Promise.all([
+          withTimeout(loadSettings(), 5_000).catch(() => DEFAULT_SETTINGS),
+          withTimeout(
+            sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+              payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
+            }),
+            8_000,
+          ).catch(() => undefined),
+        ]);
 
         const orchestrator = new PronunciationAudioOrchestrator(
           settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
         );
         const wordItems = await withTimeout(
           orchestrator.resolve(result.term, result.langCode),
-          12_000,
+          15_000,
         );
 
         const sentenceItems: AudioItem[] = [];
@@ -203,20 +203,24 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         }
       }
     })();
-  }, [audioItems, result, contextSentence]);
+  }, [audioItems, audioLoading, result, contextSentence]);
 
   const fetchImages = useCallback((): Promise<readonly ImageItem[]> => {
     if (!result) return Promise.resolve([]);
+    if (imageLoading) return Promise.resolve(imageItems);
     if (imageItems.length > 0) return Promise.resolve(imageItems);
     setImageLoading(true);
     setImageError(null);
 
-    return sendMessage<MessageResponse<FetchImagesResponse>>({
-      type: MESSAGE_TYPES.FETCH_IMAGES,
-      payload: { tabId: 0, term: result.term, langCode: result.langCode },
-    })
+    return withTimeout(
+      sendMessage<MessageResponse<FetchImagesResponse>>({
+        type: MESSAGE_TYPES.FETCH_IMAGES,
+        payload: { tabId: 0, term: result.term, langCode: result.langCode },
+      }),
+      10_000,
+    )
       .then((response) => {
-        if (response?.success && response.data?.items) {
+        if (response?.success && response.data?.items && response.data.items.length > 0) {
           const items = response.data.items;
           if (mountedRef.current) {
             setImageItems(items);
@@ -234,16 +238,17 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       .finally(() => {
         if (mountedRef.current) setImageLoading(false);
       });
-  }, [imageItems, result]);
+  }, [imageItems, imageLoading, result]);
 
   const translate = useCallback((): Promise<string> => {
     if (!result) return Promise.resolve('');
     const text = contextSentence.trim() || result.term.trim();
     if (!text) return Promise.resolve(translation);
     if (translation) return Promise.resolve(translation);
+    if (isTranslating) return Promise.resolve(translation);
     setIsTranslating(true);
     setTranslationError(null);
-    return translateSentence(text, sourceLang, targetLang)
+    return withTimeout(translateSentence(text, sourceLang, targetLang), 10_000)
       .then((res) => {
         if (mountedRef.current) {
           setTranslation(res);
@@ -253,7 +258,6 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       })
       .catch((err: unknown) => {
         if (mountedRef.current) {
-          setTranslation('');
           setTranslationError(err instanceof Error ? err.message : String(err));
         }
         return '';
@@ -261,7 +265,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       .finally(() => {
         if (mountedRef.current) setIsTranslating(false);
       });
-  }, [contextSentence, result, sourceLang, targetLang, translation]);
+  }, [contextSentence, result, sourceLang, targetLang, translation, isTranslating]);
 
   const toggleAudio = useCallback((id: string, selected: boolean): void => {
     setAudioSelection((prev) => new Map(prev).set(id, selected));
@@ -284,14 +288,29 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     setTranslationSelected((prev) => !prev);
   }, []);
 
+  // Refs keep the latest fetch callbacks so the lazy-load effect can depend on
+  // tab + data identity instead of on the callbacks themselves. This breaks a
+  // re-fetch loop where state changes (audioLoading / audioItems) would recreate
+  // the callback, re-trigger the effect, and start another fetch.
+  const fetchAudioRef = useRef<() => Promise<readonly AudioItem[]>>(fetchAudio);
+  const fetchImagesRef = useRef<() => Promise<readonly ImageItem[]>>(fetchImages);
+  useEffect(() => {
+    fetchAudioRef.current = fetchAudio;
+    fetchImagesRef.current = fetchImages;
+  });
+
   // Lazy-load tab data when a tab becomes active.
   useEffect(() => {
     if (activeTab === 'audio') {
-      void fetchAudio();
-    } else if (activeTab === 'image') {
-      void fetchImages();
+      void fetchAudioRef.current();
     }
-  }, [activeTab, fetchAudio, fetchImages]);
+  }, [activeTab, result?.term, result?.langCode, contextSentence]);
+
+  useEffect(() => {
+    if (activeTab === 'image') {
+      void fetchImagesRef.current();
+    }
+  }, [activeTab, result?.term, result?.langCode]);
 
   const selectedAudioCount = useMemo(
     () => audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected).length,

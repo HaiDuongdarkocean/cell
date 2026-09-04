@@ -116,7 +116,7 @@ const providerFactories: Record<AudioEngineKind, () => PronunciationAudioProvide
   espeak: () => new EspeakAudioProvider(),
 };
 
-const PROVIDER_TIMEOUT_MS = 7_000;
+const PROVIDER_TIMEOUT_MS = 8_000;
 
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([

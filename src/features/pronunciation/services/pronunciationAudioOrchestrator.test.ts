@@ -63,6 +63,17 @@ describe('PronunciationAudioOrchestrator', () => {
     expect(result[0].id).toBe('c1');
   });
 
+  it('times out a provider that never resolves and continues to the next', async () => {
+    const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['localFile', 'native']));
+    (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
+      { kind: 'localFile', resolve: () => new Promise(() => {}) },
+      new MockProvider([makeItem('n1', 'community')]),
+    ];
+
+    const result = await orchestrator.resolve('hello', 'en');
+    expect(result.map((i) => i.id)).toEqual(['n1']);
+  }, 15_000);
+
   it('stops at the first non-empty provider and uses only its items', async () => {
     const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['native', 'localFile']));
     (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
