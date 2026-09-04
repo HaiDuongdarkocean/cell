@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dialog-overlay-bg);
+  background: var(--universal-panel-overlay-bg);
 }
 
 .panel {
@@ -32,7 +32,7 @@
 .profileButton {
   width: var(--universal-panel-profile-flag-size);
   height: var(--universal-panel-profile-flag-size);
-  padding: 0;
+  padding: var(--space-0);
   overflow: hidden;
 }
 

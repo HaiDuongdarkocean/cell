@@ -7,8 +7,8 @@
   justify-content: space-around;
   gap: var(--space-1);
   padding: var(--space-2) var(--space-1);
-  background: var(--color-surface-elevated);
-  border-top: 1px solid var(--color-border);
+  background: var(--universal-panel-bottom-nav-bg);
+  border-top: 1px solid var(--universal-panel-bottom-nav-border);
 }
 
 @media (max-width: 839px) {
@@ -20,7 +20,7 @@
 .navItem {
   flex: 1;
   min-width: 0;
-  height: 52px;
+  height: var(--universal-panel-bottom-nav-item-height);
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -33,12 +33,12 @@
 }
 
 .navItem[data-active="true"] {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  color: var(--universal-panel-bottom-nav-active-fg);
+  background: var(--universal-panel-bottom-nav-active-bg);
 }
 
 .label {
-  line-height: 1.2;
+  line-height: var(--leading-tight);
   white-space: nowrap;
 }
 
@@ -55,8 +55,8 @@
   width: 100%;
   padding: var(--space-3);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-elevated);
+  border: 1px solid var(--universal-panel-tool-row-border);
+  background: var(--universal-panel-tool-row-bg);
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
@@ -64,7 +64,7 @@
 }
 
 .toolRow:hover {
-  background: var(--color-surface-hover);
+  background: var(--universal-panel-tool-row-hover-bg);
   border-color: var(--color-border-emphasized);
 }
 
