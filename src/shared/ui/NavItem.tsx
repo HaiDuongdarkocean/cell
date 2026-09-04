@@ -47,6 +47,7 @@ export function NavItem({
 
   return (
     <button type="button" className={cls} disabled={disabled} {...rest}>
+      <span className={styles.pill} aria-hidden="true" />
       {iconNode && <span className={styles.icon}>{iconNode}</span>}
       {label && <span className={styles.label}>{label}</span>}
     </button>

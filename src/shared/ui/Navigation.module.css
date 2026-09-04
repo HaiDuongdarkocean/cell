@@ -1,7 +1,6 @@
 /* === Navigation — standalone responsive navigation organism ===
    Supports vertical (sidebar/drawer/menu) and horizontal (chip-bar/tabs/topbar).
-   Owns: active state indicator (water-flow rAF pill), scroll-spy, event delegation.
-   Consumes design tokens only — no raw hex/radius. */
+   Manages active state, scroll-spy, scroll-to-active. */
 
 .nav {
   position: relative;
@@ -30,27 +29,6 @@
   container-type: inline-size;
 }
 
-/* Vertical floating active indicator pill (slides along Y) */
-.vertical::before {
-  content: '';
-  position: absolute;
-  left: var(--space-2);
-  right: var(--space-2);
-  top: 0;
-  height: var(--active-h, 0px);
-  transform: translateY(var(--active-y, 0px));
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-md);
-  transition: transform var(--duration-normal) ease-in-out,
-              height var(--duration-normal) ease-in-out,
-              border-radius var(--duration-normal) ease-in-out,
-              left var(--duration-normal) ease-in-out,
-              right var(--duration-normal) ease-in-out,
-              width var(--duration-normal) ease-in-out;
-  z-index: 0;
-  pointer-events: none;
-}
-
 /* ─── Orientation: Horizontal ─── */
 .horizontal {
   flex-direction: row;
@@ -64,68 +42,8 @@
   scroll-padding: var(--space-2);
 }
 
-/* Horizontal floating active indicator pill (slides along X) */
-.horizontal::before {
-  content: '';
-  position: absolute;
-  top: var(--space-1);
-  bottom: var(--space-1);
-  left: 0;
-  width: var(--active-w, 0px);
-  transform: translateX(var(--active-x, 0px));
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-xs);
-  transition: transform var(--duration-normal) ease-in-out,
-              width var(--duration-normal) ease-in-out,
-              border-radius var(--duration-normal) ease-in-out;
-  z-index: 0;
-  pointer-events: none;
-}
-
-/* JS-driven animation (rAF) — disable CSS transition while rAF active */
-.nav[data-animating]::before {
-  transition: none;
-}
-
-/* Items stay above floating indicator */
-.nav :global(button),
-.nav :global(a),
-.nav :global([role="tab"]),
-.nav :global([role="menuitem"]) {
-  position: relative;
-  z-index: 1;
-}
-
-/* ─── Responsive & container queries for vertical compact morph ─── */
-@container (width <= 64px) {
-  .vertical::before {
-    left: 50%;
-    right: auto;
-    width: var(--touch-target);
-    height: var(--touch-target);
-    transform: translateX(-50%) translateY(var(--active-y, 0px));
-    border-radius: 50%;
-  }
-
-  .vertical :global(button) {
-    height: var(--touch-target);
-    min-height: var(--touch-target);
-    padding: 0 calc((var(--space-16) - var(--space-2) * 2 - var(--space-5)) / 2);
-    border-radius: 50%;
-    gap: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .nav,
-  .nav::before,
-  .nav :global(button) {
-    transition: none;
-    animation: none;
-  }
   .nav {
     scroll-behavior: auto;
   }
 }
-
-

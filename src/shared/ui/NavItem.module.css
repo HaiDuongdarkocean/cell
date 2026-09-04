@@ -23,7 +23,7 @@
   width: 100%;
   justify-content: flex-start;
   /* NavItem is self-aware: container query detects own width.
-     Label retracts at <=80px, before circle morph at <=48px. */
+     Label retracts at <=80px, before circle morph at <=64px. */
   container-type: inline-size;
   transition: background-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
@@ -45,23 +45,9 @@
 
 .item.active,
 .item[aria-current="true"] {
+  background: var(--color-surface-hover);
   color: var(--color-text);
   font-weight: var(--font-weight-regular);
-}
-
-.item.active::after,
-.item[aria-current="true"]::after {
-  content: '';
-  position: absolute;
-  left: var(--space-1);
-  top: 50%;
-  transform: translateY(-50%);
-  width: var(--space-1);
-  height: var(--space-4);
-  border-radius: var(--radius-pill);
-  background: var(--color-primary);
-  z-index: 2;
-  pointer-events: none;
 }
 
 .item.active .icon,
@@ -69,8 +55,25 @@
   color: var(--color-primary);
 }
 
-.item.horizontal.active::after,
-.item.horizontal[aria-current="true"]::after {
+.pill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--space-1);
+  height: var(--space-4);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.item.active .pill,
+.item[aria-current="true"] .pill {
+  opacity: 1;
+}
+
+.horizontal .pill {
   display: none;
 }
 
@@ -115,8 +118,7 @@
 }
 
 /* === Container query: NavItem self-collapse ===
-   Threshold 1 (<=80px): label retracts toward icon, fades out.
-   This triggers BEFORE circle morph (threshold 2 in Sidebar.module.css). */
+   Threshold 1 (<=80px): label retracts toward icon, fades out. */
 @container (width <= 80px) {
   .label {
     opacity: 0;
@@ -124,9 +126,25 @@
   }
 }
 
+/* === Compact circle morph (<=64px): icon-only, centered === */
+@container (width <= 64px) {
+  .item {
+    height: var(--touch-target);
+    min-height: var(--touch-target);
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .pill,
+  .label {
+    display: none;
+  }
+}
+
 /* === Mobile chip bar (<600px): icon-only, no label ===
-   Chip bar ngang trên mobile chỉ hiển thị icon — label ẩn đi.
-   NavItem thu về hình vuông touch-target, justify center. */
+   Chip bar ngang trên mobile chỉ hiển thị icon — label ẩn đi. */
 @media (max-width: 599px) {
   .item {
     width: auto;
