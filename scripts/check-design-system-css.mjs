@@ -432,7 +432,8 @@ async function main() {
   }
 
   if (allFindings.length === 0) {
-    console.log(`0 violations in ${files.length} file${files.length === 1 ? '' : 's'} checked.`);
+    const totalFilesLabel = `${files.length} file${files.length === 1 ? '' : 's'}`;
+    console.log(`0 violations (${totalFilesLabel} checked).`);
     process.exit(0);
   }
 

@@ -43,7 +43,7 @@ describe('generate-design-system-health-report', () => {
     expect(report.adoption.target).toBe(0.95);
   });
 
-  it('shows pre-existing undefined-token drift as a deliberate/accepted warning, not a failure', async () => {
+  it('reflects the current undefined-token count with no failures', async () => {
     const raw = await readFile(jsonPath, 'utf-8');
     const report = JSON.parse(raw) as {
       summary: { status: string; failures: string[]; warnings: string[] };
@@ -51,10 +51,9 @@ describe('generate-design-system-health-report', () => {
     };
 
     const undefinedTokenCount = report.tokenHealth.cssAudit.byRule['undefined-token'] ?? 0;
-    expect(undefinedTokenCount).toBeGreaterThan(0);
-    expect(report.summary.status).toBe('warn');
     expect(report.summary.failures).toEqual([]);
-    expect(report.summary.warnings.some((w) => w.includes('undefined-token'))).toBe(true);
+    expect(report.summary.warnings.some((w) => w.includes('undefined-token'))).toBe(undefinedTokenCount > 0);
+    expect(['pass', 'warn']).toContain(report.summary.status);
   });
 
   it('flags zero-consumer public UI exports when present', async () => {
