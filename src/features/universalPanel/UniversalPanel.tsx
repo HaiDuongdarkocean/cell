@@ -1,10 +1,15 @@
-import { useRef, useState, useEffect, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+import { useRef, useState, useEffect, useCallback, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
+import { Button } from '@/shared/ui/Button';
+import { Surface } from '@/shared/ui/Surface';
+import { FlagIcon } from '@/shared/ui/FlagIcon';
+import { Dialog } from '@/shared/ui/Dialog';
+import { RadioGroup } from '@/shared/ui/RadioGroup';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
-import { Icon } from '@/shared/icons/Icon';
+import { CollapsibleSidebar } from '@/shared/ui';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { UniversalPanelHeader } from './UniversalPanelHeader';
+import { UniversalPanelBottomNav } from './UniversalPanelBottomNav';
 import { getLocalPlayerUrl } from './localPlayerLink';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab } from './types';
@@ -23,8 +28,10 @@ export interface UniversalPanelProps {
   readonly tokenizeState: TokenizePanelState;
   /** Toggle one of the tokenize keys from the universal header. */
   readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
+  /** Whether the current page has a video (disables the Media half). */
+  readonly hasMedia?: boolean;
   /** Language profiles for quick switch. */
-  readonly languageProfiles?: { readonly id: string; readonly name: string }[];
+  readonly languageProfiles?: { readonly id: string; readonly name: string; readonly target?: string }[];
   /** Active profile id. */
   readonly activeProfileId?: string | null;
   /** Called when user switches active profile. */
@@ -43,6 +50,33 @@ const TABS: { key: UniversalPanelTab; icon: 'bookOpen' | 'settings' | 'slidersHo
   { key: 'settings', icon: 'settings', label: 'Settings' },
 ];
 
+const TOOLS: { id: string; icon: 'library' | 'layers' | 'playRoundedRect'; title: string; description: string; onClick: () => void; 'data-cell-id'?: string }[] = [
+  {
+    id: 'reader',
+    icon: 'library',
+    title: 'Open Reader',
+    description: 'Read saved articles and subtitles',
+    onClick: () => { void sendMessage({ type: MESSAGE_TYPES.OPEN_READER, payload: {} }); },
+    'data-cell-id': 'universal-panel-reader',
+  },
+  {
+    id: 'srs',
+    icon: 'layers',
+    title: 'Open SRS',
+    description: 'Review your queued cards',
+    onClick: () => { void sendMessage({ type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE, payload: {} }); },
+    'data-cell-id': 'universal-panel-srs-study',
+  },
+  {
+    id: 'player',
+    icon: 'playRoundedRect',
+    title: 'Open local player',
+    description: 'Watch local video with subtitles',
+    onClick: () => { window.open(getLocalPlayerUrl(), '_blank'); },
+    'data-cell-id': 'universal-panel-tab-local-player',
+  },
+];
+
 /**
  * UniversalPanel — slide-in side panel shell with Dictionary / Settings tabs.
  *
@@ -56,6 +90,7 @@ export function UniversalPanel({
   onClose,
   tokenizeState,
   onToggleTokenize,
+  hasMedia = true,
   languageProfiles = [],
   activeProfileId = null,
   onProfileChange = () => {},
@@ -66,6 +101,16 @@ export function UniversalPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(isOpen);
   const [isClosing, setIsClosing] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const profileOptions = languageProfiles.map((p) => ({ value: p.id, label: p.name }));
+  const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
+  const activeProfileName = activeProfile?.name ?? 'Select profile';
+
+  const handleProfileSelect = useCallback((id: string): void => {
+    onProfileChange(id);
+    setIsProfileDialogOpen(false);
+  }, [onProfileChange]);
 
   useFocusTrap(panelRef, isOpen);
 
@@ -111,9 +156,10 @@ export function UniversalPanel({
       role="presentation"
       data-cell-id="universal-panel-backdrop"
     >
-      <div
+      <Surface
         ref={panelRef}
-        className={panelClass}
+        as="div"
+        variant="panel"
         role="dialog"
         aria-modal="true"
         aria-label="Universal panel"
@@ -124,80 +170,88 @@ export function UniversalPanel({
             setIsClosing(false);
           }
         }}
+        className={panelClass}
         data-cell-id="universal-panel"
       >
-        <nav
-          className={styles.tabBar}
+        <UniversalPanelBottomNav
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          tools={TOOLS}
+          className={styles.mobileBottomNav}
+        />
+        <CollapsibleSidebar
+          collapsed={isCollapsed}
+          onCollapsedChange={setIsCollapsed}
           aria-label="Panel tabs"
           data-cell-id="universal-panel-tab-bar"
-        >
-          <div className={styles.tabGroup}>
-            {TABS.map((tab) => (
-              <IconButton material="solid"
-                key={tab.key}
+          className={styles.desktopSidebar}
+          header={languageProfiles.length > 0 ? (
+            <div className={styles.profileHeader} data-collapsed={isCollapsed}>
+              <Button
+                material="solid"
                 size="md"
                 variant="ghost"
-                active={activeTab === tab.key}
-                aria-label={tab.label}
-                aria-pressed={activeTab === tab.key}
-                onClick={() => onTabChange(tab.key)}
-                data-cell-id={`universal-panel-tab-${tab.key}`}
+                shape="pill"
+                fullWidth
+                className={styles.profileButton}
+                onClick={() => setIsProfileDialogOpen(true)}
+                aria-label={`Switch language profile: ${activeProfileName}`}
+                data-cell-id="universal-panel-profile-button"
               >
-                <Icon name={tab.icon}  />
-              </IconButton>
-            ))}
-            <IconButton material="solid"
-              size="md"
-              variant="ghost"
-              aria-label="Open Reader"
-              title="Open Reader"
-              onClick={() =>
-                void sendMessage({
-                  type: MESSAGE_TYPES.OPEN_READER,
-                  payload: {},
-                })
-              }
-              data-cell-id="universal-panel-reader"
-            >
-              <Icon name="library"  />
-            </IconButton>
-            <IconButton
-              material="solid"
-              size="md"
-              variant="ghost"
-              aria-label="Open SRS study"
-              title="Open SRS study"
-              onClick={() => {
-                void sendMessage({
-                  type: MESSAGE_TYPES.SRS_OPEN_STUDY_PAGE,
-                  payload: {},
-                });
-              }}
-              data-cell-id="universal-panel-srs-study"
-            >
-              <Icon name="layers" />
-            </IconButton>
-            <IconButton material="solid"
-              size="md"
-              variant="ghost"
-              aria-label="Open local player"
-              title="Open local player"
-              onClick={() => { window.open(getLocalPlayerUrl(), '_blank'); }}
-              data-cell-id="universal-panel-tab-local-player"
-            >
-              <Icon name="playRoundedRect"  />
-            </IconButton>
-          </div>
-        </nav>
+                <FlagIcon lang={activeProfile?.target ?? ''} title={activeProfileName} />
+                <span className={styles.profileLabel}>{activeProfileName}</span>
+              </Button>
+            </div>
+          ) : undefined}
+          sections={[
+            {
+              id: 'tabs',
+              items: TABS.map((tab) => ({
+                id: tab.key,
+                icon: tab.icon,
+                label: tab.label,
+                active: activeTab === tab.key,
+                onClick: () => onTabChange(tab.key),
+                'data-cell-id': `universal-panel-tab-${tab.key}`,
+              })),
+            },
+            {
+              id: 'tools',
+              items: TOOLS.map((tool) => ({
+                id: tool.id,
+                icon: tool.icon,
+                label: tool.title,
+                onClick: tool.onClick,
+                'data-cell-id': tool['data-cell-id'],
+              })),
+            },
+          ]}
+        />
+
+        {languageProfiles.length > 0 && (
+          <Dialog
+            open={isProfileDialogOpen}
+            onOpenChange={setIsProfileDialogOpen}
+            title="Select language profile"
+            description="Choose the profile for translation and dictionary."
+            showCloseButton
+            data-cell-id="universal-panel-profile-dialog"
+          >
+            <RadioGroup
+              name="profile"
+              value={activeProfileId ?? ''}
+              options={profileOptions}
+              onChange={handleProfileSelect}
+            />
+          </Dialog>
+        )}
 
         <div className={styles.body}>
           <UniversalPanelHeader
             tokenizeState={tokenizeState}
             onToggleTokenize={onToggleTokenize}
             onClose={onClose}
-            languageProfiles={languageProfiles}
-            activeProfileId={activeProfileId}
-            onProfileChange={onProfileChange}
+            hasMedia={hasMedia}
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
@@ -206,7 +260,7 @@ export function UniversalPanel({
             {activeTab === 'settings' && settingsPanel}
           </div>
         </div>
-      </div>
+      </Surface>
     </div>
   );
 }

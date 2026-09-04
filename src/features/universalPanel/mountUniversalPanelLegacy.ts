@@ -213,6 +213,10 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
     if (isUnmounted || !root) return;
     const open = mountController.isOpen();
     rootEl.style.pointerEvents = open ? 'auto' : 'none';
+    // ponytail: naive hasMedia detection via document.querySelector('video').
+    // Covers HTML5 players in the top-level document; does not detect videos
+    // inside cross-origin iframes or some custom players. Upgrade when needed.
+    const hasMedia = typeof document !== 'undefined' && document.querySelector('video') !== null;
     root.render(
       createElement(UniversalPanel, {
         isOpen: open,
@@ -222,6 +226,7 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
         },
         onClose: () => controller.close(),
         tokenizeState,
+        hasMedia,
         onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
           options.panel?.onToggle(key);
         },

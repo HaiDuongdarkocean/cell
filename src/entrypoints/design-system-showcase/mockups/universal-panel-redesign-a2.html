@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universal Panel A2 — Mobile &amp; Desktop</title>
+  <style>
+    :root {
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', Roboto, sans-serif;
+      --color-primary: #5E6AD2;
+      --color-primary-subtle: rgba(94, 106, 210, 0.12);
+      --color-primary-foreground: #FFFFFF;
+      --color-background: #F9F9F7;
+      --color-surface: #FFFFFF;
+      --color-surface-elevated: #FAFAF8;
+      --color-surface-hover: #F2F2EF;
+      --color-surface-pressed: #EBEBE8;
+      --color-text: #2A2A2B;
+      --color-text-secondary: #6E6E73;
+      --color-text-tertiary: #9A9AA2;
+      --color-text-inverse: #FFFFFF;
+      --color-border: #E2E2DF;
+      --color-border-subtle: #EFEFEC;
+      --color-border-emphasized: #D6D6D2;
+      --color-error: #A63C3C;
+      --color-error-subtle: #F5DEDE;
+      --space-0-5: 2px;
+      --space-1: 4px;
+      --space-1-5: 6px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+      --radius-2xl: 16px;
+      --radius-3xl: 24px;
+      --radius-pill: 9999px;
+      --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04);
+      --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.06);
+      --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.08);
+      --shadow-xl: 0 24px 48px -8px rgb(0 0 0 / 0.16);
+      --shadow-sheet: 0 -8px 32px rgb(0 0 0 / 0.12);
+      --font-size-2xs: 10px;
+      --font-size-xs: 12px;
+      --font-size-sm: 14px;
+      --font-size-md: 16px;
+      --font-size-lg: 18px;
+      --font-size-xl: 20px;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+      --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; min-height: 100vh; }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--color-background);
+      color: var(--color-text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-6);
+      padding: var(--space-6);
+    }
+
+    .page-header { text-align: center; max-width: 680px; }
+    .page-header h1 { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-2); }
+    .page-header p { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0; line-height: 1.5; }
+
+    .devices {
+      display: grid;
+      grid-template-columns: auto auto;
+      place-items: start center;
+      gap: var(--space-8);
+      padding-bottom: var(--space-8);
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .device { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+    .device-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; }
+    .device-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin: 0; }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================
+       Mobile A2
+       ========================================================== */
+    .mobile .phone {
+      width: 360px;
+      height: 720px;
+      background: #111;
+      border-radius: 48px;
+      padding: 11px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.06) inset;
+      position: relative;
+    }
+
+    .mobile .screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 38px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--color-surface);
+    }
+
+    .mobile .panel-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface);
+      position: relative;
+    }
+
+    .mobile .profile-flag {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-elevated);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    .mobile .profile-flag:hover { transform: scale(1.05); box-shadow: var(--shadow-md); }
+
+    .mobile .tokenize-pill {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      height: 44px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-elevated);
+      overflow: hidden;
+    }
+
+    .mobile .tokenize-half {
+      flex: 1 1 50%;
+      min-width: 44px;
+      height: 100%;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1-5);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+    .mobile .tokenize-half.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .mobile .tokenize-divider { width: 1px; height: 22px; background: var(--color-border); }
+
+    .mobile .close-btn {
+      width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent;
+      color: var(--color-text-secondary); display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+    }
+    .mobile .close-btn:hover { background: var(--color-surface-hover); }
+
+    .mobile .panel-content {
+      flex: 1; overflow-y: auto; padding: var(--space-4);
+      display: flex; flex-direction: column; gap: var(--space-4); min-height: 0;
+    }
+
+    .mobile .tab-panel { display: none; flex-direction: column; gap: var(--space-4); height: 100%; }
+    .mobile .tab-panel.active { display: flex; }
+    .mobile .tab-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-bold); margin: 0; }
+
+    .mobile .search-wrap { position: relative; width: 100%; }
+    .mobile .search-input {
+      width: 100%; height: 44px; border-radius: var(--radius-lg); border: 1px solid var(--color-border);
+      background: var(--color-surface-elevated); padding: 0 var(--space-4) 0 40px;
+      font-size: var(--font-size-md); color: var(--color-text); outline: none;
+    }
+    .mobile .search-input::placeholder { color: var(--color-text-tertiary); }
+    .mobile .search-icon { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--color-text-tertiary); }
+
+    .mobile .placeholder {
+      padding: var(--space-6); border-radius: var(--radius-xl); background: var(--color-surface-elevated);
+      border: 1px dashed var(--color-border); text-align: center; color: var(--color-text-secondary);
+      font-size: var(--font-size-sm); line-height: 1.5;
+    }
+
+    .mobile .list { display: flex; flex-direction: column; gap: var(--space-2); }
+    .mobile .list-item {
+      display: flex; align-items: center; justify-content: space-between; padding: var(--space-3);
+      border-radius: var(--radius-lg); background: var(--color-surface-elevated); border: 1px solid var(--color-border);
+      font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+    }
+    .mobile .switch {
+      width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--color-border);
+      position: relative; cursor: pointer; transition: background 120ms ease;
+    }
+    .mobile .switch.on { background: var(--color-primary); }
+    .mobile .switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+      border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform 120ms ease;
+    }
+    .mobile .switch.on::after { transform: translateX(20px); }
+
+    .mobile .setting-row {
+      display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3);
+      border-radius: var(--radius-lg); background: var(--color-surface-elevated); border: 1px solid var(--color-border);
+    }
+    .mobile .setting-row label { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); }
+    .mobile .setting-row input {
+      width: 100%; height: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      padding: 0 var(--space-2); font-size: var(--font-size-sm); color: var(--color-text); background: var(--color-surface);
+    }
+
+    .mobile .bottom-bar {
+      flex: 0 0 auto; display: flex; align-items: center; justify-content: space-around;
+      padding: var(--space-2) var(--space-1); border-top: 1px solid var(--color-border);
+      background: var(--color-surface); position: relative; z-index: 10;
+    }
+
+    .mobile .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-0-5);
+      min-width: 60px; padding: var(--space-2); border: none; border-radius: var(--radius-lg);
+      background: transparent; color: var(--color-text-secondary);
+      font-size: var(--font-size-2xs); font-weight: var(--font-weight-semibold);
+      cursor: pointer; transition: background 120ms ease, color 120ms ease;
+    }
+    .mobile .nav-item.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .mobile .nav-item .icon { width: 22px; height: 22px; }
+    .mobile .nav-item.tools { color: var(--color-text-secondary); }
+    .mobile .nav-item.tools.active { background: var(--color-surface-hover); color: var(--color-text); }
+    .mobile .nav-item.tools .tool-chevron { transition: transform 200ms var(--ease-snap); }
+    .mobile .nav-item.tools.open .tool-chevron { transform: rotate(180deg); }
+
+    .mobile .sheet-backdrop {
+      position: absolute; inset: 0; background: rgba(0, 0, 0, 0.18);
+      opacity: 0; pointer-events: none; transition: opacity 250ms ease; z-index: 15;
+    }
+    .mobile .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .mobile .tools-sheet {
+      position: absolute; left: 0; right: 0; bottom: 0; background: var(--color-surface);
+      border-radius: var(--radius-3xl) var(--radius-3xl) 0 0; box-shadow: var(--shadow-sheet);
+      padding: var(--space-3) var(--space-4) var(--space-5);
+      transform: translateY(100%); transition: transform 300ms var(--ease-snap);
+      z-index: 20; display: flex; flex-direction: column; gap: var(--space-3);
+    }
+    .mobile .tools-sheet.open { transform: translateY(0); }
+    .mobile .sheet-handle { width: 44px; height: 5px; border-radius: 3px; background: var(--color-border); margin: 0 auto; }
+    .mobile .sheet-title { font-size: var(--font-size-md); font-weight: var(--font-weight-bold); color: var(--color-text); margin: 0; text-align: center; }
+
+    .mobile .tool-list { display: flex; flex-direction: column; gap: var(--space-2); }
+    .mobile .tool-row {
+      display: flex; align-items: center; gap: var(--space-3); width: 100%; padding: var(--space-3);
+      border-radius: var(--radius-xl); border: 1px solid var(--color-border); background: var(--color-surface-elevated);
+      color: var(--color-text); text-align: left; cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .mobile .tool-row:hover { background: var(--color-surface-hover); border-color: var(--color-border-emphasized); }
+    .mobile .tool-row .icon { width: 24px; height: 24px; color: var(--color-primary); }
+    .mobile .tool-row-body { display: flex; flex-direction: column; gap: var(--space-0-5); }
+    .mobile .tool-row-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+    .mobile .tool-row-desc { font-size: var(--font-size-2xs); color: var(--color-text-tertiary); }
+
+    .mobile .profile-popover {
+      position: absolute; top: 62px; left: var(--space-3); width: 220px; display: none;
+      flex-direction: column; gap: var(--space-1); padding: var(--space-3); background: var(--color-surface);
+      border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); z-index: 30;
+    }
+    .mobile .profile-popover.open { display: flex; }
+    .mobile .profile-popover-title {
+      font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-secondary);
+      text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 var(--space-1);
+    }
+    .mobile .profile-option {
+      display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3);
+      border: none; border-radius: var(--radius-lg); background: transparent; color: var(--color-text);
+      font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-align: left; cursor: pointer;
+    }
+    .mobile .profile-option:hover { background: var(--color-surface-elevated); }
+    .mobile .profile-option.selected { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .mobile .profile-option .flag { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--color-border); }
+
+    .mobile .toast {
+      position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px);
+      opacity: 0; pointer-events: none; padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill);
+      background: #2A2A2B; color: #fff; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+      box-shadow: var(--shadow-lg); transition: opacity 200ms ease, transform 200ms ease; z-index: 40;
+    }
+    .mobile .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ==========================================================
+       Desktop A2 — L-shape, collapsible sidebar
+       ========================================================== */
+    .desktop .d-canvas {
+      width: 900px; height: 640px; max-width: 100%;
+      background: rgba(0, 0, 0, 0.42);
+      border-radius: var(--radius-2xl);
+      display: grid; place-items: center;
+      box-shadow: var(--shadow-xl); overflow: hidden;
+    }
+
+    .desktop .d-panel {
+      width: 840px; height: 560px; max-width: calc(100% - var(--space-8)); max-height: calc(100% - var(--space-8));
+      background: var(--color-surface); border-radius: var(--radius-2xl); box-shadow: var(--shadow-xl);
+      display: flex; overflow: hidden; position: relative;
+    }
+
+    /* Sidebar — continuous with header, no internal border */
+    .desktop .d-sidebar {
+      flex: 0 0 180px;
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 4px;
+      background: var(--color-surface-elevated);
+      transition: flex-basis 250ms var(--ease-snap);
+      position: relative;
+      overflow: visible;
+    }
+    .desktop .d-sidebar.collapsed { flex-basis: 64px; }
+
+    .d-sidebar-btn {
+      width: 100%; height: 52px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 12px;
+      border: none; border-radius: var(--radius-lg);
+      background: transparent; color: var(--color-text-secondary);
+      font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold);
+      text-align: left; cursor: pointer; white-space: nowrap;
+      transition: background 120ms ease, color 120ms ease, justify-content 120ms ease;
+      overflow: hidden;
+    }
+    .d-sidebar-btn:hover { background: var(--color-surface-hover); }
+    .d-sidebar-btn.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .d-sidebar-btn .icon { width: 20px; height: 20px; }
+    .d-sidebar-btn .label {
+      opacity: 1; max-width: 120px;
+      transition: opacity 150ms ease, max-width 150ms ease;
+      overflow: hidden;
+    }
+
+    .desktop .d-sidebar.collapsed .d-sidebar-btn {
+      justify-content: center;
+      padding: 0;
+      gap: 0;
+    }
+    .desktop .d-sidebar.collapsed .d-sidebar-btn .label {
+      opacity: 0; max-width: 0;
+    }
+
+    .d-profile-flag {
+      width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+      background: var(--color-surface-elevated);
+      display: grid; place-items: center;
+    }
+    .d-profile-flag img, .d-profile-flag svg { width: 100%; height: 100%; object-fit: cover; }
+
+    .d-tools-group {
+      display: flex; flex-direction: column; gap: 2px;
+      margin-top: 8px;
+    }
+    .d-tool-btn { color: var(--color-text); font-weight: var(--font-weight-medium); }
+    .d-tool-btn .icon { color: var(--color-primary); }
+
+    .d-collapse-btn { margin-top: auto; color: var(--color-text-tertiary); }
+    .d-collapse-btn .icon-expanded, .d-collapse-btn .icon-collapsed { display: none; }
+    .d-sidebar:not(.collapsed) .d-collapse-btn .icon-expanded { display: block; }
+    .d-sidebar.collapsed .d-collapse-btn .icon-collapsed { display: block; }
+
+    /* Right body: different background separates L-shape from content, no border */
+    .desktop .d-body {
+      flex: 1; min-width: 0; display: flex; flex-direction: column;
+      background: var(--color-surface);
+    }
+
+    .desktop .d-header {
+      height: 52px;
+      display: flex; align-items: center; gap: var(--space-3);
+      padding: 0 var(--space-4);
+      background: var(--color-surface-elevated);
+    }
+
+    .desktop .d-tokenize {
+      flex: 1; min-width: 0;
+      display: flex; align-items: center; height: 40px; border-radius: var(--radius-pill);
+      background: var(--color-surface); box-shadow: var(--shadow-sm); overflow: hidden;
+    }
+    .desktop .d-tokenize-half {
+      flex: 1 1 50%; min-width: 44px; height: 100%; border: none; background: transparent;
+      display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+      color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold);
+      cursor: pointer; transition: background 120ms ease, color 120ms ease;
+    }
+    .desktop .d-tokenize-half.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .desktop .d-tokenize-divider { width: 1px; height: 22px; background: var(--color-border); }
+
+    .desktop .d-close {
+      width: 40px; height: 40px; border-radius: 50%; border: none; background: transparent;
+      color: var(--color-text-secondary); display: grid; place-items: center; cursor: pointer;
+    }
+    .desktop .d-close:hover { background: var(--color-surface-hover); }
+
+    .desktop .d-content {
+      flex: 1; overflow-y: auto; padding: var(--space-5); display: flex; flex-direction: column;
+      gap: var(--space-4); min-height: 0;
+    }
+    .desktop .d-tab-panel { display: none; flex-direction: column; gap: var(--space-4); height: 100%; }
+    .desktop .d-tab-panel.active { display: flex; }
+    .desktop .d-tab-title { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0; }
+
+    .desktop .d-search-wrap { position: relative; width: 100%; max-width: 480px; }
+    .desktop .d-search-input {
+      width: 100%; height: 44px; border-radius: var(--radius-lg); border: 1px solid var(--color-border);
+      background: var(--color-surface-elevated); padding: 0 var(--space-4) 0 40px;
+      font-size: var(--font-size-md); color: var(--color-text); outline: none;
+    }
+    .desktop .d-search-input::placeholder { color: var(--color-text-tertiary); }
+    .desktop .d-search-icon { position: absolute; left: var(--space-3); top: 50%; transform: translateY(-50%); color: var(--color-text-tertiary); }
+
+    .desktop .d-placeholder {
+      padding: var(--space-8) var(--space-6); border-radius: var(--radius-xl); background: var(--color-surface-elevated);
+      border: 1px dashed var(--color-border); text-align: center; color: var(--color-text-secondary);
+      font-size: var(--font-size-sm); line-height: 1.5; max-width: 560px;
+    }
+
+    .desktop .d-list { display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; }
+    .desktop .d-list-item {
+      display: flex; align-items: center; justify-content: space-between; padding: var(--space-3);
+      border-radius: var(--radius-lg); background: var(--color-surface-elevated); border: 1px solid var(--color-border);
+      font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+    }
+    .desktop .d-switch {
+      width: 44px; height: 24px; border-radius: var(--radius-pill); background: var(--color-border);
+      position: relative; cursor: pointer; transition: background 120ms ease;
+    }
+    .desktop .d-switch.on { background: var(--color-primary); }
+    .desktop .d-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+      border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform 120ms ease;
+    }
+    .desktop .d-switch.on::after { transform: translateX(20px); }
+
+    .desktop .d-setting-row {
+      display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3);
+      border-radius: var(--radius-lg); background: var(--color-surface-elevated); border: 1px solid var(--color-border); max-width: 560px;
+    }
+    .desktop .d-setting-row label { font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); }
+    .desktop .d-setting-row input {
+      width: 100%; height: 36px; border: 1px solid var(--color-border); border-radius: var(--radius-md);
+      padding: 0 var(--space-2); font-size: var(--font-size-sm); color: var(--color-text); background: var(--color-surface);
+    }
+
+    .desktop .d-toast {
+      position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%) translateY(20px);
+      opacity: 0; pointer-events: none; padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill);
+      background: #2A2A2B; color: #fff; font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+      box-shadow: var(--shadow-lg); transition: opacity 200ms ease, transform 200ms ease; z-index: 50;
+    }
+    .desktop .d-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .desktop .d-profile-popover {
+      position: absolute; top: 8px; left: calc(100% + 8px); width: 220px; display: none;
+      flex-direction: column; gap: var(--space-1); padding: var(--space-3); background: var(--color-surface);
+      border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); z-index: 30;
+    }
+    .desktop .d-profile-popover.open { display: flex; }
+    .desktop .d-profile-popover-title {
+      font-size: var(--font-size-xs); font-weight: var(--font-weight-bold); color: var(--color-text-secondary);
+      text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 var(--space-1);
+    }
+    .desktop .d-profile-option {
+      display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-2) var(--space-3);
+      border: none; border-radius: var(--radius-lg); background: transparent; color: var(--color-text);
+      font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); text-align: left; cursor: pointer;
+    }
+    .desktop .d-profile-option:hover { background: var(--color-surface-elevated); }
+    .desktop .d-profile-option.selected { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .desktop .d-profile-option .flag { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--color-border); }
+
+    @media (max-width: 1180px) {
+      .desktop .d-canvas { width: 100%; height: auto; min-height: 560px; }
+      .desktop .d-panel { width: 100%; height: 560px; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Universal Panel A2 — Mobile &amp; Desktop</h1>
+    <p>SSOT: mobile List Tools sheet; desktop L-shape sidebar, profile ở sidebar, có collapse/expand.</p>
+  </header>
+
+  <svg style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true">
+    <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="icon-scanText" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5M8 17h8"/></symbol>
+    <symbol id="icon-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="m10 11 5 3-5 3V11Z"/></symbol>
+    <symbol id="icon-bookOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+    <symbol id="icon-slidersH" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M10 12h10M3 12h.01M3 18h.01M10 18h10M6 3v18"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></symbol>
+    <symbol id="icon-reader" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></symbol>
+    <symbol id="icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+    <symbol id="icon-playRounded" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="m10 11 5 3-5 3V11Z"/></symbol>
+    <symbol id="icon-chevronUp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></symbol>
+    <symbol id="icon-chevronLeft" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></symbol>
+    <symbol id="icon-chevronRight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+  </svg>
+
+  <main class="devices">
+
+    <!-- Mobile A2 -->
+    <section class="device mobile">
+      <div class="device-label">Mobile</div>
+      <h2 class="device-title">List Tools sheet</h2>
+      <div class="phone" id="m-phone">
+        <div class="screen">
+          <header class="panel-header">
+            <button class="profile-flag" aria-label="Switch language profile" onclick="mToggleProfile()">
+              <span class="flag"><svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="12" fill="#DA251D"/><path d="M12 6 13.5 10.5H18l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5L6.5 10.5h4.5Z" fill="#FFCD00"/></svg></span>
+            </button>
+
+            <div class="tokenize-pill">
+              <button class="tokenize-half active" aria-pressed="true"><svg class="icon"><use href="#icon-scanText"/></svg>Text</button>
+              <div class="tokenize-divider"></div>
+              <button class="tokenize-half" aria-pressed="false"><svg class="icon"><use href="#icon-video"/></svg>Media</button>
+            </div>
+
+            <button class="close-btn" aria-label="Close panel"><svg class="icon"><use href="#icon-x"/></svg></button>
+          </header>
+
+          <main class="panel-content">
+            <div class="tab-panel active" id="m-tab-dictionary">
+              <h3 class="tab-title">Dictionary</h3>
+              <div class="search-wrap">
+                <svg class="search-icon icon"><use href="#icon-search"/></svg>
+                <input type="text" class="search-input" placeholder="Type a word…" />
+              </div>
+              <div class="placeholder">Dictionary results appear here.<br/>Search a word to begin.</div>
+            </div>
+            <div class="tab-panel" id="m-tab-study">
+              <h3 class="tab-title">Study Modes</h3>
+              <div class="list">
+                <div class="list-item"><span>SRS review</span><div class="switch on" onclick="this.classList.toggle('on')"></div></div>
+                <div class="list-item"><span>Listen &amp; repeat</span><div class="switch" onclick="this.classList.toggle('on')"></div></div>
+                <div class="list-item"><span>Speed quiz</span><div class="switch" onclick="this.classList.toggle('on')"></div></div>
+              </div>
+            </div>
+            <div class="tab-panel" id="m-tab-settings">
+              <h3 class="tab-title">Settings</h3>
+              <div class="setting-row"><label>AnkiConnect URL</label><input type="text" value="http://localhost:8765" /></div>
+              <div class="setting-row"><label>Default tags</label><input type="text" placeholder="tag1 tag2" /></div>
+              <div class="list-item" style="margin-top:4px;"><span>Dark mode</span><div class="switch" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </main>
+
+          <nav class="bottom-bar" aria-label="Panel navigation">
+            <button class="nav-item active" data-tab="dictionary" onclick="mSetTab('dictionary')" aria-label="Dictionary"><svg class="icon"><use href="#icon-bookOpen"/></svg><span>Dictionary</span></button>
+            <button class="nav-item" data-tab="study" onclick="mSetTab('study')" aria-label="Study Modes"><svg class="icon"><use href="#icon-slidersH"/></svg><span>Study</span></button>
+            <button class="nav-item" data-tab="settings" onclick="mSetTab('settings')" aria-label="Settings"><svg class="icon"><use href="#icon-settings"/></svg><span>Settings</span></button>
+            <button class="nav-item tools" id="m-tools-btn" onclick="mToggleTools()" aria-label="More tools"><svg class="icon tool-chevron"><use href="#icon-chevronUp"/></svg><span>Tools</span></button>
+          </nav>
+
+          <div class="sheet-backdrop" id="m-backdrop" onclick="mToggleTools()"></div>
+          <div class="tools-sheet" id="m-tools-sheet">
+            <div class="sheet-handle"></div>
+            <h4 class="sheet-title">Quick tools</h4>
+            <div class="tool-list">
+              <button class="tool-row" onclick="mDoAction('Opening Reader…')">
+                <svg class="icon"><use href="#icon-reader"/></svg>
+                <div class="tool-row-body">
+                  <span class="tool-row-title">Open Reader</span>
+                  <span class="tool-row-desc">Read saved articles and subtitles</span>
+                </div>
+              </button>
+              <button class="tool-row" onclick="mDoAction('Opening SRS…')">
+                <svg class="icon"><use href="#icon-layers"/></svg>
+                <div class="tool-row-body">
+                  <span class="tool-row-title">Open SRS</span>
+                  <span class="tool-row-desc">Review your queued cards</span>
+                </div>
+              </button>
+              <button class="tool-row" onclick="mDoAction('Opening Player…')">
+                <svg class="icon"><use href="#icon-playRounded"/></svg>
+                <div class="tool-row-body">
+                  <span class="tool-row-title">Open Player</span>
+                  <span class="tool-row-desc">Watch local video with subtitles</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-popover" id="m-profile-popover">
+            <div class="profile-popover-title">Select profile</div>
+            <button class="profile-option selected" onclick="mSelectProfile(this)"><span class="flag"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="12" fill="#DA251D"/><path d="M12 6 13.5 10.5H18l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5L6.5 10.5h4.5Z" fill="#FFCD00"/></svg></span>Vietnamese → English</button>
+            <button class="profile-option" onclick="mSelectProfile(this)"><span class="flag" style="background:#fff;"><span style="color:var(--color-text);font-size:10px;font-weight:700;">JP</span></span>Japanese → English</button>
+            <button class="profile-option" onclick="mSelectProfile(this)"><span class="flag" style="background:#fff;"><span style="color:var(--color-text);font-size:10px;font-weight:700;">KO</span></span>Korean → English</button>
+          </div>
+
+          <div class="toast" id="m-toast"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Desktop A2 — L-shape, collapsible sidebar -->
+    <section class="device desktop">
+      <div class="device-label">Desktop</div>
+      <h2 class="device-title">L-shape sidebar + collapse</h2>
+      <div class="d-canvas">
+        <div class="d-panel" id="d-panel">
+          <nav class="d-sidebar" id="d-sidebar" aria-label="Panel navigation">
+            <button class="d-sidebar-btn" id="d-profile-btn" onclick="dToggleProfile()" aria-label="Switch language profile">
+              <span class="d-profile-flag"><svg viewBox="0 0 24 24" width="40" height="40"><circle cx="12" cy="12" r="12" fill="#DA251D"/><path d="M12 6 13.5 10.5H18l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5L6.5 10.5h4.5Z" fill="#FFCD00"/></svg></span>
+              <span class="label">Vietnamese</span>
+            </button>
+
+            <button class="d-sidebar-btn active" data-tab="dictionary" onclick="dSetTab('dictionary')" aria-label="Dictionary">
+              <svg class="icon"><use href="#icon-bookOpen"/></svg>
+              <span class="label">Dictionary</span>
+            </button>
+            <button class="d-sidebar-btn" data-tab="study" onclick="dSetTab('study')" aria-label="Study Modes">
+              <svg class="icon"><use href="#icon-slidersH"/></svg>
+              <span class="label">Study</span>
+            </button>
+            <button class="d-sidebar-btn" data-tab="settings" onclick="dSetTab('settings')" aria-label="Settings">
+              <svg class="icon"><use href="#icon-settings"/></svg>
+              <span class="label">Settings</span>
+            </button>
+
+            <div class="d-tools-group">
+              <button class="d-sidebar-btn d-tool-btn" onclick="dDoAction('Opening Reader…')" aria-label="Open Reader">
+                <svg class="icon"><use href="#icon-reader"/></svg>
+                <span class="label">Reader</span>
+              </button>
+              <button class="d-sidebar-btn d-tool-btn" onclick="dDoAction('Opening SRS…')" aria-label="Open SRS study">
+                <svg class="icon"><use href="#icon-layers"/></svg>
+                <span class="label">SRS</span>
+              </button>
+              <button class="d-sidebar-btn d-tool-btn" onclick="dDoAction('Opening Player…')" aria-label="Open local player">
+                <svg class="icon"><use href="#icon-playRounded"/></svg>
+                <span class="label">Player</span>
+              </button>
+            </div>
+
+            <button class="d-sidebar-btn d-collapse-btn" onclick="dToggleCollapse()" aria-label="Collapse sidebar">
+              <svg class="icon icon-expanded"><use href="#icon-chevronLeft"/></svg>
+              <svg class="icon icon-collapsed"><use href="#icon-chevronRight"/></svg>
+            </button>
+
+            <div class="d-profile-popover" id="d-profile-popover">
+              <div class="d-profile-popover-title">Select profile</div>
+              <button class="d-profile-option selected" data-label="Vietnamese" onclick="dSelectProfile(this)"><span class="flag"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="12" fill="#DA251D"/><path d="M12 6 13.5 10.5H18l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5L6.5 10.5h4.5Z" fill="#FFCD00"/></svg></span>Vietnamese → English</button>
+              <button class="d-profile-option" data-label="Japanese" onclick="dSelectProfile(this)"><span class="flag" style="background:#fff;"><span style="color:var(--color-text);font-size:10px;font-weight:700;">JP</span></span>Japanese → English</button>
+              <button class="d-profile-option" data-label="Korean" onclick="dSelectProfile(this)"><span class="flag" style="background:#fff;"><span style="color:var(--color-text);font-size:10px;font-weight:700;">KO</span></span>Korean → English</button>
+            </div>
+          </nav>
+
+          <main class="d-body">
+            <header class="d-header">
+              <div class="d-tokenize">
+                <button class="d-tokenize-half active" aria-pressed="true"><svg class="icon"><use href="#icon-scanText"/></svg>Text</button>
+                <div class="d-tokenize-divider"></div>
+                <button class="d-tokenize-half" aria-pressed="false"><svg class="icon"><use href="#icon-video"/></svg>Media</button>
+              </div>
+              <button class="d-close" aria-label="Close panel"><svg class="icon"><use href="#icon-x"/></svg></button>
+            </header>
+
+            <section class="d-content" role="tabpanel" aria-label="Panel content">
+              <div class="d-tab-panel active" id="d-tab-dictionary">
+                <h2 class="d-tab-title">Dictionary</h2>
+                <div class="d-search-wrap">
+                  <svg class="d-search-icon icon"><use href="#icon-search"/></svg>
+                  <input type="text" class="d-search-input" placeholder="Type a word…" />
+                </div>
+                <div class="d-placeholder">Dictionary results appear here.<br/>Search a word to begin.</div>
+              </div>
+              <div class="d-tab-panel" id="d-tab-study">
+                <h2 class="d-tab-title">Study Modes</h2>
+                <div class="d-list">
+                  <div class="d-list-item"><span>SRS review</span><div class="d-switch on" onclick="this.classList.toggle('on')"></div></div>
+                  <div class="d-list-item"><span>Listen &amp; repeat</span><div class="d-switch" onclick="this.classList.toggle('on')"></div></div>
+                  <div class="d-list-item"><span>Speed quiz</span><div class="d-switch" onclick="this.classList.toggle('on')"></div></div>
+                </div>
+              </div>
+              <div class="d-tab-panel" id="d-tab-settings">
+                <h2 class="d-tab-title">Settings</h2>
+                <div class="d-setting-row"><label>AnkiConnect URL</label><input type="text" value="http://localhost:8765" /></div>
+                <div class="d-setting-row"><label>Default tags</label><input type="text" placeholder="tag1 tag2" /></div>
+                <div class="d-list-item" style="margin-top:4px; max-width:560px;"><span>Dark mode</span><div class="d-switch" onclick="this.classList.toggle('on')"></div></div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* Mobile */
+    function mSetTab(tab) {
+      document.querySelectorAll('.mobile .tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('m-tab-' + tab).classList.add('active');
+
+      document.querySelectorAll('.mobile .nav-item[data-tab]').forEach(b => b.classList.remove('active'));
+      document.querySelector('.mobile .nav-item[data-tab="' + tab + '"]').classList.add('active');
+    }
+
+    function mToggleTools() {
+      const sheet = document.getElementById('m-tools-sheet');
+      const backdrop = document.getElementById('m-backdrop');
+      const btn = document.getElementById('m-tools-btn');
+      const isOpen = sheet.classList.contains('open');
+
+      if (isOpen) {
+        sheet.classList.remove('open');
+        backdrop.classList.remove('open');
+        btn.classList.remove('open');
+      } else {
+        sheet.classList.add('open');
+        backdrop.classList.add('open');
+        btn.classList.add('open');
+      }
+    }
+
+    function mDoAction(message) {
+      const toast = document.getElementById('m-toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1600);
+      mToggleTools();
+    }
+
+    function mToggleProfile() {
+      const popover = document.getElementById('m-profile-popover');
+      popover.classList.toggle('open');
+    }
+
+    function mSelectProfile(btn) {
+      document.querySelectorAll('.mobile .profile-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('m-profile-popover').classList.remove('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.mobile .profile-flag') && !e.target.closest('.mobile .profile-popover')) {
+        document.getElementById('m-profile-popover').classList.remove('open');
+      }
+      if (!e.target.closest('.mobile .tools-sheet') && !e.target.closest('.mobile #m-tools-btn') && !e.target.closest('.mobile .sheet-backdrop')) {
+        document.getElementById('m-tools-sheet').classList.remove('open');
+        document.getElementById('m-backdrop').classList.remove('open');
+        document.getElementById('m-tools-btn').classList.remove('open');
+      }
+    });
+
+    /* Desktop */
+    function dSetTab(tab) {
+      document.querySelectorAll('.desktop .d-tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('d-tab-' + tab).classList.add('active');
+
+      document.querySelectorAll('.desktop .d-sidebar-btn[data-tab]').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.querySelector('.desktop .d-sidebar-btn[data-tab="' + tab + '"]');
+      if (activeBtn) activeBtn.classList.add('active');
+    }
+
+    function dDoAction(message) {
+      const toast = document.createElement('div');
+      toast.className = 'd-toast show';
+      toast.textContent = message;
+      document.getElementById('d-panel').appendChild(toast);
+      setTimeout(() => toast.remove(), 1600);
+    }
+
+    function dToggleProfile() {
+      const popover = document.getElementById('d-profile-popover');
+      popover.classList.toggle('open');
+    }
+
+    function dSelectProfile(btn) {
+      document.querySelectorAll('.desktop .d-profile-option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('d-profile-btn').querySelector('.label').textContent = btn.dataset.label;
+      document.getElementById('d-profile-popover').classList.remove('open');
+    }
+
+    function dToggleCollapse() {
+      const sidebar = document.getElementById('d-sidebar');
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      if (isCollapsed) {
+        sidebar.classList.remove('collapsed');
+      } else {
+        sidebar.classList.add('collapsed');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.desktop #d-profile-btn') && !e.target.closest('.desktop .d-profile-popover')) {
+        document.getElementById('d-profile-popover').classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
