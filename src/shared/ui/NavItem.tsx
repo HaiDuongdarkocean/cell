@@ -1,5 +1,4 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Button } from '@/shared/ui/Button';
 import styles from './NavItem.module.css';
 
 type NavItemOrientation = 'horizontal' | 'vertical';
@@ -18,7 +17,10 @@ export interface NavItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * NavItem — navigation item for sidebar or horizontal nav.
+ * NavItem — self-contained navigation item.
+ *
+ * Does not depend on Button; owns its own styling so it can be reused
+ * inside Navigation, CollapsibleSidebar, or any nav without page-level overrides.
  */
 export function NavItem({
   icon,
@@ -34,9 +36,9 @@ export function NavItem({
     .join(' ');
 
   return (
-    <Button material="solid" variant="ghost" shape="pill" className={cls} disabled={disabled} {...rest}>
+    <button type="button" className={cls} disabled={disabled} {...rest}>
       {icon && <span className={styles.icon}>{icon}</span>}
       {label && <span className={styles.label}>{label}</span>}
-    </Button>
+    </button>
   );
 }
