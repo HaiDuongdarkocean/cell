@@ -45,23 +45,27 @@ export function UniversalPanelBottomNav({
   return (
     <>
       <nav className={`${styles.bottomNav} ${className ?? ''}`.trim()} aria-label="Panel navigation" data-cell-id="universal-panel-bottom-nav">
-        {TABS.map((tab) => (
-          <Button
-            key={tab.key}
-            material="solid"
-            variant="ghost"
-            shape="pill"
-            size="md"
-            active={activeTab === tab.key}
-            className={styles.navItem}
-            aria-label={tab.label}
-            onClick={() => onTabChange(tab.key)}
-            data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
-          >
-            <Icon name={tab.icon} size={20} />
-            <span className={styles.label}>{tab.label}</span>
-          </Button>
-        ))}
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Button
+              key={tab.key}
+              material="solid"
+              variant="ghost"
+              shape="pill"
+              size="md"
+              aria-pressed={isActive}
+              data-active={String(isActive)}
+              className={styles.navItem}
+              aria-label={tab.label}
+              onClick={() => onTabChange(tab.key)}
+              data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
+            >
+              <Icon name={tab.icon} size={20} />
+              <span className={styles.label}>{tab.label}</span>
+            </Button>
+          );
+        })}
         <Button
           material="solid"
           variant="ghost"
@@ -86,21 +90,24 @@ export function UniversalPanelBottomNav({
       >
         <div className={styles.toolsList} role="list">
           {tools.map((tool) => (
-            <button
+            <Button
               key={tool.id}
+              material="solid"
+              variant="outline"
+              shape="pill"
               className={styles.toolRow}
+              leadingIcon={<Icon name={tool.icon} size={24} />}
               onClick={() => {
                 tool.onClick();
                 setIsToolsOpen(false);
               }}
               data-cell-id={tool['data-cell-id']}
             >
-              <Icon name={tool.icon} size={24} />
               <div className={styles.toolBody}>
                 <span className={styles.toolTitle}>{tool.title}</span>
                 <span className={styles.toolDesc}>{tool.description}</span>
               </div>
-            </button>
+            </Button>
           ))}
         </div>
       </BottomSheet>
