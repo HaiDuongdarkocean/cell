@@ -61,16 +61,6 @@
   --sidebar-fg: var(--universal-panel-aside-fg);
 }
 
-.desktopSidebar :global(button[class*="_item_"]) > span:nth-child(2) {
-  width: var(--space-6);
-  height: var(--space-6);
-}
-
-.desktopSidebar :global(button[class*="_item_"]) > span:nth-child(2) :global(svg) {
-  width: 100%;
-  height: 100%;
-}
-
 @media (max-width: 839px) {
   .panel {
     max-width: none;

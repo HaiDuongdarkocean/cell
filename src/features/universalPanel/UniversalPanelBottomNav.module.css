@@ -9,7 +9,6 @@
   padding: var(--space-2) var(--space-1);
   background: var(--universal-panel-bottom-nav-bg);
   border-top: 1px solid var(--universal-panel-bottom-nav-border);
-  --button-vertical-icon-size: var(--iconbutton-icon-lg);
 }
 
 @media (max-width: 839px) {
@@ -23,11 +22,6 @@
   min-width: 0;
   height: var(--universal-panel-bottom-nav-item-height);
   width: 100%;
-}
-
-/* Override Button.ghost default color and keep the muted look for inactive tabs. */
-.bottomNav .navItem[data-active="false"] {
-  color: var(--color-text-secondary);
 }
 
 .toolsList {
