@@ -12,45 +12,33 @@
 .half {
   flex: 1 1 50%;
   height: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--universal-panel-tokenize-capsule-bg);
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition:
-    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    background 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
   padding: var(--space-0);
   touch-action: manipulation;
 }
 
-.half:focus-visible {
-  outline: var(--border-width-thick) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
+/* Keep the muted color for the OFF half; the ON half uses Button.primarySubtle. */
+.capsule .half[data-pressed="false"] {
+  color: var(--color-text-secondary);
 }
 
-.half:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
+/* Override Button.ghost filter hover with the universal panel token. */
 @media (hover: hover) and (pointer: fine) {
-  .half:hover:not(:disabled) {
+  .capsule .half[data-pressed="false"]:not(:disabled):hover {
     background: var(--universal-panel-tokenize-hover-bg);
+    filter: none;
   }
 }
 
-.half.active {
-  background: var(--universal-panel-tokenize-active-bg);
-  color: var(--universal-panel-tokenize-active-fg);
+/* Restore the disabled look from the original custom button. */
+.capsule .half:disabled {
+  opacity: 0.45;
+  color: var(--color-text-tertiary);
 }
 
-.half:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  color: var(--color-text-tertiary);
+/* Match the original focus ring. */
+.capsule .half:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .divider {
@@ -65,9 +53,5 @@
     transition:
       background 120ms cubic-bezier(0.23, 1, 0.32, 1),
       color 120ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-
-  .half:active:not(:disabled) {
-    transform: none;
   }
 }

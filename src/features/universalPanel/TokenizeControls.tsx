@@ -1,5 +1,6 @@
 import { useEffect, type ReactElement } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui/Button';
 import styles from './TokenizeControls.module.css';
 
 export interface TokenizeControlsProps {
@@ -19,6 +20,35 @@ export interface TokenizeControlsProps {
  * Left half toggles web text tokenization. Right half toggles subtitle/media
  * tokenization and is disabled when the page has no video.
  */
+interface TokenizeHalfProps {
+  readonly active: boolean;
+  readonly disabled?: boolean;
+  readonly icon: 'scanText' | 'video';
+  readonly label: string;
+  readonly onClick: () => void;
+  readonly testId: string;
+}
+
+function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }: TokenizeHalfProps): React.JSX.Element {
+  return (
+    <Button
+      material="solid"
+      shape="pill"
+      variant={active ? 'primarySubtle' : 'ghost'}
+      ripple={false}
+      aria-pressed={active}
+      aria-label={label}
+      title={disabled ? 'No video on this page' : `${label}: ${active ? 'ON' : 'OFF'}`}
+      disabled={disabled}
+      onClick={onClick}
+      data-pressed={String(active)}
+      data-cell-id={testId}
+      className={styles.half}
+      leadingIcon={<Icon name={icon} size={18} />}
+    />
+  );
+}
+
 export function TokenizeControls({
   text,
   media,
@@ -41,31 +71,22 @@ export function TokenizeControls({
       aria-label="Tokenize sources"
       data-cell-id="universal-panel-tokenize-controls"
     >
-      <button
-        type="button"
-        className={`${styles.half} ${text ? styles.active : ''}`}
-        aria-pressed={text}
-        aria-label="Tokenize text"
-        title={`Text tokenize: ${text ? 'ON' : 'OFF'}`}
+      <TokenizeHalf
+        active={text}
+        icon="scanText"
+        label="Tokenize text"
         onClick={() => onToggle('text')}
-        data-cell-id="universal-panel-header-tokenize-text"
-      >
-        <Icon name="scanText" size={18} />
-      </button>
+        testId="universal-panel-header-tokenize-text"
+      />
       <span className={styles.divider} aria-hidden="true" />
-      <button
-        type="button"
-        className={`${styles.half} ${media ? styles.active : ''}`}
-        aria-pressed={media}
-        aria-disabled={mediaDisabled}
-        aria-label="Tokenize media"
-        title={mediaDisabled ? 'No video on this page' : `Media tokenize: ${media ? 'ON' : 'OFF'}`}
-        onClick={() => onToggle('media')}
+      <TokenizeHalf
+        active={media}
         disabled={mediaDisabled}
-        data-cell-id="universal-panel-header-tokenize-media"
-      >
-        <Icon name="video" size={18} />
-      </button>
+        icon="video"
+        label="Tokenize media"
+        onClick={() => onToggle('media')}
+        testId="universal-panel-header-tokenize-media"
+      />
     </div>
   );
 }
