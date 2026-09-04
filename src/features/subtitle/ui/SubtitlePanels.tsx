@@ -25,6 +25,7 @@ import {
   isYoutubePage,
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
@@ -33,14 +34,6 @@ import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
-import subtitlePanelCss from './SubtitlePanel.module.css?inline';
-import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
-import iconCss from '@/shared/icons/Icon.module.css?inline';
-import tabsCss from '@/shared/ui/Tabs.module.css?inline';
-import selectCss from '@/shared/ui/Select.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import libraryViewCss from '@/entrypoints/local-player/components/LibraryView.module.css?inline';
-import libraryCardCss from '@/entrypoints/local-player/components/LibraryCard.module.css?inline';
 import styles from './SubtitlePanels.module.css';
 import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
 import {
@@ -158,12 +151,25 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [blockSettings, setBlockSettingsState] = useState<SubtitleBlockSettings | undefined>(initialBlockSettings);
     const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
-    // Sync manager prop → state when parent rebuilds it (e.g. local-player
-    // rebuilds ManagerState when subtitles change). useState(initialManager)
-    // only sets the first render; without this effect, track switching + import
-    // callbacks stay stale.
-    useEffect(() => { setManager(initialManager); }, [initialManager]);
+    // Sync manager prop → state when parent passes a *new* manager object
+    // (e.g. local-player rebuilds ManagerState when subtitles change). Guard
+    // against the first render where the prop is undefined but the controller
+    // will immediately set the real state via the imperative ref.
+    const lastInitialManagerRef = useRef(initialManager);
+    useEffect(() => {
+      if (initialManager !== lastInitialManagerRef.current) {
+        lastInitialManagerRef.current = initialManager;
+        setManager(initialManager);
+      }
+    }, [initialManager]);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
+    const lastInitialOffsetRef = useRef(initialOffset);
+    useEffect(() => {
+      if (initialOffset !== lastInitialOffsetRef.current) {
+        lastInitialOffsetRef.current = initialOffset;
+        setOffset(initialOffset);
+      }
+    }, [initialOffset]);
     const [removeBracketed, setRemoveBracketed] = useState(initialRemoveBracketed);
     const [managerOpen, setManagerOpen] = useState(false);
     const [managerExiting, setManagerExiting] = useState(false);
@@ -766,7 +772,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // undefined → colors fall back to browser defaults.
       const panelShadow = panel.attachShadow({ mode: 'open' });
       injectShadowCss(panelShadow, {
-        css: [subtitlePanelCss, cueListCss, iconCss, tabsCss, selectCss, buttonCss, libraryViewCss, libraryCardCss],
+        css: allModuleCss,
       });
       const panelInner = document.createElement('div');
       panelInner.setAttribute('data-theme', 'dark');
