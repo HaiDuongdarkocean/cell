@@ -1,4 +1,17 @@
-import { useState, useId, useRef, useEffect, useLayoutEffect, useCallback, type ReactNode, type Ref } from 'react';
+import {
+  useState,
+  useId,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  Children,
+  isValidElement,
+  cloneElement,
+  type ReactNode,
+  type Ref,
+} from 'react';
+import { NavItem, type NavItemProps } from './NavItem';
 import styles from './Navigation.module.css';
 
 export type NavigationOrientation = 'vertical' | 'horizontal';
@@ -291,9 +304,16 @@ export function Navigation({
     .filter(Boolean)
     .join(' ');
 
+  const orientedChildren = Children.map(children, (child) => {
+    if (isValidElement<NavItemProps>(child) && child.type === NavItem) {
+      return cloneElement(child, { orientation });
+    }
+    return child;
+  });
+
   return (
     <nav id={id} ref={navRef} className={navClasses} aria-label={ariaLabel} onClick={handleNavClick}>
-      {children}
+      {orientedChildren}
     </nav>
   );
 }
