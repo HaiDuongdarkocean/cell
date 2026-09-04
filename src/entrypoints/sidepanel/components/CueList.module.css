@@ -1,31 +1,54 @@
-/* === CueList — subtitle cue list with current-cue highlight === */
+/* === CueList — subtitle cue list with Windows 11 Settings nav style === */
 .list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cue-list-item-gap);
+  padding: var(--space-1);
 }
 
 .cue {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 0;
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--cue-list-item-border);
+  border-radius: var(--cue-list-item-radius);
+  background: var(--cue-list-item-bg);
+  color: var(--cue-list-item-fg);
   user-select: text;
-  transition: background var(--transition);
+  overflow: hidden;
+  transition: background var(--transition), border-color var(--transition);
 }
 
 .cue:hover {
-  background: var(--color-surface-hover);
+  background: var(--cue-list-item-hover-bg);
+}
+
+/* Left rounded pill indicator — Windows 11 style active marker */
+.cueCurrent::before {
+  content: '';
+  position: absolute;
+  left: var(--space-0-5);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--cue-list-indicator-width);
+  height: 60%;
+  border-radius: var(--cue-list-indicator-radius);
+  background: var(--cue-list-indicator-color);
+  z-index: 1;
 }
 
 .cueCurrent {
-  background: var(--color-primary-subtle);
-  box-shadow: inset 3px 0 0 var(--color-primary);
+  background: var(--cue-list-item-active-bg);
+  border-color: color-mix(in srgb, var(--cue-list-item-border), var(--color-primary) 20%);
 }
 
 .cueCurrent:hover {
-  background: var(--color-primary-subtle);
+  background: var(--cue-list-item-active-bg);
 }
 
 .timestamp {
@@ -48,7 +71,7 @@
 }
 
 .cueCurrent .timestamp {
-  color: var(--color-primary);
+  color: var(--cue-list-item-active-fg);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -73,6 +96,10 @@
 
 /* === Responsive — mobile (<600px, standard breakpoint) === */
 @media (max-width: 599px) {
+  .list {
+    padding: var(--space-0-5);
+  }
+
   .timestamp {
     min-width: 2.8em;
     font-size: var(--font-size-xs);
