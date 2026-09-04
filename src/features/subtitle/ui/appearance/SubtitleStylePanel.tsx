@@ -218,7 +218,7 @@ export function SubtitleStylePanel({
           <label className={styles.label}>Alignment</label>
           <div className={styles.segmented} role="radiogroup" aria-label="Alignment">
             {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
-              <Button material="solid" variant="secondary"
+              <Button material="liquid" variant="secondary"
                 key={align}
                 role="radio"
                 aria-checked={style.horizontalAlign === align}
@@ -237,7 +237,7 @@ export function SubtitleStylePanel({
           <label className={styles.label}>Shadow</label>
           <div className={styles.segmented} role="radiogroup" aria-label="Shadow style">
             {TEXT_SHADOW_PRESETS.map((preset) => (
-              <Button material="solid" variant="secondary"
+              <Button material="liquid" variant="secondary"
                 key={preset}
                 role="radio"
                 aria-checked={style.textShadow.preset === preset}
@@ -323,7 +323,7 @@ export function SubtitleStylePanel({
       {/* ─── Reset ─── */}
       <div className={styles.resetRow}>
         {!showResetConfirm ? (
-          <Button material="solid"
+          <Button material="liquid"
             variant="ghost"
             size="sm"
             onClick={() => setShowResetConfirm(true)}
@@ -335,10 +335,10 @@ export function SubtitleStylePanel({
         ) : (
           <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>
             <span>Reset to defaults?</span>
-            <Button material="solid" variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
+            <Button material="liquid" variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
               Reset
             </Button>
-            <Button material="solid" variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
+            <Button material="liquid" variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
               Cancel
             </Button>
           </div>

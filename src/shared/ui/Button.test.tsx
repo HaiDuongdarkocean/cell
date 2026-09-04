@@ -18,13 +18,13 @@ describe('Button', () => {
     }
   });
 
-  it('applies solid class for solid material', () => {
-    const { container } = render(<Button material="solid">Solid</Button>);
+  it('applies solid class by default', () => {
+    const { container } = render(<Button>Solid</Button>);
     expect(container.firstChild).toHaveClass('solid');
   });
 
-  it('applies liquid class by default', () => {
-    const { container } = render(<Button>Liquid</Button>);
+  it('applies liquid class for liquid material', () => {
+    const { container } = render(<Button material="liquid">Liquid</Button>);
     expect(container.firstChild).not.toHaveClass('solid');
   });
 
@@ -44,7 +44,7 @@ describe('Button', () => {
       ['prominent', 'liquidProminent'],
     ] as const;
     for (const [liquidStyle, className] of liquidStyles) {
-      const { unmount } = render(<Button variant="glass" liquidStyle={liquidStyle}>Liquid</Button>);
+      const { unmount } = render(<Button material="liquid" variant="glass" liquidStyle={liquidStyle}>Liquid</Button>);
       expect(screen.getByRole('button', { name: 'Liquid' })).toHaveClass(className);
       unmount();
     }

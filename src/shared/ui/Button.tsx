@@ -17,7 +17,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   /** Hide label when nested in a container narrower than 380px. */
   collapseLabel?: boolean;
-  /** Surface material. Default: liquid. */
+  /** Surface material. Default: solid. */
   material?: ButtonMaterial;
   /** Apple-inspired material for glass buttons. Default: regular. */
   liquidStyle?: ButtonLiquidStyle;
@@ -60,7 +60,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
-  material = 'liquid',
+  material = 'solid',
   liquidStyle = 'regular',
   size = 'md',
   shape,

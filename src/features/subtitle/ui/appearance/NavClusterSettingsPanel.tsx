@@ -102,7 +102,7 @@ export function NavClusterSettingsPanel({
             settings.textOpacity === preset.textOpacity &&
             settings.bgOpacity === preset.bgOpacity;
           return (
-            <Button material="solid"
+            <Button material="liquid"
               key={preset.label}
               variant="primary"
               size="sm"
