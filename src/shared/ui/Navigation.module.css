@@ -3,7 +3,6 @@
    Manages active state, scroll-spy, scroll-to-active. */
 
 .nav {
-  position: relative;
   display: flex;
   flex-shrink: 0;
   overflow: auto;
@@ -26,7 +25,6 @@
   touch-action: auto;
   scroll-behavior: smooth;
   scroll-padding: var(--space-2);
-  container-type: inline-size;
 }
 
 /* ─── Orientation: Horizontal ─── */

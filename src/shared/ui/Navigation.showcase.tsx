@@ -1,7 +1,6 @@
 import { useRef, useState, type ReactElement } from 'react';
 import { Navigation } from './Navigation';
 import { NavItem } from './NavItem';
-import { Icon } from '@/shared/icons/Icon';
 
 const ITEMS = [
   { id: 'all', label: 'All Items', icon: 'layers' },
@@ -21,7 +20,7 @@ export function Showcase(): ReactElement {
       {/* 1. Horizontal Navigation */}
       <div>
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-          Horizontal Navigation (Tabs / Chip-bar with sliding active indicator)
+          Horizontal Navigation (Tabs / Chip-bar)
         </h3>
         <div style={{ padding: 'var(--space-2)', background: 'var(--color-surface)', border: 'var(--border-width-hairline) solid var(--color-border-subtle)', borderRadius: 'var(--radius-card)' }}>
           <Navigation
@@ -34,9 +33,8 @@ export function Showcase(): ReactElement {
               <NavItem
                 key={item.id}
                 data-section-id={item.id}
-                icon={<Icon name={item.icon as never} size={16} />}
+                icon={item.icon}
                 label={item.label}
-                orientation="horizontal"
               />
             ))}
           </Navigation>
@@ -46,7 +44,7 @@ export function Showcase(): ReactElement {
       {/* 2. Vertical Navigation with Scroll-spy */}
       <div>
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
-          Vertical Navigation (Scroll-spy + rAF water-flow pill animation)
+          Vertical Navigation (Scroll-spy)
         </h3>
         <div style={{ display: 'flex', gap: 'var(--space-4)', height: 260 }}>
           <div style={{ width: 200, border: 'var(--border-width-hairline) solid var(--color-border-subtle)', borderRadius: 'var(--radius-card)', background: 'var(--color-surface)' }}>
@@ -62,9 +60,8 @@ export function Showcase(): ReactElement {
                 <NavItem
                   key={item.id}
                   data-section-id={item.id}
-                  icon={<Icon name={item.icon as never} size={18} />}
+                  icon={item.icon}
                   label={item.label}
-                  orientation="horizontal"
                 />
               ))}
             </Navigation>
@@ -95,7 +92,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Navigation',
-  description: 'Self-contained navigation organism: owns active state, floating pill rAF water-flow animation, scroll-spy, scroll-to-active, event delegation. Supports vertical & horizontal orientations.',
+  description: 'Self-contained navigation organism: owns active state, scroll-spy, scroll-to-active, event delegation. Supports vertical & horizontal orientations.',
   level: 'organisms' as const,
   category: 'Navigation',
   order: 11,
