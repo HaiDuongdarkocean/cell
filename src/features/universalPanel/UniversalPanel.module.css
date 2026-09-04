@@ -86,10 +86,6 @@
   display: flex;
 }
 
-.mobileBottomNav {
-  display: none;
-}
-
 @media (max-width: 839px) {
   .panel {
     max-width: none;
@@ -97,12 +93,11 @@
     flex-direction: column-reverse;
   }
 
-  .desktopSidebar {
+  /* Doubled class = specificity (0,2,0) beats CollapsibleSidebar's `.sidebar`
+     display:flex (0,1,0) regardless of CSS injection order (allModuleCss globs
+     features/ before shared/). */
+  .desktopSidebar.desktopSidebar {
     display: none;
-  }
-
-  .mobileBottomNav {
-    display: flex;
   }
 
   .body {

@@ -177,7 +177,6 @@ export function UniversalPanel({
           activeTab={activeTab}
           onTabChange={onTabChange}
           tools={TOOLS}
-          className={styles.mobileBottomNav}
         />
         <CollapsibleSidebar
           collapsed={isCollapsed}

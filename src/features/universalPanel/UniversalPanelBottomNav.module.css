@@ -1,12 +1,20 @@
 .bottomNav {
   flex: 0 0 auto;
-  display: flex;
+  /* Hidden on desktop — the L-shape CollapsibleSidebar owns navigation there.
+     Shown only ≤839px. Self-contained so CSS injection order can't break it. */
+  display: none;
   align-items: center;
   justify-content: space-around;
   gap: var(--space-1);
   padding: var(--space-2) var(--space-1);
   background: var(--color-surface-elevated);
   border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 839px) {
+  .bottomNav {
+    display: flex;
+  }
 }
 
 .navItem {
