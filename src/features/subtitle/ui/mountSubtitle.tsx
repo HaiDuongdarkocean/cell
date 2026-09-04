@@ -1,41 +1,14 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { createElement } from 'react';
+import { flushSync } from 'react-dom';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 
 import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
 import type { ToastVariant } from './SubtitleToast';
-import subtitleBlockCss from './SubtitleBlock.module.css?inline';
-import navClusterCss from './NavCluster.module.css?inline';
-import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
-import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
-import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
-import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import footerBarCss from '@/shared/ui/FooterBar.module.css?inline';
-import inputCss from '@/shared/ui/Input.module.css?inline';
-import selectCss from '@/shared/ui/Select.module.css?inline';
-import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
-import tabsCss from '@/shared/ui/Tabs.module.css?inline';
-import subtitleToastCss from './SubtitleToast.module.css?inline';
-import subtitleHintCss from './SubtitleHint.module.css?inline';
-import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
-import subtitlePanelsSharedCss from './subtitlePanelsShared.module.css?inline';
-import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
-import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
-import iconCss from '@/shared/icons/Icon.module.css?inline';
-import uiIconCss from '@/shared/ui/Icon.module.css?inline';
-import labelGroupCss from '@/shared/ui/LabelGroup.module.css?inline';
-import settingsRowCss from '@/shared/ui/SettingsRow.module.css?inline';
-import sliderRowCss from '@/shared/ui/SliderRow.module.css?inline';
-import sheetCss from '@/shared/ui/Sheet.module.css?inline';
-import toggleCss from '@/shared/ui/Toggle.module.css?inline';
-import sliderCss from '@/shared/ui/Slider.module.css?inline';
-import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
-import ocrSettingsPanelCss from '@/features/ocr/ui/OcrSettingsPanel.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 import type { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
@@ -190,32 +163,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       currentTimeMs={currentTimeMs}
       offsetMs={offsetMs}
       onSeek={onSeek}
-      managerShadowCss={[
-        sheetCss,
-        subtitleManagerCss,
-        subtitleSearchCss,
-        apiKeyManagerCss,
-        subtitleOffsetCss,
-        buttonCss,
-        footerBarCss,
-        inputCss,
-        selectCss,
-        skeletonCss,
-        tabsCss,
-        subtitlePanelsCss,
-        subtitlePanelsSharedCss,
-        iconCss,
-        uiIconCss,
-        labelGroupCss,
-        settingsRowCss,
-        sliderRowCss,
-        toggleCss,
-        sliderCss,
-        tooltipCss,
-        ocrSettingsPanelCss,
-        buildTokenSpanCssForShadow(),
-        ...appearanceShadowCss,
-      ]}
+      managerShadowCss={[...allModuleCss, buildTokenSpanCssForShadow()]}
     />
   );
 
@@ -226,45 +174,20 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       layer: 2,
       position: 'absolute',
       reparentOnFullscreen: true,
-      css: [
-        subtitleBlockCss,
-        navClusterCss,
-        subtitleManagerCss,
-        subtitleSearchCss,
-        apiKeyManagerCss,
-        subtitleOffsetCss,
-        buttonCss,
-        inputCss,
-        selectCss,
-        skeletonCss,
-        tabsCss,
-        subtitleToastCss,
-        subtitleHintCss,
-        subtitlePanelsCss,
-        subtitlePanelsSharedCss,
-        playerModeOverlayCss,
-        cueListCss,
-        iconCss,
-        uiIconCss,
-        labelGroupCss,
-        settingsRowCss,
-        sliderRowCss,
-        toggleCss,
-        sliderCss,
-        tooltipCss,
-        ocrSettingsPanelCss,
-        buildTokenSpanCssForShadow(),
-        ...appearanceShadowCss,
-      ],
+      css: [...allModuleCss, buildTokenSpanCssForShadow()],
     },
   );
 
   // Re-render with ShadowThemeProvider so data-theme + color tokens resolve
   // inside the shadow boundary. Without this, [data-theme="dark"] selectors
   // never match and buttons fall back to light-theme colors (invisible on dark dock).
-  root.render(
-    createElement(ShadowThemeProvider, { container: rootEl }, buildComponent()),
-  );
+  // Flushing sync ensures the imperative ref is populated before the caller
+  // (e.g. ReactSubtitleController) starts driving the panel state.
+  flushSync(() => {
+    root.render(
+      createElement(ShadowThemeProvider, { container: rootEl }, buildComponent()),
+    );
+  });
 
   // Host fills the video container but lets clicks pass through to player controls.
   // pointer-events:none on host → player controls stay interactive.

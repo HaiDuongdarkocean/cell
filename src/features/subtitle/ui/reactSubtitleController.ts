@@ -554,6 +554,7 @@ export class ReactSubtitleController {
   }
 
   openManager(): void {
+    this.mount.setManager(this.buildManagerState());
     this.mount.setManagerOpen(true);
   }
 
