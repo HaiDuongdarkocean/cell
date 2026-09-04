@@ -5,7 +5,11 @@ import {
 import type { AudioItem } from '@/features/dictionaryPopup/types';
 import type { PronunciationSettings } from '@/entities/settings/types';
 
+import type { AudioEngineKind } from '../types';
+
 class MockProvider {
+  readonly kind: AudioEngineKind = 'localFile';
+
   constructor(private readonly items: AudioItem[]) {}
 
   resolve(): Promise<readonly AudioItem[]> {
@@ -59,7 +63,7 @@ describe('PronunciationAudioOrchestrator', () => {
     expect(result[0].id).toBe('c1');
   });
 
-  it('respects the fallback engine order', async () => {
+  it('stops at the first non-empty provider and uses only its items', async () => {
     const orchestrator = new PronunciationAudioOrchestrator(makeSettings(['native', 'localFile']));
     (orchestrator as unknown as { providers: PronunciationAudioProvider[] }).providers = [
       new MockProvider([makeItem('n1', 'community'), makeItem('n2', 'community')]),
@@ -67,10 +71,9 @@ describe('PronunciationAudioOrchestrator', () => {
     ];
 
     const result = await orchestrator.resolve('hello', 'en');
-    expect(result.map((i) => i.id)).toEqual(['n1', 'n2', 'l1']);
+    expect(result.map((i) => i.id)).toEqual(['n1', 'n2']);
     expect(result[0].defaultSelected).toBe(true);
     expect(result[1].defaultSelected).toBe(false);
-    expect(result[2].defaultSelected).toBe(false);
   });
 
   it('skips unknown engine kinds', async () => {

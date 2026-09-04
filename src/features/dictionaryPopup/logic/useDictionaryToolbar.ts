@@ -137,18 +137,35 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
     return (async (): Promise<readonly AudioItem[]> => {
       try {
-        const [settings, sentenceTtsRes] = await Promise.all([
-          loadSettings(),
-          sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-            payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
-          }),
-        ]);
+        const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+          Promise.race([
+            p,
+            new Promise<T>((_, reject) =>
+              setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms),
+            ),
+          ]);
+
+        const [settings, sentenceTtsRes] = await withTimeout(
+          Promise.all([
+            withTimeout(loadSettings(), 5_000),
+            withTimeout(
+              sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+                type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+                payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
+              }),
+              8_000,
+            ).catch(() => undefined),
+          ]),
+          10_000,
+        );
 
         const orchestrator = new PronunciationAudioOrchestrator(
           settings.pronunciation ?? DEFAULT_PRONUNCIATION_SETTINGS,
         );
-        const wordItems = await orchestrator.resolve(result.term, result.langCode);
+        const wordItems = await withTimeout(
+          orchestrator.resolve(result.term, result.langCode),
+          12_000,
+        );
 
         const sentenceItems: AudioItem[] = [];
         if (sentenceTtsRes?.success && sentenceTtsRes.data?.url) {
@@ -169,7 +186,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           setAudioError(sentenceTtsRes?.error ?? 'Audio fetch failed');
         }
 
-        if (mountedRef.current) {
+        if (mountedRef.current && (items.length > 0 || audioItems.length > 0)) {
           setAudioItems(items);
           setAudioSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
         }
@@ -181,7 +198,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         }
         return [];
       } finally {
-        if (mountedRef.current) setAudioLoading(false);
+        if (mountedRef.current) {
+          setAudioLoading(false);
+        }
       }
     })();
   }, [audioItems, result, contextSentence]);
