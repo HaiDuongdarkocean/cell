@@ -66,7 +66,6 @@ export function createGestureDetector(deps: GestureDetectorDeps): GestureDetecto
       clearTimer();
 
       if (now - lastTapTime > TAP_WINDOW_MS) {
-        // Start a new tap sequence.
         tapCount = 1;
       } else {
         tapCount += 1;

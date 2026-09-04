@@ -1,5 +1,3 @@
-// Unit tests for the generic subtitle discovery pipeline.
-
 import { SubtitleDiscoveryPipeline, createDefaultAdapters } from '@/features/detection/subtitleDiscovery';
 import type { SubtitleDiscoveryEnvironment, SubtitleInventorySink } from '@/features/detection/subtitleDiscovery';
 import type { DetectedSubtitle } from '@/entities/media';

@@ -1,5 +1,3 @@
-// Unit tests for the SUBTITLE_DISCOVERY_SIGNAL handler.
-
 import { registerSubtitleDiscoveryHandlers } from '@/entrypoints/background/handlers/subtitleDiscovery';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '@/entrypoints/background/context';

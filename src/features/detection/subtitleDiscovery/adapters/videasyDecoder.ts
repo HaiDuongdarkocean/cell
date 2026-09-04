@@ -15,10 +15,10 @@ const MURMUL_C1 = 2246822507;
 const MURMUL_C2 = 3266489909;
 const MAGIC_HEADER = [109, 118, 109, 49]; // "mvm1"
 
-// The original bundle declares both helpers, but they evaluate to constant
-// true/false for integer inputs. We keep them as comments for fidelity.
-// const isEvenTriangular = (n: number) => ((n * (n + 1)) & 1) === 0; // always true
-// const isOddTriangular = (n: number) => ((n * (n + 1)) & 1) === 1;  // always false
+// The original bundle declares two extra helpers (isEvenTriangular /
+// isOddTriangular), but they evaluate to constant true/false for integer
+// inputs, so they are omitted here (see the dead-branch note in
+// buildPrngState below).
 
 function murmurMix(e: number): number {
   let n = e >>> 0;

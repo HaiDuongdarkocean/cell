@@ -198,7 +198,6 @@ export function serializePhraseIndex(index: PhraseIndex): ArrayBuffer {
     internNodes(t.nodes, intern);
   }
 
-  // Build byte chunks.
   const chunks: number[] = [];
 
   // Header: magic + version + termCount + anchorCount

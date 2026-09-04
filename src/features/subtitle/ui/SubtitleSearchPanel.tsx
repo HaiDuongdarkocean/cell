@@ -122,7 +122,6 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
   const [activeTab, setActiveTab] = useState<SubtitleRole>('target');
   const abortRef = useRef<AbortController | null>(null);
 
-  // Load target + native languages from settings on mount.
   useEffect(() => {
     void (async (): Promise<void> => {
       try {

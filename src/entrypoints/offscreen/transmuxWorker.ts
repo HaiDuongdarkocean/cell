@@ -73,7 +73,6 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         return;
       }
 
-      // Merge all chunks into a single buffer
       const output = new Uint8Array(bytesWritten);
       let writeOffset = 0;
       for (const chunk of chunks) {

@@ -227,7 +227,6 @@ export function injectThemeTokens(container: HTMLElement): () => void {
   };
   onStorageChanged(onChanged);
 
-  // Cleanup
   return () => {
     removeOnStorageChangedListener(onChanged);
   };

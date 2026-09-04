@@ -663,7 +663,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // ADR-015 T7: debounced toast (collapses rapid import/switch messages)
   const debouncedToast = createDebouncedToast(showToast, 500);
 
-  // Load shortcuts from storage
   loadShortcuts().then((s) => { shortcuts = s; }).catch((err) => console.warn('[content-script] Failed to load shortcuts:', err));
 
   // Toggle Side Panel open/close (ADR-008 D1). Shared by React tools button + 't'

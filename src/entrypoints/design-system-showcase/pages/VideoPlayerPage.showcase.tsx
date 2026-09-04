@@ -49,7 +49,6 @@ export function Showcase(): ReactElement {
     store.setActiveIndex(-1, -1);
   }, []);
 
-  // Sync video.currentTime → active cue index
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;

@@ -1,5 +1,3 @@
-// definitionSelection.ts — pure helpers for definition checkbox state.
-//
 // These used to live inside the legacy popupContent.ts renderer. They are
 // still consumed by useCandidate and useDictionaryLookup, so they have been
 // extracted into a standalone logic module before that legacy file was deleted.

@@ -60,7 +60,6 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
     });
     webTextCtrlRef.current = ctrl;
 
-    // Load settings + update controller config.
     void loadSettings().then((settings) => {
       ctrl.updateSettings({
         dictionaryPopup: settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
@@ -137,7 +136,6 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
 
     void startGenerateNative(targetCuesSnapshot, {
       onChunkTranslated: (translatedCues) => {
-        // Load translated cues as native cues into the store.
         useCuesStore.getState().setCues(targetCuesSnapshot, translatedCues);
       },
       onError: (msg) => {

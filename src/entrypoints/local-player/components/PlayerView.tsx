@@ -258,7 +258,6 @@ export function PlayerView({
     void setStorage({ [STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN]: open }).catch(() => undefined);
   }, []);
 
-  // Set video.src when a new file is loaded.
   useEffect(() => {
     if (!videoFile) return;
     const video = videoRef.current;

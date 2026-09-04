@@ -1,5 +1,3 @@
-// Unit tests for MessageBus subtitle-discovery sender injection.
-
 import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageRequest, MessageResponse } from '@/types/message';

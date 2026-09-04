@@ -731,7 +731,6 @@ export function matchPhraseAll(
 
   emitTrace(traceSink, index, sourceResourceId, candidateIds, anchorHits, perCandidateTraces, ranked);
 
-  // Build PhraseMatch[] + deduplicate by dictionaryTerm.
   const seen = new Set<string>();
   const result: PhraseMatch[] = [];
   for (const best of matches) {

@@ -1171,7 +1171,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       };
     }, [splitViewOpen, playerMode, isFullscreen, fallbackPlayerContainerRef, splitViewPct]);
 
-    // Load persisted splitViewPct on mount.
     useEffect(() => {
       let cancelled = false;
       getStorage<Record<string, number>>(STORAGE_KEYS.SPLIT_VIEW_PCT)

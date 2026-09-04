@@ -1,4 +1,3 @@
-// ocrToCues.test.ts — TDD: 10 test cases cho dedup algorithm.
 // Mỗi test mô phỏng 1 real-world OCR duplicate scenario.
 import { describe, expect, it } from '@jest/globals';
 import { ocrTextToCues, CUE_TAIL_MS, CUE_MERGE_GAP_MS, normalizeText } from './ocrToCues';

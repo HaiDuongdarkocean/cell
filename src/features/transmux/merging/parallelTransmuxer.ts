@@ -275,7 +275,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
       }),
     );
 
-    // Check if any group failed
     const failedGroup = results.find((r) => !r.success);
     if (failedGroup) {
       await cleanupPartFiles(dirHandle, partNames);

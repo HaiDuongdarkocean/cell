@@ -448,7 +448,6 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     return () => window.removeEventListener('resize', onResize);
   }, [computeAndClampPosition]);
 
-  // Clear snap-back timer on unmount.
   useEffect(() => {
     return () => {
       if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);

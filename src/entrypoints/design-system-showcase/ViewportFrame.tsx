@@ -50,17 +50,14 @@ export function ViewportFrame({
       const doc = iframe.contentDocument;
       if (!doc) return;
 
-      // Clone all stylesheets from parent document
       const styleNodes = document.querySelectorAll('style, link[rel="stylesheet"]');
       styleNodes.forEach((node) => {
         doc.head.appendChild(node.cloneNode(true));
       });
 
-      // Sync theme attribute (dark mode)
       const parentTheme = document.documentElement.getAttribute('data-theme');
       if (parentTheme) doc.documentElement.setAttribute('data-theme', parentTheme);
 
-      // Reset body
       doc.body.style.margin = '0';
       doc.body.style.padding = '0';
       doc.body.style.background = 'var(--color-background)';
