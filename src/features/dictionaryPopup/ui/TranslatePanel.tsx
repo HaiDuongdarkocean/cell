@@ -80,8 +80,8 @@ export function TranslatePanel({
             <div className={styles.cellTranslateTarget}>{translation}</div>
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
-          <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
-            {loading ? <Spinner size="md" /> : <Icon name="check"  />}
+          <span className={`${checkStyles.cellDefCheckBox} ${loading ? checkStyles['cellDefCheckBox--loading'] : ''}`} aria-hidden="true">
+            {loading ? <Spinner size="xl" color="accent" /> : <Icon name="check" size="md" />}
           </span>
         </div>
       </div>

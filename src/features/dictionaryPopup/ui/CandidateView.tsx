@@ -294,36 +294,46 @@ function DefinitionItem({
     <div
       className={checkStyles.cellDefItem}
       data-cell-id="dictionary-definition"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={`Select definition: ${definition.text}`}
+      tabIndex={0}
       onClick={() => onToggle(definition.id, !checked)}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          onToggle(definition.id, !checked);
+        }
+      }}
     >
-      <label
-        className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <input
-          type="checkbox"
-          className={checkStyles.cellDefCheckInput}
-          checked={checked}
-          onChange={(e) => onToggle(definition.id, e.target.checked)}
-          aria-label={`Select definition: ${definition.text}`}
-        />
-        <span className={checkStyles.cellDefCheckDot} aria-hidden="true" />
-        <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
-          <Icon name="check"  />
-        </span>
-      </label>
-      <div className={styles.cellDefText}>
-        <span>
+      <div className={styles.cellDefRow}>
+        <label
+          className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            className={checkStyles.cellDefCheckInput}
+            checked={checked}
+            onChange={(e) => onToggle(definition.id, e.target.checked)}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
+            <Icon name="check" size="md" />
+          </span>
+        </label>
+        <span className={styles.cellDefText}>
           {definition.pos ? `${definition.pos} ${definition.text}` : definition.text}
         </span>
-        {definition.examples.length > 0 && (
-          <div className={styles.cellDefExamples}>
-            {definition.examples.map((ex, i) => (
-              <div key={i}>• {ex}</div>
-            ))}
-          </div>
-        )}
       </div>
+      {definition.examples.length > 0 && (
+        <div className={styles.cellDefExamples}>
+          {definition.examples.map((ex, i) => (
+            <div key={i}>• {ex}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

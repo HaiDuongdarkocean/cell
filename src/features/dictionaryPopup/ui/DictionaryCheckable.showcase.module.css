@@ -1,0 +1,54 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px;
+  max-width: 720px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  margin: 0 0 4px;
+}
+
+.demo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stateLabel {
+  flex: 0 0 130px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.demoHost {
+  flex: 1;
+  min-width: 0;
+}
+
+.imageRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.hint {
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+}

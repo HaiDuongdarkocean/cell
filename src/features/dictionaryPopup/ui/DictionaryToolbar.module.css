@@ -13,7 +13,7 @@
 
 .cellToolbar {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   padding: 0;
   align-items: center;
 }
@@ -42,7 +42,13 @@
 }
 
 .cellToolbarTab[aria-selected="true"] {
-  color: var(--color-text-on-primary);
+  color: var(--button-fg);
+}
+
+/* Popup/sheet sits on surface-elevated, where surface-hover collapses into
+   the background (~4% lightness delta) — step the ghost fill up one rung. */
+[data-cell-id="popup-dictionary"] .cellToolbarTab[aria-selected="false"] {
+  background: var(--color-surface-pressed);
 }
 
 .cellToolbarLabel {

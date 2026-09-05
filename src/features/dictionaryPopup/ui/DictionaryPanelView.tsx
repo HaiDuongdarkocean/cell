@@ -16,6 +16,7 @@ import {
   persistSearchHistory,
   removeSearchHistoryTerm,
 } from '@/features/universalPanel/searchHistory';
+import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 import candidateStyles from './CandidateView.module.css';
@@ -96,6 +97,7 @@ export function DictionaryPanelView({
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSearchFocusRef = useRef(false);
   const userTypedRef = useRef(false);
+  const spySuppressRef = useRef(false);
 
   const { searchTerm, setSearchTerm, search } = panel;
 
@@ -213,6 +215,33 @@ export function DictionaryPanelView({
     [panel.currentResult, panel.candidates],
   );
 
+  // Scroll-spy: keep the active chip in sync with the candidate occupying the
+  // top half of the viewport. root=null (viewport) works in both modes — in
+  // integrated mode .candidateList clips, in popup mode .content clips, and
+  // ancestor clipping applies regardless of which element scrolls.
+  // Suppressed during chip-click scroll so the chip doesn't flick through
+  // intermediate candidates — unlock waits for scrollend (the slowest async
+  // op), not an animation timer (experience: async-observer-unlock-on-scrollend).
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || allCandidates.length <= 1) return;
+    const candidates = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-cell-id]'),
+    ).filter((el) => /^dictionary-candidate-\d+$/.test(el.dataset.cellId ?? ''));
+
+    const tracker = new ViewportTracker({ rootMargin: '0px 0px -50% 0px' });
+    candidates.forEach((el) => {
+      const idx = Number((el.dataset.cellId ?? '').slice('dictionary-candidate-'.length));
+      if (Number.isNaN(idx)) return;
+      tracker.observe(el, {
+        onEnter: () => {
+          if (!spySuppressRef.current) setActiveChipIndex(idx);
+        },
+      });
+    });
+    return () => tracker.destroy();
+  }, [allCandidates]);
+
   const handleChipClick = useCallback((index: number): void => {
     setActiveChipIndex(index);
     // Query inside the container's root node so this works in both Shadow DOM
@@ -223,6 +252,17 @@ export function DictionaryPanelView({
       `[data-cell-id="dictionary-candidate-${index}"]`,
     );
     if (el) {
+      // Suppress scroll-spy until the programmatic smooth scroll finishes.
+      // scrollend (capture — the event doesn't bubble) is the unlock signal;
+      // the timeout is a fallback for no-op scrolls where scrollend never
+      // fires (target already in view).
+      spySuppressRef.current = true;
+      const unlock = (): void => {
+        spySuppressRef.current = false;
+        document.removeEventListener('scrollend', unlock, true);
+      };
+      document.addEventListener('scrollend', unlock, { capture: true, once: true });
+      setTimeout(unlock, 800);
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     const candidate = allCandidates[index];
@@ -246,12 +286,43 @@ export function DictionaryPanelView({
             placeholder="Type a word"
             disabled={panel.isLoading}
             className={styles.searchField}
+            prefix={null}
           />
         </div>
       )}
 
       {variant !== 'popup' && searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
+          <ul className={styles.searchHistoryList}>
+            {searchHistory.map((term) => {
+              const isActive = panel.currentResult?.term.toLowerCase() === term.toLowerCase();
+              return (
+                <li key={term} className={`${styles.searchHistoryItem} ${isActive ? styles.searchHistoryItemActive : ''}`}>
+                  <Button material="solid" variant="secondary"
+                    className={styles.searchHistoryTerm}
+                    aria-current={isActive ? 'true' : undefined}
+                    leadingIcon={<Icon name="rotateCcw" size="xs" />}
+                    onClick={() => {
+                      setSearchTerm(term);
+                      search(term);
+                    }}
+                    data-cell-id={`dictionary-search-history-term-${term}`}
+                  >
+                    {term}
+                  </Button>
+                  <Button material="solid" variant="ghost"
+                    className={styles.searchHistoryRemove}
+                    aria-label={`Remove ${term} from recent searches`}
+                    title={`Remove ${term}`}
+                    onClick={() => handleRemoveHistory(term)}
+                    data-cell-id={`dictionary-search-history-remove-${term}`}
+                  >
+                    <Icon name="x" size="xs" />
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
           <Button shape="circle" size="xs" material="solid" variant="ghost"
             className={styles.searchHistoryClear}
             aria-label="Clear recent searches"
@@ -259,33 +330,8 @@ export function DictionaryPanelView({
             onClick={handleClearHistory}
             data-cell-id="dictionary-search-history-clear"
           >
-            <Icon name="trash"  />
+            <Icon name="trash2" size="xs" />
           </Button>
-          <ul className={styles.searchHistoryList}>
-            {searchHistory.map((term) => (
-              <li key={term} className={styles.searchHistoryItem}>
-                <Button material="solid" variant="secondary"
-                  className={styles.searchHistoryTerm}
-                  onClick={() => {
-                    setSearchTerm(term);
-                    search(term);
-                  }}
-                  data-cell-id={`dictionary-search-history-term-${term}`}
-                >
-                  {term}
-                </Button>
-                <Button shape="circle" material="solid" variant="ghost"
-                  className={styles.searchHistoryRemove}
-                  aria-label={`Remove ${term} from recent searches`}
-                  title={`Remove ${term}`}
-                  onClick={() => handleRemoveHistory(term)}
-                  data-cell-id={`dictionary-search-history-remove-${term}`}
-                >
-                  <Icon name="x"  />
-                </Button>
-              </li>
-            ))}
-          </ul>
         </section>
       )}
 
@@ -368,6 +414,12 @@ export function DictionaryPanelView({
  * (reading, status, frequency, toolbar, definitions). Every dimension
  * references design tokens via var()/calc() — no hardcoded px — so the
  * skeleton stays in sync with the real CandidateView if tokens change.
+ *
+ * WARNING: this component manually mirrors CandidateView's DOM structure
+ * (header → reading → status → toolbar → definitions). NOTHING enforces the
+ * mirror — no type error, no test, no lint. When CandidateView's layout
+ * changes, update the skeleton in the same commit or the loading state drifts
+ * into a visible layout shift when results land.
  */
 function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Element {
   // Token-derived sizes — SSOT, no magic numbers.
@@ -421,22 +473,26 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
 
         <section className={styles.cellDef} aria-label="Definitions">
           <div className={checkStyles.cellDefItem}>
-            <span className={checkStyles.cellDefCheck}>
-              <Skeleton width={checkbox} height={checkbox} shape="rounded" />
-            </span>
-            <div className={candidateStyles.cellDefText}>
-              <Skeleton width="90%" height={textH} shape="rounded" />
-              <div className={candidateStyles.cellDefExamples}>
-                <Skeleton width="65%" height={exH} shape="rounded" />
-              </div>
+            <div className={candidateStyles.cellDefRow}>
+              <span className={checkStyles.cellDefCheck}>
+                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+              </span>
+              <span className={candidateStyles.cellDefText}>
+                <Skeleton width="90%" height={textH} shape="rounded" />
+              </span>
+            </div>
+            <div className={candidateStyles.cellDefExamples}>
+              <Skeleton width="65%" height={exH} shape="rounded" />
             </div>
           </div>
           <div className={checkStyles.cellDefItem}>
-            <span className={checkStyles.cellDefCheck}>
-              <Skeleton width={checkbox} height={checkbox} shape="rounded" />
-            </span>
-            <div className={candidateStyles.cellDefText}>
-              <Skeleton width="75%" height={textH} shape="rounded" />
+            <div className={candidateStyles.cellDefRow}>
+              <span className={checkStyles.cellDefCheck}>
+                <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+              </span>
+              <span className={candidateStyles.cellDefText}>
+                <Skeleton width="75%" height={textH} shape="rounded" />
+              </span>
             </div>
           </div>
         </section>

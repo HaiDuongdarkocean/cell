@@ -49,6 +49,7 @@ export function DictionaryToolbar({
           >
             <Icon name={tab.icon}  />
             <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
+            {/* Links are static shortcuts, not selected materials — no count badge. */}
             {count > 0 && tab.key !== 'links' && <span className={styles.cellToolbarBadge}>{count}</span>}
           </Button>
         );

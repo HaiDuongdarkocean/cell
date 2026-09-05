@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Dictionary Word Pill + Chips</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    /* === Mockup shell (page chrome only, not themed) === */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-family);
+      background: #ECEEF1;
+      color: #1F2328;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-8);
+      padding: var(--space-12) var(--space-6);
+    }
+    .meta {
+      text-align: center;
+      color: #6B7280;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: var(--font-weight-semibold);
+    }
+    .page-title {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: var(--tracking-tight);
+      margin: var(--space-1) 0 0;
+    }
+    .canvases {
+      display: flex;
+      gap: var(--space-6);
+      flex-wrap: wrap;
+      justify-content: center;
+      width: min(1100px, 100%);
+    }
+    .canvas-label {
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6B7280;
+      margin-bottom: var(--space-2);
+    }
+
+    /* === Themed canvas — simulates the universal panel body === */
+    .canvas {
+      flex: 1 1 460px;
+      max-width: 560px;
+      background: var(--color-background);
+      border-radius: var(--radius-lg, 16px);
+      padding: var(--space-4);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+      color: var(--color-text);
+    }
+
+    /* === Big word pill === */
+    .word-pill {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: var(--space-14);               /* 56px */
+      padding: 0 var(--space-4);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface-elevated);
+      border: var(--border-width-hairline, 1px) solid var(--color-border-subtle);
+    }
+    .word-pill .word {
+      flex: 1;
+      min-width: 0;
+      font-size: var(--font-size-3xl);            /* 28px */
+      font-weight: var(--font-weight-bold);
+      letter-spacing: var(--tracking-tight);
+      line-height: var(--leading-tight);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--color-text);
+    }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      padding: var(--space-1);
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--radius-pill);
+      flex-shrink: 0;
+      transition: color var(--duration-fast, 120ms) ease;
+    }
+    .icon-btn:hover { color: var(--color-text); }
+    .icon-btn svg { display: block; }
+
+    /* === Chips row === */
+    .chips {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: var(--space-2);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: var(--space-1-5) var(--space-3-5, 14px);
+      min-height: var(--space-8);                 /* 32px */
+      border-radius: var(--radius-pill);
+      border: var(--border-width-hairline, 1px) solid var(--color-border-subtle);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: background var(--duration-fast, 120ms) ease,
+                  color var(--duration-fast, 120ms) ease,
+                  border-color var(--duration-fast, 120ms) ease;
+    }
+    .chip svg { flex-shrink: 0; }
+    .chip:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text);
+    }
+    .chip.active,
+    .chip.active:hover {
+      background: var(--color-primary);
+      border-color: transparent;
+      color: var(--color-primary-foreground);
+    }
+
+    /* Trailing clear-all icon, sits at the end of the row */
+    .chips .icon-btn { padding: var(--space-2); }
+
+    /* === Spec strip === */
+    .spec {
+      width: min(1100px, 100%);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-3);
+      font-size: 12px;
+      color: #4B5563;
+    }
+    .spec h3 {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6B7280;
+      margin: 0 0 var(--space-1);
+    }
+    .spec ul { margin: 0; padding-left: 16px; }
+    .spec li { margin: 2px 0; }
+    .spec code {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      background: rgba(15,23,42,.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">Dictionary — word pill + chips row</div>
+  <h1 class="page-title">Universal Panel / Dictionary</h1>
+
+  <div class="canvases">
+    <!-- ============ DARK ============ -->
+    <div>
+      <div class="canvas-label">Dark</div>
+      <div class="canvas" data-theme="dark">
+        <div class="word-pill">
+          <span class="word">greeting</span>
+          <button class="icon-btn" aria-label="Clear word">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="chips">
+          <button class="chip active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            greeting
+          </button>
+          <button class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            hellos
+          </button>
+          <button class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            hello
+          </button>
+          <button class="icon-btn" aria-label="Clear all">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LIGHT ============ -->
+    <div>
+      <div class="canvas-label">Light</div>
+      <div class="canvas" data-theme="light">
+        <div class="word-pill">
+          <span class="word">greeting</span>
+          <button class="icon-btn" aria-label="Clear word">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="chips">
+          <button class="chip active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            greeting
+          </button>
+          <button class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            hellos
+          </button>
+          <button class="chip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            hello
+          </button>
+          <button class="icon-btn" aria-label="Clear all">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Icon options ============ -->
+  <div style="width:min(1100px,100%)">
+    <div class="canvas-label" style="margin-bottom:var(--space-3)">Icon options — pick one</div>
+    <div class="canvas" data-theme="dark" style="max-width:none">
+      <div class="chips" style="margin-top:0">
+        <button class="chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          greeting <span style="font-weight:400;opacity:.6">clock</span>
+        </button>
+        <button class="chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          greeting <span style="font-weight:400;opacity:.6">rotate-ccw</span>
+        </button>
+        <button class="chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/></svg>
+          greeting <span style="font-weight:400;opacity:.6">mic</span>
+        </button>
+        <button class="chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
+          greeting <span style="font-weight:400;opacity:.6">audio-lines</span>
+        </button>
+        <button class="chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          greeting <span style="font-weight:400;opacity:.6">search</span>
+        </button>
+        <button class="chip">
+          greeting <span style="font-weight:400;opacity:.6">no icon</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Spec ============ -->
+  <div class="spec">
+    <div>
+      <h3>Word pill</h3>
+      <ul>
+        <li>bg <code>--color-surface-elevated</code> + hairline <code>--color-border-subtle</code></li>
+        <li>radius <code>--radius-pill</code>, min-height 56px</li>
+        <li>word <code>--font-size-3xl</code> (28px) / bold / tracking-tight</li>
+        <li>× ghost icon, <code>text-tertiary → text</code> on hover</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Chip — inactive</h3>
+      <ul>
+        <li>bg <code>--color-surface</code>, border hairline</li>
+        <li>text <code>--color-text-secondary</code>, 14px / semibold</li>
+        <li>hover: <code>--color-surface-hover</code> + text</li>
+        <li>icon 14px, currentColor — chọn ở hàng options bên dưới</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Chip — active</h3>
+      <ul>
+        <li>bg <code>--color-primary</code>, border transparent</li>
+        <li>text <code>--color-primary-foreground</code></li>
+      </ul>
+      <h3 style="margin-top:12px">Clear-all</h3>
+      <ul>
+        <li>trash icon, cuối hàng, ghost (không border/bg)</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
