@@ -73,9 +73,9 @@
 }
 
 .cellImageNavLeft.cellImageNavLeft {
-  left: 0;
+  left: var(--space-0-5);
 }
 
 .cellImageNavRight.cellImageNavRight {
-  right: 0;
+  right: var(--space-0-5);
 }
