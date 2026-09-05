@@ -1,0 +1,237 @@
+/* CandidateView — candidate card header, content wrapper, definition text.
+ * The selectable definition row + checkbox morph live in
+ * DictionaryCheckable.module.css (shared with audio/image/translate panels). */
+
+
+/* Placeholders for JSX-only class references that have no popup-specific styles. */
+.cellHeaderSend, .cellHeaderQuickAdd, .cellHeaderSrs {
+  /* relies on global .icon-btn/.btn classes */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cellHeader {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+/* Content wrapper: cellHeaderReading + cellHeaderSecond + toolbar + definitions */
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cellHeaderRow {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.cellHeaderMain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cellHeaderWordRow {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.cellHeaderWord {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cellHeaderIpa {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cellHeaderReading {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  flex-basis: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.cellHeaderAudioGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  flex-shrink: 0;
+}
+
+.cellHeaderAudio {
+  width: calc(var(--touch-target-mobile) * 0.4);
+  height: calc(var(--touch-target-mobile) * 0.4);
+  min-width: calc(var(--touch-target-mobile) * 0.4);
+  min-height: calc(var(--touch-target-mobile) * 0.4);
+  padding: 0;
+  gap: var(--space-0-5);
+}
+
+.cellHeaderAudio svg {
+  width: calc(var(--touch-target-mobile) * 0.25);
+  height: calc(var(--touch-target-mobile) * 0.25);
+}
+
+.cellHeaderSecond {
+  display: flex;
+  composes: hide from '@/shared/ui/Scrollable.module.css';
+  align-items: center;
+  gap: var(--space-1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cellHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.cellHeaderStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: calc(var(--space-3) * 7);
+  height: var(--space-5);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-none);
+  white-space: nowrap;
+  cursor: pointer;
+  border: var(--border-width-hairline) solid transparent;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.cellHeaderStatus:hover {
+  filter: brightness(0.95);
+}
+
+.cellHeaderStatus--unknown {
+  background: var(--color-token-status-unknown-bg);
+  color: var(--color-token-status-unknown);
+}
+
+.cellHeaderStatus--tracking {
+  background: var(--color-token-status-tracking-bg);
+  color: var(--color-token-status-tracking);
+}
+
+.cellHeaderStatus--known {
+  background: var(--color-token-status-known-bg);
+  color: var(--color-token-status-known);
+}
+
+.cellHeaderStatus--ignore {
+  background: var(--color-token-status-ignore-bg);
+  color: var(--color-token-status-ignore);
+}
+
+.cellHeaderFrequency {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--space-5);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-none);
+}
+
+.cellHeaderFrequencySource {
+  padding: var(--space-1) var(--space-2-5);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.cellHeaderFrequencyRank {
+  padding: var(--space-1) var(--space-2-5);
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.cellHeaderFrequency--core .cellHeaderFrequencySource {
+  background: var(--color-token-freq-core-bg);
+  color: var(--color-token-freq-core-fg);
+}
+
+.cellHeaderFrequency--common .cellHeaderFrequencySource {
+  background: var(--color-token-freq-common-bg);
+  color: var(--color-token-freq-common-fg);
+}
+
+.cellHeaderFrequency--general .cellHeaderFrequencySource {
+  background: var(--color-token-freq-general-bg);
+  color: var(--color-token-freq-general-fg);
+}
+
+.cellHeaderFrequency--advanced .cellHeaderFrequencySource {
+  background: var(--color-token-freq-advanced-bg);
+  color: var(--color-token-freq-advanced-fg);
+}
+
+.cellHeaderFrequency--rare .cellHeaderFrequencySource {
+  background: var(--color-token-freq-rare-bg);
+  color: var(--color-token-freq-rare-fg);
+}
+
+.cellDefText {
+  padding: var(--space-1) 0 var(--space-1) var(--space-7);
+}
+
+.cellDefPos {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.cellDefExamples {
+  margin-top: var(--space-0-5);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.candidate {
+  flex-shrink: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  scroll-margin-top: var(--space-2);
+}
+
+/* Articles from the 2nd onward get padding-top to separate from the previous
+   candidate's border. The first candidate has no padding-top (no element above). */
+.candidate + .candidate {
+  padding-top: var(--space-3);
+}
+
+.candidate:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}

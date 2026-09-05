@@ -18,6 +18,9 @@ import {
 } from '@/features/universalPanel/searchHistory';
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
+import candidateStyles from './CandidateView.module.css';
+import checkStyles from './DictionaryCheckable.module.css';
+import toolbarStyles from './DictionaryToolbar.module.css';
 import styles from './DictionaryPanelView.module.css';
 
 const SEARCH_INPUT_ID = 'dictionary-panel-search-input';
@@ -378,36 +381,36 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
   const exH = 'calc(var(--font-size-xs) * var(--leading-normal))';
 
   return (
-    <article className={styles.candidate} data-cell-id="dictionary-candidate-skeleton" aria-busy="true">
-      <header className={styles.cellHeader}>
-        <div className={styles.cellHeaderRow}>
-          <div className={styles.cellHeaderMain}>
-            <div className={styles.cellHeaderWordRow}>
-              <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{term}</Heading>
+    <article className={candidateStyles.candidate} data-cell-id="dictionary-candidate-skeleton" aria-busy="true">
+      <header className={candidateStyles.cellHeader}>
+        <div className={candidateStyles.cellHeaderRow}>
+          <div className={candidateStyles.cellHeaderMain}>
+            <div className={candidateStyles.cellHeaderWordRow}>
+              <Heading level={2} size={2} className={candidateStyles.cellHeaderWord} data-cell-id="dictionary-term">{term}</Heading>
             </div>
           </div>
-          <div className={styles.cellHeaderActions}>
+          <div className={candidateStyles.cellHeaderActions}>
             <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
             <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
           </div>
         </div>
       </header>
 
-      <div className={styles.cellContent} data-cell-id="dictionary-content-skeleton">
-        <div className={styles.cellHeaderReading}>
+      <div className={candidateStyles.cellContent} data-cell-id="dictionary-content-skeleton">
+        <div className={candidateStyles.cellHeaderReading}>
           <Skeleton width={ipaW} height={ipaH} shape="rect" />
-          <span className={styles.cellHeaderAudioGroup}>
+          <span className={candidateStyles.cellHeaderAudioGroup}>
             <Skeleton width={btnXs} height={btnXs} shape="circle" />
             <Skeleton width={btnXs} height={btnXs} shape="circle" />
           </span>
         </div>
 
-        <div className={styles.cellHeaderSecond}>
+        <div className={candidateStyles.cellHeaderSecond}>
           <Skeleton width={statusW} height={pillH} shape="rounded" />
           <Skeleton width={freqW} height={pillH} shape="rounded" />
         </div>
 
-        <div className={styles.cellToolbar} role="presentation">
+        <div className={toolbarStyles.cellToolbar} role="presentation">
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
@@ -415,22 +418,22 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
         </div>
 
         <section className={styles.cellDef} aria-label="Definitions">
-          <div className={styles.cellDefItem}>
-            <span className={styles.cellDefCheck}>
+          <div className={checkStyles.cellDefItem}>
+            <span className={checkStyles.cellDefCheck}>
               <Skeleton width={checkbox} height={checkbox} shape="rounded" />
             </span>
-            <div className={styles.cellDefText}>
+            <div className={candidateStyles.cellDefText}>
               <Skeleton width="90%" height={textH} shape="rounded" />
-              <div className={styles.cellDefExamples}>
+              <div className={candidateStyles.cellDefExamples}>
                 <Skeleton width="65%" height={exH} shape="rounded" />
               </div>
             </div>
           </div>
-          <div className={styles.cellDefItem}>
-            <span className={styles.cellDefCheck}>
+          <div className={checkStyles.cellDefItem}>
+            <span className={checkStyles.cellDefCheck}>
               <Skeleton width={checkbox} height={checkbox} shape="rounded" />
             </span>
-            <div className={styles.cellDefText}>
+            <div className={candidateStyles.cellDefText}>
               <Skeleton width="75%" height={textH} shape="rounded" />
             </div>
           </div>

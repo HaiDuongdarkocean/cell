@@ -3,7 +3,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
-import panelStyles from './DictionaryPanelView.module.css';
+import checkStyles from './DictionaryCheckable.module.css';
 import styles from './AudioPanel.module.css';
 import type { AudioItem } from '../types';
 
@@ -80,7 +80,7 @@ export function AudioPanel({
             const itemUrl = getUrl(item);
             const isTts = !itemUrl;
             return (
-              <div key={item.id} className={panelStyles.cellAudioItem}>
+              <div key={item.id} className={checkStyles.cellAudioItem}>
                 <Button
                   shape="circle"
                   size="sm"
@@ -119,7 +119,7 @@ export function AudioPanel({
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
                 </button>
-                <span className={`${panelStyles.cellDefCheckBox} ${selected ? panelStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+                <span className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                   <Icon name="check"  />
                 </span>
               </div>
