@@ -20,6 +20,8 @@ export interface DictionaryTabProps {
   readonly prefill?: DictionaryPanelPrefill | null;
   /** Called when the user presses "Quick Add" in the dictionary header. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called from the empty-definitions state to open Settings → Resources. */
+  readonly onOpenSettings?: () => void;
 }
 
 export function DictionaryTab({
@@ -30,6 +32,7 @@ export function DictionaryTab({
   isOpen,
   prefill: externalPrefill,
   onQuickAdd,
+  onOpenSettings,
 }: DictionaryTabProps): React.JSX.Element {
   const [prefill, setPrefill] = useState<DictionaryPanelPrefill | null>(externalPrefill ?? null);
 
@@ -57,6 +60,7 @@ export function DictionaryTab({
           isOpen={isOpen}
           onSendToCard={handlePanelSendToCard}
           onQuickAdd={onQuickAdd ?? handlePanelQuickAdd}
+          onOpenSettings={onOpenSettings}
         />
       </div>
       <div className={styles.rightPane}>

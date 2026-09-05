@@ -56,6 +56,8 @@ export interface MountPopupDictionaryOptions {
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate. */
   readonly onCandidateChange?: (term: string) => void;
+  /** Called from the empty state to open Settings → Resources (import dictionary). */
+  readonly onOpenSettings?: () => void;
   /** Default media tab to open when the result first appears. */
   readonly defaultActiveTab?: PopupTab | null;
   /**
@@ -147,6 +149,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onQuickAdd: current.onQuickAdd,
     onStatusChange: current.onStatusChange,
     onCandidateChange: current.onCandidateChange,
+    onOpenSettings: current.onOpenSettings,
     defaultActiveTab: current.defaultActiveTab,
     syncStatus: current.syncStatus,
   });

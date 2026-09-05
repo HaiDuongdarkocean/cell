@@ -48,6 +48,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 
 import type { UniversalPanelMountController, DictionaryPanelPrefill } from '@/features/universalPanel';
+import { openSettingsSection } from '@/features/universalPanel';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -785,6 +786,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
+        onOpenSettings: deps.panelController
+          ? () => { void openSettingsSection(deps.panelController, 'resources'); }
+          : undefined,
         dismissOnOutsideClick: !isSheetMode(),
       };
       popupMount = mountPopupDictionary(options);
@@ -927,6 +931,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
+        onOpenSettings: deps.panelController
+          ? () => { void openSettingsSection(deps.panelController, 'resources'); }
+          : undefined,
         dismissOnOutsideClick: !isSheetMode(),
       };
       popupMount = mountPopupDictionary(options);
