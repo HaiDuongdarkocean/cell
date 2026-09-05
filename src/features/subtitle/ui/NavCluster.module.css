@@ -8,10 +8,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  --cluster-btn-size: clamp(22px, 5cqw, 34px);
-  --cluster-icon-size: clamp(12px, 2.8cqw, 20px);
+  --cluster-btn-size: clamp(22px, 5cqw, var(--universal-panel-profile-flag-size));
+  --cluster-icon-size: clamp(var(--space-3), 2.8cqw, var(--space-5));
   --cluster-text-opacity: 1;
-  --cluster-bg-opacity: 0.2;
+  --cluster-bg-opacity: var(--opacity-20);
 }
 
 .cluster .main,
@@ -39,7 +39,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(2px, 0.4cqw, var(--space-1));
+  gap: clamp(var(--space-0-5), 0.4cqw, var(--space-1));
 }
 
 .secondary {

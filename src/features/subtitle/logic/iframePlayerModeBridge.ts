@@ -148,6 +148,7 @@ async function enterTopFramePlayerMode(frameSrc: string): Promise<boolean> {
       '  position:fixed!important;inset:0!important;',
       '  width:100vw!important;height:100dvh!important;',
       '  max-width:none!important;max-height:none!important;',
+      '  /* max-int: intentional top-most overlay */',
       '  z-index:2147483647!important;',
       '  overflow:hidden!important;',
       '}',

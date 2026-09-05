@@ -16,8 +16,8 @@ describe('SettingsDialog dictionary popup default active tab', () => {
     });
     render(<SettingsDialog isOpen settings={settings} onChange={onChange} onClose={jest.fn()} />);
 
-    const select = screen.getByLabelText(/Default active tab/i) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'image' } });
+    fireEvent.click(screen.getByLabelText(/Default active tab/i));
+    fireEvent.click(screen.getByRole('option', { name: 'Image' }));
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({

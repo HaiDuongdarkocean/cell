@@ -22,12 +22,12 @@ describe('buildTextShadow', () => {
 
   it('returns soft preset format', () => {
     const result = buildTextShadow({ ...base, preset: 'soft', color: '#000000' });
-    expect(result).toBe('var(--shadow-text-soft) #000000');
+    expect(result).toBe('var(--shadow-textSoft) #000000');
   });
 
   it('returns cinema preset format', () => {
     const result = buildTextShadow({ ...base, preset: 'cinema', color: '#333333' });
-    expect(result).toBe('var(--shadow-text-cinema) #333333');
+    expect(result).toBe('var(--shadow-textCinema) #333333');
   });
 
   it('returns custom format with offsetX/offsetY/blur/color', () => {

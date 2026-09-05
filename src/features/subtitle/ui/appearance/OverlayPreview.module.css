@@ -12,7 +12,7 @@
      Replaces the old hardcoded --overlay-background (#000) which only matched
      the dark video player and ignored light mode. */
   background: var(--color-glass-surface);
-  border: 1px solid var(--color-glass-border);
+  border: var(--border-width-hairline) solid var(--color-glass-border);
   backdrop-filter: blur(var(--blur-lg));
   -webkit-backdrop-filter: blur(var(--blur-lg));
   padding: var(--space-2);
@@ -75,8 +75,8 @@
 }
 
 .blockLayer [contenteditable="true"]:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--border-width-thick) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
   border-radius: var(--radius-sm);
 }
 
@@ -119,14 +119,14 @@
   gap: var(--space-1);
   max-height: 0;
   overflow: hidden;
-  transition: max-height 200ms ease;
+  transition: max-height var(--duration-normal) ease;
 }
 
 .hint {
   position: absolute;
   top: var(--space-1);
   right: var(--space-2);
-  color: rgba(255, 255, 255, 0.4);
+  color: color-mix(in srgb, var(--overlay-text), transparent 60%);
   font-size: var(--font-size-xs);
   pointer-events: none;
 }

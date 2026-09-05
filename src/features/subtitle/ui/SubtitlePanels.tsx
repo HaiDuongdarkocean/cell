@@ -317,7 +317,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         : (overlayHost?.parentElement ?? rootRef.current?.parentElement ?? document.body);
       const host = document.createElement('div');
       host.id = 'cell-manager-portal';
-      host.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2147483647;';
+      host.style.cssText = 'position:absolute;inset:0;pointer-events:none;/* max-int: intentional top-most overlay */z-index:2147483647;';
       container.appendChild(host);
       const shadow = host.attachShadow({ mode: 'open' });
       const cleanupCss = injectShadowCss(shadow, { css: managerShadowCss });
@@ -553,6 +553,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           position: host.style.position,
           inset: host.style.inset,
         };
+        // max-int: intentional top-most overlay
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
@@ -770,7 +771,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // Apple §7: enter from right, exit to right — symmetric path.
       // §4: critically damped spring feel (no overshoot).
       // flex-basis animates so the video expands smoothly as the panel slides out.
-      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:0.3;`;
+      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:var(--opacity-30);`;
 
       // Attach a shadow root to the panel so the design-system tokens
       // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
@@ -788,7 +789,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
       const handle = document.createElement('div');
       handle.setAttribute('data-cell-split-view', 'handle');
-      handle.style.cssText = 'flex:0 0 6px;height:100%;background:var(--color-border,#333);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
+      handle.style.cssText = 'flex:0 0 var(--space-1-5);height:100%;background:var(--color-border);cursor:col-resize;touch-action:none;position:relative;z-index:1;';
 
       // Wrapper only needed in the normal (non-fullscreen) branch.
       let wrapper: HTMLDivElement | null = null;
@@ -1408,6 +1409,7 @@ class PlayerModeErrorBoundary extends Component<
 
   render(): ReactNode {
     if (this.state.error) {
+      // max-int: intentional top-most overlay
       return (
         <div style={{ position: 'fixed', inset: 0, background: '#1a1a1a', color: '#ff4444', padding: 20, fontSize: 14, fontFamily: 'monospace', zIndex: 2147483647, overflow: 'auto' }}>
           <div style={{ marginBottom: 8, color: '#fff', fontSize: 16 }}>Player Mode crashed:</div>

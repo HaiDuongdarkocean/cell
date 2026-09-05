@@ -52,7 +52,9 @@
   min-width: 0;
 }
 
-/* Two-class selectors to beat Button variant rules. */
+/* Two-class selectors to beat Button variant rules.
+   design-system: intentional override — tool rows use universal-panel surface/border tokens
+   not covered by a Button variant. */
 .toolsList .toolRow {
   display: flex;
   align-items: center;
@@ -65,7 +67,7 @@
   background: var(--universal-panel-tool-row-bg);
   color: var(--color-text);
   text-align: left;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
 
 .toolsList .toolRow:hover {

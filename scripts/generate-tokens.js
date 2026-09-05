@@ -117,6 +117,13 @@ function flattenStaticTokens(staticObj) {
     push(`blur-${key}`, value);
   }
 
+  // opacity
+  if (staticObj.opacity) {
+    for (const [key, value] of Object.entries(staticObj.opacity)) {
+      push(`opacity-${key}`, value);
+    }
+  }
+
   // motion
   for (const [key, value] of Object.entries(staticObj.motion)) {
     push(key, value);

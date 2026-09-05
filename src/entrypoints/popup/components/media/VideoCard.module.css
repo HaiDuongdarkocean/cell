@@ -12,7 +12,7 @@
 
 /* Downloading state */
 .downloading {
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
   cursor: default;
   border-color: var(--color-border);
 }
@@ -142,7 +142,7 @@
   width: var(--space-3);
   height: var(--space-3);
   color: inherit;
-  transition: transform var(--duration-normal) ease;
+  transition: transform var(--duration-normal) var(--ease-out);
   flex-shrink: 0;
 }
 
@@ -202,7 +202,7 @@
 .expandChevron {
   width: var(--space-3-5);
   height: var(--space-3-5);
-  transition: transform var(--duration-normal) ease;
+  transition: transform var(--duration-normal) var(--ease-out);
 }
 
 .expandChevronOpen {

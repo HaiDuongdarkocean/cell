@@ -18,12 +18,12 @@
 .panel::before {
   content: '';
   display: block;
-  width: 32px;
-  height: 3px;
+  width: var(--space-8);
+  height: var(--cue-list-indicator-width);
   margin: var(--space-1) auto var(--space-0-5);
   background: var(--color-border-emphasized);
   border-radius: var(--radius-full);
-  opacity: 0.5;
+  opacity: var(--opacity-50);
   flex: 0 0 auto;
 }
 
@@ -37,13 +37,13 @@
 @media (min-width: 840px) {
   .panel {
     flex: 0 1 auto;
-    width: min(100%, 360px);
+    width: min(100%, var(--dialog-max-width-sm));
     height: 100%;
     max-height: 660px;
-    border-radius: var(--radius-element, 12px) 0 0 var(--radius-element, 12px);
+    border-radius: var(--radius-element) 0 0 var(--radius-element);
     background: var(--color-glass-sidebar-panel);
     overflow: hidden;
-    animation: panelSlideIn 280ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: panelSlideIn var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) both;
   }
 
   /* Hide drag handle on desktop sidebar — no bottom-sheet drag needed */
@@ -53,7 +53,7 @@
 
   /* Exit state — applied by parent before unmount */
   .panel[data-state='exiting'] {
-    animation: panelSlideOut 280ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: panelSlideOut var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) both;
   }
 
   @keyframes panelSlideIn {
@@ -97,9 +97,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 40px;
+  min-height: var(--space-10);
   padding: var(--space-1) var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
 }
 
 /* Stack — relative container for sliding header content, clips overflow.
@@ -134,20 +134,20 @@
 
 /* Forward: new enters from right, old exits to left */
 .headerSlide[data-state='entering'][data-direction='forward'] {
-  animation: slideInRight 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideInRight var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .headerSlide[data-state='exiting'][data-direction='forward'] {
-  animation: slideOutLeft 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideOutLeft var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 /* Backward: new enters from left, old exits to right */
 .headerSlide[data-state='entering'][data-direction='backward'] {
-  animation: slideInLeft 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideInLeft var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 .headerSlide[data-state='exiting'][data-direction='backward'] {
-  animation: slideOutRight 320ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideOutRight var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
 @keyframes slideInRight {
@@ -194,7 +194,7 @@
 
 @media (min-width: 600px) {
   .header {
-    min-height: 44px;
+    min-height: var(--space-11);
     padding: var(--space-1-5) var(--space-3);
   }
 }
@@ -205,7 +205,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  animation: viewEnter 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: viewEnter var(--duration-normal) cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Forward: new view slides in from right */
@@ -219,12 +219,12 @@
 }
 
 @keyframes viewEnterForward {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(var(--space-4)); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes viewEnterBackward {
-  from { opacity: 0; transform: translateX(-16px); }
+  from { opacity: 0; transform: translateX(calc(var(--space-4) * -1)); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
@@ -253,7 +253,7 @@
   align-items: center;
   gap: var(--space-1-5);
   padding: var(--space-1) var(--space-2);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -278,7 +278,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  min-height: 36px;
+  min-height: var(--space-9);
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-sm);
 }
@@ -294,7 +294,7 @@
 
 @media (min-width: 600px) {
   .tabTrigger {
-    min-height: 40px;
+    min-height: var(--space-10);
   }
 }
 
@@ -330,7 +330,7 @@
   align-items: flex-start;
   gap: var(--space-2);
   width: 100%;
-  min-height: 40px;
+  min-height: var(--space-10);
   padding: var(--space-1-5);
   border: 0;
   border-radius: var(--radius-sm);
@@ -356,16 +356,16 @@
     box-shadow: none;
   }
   .header {
-    border-bottom: 1px solid var(--color-glass-border);
+    border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
   }
   .sectionBar {
     border-bottom: 0;
   }
   .tabsList {
-    border-bottom: 1px solid var(--color-glass-border);
+    border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
   }
   .tabTrigger {
-    border-bottom: 2px solid transparent;
+    border-bottom: var(--border-width-thick) solid transparent;
   }
   .tabTrigger[aria-selected='true'] {
     border-bottom-color: var(--color-primary);
@@ -374,7 +374,7 @@
 
 /* Off row — compact */
 .offRow {
-  min-height: 36px;
+  min-height: var(--space-9);
   color: var(--color-text-secondary);
 }
 
@@ -385,11 +385,11 @@
 
 /* Radio indicator */
 .radio {
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin-top: 2px;
-  border: 2px solid var(--color-border-emphasized);
+  flex: 0 0 var(--space-4);
+  width: var(--space-4);
+  height: var(--space-4);
+  margin-top: var(--space-0-5);
+  border: var(--border-width-thick) solid var(--color-border-emphasized);
   border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
@@ -401,8 +401,8 @@
 }
 
 .radioDot {
-  width: 8px;
-  height: 8px;
+  width: var(--space-2);
+  height: var(--space-2);
   border-radius: var(--radius-full);
   background-color: var(--color-primary);
 }
@@ -500,7 +500,7 @@
   flex: 1 1 auto;
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-surface);
   border-radius: var(--radius-pill);
   overflow: hidden;
@@ -513,7 +513,7 @@
 
 .pillGroup:focus-within {
   border-color: transparent;
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-primary-subtle);
 }
 
 .stepLabel {
@@ -530,14 +530,14 @@
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  border-left: 1px solid var(--color-border);
-  border-right: 1px solid var(--color-border);
+  border-left: var(--border-width-hairline) solid var(--color-border);
+  border-right: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-surface);
 }
 
 .valueInput {
   width: 100%;
-  height: 40px;
+  height: var(--space-10);
   padding: 0 var(--space-2);
   border: 0;
   background: transparent;
@@ -574,28 +574,6 @@
   display: none;
 }
 
-.backBtn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  width: 100%;
-  min-height: 36px;
-  padding: var(--space-1-5) var(--space-2);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  text-align: left;
-  cursor: pointer;
-  transition: color var(--duration-150) var(--ease-out);
-}
-
-.backBtn:hover {
-  color: var(--color-primary);
-}
-
 .previewWrap {
   position: sticky;
   top: 0;
@@ -614,12 +592,12 @@
 /* Appearance view tabs — compact, override shared Tabs defaults + tracks view flex */
 .tabsRoot .tabsList {
   flex: 0 0 auto;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   padding: 0 var(--space-2);
 }
 
 .tabsRoot .tabTrigger {
-  min-height: 34px;
+  min-height: var(--universal-panel-profile-flag-size);
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -630,7 +608,7 @@
   flex: 1 1 auto;
   overflow-y: auto;
   scrollbar-width: none;
-  animation: tabFadeIn 200ms var(--ease-out, ease-out);
+  animation: tabFadeIn var(--duration-normal) var(--ease-out);
 }
 
 .tabsRoot .tabContent::-webkit-scrollbar {
@@ -640,7 +618,7 @@
 @keyframes tabFadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(var(--space-1));
   }
   to {
     opacity: 1;
@@ -649,25 +627,9 @@
 }
 
 @media (min-width: 600px) {
-  .backBtn {
-    padding: var(--space-2) var(--space-3);
-  }
-
   .previewWrap {
     padding: var(--space-2) var(--space-3);
   }
-}
-
-/* ─── Search section wrapper ─── */
-.searchSectionWrapper {
-  margin-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.empty {
-  padding: var(--space-2) var(--space-1-5);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
 }
 
 /* ─── Auto-hide header/footer on scroll (mobile only, <840px) ─── */
@@ -688,19 +650,19 @@
   }
 
   .header {
-    transition: height 220ms cubic-bezier(0.32, 0.72, 0, 1),
-                min-height 220ms cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 180ms ease-out,
-                margin 220ms ease-out,
-                padding 220ms ease-out,
-                border-width 220ms ease-out;
+    transition: height var(--duration-normal) cubic-bezier(0.32, 0.72, 0, 1),
+                min-height var(--duration-normal) cubic-bezier(0.32, 0.72, 0, 1),
+                opacity var(--duration-150) var(--ease-out),
+                margin var(--duration-normal) var(--ease-out),
+                padding var(--duration-normal) var(--ease-out),
+                border-width var(--duration-normal) var(--ease-out);
   }
 
   :global([class*='footer']) {
-    transition: height 220ms cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 180ms ease-out,
-                margin 220ms ease-out,
-                padding 220ms ease-out;
+    transition: height var(--duration-normal) cubic-bezier(0.32, 0.72, 0, 1),
+                opacity var(--duration-150) var(--ease-out),
+                margin var(--duration-normal) var(--ease-out),
+                padding var(--duration-normal) var(--ease-out);
   }
 }
 
@@ -717,9 +679,6 @@
   .valueField {
     border-left: 0;
     border-right: 0;
-  }
-  .searchSectionWrapper {
-    border-bottom: 0;
   }
   .tabContent {
     padding-top: var(--space-1);

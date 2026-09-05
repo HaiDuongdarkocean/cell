@@ -20,13 +20,13 @@
 }
 
 @keyframes panelSlideIn {
-  from { transform: translateX(100%); opacity: 0.3; }
+  from { transform: translateX(100%); opacity: var(--opacity-30); }
   to   { transform: translateX(0);    opacity: 1; }
 }
 
 @keyframes panelSlideOut {
   from { transform: translateX(0);    opacity: 1; }
-  to   { transform: translateX(100%); opacity: 0.3; }
+  to   { transform: translateX(100%); opacity: var(--opacity-30); }
 }
 
 .header {
@@ -53,7 +53,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
   /* Ellipsis when filename is too long — flex item needs min-width:0 to shrink. */
   min-width: 0;
   overflow: hidden;
@@ -90,84 +90,6 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-/* Footer — Add files + Add folder (Playlist tab only). */
-.footer {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1-5);
-  padding: var(--space-3) var(--space-4);
-  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-}
-
-.buttonRow {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.addFilesBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  flex: 1 1 0;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-on-accent);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard);
-}
-
-.addFilesBtn:hover {
-  background: var(--color-primary-hover);
-}
-
-.addFilesBtn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
-.addFolderBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  flex: 1 1 0;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
-}
-
-.addFolderBtn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-emphasized);
-}
-
-.addFolderBtn:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus);
-}
-
-.dragHint {
-  margin: 0;
-  text-align: center;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {

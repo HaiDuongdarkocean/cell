@@ -53,6 +53,8 @@
 
 .timestamp {
   flex-shrink: 0;
+  /* em is intentional: font-relative width scales the tabular-nums timestamp
+     column with font-size; no spacing token covers em units. */
   min-width: 3.2em;
   padding: var(--space-2) var(--space-3);
   border: 0;
@@ -104,6 +106,7 @@
   }
 
   .timestamp {
+    /* em is intentional: see .timestamp above — font-relative tabular-nums column. */
     min-width: 2.8em;
     font-size: var(--font-size-xs);
     padding: var(--space-1-5) var(--space-2);

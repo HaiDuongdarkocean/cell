@@ -20,7 +20,7 @@
 }
 
 .card.queued {
-  opacity: 0.6;
+  opacity: var(--opacity-60);
 }
 
 .card.queued:hover {
@@ -131,7 +131,7 @@
 .progressFill {
   height: 100%;
   border-radius: var(--radius-full);
-  transition: width var(--duration-normal) ease;
+  transition: width var(--duration-normal) var(--ease-out);
 }
 
 .progressFill.downloading { background: var(--color-primary); }
@@ -176,7 +176,7 @@
 
 .detailItem svg {
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: var(--opacity-70);
 }
 
 @media (prefers-reduced-motion: reduce) {

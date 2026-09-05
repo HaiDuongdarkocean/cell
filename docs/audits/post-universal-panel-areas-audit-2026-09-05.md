@@ -77,3 +77,28 @@ prioritized summary + remediation queue.**
 4. P3 — document intentional, fix trivial ones opportunistically
 
 *Generated with Devin — 4 parallel read-only subagent audits.*
+
+---
+
+## Status update — remediation in progress (2026-09-05)
+
+- **T11 P0: DONE** — 8/9 fixed (see task file); launcher dead buttons deferred (WIP design page, needs product intent).
+- **T12 P1: DONE** — all undefined tokens remapped to registered names; Badge/Heading/Progress/Select/Input/Textarea/EmptyState migrations; Sheet a11y (aria-label + focusTrap + keyboard handle); destructive variants; `role=listbox` trackList; Icon barrel unified; dead `Icon.module.css` deleted.
+  - *Reverted-by-design*: bare inputs inside styled chrome wrappers (`SubtitleSearchPanel.searchBar`, `ManagerPanel.valueField`) — shared `Input` would double-chrome; `type="color"` stays native (no `ColorInput` atom).
+- **T13 P2: IN PROGRESS** — bulk tokenization + dead-CSS removal via 3 parallel subagents (popup+sidepanel+launcher / subtitle / srs+bottomnav).
+- **T14 P3: documented below.**
+
+## P3 — intentionally retained (documented)
+
+| Pattern | Where | Rationale |
+|---|---|---|
+| Subtitle-content px sizing (`fontSize`, preview `scale(0.3333)`, `160px` frame) | `SubtitlePreview.tsx`, `OverlayPreview.module.css` | User-facing subtitle geometry — px IS the config unit; preview frame is a fixed reference surface |
+| `clamp()` cluster sizing (`--cluster-btn-size`, `--cluster-icon-size`) | `NavCluster.module.css`, `subtitlePanelsShared.module.css` | Container-query-driven cluster scaling — user-configured size range, not design chrome |
+| Error-boundary inline styles (`#1a1a1a`, `#ff4444`, `14/16px`, z-index max) | `SubtitlePanels.tsx:1412-1416` | Crash-only UI must render even when the token pipeline fails — inline literals are the feature |
+| `SHEET_MARGIN_PX` px constants | `useSheet.ts:12-18` | JS gesture math mirrors `--space-2`; CSS vars can't be read in pointer math — documented mirror |
+| `autoFocus` on `InputField` | `SrsReviewCardFront.tsx:66` | Deliberate — typing answer immediately on card flip; revisit if SR complaints |
+| Bare inputs inside chrome wrappers | `SubtitleSearchPanel.searchBar`, `SubtitleManagerPanel.valueField` | Wrapper provides border/bg/focus-within chrome; shared `Input` would double-chrome; `aria-label` already present |
+| Native `type="color"` inputs | `SubtitleStylePanel` ×3 | Platform color-picker primitive; no `ColorInput` atom exists — promote when 2nd consumer appears |
+| `HStack role="button"` card rows | `SubtitleCard`, `VideoCard` | Clickable sub-region inside `Card` — `SelectableCard` renders its own Card (wrong DOM); keyboard already wired + `:focus-visible` added |
+| Launcher dead buttons (tiles, Settings, Add) | `launcher-dashboard` | WIP design-concept page — wire when product intent lands |
+| `z-index` max-int (`2147483646/7`) | overlay injection points | Intentional top-most vs host page — could later alias to `--z-ceiling` |

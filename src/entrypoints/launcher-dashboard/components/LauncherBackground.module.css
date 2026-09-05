@@ -12,7 +12,7 @@
   position: absolute;
   border-radius: var(--radius-full);
   filter: blur(var(--blur-xl)) saturate(160%);
-  opacity: 0.55;
+  opacity: var(--opacity-55);
 }
 
 .blob1 {
@@ -43,5 +43,5 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at 50% 0%, transparent 40%, var(--color-background) 90%);
-  opacity: 0.85;
+  opacity: var(--opacity-85);
 }

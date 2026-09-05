@@ -87,7 +87,7 @@
   .resizeHandle {
     display: block;
     flex: 0 0 auto;
-    width: 6px;
+    width: var(--space-1-5);
     height: 100%;
     background: var(--color-border);
     cursor: col-resize;
@@ -110,11 +110,11 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 2px;
-    height: 24px;
+    width: var(--space-0-5);
+    height: var(--space-6);
     background: var(--color-text-secondary);
     border-radius: var(--radius-full);
-    opacity: 0.5;
+    opacity: var(--opacity-50);
   }
 
   .resizeHandle:hover::before,
@@ -138,14 +138,14 @@
   flex: 0 0 auto;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(44px, auto);
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(var(--touch-target-mobile), auto);
   grid-template-areas: 'nav subtitle actions';
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-border);
   pointer-events: auto;
   container-type: inline-size;
 }
@@ -158,7 +158,7 @@
   justify-content: center;
   width: 100%;
   min-width: 0;
-  min-height: 2em;
+  min-height: var(--space-7);
   pointer-events: auto;
 }
 
@@ -192,8 +192,8 @@
 .navArea :global([role='button']),
 .actionArea :global(button),
 .actionArea :global([role='button']) {
-  min-width: var(--touch-target-mobile, 44px);
-  min-height: var(--touch-target-mobile, 44px);
+  min-width: var(--touch-target-mobile);
+  min-height: var(--touch-target-mobile);
 }
 
 /* Player Mode icon size: override NavCluster/SubtitlePanels --cluster-icon-size
@@ -203,13 +203,13 @@
 .dock .navArea :global([role='button']) :global(span),
 .dock .actionArea :global(button) :global(span),
 .dock .actionArea :global([role='button']) :global(span) {
-  width: 24px !important;
-  height: 24px !important;
+  width: var(--space-6) !important;
+  height: var(--space-6) !important;
 }
 
 /* Subtitle text: readable in dock, prevent overflow on long lines. */
 .subtitleArea :global(.text) {
-  max-height: 3em;
+  max-height: var(--space-10);
   overflow: hidden;
 }
 

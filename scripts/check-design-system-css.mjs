@@ -96,6 +96,9 @@ function buildTokenRegistryFromJson(tokens) {
     for (const key of Object.keys(staticObj.blur ?? {})) {
       registry.add(`--blur-${key}`);
     }
+    for (const key of Object.keys(staticObj.opacity ?? {})) {
+      registry.add(`--opacity-${key}`);
+    }
     for (const key of Object.keys(staticObj.motion ?? {})) {
       registry.add(`--${key}`);
     }

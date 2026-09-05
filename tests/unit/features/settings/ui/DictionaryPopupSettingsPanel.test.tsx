@@ -16,8 +16,8 @@ describe('DictionaryPopupSettingsPanel', () => {
   it('calls onChange with selected default active tab (image)', () => {
     const props = makeProps({ defaultActiveTab: null });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    const select = screen.getByLabelText(/Default active tab/i) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'image' } });
+    fireEvent.click(screen.getByLabelText(/Default active tab/i));
+    fireEvent.click(screen.getByRole('option', { name: 'Image' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: 'image' }),
     );
@@ -26,8 +26,8 @@ describe('DictionaryPopupSettingsPanel', () => {
   it('calls onChange with null when selecting None', () => {
     const props = makeProps({ defaultActiveTab: 'audio' });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    const select = screen.getByLabelText(/Default active tab/i) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: '' } });
+    fireEvent.click(screen.getByLabelText(/Default active tab/i));
+    fireEvent.click(screen.getByRole('option', { name: 'None (dictionary only)' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: null }),
     );
@@ -39,8 +39,8 @@ describe('DictionaryPopupSettingsPanel', () => {
       defaultActiveTabPerLang: { en: 'audio' },
     });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    const select = screen.getByLabelText(/Default active tab/i) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: 'image' } });
+    fireEvent.click(screen.getByLabelText(/Default active tab/i));
+    fireEvent.click(screen.getByRole('option', { name: 'Image' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: 'image', defaultActiveTabPerLang: undefined }),
     );
