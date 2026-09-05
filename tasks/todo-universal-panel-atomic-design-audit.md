@@ -139,6 +139,12 @@ Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
   - [x] `trackList` → `role="listbox"`; SrsReviewCard progress dots → `role=list/listitem` + `aria-current`
   - [x] Destructive actions → `variant="destructive"` (SrsManagePanel ×3, SrsReviewCardBack ×2)
   - [~] Deferred w/ rationale: bare inputs inside styled chrome wrappers (`searchBar`, `valueField`) — shared `Input` would double-chrome, aria-label already present; `type="color"` inputs stay native (no `ColorInput` atom); `mainRow`/`copyBtn` keep role=button (inside Card) + gained `:focus-visible`
-- [ ] **T13** — P2 tokenization + dead CSS: opacity tokens, `ease`→`--ease-*`, `inset 0 0 0 1px`→`--border-width-hairline`, drop `var(--t, literal)` fallbacks for registered tokens, dead selectors (srs App ×10, SubtitlePanel ×5, SubtitleManagerPanel ×3, SubtitleSearchPanel ×1), destructive `ghost`→`destructive`, `@/shared/icons/Icon`→`@/shared/ui/Icon` barrel, Button CSS overrides (`.toolRow`, `.audioButton`…)
-- [ ] **T14** — P3 document intentional: subtitle content px sizing, preview scale, error-boundary crash styles, `SHEET_MARGIN_PX`
-- [ ] **T15** — Inventory: confirm generator picks up `SelectableCard`/`MultiSelect`/`BottomSheet` (shared/ui-only scan — feature components like `CueStrip`/`StepEditor`/`Dropzone` are out of generator scope by design)
+- [x] **T13** — P2 tokenization + dead CSS (3 parallel subagents):
+  - [x] Token pipeline: `static.opacity` group (`--opacity-20/30/40/50/55/60/70/85`) + `--tracking-wider/widest` added via `tokens.json` SSOT; generator + css-check registry + `lib/tokens.ts` kept in parity; `tokens.css` regenerated
+  - [x] opacity/`ease`/`inset 1px` → tokens (popup, launcher, subtitle, srs)
+  - [x] All registered-token `var(--t, literal)` fallbacks dropped in scope (srs ~76 sites, subtitle ~15 sites)
+  - [x] Dead selectors removed: srs App ×10, SubtitlePanel ×5, SubtitleManagerPanel ×3 (+orphaned media rules), SubtitleSearchPanel ×1
+  - [x] Intentional overrides documented (`.toolRow`, `.audioButton`, `.forgetButton`, `.rememberButton`); max-int z-index annotated; layout px bounds (720px, 240px, 280px…) kept + commented
+- [x] **T14** — P3 documented in audit doc (subtitle px sizing, preview scale, crash-boundary styles, `SHEET_MARGIN_PX`, bare chrome-wrapped inputs, native color inputs)
+- [x] **T15** — Inventory regenerated; usage counts updated (Badge, EmptyState consumers)
+- [x] Bonus: 4 stale test suites fixed (token renames + Select migration leftover from 2781ba14) — 5437 pass
