@@ -119,7 +119,7 @@ export function AudioPanel({
                   )}
                 </button>
                 <span className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
-                  <Icon name="check"  />
+                  <Icon name="check" size="md" />
                 </span>
               </div>
             );

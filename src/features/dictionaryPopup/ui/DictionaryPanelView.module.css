@@ -9,8 +9,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-0-5);
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
   overflow-y: auto;
   composes: hide from '@/shared/ui/Scrollable.module.css';
   overscroll-behavior: contain;
@@ -56,12 +56,54 @@
   min-width: 0;
 }
 
+/* Big word pill — display-style input replacing the default glass look.
+   The className lands on the <input>; [data-cell-id] bumps specificity
+   above Input's .glass/.md variants. */
+.searchField[data-cell-id="dictionary-search-input"] {
+  min-height: var(--space-10);
+  padding: var(--space-1) var(--space-4);
+  padding-right: calc(var(--input-padding-x) + var(--space-6));
+  border-color: var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-elevated);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+.searchField[data-cell-id="dictionary-search-input"]:not(:focus-visible) {
+  box-shadow: none;
+}
+
+.searchField[data-cell-id="dictionary-search-input"]:hover:not(:disabled) {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-emphasized);
+}
+
+/* Native search cancel button — the suffix already provides the ×. */
+.searchField[data-cell-id="dictionary-search-input"]::-webkit-search-cancel-button,
+.searchField[data-cell-id="dictionary-search-input"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Clear × inside the pill — solid text color so small strokes don't
+   read as broken joints. */
+.searchField[data-cell-id="dictionary-search-input"] + span button {
+  color: var(--color-text);
+}
+
 .searchHistory {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-width: 0;
+  /* Pill→chips = 12px total (4px panel gap + 8px here). */
+  margin-top: var(--space-2);
 }
 
 .searchHistoryTerm,
@@ -73,7 +115,7 @@
 
 .searchHistoryClear {
   flex-shrink: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
 }
 
 .searchHistoryClear:hover {
@@ -83,58 +125,134 @@
 .searchHistoryList {
   display: flex;
   composes: hide from '@/shared/ui/Scrollable.module.css';
-  gap: var(--space-1);
+  gap: var(--space-2);
+  /* Clip room for the floating corner badge: overflow-x:auto clips at the
+     padding box, so top/right padding lets the badge overhang the chip
+     edge; equal negative margin keeps the outer layout unchanged. */
   margin: 0;
+  margin-top: calc(-1 * var(--space-2));
+  margin-right: calc(-1 * var(--space-2));
   padding: 0;
+  padding-top: var(--space-2);
+  padding-right: var(--space-2);
   overflow-x: auto;
   list-style: none;
   min-width: 0;
 }
 
+/* Color-only state ladder — chips sit on --color-surface, so the fill
+   steps up elevated → hover → pressed. No border: normal / hover / active
+   / disabled read through background and text color alone, and the ladder
+   auto-adapts to light/dark via tokens. --color-primary is reserved for
+   real accents, never for these low-importance chips. */
 .searchHistoryItem {
+  position: relative;
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
-  gap: var(--space-1);
-  padding: var(--space-0-5) var(--space-1) var(--space-0-5) var(--space-2);
-  overflow: hidden;
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  gap: var(--space-1-5);
+  padding: var(--space-0-5) var(--space-2-5);
+  min-height: var(--space-7);
+  border: 0;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-surface-elevated);
+  transition: background var(--duration-fast) var(--ease-standard);
 }
 
-.searchHistoryTerm {
+.searchHistoryItem:hover {
+  background: var(--color-surface-hover);
+}
+
+/* Active = the term currently shown in the big word pill — the brightest
+   neutral step so it stays muted but still reads as "current". */
+.searchHistoryItem.searchHistoryItemActive,
+.searchHistoryItem.searchHistoryItemActive:hover {
+  background: var(--color-surface-pressed);
+}
+
+.searchHistoryItem.searchHistoryItemActive .searchHistoryTerm,
+.searchHistoryItem.searchHistoryItemActive .searchHistoryTerm:hover {
+  color: var(--color-text);
+}
+
+/* Disabled — uniform dim via the token; fires automatically when the
+   inner term button carries the disabled attribute. */
+.searchHistoryItem:has(.searchHistoryTerm:disabled) {
+  opacity: var(--opacity-disabled);
+}
+
+/* (0,2,0) beats Button's .button min-height/height so the li shell
+   owns the chip height. */
+.searchHistoryItem .searchHistoryTerm {
   max-width: calc(var(--space-6) * 8);
+  min-height: 0;
+  height: auto;
   padding: 0;
   overflow: hidden;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.searchHistoryTerm:hover {
-  color: var(--color-primary);
+.searchHistoryItem .searchHistoryTerm:hover {
+  color: var(--color-text);
 }
 
-/* Remove button styled as a small badge: circular pill with subtle fill,
-   sitting at the right edge of the history chip. */
-.searchHistoryRemove {
+/* Remove — floating circled-× badge on the chip's top-right corner,
+   revealed on hover/focus-within so the idle row stays clean. opacity
+   only: stays in tab order; li:focus-within reveals it for keyboard.
+   The list's top/right padding provides the clip room for the overhang.
+   (0,2,0) beats Button's min-width/min-height (--touch-target 40px). */
+.searchHistoryItem .searchHistoryRemove {
+  position: absolute;
+  top: calc(-1 * var(--space-1-5));
+  right: calc(-1 * var(--space-1-5));
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-4-5);
-  height: var(--space-4-5);
+  width: var(--space-4);
+  height: var(--space-4);
+  min-width: var(--space-4);
+  min-height: var(--space-4);
+  margin: 0;
   padding: 0;
+  /* 0.5px hairline in the theme's text color — white in dark mode,
+     black in light — just enough to separate the badge from the chip. */
+  border: 0.5px solid var(--color-text);
   border-radius: var(--radius-full);
-  color: var(--color-text-inverse);
-  background: var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
   flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+              color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
 }
 
-.searchHistoryRemove:hover {
-  background: var(--color-error);
+/* (0,3,2) beats Button's `.md.iconOnly .label > * svg` icon-size rule
+   (0,3,1) — icon-only buttons always get circle/iconOnly classes. */
+li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  /* 12px render shrinks the lucide 2px stroke to ~1px — bump to 3 so the
+     × keeps the same visual weight as the row's other icons. */
+  stroke-width: 3;
+}
+
+.searchHistoryItem:hover .searchHistoryRemove,
+.searchHistoryItem:focus-within .searchHistoryRemove {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.searchHistoryItem .searchHistoryRemove:hover {
   color: var(--color-text-inverse);
+  background: var(--color-error);
 }
 
 .loading {
@@ -147,9 +265,13 @@
 
 .cellDef {
   composes: hide from '@/shared/ui/Scrollable.module.css';
-  padding: 0 var(--space-2);
+  padding: 0;
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Vertical spacing between def rows — items carry no top/bottom padding. */
+  gap: var(--space-1);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -167,7 +289,7 @@
   display: flex;
   align-items: center;
   gap: 0;
-  padding: var(--space-0-5) var(--space-1);
+  padding: var(--space-1-5) var(--space-1);
   margin: 0;
   background: var(--color-surface);
   border-top: var(--border-width-hairline) solid var(--color-border-subtle);
@@ -208,6 +330,7 @@
   composes: hide from '@/shared/ui/Scrollable.module.css';
   flex: 1;
   min-height: 0;
+  margin-top: var(--space-2);
   display: flex;
   flex-direction: column;
   overflow-y: auto;

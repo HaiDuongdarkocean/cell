@@ -1,18 +1,19 @@
 /* DictionaryCheckable — unified selectable-row/card contract (SSOT).
- * Owns: checkbox morph (cellDefCheck* + dot), host classes (cellDefItem,
+ * Owns: checkbox morph (cellDefCheck*), host classes (cellDefItem,
  * cellAudioItem, cellImageCard, cellTranslateBlock) and their hover/checked
  * compound rules. All cross-panel selectors live here because CSS-module
  * classes cannot be referenced across files.
  *
  * WARNING: every class used inside a compound selector below (the host
- * classes AND cellDefCheck-prefixed / cellDefCheckDot / cellAudioCheck--checked /
- * cellImageCard--selected/cellTranslateBlock--selected) MUST stay in this
+ * classes AND cellDefCheck-prefixed / cellDefCheckBox--*
+ * modifiers / cellAudioCheck--checked / cellImageCard--selected /
+ * cellTranslateBlock--selected) MUST stay in this
  * file. Moving one to another module silently breaks the compound — the
  * un-hashed class name will match nothing. Do not split this file. */
 
 
 .cellDefItem {
-  position: relative;
+  padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out);
@@ -22,70 +23,247 @@
   background: var(--color-surface-hover);
 }
 
+/* Row is the tab stop (role=checkbox in JSX); the inner input is decorative
+   (tabIndex -1) so keyboard focus lands here, not on the input. */
+.cellDefItem:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.cellDefItem:focus-visible .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity);
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  transform: scale(1.04);
+}
+
 .cellDefCheck {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: var(--iconbutton-size-xs);
+  position: relative;
+  width: var(--space-5);
+  /* Marker slot = first-line line-box; +2px shifts the box/dot onto the
+     x-height band (optical center of the text, not the line-box). */
+  height: calc(var(--font-size-sm) * var(--leading-normal));
+  transform: translateY(var(--space-0-5));
   cursor: pointer;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.cellDefCheckDot {
-  width: var(--space-1-5);
-  height: var(--space-1-5);
+/* Idle dot in the checkbox slot; ::before paints below the box so any
+   revealed state (hover/focus/checked) covers it. */
+.cellDefCheck::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: var(--space-2);
+  height: var(--space-2);
   border-radius: var(--radius-full);
-  background: var(--color-border);
-  display: inline-block;
-  transition: opacity var(--duration-fast) var(--ease-in-out);
+  background: var(--color-text-secondary);
+}
+
+/* Hide the bullet only where the box actually reveals. Use :focus-visible
+   (not :focus-within): a mouse click leaves :focus on the row, which would
+   keep the bullet hidden until the user clicks away to blur. */
+.cellDefItem:is(:hover, :focus-visible) .cellDefCheck::before,
+.cellDefCheck--checked::before,
+.cellDefItem--disabled .cellDefCheck::before {
+  content: none;
 }
 
 /* === Unified checkbox — single SSOT for def/audio/image/translate panels ===
-   Shape: 16px square, radius-sm. Color: primary border + transparent (unchecked),
-   primary bg + fixed-white (checked). Behavior: space always reserved (visibility:hidden),
-   show on hover (unchecked) or checked. No layout shift when checkbox appears. */
+   16px square; the slot is always reserved so reveal never shifts layout. */
 .cellDefCheckBox {
   width: var(--space-4);
   height: var(--space-4);
   border-radius: var(--radius-sm);
-  border: var(--border-width-hairline) solid var(--color-primary);
+  border: var(--border-width-thick) solid var(--color-text);
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-text);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  visibility: hidden;
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-/* Hover any host → show unchecked checkbox (border + primary icon) */
-.cellDefItem:hover .cellDefCheckBox,
-.cellAudioItem:hover .cellDefCheckBox,
-.cellImageCard:hover .cellDefCheckBox,
-.cellTranslateBlock:hover .cellDefCheckBox {
-  visibility: visible;
+/* Image card: unchecked box needs a surface backing so it is visible over
+   arbitrary image thumbnails; selected/hover rules below override this. */
+.cellImageCard .cellDefCheckBox {
+  background: var(--color-surface);
 }
 
-/* Checked state — primary bg + fixed-white checkmark (all panels) */
-.cellDefCheck--checked .cellDefCheckBox,
+/* Hover → faded preview box. Disabled and already-checked/selected hosts
+   are excluded so a checked box keeps its primary fill on hover. */
+.cellDefItem:not(.cellDefItem--disabled):hover .cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckBox,
+.cellAudioItem:not(.cellAudioItem--disabled):hover .cellDefCheckBox:not(.cellAudioCheck--checked),
+.cellImageCard:not(.cellImageCard--disabled):not(.cellImageCard--selected):not(:disabled):hover .cellDefCheckBox,
+.cellTranslateBlock:not(.cellTranslateBlock--disabled):not(.cellTranslateBlock--selected):hover .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity);
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  transform: scale(1.04);
+}
+
+.cellDefItem:not(.cellDefItem--disabled):active .cellDefCheckBox,
+.cellAudioItem:not(.cellAudioItem--disabled):active .cellDefCheckBox,
+.cellImageCard:not(.cellImageCard--disabled):not(:disabled):active .cellDefCheckBox,
+.cellTranslateBlock:not(.cellTranslateBlock--disabled):active .cellDefCheckBox {
+  transform: scale(0.95);
+  transition: transform var(--duration-100) var(--ease-out);
+}
+
+/* SVG icon / spinner inside the box: 12px — fits inside the 16px box.
+   The spinner size class may override, so !important keeps it contained. */
+.cellDefCheckBox svg,
+.cellDefCheckBox .spinner {
+  width: var(--space-3) !important;
+  height: var(--space-3) !important;
+  display: block;
+}
+
+.cellDefCheckBox .spinner {
+  color: var(--color-primary);
+}
+
+/* Check/dash path: hidden by dash-offset, then draws in when selected.
+   We target by the path's d-attribute because lucide-* class names are global
+   and CSS Modules would hash them. */
+.cellDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  stroke-width: calc(var(--stroke-width-md) * 1.75);
+  transition: stroke-dashoffset var(--duration-fast) var(--ease-out);
+  transform-origin: center;
+}
+
+.cellDefCheckBox svg path[d="M5 12h14"] {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  stroke-width: calc(var(--stroke-width-md) * 1.75);
+  transition: stroke-dashoffset var(--duration-fast) var(--ease-out);
+  transform-origin: center;
+}
+
+/* Revealed — shows the disabled-like preview (faded empty box)
+   without the host being actually disabled. !important prevents image-card
+   base surface from overriding the fill. */
+.cellDefCheckBox--revealed {
+  opacity: var(--checkbox-disabled-opacity) !important;
+  background: var(--color-surface) !important;
+  border-color: var(--color-text) !important;
+  color: var(--color-text) !important;
+  transform: scale(1.04) !important;
+}
+
+/* Checked state — primary fill + thick white checkmark (all panels).
+   The box pops with spring overshoot; the check path draws in after 100ms.
+   Host prefix raises specificity so checked overrides hover. */
+.cellDefItem .cellDefCheck--checked .cellDefCheckBox,
 .cellAudioItem .cellDefCheckBox.cellAudioCheck--checked,
-.cellImageCard--selected .cellDefCheckBox,
-.cellTranslateBlock--selected .cellDefCheckBox {
-  visibility: visible;
+.cellImageCard.cellImageCard--selected .cellDefCheckBox,
+.cellTranslateBlock.cellTranslateBlock--selected .cellDefCheckBox {
+  opacity: 1;
+  transform: scale(1);
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-text-on-primary);
+  color: var(--color-overlay-text);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-slow) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-/* Definition panel: hide dot when checkbox is visible */
-.cellDefItem:hover .cellDefCheckDot,
-.cellDefCheck--checked .cellDefCheckDot,
-.cellDefItem:hover .cellDefCheck--checked .cellDefCheckDot {
-  display: none;
+.cellDefItem .cellDefCheck--checked .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"],
+.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked svg path[d="M20 6 9 17l-5-5"],
+.cellImageCard.cellImageCard--selected .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"],
+.cellTranslateBlock.cellTranslateBlock--selected .cellDefCheckBox svg path[d="M20 6 9 17l-5-5"] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--duration-normal) var(--ease-out) var(--duration-100);
+}
+
+/* Indeterminate — filled like checked; consumer renders a "minus" icon.
+   !important prevents the image-card base surface from overriding the fill. */
+.cellDefCheckBox--indeterminate {
+  opacity: 1 !important;
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-overlay-text) !important;
+  transform: scale(1) !important;
+}
+
+.cellDefCheckBox--indeterminate svg path[d="M5 12h14"] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--duration-150) var(--ease-out) var(--duration-instant);
+}
+
+/* Disabled — visible but faded; opacity is !important so checked/selected
+   states do not override it. */
+.cellDefCheckBox--disabled,
+.cellDefCheckInput:disabled + .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity) !important;
+  transform: scale(1);
+  pointer-events: none;
+}
+
+.cellDefItem--disabled .cellDefCheckBox,
+.cellAudioItem--disabled .cellDefCheckBox,
+.cellImageCard--disabled .cellDefCheckBox,
+.cellImageCard:disabled .cellDefCheckBox,
+.cellTranslateBlock--disabled .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity) !important;
+  transform: scale(1);
+}
+
+/* Loading — no square box, only the primary spinner in the reserved space.
+   !important prevents image-card base / hover from drawing a box behind it. */
+.cellDefCheckBox--loading {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--color-primary) !important;
+}
+
+/* Disabled host — the whole row/card signals "not selectable". */
+.cellDefItem--disabled,
+.cellAudioItem--disabled,
+.cellImageCard--disabled,
+.cellImageCard:disabled,
+.cellTranslateBlock--disabled {
+  cursor: not-allowed;
+}
+
+/* Keyboard focus on non-input hosts reveals the disabled-like box too —
+   same checked/selected exclusion as hover. */
+.cellAudioItem:focus-within .cellDefCheckBox:not(.cellAudioCheck--checked),
+.cellImageCard:focus-visible:not(.cellImageCard--selected) .cellDefCheckBox,
+.cellTranslateBlock:focus-visible:not(.cellTranslateBlock--selected) .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity);
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  transform: scale(1.04);
+}
+
+.cellTranslateBlock:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cellDefCheckInput {
@@ -96,7 +274,14 @@
   pointer-events: none;
 }
 
-.cellDefCheckInput:focus-visible + .cellDefCheckBox {
+/* Focus-visible on the real input: disabled-like box + primary outline.
+   Skip when the item is already checked. */
+.cellDefCheck:not(.cellDefCheck--checked) .cellDefCheckInput:focus-visible + .cellDefCheckBox {
+  opacity: var(--checkbox-disabled-opacity);
+  background: var(--color-surface);
+  border-color: var(--color-text);
+  color: var(--color-text);
+  transform: scale(1.04);
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
@@ -145,7 +330,11 @@
   border-color: var(--color-border);
 }
 
-/* Audio panel: uses unified cellDefCheckBox — no panel-specific overrides needed */
+/* Image card loading spinner: white so it is visible on top of
+   arbitrary/purple thumbnails. */
+.cellImageCard .cellDefCheckBox.cellDefCheckBox--loading .spinner {
+  color: var(--color-overlay-text);
+}
 
 .cellImageCard {
   flex: 0 0 auto;
@@ -157,14 +346,11 @@
   aspect-ratio: 4 / 3;
   padding: 0;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: none;
   overflow: hidden;
   cursor: pointer;
-}
-
-.cellImageCard {
   transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
 }
 
@@ -185,6 +371,6 @@
 /* Image panel: unified cellDefCheckBox pinned to the card's top-right corner. */
 .cellImageCard .cellDefCheckBox {
   position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
+  top: var(--space-1);
+  right: var(--space-1);
 }
