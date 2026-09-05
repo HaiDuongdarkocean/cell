@@ -11,7 +11,7 @@ import {
   VolumeControl,
 } from '@/shared/domain/video/atoms';
 import { Button } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './PlayerControls.module.css';
 
 type SkipDirection = 'forward' | 'backward';
@@ -212,7 +212,7 @@ export function PlayerControls({
               </Button>
               {settingsOpen && (
                 <div className={styles.settingsMenu} role="menu">
-                  <div className={styles.settingsItem}>
+                  <div className={styles.settingsItem} role="menuitem">
                     <PlaybackSpeedControl
                       currentSpeed={playbackRate}
                       onSpeedChange={onSpeedChange}

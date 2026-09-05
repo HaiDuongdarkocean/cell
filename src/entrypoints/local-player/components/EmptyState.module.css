@@ -30,6 +30,7 @@
 /* Primary instruction — bold, high contrast. */
 .primaryHint {
   margin: 0;
+  /* design-system: intentional — 50ch caps line length for readability. */
   max-width: 50ch;
   color: var(--color-text);
   font-size: var(--font-size-lg);
@@ -40,6 +41,7 @@
 /* Note — dim, explains the constraint. */
 .noteHint {
   margin: 0;
+  /* design-system: intentional — 50ch caps line length for readability. */
   max-width: 50ch;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);

@@ -1,4 +1,4 @@
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui';
 import styles from './EmptyState.module.css';
 
@@ -20,7 +20,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
   return (
     <div className={styles.dropzone} data-cell-id="empty-state-content">
       <div className={styles.iconBadge}>
-        <Icon name="video" size={40} />
+        <Icon name="video" size="lg" />
       </div>
       <p className={styles.primaryHint}>Drop your video and subtitles here</p>
       <p className={styles.noteHint}>You can add multiple subtitle files, but only one video</p>
@@ -29,7 +29,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
           variant="primary"
           size="md"
           onClick={onOpenFile}
-          leadingIcon={<Icon name="plus" size={18} />}
+          leadingIcon={<Icon name="plus" size="sm" />}
           data-cell-id="empty-open-file"
         >
           Add files
@@ -38,7 +38,7 @@ export function EmptyState({ onOpenFile, onOpenFolder }: EmptyStateProps): React
           variant="secondary"
           size="md"
           onClick={onOpenFolder}
-          leadingIcon={<Icon name="folderOpen" size={18} />}
+          leadingIcon={<Icon name="folderOpen" size="sm" />}
           data-cell-id="empty-open-folder"
         >
           Add folder

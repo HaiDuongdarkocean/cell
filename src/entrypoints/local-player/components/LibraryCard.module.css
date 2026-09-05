@@ -11,7 +11,7 @@
 
 .item:hover { background: var(--color-surface-hover); }
 .item.active { background: var(--color-primary-subtle); }
-.item.expanded { z-index: 10; }
+.item.expanded { z-index: var(--z-dropdown); }
 
 .row {
   display: flex;
@@ -34,9 +34,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
 }
 
 .ring {
@@ -50,15 +50,17 @@
 .ringTrack {
   fill: none;
   stroke: var(--color-border);
+  /* design-system: intentional — 2.5 SVG stroke-width tunes the ring weight inside viewBox units, not a layout token. */
   stroke-width: 2.5;
 }
 
 .ringProgress {
   fill: none;
   stroke: var(--color-primary);
+  /* design-system: intentional — 2.5 SVG stroke-width tunes the ring weight inside viewBox units, not a layout token. */
   stroke-width: 2.5;
   stroke-linecap: round;
-  transition: stroke-dashoffset var(--duration-base) var(--ease-in-out);
+  transition: stroke-dashoffset var(--duration-normal) var(--ease-in-out);
 }
 
 .active .ringProgress { stroke: var(--color-on-accent); }
@@ -66,6 +68,7 @@
 
 .pct {
   position: relative;
+  /* design-system: intentional — 11px fits the % readout inside the 40px progress ring. */
   font-size: 11px;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
@@ -137,7 +140,7 @@
 .subs {
   display: flex;
   flex-direction: column;
-  padding: var(--space-1) var(--space-3) var(--space-3) calc(var(--space-3) + 40px + var(--space-2));
+  padding: var(--space-1) var(--space-3) var(--space-3) calc(var(--space-3) + var(--space-10) + var(--space-2));
   gap: var(--space-2);
 }
 
@@ -155,143 +158,21 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
+  /* design-system: intentional — .04em tracking for the uppercase micro-label. */
   letter-spacing: 0.04em;
-}
-
-/* === Inline select === */
-.inlineSelect {
-  position: relative;
-  width: 100%;
-}
-
-.selectTrigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-element);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-in-out),
-              background-color var(--duration-fast) var(--ease-in-out);
-}
-
-.selectTrigger:hover { border-color: var(--color-border-emphasized); background: var(--color-surface-hover); }
-.selectTrigger:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-}
-
-.selectValue {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.placeholder { color: var(--color-text-secondary); }
-
-.selectChev {
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
-  transition: transform var(--duration-fast) var(--ease-in-out);
-}
-
-.selectTrigger[aria-expanded="true"] .selectChev { transform: rotate(180deg); }
-
-.selectMenu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
-  right: 0;
-  z-index: 20;
-  max-height: 220px;
-  overflow-y: auto;
-  padding: var(--space-1);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-element);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-modal);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-}
-
-.selectOption {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-in-out);
-}
-
-.selectOption:hover { background: var(--color-surface-hover); }
-.selectOption:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-}
-
-.selectOptionSelected {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.optionName {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.optionLang {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-}
-
-.selectOptionSelected .optionLang { color: var(--color-primary); }
-
-.optionCheck {
-  flex-shrink: 0;
-  color: var(--color-primary);
-}
-
-.selectEmpty {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-style: italic;
 }
 
 /* === Responsive — mobile === */
 @media (max-width: 599px) {
-  .leading { width: 36px; height: 36px; }
-  .pct { font-size: 10px; }
+  .leading { width: 36px; height: 36px; } /* design-system: intentional — 36px shrinks the ring below the 40px (--space-10) desktop size; no 36px space token exists. */
+  .pct { font-size: 10px; } /* design-system: intentional — 10px fits the % readout inside the 36px mobile ring. */
   .name { font-size: var(--font-size-sm); }
   .meta { gap: var(--space-1-5); }
-  .subs { padding-left: calc(var(--space-3) + 36px + var(--space-2)); }
+  .subs { padding-left: calc(var(--space-3) + 36px + var(--space-2)); } /* design-system: intentional — 36px tracks the mobile .leading width; no 36px space token exists. */
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .item, .expandBtn, .selectTrigger, .selectOption, .ringProgress, .selectChev {
+  .item, .expandBtn, .ringProgress {
     transition: none;
   }
 }

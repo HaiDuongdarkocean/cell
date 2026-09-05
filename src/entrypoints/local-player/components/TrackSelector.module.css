@@ -8,6 +8,7 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
   padding: var(--space-2);
+  /* design-system: intentional — 240px min-width / 320px max-height size the popover panel; not layout spacing. */
   min-width: 240px;
   max-height: 320px;
   overflow-y: auto;

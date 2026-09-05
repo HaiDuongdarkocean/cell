@@ -1,4 +1,4 @@
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './PlayPauseOverlay.module.css';
 
@@ -15,10 +15,12 @@ export interface PlayPauseOverlayProps {
  * so repeated toggles replay the animation from frame 0.
  */
 export function PlayPauseOverlay({ icon, pulseKey }: PlayPauseOverlayProps): React.JSX.Element {
+  // Transient visual feedback — decorative; the control bar buttons already
+  // announce play/pause state, so the flash is hidden from the a11y tree.
   return (
-    <div className={styles.overlay} data-cell-id="play-pause-flash" key={pulseKey}>
+    <div className={styles.overlay} data-cell-id="play-pause-flash" key={pulseKey} aria-hidden="true">
       <div className={styles.iconWrap}>
-        <Icon name={icon} size={64} />
+        <Icon name={icon} size="lg" />
       </div>
     </div>
   );

@@ -18,38 +18,6 @@
   padding: var(--space-2);
 }
 
-/* === Empty state === */
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-8) var(--space-4);
-  text-align: center;
-  flex: 1;
-}
-
-.emptyIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-secondary);
-}
-
-.emptyTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.emptyDesc {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  max-width: 32ch;
-  line-height: var(--leading-normal);
-}
-
 /* === Footer === */
 .footer {
   flex-shrink: 0;
@@ -62,6 +30,7 @@
 }
 
 .sortSelect {
+  /* design-system: intentional — 8rem floor keeps the sort select label legible. */
   min-width: 8rem;
 }
 
