@@ -25,16 +25,14 @@
   color: var(--color-text-secondary);
 }
 
-.cellTranslateSkeleton {
-  padding: var(--space-2);
-}
-
+/* Mirrors .cellTranslateBlock metrics — same padding/border/radius so the
+   skeleton occupies the exact box the loaded block will. */
 .cellTranslateSkeletonBlock {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-1);
-  padding: var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -48,6 +46,18 @@
   min-width: 0;
 }
 
-.cellTranslateSkeletonLine {
+/* --color-muted is nearly invisible on light surfaces; 10% text keeps the
+   placeholders perceptible in both themes. */
+.cellTranslateSkeletonLine,
+.cellTranslateSkeletonCheck {
   max-width: 100%;
+  background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+}
+
+/* Placeholder for the 16px checkbox — same radius + top offset as
+   .cellTranslateBlock .cellDefCheckBox. */
+.cellTranslateSkeletonCheck {
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-0-5);
+  flex-shrink: 0;
 }

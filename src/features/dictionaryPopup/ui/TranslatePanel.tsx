@@ -107,14 +107,12 @@ export function TranslatePanel({
 
 function TranslateSkeleton(): React.JSX.Element {
   return (
-    <div className={styles.cellTranslateSkeleton} aria-hidden="true">
-      <div className={styles.cellTranslateSkeletonBlock}>
-        <div className={styles.cellTranslateSkeletonText}>
-          <Skeleton width="100%" height="calc(var(--space-5) + var(--border-width-hairline))" className={styles.cellTranslateSkeletonLine} />
-          <Skeleton width="80%" height="var(--space-4-5)" className={styles.cellTranslateSkeletonLine} />
-        </div>
-        <Skeleton width="var(--space-4)" height="var(--space-4)" />
+    <div className={styles.cellTranslateSkeletonBlock} aria-hidden="true">
+      <div className={styles.cellTranslateSkeletonText}>
+        <Skeleton height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.cellTranslateSkeletonLine} />
+        <Skeleton width="75%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.cellTranslateSkeletonLine} />
       </div>
+      <Skeleton width="var(--space-4)" height="var(--space-4)" className={styles.cellTranslateSkeletonCheck} />
     </div>
   );
 }
