@@ -209,6 +209,9 @@ export function CandidateView({
           }}
         />
 
+        {/* key=activeTab remounts on tab switch so .cellTabContent replays
+           its entrance — panels animate in instead of teleporting. */}
+        <div key={panel.activeTab ?? 'none'} className={styles.cellTabContent}>
         {panel.activeTab === 'audio' && (
           <AudioPanel
             items={panel.audioItems}
@@ -255,6 +258,7 @@ export function CandidateView({
             />
           </div>
         )}
+        </div>
 
         <section className={panelStyles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (

@@ -147,6 +147,20 @@
   color: var(--chip-status-tracking-fg);
 }
 
+/* Tab panel entrance — the wrapper is keyed by activeTab in CandidateView,
+   so each switch remounts it and replays this fade+rise. Reduced-motion is
+   covered globally by .dictionaryPanel's media query. */
+@keyframes cellTabContentIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+
+.cellTabContent {
+  animation: cellTabContentIn var(--duration-normal) var(--ease-out) both;
+}
+
 .cellHeaderStatus--known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);

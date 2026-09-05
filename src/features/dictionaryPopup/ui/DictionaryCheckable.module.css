@@ -298,6 +298,7 @@
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out),
               border-color var(--duration-fast) var(--ease-in-out);
+  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
 }
 
 .cellTranslateBlock:hover {
@@ -316,6 +317,16 @@
   margin-top: var(--space-0-5);
 }
 
+/* Mount entrance: checkable surfaces fade+rise in, staggered per sibling so
+   loaded content cascades in instead of teleporting. Reduced-motion is
+   covered globally by .dictionaryPanel's media query. */
+@keyframes cellCheckableIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+
 .cellAudioItem {
   display: flex;
   align-items: center;
@@ -325,7 +336,17 @@
   background: transparent;
   border: var(--border-width-hairline) solid transparent;
   transition: background var(--transition), border-color var(--transition);
+  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
 }
+
+.cellAudioItem:nth-child(2),
+.cellImageCard:nth-child(2) { animation-delay: 40ms; }
+.cellAudioItem:nth-child(3),
+.cellImageCard:nth-child(3) { animation-delay: 80ms; }
+.cellAudioItem:nth-child(4),
+.cellImageCard:nth-child(4) { animation-delay: 120ms; }
+.cellAudioItem:nth-child(n + 5),
+.cellImageCard:nth-child(n + 5) { animation-delay: 160ms; }
 
 .cellAudioItem:hover {
   background: var(--color-surface-hover);
@@ -361,6 +382,7 @@
   overflow: hidden;
   cursor: pointer;
   transition: transform var(--button-press-duration) var(--button-press-ease), filter var(--button-press-duration) var(--button-press-ease);
+  animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
 }
 
 .cellImageCard:hover {

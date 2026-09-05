@@ -71,6 +71,15 @@
   pointer-events: none;
   z-index: var(--z-dropdown);
   transition: opacity var(--duration-fast) var(--ease-in-out);
+  animation: cellToolbarBadgeIn var(--duration-normal) var(--ease-spring) both;
+}
+
+/* Selection feedback: the badge pops in when a count first appears. */
+@keyframes cellToolbarBadgeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
 
 /* Badge sleeps with its tab: dimmed at rest, fully lit on hover or when
