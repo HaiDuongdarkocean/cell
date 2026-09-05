@@ -39,15 +39,17 @@ export function SrsReviewCard(): React.JSX.Element | null {
 
   return (
     <Box className={styles.card}>
-      <Box className={styles.progress}>
+      <div className={styles.progress} role="list" aria-label="Review progress">
         {(['sound', 'meaning', 'spelling'] as const).map((t) => (
-          <Box
+          <div
             key={t}
+            role="listitem"
             className={[styles.progressDot, t === componentType ? styles.progressDotActive : ''].join(' ')}
             aria-label={t}
+            aria-current={t === componentType ? 'step' : undefined}
           />
         ))}
-      </Box>
+      </div>
 
       {showAnswer ? (
         <SrsReviewCardBack

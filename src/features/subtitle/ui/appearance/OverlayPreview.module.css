@@ -93,8 +93,8 @@
 /* Restore icon default size — shared CSS forces --cluster-icon-size with
    !important on button spans; preview keeps design-system default. */
 .clusterRight button span {
-  width: var(--icon-default-size) !important;
-  height: var(--icon-default-size) !important;
+  width: var(--iconbutton-icon-md) !important;
+  height: var(--iconbutton-icon-md) !important;
 }
 
 .primaryCol,

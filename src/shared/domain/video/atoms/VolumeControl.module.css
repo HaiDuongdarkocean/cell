@@ -113,7 +113,7 @@
   width: 0;
   opacity: 0;
   overflow: hidden;
-  transition: width var(--duration-medium) var(--ease-spring),
+  transition: width var(--duration-normal) var(--ease-spring),
     opacity var(--duration-fast) var(--ease-standard);
 }
 

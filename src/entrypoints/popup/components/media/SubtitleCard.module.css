@@ -28,6 +28,12 @@
 .mainRow {
   padding: var(--space-3);
   cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.mainRow:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: calc(-1 * var(--space-0-5));
 }
 
 .downloading .mainRow {
@@ -136,6 +142,12 @@
   font-family: var(--font-family);
   text-align: left;
   transition: color var(--transition);
+}
+
+.copyBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
 }
 
 .copyBtn svg {

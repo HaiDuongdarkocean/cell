@@ -117,7 +117,7 @@
 }
 
 .error {
-  color: var(--color-danger, #f87171);
+  color: var(--color-error, #f87171);
   text-align: center;
   margin-bottom: var(--space-3, 0.75rem);
 }

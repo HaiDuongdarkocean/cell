@@ -1,6 +1,6 @@
 import styles from './Header.module.css';
-import { Button, HStack } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Button, HStack, Heading } from '@/shared/ui';
+import { Icon } from '@/shared/ui/Icon';
 
 interface HeaderProps {
   isActive: boolean;
@@ -25,7 +25,7 @@ export function Header({
     <header className={styles.header}>
       <HStack align="center" gap="2" className={styles.headerLeft}>
         <Icon name="play" className={styles.headerIcon} />
-        <h1 className={styles.headerTitle}>Cell</h1>
+        <Heading level={1} className={styles.headerTitle}>Cell</Heading>
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}

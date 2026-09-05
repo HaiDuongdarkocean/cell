@@ -8,7 +8,7 @@
   justify-content: center;
   pointer-events: none;
   z-index: var(--z-popover);
-  animation: cell-flash var(--duration-medium) var(--ease-standard) forwards;
+  animation: cell-flash var(--duration-normal) var(--ease-standard) forwards;
 }
 
 .iconWrap {
@@ -22,7 +22,7 @@
   color: var(--color-overlay-text);
   opacity: 0;
   transform: scale(0.6);
-  animation: cell-flash-icon var(--duration-medium) var(--ease-spring) forwards;
+  animation: cell-flash-icon var(--duration-normal) var(--ease-spring) forwards;
 }
 
 @keyframes cell-flash {

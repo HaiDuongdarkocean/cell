@@ -12,11 +12,11 @@
   /* Slide animation: panel enters from right, exits to right.
      Apple §7 spatial consistency — symmetric path along the same axis.
      §4 critically damped (no overshoot) — graceful, non-distracting. */
-  animation: panelSlideIn var(--duration-medium) var(--ease-standard) both;
+  animation: panelSlideIn var(--duration-normal) var(--ease-standard) both;
 }
 
 .panel[data-closing='true'] {
-  animation: panelSlideOut var(--duration-medium) var(--ease-standard) both;
+  animation: panelSlideOut var(--duration-normal) var(--ease-standard) both;
 }
 
 @keyframes panelSlideIn {
@@ -41,7 +41,7 @@
 /* Chevron points right (collapse direction = panel slides out to right).
    On close, rotates 180° to point left — Apple §8: hint reverses with gesture. */
 .header svg {
-  transition: transform var(--duration-medium) var(--ease-standard);
+  transition: transform var(--duration-normal) var(--ease-standard);
 }
 
 .panel[data-closing='true'] .header svg {

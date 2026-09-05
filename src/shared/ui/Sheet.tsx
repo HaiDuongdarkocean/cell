@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { useSheet } from './useSheet';
+import { useFocusTrap } from './useFocusTrap';
 import styles from './Sheet.module.css';
 
 export interface SheetProps {
@@ -7,6 +8,8 @@ export interface SheetProps {
   readonly open: boolean;
   /** Called when the sheet requests close (drag dismiss, click handle, ESC). */
   readonly onClose?: () => void;
+  /** Accessible name for the dialog (aria-label). */
+  readonly 'aria-label'?: string;
   /** Initial sheet height in px. Default: 300. */
   readonly initialHeight?: number;
   /** Max sheet height in px. Default: viewport - margin. */
@@ -33,6 +36,7 @@ export interface SheetProps {
 export function Sheet({
   open,
   onClose,
+  'aria-label': ariaLabel,
   initialHeight,
   maxHeight,
   onHeightChange,
@@ -47,6 +51,7 @@ export function Sheet({
     onPointerDownHandle,
     onPointerDownContent,
   } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange });
+  useFocusTrap(sheetRef, open);
 
   // ESC to close — fullscreen-aware (let browser exit fullscreen first).
   useEffect(() => {
@@ -69,13 +74,22 @@ export function Sheet({
       className={className ? `${styles.sheet} ${className}` : styles.sheet}
       role="dialog"
       aria-modal="true"
+      aria-label={ariaLabel}
       data-cell-id={dataTestId}
       style={style}
     >
       <div
         className={styles.handle}
-        aria-hidden="true"
+        role="button"
+        tabIndex={0}
+        aria-label="Close sheet"
         onPointerDown={onPointerDownHandle}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose?.();
+          }
+        }}
       />
       <div
         className={contentClassName ? `${styles.content} ${contentClassName}` : styles.content}

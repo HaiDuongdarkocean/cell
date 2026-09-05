@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Box, Button, Heading, Text } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { audioAssetId, imageAssetId, normalizeSpelling } from '@/features/srs/lib/helpers';
 import type { ComponentType, SrsAudioAsset, SrsFieldValue, SrsImageAsset, SrsNote } from '@/entities/srs/types';
 import styles from './SrsReviewCard.module.css';
@@ -192,7 +192,7 @@ export function SrsReviewCardBack({
       <Box className={styles.actions}>
         <Button variant="ghost" onClick={() => markStudyAgain(componentType)}>Study again</Button>
         <Button
-          variant="ghost"
+          variant="destructive"
           onClick={() => {
             if (window.confirm(`Reset progress for ${componentType}?`)) {
               void resetCurrentComponent();
@@ -202,7 +202,7 @@ export function SrsReviewCardBack({
           Reset component
         </Button>
         <Button
-          variant="ghost"
+          variant="destructive"
           onClick={() => {
             if (window.confirm('Reset all components for this card?')) {
               void resetCurrentCard();

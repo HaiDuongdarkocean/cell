@@ -589,7 +589,7 @@
   font-weight: var(--font-weight-medium);
   text-align: left;
   cursor: pointer;
-  transition: color var(--transition-fast, 150ms) var(--ease-out, ease-out);
+  transition: color var(--duration-150) var(--ease-out);
 }
 
 .backBtn:hover {

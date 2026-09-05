@@ -2,6 +2,8 @@ import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { Button } from '@/shared/ui/Button';
 import { Slider } from '@/shared/ui/Slider';
+import { Select } from '@/shared/ui/Select';
+import { Input } from '@/shared/ui/Input';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -108,27 +110,26 @@ export function SubtitleStylePanel({
         {/* Font family */}
         <div className={styles.row}>
           <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font</label>
-          <select
+          <Select
             id={`style-${role}-font-family`}
             value={isCustomFont ? '__custom__' : style.fontFamily}
-            onChange={(e) => {
-              if (e.target.value === '__custom__') {
+            options={[
+              ...FONT_FAMILY_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+              { value: '__custom__', label: 'Custom…' },
+            ]}
+            onChange={(value) => {
+              if (value === '__custom__') {
                 setCustomFontOpen(true);
               } else {
-                onChange({ fontFamily: e.target.value });
+                onChange({ fontFamily: value });
                 setCustomFontOpen(false);
               }
             }}
             className={styles.select}
             aria-label="Font family"
-          >
-            {FONT_FAMILY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-            <option value="__custom__">Custom…</option>
-          </select>
+          />
           {(customFontOpen || isCustomFont) && (
-            <input
+            <Input
               type="text"
               value={isCustomFont ? style.fontFamily : ''}
               placeholder="e.g. 'Noto Sans JP', sans-serif"
@@ -270,7 +271,7 @@ export function SubtitleStylePanel({
                 Blur
                 <span className={styles.valueBadge}>{style.textShadow.blur}px</span>
               </label>
-              <input
+              <Input
                 id={`style-${role}-shadow-blur`}
                 type="number"
                 min={0}
@@ -287,7 +288,7 @@ export function SubtitleStylePanel({
                 Offset X
                 <span className={styles.valueBadge}>{style.textShadow.offsetX}px</span>
               </label>
-              <input
+              <Input
                 id={`style-${role}-shadow-offset-x`}
                 type="number"
                 min={-10}
@@ -304,7 +305,7 @@ export function SubtitleStylePanel({
                 Offset Y
                 <span className={styles.valueBadge}>{style.textShadow.offsetY}px</span>
               </label>
-              <input
+              <Input
                 id={`style-${role}-shadow-offset-y`}
                 type="number"
                 min={-10}

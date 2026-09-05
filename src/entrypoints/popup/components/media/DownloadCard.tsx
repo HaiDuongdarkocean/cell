@@ -4,7 +4,9 @@ import { Card } from '@/shared/ui/Card';
 import { Flex } from '@/shared/ui/Flex';
 import { HStack, VStack } from '@/shared/ui/Stack';
 import { Button } from '@/shared/ui/Button';
-import { Icon } from '@/shared/icons/Icon';
+import { Badge } from '@/shared/ui/Badge';
+import { Progress } from '@/shared/ui/Progress';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './DownloadCard.module.css';
 
 interface DownloadCardProps {
@@ -163,6 +165,7 @@ export function DownloadCard({
   }
 
   // Build progress section
+  const progressColor = isError ? 'error' : isDone ? 'success' : download.status === 'paused' ? 'warning' : 'accent';
   let progressHtml: React.JSX.Element;
   if (isQueued) {
     progressHtml = (
@@ -179,26 +182,20 @@ export function DownloadCard({
           <span className={`${styles.phaseLabel} ${styles.done}`}>Download</span>
           <span className={`${styles.phasePercent} ${styles.done}`}>100%</span>
         </HStack>
-        <div className={styles.progressBar}>
-          <div className={`${styles.progressFill} ${styles.done}`} style={{ width: '100%' }} />
-        </div>
+        <Progress size="sm" color="success" value={100} />
         <HStack align="center" justify="between" gap="0" className={styles.phaseRow}>
           <span className={`${styles.phaseLabel} ${styles.active}`}>
             Converting{phaseText}
           </span>
           <span className={`${styles.phasePercent} ${styles.active}`}>{download.convertProgress ?? 0}%</span>
         </HStack>
-        <div className={styles.progressBar}>
-          <div className={`${styles.progressFill} ${styles.converting}`} style={{ width: `${download.convertProgress ?? 0}%` }} />
-        </div>
+        <Progress size="sm" color="accent" value={download.convertProgress ?? 0} />
       </>
     );
   } else if (isDone) {
     progressHtml = (
       <>
-        <div className={styles.progressBar}>
-          <div className={`${styles.progressFill} ${styles.done}`} style={{ width: '100%' }} role="progressbar" aria-valuenow={100} aria-valuemin={0} aria-valuemax={100} />
-        </div>
+        <Progress size="sm" color="success" value={100} />
         <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span>Done</span>
           <span className={styles.progressPercent}>100%</span>
@@ -208,9 +205,7 @@ export function DownloadCard({
   } else if (isError) {
     progressHtml = (
       <>
-        <div className={styles.progressBar}>
-          <div className={`${styles.progressFill} ${styles.error}`} style={{ width: `${download.progress}%` }} />
-        </div>
+        <Progress size="sm" color="error" value={download.progress} />
         <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span className={styles.errorText}>Failed at {download.progress}%</span>
           <span className={styles.progressPercent}>{download.progress}%</span>
@@ -221,16 +216,7 @@ export function DownloadCard({
     // Single-phase: downloading or paused
     progressHtml = (
       <>
-        <div className={styles.progressBar}>
-          <div
-            className={`${styles.progressFill} ${styles[download.status]}`}
-            style={{ width: `${download.progress}%` }}
-            role="progressbar"
-            aria-valuenow={download.progress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          />
-        </div>
+        <Progress size="sm" color={progressColor} value={download.progress} />
         <HStack align="center" justify="between" gap="0" className={styles.progressLabel}>
           <span>{statusText}</span>
           <span className={styles.progressPercent}>{download.progress}%</span>
@@ -251,12 +237,12 @@ export function DownloadCard({
           <HStack align="center" gap="1-5" className={styles.titleRow}>
             <span className={styles.title}>{download.title}</span>
             {download.quality && (
-              <span className={styles.qualityBadge}>{download.quality}</span>
+              <Badge size="sm" variant="default" className={styles.qualityBadge}>{download.quality}</Badge>
             )}
             {download.usedWorkers && (
-              <span className={styles.parallelBadge} title="Parallel conversion">
+              <Badge size="sm" variant="default" className={styles.parallelBadge} title="Parallel conversion">
                 <Icon name="zap"  />
-              </span>
+              </Badge>
             )}
           </HStack>
           <HStack align="center" gap="1" className={styles.actions}>
