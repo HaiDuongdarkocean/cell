@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Tokenize Header One-Row Concepts</title>
+  <style>
+    :root {
+      --bg: #F5F7FA;
+      --surface: #FFFFFF;
+      --surface-soft: #F8FAFC;
+      --border: #E7EAEE;
+      --border-subtle: #F0F2F5;
+      --text: #0F172A;
+      --text-secondary: #64748B;
+      --text-tertiary: #94A3B8;
+      --primary: #0EA5E9;
+      --primary-soft: #E0F2FE;
+      --primary-contrast: #FFFFFF;
+      --radius-outer: 26px;
+      --radius-inner: 18px;
+      --radius-pill: 999px;
+      --radius-sm: 10px;
+      --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    section {
+      width: 100%;
+      min-height: 100dvh;
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+    }
+
+    .meta {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .concept-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .concept-desc {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      max-width: 560px;
+      margin: 0 0 8px;
+    }
+
+    .panel-outer {
+      width: min(760px, 100%);
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    .panel-inner {
+      background: var(--surface);
+      border-radius: var(--radius-inner);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 56px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .profile-select {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: var(--radius-pill);
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 100px;
+      font-family: var(--font-sans);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .switch {
+      width: 30px;
+      height: 17px;
+      border-radius: 9px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s var(--ease-fluid);
+      flex-shrink: 0;
+    }
+
+    .switch.on { background: var(--primary); }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--primary-contrast);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .switch.on::after { transform: translateX(13px); }
+
+    .close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .panel-body {
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      font-weight: 500;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+
+    /* ─── Concept A: Master + twin chips ─── */
+    .a-tokenize {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 4px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .a-master {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 1px 8px 1px 1px;
+      border-right: 1px solid var(--border-subtle);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .a-master .switch { width: 26px; height: 15px; }
+    .a-master .switch::after { width: 11px; height: 11px; }
+    .a-master .switch.on::after { transform: translateX(11px); }
+
+    .a-chip {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: color 0.2s var(--ease-fluid), background 0.2s var(--ease-fluid);
+    }
+
+    .a-chip:hover:not(:disabled) { background: rgba(14, 165, 233, 0.06); color: var(--text); }
+    .a-chip.active { background: var(--primary-soft); color: var(--primary); }
+    .a-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── Concept B: Dual independent switches ─── */
+    .b-tokenize {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+    }
+
+    .b-pair {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .b-pair .switch { width: 26px; height: 15px; }
+    .b-pair .switch::after { width: 11px; height: 11px; }
+    .b-pair .switch.on::after { transform: translateX(11px); }
+
+    /* ─── Concept C: Split bar ─── */
+    .c-tokenize {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .c-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .c-bar {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .c-half {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .c-half.active { background: var(--primary-soft); color: var(--primary); }
+    .c-half:hover { color: var(--text); }
+
+    .c-half + .c-half::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      height: 60%;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .c-half.active + .c-half::before,
+    .c-half + .c-half.active::before { background: transparent; }
+
+    @media (max-width: 640px) {
+      .header { flex-wrap: wrap; height: auto; }
+      .header-left, .header-right { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CONCEPT A -->
+  <section>
+    <div class="meta">A. Master switch + twin mode chips</div>
+    <h2 class="concept-title">Master Tokenize + Media / Text chips trên một hàng</h2>
+    <p class="concept-desc">Một master bật/tắt toàn bộ. Khi master bật, hai chip Media / Text mới có thể click, và cả hai đều có thể active.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="toggle-label"><span>Status</span><div class="switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div></label>
+            <label class="toggle-label"><span>Frequency</span><div class="switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div></label>
+          </div>
+          <div class="header-right">
+            <div class="a-tokenize" role="group" aria-label="Tokenize controls">
+              <div class="a-master" role="switch" aria-checked="true" aria-label="Enable tokenize" onclick="toggleMasterA(this)">
+                <div class="switch on"></div>
+                <span>Tokenize</span>
+              </div>
+              <div class="a-chips" role="group" aria-label="Tokenize targets">
+                <button class="a-chip active" data-mode="media" aria-pressed="true" onclick="toggleChipA(this)">Media</button>
+                <button class="a-chip" data-mode="text" aria-pressed="false" onclick="toggleChipA(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body a-status">[ media ]</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT B -->
+  <section>
+    <div class="meta">B. Dual independent switches</div>
+    <h2 class="concept-title">Hai toggle độc lập Media / Text, không master</h2>
+    <p class="concept-desc">Không có master. User tự bật/tắt Media và Text như hai feature toggle riêng biệt. Nhanh, trực tiếp, không extra click.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="toggle-label"><span>Status</span><div class="switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div></label>
+            <label class="toggle-label"><span>Frequency</span><div class="switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div></label>
+          </div>
+          <div class="header-right">
+            <div class="b-tokenize" role="group" aria-label="Tokenize controls">
+              <label class="b-pair" aria-label="Tokenize media">
+                <span>Media</span>
+                <div class="switch on" role="switch" aria-checked="true" data-mode="media" onclick="toggleB(this)"></div>
+              </label>
+              <label class="b-pair" aria-label="Tokenize text">
+                <span>Text</span>
+                <div class="switch" role="switch" aria-checked="false" data-mode="text" onclick="toggleB(this)"></div>
+              </label>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body b-status">[ media ]</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT C -->
+  <section>
+    <div class="meta">C. Split mode bar</div>
+    <h2 class="concept-title">Thanh chia đôi Media | Text, click từng nửa để bật</h2>
+    <p class="concept-desc">Một thanh duy nhất chia làm hai nửa. Mỗi nửa là một toggle. Cả hai có thể sáng cùng lúc. Gọn nhất, ít element nhất.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="toggle-label"><span>Status</span><div class="switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div></label>
+            <label class="toggle-label"><span>Frequency</span><div class="switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div></label>
+          </div>
+          <div class="header-right">
+            <div class="c-tokenize" role="group" aria-label="Tokenize controls">
+              <span class="c-label">Tokenize</span>
+              <div class="c-bar" role="group" aria-label="Tokenize targets">
+                <button class="c-half active" data-mode="media" aria-pressed="true" onclick="toggleC(this)">Media</button>
+                <button class="c-half" data-mode="text" aria-pressed="false" onclick="toggleC(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body c-status">[ media ]</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function statusText(section) {
+      const active = Array.from(section.querySelectorAll('[data-mode].active, [data-mode].on')).map(el => el.dataset.mode);
+      const labels = active.length ? active : ['none'];
+      return `[ ${labels.join(' + ')} ]`;
+    }
+
+    function toggleLegacy(el) {
+      el.classList.toggle('on');
+      el.setAttribute('aria-checked', String(el.classList.contains('on')));
+    }
+
+    /* Concept A */
+    function toggleMasterA(el) {
+      const master = el.querySelector('.switch');
+      master.classList.toggle('on');
+      const on = master.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+      const section = el.closest('section');
+      const chips = section.querySelectorAll('.a-chip');
+      chips.forEach(chip => {
+        chip.disabled = !on;
+        if (!on) {
+          chip.classList.remove('active');
+          chip.setAttribute('aria-pressed', 'false');
+        }
+      });
+      section.querySelector('.a-status').textContent = statusText(section);
+    }
+
+    function toggleChipA(el) {
+      if (el.disabled) return;
+      el.classList.toggle('active');
+      el.setAttribute('aria-pressed', String(el.classList.contains('active')));
+      const section = el.closest('section');
+      section.querySelector('.a-status').textContent = statusText(section);
+    }
+
+    /* Concept B */
+    function toggleB(el) {
+      el.classList.toggle('on');
+      el.setAttribute('aria-checked', String(el.classList.contains('on')));
+      const section = el.closest('section');
+      section.querySelector('.b-status').textContent = statusText(section);
+    }
+
+    /* Concept C */
+    function toggleC(el) {
+      el.classList.toggle('active');
+      el.setAttribute('aria-pressed', String(el.classList.contains('active')));
+      const section = el.closest('section');
+      section.querySelector('.c-status').textContent = statusText(section);
+    }
+  </script>
+</body>
+</html>

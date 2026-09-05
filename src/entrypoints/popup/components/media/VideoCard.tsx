@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { Center } from '@/shared/ui/Center';
-import { Flex, HStack, VStack } from '@/shared/ui';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button, Flex, HStack, VStack } from '@/shared/ui';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/icons/Icon';
@@ -185,7 +184,7 @@ export function VideoCard({
 
         {/* Actions — expand chevron + download button */}
         <HStack align="center" gap="1" className={styles.actions}>
-          <IconButton material="solid"
+          <Button shape="circle" material="solid"
             size="sm"
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
@@ -196,14 +195,14 @@ export function VideoCard({
               name="chevronDown"
               className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
             />
-          </IconButton>
+          </Button>
           <div className={styles.action}>
             {downloading ? (
               <Center as="span" className={styles.downloadingIndicator} aria-label="Downloading">
                 <Spinner size="md" color="secondary" aria-hidden="true" />
               </Center>
             ) : (
-              <IconButton material="solid"
+              <Button shape="circle" material="solid"
                 size="sm"
                 variant="ghost"
                 onClick={handleActionClick}
@@ -211,7 +210,7 @@ export function VideoCard({
                 data-cell-id="download-button"
               >
                 <Icon name="download"  />
-              </IconButton>
+              </Button>
             )}
           </div>
         </HStack>

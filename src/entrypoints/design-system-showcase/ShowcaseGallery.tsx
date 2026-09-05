@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Badge, Box, Card, Heading, IconButton, SearchField, Text, Tree } from '@/shared/ui';
+import { Button, Badge, Box, Card, Heading, SearchField, Text, Tree } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { type TreeNode } from '@/shared/ui/Tree';
 import { PresetSwitcher } from '@/features/theme/ui/PresetSwitcher';
@@ -168,7 +168,7 @@ export function ShowcaseGallery(): ReactElement | null {
           </div>
           <div className={styles.sidebarFooter}>
             <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
-            <IconButton
+            <Button shape="circle"
               type="button"
               variant="ghost"
               size="sm"
@@ -177,7 +177,7 @@ export function ShowcaseGallery(): ReactElement | null {
               className={styles.themeToggle}
             >
               <Icon name={mode === 'light' ? 'moon' : 'sun'} size={18} />
-            </IconButton>
+            </Button>
           </div>
         </aside>
 

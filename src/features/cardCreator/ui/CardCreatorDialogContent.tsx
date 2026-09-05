@@ -13,8 +13,9 @@
  * BEM block: .cc-dialog
  */
 import type { ReactElement } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
+import { Heading } from '@/shared/ui/Heading';
 import { Select } from '@/shared/ui/Select';
 import { FieldRow, FieldAutoGrowInput } from './FieldRow';
 import { MediaList } from './MediaList';
@@ -138,7 +139,7 @@ export function CardCreatorDialogContent({
 
       {/* Section: Card destination */}
       <div className={styles['cc-dialog__section']}>
-        <h3 className={styles['cc-dialog__section-title']}>Card destination</h3>
+        <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Card destination</Heading>
         <div className={styles['cc-dialog__pair-row']}>
           <div className={styles['cc-dialog__field']}>
             <label className={styles['cc-dialog__field-label']}>Note type</label>
@@ -173,7 +174,7 @@ export function CardCreatorDialogContent({
 
       {/* Section: Fields */}
       <div className={styles['cc-dialog__section']}>
-        <h3 className={styles['cc-dialog__section-title']}>Fields</h3>
+        <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Fields</Heading>
 
         <FieldRow
           label="Target word"

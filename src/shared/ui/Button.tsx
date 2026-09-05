@@ -164,11 +164,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       onPointerDown={handlePointerDown}
       {...rest}
     >
-      <span
-        className={styles.glassFilter}
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: filterSvg }}
-      />
+      {material === 'liquid' && (
+        <span
+          className={styles.glassFilter}
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: filterSvg }}
+        />
+      )}
       {loading && <Spinner size="md" color="current" aria-hidden="true" />}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}
       {children && <span className={styles.label}>{children}</span>}

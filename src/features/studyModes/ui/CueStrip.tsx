@@ -1,8 +1,7 @@
 import { type ReactElement, useRef } from 'react';
-import { Text, HStack } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Text, HStack, Icon } from '@/shared/ui';
 import type { StudyStep } from '@/entities/studyMode';
-import styles from './StudyModesTab.module.css';
+import styles from './CueStrip.module.css';
 
 interface CueStripProps {
   readonly steps: readonly StudyStep[];
@@ -86,7 +85,7 @@ export function CueStrip({
         onClick={onAdd}
         data-cell-id="cue-add-step"
       >
-        <Icon name="plus" size={16} />
+        <Icon name="plus" size="xs" />
         <Text as="span">Add</Text>
       </button>
     </HStack>

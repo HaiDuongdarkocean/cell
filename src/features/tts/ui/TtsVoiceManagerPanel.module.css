@@ -68,33 +68,9 @@
   gap: var(--space-2);
 }
 
-.row__control select,
-.row__control textarea {
-  width: 100%;
-  max-width: calc(var(--space-5) * 16);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-base);
-}
 
-.row__control textarea {
-  max-width: 100%;
-  resize: vertical;
-}
 
-.row__control select:focus-visible,
-.row__control textarea:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: calc(var(--space-0-5) * -0.5);
-}
 
-.row__control input[type='checkbox'] {
-  margin-right: var(--space-2);
-}
 
 /* === Voice selection list (Card 1) === */
 .voiceSelectionList {
@@ -239,10 +215,6 @@
   .row__label {
     flex: none;
     padding-top: 0;
-  }
-  .row__control select,
-  .row__control textarea {
-    max-width: 100%;
   }
   .ttsHeader {
     flex-direction: column;

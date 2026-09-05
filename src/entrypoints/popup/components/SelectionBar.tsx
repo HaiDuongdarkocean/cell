@@ -1,4 +1,4 @@
-import { Button, HStack, IconButton } from '@/shared/ui';
+import { Button, HStack } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SelectionBar.module.css';
 
@@ -19,14 +19,14 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       className={styles.selectionBar}
       data-cell-id="selection-bar"
     >
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         size="sm"
         onClick={onClear}
         aria-label="Clear selection"
         data-cell-id="selection-clear-btn"
       >
         <Icon name="x"  />
-      </IconButton>
+      </Button>
       <span className={styles.count} data-cell-id="selection-count">
         {selectionCount} selected
       </span>

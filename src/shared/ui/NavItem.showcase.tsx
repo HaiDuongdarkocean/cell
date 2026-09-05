@@ -19,6 +19,7 @@ export function Showcase(): ReactElement {
           padding: 'var(--space-2)',
           border: 'var(--border-width-hairline) solid var(--color-border)',
           borderRadius: 'var(--radius-card)',
+          containerType: 'inlineSize',
         }}
       >
         <NavItem orientation="vertical" icon={<Icon name="bookOpen" size={20} />} label="Dict" active />

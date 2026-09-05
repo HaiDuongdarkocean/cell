@@ -11,7 +11,7 @@ interface IconProps {
   name: keyof typeof ICON_CATALOG;
   /** Semantic size. Default: md. */
   size?: IconSize;
-  /** Icon color. Default: primary. */
+  /** Icon color. Default: current (inherits parent text color). */
   color?: IconColor;
   /** Accessible label — when provided, sets role="img" + aria-label. */
   label?: string;
@@ -38,7 +38,7 @@ const SIZE_MAP: Record<IconSize, number> = {
 export function Icon({
   name,
   size = 'md',
-  color = 'primary',
+  color = 'current',
   label,
   className,
   style,

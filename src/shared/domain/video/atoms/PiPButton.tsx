@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './PiPButton.module.css';
 
@@ -30,7 +30,7 @@ export function PiPButton({
       : true;
 
   return (
-    <IconButton material="solid"
+    <Button shape="circle" material="solid"
       active={pip}
       disabled={disabled || !supported}
       aria-pressed={pip}
@@ -39,6 +39,6 @@ export function PiPButton({
       {...rest}
     >
       <Icon name="pip"  />
-    </IconButton>
+    </Button>
   );
 }

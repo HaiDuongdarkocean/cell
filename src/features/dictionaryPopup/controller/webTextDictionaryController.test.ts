@@ -689,7 +689,7 @@ describe('createWebTextDictionaryController', () => {
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"].btn--primary');
+      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"][aria-selected="true"]');
       if (!el) throw new Error('image tab not active');
       return el;
     });
@@ -740,7 +740,7 @@ describe('createWebTextDictionaryController', () => {
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"].btn--primary');
+      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"][aria-selected="true"]');
       if (!el) throw new Error('image tab not active');
       return el;
     });
@@ -785,7 +785,7 @@ describe('createWebTextDictionaryController', () => {
     const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
     expect(host).not.toBeNull();
     const shadow = host?.shadowRoot;
-    expect(shadow?.querySelector('[data-cell-id^="dictionary-tab-"].btn--primary')).toBeNull();
+    expect(shadow?.querySelector('[data-cell-id^="dictionary-tab-"][aria-selected="true"]')).toBeNull();
     expect(shadow?.querySelector('[data-cell-id="dictionary-image-panel"]')).toBeNull();
     ctrl.destroy();
   });

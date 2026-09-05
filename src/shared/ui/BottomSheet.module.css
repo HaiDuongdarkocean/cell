@@ -13,7 +13,7 @@
 .sheet {
   width: 94%;
   max-height: 75vh;
-  background: var(--color-background);
+  background: var(--color-surface);
   border-radius: var(--radius-element);
   padding: var(--space-3) var(--space-4) var(--space-4);
   overflow: auto;

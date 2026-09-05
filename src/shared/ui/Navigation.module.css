@@ -20,6 +20,8 @@
   gap: var(--space-0-5);
   padding: var(--space-2);
   width: 100%;
+  /* Vertical Navigation is the container for NavItem's container query */
+  container-type: inline-size;
   overflow-x: hidden;
   overflow-y: auto;
   touch-action: auto;

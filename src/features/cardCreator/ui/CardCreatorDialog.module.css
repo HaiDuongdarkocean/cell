@@ -90,12 +90,14 @@
 }
 
 /* === Alert (notice style: left border only) === */
+/* pill radius is intentional: when the alert is short it renders as a disc
+   (design choice — do not "fix" to radius-md). Long messages become a pill. */
 .cc-dialog__alert {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   background: var(--color-warning-subtle);
   border: none;
   border-left: var(--border-width-hairline) solid var(--color-warning);

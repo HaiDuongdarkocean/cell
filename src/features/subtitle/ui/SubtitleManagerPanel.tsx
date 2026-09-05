@@ -9,7 +9,7 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
-import { Button, IconButton, Tabs } from '@/shared/ui';
+import { Button, Tabs } from '@/shared/ui';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -152,7 +152,7 @@ function ItemRow({
       </span>
       {onDownload && (
         <span className={styles.trackActions}>
-          <IconButton material="liquid"
+          <Button shape="circle" material="liquid"
             size="md"
             variant="ghost"
             aria-label={`Download ${item.name}`}
@@ -163,7 +163,7 @@ function ItemRow({
             }}
           >
             <Download aria-hidden="true" />
-          </IconButton>
+          </Button>
         </span>
       )}
     </div>
@@ -286,7 +286,7 @@ function OffsetStepper({
             <span className={styles.stepLabel}>+0.5s</span>
           </Button>
         </div>
-        <IconButton material="liquid"
+        <Button shape="circle" material="liquid"
           size="md"
           variant="outline"
           aria-label="Reset latency"
@@ -295,7 +295,7 @@ function OffsetStepper({
           className={styles.resetBtn}
         >
           <RotateCcw aria-hidden="true" />
-        </IconButton>
+        </Button>
       </div>
     </div>
   );
@@ -533,7 +533,7 @@ export function SubtitleManagerPanel({
     return (
       <>
         {v !== 'tracks' && (
-          <IconButton material="liquid"
+          <Button shape="circle" material="liquid"
             ref={backBtnRef}
             variant="ghost"
             aria-label="Back to subtitles"
@@ -541,7 +541,7 @@ export function SubtitleManagerPanel({
             onClick={handleBack}
           >
             <ChevronLeft aria-hidden="true" />
-          </IconButton>
+          </Button>
         )}
         {v === 'tracks' && (
           <span className={styles.headerIcon}>
@@ -588,13 +588,13 @@ export function SubtitleManagerPanel({
             {renderHeaderContent(view)}
           </div>
         </div>
-        <IconButton material="liquid"
+        <Button shape="circle" material="liquid"
           aria-label="Close subtitle manager"
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
         >
           <X aria-hidden="true" />
-        </IconButton>
+        </Button>
       </div>
 
       {/* View content — key triggers remount → CSS enter animation */}
@@ -615,7 +615,7 @@ export function SubtitleManagerPanel({
                 </Tabs.List>
                 <div className={styles.sectionActions}>
                   {onImport && (
-                    <IconButton material="liquid"
+                    <Button shape="circle" material="liquid"
                       size="md"
                       variant="ghost"
                       aria-label={`Import ${activeLabel} subtitle`}
@@ -623,10 +623,10 @@ export function SubtitleManagerPanel({
                       onClick={() => onImport(activeTab)}
                     >
                       <Plus aria-hidden="true" />
-                    </IconButton>
+                    </Button>
                   )}
                   {onHideSection && (
-                    <IconButton material="liquid"
+                    <Button shape="circle" material="liquid"
                       size="md"
                       variant="ghost"
                       active={activeHidden}
@@ -635,7 +635,7 @@ export function SubtitleManagerPanel({
                       onClick={() => onHideSection(activeTab)}
                     >
                       <EyeOff aria-hidden="true" />
-                    </IconButton>
+                    </Button>
                   )}
                 </div>
               </div>

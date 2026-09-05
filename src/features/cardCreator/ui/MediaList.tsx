@@ -13,8 +13,8 @@
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Icon } from '@/shared/icons/Icon';
+
+import { Icon } from '@/shared/ui/Icon';
 import type { MediaFile } from '../media/mediaFile';
 import styles from './MediaList.module.css';
 
@@ -40,7 +40,7 @@ interface MediaListProps {
 }
 
 /** Image icon for empty dropzone and audio waveform icon. */
-function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number }): ReactElement {
+function ThumbIcon({ kind, size = 'sm' }: { kind: 'image' | 'audio'; size?: 'xs' | 'sm' | 'md' | 'lg' }): ReactElement {
   return kind === 'image' ? (
     <Icon name="image" size={size} className={styles['cc-media__icon--image']} />
   ) : (
@@ -50,7 +50,7 @@ function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number
 
 /** Plus icon used in the dashed image add button. */
 function PlusIcon(): ReactElement {
-  return <Icon name="plus" size={24} />;
+  return <Icon name="plus" size="md" />;
 }
 
 /** Determine whether a File is an image or an audio file.
@@ -147,7 +147,7 @@ function EmptyDropzone({
       aria-label={addLabel}
       data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
-      <ThumbIcon kind={kind} size={24} />
+      <ThumbIcon kind={kind} size="md" />
       <span>{text}</span>
     </Button>
   );
@@ -342,7 +342,7 @@ function ImageGallery({
           dataId={dataId}
         />
       ))}
-      <IconButton material="solid" variant="ghost"
+      <Button shape="circle" material="solid" variant="ghost"
         className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
@@ -350,7 +350,7 @@ function ImageGallery({
         data-cell-id={dataId ? `${dataId}-add` : undefined}
       >
         <PlusIcon />
-      </IconButton>
+      </Button>
     </div>
   );
 }
@@ -478,14 +478,14 @@ function AudioList({
             onDragEnd={handleDragEnd}
             data-index={index}
           >
-            <IconButton material="solid" variant="ghost"
+            <Button shape="circle" material="solid" variant="ghost"
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
-              <ThumbIcon kind="audio" size={16} />
-            </IconButton>
+              <ThumbIcon kind="audio" size="xs" />
+            </Button>
             <span className={styles['cc-media__name']}>{file.filename}</span>
             <Button material="solid" variant="secondary"
               className={styles['cc-media__row-remove']}

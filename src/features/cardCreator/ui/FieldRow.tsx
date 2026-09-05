@@ -22,9 +22,9 @@
  *  - .field-input (the auto-grow input — also exported standalone)
  */
 import { useRef, type ChangeEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from '@/shared/ui/Button';
 import { Select, type SelectOption } from '@/shared/ui/Select';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './FieldRow.module.css';
 
 interface FieldRowProps {
@@ -153,13 +153,13 @@ export function FieldAutoGrowInput({
         {...rest}
       />
       {clearable && value.length > 0 && (
-        <IconButton material="solid" variant="ghost"
+        <Button shape="circle" material="solid" variant="ghost"
           className={styles.fieldInput__clear}
           aria-label="Clear"
           onClick={handleClear}
         >
           <Icon name="x"  />
-        </IconButton>
+        </Button>
       )}
     </div>
   );

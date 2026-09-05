@@ -10,7 +10,8 @@
   width: max-content;
   min-width: var(--space-16);
   height: 100%;
-  background: var(--color-surface);
+  background: var(--sidebar-bg, var(--color-surface-elevated));
+  color: var(--sidebar-fg, var(--color-text));
   border-right: var(--border-width-hairline) solid var(--color-border-subtle);
   overflow: hidden;
   transition: width var(--duration-normal) ease-in-out, min-width var(--duration-normal) ease-in-out;
@@ -97,7 +98,7 @@
     /* Ghim cố định đầu trang — không cuộn cùng content */
     position: sticky;
     top: 0;
-    z-index: var(--z-sticky, 10);
+    z-index: var(--z-sticky);
 
     /* Layout ngang cuộn được */
     width: 100%;
@@ -107,8 +108,8 @@
 
     /* Kính mờ: tạo chiều sâu layering khi cuộn content qua phía dưới */
     background: color-mix(in srgb, var(--color-surface) 90%, transparent);
-    backdrop-filter: blur(12px) saturate(1.6);
-    -webkit-backdrop-filter: blur(12px) saturate(1.6);
+    backdrop-filter: blur(var(--blur-lg)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(160%);
 
     border-right: none;
     border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);

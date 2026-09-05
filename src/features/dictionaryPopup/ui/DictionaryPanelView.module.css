@@ -104,7 +104,7 @@
 }
 
 .searchHistoryTerm {
-  max-width: 192px;
+  max-width: calc(var(--space-6) * 8);
   padding: 0;
   overflow: hidden;
   color: var(--color-text);
@@ -123,8 +123,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
   padding: 0;
   border-radius: var(--radius-full);
   color: var(--color-text-inverse);
@@ -151,17 +151,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.cellLabel {
-  display: none;
-  font-size: var(--font-size-xm);
-}
-
-.cellToolbarTab svg {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
-  flex-shrink: 0;
 }
 
 .cellHeader {
@@ -269,7 +258,7 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  min-width: 6em;
+  min-width: calc(var(--space-3) * 7);
   height: var(--space-5);
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
@@ -437,7 +426,7 @@
   visibility: visible;
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-fixed-white);
+  color: var(--color-text-on-primary);
 }
 
 /* Definition panel: hide dot when checkbox is visible */
@@ -475,122 +464,6 @@
   color: var(--color-text-secondary);
 }
 
-.cellToolbar {
-  display: flex;
-  gap: var(--space-1);
-  padding: 0;
-  align-items: center;
-}
-
-/* Double class = specificity beats global .btn height/padding.
-   Icon-only (label hidden via .cellLabel): min-width keeps it a 32px circle.
-   Label visible: content stretches width past min-width → pill. */
-.cellToolbar .cellToolbarTab {
-  position: relative;
-  flex-shrink: 0;
-  border-radius: var(--radius-full);
-  height: var(--iconbutton-size-sm);
-  min-height: var(--iconbutton-size-sm); /* beat .button min-height (--touch-target 40px) */
-  width: auto;
-  min-width: var(--iconbutton-size-sm);
-  padding: 0;
-  gap: 0;
-  justify-content: center;
-}
-
-/* Non-active (ghost) tabs get a subtle background so they're visible
-   against the panel surface. Active tabs keep .btn--primary background
-   with fixed white icon color (not theme-dependent). */
-.cellToolbarTab[aria-selected="false"] {
-  background: var(--color-surface-hover);
-}
-
-.cellToolbarTab[aria-selected="true"] {
-  color: var(--color-fixed-white);
-}
-
-.cellToolbarLabel {
-  /* visibility is controlled by .cellLabel so container queries can hide it on narrow widths */
-}
-
-.cellToolbarBadge {
-  position: absolute;
-  top: 0;
-  right: calc(-1.5 * var(--space-0-5));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--space-4);
-  height: var(--space-4);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-full);
-  background: var(--color-error);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: var(--z-dropdown);
-}
-
-.cellAudio {
-  padding: 0 var(--space-2);
-}
-
-.cellAudioSubtabs {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-0-5) 0 var(--space-1);
-}
-
-.cellAudioSubtab {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  border-bottom: var(--space-0-5) solid transparent;
-  padding-bottom: var(--space-0-5);
-  transition: color var(--duration-fast) var(--ease-in-out),
-    border-color var(--duration-fast) var(--ease-in-out);
-}
-
-.cellAudioSubtab:hover {
-  color: var(--color-text);
-}
-
-.cellAudioSubtab--active {
-  color: var(--color-text);
-  border-bottom-color: var(--color-primary);
-}
-
-.cellImage {
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.cellImageEmptyAction {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-size: var(--font-size-xs);
-  white-space: nowrap;
-}
-
-.cellImageEmptyAction:hover {
-  text-decoration: underline;
-}
-
-.cellTranslate {
-  padding: 0 var(--space-2);
-}
-
 .cellTranslateBlock {
   display: flex;
   align-items: flex-start;
@@ -614,61 +487,9 @@
   border-color: var(--color-primary);
 }
 
-.cellTranslateText {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-}
-
-.cellTranslateTarget {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
-
-.cellTranslateNative {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
 /* Translate panel: margin offset (layout only — visual is unified) */
 .cellTranslateBlock .cellDefCheckBox {
   margin-top: var(--space-0-5);
-}
-
-.cellLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-}
-
-.cellLinksItem {
-  height: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text);
-  text-decoration: none;
-  font-size: var(--font-size-xs);
-}
-
-.cellLinksItem:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
-}
-
-.cellLinksItem svg {
-  width: var(--space-3-5);
-  height: var(--space-3-5);
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
 }
 
 .cellCandidatesChips {
@@ -709,10 +530,10 @@
   border-color: transparent !important;
 }
 
-.cellChip:global(.btn--primary) {
+.cellChip[aria-current="true"] {
   color: var(--color-primary) !important;
   text-decoration: underline;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: var(--border-width-thick);
   text-underline-offset: var(--space-0-5);
 }
 
@@ -747,37 +568,6 @@
   padding-bottom: 0;
 }
 
-.cellAudioSkeleton {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
-}
-
-.cellAudioSkeletonSubtabs {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-0-5) 0 var(--space-1);
-}
-
-.cellAudioSkeletonRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.cellAudioSkeletonPlay {
-  flex: 0 0 auto;
-}
-
-.cellAudioSkeletonLabel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-  min-width: 0;
-}
-
 .cellAudioError,
 .cellImageError,
 .cellTranslateError {
@@ -803,68 +593,7 @@
   border-color: var(--color-border);
 }
 
-.cellAudioPlay {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cellAudioLabel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-  min-width: 0;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--color-text);
-}
-
-.cellAudioLabelName {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-}
-
-.cellAudioLabelMeta {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
 /* Audio panel: uses unified cellDefCheckBox — no panel-specific overrides needed */
-
-.cellImageSkeleton {
-  composes: hide from '@/shared/ui/Scrollable.module.css';
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  -ms-overflow-style: none;
-}
-
-.cellImageSkeletonCard {
-  flex: 0 0 auto;
-  width: calc(var(--space-10) * 3);
-  min-width: calc(var(--space-10) * 3);
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius-2xl);
-}
-
-.cellImageStrip {
-  composes: hide from '@/shared/ui/Scrollable.module.css';
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  -ms-overflow-style: none;
-}
 
 .cellImageCard {
   flex: 0 0 auto;
@@ -901,12 +630,6 @@
   outline-offset: var(--space-0-5);
 }
 
-.cellImageThumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 /* Image panel: unified cellDefCheckBox pinned to the card's top-right corner. */
 .cellImageCard .cellDefCheckBox {
   position: absolute;
@@ -914,55 +637,9 @@
   right: var(--space-2);
 }
 
-.cellTranslateSkeleton {
-  padding: var(--space-2);
-}
-
-.cellTranslateSkeletonBlock {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.cellTranslateSkeletonText {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-0-5);
-  min-width: 0;
-}
-
-.cellTranslateSkeletonLine {
-  max-width: 100%;
-}
-
 /* CandidateSkeleton — skeleton action buttons in header (icon-btn--sm size) */
 .skeletonAction {
   flex-shrink: 0;
-}
-
-/* Image panel scroll controls — arrows overlaid at the two ends, vertically centered on the strip.
-   Centered with negative margin instead of transform so the SSOT Button press
-   transform (scale) is not overridden. Doubled class keeps these rules above `.button`. */
-.cellImageNavLeft.cellImageNavLeft,
-.cellImageNavRight.cellImageNavRight {
-  position: absolute;
-  top: 50%;
-  margin-top: calc(var(--space-3-5) * -1);
-  z-index: var(--z-dropdown);
-}
-
-.cellImageNavLeft.cellImageNavLeft {
-  left: 0;
-}
-
-.cellImageNavRight.cellImageNavRight {
-  right: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

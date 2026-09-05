@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Spinner } from './Spinner';
 import styles from './Input.module.css';
 
@@ -72,8 +72,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     .filter(Boolean)
     .join(' ');
 
-  const errorId = errorMessage ? 'input-error' : undefined;
-  const helperId = helperText ? 'input-helper' : undefined;
+  const id = useId();
+  const errorId = errorMessage ? `${id}-error` : undefined;
+  const helperId = helperText ? `${id}-helper` : undefined;
   const describedBy = [ariaDescribedBy, errorId, helperId].filter(Boolean).join(' ') || undefined;
 
   return (
@@ -101,12 +102,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         )}
       </div>
       {errorMessage && (
-        <span id="input-error" className={styles.errorText} role="alert">
+        <span id={errorId} className={styles.errorText} role="alert">
           {errorMessage}
         </span>
       )}
       {helperText && (
-        <span id="input-helper" className={styles.helperText}>
+        <span id={helperId} className={styles.helperText}>
           {helperText}
         </span>
       )}

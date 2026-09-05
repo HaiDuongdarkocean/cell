@@ -1,6 +1,7 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { HStack } from './Stack';
-import { Button } from './Button';
+import { CloseButton } from './CloseButton';
+import { Surface } from './Surface';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './Dialog.module.css';
 
@@ -73,8 +74,10 @@ export function Dialog({
       role="presentation"
       data-cell-id={dataTestId}
     >
-      <div
+      <Surface
         ref={panelRef}
+        as="div"
+        variant="dialog"
         className={styles.panel}
         onClick={handlePanelClick}
         role="dialog"
@@ -92,14 +95,7 @@ export function Dialog({
             {showCloseButton && centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <Button material="solid"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpenChange?.(false)}
-                  aria-label="Close"
-                >
-                  ×
-                </Button>
+                <CloseButton size="sm" variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
             <div className={styles.headerText}>
@@ -109,16 +105,14 @@ export function Dialog({
             {showCloseButton && !centerTitle && (
               <HStack align="center" gap="1" className={styles.headerRightGroup}>
                 {headerExtra}
-                <Button material="solid" variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
-                  ×
-                </Button>
+                <CloseButton size="sm" variant="ghost" onClick={() => onOpenChange?.(false)} />
               </HStack>
             )}
           </HStack>
         )}
         {children && <div className={styles.content}>{children}</div>}
         {footer && <HStack justify="end" gap="3" className={styles.footer}>{footer}</HStack>}
-      </div>
+      </Surface>
     </div>
   );
 }

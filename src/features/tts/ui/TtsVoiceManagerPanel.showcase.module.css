@@ -7,7 +7,7 @@
 
 .panelFrame {
   width: 100%;
-  max-width: 600px;
+  max-width: calc(var(--space-10) * 15);
   margin-inline: auto;
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-container);

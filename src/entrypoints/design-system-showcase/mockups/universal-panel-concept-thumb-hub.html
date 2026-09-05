@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Universal Panel Concept C: Thumb Hub</title>
+  <style>
+    :root {
+      --bg: #F6F1E9;
+      --bg-2: #EDE6DA;
+      --surface: #FFFDF9;
+      --surface-raised: #F7F3EC;
+      --ink: #2E2520;
+      --ink-secondary: #6F6459;
+      --ink-tertiary: #A89E93;
+      --accent: #C67B3C;
+      --accent-subtle: #F6E9DA;
+      --danger: #C94A4A;
+      --danger-subtle: #F9E5E5;
+      --radius-outer: 44px;
+      --radius-inner: 28px;
+      --radius-pill: 999px;
+      --shadow: 0 32px 90px rgba(46, 37, 32, 0.12), 0 0 0 1px rgba(46, 37, 32, 0.04) inset;
+      --font: 'Georgia', 'Times New Roman', serif;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-ui);
+      background: linear-gradient(160deg, var(--bg), var(--bg-2));
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      gap: 24px;
+    }
+
+    .meta { text-align: center; color: var(--ink-secondary); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+    .page-title { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em; font-family: var(--font); }
+
+    .phone {
+      width: min(420px, 100%);
+      height: 780px;
+      background: #1A1612;
+      border-radius: 56px;
+      padding: 14px;
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255,255,255,0.06) inset;
+      position: relative;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: #2B2520;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .panel {
+      position: relative;
+      margin-top: auto;
+      height: 100%;
+      background: var(--surface);
+      border-radius: var(--radius-outer) var(--radius-outer) 0 0;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 12px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      padding: 0 12px 0 4px;
+      background: var(--surface-raised);
+      border: 1px solid rgba(46, 37, 32, 0.08);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .profile-chip .avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2E5A8C, #6BA3D6);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 10px;
+    }
+
+    .title {
+      font-family: var(--font);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .close {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-raised);
+      color: var(--ink-secondary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 24px 240px;
+    }
+
+    .tokenize {
+      display: inline-flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tokenize button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(46, 37, 32, 0.1);
+      border-radius: var(--radius-pill);
+      background: transparent;
+      color: var(--ink-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tokenize button.active { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+    .search {
+      width: 100%;
+      height: 52px;
+      border-radius: 16px;
+      border: 1px solid rgba(46, 37, 32, 0.1);
+      background: var(--surface-raised);
+      padding: 0 18px;
+      font-size: 16px;
+      color: var(--ink);
+      outline: none;
+      margin-bottom: 20px;
+    }
+    .search::placeholder { color: var(--ink-tertiary); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--ink-secondary);
+      border: 1px dashed rgba(46, 37, 32, 0.12);
+      border-radius: 20px;
+    }
+    .empty-state svg { width: 44px; height: 44px; color: var(--ink-tertiary); margin-bottom: 14px; }
+    .empty-state h3 { margin: 0 0 6px; font-size: 18px; color: var(--ink); font-family: var(--font); }
+    .empty-state p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+    .card-creator {
+      margin-top: 20px;
+      padding: 18px;
+      background: var(--surface-raised);
+      border: 1px solid rgba(46, 37, 32, 0.08);
+      border-radius: 20px;
+    }
+    .card-creator h4 {
+      margin: 0 0 14px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      text-align: center;
+    }
+    .error-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--danger-subtle);
+      border: 1px solid #EEBDBD;
+      border-radius: 14px;
+      font-size: 13px;
+      color: #7A2E2E;
+      margin-bottom: 16px;
+    }
+    .error-banner svg { width: 20px; height: 20px; color: var(--danger); flex-shrink: 0; }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .field label { display: block; font-size: 12px; color: var(--ink-secondary); margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      height: 44px;
+      border: 1px solid rgba(46, 37, 32, 0.1);
+      border-radius: 14px;
+      background: var(--surface);
+      padding: 0 14px;
+      font-size: 14px;
+      color: var(--ink);
+    }
+
+    .hub {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 220px;
+      display: grid;
+      place-items: center;
+      z-index: 10;
+      pointer-events: none;
+      background: linear-gradient(to top, var(--surface) 0%, rgba(255, 253, 249, 0.96) 52%, transparent 100%);
+    }
+
+    .hub-ring {
+      position: relative;
+      width: 300px;
+      height: 180px;
+      pointer-events: auto;
+    }
+
+    .hub-center {
+      position: absolute;
+      left: 50%;
+      top: 90%;
+      transform: translate(-50%, -50%);
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: 0 16px 40px rgba(198, 123, 60, 0.35);
+      border: 4px solid var(--surface);
+      z-index: 2;
+    }
+    .hub-center svg { width: 28px; height: 28px; }
+    .hub-center span { font-size: 10px; font-weight: 700; }
+
+    .hub-orbit {
+      position: absolute;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid rgba(46, 37, 32, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--ink-secondary);
+      box-shadow: 0 12px 30px rgba(46, 37, 32, 0.08);
+    }
+    .hub-orbit.active { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
+    .hub-orbit svg { width: 20px; height: 20px; }
+    .hub-orbit span { font-size: 9px; font-weight: 600; }
+
+    .hub-orbit:nth-child(1) { left: 59.1%; top: 33.6%; transform: translate(-50%, -50%); }
+    .hub-orbit:nth-child(2) { left: 40.9%; top: 33.6%; transform: translate(-50%, -50%); }
+    .hub-orbit:nth-child(3) { left: 50%; top: 31.7%; transform: translate(-50%, -50%); }
+    .hub-orbit:nth-child(4) { left: 74.7%; top: 48.7%; transform: translate(-50%, -50%); }
+    .hub-orbit:nth-child(5) { left: 25.3%; top: 48.7%; transform: translate(-50%, -50%); }
+
+    .hub-arc {
+      position: absolute;
+      left: 50%;
+      top: 90%;
+      transform: translate(-50%, -50%);
+      width: 210px;
+      height: 105px;
+      border: 1px dashed rgba(46, 37, 32, 0.1);
+      border-radius: 105px 105px 0 0;
+      border-bottom: none;
+    }
+
+    .icon { width: 22px; height: 22px; }
+  </style>
+</head>
+<body>
+  <div class="meta">Concept C — Mobile First</div>
+  <h1 class="page-title">Thumb Command Hub</h1>
+
+  <div class="phone">
+    <div class="screen">
+      <div class="backdrop"></div>
+
+      <div class="panel">
+        <header class="header">
+          <div class="header-left">
+            <div class="profile-chip">
+              <span class="avatar">EN</span>
+              <span>English</span>
+            </div>
+          </div>
+          <div class="title">Universal</div>
+          <button class="close" aria-label="Close">×</button>
+        </header>
+
+        <main class="content">
+          <div class="tokenize">
+            <button class="active">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h3M4 17v3h3M20 7V4h-3M20 17v3h-3M9 9h6v6H9z"/></svg>
+              Text
+            </button>
+            <button>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="m10 11 5 3-5 3V11Z"/></svg>
+              Media
+            </button>
+          </div>
+
+          <input type="text" class="search" placeholder="Type a word" />
+
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <h3>Your dictionary awaits</h3>
+            <p>Search a word, then create cards, study, or adjust settings.</p>
+          </div>
+
+          <div class="card-creator">
+            <h4>Card Creator</h4>
+            <div class="error-banner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              <span>Failed to load from AnkiConnect. Check Settings → Card Creator.</span>
+            </div>
+            <div class="row">
+              <div class="field"><label>Note type</label><input type="text" /></div>
+              <div class="field"><label>Deck</label><input type="text" /></div>
+            </div>
+            <div class="field"><label>Target word</label><input type="text" placeholder="Enter the word or phrase to learn" /></div>
+          </div>
+        </main>
+
+        <div class="hub">
+          <div class="hub-ring">
+            <div class="hub-arc"></div>
+            <button class="hub-orbit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M10 12h10M3 12h.01M3 18h.01M10 18h10M6 3v18"/></svg>
+              <span>Study</span>
+            </button>
+            <button class="hub-orbit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>Settings</span>
+            </button>
+            <button class="hub-orbit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              <span>Reader</span>
+            </button>
+            <button class="hub-orbit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <span>SRS</span>
+            </button>
+            <button class="hub-orbit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="m10 11 5 3-5 3V11Z"/></svg>
+              <span>Player</span>
+            </button>
+            <div class="hub-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              <span>Dict</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

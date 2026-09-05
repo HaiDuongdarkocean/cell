@@ -1,6 +1,8 @@
 import { useCallback, type ReactElement } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui/Button';
+
+import { Icon } from '@/shared/ui/Icon';
+import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { TokenizeControls } from './TokenizeControls';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './UniversalPanelHeader.module.css';
@@ -14,26 +16,49 @@ export interface UniversalPanelHeaderProps {
   readonly onClose: () => void;
   /** Whether the current page has a video (disables the Media half). */
   readonly hasMedia?: boolean;
+  /** Active language profile for the header profile button. */
+  readonly activeProfile?: { readonly name: string; readonly target?: string } | null;
+  /** Called when the profile button is clicked. */
+  readonly onProfileClick?: () => void;
 }
 
 /**
  * UniversalPanelHeader — minimal horizontal header above the panel content.
  *
- * Layout (left → right): language profile select (optional) … gap …
- * tokenize split capsule (Text / Media) … gap … close button (right edge).
+ * Layout (left → right): language profile select (optional) … tokenize split capsule (Text / Media) … close button (right edge).
  */
 export function UniversalPanelHeader({
   tokenizeState,
   onToggleTokenize,
   onClose,
   hasMedia = true,
+  activeProfile,
+  onProfileClick,
 }: UniversalPanelHeaderProps): ReactElement {
   const handleToggle = useCallback((mode: 'text' | 'media'): void => {
     onToggleTokenize(mode === 'text' ? 'enabled' : 'subtitleEnabled');
   }, [onToggleTokenize]);
 
+  const profileName = activeProfile?.name ?? 'Select profile';
+
   return (
     <header className={styles.header} data-cell-id="universal-panel-header">
+      {activeProfile && onProfileClick && (
+        <Button
+          material="solid"
+          size="md"
+          variant="ghost"
+          shape="circle"
+          className={styles.profileButton}
+          onClick={onProfileClick}
+          aria-label={`Switch language profile: ${profileName}`}
+          title={profileName}
+          data-cell-id="universal-panel-profile-button"
+        >
+          <FlagIcon lang={activeProfile.target ?? ''} title={profileName} />
+        </Button>
+      )}
+
       <TokenizeControls
         text={tokenizeState.enabled}
         media={tokenizeState.subtitleEnabled}
@@ -41,7 +66,7 @@ export function UniversalPanelHeader({
         onToggle={handleToggle}
       />
 
-      <IconButton
+      <Button shape="circle"
         material="solid"
         size="md"
         variant="ghost"
@@ -51,7 +76,7 @@ export function UniversalPanelHeader({
         data-cell-id="universal-panel-close"
       >
         <Icon name="x" />
-      </IconButton>
+      </Button>
     </header>
   );
 }

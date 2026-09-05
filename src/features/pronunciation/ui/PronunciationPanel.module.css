@@ -33,7 +33,7 @@
   color: var(--color-text);
   background: var(--color-surface);
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
     background var(--duration-fast) var(--ease-in-out),
@@ -55,7 +55,7 @@
 .phoneme:active {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-on-primary);
+  color: var(--color-text-on-primary);
 }
 
 .separator {

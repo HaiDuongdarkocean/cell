@@ -1,8 +1,7 @@
 import { type ReactElement } from 'react';
-import { Text, Button, Chip, HStack, VStack } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Text, Button, Chip, HStack, VStack, Icon } from '@/shared/ui';
 import type { StudyStep } from '@/entities/studyMode';
-import styles from './StudyModesTab.module.css';
+import styles from './StepEditor.module.css';
 
 const SUBTITLE_OPTIONS: StudyStep['subtitle'][] = ['none', 'native', 'target', 'both'];
 const PAUSE_OPTIONS: StudyStep['pause'][] = ['none', 'start', 'end'];
@@ -62,8 +61,9 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
           size="xs"
           variant="ghost"
           onClick={onRemove}
+          aria-label={`Remove step ${index + 1}`}
           data-cell-id={`remove-step-${index}`}
-          leadingIcon={<Icon name="trash" size={14} />}
+          leadingIcon={<Icon name="trash" size="xs" />}
         />
       )}
     </div>

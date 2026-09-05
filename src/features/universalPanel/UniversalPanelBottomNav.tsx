@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './UniversalPanelBottomNav.module.css';
 
 export interface ToolAction {
@@ -55,11 +55,8 @@ export function UniversalPanelBottomNav({
               shape="pill"
               size="md"
               orientation="vertical"
-              active={isActive}
-              aria-pressed={isActive}
-              data-active={String(isActive)}
               className={styles.navItem}
-              aria-label={tab.label}
+              aria-current={isActive ? 'true' : undefined}
               onClick={() => onTabChange(tab.key)}
               data-cell-id={`universal-panel-mobile-tab-${tab.key}`}
               leadingIcon={<Icon name={tab.icon} />}
@@ -75,11 +72,11 @@ export function UniversalPanelBottomNav({
           size="md"
           orientation="vertical"
           className={styles.navItem}
-          aria-label="Tools"
           aria-expanded={isToolsOpen}
+          aria-haspopup="dialog"
           onClick={() => setIsToolsOpen(true)}
           data-cell-id="universal-panel-mobile-tools"
-          leadingIcon={<Icon name="chevronDown" />}
+          leadingIcon={<Icon name="layoutGrid" />}
         >
           Tools
         </Button>
@@ -91,28 +88,29 @@ export function UniversalPanelBottomNav({
         title="Quick tools"
         data-cell-id="universal-panel-tools-sheet"
       >
-        <div className={styles.toolsList} role="list">
+        <ul className={styles.toolsList}>
           {tools.map((tool) => (
-            <Button
-              key={tool.id}
-              material="solid"
-              variant="outline"
-              shape="pill"
-              className={styles.toolRow}
-              leadingIcon={<Icon name={tool.icon} size={24} />}
-              onClick={() => {
-                tool.onClick();
-                setIsToolsOpen(false);
-              }}
-              data-cell-id={tool['data-cell-id']}
-            >
-              <div className={styles.toolBody}>
-                <span className={styles.toolTitle}>{tool.title}</span>
-                <span className={styles.toolDesc}>{tool.description}</span>
-              </div>
-            </Button>
+            <li key={tool.id}>
+              <Button
+                material="solid"
+                variant="ghost"
+                shape="pill"
+                className={styles.toolRow}
+                leadingIcon={<Icon name={tool.icon} size="md" />}
+                onClick={() => {
+                  tool.onClick();
+                  setIsToolsOpen(false);
+                }}
+                data-cell-id={tool['data-cell-id']}
+              >
+                <span className={styles.toolBody}>
+                  <span className={styles.toolTitle}>{tool.title}</span>
+                  <span className={styles.toolDesc}>{tool.description}</span>
+                </span>
+              </Button>
+            </li>
           ))}
-        </div>
+        </ul>
       </BottomSheet>
     </>
   );

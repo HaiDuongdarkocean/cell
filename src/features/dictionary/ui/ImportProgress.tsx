@@ -3,6 +3,7 @@
 import { type ReactElement } from 'react';
 import { Button } from '@/shared/ui';
 import { Alert } from '@/shared/ui/Alert';
+import { Progress } from '@/shared/ui/Progress';
 import styles from './ImportProgress.module.css';
 
 interface ImportProgressProps {
@@ -13,12 +14,15 @@ interface ImportProgressProps {
 }
 
 export function ImportProgress({ processed, total, onCancel, error }: ImportProgressProps): ReactElement {
-  const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
   return (
     <div className={styles.progress} data-cell-id="import-progress">
-      <div className={styles.bar}>
-        <div className={styles.fill} style={{ width: `${pct}%` }} />
-      </div>
+      <Progress
+        className={styles.bar}
+        value={processed}
+        max={total > 0 ? total : 100}
+        indeterminate={total === 0}
+        aria-label="Import progress"
+      />
       <span className={styles.label}>
         {processed}{total > 0 ? ` / ${total}` : ''} mục
       </span>

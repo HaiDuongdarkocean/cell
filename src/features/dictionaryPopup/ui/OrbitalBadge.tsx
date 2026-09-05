@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Icon } from '@/shared/icons/Icon';
+import { Button } from '@/shared/ui/Button';
+import { Icon } from '@/shared/ui/Icon';
 import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOrbitalPointer';
 import { useOrbitalSnap } from '@/features/dictionaryPopup/badgePointer/useOrbitalSnap';
 import { getNearestEdge, getEdgeCenter, type ViewportRect, type CollapsedEdge } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
@@ -384,7 +384,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       onPointerUp={gesture.onPointerUp}
       onPointerCancel={gesture.onPointerCancel}
     >
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         className={styles.badge}
         aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
         data-cell-id="orbital-badge-button"

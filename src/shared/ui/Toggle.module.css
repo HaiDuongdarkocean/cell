@@ -18,17 +18,17 @@
 /* === Sizes === */
 .sm {
   --toggle-h: var(--space-8);
-  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
+  --toggle-w: calc(var(--toggle-h) * 2 - var(--space-1));
 }
 
 .md {
   --toggle-h: var(--touch-target);
-  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
+  --toggle-w: calc(var(--toggle-h) * 2 - var(--space-1));
 }
 
 .lg {
   --toggle-h: var(--space-12);
-  --toggle-w: calc(var(--toggle-h) * 2 - 4px);
+  --toggle-w: calc(var(--toggle-h) * 2 - var(--space-1));
 }
 
 /* === Track === */
@@ -45,7 +45,7 @@
   margin: 0;
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.3s linear;
+  transition: background var(--duration-300) linear;
 }
 
 .input:hover {
@@ -57,7 +57,7 @@
 }
 
 .input:disabled {
-  opacity: 0.4;
+  opacity: var(--opacity-disabled);
   cursor: not-allowed;
 }
 
@@ -66,18 +66,18 @@
 }
 
 .toggle.disabled .thumb {
-  opacity: 0.4;
+  opacity: var(--opacity-disabled);
 }
 
 /* === Dot / SVG thumb === */
 .thumb {
   fill: var(--toggle-dot);
   display: block;
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
+  width: calc(100% - var(--space-1));
+  height: calc(100% - var(--space-1));
   position: absolute;
-  left: 2px;
-  top: 2px;
+  left: var(--space-0-5);
+  top: var(--space-0-5);
   pointer-events: none;
   filter: drop-shadow(0 0.5px 0.5px var(--toggle-dot-shadow));
   transform-origin: 50% 50%;

@@ -8,6 +8,10 @@ import type React from 'react';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPopupSettings, BadgePointerTriggerSettings } from '@/entities/settings/types';
 import { Slider } from '@/shared/ui/Slider';
+import { Toggle } from '@/shared/ui/Toggle';
+import { Select } from '@/shared/ui/Select';
+import { Input } from '@/shared/ui/Input';
+import { Text } from '@/shared/ui/Text';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -58,54 +62,50 @@ export function DictionaryPopupSettingsPanel({
     <div className={styles.panel}>
       {/* Enabled toggle */}
       <div className={styles.field}>
-        <label htmlFor="dp-enabled">
-          <input
-            id="dp-enabled"
-            type="checkbox"
-            checked={settings.enabled}
-            onChange={(e) => update({ enabled: e.target.checked })}
-          />
-          {' '}
-          Enable Dictionary Popup
-        </label>
+        <Toggle
+          checked={settings.enabled}
+          onChange={(next) => update({ enabled: next })}
+          ariaLabel="Enable Dictionary Popup"
+          dataTestId="dp-enabled"
+        />
+        {' '}
+        Enable Dictionary Popup
       </div>
 
       {/* Trigger mode */}
       <div className={styles.field}>
         <label htmlFor="dp-trigger-mode">Trigger mode</label>
-        <select
+        <Select
           id="dp-trigger-mode"
           value={settings.triggerMode}
-          onChange={(e) => update({ triggerMode: e.target.value as DictionaryPopupSettings['triggerMode'] })}
-        >
-          {TRIGGER_MODES.map((mode) => (
-            <option key={mode} value={mode}>{TRIGGER_LABELS[mode]}</option>
-          ))}
-        </select>
+          options={TRIGGER_MODES.map((mode) => ({ value: mode, label: TRIGGER_LABELS[mode] }))}
+          onChange={(mode) => update({ triggerMode: mode as DictionaryPopupSettings['triggerMode'] })}
+        />
       </div>
 
       {/* Orbital badge pointer settings — always visible (orbital is always on). */}
       <div className={styles.field}>
         <label htmlFor="dp-badge-pointer-position">Pointer position</label>
-        <select
+        <Select
           id="dp-badge-pointer-position"
           value={settings.badgePointerTrigger?.position ?? DEFAULT_BADGE_POINTER_TRIGGER.position}
-          onChange={(e) => {
+          options={[
+            { value: 'top', label: 'Top' },
+            { value: 'bottom', label: 'Bottom' },
+            { value: 'left', label: 'Left' },
+            { value: 'right', label: 'Right' },
+            { value: 'center', label: 'Center' },
+          ]}
+          onChange={(pos) => {
             const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
             update({
               badgePointerTrigger: {
                 ...base,
-                position: e.target.value as BadgePointerTriggerSettings['position'],
+                position: pos as BadgePointerTriggerSettings['position'],
               },
             });
           }}
-        >
-          <option value="top">Top</option>
-          <option value="bottom">Bottom</option>
-          <option value="left">Left</option>
-          <option value="right">Right</option>
-          <option value="center">Center</option>
-        </select>
+        />
       </div>
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
@@ -135,22 +135,21 @@ export function DictionaryPopupSettingsPanel({
       {/* Default active tab */}
       <div className={styles.field}>
         <label htmlFor="dp-default-tab">Default active tab</label>
-        <select
+        <Select
           id="dp-default-tab"
           value={settings.defaultActiveTab ?? ''}
-          onChange={(e) => update({ defaultActiveTab: (e.target.value || null) as DictionaryPopupSettings['defaultActiveTab'] })}
-        >
-          <option value="">None (dictionary only)</option>
-          {TAB_OPTIONS.map((tab) => (
-            <option key={tab} value={tab}>{TAB_LABELS[tab]}</option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: 'None (dictionary only)' },
+            ...TAB_OPTIONS.map((tab) => ({ value: tab, label: TAB_LABELS[tab] })),
+          ]}
+          onChange={(tab) => update({ defaultActiveTab: (tab || null) as DictionaryPopupSettings['defaultActiveTab'] })}
+        />
       </div>
 
       {/* Popup width */}
       <div className={styles.field}>
         <label htmlFor="dp-width">Popup width (px)</label>
-        <input
+        <Input
           id="dp-width"
           type="number"
           min={320}
@@ -163,7 +162,7 @@ export function DictionaryPopupSettingsPanel({
       {/* Popup max height */}
       <div className={styles.field}>
         <label htmlFor="dp-max-height">Popup max height (px)</label>
-        <input
+        <Input
           id="dp-max-height"
           type="number"
           min={200}
@@ -176,17 +175,18 @@ export function DictionaryPopupSettingsPanel({
       {/* SRS destination */}
       <div className={styles.field}>
         <label htmlFor="dp-srs">SRS destination</label>
-        <select
+        <Select
           id="dp-srs"
           value={settings.srsDestination}
-          onChange={(e) => update({ srsDestination: e.target.value as DictionaryPopupSettings['srsDestination'] })}
-        >
-          <option value="anki">Anki</option>
-          <option value="ocean-srs">Ocean SRS</option>
-        </select>
-        <small className={styles.hint}>
+          options={[
+            { value: 'anki', label: 'Anki' },
+            { value: 'ocean-srs', label: 'Ocean SRS' },
+          ]}
+          onChange={(dest) => update({ srsDestination: dest as DictionaryPopupSettings['srsDestination'] })}
+        />
+        <Text as="small" color="secondary" className={styles.hint}>
           Choose where Quick Add sends cards.
-        </small>
+        </Text>
       </div>
     </div>
   );

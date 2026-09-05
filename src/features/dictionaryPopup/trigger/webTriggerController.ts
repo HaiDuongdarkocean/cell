@@ -18,6 +18,7 @@ import {
   defaultGetCaretRange,
   type SentenceContext,
 } from '../sentence/sentenceModule';
+import { CELL_UI_HOST_SELECTORS, CELL_UI_POINTER_EVENT_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 
 /** Hover debounce for web text — only fire after the cursor has been still for this long. */
 const WEB_HOVER_DEBOUNCE_MS = 80;
@@ -31,19 +32,13 @@ const MIN_SELECTION_LENGTH = 1;
 const MAX_SELECTION_LENGTH = 100;
 
 /** UI hosts that float above page text and can block `caretRangeFromPoint`.
- *  Text inside these hosts is extension UI — must not trigger dictionary lookup.
- *  Kept in sync with EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts. */
-const UI_HOST_SELECTORS =
-  '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
-  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host, ' +
-  '#cell-subtitle-root';
+ *  Text inside these hosts is extension UI — must not trigger dictionary lookup. */
+const UI_HOST_SELECTORS = CELL_UI_HOST_SELECTORS;
 
 /** Only hosts whose pointer-events should be disabled when resolving a caret.
  *  The universal panel is excluded because it contains allowed lookup text
  *  (dictionary definitions and card creator preview). */
-const POINTER_EVENT_HOST_SELECTORS =
-  '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
-  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-subtitle-root';
+const POINTER_EVENT_HOST_SELECTORS = CELL_UI_POINTER_EVENT_HOST_SELECTORS;
 
 const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
 

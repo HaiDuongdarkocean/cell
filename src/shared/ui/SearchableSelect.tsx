@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect, type KeyboardEvent, type ReactElement } from 'react';
+import { useState, useRef, useMemo, useEffect, useId, type KeyboardEvent, type ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchableSelect.module.css';
@@ -67,6 +67,7 @@ export function SearchableSelect({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const listboxId = `${useId()}-listbox`;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -162,7 +163,6 @@ export function SearchableSelect({
       {isOpen && (
         <div
           className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
-          role="listbox"
           style={maxHeight !== undefined ? { '--searchable-select-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
         >
           {/* Search input */}
@@ -174,6 +174,10 @@ export function SearchableSelect({
               className={styles.searchInput}
               placeholder={placeholder}
               aria-label="Search options"
+              role="combobox"
+              aria-expanded={isOpen}
+              aria-controls={listboxId}
+              aria-activedescendant={filtered.length > 0 ? `${listboxId}-option-${highlightedIndex}` : undefined}
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -184,11 +188,12 @@ export function SearchableSelect({
           </div>
 
           {/* Options list */}
-          <ul className={styles.list}>
+          <ul className={styles.list} role="listbox" id={listboxId}>
             {filtered.length > 0 ? (
               filtered.map((opt, index) => (
                 <li
                   key={opt.value}
+                  id={`${listboxId}-option-${index}`}
                   className={`${styles.option} ${opt.value === value ? styles.optionSelected : ''} ${index === highlightedIndex ? styles.optionHighlighted : ''}`}
                   role="option"
                   aria-selected={opt.value === value}

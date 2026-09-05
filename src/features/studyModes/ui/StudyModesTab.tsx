@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard } from '@/shared/ui';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
 import { findActiveMode } from '../lib/findActiveMode';
 import { CustomModeBuilder } from './CustomModeBuilder';
@@ -93,7 +92,7 @@ export function StudyModesTab(): ReactElement {
           <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
             Playback settings
           </Text>
-          <Heading level={2} size={3} className={styles.sectionHeading}>
+          <Heading level={3} size={3} className={styles.sectionHeading}>
             Play mode
           </Heading>
           <div className={styles.grid} role="radiogroup" aria-label="Preset study modes">
@@ -114,11 +113,11 @@ export function StudyModesTab(): ReactElement {
               <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
                 Your combinations
               </Text>
-              <Heading level={2} size={3} className={styles.sectionHeading}>
+              <Heading level={3} size={3} className={styles.sectionHeading}>
                 Custom
               </Heading>
             </div>
-            <Button size="sm" onClick={handleNewMode} data-cell-id="new-mode-button" leadingIcon={<Icon name="plus" size={16} />}>
+            <Button size="sm" onClick={handleNewMode} data-cell-id="new-mode-button" leadingIcon={<Icon name="plus" size="xs" />}>
               New mode
             </Button>
           </HStack>
@@ -133,27 +132,19 @@ export function StudyModesTab(): ReactElement {
                 onDelete={handleDeleteMode}
               />
             ))}
-            <Card
-              variant="interactive"
-              className={styles.newModeCard}
-              onClick={handleNewMode}
-              data-cell-id="new-mode-card"
+            <SelectableCard
               role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleNewMode();
-                }
-              }}
+              className={styles.newModeCard}
+              onSelect={handleNewMode}
+              data-cell-id="new-mode-card"
               aria-label="New mode"
             >
-              <Icon name="plus" size={32} className={styles.newModeIcon} />
+              <Icon name="plus" size="lg" className={styles.newModeIcon} />
               <Text variant="heading-2" as="p">New mode</Text>
               <Text color="secondary" as="p" className={styles.newModeHint}>
                 Build your own study flow
               </Text>
-            </Card>
+            </SelectableCard>
           </div>
         </section>
 
@@ -209,29 +200,21 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
 
   return (
     <div className={styles.modeCardWrapper}>
-      <Card
-        variant={selected ? 'selected' : 'interactive'}
-        className={styles.modeCard}
-        onClick={() => onSelect(mode)}
-        data-cell-id={`mode-card-${mode.id}`}
+      <SelectableCard
+        selected={selected}
         role="radio"
-        aria-checked={selected}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSelect(mode);
-          }
-        }}
+        className={styles.modeCard}
+        onSelect={() => onSelect(mode)}
+        data-cell-id={`mode-card-${mode.id}`}
       >
-        <Icon name={mode.icon} size={28} className={styles.modeIcon} />
+        <Icon name={mode.icon} size="lg" className={styles.modeIcon} />
         <Text variant="heading-2" as="p" className={styles.modeTitle}>
           {mode.title}
         </Text>
         <Text color="secondary" as="p" className={styles.modeDesc}>
           {description}
         </Text>
-      </Card>
+      </SelectableCard>
       {isCustom && (
         <HStack gap="2" className={styles.modeActions}>
           <Button
@@ -239,7 +222,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             variant="ghost"
             onClick={() => onEdit?.(mode)}
             data-cell-id={`edit-mode-${mode.id}`}
-            leadingIcon={<Icon name="pencil" size={14} />}
+            leadingIcon={<Icon name="pencil" size="xs" />}
           >
             Edit
           </Button>
@@ -248,7 +231,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
             variant="ghost"
             onClick={() => onDelete?.(mode)}
             data-cell-id={`delete-mode-${mode.id}`}
-            leadingIcon={<Icon name="trash" size={14} />}
+            leadingIcon={<Icon name="trash" size="xs" />}
           >
             Delete
           </Button>
@@ -266,7 +249,7 @@ interface AdvancedSectionProps {
 function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactElement {
   return (
     <Card className={styles.advancedCard} data-cell-id="advanced-settings">
-      <Heading level={2} size={3} className={styles.sectionHeading}>
+      <Heading level={3} size={3} className={styles.sectionHeading}>
         Advanced
       </Heading>
       <VStack gap="4">

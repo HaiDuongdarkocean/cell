@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dictionary Popup — 10 Redesign Variants</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --text: #f5f5f7;
+      --muted: #a0a0b0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 1.5rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 2rem;
+    }
+    .variant {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .variant h2 {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stage {
+      height: 260px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* === 1. Glassmorphism Dark Orb === */
+    .stage-orb { background: radial-gradient(circle at 30% 30%, #1f1f3a, #0a0a14); }
+    .orb {
+      width: 260px;
+      height: 220px;
+      border-radius: 50% 50% 48% 48%;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,255,255,0.05);
+      position: relative;
+      padding: 1.5rem;
+      overflow: hidden;
+    }
+    .orb-word {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .orb-word small {
+      display: block;
+      font-size: 0.75rem;
+      color: #b0b0c0;
+      font-weight: 400;
+    }
+    .orb-orbit {
+      position: absolute;
+      inset: 0;
+    }
+    .orb-btn {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+    .orb-btn:nth-child(1) { top: 18px; left: 50%; transform: translateX(-50%); }
+    .orb-btn:nth-child(2) { top: 50%; right: 14px; transform: translateY(-50%); }
+    .orb-btn:nth-child(3) { bottom: 18px; right: 70px; }
+    .orb-btn:nth-child(4) { bottom: 18px; left: 70px; }
+    .orb-btn:nth-child(5) { top: 50%; left: 14px; transform: translateY(-50%); }
+    .orb-defs {
+      position: absolute;
+      bottom: 18px;
+      left: 24px;
+      right: 24px;
+      font-size: 0.65rem;
+      color: #c0c0d0;
+      line-height: 1.4;
+    }
+    .orb-ring {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.6rem;
+    }
+    .orb-ring span {
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* === 2. Brutalist Terminal === */
+    .stage-terminal { background: #050505; font-family: 'SF Mono', Menlo, Consolas, monospace; }
+    .terminal {
+      width: 280px;
+      border: 1px solid #22c55e;
+      padding: 1rem;
+      color: #22c55e;
+      background: #080808;
+      box-shadow: 0 0 20px rgba(34,197,94,0.15);
+    }
+    .terminal-line { font-size: 0.75rem; margin-bottom: 0.5rem; }
+    .term-cmd { color: #facc15; }
+    .term-tag {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      margin-right: 0.5rem;
+      font-size: 0.65rem;
+    }
+    .term-freq {
+      color: #000;
+      background: #facc15;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.65rem;
+    }
+    .term-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+    }
+    .term-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid #22c55e;
+      background: transparent;
+      color: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+    .term-def { color: #86efac; font-size: 0.7rem; line-height: 1.4; }
+
+    /* === 3. 3D Flashcard === */
+    .stage-flip { background: linear-gradient(135deg, #1a1a2e, #16213e); perspective: 1000px; }
+    .flashcard {
+      width: 220px;
+      height: 160px;
+      background: #fff;
+      border-radius: 16px;
+      color: #111;
+      padding: 1rem;
+      position: relative;
+      transform: rotateY(-8deg) rotateX(4deg);
+      box-shadow: 20px 20px 40px rgba(0,0,0,0.4);
+    }
+    .flashcard h3 { margin: 0; font-size: 1.25rem; }
+    .flashcard .ipa { color: #666; font-size: 0.8rem; }
+    .flashcard .def { font-size: 0.7rem; color: #444; margin-top: 0.5rem; }
+    .flash-edge {
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .flash-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.15);
+    }
+
+    /* === 4. Game HUD === */
+    .stage-hud { background: #0a0f14; }
+    .hud {
+      width: 280px;
+      height: 200px;
+      position: relative;
+      border: 1px solid rgba(56,189,248,0.4);
+      clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+      background: rgba(14,22,30,0.85);
+      padding: 1rem;
+    }
+    .hud-corner {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-color: #38bdf8;
+      border-style: solid;
+    }
+    .hud-corner.tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .hud-corner.tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+    .hud-corner.bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+    .hud-corner.br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+    .hud-target {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56,189,248,0.5);
+    }
+    .hud-arc {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 60px;
+      border-top: 3px solid #22d3ee;
+      border-radius: 60px 60px 0 0;
+    }
+    .hud-radial {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .hud-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #38bdf8;
+      background: rgba(56,189,248,0.12);
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    /* === 5. Editorial Magazine === */
+    .stage-mag { background: #f7f5f0; }
+    .mag {
+      width: 260px;
+      background: #fff;
+      padding: 1.25rem;
+      border-radius: 2px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      color: #222;
+      font-family: Georgia, 'Times New Roman', serif;
+    }
+    .mag h3 { font-size: 1.6rem; margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+    .mag .ipa { font-style: italic; color: #888; font-size: 0.8rem; }
+    .mag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.75rem 0;
+    }
+    .mag-badge span {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #111;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .mag-def { font-size: 0.8rem; line-height: 1.5; color: #444; }
+    .mag-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .mag-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid #c0a06c;
+      color: #c0a06c;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    /* === 6. Soft Neumorphism === */
+    .stage-neu { background: #e0e5ec; }
+    .neu {
+      width: 260px;
+      padding: 1.25rem;
+      border-radius: 20px;
+      background: #e0e5ec;
+      color: #4a5568;
+      box-shadow: 12px 12px 24px #b8b9be, -12px -12px 24px #fff;
+    }
+    .neu h3 { margin: 0; font-size: 1.3rem; color: #2d3748; }
+    .neu .ipa { color: #718096; font-size: 0.8rem; }
+    .neu-pills { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+    .neu-pill {
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #e0e5ec;
+      box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #fff;
+      color: #4a5568;
+    }
+    .neu-toolbar { display: flex; gap: 0.75rem; margin: 0.75rem 0; }
+    .neu-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: #e0e5ec;
+      color: #4a5568;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #fff;
+    }
+    .neu-def { font-size: 0.75rem; color: #4a5568; line-height: 1.4; }
+
+    /* === 7. Liquid Organic Blob === */
+    .stage-liquid { background: linear-gradient(120deg, #0f172a, #1e1b4b); }
+    .liquid {
+      width: 270px;
+      padding: 1.5rem;
+      border-radius: 40% 60% 50% 50% / 50% 40% 60% 50%;
+      background: rgba(99,102,241,0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(165,180,252,0.3);
+      color: #e0e7ff;
+      position: relative;
+    }
+    .liquid h3 { margin: 0; font-size: 1.4rem; }
+    .liquid .ipa { color: #a5b4fc; font-size: 0.8rem; }
+    .liquid-drops { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+    .liquid-drop {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(165,180,252,0.2);
+      font-size: 0.7rem;
+      color: #fff;
+    }
+    .liquid-bubbles { display: flex; gap: 0.6rem; margin: 0.75rem 0; }
+    .liquid-bubble {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .liquid-def { font-size: 0.75rem; color: #c7d2fe; line-height: 1.4; }
+
+    /* === 8. Split Minimalist === */
+    .stage-split { background: #fafafa; }
+    .split {
+      width: 280px;
+      height: 190px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      color: #111;
+    }
+    .split-left {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #111;
+      color: #fff;
+    }
+    .split-left h3 { margin: 0; font-size: 1.5rem; }
+    .split-left .ipa { color: #aaa; font-size: 0.75rem; margin: 0.25rem 0; }
+    .split-right {
+      padding: 1rem;
+      position: relative;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: #444;
+    }
+    .split-divider {
+      position: absolute;
+      left: -16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .split-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #111;
+      color: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+    }
+    .split-dots {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+    .split-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #111;
+    }
+
+    /* === 9. Neon Nightclub === */
+    .stage-neon { background: #050510; }
+    .neon {
+      width: 260px;
+      padding: 1.25rem;
+      border-radius: 16px;
+      background: rgba(10,10,25,0.9);
+      border: 1px solid rgba(168,85,247,0.5);
+      box-shadow: 0 0 30px rgba(168,85,247,0.2), inset 0 0 20px rgba(168,85,247,0.05);
+      color: #fff;
+    }
+    .neon h3 {
+      margin: 0;
+      font-size: 1.6rem;
+      color: #e9d5ff;
+      text-shadow: 0 0 10px rgba(168,85,247,0.8);
+    }
+    .neon .ipa { color: #d8b4fe; font-size: 0.8rem; }
+    .neon-signs { display: flex; gap: 0.5rem; margin: 0.75rem 0; }
+    .neon-sign {
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid #f43f5e;
+      color: #f43f5e;
+      font-size: 0.65rem;
+      text-shadow: 0 0 6px rgba(244,63,94,0.6);
+      box-shadow: 0 0 8px rgba(244,63,94,0.2);
+    }
+    .neon-counter {
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: #000;
+      color: #facc15;
+      font-family: monospace;
+      font-size: 0.75rem;
+      text-shadow: 0 0 6px rgba(250,204,21,0.6);
+    }
+    .neon-toolbar { display: flex; gap: 0.75rem; margin: 0.75rem 0; }
+    .neon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #000;
+      border: 1px solid #22d3ee;
+      color: #22d3ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      box-shadow: 0 0 8px rgba(34,211,238,0.4);
+    }
+    .neon-def { font-size: 0.75rem; color: #e9d5ff; line-height: 1.4; }
+
+    /* === 10. Sticky Paper Note === */
+    .stage-sticky { background: #2a2a2e; }
+    .sticky {
+      width: 240px;
+      padding: 1.25rem;
+      background: #fffbe6;
+      color: #3a3020;
+      border-radius: 2px;
+      box-shadow: 4px 4px 12px rgba(0,0,0,0.25);
+      position: relative;
+      transform: rotate(-1deg);
+    }
+    .sticky::before {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 24px;
+      background: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .sticky h3 { margin: 0; font-size: 1.4rem; font-family: 'Comic Sans MS', cursive; }
+    .sticky .ipa { color: #7c6f58; font-size: 0.8rem; }
+    .sticky-mark {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      background: #fde047;
+      color: #3a3020;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin: 0.5rem 0.25rem 0.5rem 0;
+    }
+    .sticky-toolbar { display: flex; gap: 0.5rem; margin: 0.5rem 0; }
+    .sticky-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #a89f91;
+      color: #5c5346;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+    .sticky-def { font-size: 0.75rem; color: #5c5346; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>Dictionary Popup — 10 Redesign Variants</h1>
+  <div class="grid">
+
+    <section class="variant">
+      <h2>1. Glassmorphism Dark Orb</h2>
+      <div class="stage stage-orb">
+        <div class="orb">
+          <div class="orb-ring">
+            <span>unknown</span>
+            <span>7,767</span>
+          </div>
+          <div class="orb-word">
+            comments
+            <small>/ˈkɑːment/</small>
+          </div>
+          <div class="orb-orbit">
+            <div class="orb-btn">♪</div>
+            <div class="orb-btn">🖼</div>
+            <div class="orb-btn">文</div>
+            <div class="orb-btn">⛓</div>
+            <div class="orb-btn">🎙</div>
+          </div>
+          <div class="orb-defs">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>2. Brutalist Terminal</h2>
+      <div class="stage stage-terminal">
+        <div class="terminal">
+          <div class="terminal-line term-cmd">$ comments /ˈkkɑːment/</div>
+          <div class="terminal-line">
+            <span class="term-tag">UNKNOWN</span>
+            <span class="term-freq">FREQ 7,767</span>
+          </div>
+          <div class="term-toolbar">
+            <div class="term-btn">♪</div>
+            <div class="term-btn">🖼</div>
+            <div class="term-btn">文</div>
+            <div class="term-btn">⛓</div>
+            <div class="term-btn">🎙</div>
+          </div>
+          <div class="term-def">
+            &gt; noun [ C or U ]<br>
+            &gt; something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>3. 3D Flashcard</h2>
+      <div class="stage stage-flip">
+        <div class="flashcard">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div class="def">something that you say or write that expresses your opinion.</div>
+          <div class="flash-edge">
+            <div class="flash-btn">♪</div>
+            <div class="flash-btn">🖼</div>
+            <div class="flash-btn">文</div>
+            <div class="flash-btn">⛓</div>
+            <div class="flash-btn">🎙</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>4. Game HUD</h2>
+      <div class="stage stage-hud">
+        <div class="hud">
+          <div class="hud-corner tl"></div>
+          <div class="hud-corner tr"></div>
+          <div class="hud-corner bl"></div>
+          <div class="hud-corner br"></div>
+          <div class="hud-arc"></div>
+          <div class="hud-target">comments<br><small style="color:#22d3ee;font-size:0.7rem;">/ˈkkɑːment/</small></div>
+          <div class="hud-radial">
+            <div class="hud-btn">♪</div>
+            <div class="hud-btn">🖼</div>
+            <div class="hud-btn">文</div>
+            <div class="hud-btn">⛓</div>
+            <div class="hud-btn">🎙</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>5. Editorial Magazine</h2>
+      <div class="stage stage-mag">
+        <div class="mag">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div class="mag-badge">
+            <span>UN<br>KNOWN</span>
+            <span style="background:#c0a06c;">7,<br>767</span>
+          </div>
+          <div class="mag-def">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+          <div class="mag-toolbar">
+            <div class="mag-btn">♪</div>
+            <div class="mag-btn">🖼</div>
+            <div class="mag-btn">文</div>
+            <div class="mag-btn">⛓</div>
+            <div class="mag-btn">🎙</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>6. Soft Neumorphism</h2>
+      <div class="stage stage-neu">
+        <div class="neu">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div class="neu-pills">
+            <div class="neu-pill">unknown</div>
+            <div class="neu-pill">7,767</div>
+          </div>
+          <div class="neu-toolbar">
+            <div class="neu-btn">♪</div>
+            <div class="neu-btn">🖼</div>
+            <div class="neu-btn">文</div>
+            <div class="neu-btn">⛓</div>
+            <div class="neu-btn">🎙</div>
+          </div>
+          <div class="neu-def">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>7. Liquid Organic Blob</h2>
+      <div class="stage stage-liquid">
+        <div class="liquid">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div class="liquid-drops">
+            <div class="liquid-drop">unknown</div>
+            <div class="liquid-drop">7,767</div>
+          </div>
+          <div class="liquid-bubbles">
+            <div class="liquid-bubble">♪</div>
+            <div class="liquid-bubble">🖼</div>
+            <div class="liquid-bubble">文</div>
+            <div class="liquid-bubble">⛓</div>
+            <div class="liquid-bubble">🎙</div>
+          </div>
+          <div class="liquid-def">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>8. Split Minimalist</h2>
+      <div class="stage stage-split">
+        <div class="split">
+          <div class="split-left">
+            <h3>comments</h3>
+            <div class="ipa">/ˈkkɑːment/</div>
+          </div>
+          <div class="split-right">
+            <div class="split-divider">
+              <div class="split-btn">♪</div>
+              <div class="split-btn">🖼</div>
+              <div class="split-btn">文</div>
+              <div class="split-btn">⛓</div>
+              <div class="split-btn">🎙</div>
+            </div>
+            <p>(noun) something that you say or write that expresses your opinion.</p>
+            <div class="split-dots">
+              <div class="split-dot"></div>
+              <div class="split-dot" style="background:#bbb;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>9. Neon Nightclub</h2>
+      <div class="stage stage-neon">
+        <div class="neon">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div class="neon-signs">
+            <div class="neon-sign">UNKNOWN</div>
+            <div class="neon-counter">7,767</div>
+          </div>
+          <div class="neon-toolbar">
+            <div class="neon-btn">♪</div>
+            <div class="neon-btn">🖼</div>
+            <div class="neon-btn">文</div>
+            <div class="neon-btn">⛓</div>
+            <div class="neon-btn">🎙</div>
+          </div>
+          <div class="neon-def">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="variant">
+      <h2>10. Sticky Paper Note</h2>
+      <div class="stage stage-sticky">
+        <div class="sticky">
+          <h3>comments</h3>
+          <div class="ipa">/ˈkkɑːment/</div>
+          <div>
+            <span class="sticky-mark">unknown</span>
+            <span class="sticky-mark" style="background:#67e8f9;">7,767</span>
+          </div>
+          <div class="sticky-toolbar">
+            <div class="sticky-btn">♪</div>
+            <div class="sticky-btn">🖼</div>
+            <div class="sticky-btn">文</div>
+            <div class="sticky-btn">⛓</div>
+            <div class="sticky-btn">🎙</div>
+          </div>
+          <div class="sticky-def">
+            (noun) something that you say or write that expresses your opinion.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

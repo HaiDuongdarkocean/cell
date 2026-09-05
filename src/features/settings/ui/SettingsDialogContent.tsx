@@ -12,7 +12,7 @@ import {
 // registry. The hardcoded SUBTITLE_LANGUAGES + OVERLAY_LANGUAGE_OPTIONS arrays
 // that used to live here (~200 lines) have been removed.
 import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
-import { MultiSelect } from './MultiSelect';
+import { MultiSelect } from '@/shared/ui/MultiSelect';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { PronunciationSettingsPanel } from './PronunciationSettingsPanel';
@@ -27,12 +27,15 @@ import { LanguageProfilePanel } from './LanguageProfilePanel';
 import { Select } from '@/shared/ui/Select';
 import { HintIcon } from '@/shared/ui/HintIcon';
 import { Card } from '@/shared/ui/Card';
+import { Heading } from '@/shared/ui/Heading';
+import { Text } from '@/shared/ui/Text';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 
 import { NavItem } from '@/shared/ui/NavItem';
 import { Navigation } from '@/shared/ui/Navigation';
 import { Sidebar } from '@/shared/ui/Sidebar';
 import { VStack } from '@/shared/ui/Stack';
+import { MEDIA_QUERIES } from '@/shared/styles/breakpoints';
 
 import styles from './SettingsDialog.module.css';
 
@@ -40,6 +43,12 @@ export interface SettingsDialogContentProps {
   settings: Settings;
   onChange: (settings: Settings) => void;
   className?: string;
+  /**
+   * Render the "Settings" title in the sidebar header. Disable when the
+   * surrounding chrome already labels the section (e.g. the Universal Panel
+   * "Settings" tab) to avoid a duplicate heading.
+   */
+  showSidebarHeader?: boolean;
 }
 
 const QUALITY_OPTIONS: readonly VideoQuality[] = ['highest', '1080p', '720p', '480p', '360p', 'lowest', 'auto'];
@@ -98,7 +107,7 @@ const SHORTCUT_GROUPS: readonly { label: string; actions: readonly ShortcutActio
  * includes "None" + BCP 47 variants (zh-hans, zh-hant).
  */
 
-export function SettingsDialogContent({ settings, onChange, className }: SettingsDialogContentProps): React.JSX.Element {
+export function SettingsDialogContent({ settings, onChange, className, showSidebarHeader = true }: SettingsDialogContentProps): React.JSX.Element {
   // ADR-013: tab state for Target/Native style panel (kept here so tab switch
   // preserves state — panel unmounts/remounts would lose unsaved slider drag)
 
@@ -111,13 +120,13 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
   // Navigation orientation: horizontal chip bar on mobile (< 600px), vertical sidebar on desktop.
   // Uses native matchMedia — no dependency, O(1) listener.
   const [navOrientation, setNavOrientation] = useState<'vertical' | 'horizontal'>(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 599px)').matches
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(MEDIA_QUERIES.mobileMax).matches
       ? 'horizontal'
       : 'vertical',
   );
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-    const mq = window.matchMedia('(max-width: 599px)');
+    const mq = window.matchMedia(MEDIA_QUERIES.mobileMax);
     const handleChange = (e: MediaQueryListEvent): void =>
       setNavOrientation(e.matches ? 'horizontal' : 'vertical');
     mq.addEventListener('change', handleChange);
@@ -157,7 +166,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
           <Sidebar
             ariaLabel="Settings sidebar"
             collapsible
-            header="Settings"
+            header={showSidebarHeader ? 'Settings' : undefined}
             className={styles.sidebarWidth}
           >
             <Navigation
@@ -189,8 +198,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="media"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Media Selection</h4>
-                <p className={styles.cardDesc}>Configure how media is automatically selected.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Media Selection</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Configure how media is automatically selected.</Text>
               </div>
               <VStack gap="2" className={styles.cardBody}>
                 <SettingsRow dense>
@@ -231,8 +240,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="block"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Block</h4>
-                <p className={styles.cardDesc}>Position, scale, and auto-load behavior for the unified subtitle block.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Block</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Position, scale, and auto-load behavior for the unified subtitle block.</Text>
               </div>
               <VStack gap="2" className={styles.cardBody}>
                 <SettingsRow dense>
@@ -294,8 +303,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="languageProfile"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Language Profile</h4>
-                <p className={styles.cardDesc}>Manage language profiles for learning. One profile is active at a time.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Language Profile</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Manage language profiles for learning. One profile is active at a time.</Text>
               </div>
               <VStack className={styles.cardBody}>
                 <LanguageProfilePanel settings={settings} onChange={onChange} />
@@ -309,8 +318,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="shortcuts"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Keyboard Shortcuts</h4>
-                <p className={styles.cardDesc}>Remap keys for subtitle panel navigation actions.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Keyboard Shortcuts</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Remap keys for subtitle panel navigation actions.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <div className={styles.shortcutSection}>
@@ -357,8 +366,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="download"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Download</h4>
-                <p className={styles.cardDesc}>Download format, quality, concurrency, conversion, and filename options.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Download</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Download format, quality, concurrency, conversion, and filename options.</Text>
               </div>
               <VStack gap="2" className={styles.cardBody}>
                 <div className={styles.groupLabel}>Concurrency</div>
@@ -451,8 +460,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="cardCreator"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Card Creator</h4>
-                <p className={styles.cardDesc}>Connect to Anki via AnkiConnect. Create and update flashcards from video content.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Card Creator</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Connect to Anki via AnkiConnect. Create and update flashcards from video content.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <CardCreatorSettingsPanel
@@ -469,8 +478,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="dictionaryPopup"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Dictionary Popup</h4>
-                <p className={styles.cardDesc}>Hover or click words in subtitles to see definitions, audio, images, and Quick Add to Anki.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Dictionary Popup</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Hover or click words in subtitles to see definitions, audio, images, and Quick Add to Anki.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <DictionaryPopupSettingsPanel
@@ -487,8 +496,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="pronunciation"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Pronunciation</h4>
-                <p className={styles.cardDesc}>Choose and reorder the audio source fallback chain.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Pronunciation</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Choose and reorder the audio source fallback chain.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <PronunciationSettingsPanel
@@ -505,8 +514,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="localPronunciation"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Local Pronunciation</h4>
-                <p className={styles.cardDesc}>Use a local Forvo/Lingvo DSL audio package.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Local Pronunciation</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Use a local Forvo/Lingvo DSL audio package.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <LocalPronunciationSettingsPanel
@@ -523,8 +532,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="localPlayer"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Local Player</h4>
-                <p className={styles.cardDesc}>Configure the local video player: subtitle auto-match and resume prompt.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Local Player</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Configure the local video player: subtitle auto-match and resume prompt.</Text>
               </div>
               <VStack gap="2" className={styles.cardBody}>
                 <SettingsRow dense>
@@ -567,8 +576,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="theme"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Theme</h4>
-                <p className={styles.cardDesc}>Light/dark/system mode.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Theme</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Light/dark/system mode.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <ThemePanel />
@@ -582,8 +591,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="tts"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>TTS Voices</h4>
-                <p className={styles.cardDesc}>Enable TTS, select voices, and configure autoplay count.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>TTS Voices</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Enable TTS, select voices, and configure autoplay count.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <TtsVoiceManagerPanel
@@ -600,8 +609,8 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
               data-section="resources"
             >
               <div className={styles.cardHeader}>
-                <h4 className={styles.cardTitle}>Resources</h4>
-                <p className={styles.cardDesc}>Import and manage dictionaries and frequency lists.</p>
+                <Heading level={4} size={4} className={styles.cardTitle}>Resources</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>Import and manage dictionaries and frequency lists.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
                 <ResourcesPanel langCode={settings.subtitleOverlayTargetLanguage || 'en'} />

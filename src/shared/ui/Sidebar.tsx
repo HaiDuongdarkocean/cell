@@ -1,5 +1,5 @@
 import { useState, useId, type ReactNode } from 'react';
-import { IconButton } from './IconButton';
+import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Sidebar.module.css';
 
@@ -58,7 +58,7 @@ export function Sidebar({
         <div className={styles.topbar}>
           {header && <div className={styles.headerContent}>{header}</div>}
           {collapsible && (
-            <IconButton
+            <Button shape="circle"
               material="solid"
               type="button"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -69,7 +69,7 @@ export function Sidebar({
               onClick={toggle}
             >
               <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} />
-            </IconButton>
+            </Button>
           )}
         </div>
       )}

@@ -6,20 +6,7 @@ import {
   useCallback,
   type ReactElement,
 } from 'react';
-import {
-  Avatar,
-  Badge,
-  Breadcrumb,
-  Button,
-  Container,
-  Flex,
-  Heading,
-  Icon,
-  IconButton,
-  ListItem,
-  Tabs,
-  Text,
-} from '@/shared/ui';
+import { Avatar, Badge, Breadcrumb, Button, Container, Flex, Heading, Icon, ListItem, Tabs, Text } from '@/shared/ui';
 import { VideoPlayer } from './VideoPlayer';
 import {
   VIDEOS,
@@ -182,14 +169,14 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
           </nav>
 
           <Flex gap="3" align="center" className={styles.headerRight}>
-            <IconButton material="solid"
+            <Button shape="circle" material="solid"
               variant="ghost"
               size="md"
               aria-label="Search"
               className={styles.iconBtn}
             >
               <Icon name="search" size="sm" />
-            </IconButton>
+            </Button>
 
             <button
               type="button"
@@ -210,7 +197,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
               Login
             </Button>
 
-            <IconButton
+            <Button shape="circle"
               ref={mobileMenuBtnRef}
               material="solid"
               variant="ghost"
@@ -222,7 +209,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
               onClick={() => setMobileMenuOpen(v => !v)}
             >
               <Icon name="menu" size="sm" />
-            </IconButton>
+            </Button>
           </Flex>
         </Container>
       </header>

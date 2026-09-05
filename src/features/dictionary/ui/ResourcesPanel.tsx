@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useEffect, type ReactElement } from 'react';
 import { Alert } from '@/shared/ui/Alert';
+import { Heading } from '@/shared/ui/Heading';
 import { Dropzone } from './Dropzone';
 import { ResourceCard } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
@@ -135,7 +136,7 @@ export function ResourcesPanel({ langCode, resourceIds }: ResourcesPanelProps): 
   return (
     <div className={styles.panel} data-cell-id="resources-panel">
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Từ điển</h2>
+        <Heading level={2} size={3} className={styles.sectionTitle}>Từ điển</Heading>
         {dictState.error && (
           <Alert variant="error" description={dictState.error} data-cell-id="import-error-dictionary" />
         )}
@@ -168,7 +169,7 @@ export function ResourcesPanel({ langCode, resourceIds }: ResourcesPanelProps): 
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Danh sách tần suất</h2>
+        <Heading level={2} size={3} className={styles.sectionTitle}>Danh sách tần suất</Heading>
         {freqState.error && (
           <Alert variant="error" description={freqState.error} data-cell-id="import-error-frequency" />
         )}

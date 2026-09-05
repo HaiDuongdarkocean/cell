@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Tokenize Concept A v3 (mobile-first)</title>
+  <style>
+    :root {
+      --bg: #F5F7FA;
+      --surface: #FFFFFF;
+      --surface-soft: #F8FAFC;
+      --border: #E7EAEE;
+      --border-subtle: #F0F2F5;
+      --text: #0F172A;
+      --text-secondary: #64748B;
+      --text-tertiary: #94A3B8;
+      --primary: #0EA5E9;
+      --primary-soft: #E0F2FE;
+      --primary-contrast: #FFFFFF;
+      --radius-outer: 22px;
+      --radius-inner: 16px;
+      --radius-pill: 999px;
+      --radius-sm: 14px;
+      --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --shadow-pop: 0 -8px 40px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
+      --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 20px;
+      padding: 40px 16px;
+    }
+
+    .meta {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      max-width: 360px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    /* ─── Mobile-first container ─── */
+    .panel-outer {
+      width: min(380px, 100%);
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    .panel-inner {
+      position: relative;
+      background: var(--surface);
+      border-radius: var(--radius-inner);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 56px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .profile-select {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: var(--radius-pill);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 90px;
+      min-height: 36px;
+    }
+
+    .close {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Tokenize pill */
+    .tokenize {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      padding: 3px 4px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .master {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 1px 8px 1px 1px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-height: 36px;
+    }
+
+    .tokenize.on .master {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .switch {
+      width: 34px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s var(--ease-fluid);
+      flex-shrink: 0;
+    }
+
+    .switch.on { background: var(--primary); }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--primary-contrast);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .switch.on::after { transform: translateX(16px); }
+
+    .switch-sm {
+      width: 28px;
+      height: 16px;
+      border-radius: 8px;
+    }
+
+    .switch-sm::after { width: 12px; height: 12px; }
+    .switch-sm.on::after { transform: translateX(12px); }
+
+    .chip, .advanced {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      opacity: 0;
+      max-width: 0;
+      padding: 0;
+      margin-left: 0;
+      transform: scale(0.9);
+      transition: all 0.25s var(--ease-fluid);
+      pointer-events: none;
+    }
+
+    .tokenize.on .chip,
+    .tokenize.on .advanced {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .chip { border-radius: var(--radius-pill); }
+
+    .tokenize.on .chip {
+      max-width: 90px;
+      padding: 5px 10px;
+      margin-left: 3px;
+    }
+
+    .chip:hover { background: rgba(14, 165, 233, 0.06); color: var(--text); }
+    .chip.active { background: var(--primary-soft); color: var(--primary); }
+
+    .advanced {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+      border: none;
+      min-width: 32px;
+      min-height: 32px;
+    }
+
+    .tokenize.on .advanced {
+      max-width: 32px;
+      margin-left: 3px;
+      padding: 0;
+    }
+
+    .advanced.open {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* ─── Mobile: bottom sheet anchored at top-left of the panel bottom ─── */
+    .popover {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 0 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      box-shadow: var(--shadow-pop);
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(20px);
+      overflow: hidden;
+      transition: all 0.3s var(--ease-fluid);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .popover.show {
+      opacity: 1;
+      max-height: 240px;
+      padding: 16px;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .popover-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 14px;
+    }
+
+    .popover-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 14px;
+    }
+
+    .mode-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .mode-row:last-child { border-bottom: none; }
+
+    .mode-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .mode-opts {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .panel-body {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      font-weight: 500;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+
+    /* ─── Desktop enhancement (≥640px) ─── */
+    @media (min-width: 640px) {
+      body { padding: 48px 24px; }
+      .page-title { font-size: 28px; }
+
+      .panel-outer {
+        width: min(720px, 100%);
+        padding: 6px;
+        border-radius: 28px;
+      }
+
+      .panel-inner {
+        border-radius: 20px;
+        min-height: 220px;
+      }
+
+      .header {
+        padding: 12px 16px;
+        gap: 12px;
+      }
+
+      .profile-select {
+        min-width: 120px;
+      }
+
+      .master {
+        padding: 2px 10px 2px 2px;
+        font-size: 13px;
+      }
+
+      .tokenize.on .chip {
+        padding: 5px 12px;
+        margin-left: 4px;
+      }
+
+      /* Floating popover, top-left anchored under the pill */
+      .popover {
+        top: calc(100% + 10px);
+        bottom: auto;
+        left: 0;
+        width: 240px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(15, 23, 42, 0.04);
+        transform: translateY(-8px);
+      }
+
+      .popover.show {
+        padding: 14px;
+        transform: translateY(0);
+      }
+
+      .popover-handle { display: none; }
+
+      .popover::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        left: 24px;
+        width: 10px;
+        height: 10px;
+        background: var(--surface);
+        border-left: 1px solid var(--border);
+        border-top: 1px solid var(--border);
+        transform: rotate(45deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">Mobile-first concept A — default 375 px, bottom sheet on mobile, floating popover on desktop (resize to ≥640 px)</div>
+  <h1 class="page-title">Tokenize Concept A v3 (mobile-first)</h1>
+
+  <div class="panel-outer">
+    <div class="panel-inner">
+      <header class="header" aria-label="Universal panel header">
+        <div class="header-left">
+          <select class="profile-select" aria-label="Switch language profile">
+            <option>English</option>
+            <option>Tiếng Việt</option>
+          </select>
+        </div>
+        <div class="header-right">
+          <div class="tokenize" id="tokenize" role="group" aria-label="Tokenize controls">
+            <div class="master" role="switch" aria-checked="false" aria-label="Enable tokenize" onclick="toggleMaster()">
+              <div class="switch" id="master-switch"></div>
+              <span>Tokenize</span>
+            </div>
+            <button class="chip" data-mode="media" aria-pressed="false" onclick="toggleMode(this)">Media</button>
+            <button class="chip" data-mode="text" aria-pressed="false" onclick="toggleMode(this)">Text</button>
+            <button class="advanced" aria-label="Advanced tokenize settings" onclick="toggleAdvanced()">⋮</button>
+
+            <div class="popover" id="popover" role="dialog" aria-label="Advanced tokenize settings">
+              <div class="popover-handle"></div>
+              <h3 class="popover-title">Advanced (auto-on)</h3>
+              <div class="mode-row">
+                <span class="mode-name">Media</span>
+                <div class="mode-opts">
+                  <label class="toggle-label"><span>Status</span><div class="switch switch-sm on" role="switch" aria-checked="true" onclick="toggleOpt(this)"></div></label>
+                  <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm on" role="switch" aria-checked="true" onclick="toggleOpt(this)"></div></label>
+                </div>
+              </div>
+              <div class="mode-row">
+                <span class="mode-name">Text</span>
+                <div class="mode-opts">
+                  <label class="toggle-label"><span>Status</span><div class="switch switch-sm on" role="switch" aria-checked="true" onclick="toggleOpt(this)"></div></label>
+                  <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm on" role="switch" aria-checked="true" onclick="toggleOpt(this)"></div></label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="close" aria-label="Close panel">×</button>
+        </div>
+      </header>
+      <div class="panel-body" id="panel-body">
+        [ panel content ]
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tokenize = document.getElementById('tokenize');
+    const masterSwitch = document.getElementById('master-switch');
+    const master = document.querySelector('.master');
+    const chips = document.querySelectorAll('.chip');
+    const popover = document.getElementById('popover');
+    const advancedBtn = document.querySelector('.advanced');
+    const body = document.getElementById('panel-body');
+
+    function updateStatus() {
+      const active = Array.from(chips).filter(c => c.classList.contains('active')).map(c => c.dataset.mode);
+      body.textContent = active.length
+        ? `[ tokenize: ${active.join(' + ')} ]`
+        : '[ tokenize: on — choose Media or Text ]';
+    }
+
+    function toggleMaster() {
+      const on = !masterSwitch.classList.contains('on');
+      masterSwitch.classList.toggle('on', on);
+      master.setAttribute('aria-checked', String(on));
+      tokenize.classList.toggle('on', on);
+
+      chips.forEach(chip => {
+        chip.disabled = !on;
+        if (!on) {
+          chip.classList.remove('active');
+          chip.setAttribute('aria-pressed', 'false');
+        }
+      });
+
+      if (!on) {
+        popover.classList.remove('show');
+        advancedBtn.classList.remove('open');
+        body.textContent = '[ tokenize: off ]';
+      } else {
+        updateStatus();
+      }
+
+      document.querySelectorAll('.switch-sm').forEach(sw => {
+        sw.classList.toggle('on', on);
+        sw.setAttribute('aria-checked', String(on));
+      });
+    }
+
+    function toggleMode(el) {
+      if (el.disabled) return;
+      el.classList.toggle('active');
+      el.setAttribute('aria-pressed', String(el.classList.contains('active')));
+      updateStatus();
+    }
+
+    function toggleAdvanced() {
+      if (!tokenize.classList.contains('on')) return;
+      popover.classList.toggle('show');
+      advancedBtn.classList.toggle('open');
+    }
+
+    function toggleOpt(el) {
+      el.classList.toggle('on');
+      el.setAttribute('aria-checked', String(el.classList.contains('on')));
+    }
+  </script>
+</body>
+</html>

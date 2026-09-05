@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SkipButton.module.css';
 
@@ -30,12 +30,12 @@ export function SkipButton({
   const label = `Skip ${direction} ${seconds} seconds`;
 
   return (
-    <IconButton material="solid"
+    <Button shape="circle" material="solid"
       aria-label={label}
       className={[styles.skipBtn, className].filter(Boolean).join(' ')}
       {...rest}
     >
       <Icon name={iconName}  />
-    </IconButton>
+    </Button>
   );
 }

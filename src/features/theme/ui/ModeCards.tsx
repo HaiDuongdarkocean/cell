@@ -3,7 +3,8 @@
 // a11y: role="radiogroup", mỗi card role="radio", keyboard arrow nav.
 
 import type { KeyboardEvent } from 'react';
-import { Card } from '@/shared/ui';
+import { Card, Icon } from '@/shared/ui';
+import type { ICON_CATALOG } from '@/shared/icons';
 import type { ThemeMode } from '@/entities/theme';
 import styles from './ModeCards.module.css';
 
@@ -14,10 +15,10 @@ interface ModeCardsProps {
   onChange: (mode: ThemeMode) => void;
 }
 
-const MODES: ReadonlyArray<{ mode: ThemeMode; icon: string; label: string }> = [
-  { mode: 'light', icon: '☀️', label: 'Light' },
-  { mode: 'dark', icon: '🌙', label: 'Dark' },
-  { mode: 'system', icon: '🖥️', label: 'System' },
+const MODES: ReadonlyArray<{ mode: ThemeMode; icon: keyof typeof ICON_CATALOG; label: string }> = [
+  { mode: 'light', icon: 'sun', label: 'Light' },
+  { mode: 'dark', icon: 'moon', label: 'Dark' },
+  { mode: 'system', icon: 'settings', label: 'System' },
 ];
 
 export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Element {
@@ -48,7 +49,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
             onKeyDown={handleKeyDown}
             data-cell-id={`mode-card-${m.mode}`}
           >
-            <span className={styles.icon} aria-hidden="true">{m.icon}</span>
+            <span className={styles.icon} aria-hidden="true"><Icon name={m.icon} /></span>
             <span className={styles.label}>{m.label}</span>
           </Card>
         );

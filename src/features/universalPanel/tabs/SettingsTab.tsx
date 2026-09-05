@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { SettingsDialogContent } from '@/features/settings/ui/SettingsDialogContent';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { syncFlatFieldsToActiveProfile } from '@/entities/settings/lib/profileResolution';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/settings';
 import styles from './SettingsTab.module.css';
@@ -59,8 +60,9 @@ export function SettingsTab(): React.JSX.Element | null {
   }, [settings]);
 
   const handleChange = useCallback((next: Settings) => {
-    setSettings(next);
-    void saveSettings(next);
+    const synced = syncFlatFieldsToActiveProfile(next);
+    setSettings(synced);
+    void saveSettings(synced);
   }, []);
 
   if (!settings) {
@@ -72,6 +74,7 @@ export function SettingsTab(): React.JSX.Element | null {
       <SettingsDialogContent
         settings={settings}
         onChange={handleChange}
+        showSidebarHeader={false}
       />
     </div>
   );

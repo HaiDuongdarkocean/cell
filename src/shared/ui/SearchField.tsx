@@ -1,5 +1,5 @@
 import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from './Button';
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchField.module.css';
@@ -52,13 +52,13 @@ export function SearchField({
   };
 
   const suffix = currentValue && !disabled ? (
-    <IconButton material="solid" variant="ghost"
+    <Button shape="circle" material="solid" variant="ghost"
       className={styles.clear}
       aria-label="Clear"
       onClick={handleClear}
     >
       <Icon name="x" size={16} />
-    </IconButton>
+    </Button>
   ) : undefined;
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, type KeyboardEvent, type ReactElement } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './MultiSelect.module.css';
 
 /** A single selectable option. */
@@ -113,7 +113,7 @@ export function MultiSelect({
     <div className={styles.container} data-cell-id={testId}>
       {/* Search bar */}
       <div className={styles.searchWrap}>
-        <Icon name="search" className={styles.searchIcon} />
+        <Icon name="search" size="xs" className={styles.searchIcon} />
         <input
           ref={searchRef}
           type="search"
@@ -135,7 +135,7 @@ export function MultiSelect({
       <ul
         className={styles.list}
         role="listbox"
-        style={maxHeight !== undefined ? { '--list-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
+        style={maxHeight !== undefined ? { '--multi-select-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
       >
         {sorted.selected.length > 0 && (
           <>

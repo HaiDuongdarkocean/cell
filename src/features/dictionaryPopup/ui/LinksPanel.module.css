@@ -1,0 +1,34 @@
+/* LinksPanel — external dictionary links list. */
+
+.cellLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+.cellLinksItem {
+  height: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+}
+
+.cellLinksItem:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+}
+
+.cellLinksItem svg {
+  width: var(--space-3-5);
+  height: var(--space-3-5);
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}

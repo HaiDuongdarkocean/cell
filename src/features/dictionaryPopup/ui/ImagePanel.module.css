@@ -1,0 +1,76 @@
+/* ImagePanel — image strip, cards strip, thumbnails, nav arrows, skeleton.
+   Shared checkbox contract (cellImageCard / cellDefCheckBox / --selected) lives
+   in DictionaryPanelView.module.css. */
+
+.cellImage {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.cellImageEmptyAction {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.cellImageEmptyAction:hover {
+  text-decoration: underline;
+}
+
+.cellImageSkeleton {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+}
+
+.cellImageSkeletonCard {
+  flex: 0 0 auto;
+  width: calc(var(--space-10) * 3);
+  min-width: calc(var(--space-10) * 3);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-2xl);
+}
+
+.cellImageStrip {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+}
+
+.cellImageThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Image panel scroll controls — arrows overlaid at the two ends, vertically centered on the strip.
+   Centered with negative margin instead of transform so the SSOT Button press
+   transform (scale) is not overridden. Doubled class keeps these rules above `.button`. */
+.cellImageNavLeft.cellImageNavLeft,
+.cellImageNavRight.cellImageNavRight {
+  position: absolute;
+  top: 50%;
+  margin-top: calc(var(--space-3-5) * -1);
+  z-index: var(--z-dropdown);
+}
+
+.cellImageNavLeft.cellImageNavLeft {
+  left: 0;
+}
+
+.cellImageNavRight.cellImageNavRight {
+  right: 0;
+}

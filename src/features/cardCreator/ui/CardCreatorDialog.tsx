@@ -7,7 +7,7 @@
 import type { ReactElement } from 'react';
 import { useEffect } from 'react';
 import { Dialog } from '@/shared/ui/Dialog';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { CardCreatorOpenContext } from '../types';

@@ -1,6 +1,6 @@
 // Dropzone — drag-drop + click file picker (spec F11).
 
-import { useRef, useState, useCallback, type ReactElement, type DragEvent } from 'react';
+import { useRef, useState, useCallback, type ReactElement, type DragEvent, type KeyboardEvent } from 'react';
 import styles from './Dropzone.module.css';
 
 interface DropzoneProps {
@@ -36,6 +36,13 @@ export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): R
     if (!disabled) inputRef.current?.click();
   }, [disabled]);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  }, [handleClick]);
+
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length > 0) onFiles(files);
@@ -49,6 +56,7 @@ export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): R
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
       aria-label={label}

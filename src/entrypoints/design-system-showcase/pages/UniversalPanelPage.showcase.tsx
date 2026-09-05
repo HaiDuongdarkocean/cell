@@ -2,8 +2,10 @@ import { useState, useMemo, type ReactElement } from 'react';
 import { UniversalPanel } from '@/features/universalPanel/UniversalPanel';
 import { DictionaryTab } from '@/features/universalPanel/tabs/DictionaryTab';
 import { SettingsTab } from '@/features/universalPanel/tabs/SettingsTab';
+import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import type { UniversalPanelTab } from '@/features/universalPanel/types';
 import type { TokenizePanelState } from '@/features/tokenize/types';
+import type { PresetName } from '@/entities/theme';
 import { installMockDictionarySendMessage } from '../mockDictionary';
 import styles from './UniversalPanelPage.module.css';
 
@@ -24,14 +26,19 @@ const LANGUAGE_PROFILES = [
 ];
 
 const VALID_TABS: UniversalPanelTab[] = ['dictionary', 'studyModes', 'settings'];
+const VALID_PRESETS: PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
 
-function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab } {
+function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab; mode: 'light' | 'dark'; preset: PresetName } {
   const params = new URLSearchParams(window.location.search);
   const openParam = params.get('open');
   const tabParam = params.get('tab');
+  const modeParam = params.get('mode');
+  const presetParam = params.get('preset') as PresetName | null;
   return {
     isOpen: openParam !== 'false',
     tab: VALID_TABS.includes(tabParam as UniversalPanelTab) ? (tabParam as UniversalPanelTab) : 'dictionary',
+    mode: modeParam === 'dark' ? 'dark' : 'light',
+    preset: presetParam && VALID_PRESETS.includes(presetParam) ? presetParam : 'dawn',
   };
 }
 
@@ -76,29 +83,34 @@ export function Showcase(): ReactElement {
         <div className={styles.pagePlaceholder}>
           <span>Web Page Content (behind panel)</span>
         </div>
-        <UniversalPanel
-          isOpen={isOpen}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          onClose={() => setIsOpen(false)}
-          tokenizeState={tokenizeState}
-          onToggleTokenize={handleToggleTokenize}
-          hasMedia={hasMedia}
-          languageProfiles={LANGUAGE_PROFILES}
-          activeProfileId={activeProfileId}
-          onProfileChange={setActiveProfileId}
-          dictionaryPanel={
-            <DictionaryTab
-              langCode="en"
-              sourceLang="en"
-              targetLang="vi"
-              isOpen={isOpen}
-              initialTerm="serendipity"
-            />
-          }
-          studyModesPanel={<div data-cell-id="study-modes-panel">Study Modes</div>}
-          settingsPanel={<SettingsTab />}
-        />
+        {/* Theme boundary — mirrors the shadow-root container that
+            ShadowThemeProvider themes in the real extension. `?mode=`/`?preset=`
+            scope the panel subtree without touching document.documentElement. */}
+        <div className={styles.themeBoundary} data-theme={initial.mode} data-preset={initial.preset}>
+          <UniversalPanel
+            isOpen={isOpen}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onClose={() => setIsOpen(false)}
+            tokenizeState={tokenizeState}
+            onToggleTokenize={handleToggleTokenize}
+            hasMedia={hasMedia}
+            languageProfiles={LANGUAGE_PROFILES}
+            activeProfileId={activeProfileId}
+            onProfileChange={setActiveProfileId}
+            dictionaryPanel={
+              <DictionaryTab
+                langCode="en"
+                sourceLang="en"
+                targetLang="vi"
+                isOpen={isOpen}
+                initialTerm="serendipity"
+              />
+            }
+            studyModesPanel={<StudyModesTab />}
+            settingsPanel={<SettingsTab />}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Tokenize Header Concepts in Universal Panel</title>
+  <link rel="stylesheet" href="../../../shared/styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family), Inter, sans-serif;
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      min-height: 100dvh;
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    .concept-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .panel {
+      width: min(720px, 100%);
+      border-radius: var(--radius-2xl);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      min-height: 48px;
+    }
+
+    .panel-header-left,
+    .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .panel-body {
+      min-height: 120px;
+      padding: var(--space-5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    /* Shared chrome for the existing toggles */
+    .profile-select {
+      min-width: 140px;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+    }
+
+    .toggle-field {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .toggle-switch {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--color-border);
+      position: relative;
+    }
+
+    .toggle-switch.on {
+      background: var(--color-primary);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-surface);
+    }
+
+    .toggle-switch.on::after {
+      left: auto;
+      right: 2px;
+      background: var(--color-text-on-primary);
+    }
+
+    .close-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* ─── A. Liquid Glass Dewdrop ─── */
+    .tokenize-a {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-0-5) var(--space-2);
+      background: var(--color-glass-surface, var(--color-surface-hover));
+      border: 1px solid var(--color-glass-border, var(--color-border));
+      border-radius: var(--radius-pill);
+      backdrop-filter: blur(12px) saturate(150%);
+    }
+
+    .tokenize-a .master {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-primary);
+    }
+
+    .tokenize-a .switch {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--color-primary);
+      position: relative;
+    }
+
+    .tokenize-a .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-text-on-primary);
+    }
+
+    .tokenize-a .targets {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-0-5);
+    }
+
+    .tokenize-a .target {
+      padding: var(--space-0-5) var(--space-2);
+      border-radius: var(--radius-pill);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+    }
+
+    .tokenize-a .target.active {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+    }
+
+    /* ─── B. Minimalist Editorial ─── */
+    .tokenize-b {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-xs);
+    }
+
+    .tokenize-b .master {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: var(--color-text-primary);
+    }
+
+    .tokenize-b .switch {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--color-border);
+      position: relative;
+    }
+
+    .tokenize-b .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-surface);
+    }
+
+    .tokenize-b .targets {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--color-text-secondary);
+    }
+
+    .tokenize-b .target {
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .tokenize-b .target.active {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ─── C. Industrial Brutalist Control Board ─── */
+    .tokenize-c {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-0-5);
+      padding: var(--space-0-5);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+    }
+
+    .tokenize-c .master {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-0-5) var(--space-2);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-primary);
+      border-right: 1px solid var(--color-border);
+    }
+
+    .tokenize-c .switch {
+      width: 32px;
+      height: 18px;
+      border: 1px solid var(--color-border);
+      background: var(--color-primary);
+      position: relative;
+    }
+
+    .tokenize-c .switch::after {
+      content: '';
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      width: 14px;
+      height: 14px;
+      background: var(--color-text-on-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .tokenize-c .targets {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-0-5);
+      padding-left: var(--space-0-5);
+    }
+
+    .tokenize-c .target {
+      padding: var(--space-0-5) var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+    }
+
+    .tokenize-c .target.active {
+      background: var(--color-primary);
+      color: var(--color-text-on-primary);
+      border-color: var(--color-primary);
+    }
+
+    @media (max-width: 640px) {
+      .panel-header {
+        flex-wrap: wrap;
+        height: auto;
+      }
+      .panel-header-left,
+        .panel-header-right {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section>
+    <div class="concept-label">A. Liquid Glass Dewdrop</div>
+    <div class="panel">
+      <header class="panel-header" aria-label="Universal panel header">
+        <div class="panel-header-left">
+          <div class="profile-select">English</div>
+          <label class="toggle-field"><span>Status</span><div class="toggle-switch on"></div></label>
+          <label class="toggle-field"><span>Frequency</span><div class="toggle-switch"></div></label>
+          <label class="toggle-field"><span>Subtitle</span><div class="toggle-switch"></div></label>
+        </div>
+        <div class="panel-header-right">
+          <div class="tokenize-a" role="group" aria-label="Tokenize environment">
+            <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize">
+              <div class="switch"></div>
+              <span>Tokenize</span>
+            </div>
+            <div class="targets" role="radiogroup" aria-label="Tokenize target">
+              <button class="target active" role="radio" aria-checked="true">Media</button>
+              <button class="target" role="radio" aria-checked="false">Text</button>
+            </div>
+          </div>
+          <button class="close-btn" aria-label="Close panel">×</button>
+        </div>
+      </header>
+      <div class="panel-body">[ panel content — media page ]</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="concept-label">B. Minimalist Editorial</div>
+    <div class="panel">
+      <header class="panel-header" aria-label="Universal panel header">
+        <div class="panel-header-left">
+          <div class="profile-select">English</div>
+          <label class="toggle-field"><span>Status</span><div class="toggle-switch on"></div></label>
+          <label class="toggle-field"><span>Frequency</span><div class="toggle-switch"></div></label>
+          <label class="toggle-field"><span>Subtitle</span><div class="toggle-switch"></div></label>
+        </div>
+        <div class="panel-header-right">
+          <div class="tokenize-b" role="group" aria-label="Tokenize environment">
+            <div class="master" role="switch" aria-checked="false" aria-label="Enable tokenize">
+              <div class="switch"></div>
+              <span>Tokenize</span>
+            </div>
+            <div class="targets" role="radiogroup" aria-label="Tokenize target">
+              <button class="target active" role="radio" aria-checked="true">Media</button>
+              <span>·</span>
+              <button class="target" role="radio" aria-checked="false">Text</button>
+            </div>
+          </div>
+          <button class="close-btn" aria-label="Close panel">×</button>
+        </div>
+      </header>
+      <div class="panel-body">[ panel content — text page ]</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="concept-label">C. Industrial Brutalist Control Board</div>
+    <div class="panel">
+      <header class="panel-header" aria-label="Universal panel header">
+        <div class="panel-header-left">
+          <div class="profile-select">English</div>
+          <label class="toggle-field"><span>Status</span><div class="toggle-switch on"></div></label>
+          <label class="toggle-field"><span>Frequency</span><div class="toggle-switch"></div></label>
+          <label class="toggle-field"><span>Subtitle</span><div class="toggle-switch"></div></label>
+        </div>
+        <div class="panel-header-right">
+          <div class="tokenize-c" role="group" aria-label="Tokenize environment">
+            <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize">
+              <div class="switch"></div>
+              <span>Tokenize</span>
+            </div>
+            <div class="targets" role="radiogroup" aria-label="Tokenize target">
+              <button class="target active" role="radio" aria-checked="true">Media</button>
+              <button class="target" role="radio" aria-checked="false">Text</button>
+            </div>
+          </div>
+          <button class="close-btn" aria-label="Close panel">×</button>
+        </div>
+      </header>
+      <div class="panel-body">[ panel content — media page ]</div>
+    </div>
+  </section>
+</body>
+</html>

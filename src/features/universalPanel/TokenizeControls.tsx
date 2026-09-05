@@ -1,5 +1,5 @@
 import { useEffect, type ReactElement } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import styles from './TokenizeControls.module.css';
 
@@ -35,16 +35,16 @@ function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }
       material="solid"
       shape="pill"
       variant={active ? 'primarySubtle' : 'ghost'}
-      ripple={false}
+      fullWidth
       aria-pressed={active}
       aria-label={label}
       title={disabled ? 'No video on this page' : `${label}: ${active ? 'ON' : 'OFF'}`}
       disabled={disabled}
       onClick={onClick}
+      onPointerDown={(e): void => { e.currentTarget.blur(); }}
       data-pressed={String(active)}
       data-cell-id={testId}
-      className={styles.half}
-      leadingIcon={<Icon name={icon} size={18} />}
+      leadingIcon={<Icon name={icon} size="sm" />}
     />
   );
 }
@@ -78,7 +78,6 @@ export function TokenizeControls({
         onClick={() => onToggle('text')}
         testId="universal-panel-header-tokenize-text"
       />
-      <span className={styles.divider} aria-hidden="true" />
       <TokenizeHalf
         active={media}
         disabled={mediaDisabled}

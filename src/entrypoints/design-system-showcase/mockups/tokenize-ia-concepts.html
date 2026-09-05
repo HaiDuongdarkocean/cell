@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Tokenize Controls IA Concepts</title>
+  <style>
+    :root {
+      --bg: #F5F7FA;
+      --surface: #FFFFFF;
+      --surface-soft: #F8FAFC;
+      --surface-elevated: #FFFFFF;
+      --border: #E7EAEE;
+      --border-subtle: #F0F2F5;
+      --text: #0F172A;
+      --text-secondary: #64748B;
+      --text-tertiary: #94A3B8;
+      --primary: #0EA5E9;
+      --primary-soft: #E0F2FE;
+      --primary-contrast: #FFFFFF;
+      --radius-outer: 28px;
+      --radius-inner: 20px;
+      --radius-pill: 999px;
+      --radius-sm: 12px;
+      --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --shadow-card: 0 12px 40px rgba(15, 23, 42, 0.06);
+      --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    section {
+      width: 100%;
+      min-height: 100dvh;
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+    }
+
+    .meta {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .concept-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .concept-desc {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 14px;
+      max-width: 560px;
+      margin: 0 0 8px;
+    }
+
+    /* Panel shell */
+    .panel-outer {
+      width: min(720px, 100%);
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    .panel-inner {
+      background: var(--surface);
+      border-radius: var(--radius-inner);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(15, 23, 42, 0.04);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 64px;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .profile-select {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: var(--radius-pill);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 120px;
+      font-family: var(--font-sans);
+    }
+
+    .close {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Toggle atoms */
+    .switch {
+      width: 38px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s var(--ease-fluid);
+      flex-shrink: 0;
+    }
+
+    .switch.on {
+      background: var(--primary);
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary-contrast);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .switch.on::after {
+      transform: translateX(18px);
+    }
+
+    .switch-sm {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+    }
+
+    .switch-sm::after {
+      width: 14px;
+      height: 14px;
+    }
+
+    .switch-sm.on::after {
+      transform: translateX(14px);
+    }
+
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s var(--ease-fluid);
+    }
+
+    .toggle-pill.active {
+      background: var(--primary-soft);
+      border-color: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .toggle-pill:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .panel-body {
+      min-height: 180px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+
+    /* ─── Concept A: Central Master + Mode Island ─── */
+    .a-master-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 0;
+    }
+
+    .a-master-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .a-island {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-outer);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 12px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .a-mode {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+    }
+
+    .a-mode-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .a-mode-opts {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* ─── Concept B: Dual Mode Cards ─── */
+    .b-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .b-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s var(--ease-fluid);
+    }
+
+    .b-card.disabled {
+      opacity: 0.5;
+    }
+
+    .b-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .b-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .b-card-opts {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ─── Concept C: Compact Control Matrix ─── */
+    .c-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .c-table th,
+    .c-table td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .c-table th {
+      color: var(--text-tertiary);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 11px;
+    }
+
+    .c-table td {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .c-table .cell-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 80px;
+    }
+
+    .c-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .c-row.disabled td {
+      color: var(--text-tertiary);
+    }
+
+    @media (max-width: 640px) {
+      .b-body { grid-template-columns: 1fr; }
+      .a-mode { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .a-mode-opts { width: 100%; justify-content: space-between; }
+      .c-table th, .c-table td { padding: 10px 8px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CONCEPT A -->
+  <section>
+    <div class="meta">A. Central Master + Mode Island</div>
+    <h2 class="concept-title">Master switch kích hoạt toàn bộ, mỗi mode có hàng toggle riêng</h2>
+    <p class="concept-desc">Một master Tokenize ở giữa. Khi bật, xuất hiện đảo điều khiển với hai dòng Media và Text, mỗi dòng có Enable / Status / Frequency / Subtitle. Giữ header gọn.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class="header-right">
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+
+        <div class="panel-body" data-concept="a">
+          <div class="a-master-row">
+            <span class="a-master-label">Tokenize</span>
+            <div class="switch on" role="switch" aria-checked="true" onclick="toggleMaster(this)"></div>
+          </div>
+
+          <div class="a-island" id="a-island">
+            <div class="a-mode" data-mode="media">
+              <div class="a-mode-name">
+                <div class="switch on" role="switch" aria-checked="true" data-type="enable" onclick="toggleModeOption(this)"></div>
+                <span>Media page</span>
+              </div>
+              <div class="a-mode-opts">
+                <label class="toggle-label"><span>Status</span><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="status" onclick="toggleModeOption(this)"></div></label>
+                <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleModeOption(this)"></div></label>
+                <label class="toggle-label"><span>Subtitle</span><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="subtitle" onclick="toggleModeOption(this)"></div></label>
+              </div>
+            </div>
+
+            <div class="a-mode" data-mode="text">
+              <div class="a-mode-name">
+                <div class="switch" role="switch" aria-checked="false" data-type="enable" onclick="toggleModeOption(this)"></div>
+                <span>Text page</span>
+              </div>
+              <div class="a-mode-opts">
+                <label class="toggle-label"><span>Status</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="status" onclick="toggleModeOption(this)"></div></label>
+                <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleModeOption(this)"></div></label>
+                <label class="toggle-label"><span>Subtitle</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="subtitle" onclick="toggleModeOption(this)"></div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT B -->
+  <section>
+    <div class="meta">B. Dual Mode Cards</div>
+    <h2 class="concept-title">Hai thẻ song song, mỗi thẻ là một trạm điều khiển mode</h2>
+    <p class="concept-desc">Media page và Text page là hai card riêng biệt. User nhìn thấy cùng lúc, bật/tắt Enable trên đầu thẻ, rồi tùy chỉnh Status / Frequency / Subtitle.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class="header-right">
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+
+        <div class="b-body" data-concept="b">
+          <div class="b-card" data-mode="media">
+            <div class="b-card-header">
+              <span class="b-card-title">Media page</span>
+              <div class="switch on" role="switch" aria-checked="true" data-type="enable" onclick="toggleModeCard(this)"></div>
+            </div>
+            <div class="b-card-opts">
+              <label class="toggle-label"><span>Status</span><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="status" onclick="toggleModeCard(this)"></div></label>
+              <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleModeCard(this)"></div></label>
+              <label class="toggle-label"><span>Subtitle</span><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="subtitle" onclick="toggleModeCard(this)"></div></label>
+            </div>
+          </div>
+
+          <div class="b-card" data-mode="text">
+            <div class="b-card-header">
+              <span class="b-card-title">Text page</span>
+              <div class="switch" role="switch" aria-checked="false" data-type="enable" onclick="toggleModeCard(this)"></div>
+            </div>
+            <div class="b-card-opts">
+              <label class="toggle-label"><span>Status</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="status" onclick="toggleModeCard(this)"></div></label>
+              <label class="toggle-label"><span>Frequency</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleModeCard(this)"></div></label>
+              <label class="toggle-label"><span>Subtitle</span><div class="switch switch-sm" role="switch" aria-checked="false" data-type="subtitle" onclick="toggleModeCard(this)"></div></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCEPT C -->
+  <section>
+    <div class="meta">C. Compact Control Matrix</div>
+    <h2 class="concept-title">Bảng ma trận: dòng là mode, cột là tính năng</h2>
+    <p class="concept-desc">Giao diện giống bảng điều khiển / iOS Settings. Hai dòng Media / Text, mỗi dòng có Tokenize / Status / Frequency / Subtitle. Tối giản, dễ quét.</p>
+
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class="header-right">
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+
+        <div class="panel-body" data-concept="c">
+          <table class="c-table">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th class="cell-toggle">Tokenize</th>
+                <th class="cell-toggle">Status</th>
+                <th class="cell-toggle">Frequency</th>
+                <th class="cell-toggle">Subtitle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-mode="media">
+                <td>Media page</td>
+                <td class="cell-toggle"><div class="switch on" role="switch" aria-checked="true" data-type="enable" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="status" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm on" role="switch" aria-checked="true" data-type="subtitle" onclick="toggleMatrix(this)"></div></td>
+              </tr>
+              <tr data-mode="text">
+                <td>Text page</td>
+                <td class="cell-toggle"><div class="switch" role="switch" aria-checked="false" data-type="enable" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm" role="switch" aria-checked="false" data-type="status" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm" role="switch" aria-checked="false" data-type="frequency" onclick="toggleMatrix(this)"></div></td>
+                <td class="cell-toggle"><div class="switch switch-sm" role="switch" aria-checked="false" data-type="subtitle" onclick="toggleMatrix(this)"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function toggleMaster(el) {
+      el.classList.toggle('on');
+      const on = el.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+      const section = el.closest('section');
+      const island = section.querySelector('.a-island');
+      const modes = island.querySelectorAll('.a-mode');
+      modes.forEach(mode => {
+        const enable = mode.querySelector('[data-type="enable"]');
+        if (!on) enable.classList.remove('on');
+        enable.setAttribute('aria-checked', String(enable.classList.contains('on')));
+        mode.classList.toggle('disabled', !on);
+        const sub = mode.querySelectorAll('[data-type="status"], [data-type="frequency"], [data-type="subtitle"]');
+        sub.forEach(s => s.disabled = !on || !enable.classList.contains('on'));
+      });
+    }
+
+    function toggleModeOption(el) {
+      el.classList.toggle('on');
+      const on = el.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+      const mode = el.closest('.a-mode');
+      const isEnable = el.dataset.type === 'enable';
+      if (isEnable) {
+        const sub = mode.querySelectorAll('[data-type="status"], [data-type="frequency"], [data-type="subtitle"]');
+        sub.forEach(s => {
+          s.disabled = !on;
+          s.style.opacity = on ? '1' : '0.4';
+        });
+      }
+    }
+
+    function toggleModeCard(el) {
+      el.classList.toggle('on');
+      const on = el.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+      const card = el.closest('.b-card');
+      const isEnable = el.dataset.type === 'enable';
+      if (isEnable) {
+        card.classList.toggle('disabled', !on);
+        const sub = card.querySelectorAll('[data-type="status"], [data-type="frequency"], [data-type="subtitle"]');
+        sub.forEach(s => {
+          s.disabled = !on;
+          s.style.opacity = on ? '1' : '0.4';
+        });
+      }
+    }
+
+    function toggleMatrix(el) {
+      el.classList.toggle('on');
+      const on = el.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+      const row = el.closest('tr');
+      const isEnable = el.dataset.type === 'enable';
+      if (isEnable) {
+        row.classList.toggle('disabled', !on);
+        const sub = row.querySelectorAll('[data-type="status"], [data-type="frequency"], [data-type="subtitle"]');
+        sub.forEach(s => {
+          s.disabled = !on;
+          s.style.opacity = on ? '1' : '0.4';
+        });
+      }
+    }
+  </script>
+</body>
+</html>

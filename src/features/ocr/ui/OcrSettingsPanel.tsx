@@ -4,7 +4,7 @@
 // UI: iOS Settings card style — matches SubtitleBlockSettingsPanel pattern.
 
 import { type ReactElement, useState, useEffect, useCallback } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { Toggle, Select, SliderRow, Button, Icon, LabelGroup, SettingsRow } from '@/shared/ui';
 import {
   loadOcrSettings,
@@ -201,7 +201,7 @@ export function OcrSettingsPanel({
             icon={<Icon name="scanText" size="sm" />}
             label="Detect burned-in subtitles"
             trailing={
-              <IconButton material="solid" variant="ghost"
+              <Button shape="circle" material="solid" variant="ghost"
                 className={styles.infoBtn}
                 aria-label="What is OCR?"
                 aria-expanded={hintOpen}
@@ -209,7 +209,7 @@ export function OcrSettingsPanel({
                 onClick={() => setHintOpen((v) => !v)}
               >
                 <Icon name="info" size="sm" />
-              </IconButton>
+              </Button>
             }
           />
           <Toggle
@@ -242,7 +242,7 @@ export function OcrSettingsPanel({
                 icon={<Icon name="languages" size="sm" />}
                 label="Target language"
               />
-              <IconButton material="solid" variant="ghost"
+              <Button shape="circle" material="solid" variant="ghost"
                 className={styles.resetBtn}
                 aria-label="Reset target language to system default"
                 data-cell-id="ocr-target-lang-reset"
@@ -250,7 +250,7 @@ export function OcrSettingsPanel({
                 onClick={() => handleLangReset('targetLangOverride')}
               >
                 <Icon name="rotateCcw" size="sm" />
-              </IconButton>
+              </Button>
             </div>
             <Select
               value={resolveOcrLang(targetLangOverride, effectiveTargetLang)}
@@ -269,7 +269,7 @@ export function OcrSettingsPanel({
                 icon={<Icon name="languages" size="sm" />}
                 label="Native language"
               />
-              <IconButton material="solid" variant="ghost"
+              <Button shape="circle" material="solid" variant="ghost"
                 className={styles.resetBtn}
                 aria-label="Reset native language to system default"
                 data-cell-id="ocr-native-lang-reset"
@@ -277,7 +277,7 @@ export function OcrSettingsPanel({
                 onClick={() => handleLangReset('nativeLangOverride')}
               >
                 <Icon name="rotateCcw" size="sm" />
-              </IconButton>
+              </Button>
             </div>
             <Select
               value={resolveOcrLang(nativeLangOverride, effectiveNativeLang)}

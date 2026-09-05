@@ -13,8 +13,8 @@ import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import { ChevronRight } from 'lucide-react';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Tabs } from '@/shared/ui';
+
+import { Button, Tabs } from '@/shared/ui';
 import styles from './SubtitlePanel.module.css';
 
 export interface SubtitlePanelProps {
@@ -56,7 +56,7 @@ function SubtitlePanelImpl({
     <div className={styles.panel} data-cell-id="subtitle-panel">
       {onClose && (
         <div className={styles.header}>
-          <IconButton material="liquid" variant="transparent"
+          <Button shape="circle" material="liquid" variant="transparent"
             aria-label="Collapse subtitle list"
             title="Collapse (T)"
             data-cell-id="subtitle-panel-close"
@@ -64,7 +64,7 @@ function SubtitlePanelImpl({
             onClick={onClose}
           >
             <ChevronRight aria-hidden="true" />
-          </IconButton>
+          </Button>
           <span className={styles.title}>{filename ?? 'Subtitles'}</span>
         </div>
       )}

@@ -7,6 +7,7 @@
  */
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { CardCreatorDialog } from './CardCreatorDialog';
@@ -18,16 +19,6 @@ import type {
   CardCreatorOpenContext,
 } from '../types';
 
-import cardCreatorDialogCss from './CardCreatorDialog.module.css?inline';
-import queueSidebarCss from './QueueSidebar.module.css?inline';
-import mediaListCss from './MediaList.module.css?inline';
-import previewBlockCss from './PreviewBlock.module.css?inline';
-import fieldRowCss from './FieldRow.module.css?inline';
-import dialogCss from '@/shared/ui/Dialog.module.css?inline';
-import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import selectCss from '@/shared/ui/Select.module.css?inline';
-import iconCss from '@/shared/icons/Icon.module.css?inline';
 
 export type {
   CardCreatorAction,
@@ -55,18 +46,7 @@ export interface CardCreatorMountController {
   unmount: () => void;
 }
 
-const SHADOW_CSS = [
-  cardCreatorDialogCss,
-  queueSidebarCss,
-  mediaListCss,
-  previewBlockCss,
-  fieldRowCss,
-  dialogCss,
-  bottomSheetCss,
-  buttonCss,
-  selectCss,
-  iconCss,
-];
+const SHADOW_CSS = allModuleCss;
 
 /**
  * Mount the Card Creator dialog into a fixed full-viewport shadow host.

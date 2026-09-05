@@ -3,7 +3,7 @@ import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/ch
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { TtsDownloadProgressPayloadSchema } from '@/features/dictionaryPopup/schema';
 import { deleteVoicePack } from '@/features/tts/services/ttsDownloadManager';
-import { SettingsRow, Toggle, Select, Button, Progress, IconButton, Icon, Label } from '@/shared/ui';
+import { SettingsRow, Toggle, Select, Button, Progress, Icon, Label } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';
 import type { TtsSettings } from '@/entities/settings/types';
 import type { MessageResponse } from '@/entities/message';
@@ -169,7 +169,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                   )}
                 </div>
                 <div className={styles.actions}>
-                  <IconButton material="solid"
+                  <Button shape="circle" material="solid"
                     aria-label={hidden ? `Hiện ${language}` : `Ẩn ${language}`}
                     title={hidden ? 'Hiện' : 'Ẩn'}
                     variant="ghost"
@@ -178,8 +178,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     data-cell-id={`local-tts-hide-${language}`}
                   >
                     <Icon name="eyeOff" />
-                  </IconButton>
-                  <IconButton material="solid"
+                  </Button>
+                  <Button shape="circle" material="solid"
                     aria-label={`Tải lại ${language}`}
                     title="Tải lại"
                     variant="ghost"
@@ -189,8 +189,8 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     data-cell-id={`local-tts-redownload-${language}`}
                   >
                     <Icon name="rotateCcw" />
-                  </IconButton>
-                  <IconButton material="solid"
+                  </Button>
+                  <Button shape="circle" material="solid"
                     aria-label={`Xóa ${language}`}
                     title="Xóa"
                     variant="ghost"
@@ -200,7 +200,7 @@ export function TtsLanguagePanel({ settings, onSave }: TtsLanguagePanelProps): R
                     data-cell-id={`local-tts-delete-${language}`}
                   >
                     <Icon name="trash" />
-                  </IconButton>
+                  </Button>
                 </div>
               </SettingsRow>
             );

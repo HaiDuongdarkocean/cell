@@ -17,7 +17,6 @@ export function ContrastBadges({ result }: ContrastBadgesProps): React.JSX.Eleme
         <span
           key={pair.label}
           className={`${styles.badge} ${pair.rating.level === 'AAA' ? styles.aaa : pair.rating.level === 'AA' ? styles.aa : styles.fail}`}
-          title={`${pair.label}: ${pair.ratio.toFixed(2)}:1 (${pair.rating.level})`}
           data-cell-id={`contrast-badge-${pair.label}`}
         >
           {pair.label}: {pair.rating.level}

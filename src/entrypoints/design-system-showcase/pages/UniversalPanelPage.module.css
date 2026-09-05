@@ -35,6 +35,12 @@
   background: var(--color-background);
 }
 
+/* Theme boundary for the panel subtree — mirrors the shadow-root container
+   that ShadowThemeProvider themes in the real extension mount. */
+.themeBoundary {
+  display: contents;
+}
+
 .pagePlaceholder {
   position: absolute;
   inset: 0;

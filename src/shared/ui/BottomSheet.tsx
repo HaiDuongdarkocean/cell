@@ -1,7 +1,7 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Flex, HStack, VStack } from '.';
-import { IconButton } from './IconButton';
+import { Button } from './Button';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './BottomSheet.module.css';
 
@@ -100,14 +100,15 @@ export function BottomSheet({
             {title && (
               <h2 id="bottom-sheet-title" className={styles.title}>{title}</h2>
             )}
-            <IconButton material="solid"
+            <Button shape="circle" material="solid"
               size="sm"
+              variant="ghost"
               aria-label="Close"
               onClick={() => onOpenChange?.(false)}
               className={centerTitle ? styles.closeButtonAbsolute : styles.closeIcon}
             >
               <Icon name="x"  />
-            </IconButton>
+            </Button>
           </HStack>
         )}
         {children && <VStack gap="3">{children}</VStack>}
