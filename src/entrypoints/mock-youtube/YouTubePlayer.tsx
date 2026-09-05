@@ -121,6 +121,12 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
     v.currentTime = fraction * v.duration;
   }, []);
 
+  const seekBy = useCallback((seconds: number) => {
+    const v = videoRef.current;
+    if (!v || !v.duration) return;
+    v.currentTime = Math.max(0, Math.min(v.duration, v.currentTime + seconds));
+  }, []);
+
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -154,10 +160,18 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
       else if (e.code === 'KeyM') toggleMute();
       else if (e.code === 'KeyF') toggleFullscreen();
       else if (e.code === 'KeyC') toggleCc();
+      else if (e.key === 'Escape' && showSettings) setShowSettings(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay, toggleMute, toggleFullscreen, toggleCc]);
+  }, [togglePlay, toggleMute, toggleFullscreen, toggleCc, showSettings]);
+
+  const onSeekKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); seekBy(-5); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); seekBy(5); }
+    else if (e.key === 'Home') { e.preventDefault(); seek(0); }
+    else if (e.key === 'End') { e.preventDefault(); seek(1); }
+  }, [seekBy, seek]);
 
   const progressPct = duration > 0 ? (currentTime / duration) * 100 : 0;
   const bufferedPct = duration > 0 ? (buffered / duration) * 100 : 0;
@@ -204,10 +218,17 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
         {/* Seekbar */}
         <div
           className={styles.seekbar}
+          role="slider"
+          aria-label="Seek"
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={currentTime}
+          tabIndex={0}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             seek((e.clientX - rect.left) / rect.width);
           }}
+          onKeyDown={onSeekKeyDown}
         >
           <div className={styles.seekTrack}>
             <div className={styles.seekBuffered} style={{ width: `${bufferedPct}%` }} />
@@ -246,12 +267,14 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
               <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" /></svg>
             </button>
             {showSettings && (
-              <div className={styles.settingsMenu} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.settingsMenu} role="menu" onClick={(e) => e.stopPropagation()}>
                 <div className={styles.settingsHeader}>Playback speed</div>
                 {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map(rate => (
                   <button
                     key={rate}
                     className={styles.settingsRow}
+                    role="menuitemradio"
+                    aria-checked={playbackRate === rate}
                     onClick={() => changeRate(rate)}
                   >
                     <span>{rate === 1 ? 'Normal' : `${rate}x`}</span>
