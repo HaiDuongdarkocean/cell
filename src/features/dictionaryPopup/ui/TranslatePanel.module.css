@@ -1,6 +1,6 @@
 /* TranslatePanel — translation blocks, target/native text, skeleton.
    Shared checkbox contract (cellTranslateBlock / cellDefCheckBox / --selected)
-   lives in DictionaryPanelView.module.css. */
+   lives in DictionaryCheckable.module.css. */
 
 .cellTranslate {
   padding: 0 var(--space-2);

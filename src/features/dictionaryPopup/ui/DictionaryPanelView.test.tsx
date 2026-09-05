@@ -19,7 +19,6 @@ jest.mock('./CandidateView', () => ({
     return require('react').createElement(
       'article',
       {
-        id: `dictionary-candidate-${props.index}`,
         'data-cell-id': `dictionary-candidate-${props.index}`,
         'data-candidate-term': props.candidate.term,
       },

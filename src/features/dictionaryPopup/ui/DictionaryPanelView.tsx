@@ -270,6 +270,7 @@ export function DictionaryPanelView({
                     setSearchTerm(term);
                     search(term);
                   }}
+                  data-cell-id={`dictionary-search-history-term-${term}`}
                 >
                   {term}
                 </Button>
@@ -278,6 +279,7 @@ export function DictionaryPanelView({
                   aria-label={`Remove ${term} from recent searches`}
                   title={`Remove ${term}`}
                   onClick={() => handleRemoveHistory(term)}
+                  data-cell-id={`dictionary-search-history-remove-${term}`}
                 >
                   <Icon name="x"  />
                 </Button>

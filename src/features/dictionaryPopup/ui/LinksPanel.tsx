@@ -1,5 +1,4 @@
 import { Icon } from '@/shared/ui/Icon';
-import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import styles from './LinksPanel.module.css';
 import type { ExternalDictLink } from '../types';
@@ -16,11 +15,6 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
           size="md"
           icon={<Icon name="link"  />}
           title="No external links"
-          action={
-            <Button material="solid" variant="outline" size="md" onClick={() => { /* open settings */ }}>
-              Open settings
-            </Button>
-          }
           data-cell-id="dictionary-links-empty"
         />
       ) : (

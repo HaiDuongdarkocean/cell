@@ -89,7 +89,6 @@ export function AudioPanel({
                   className={styles.cellAudioPlay}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
-                    (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, hasUrl: !!itemUrl, url: itemUrl?.substring(0,50), activeGroup}));
                     if (isTts || !itemUrl) {
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();

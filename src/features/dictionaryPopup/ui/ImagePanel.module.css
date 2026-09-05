@@ -1,6 +1,6 @@
 /* ImagePanel — image strip, cards strip, thumbnails, nav arrows, skeleton.
    Shared checkbox contract (cellImageCard / cellDefCheckBox / --selected) lives
-   in DictionaryPanelView.module.css. */
+   in DictionaryCheckable.module.css. */
 
 .cellImage {
   padding: 0;

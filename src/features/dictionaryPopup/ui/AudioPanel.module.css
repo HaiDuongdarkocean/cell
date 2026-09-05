@@ -1,6 +1,6 @@
 /* AudioPanel — audio subtab bar, item rows, play button, skeleton.
    Shared checkbox contract (cellAudioItem / cellDefCheckBox / --checked) lives
-   in DictionaryPanelView.module.css — the unified checkbox SSOT block. */
+   in DictionaryCheckable.module.css — the unified checkbox SSOT block. */
 
 .cellAudio {
   padding: 0 var(--space-2);
