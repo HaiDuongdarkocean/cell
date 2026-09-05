@@ -267,19 +267,19 @@ export function CandidateView({
         {candidate.definitions.length === 0 ? (
           <EmptyState
             size="md"
-            icon={<Icon name="info"  />}
-            description="No definitions found. Import a dictionary in Settings → Resources."
-            action={onOpenSettings && (
-              <Button
-                variant="outline"
-                material="solid"
-                size="sm"
-                onClick={onOpenSettings}
-                data-cell-id="dictionary-import-dictionary"
-              >
-                <Icon name="library"  /> Import a dictionary
-              </Button>
-            )}
+            description={onOpenSettings ? (
+              <>
+                No definitions found —{' '}
+                <button
+                  type="button"
+                  className={styles.cellEmptyLink}
+                  onClick={onOpenSettings}
+                  data-cell-id="dictionary-import-dictionary"
+                >
+                  Import a dictionary
+                </button>
+              </>
+            ) : 'No definitions found. Import a dictionary in Settings → Resources.'}
             data-cell-id="dictionary-definitions-empty"
           />
         ) : (

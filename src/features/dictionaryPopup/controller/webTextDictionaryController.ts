@@ -787,7 +787,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         onOpenSettings: deps.panelController
-          ? () => { void openSettingsSection(deps.panelController, 'resources'); }
+          ? () => { closePopup(); void openSettingsSection(deps.panelController, 'resources'); }
           : undefined,
         dismissOnOutsideClick: !isSheetMode(),
       };
@@ -932,7 +932,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
         onOpenSettings: deps.panelController
-          ? () => { void openSettingsSection(deps.panelController, 'resources'); }
+          ? () => { closePopup(); void openSettingsSection(deps.panelController, 'resources'); }
           : undefined,
         dismissOnOutsideClick: !isSheetMode(),
       };
