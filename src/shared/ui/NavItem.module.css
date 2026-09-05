@@ -28,6 +28,7 @@
   container-type: inline-size;
   transition: background-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
+              filter var(--duration-fast) var(--ease-standard),
               height var(--duration-normal) ease-in-out,
               padding var(--duration-normal) ease-in-out,
               border-radius var(--duration-normal) ease-in-out,
@@ -35,8 +36,7 @@
 }
 
 .item:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+  filter: brightness(1.05);
 }
 
 .item:focus-visible {
