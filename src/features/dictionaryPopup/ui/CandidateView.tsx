@@ -101,7 +101,6 @@ export function CandidateView({
   return (
     <article
       className={styles.candidate}
-      id={`dictionary-candidate-${index}`}
       data-cell-id={`dictionary-candidate-${index}`}
     >
       <header className={styles.cellHeader} data-cell-id="dictionary-header">
@@ -174,6 +173,7 @@ export function CandidateView({
               aria-label="Play sentence audio"
               title="Play sentence audio"
               onClick={panel.playSentence}
+              data-cell-id="dictionary-play-sentence"
             >
               <Icon name="messageSquare"  />
             </Button>
@@ -247,11 +247,13 @@ export function CandidateView({
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
         {panel.activeTab === 'pronunciation' && (
-          <PronunciationPanel
-            pronunciation={pronunciation}
-            audioUrl={selectedWordAudioUrl}
-            audioSource={selectedWordAudio ? toAudioEngineKind(selectedWordAudio.source) : undefined}
-          />
+          <div data-cell-id="dictionary-pronunciation-panel">
+            <PronunciationPanel
+              pronunciation={pronunciation}
+              audioUrl={selectedWordAudioUrl}
+              audioSource={selectedWordAudio ? toAudioEngineKind(selectedWordAudio.source) : undefined}
+            />
+          </div>
         )}
 
         <section className={panelStyles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>

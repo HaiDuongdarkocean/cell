@@ -30,6 +30,12 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
+      command: 'node scripts/serve-mock-pages.mjs --stream --no-build',
+      url: 'http://127.0.0.1:4321/index.html',
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
       command: 'npx http-server dist -p 8124 -c-1 -d false -P http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
       url: 'http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
       timeout: 120_000,
