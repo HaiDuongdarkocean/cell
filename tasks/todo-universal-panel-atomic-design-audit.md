@@ -116,3 +116,23 @@
   - [ ] M3 audit script pass on all audited paths
   - [ ] Screenshots re-captured (light + dark, all 3 tabs) — no popup on nav clicks, no duplicate header, no global theme overwrite
   - [ ] `COMPONENT_INVENTORY.json` committed
+
+---
+
+## Phase 6: Extended audit (post-panel areas) — 2026-09-05
+
+Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
+(4 parallel audits: popup / sidepanel+launcher / subtitle / srs-study+sheets)
+
+- [ ] **T11** — P0 sweep (9 items):
+  - [ ] `--stroke-width-xl` undefined → existing token or register (`SelectionBar.module.css:38`)
+  - [ ] `VideoCard` custom listbox → shared `Select` (keyboard + ARIA)
+  - [ ] `CueList` → `role="list"`/`listitem`; timestamp span → `Button`
+  - [ ] Launcher tiles/Settings/Add buttons — wire or `disabled`
+  - [ ] `LauncherSearchBar` input → `aria-label`
+  - [ ] `SubtitleHint` → tabIndex + Enter/Space (or `Button`)
+  - [ ] `--shadow-text-soft`/`--shadow-text-cinema` undefined → register or remove (`subtitleUI.ts`)
+- [ ] **T12** — P1 atom migrations (~32): Badge ×3, Heading ×2, Progress, SelectableCard ×2, Button copy ×2, Select/SearchField/Input ×10, Textarea (UserCssPanel), `role="listbox"` trackList, `Sheet` a11y (title/focusTrap/close), `--color-danger` undefined fix
+- [ ] **T13** — P2 tokenization + dead CSS: opacity tokens, `ease`→`--ease-*`, `inset 0 0 0 1px`→`--border-width-hairline`, drop `var(--t, literal)` fallbacks for registered tokens, dead selectors (srs App ×10, SubtitlePanel ×5, SubtitleManagerPanel ×3, SubtitleSearchPanel ×1), destructive `ghost`→`destructive`, `@/shared/icons/Icon`→`@/shared/ui/Icon` barrel, Button CSS overrides (`.toolRow`, `.audioButton`…)
+- [ ] **T14** — P3 document intentional: subtitle content px sizing, preview scale, error-boundary crash styles, `SHEET_MARGIN_PX`
+- [ ] **T15** — Inventory: confirm generator picks up `SelectableCard`/`MultiSelect`/`BottomSheet` (shared/ui-only scan — feature components like `CueStrip`/`StepEditor`/`Dropzone` are out of generator scope by design)

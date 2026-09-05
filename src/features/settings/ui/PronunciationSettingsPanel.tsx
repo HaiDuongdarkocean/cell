@@ -3,7 +3,8 @@ import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { Toggle } from '@/shared/ui/Toggle';
 import { VStack } from '@/shared/ui/Stack';
 import type { AudioEngineKind, PronunciationSettings } from '@/entities/settings/types';
-import styles from './SettingsDialog.module.css';
+import dialogStyles from './SettingsDialog.module.css';
+import styles from './PronunciationSettingsPanel.module.css';
 
 interface PronunciationSettingsPanelProps {
   settings: PronunciationSettings;
@@ -38,8 +39,8 @@ export function PronunciationSettingsPanel({
   return (
     <VStack gap="0">
       <SettingsRow dense stacked>
-        <span className={styles.rowLabel}>Audio source priority</span>
-        <span className={styles.cardDesc}>
+        <span className={dialogStyles.rowLabel}>Audio source priority</span>
+        <span className={dialogStyles.cardDesc}>
           Engines are tried in order. Drag is not supported; use the up/down buttons to reorder.
         </span>
       </SettingsRow>
@@ -73,7 +74,7 @@ export function PronunciationSettingsPanel({
       </ol>
 
       <SettingsRow dense>
-        <span className={styles.rowLabel}>Download eSpeak TTS data</span>
+        <span className={dialogStyles.rowLabel}>Download eSpeak TTS data</span>
         <Toggle
           checked={downloadEspeakTtsData}
           onChange={(next) => onChange({ ...settings, downloadEspeakTtsData: next })}

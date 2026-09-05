@@ -23,7 +23,8 @@ import {
   resolveProfile,
   validateLanguageProfile,
 } from '@/entities/settings';
-import styles from './SettingsDialog.module.css';
+import dialogStyles from './SettingsDialog.module.css';
+import styles from './LanguageProfilePanel.module.css';
 
 interface LanguageProfilePanelProps {
   readonly settings: Settings;
@@ -200,7 +201,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
   return (
     <>
       <SettingsRow dense stacked>
-        <label className={styles.rowLabel} htmlFor="set-universal-native-lang">Universal native language</label>
+        <label className={dialogStyles.rowLabel} htmlFor="set-universal-native-lang">Universal native language</label>
         <SearchableSelect
           testId="universal-native-language"
           dataTestId="universal-native-language"
@@ -345,12 +346,12 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
 
           {draft.mode === 'edit' ? (
             <SettingsRow dense stacked>
-              <label className={styles.rowLabel}>Target language</label>
+              <label className={dialogStyles.rowLabel}>Target language</label>
               <div className={styles.profileReadonly}>{targetLabel(draft.target)}</div>
             </SettingsRow>
           ) : (
             <SettingsRow dense stacked>
-              <label className={styles.rowLabel} htmlFor="set-profile-target">Target language *</label>
+              <label className={dialogStyles.rowLabel} htmlFor="set-profile-target">Target language *</label>
               <SearchableSelect
                 testId="profile-target-language"
                 dataTestId="profile-target-language"
@@ -364,7 +365,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
 
           <SettingsRow dense stacked>
             <HStack align="center" justify="between">
-              <label className={styles.rowLabel}>Native language</label>
+              <label className={dialogStyles.rowLabel}>Native language</label>
               <Toggle
                 checked={draft.useUniversalNative}
                 onChange={(checked) => setDraft((d) => ({ ...d, useUniversalNative: checked }))}
