@@ -1,5 +1,5 @@
 .definition {
-  margin: 0;
+  margin: var(--space-0);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-regular);

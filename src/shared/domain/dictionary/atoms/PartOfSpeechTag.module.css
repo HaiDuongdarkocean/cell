@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--badge-padding-y) var(--badge-padding-x);
+  padding: var(--space-0-5) var(--space-1-5);
   border-radius: var(--radius-pill);
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium);
