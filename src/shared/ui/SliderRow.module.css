@@ -64,7 +64,7 @@
   bottom: calc(var(--touch-target) / 2 + var(--space-1));
   transform: translateX(-50%);
   background: var(--color-primary);
-  color: var(--color-text-on-primary, #ffffff);
+  color: var(--color-text-on-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;

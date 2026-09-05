@@ -180,3 +180,18 @@ The content script's `WebTriggerController` attaches `document` level `mouseup`/
 ---
 
 *Generated with Devin. Screenshots and snapshots are in `docs/audits/screenshots/`.*
+
+---
+
+## Post-remediation verification (addendum)
+
+After the atomic-design + SSOT remediation commits, the panel was re-screenshotted
+in light and dark modes across all three tabs (Dictionary / Study Modes /
+Settings) at 1280×800. No visual regressions observed: SelectableCard active
+states, shared Toggle/Select/Heading/Text controls, dictionary sub-panels after
+the CSS module split, and the settings inner sidebar all render correctly in
+both themes. `e2e/showcase-universal-panel-bugs.spec.ts` — 7/7 pass.
+
+Status: **all findings closed.** Playwright webServer config already sets
+`reuseExistingServer: !process.env.CI` — the earlier `EADDRINUSE :8123` was a
+stale dev server, not a config gap.
