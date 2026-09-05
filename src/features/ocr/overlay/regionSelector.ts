@@ -52,6 +52,17 @@ export function formatPct(pct: number): number {
   return Math.round(pct);
 }
 
+const HANDLE_LABELS: Record<string, string> = {
+  nw: 'north-west corner resize handle',
+  n: 'top edge resize handle',
+  ne: 'north-east corner resize handle',
+  e: 'right edge resize handle',
+  se: 'south-east corner resize handle',
+  s: 'bottom edge resize handle',
+  sw: 'south-west corner resize handle',
+  w: 'left edge resize handle',
+};
+
 const FONT = STATIC_TOKENS['--font-family'] ?? 'sans-serif';
 const ACCENT = STATIC_TOKENS['--overlay-ocr-region-accent'] ?? '#0066ff';
 const FILL = STATIC_TOKENS['--overlay-ocr-region-fill'] ?? 'rgba(0, 102, 255, 0.05)';
@@ -154,6 +165,23 @@ export class RegionSelector {
    *  sits at stale shell-space coordinates until a manual action triggers render. */
   private resizeObserver: ResizeObserver | null = null;
   private boundOnWindowResize: (() => void) | null = null;
+  /** Keyboard resize for handles: Arrow keys move the active handle 10px. */
+  private onHandleKeyDown = (e: KeyboardEvent): void => {
+    const target = e.currentTarget as HTMLElement | null;
+    const handle = target?.dataset.handle ?? '';
+    if (!handle || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    if (!this.container) return;
+    const rect = this.container.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const stepPx = 10;
+    const dxPct = ((e.key === 'ArrowLeft' ? -stepPx : e.key === 'ArrowRight' ? stepPx : 0) / rect.width) * 100;
+    const dyPct = ((e.key === 'ArrowUp' ? -stepPx : e.key === 'ArrowDown' ? stepPx : 0) / rect.height) * 100;
+    const base = this.pendingRegion ?? this.currentRegion;
+    this.pendingRegion = this.computeResizedRegion(base, handle, dxPct, dyPct);
+    this.render();
+    this.callbacks.onRegionChange(this.toIntrinsicRegion(this.pendingRegion));
+  };
 
   // ─── Split dual-stream (spec ocr-split-dual-stream) ───
   private splitEnabled = false;
@@ -506,7 +534,11 @@ export class RegionSelector {
         const h = document.createElement('div');
         h.className = 'cell-ocr-region-handle';
         h.dataset.handle = pos;
+        h.setAttribute('role', 'separator');
+        h.setAttribute('tabindex', '0');
+        h.setAttribute('aria-label', HANDLE_LABELS[pos] ?? `${pos} resize handle`);
         h.addEventListener('mousedown', this.onEditResizeStart);
+        h.addEventListener('keydown', this.onHandleKeyDown);
         this.rect.appendChild(h);
         this.handles.push(h);
       }
@@ -601,10 +633,16 @@ export class RegionSelector {
     this.actionBar.style.display = visible ? '' : 'none';
     this.actionBarInner.dataset.collapsed = String(this.actionBarCollapsed);
     const toggleBtn = this.actionBar.querySelector('.cell-ocr-action-toggle');
-    if (toggleBtn) (toggleBtn as HTMLButtonElement).dataset.collapsed = String(this.actionBarCollapsed);
+    if (toggleBtn) {
+      (toggleBtn as HTMLButtonElement).dataset.collapsed = String(this.actionBarCollapsed);
+      toggleBtn.setAttribute('aria-expanded', String(!this.actionBarCollapsed));
+    }
     // Update split button active state.
     const splitBtn = this.actionBarInner.querySelector('[data-cell-id="ocr-action-split"]');
-    if (splitBtn) (splitBtn as HTMLButtonElement).dataset.active = String(this.splitEnabled);
+    if (splitBtn) {
+      (splitBtn as HTMLButtonElement).dataset.active = String(this.splitEnabled);
+      splitBtn.setAttribute('aria-pressed', String(this.splitEnabled));
+    }
   }
 
   private iconElement(svg: string): HTMLElement {
@@ -691,6 +729,16 @@ export class RegionSelector {
     document.addEventListener('mouseup', this.onDragEnd);
   };
 
+  /** Apply a resize delta to a region from a given handle — shared by pointer drag and keyboard. */
+  private computeResizedRegion(sr: CustomRegion, handle: string, dxPct: number, dyPct: number): CustomRegion {
+    let { xPct, yPct, widthPct, heightPct } = sr;
+    if (handle.includes('e')) widthPct = Math.max(1, Math.min(100 - xPct, sr.widthPct + dxPct));
+    if (handle.includes('w')) { const newW = Math.max(1, Math.min(xPct + widthPct - 1, sr.widthPct - dxPct)); xPct = sr.xPct + (sr.widthPct - newW); widthPct = newW; }
+    if (handle.includes('s')) heightPct = Math.max(1, Math.min(100 - yPct, sr.heightPct + dyPct));
+    if (handle.includes('n')) { const newH = Math.max(1, Math.min(yPct + heightPct - 1, sr.heightPct - dyPct)); yPct = sr.yPct + (sr.heightPct - newH); heightPct = newH; }
+    return { xPct, yPct, widthPct, heightPct };
+  }
+
   private onDragMove = (e: MouseEvent): void => {
     if (!this.dragState || !this.video || !this.container) return;
     // Use the container's rect (same as onSelectStart) — the rect is positioned
@@ -718,13 +766,7 @@ export class RegionSelector {
       const dxPct = ((e.clientX - this.dragState.startX) / rect.width) * 100;
       const dyPct = ((e.clientY - this.dragState.startY) / rect.height) * 100;
       const sr = this.dragState.startRegion;
-      const handle = this.dragState.handle;
-      let { xPct, yPct, widthPct, heightPct } = sr;
-      if (handle.includes('e')) widthPct = Math.max(1, Math.min(100 - xPct, sr.widthPct + dxPct));
-      if (handle.includes('w')) { const newW = Math.max(1, Math.min(xPct + widthPct - 1, sr.widthPct - dxPct)); xPct = sr.xPct + (sr.widthPct - newW); widthPct = newW; }
-      if (handle.includes('s')) heightPct = Math.max(1, Math.min(100 - yPct, sr.heightPct + dyPct));
-      if (handle.includes('n')) { const newH = Math.max(1, Math.min(yPct + heightPct - 1, sr.heightPct - dyPct)); yPct = sr.yPct + (sr.heightPct - newH); heightPct = newH; }
-      this.pendingRegion = { xPct, yPct, widthPct, heightPct };
+      this.pendingRegion = this.computeResizedRegion(sr, this.dragState.handle, dxPct, dyPct);
     }
 
     if (this.pendingRegion) {
