@@ -134,24 +134,27 @@
   filter: brightness(0.95);
 }
 
+/* Theme-invariant pastel chips (--chip-status-* literals, same in every
+   theme): soft pastel fill + deep-shade text, and stays independent of
+   --color-token-status-* which also colors tokenized words. */
 .cellHeaderStatus--unknown {
-  background: var(--color-token-status-unknown-bg);
-  color: var(--color-token-status-unknown);
+  background: var(--chip-status-unknown-bg);
+  color: var(--chip-status-unknown-fg);
 }
 
 .cellHeaderStatus--tracking {
-  background: var(--color-token-status-tracking-bg);
-  color: var(--color-token-status-tracking);
+  background: var(--chip-status-tracking-bg);
+  color: var(--chip-status-tracking-fg);
 }
 
 .cellHeaderStatus--known {
-  background: var(--color-token-status-known-bg);
-  color: var(--color-token-status-known);
+  background: var(--chip-status-known-bg);
+  color: var(--chip-status-known-fg);
 }
 
 .cellHeaderStatus--ignore {
-  background: var(--color-token-status-ignore-bg);
-  color: var(--color-token-status-ignore);
+  background: var(--chip-status-ignore-bg);
+  color: var(--chip-status-ignore-fg);
 }
 
 .cellHeaderFrequency {
@@ -166,41 +169,46 @@
   line-height: var(--leading-none);
 }
 
+/* Two-tone capsule: source = tint bg + strong fg, rank = the inverse pair
+   (strong bg + tint fg). Both segments read from --freq-* set per band, so
+   adding a band only needs one line. Requires solid --freq-bg values —
+   dark theme uses deep shades, not alpha tints, so the inverted rank text
+   stays readable. */
 .cellHeaderFrequencySource {
   padding: var(--space-1) var(--space-2-5);
-  background: var(--color-primary);
-  color: var(--color-overlay-text);
+  background: var(--freq-bg, var(--color-primary));
+  color: var(--freq-fg, var(--color-overlay-text));
 }
 
 .cellHeaderFrequencyRank {
   padding: var(--space-1) var(--space-2-5);
-  background: transparent;
-  color: var(--color-text-secondary);
+  background: var(--freq-fg, transparent);
+  color: var(--freq-bg, var(--color-text-secondary));
 }
 
-.cellHeaderFrequency--core .cellHeaderFrequencySource {
-  background: var(--color-token-freq-core-bg);
-  color: var(--color-token-freq-core-fg);
+.cellHeaderFrequency--core {
+  --freq-bg: var(--color-token-freq-core-bg);
+  --freq-fg: var(--color-token-freq-core-fg);
 }
 
-.cellHeaderFrequency--common .cellHeaderFrequencySource {
-  background: var(--color-token-freq-common-bg);
-  color: var(--color-token-freq-common-fg);
+.cellHeaderFrequency--common {
+  --freq-bg: var(--color-token-freq-common-bg);
+  --freq-fg: var(--color-token-freq-common-fg);
 }
 
-.cellHeaderFrequency--general .cellHeaderFrequencySource {
-  background: var(--color-token-freq-general-bg);
-  color: var(--color-token-freq-general-fg);
+.cellHeaderFrequency--general {
+  --freq-bg: var(--color-token-freq-general-bg);
+  --freq-fg: var(--color-token-freq-general-fg);
 }
 
-.cellHeaderFrequency--advanced .cellHeaderFrequencySource {
-  background: var(--color-token-freq-advanced-bg);
-  color: var(--color-token-freq-advanced-fg);
+.cellHeaderFrequency--advanced {
+  --freq-bg: var(--color-token-freq-advanced-bg);
+  --freq-fg: var(--color-token-freq-advanced-fg);
 }
 
-.cellHeaderFrequency--rare .cellHeaderFrequencySource {
-  background: var(--color-token-freq-rare-bg);
-  color: var(--color-token-freq-rare-fg);
+.cellHeaderFrequency--rare {
+  --freq-bg: var(--color-token-freq-rare-bg);
+  --freq-fg: var(--color-token-freq-rare-fg);
 }
 
 .cellDefRow {

@@ -288,6 +288,23 @@
   background: var(--color-primary-active);
 }
 
+/* Dimmed — primary fill rendered at disabled-like opacity; the caller's
+   aria-selected/aria-pressed marks the lit item, hover lights it fully. */
+.solid.primary.dimmed {
+  opacity: var(--button-primary-dimmed-opacity);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .solid.primary.dimmed:hover {
+    opacity: 1;
+  }
+}
+
+.solid.primary.dimmed:is([aria-selected="true"], [aria-pressed="true"]) {
+  opacity: 1;
+}
+
 .solid.primarySubtle {
   background: var(--color-primary-subtle);
   color: var(--color-text-accent);

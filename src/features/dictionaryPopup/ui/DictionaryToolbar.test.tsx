@@ -38,11 +38,11 @@ describe('DictionaryToolbar', () => {
       />,
     );
 
-    expect(screen.getByTestId('dictionary-tab-audio')).toHaveTextContent('2');
-    expect(screen.getByTestId('dictionary-tab-image')).not.toHaveTextContent('0');
-    expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('1');
-    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('1');
+    expect(screen.getByTestId('dictionary-badge-audio')).toHaveTextContent('2');
+    expect(screen.queryByTestId('dictionary-badge-image')).not.toBeInTheDocument();
+    expect(screen.getByTestId('dictionary-badge-translate')).toHaveTextContent('1');
+    expect(screen.getByTestId('dictionary-badge-pronunciation')).toHaveTextContent('1');
     // Links tab does not show a badge
-    expect(screen.getByTestId('dictionary-tab-links')).not.toHaveTextContent('3');
+    expect(screen.queryByTestId('dictionary-badge-links')).not.toBeInTheDocument();
   });
 });

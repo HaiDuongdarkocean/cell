@@ -35,23 +35,29 @@ export function DictionaryToolbar({
       {TABS.map((tab) => {
         const active = activeTab === tab.key;
         const count = counts[tab.key] ?? 0;
+        /* Badge must escape .button's overflow:hidden (needed for the
+           ripple), so it lives on a sibling wrapper — also keeps it
+           undimmed while the tab sits at dimmed opacity. */
         return (
-          <Button material="solid" variant={active ? 'primary' : 'ghost'}
-            key={tab.key}
-            role="tab"
-            aria-selected={active}
-            aria-pressed={active}
-            aria-label={tab.label}
-            title={tab.label}
-            className={styles.cellToolbarTab}
-            onClick={() => onSelect(tab.key)}
-            data-cell-id={`dictionary-tab-${tab.key}`}
-          >
-            <Icon name={tab.icon}  />
-            <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
+          <span key={tab.key} className={styles.cellToolbarItem} role="presentation">
+            <Button material="solid" variant="primary" dimmed={!active}
+              role="tab"
+              aria-selected={active}
+              aria-pressed={active}
+              aria-label={tab.label}
+              title={tab.label}
+              className={styles.cellToolbarTab}
+              onClick={() => onSelect(tab.key)}
+              data-cell-id={`dictionary-tab-${tab.key}`}
+            >
+              <Icon name={tab.icon}  />
+              <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
+            </Button>
             {/* Links are static shortcuts, not selected materials — no count badge. */}
-            {count > 0 && tab.key !== 'links' && <span className={styles.cellToolbarBadge}>{count}</span>}
-          </Button>
+            {count > 0 && tab.key !== 'links' && (
+              <span className={styles.cellToolbarBadge} data-cell-id={`dictionary-badge-${tab.key}`}>{count}</span>
+            )}
+          </span>
         );
       })}
     </div>
