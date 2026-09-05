@@ -51,6 +51,7 @@ export function LauncherUserBar() {
         variant="ghost"
         aria-label="Settings"
         title="Settings"
+        disabled
       >
         <Icon name="settings" size="md" />
       </Button>
@@ -59,6 +60,7 @@ export function LauncherUserBar() {
         variant="ghost"
         aria-label="Add"
         title="Add"
+        disabled
       >
         <Icon name="plus" size="md" />
       </Button>

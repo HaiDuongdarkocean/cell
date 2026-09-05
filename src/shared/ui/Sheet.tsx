@@ -49,6 +49,7 @@ export function Sheet({
     sheetRef,
     style,
     onPointerDownHandle,
+    onKeyDownHandle,
     onPointerDownContent,
   } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange });
   useFocusTrap(sheetRef, open);
@@ -80,15 +81,18 @@ export function Sheet({
     >
       <div
         className={styles.handle}
-        role="button"
+        role="separator"
+        aria-orientation="horizontal"
         tabIndex={0}
-        aria-label="Close sheet"
+        aria-label="Resize sheet. Enter or Space to close."
         onPointerDown={onPointerDownHandle}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onClose?.();
+            return;
           }
+          onKeyDownHandle(e);
         }}
       />
       <div

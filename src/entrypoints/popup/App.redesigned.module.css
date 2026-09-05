@@ -102,22 +102,6 @@
   margin-bottom: var(--space-2);
 }
 
-/* === Download count badge in tab trigger === */
-.tabBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--space-4);
-  height: var(--space-4);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-primary-foreground-soft);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-none);
-  font-variant-numeric: tabular-nums;
-}
 
 /* === Lists === */
 .mediaList,

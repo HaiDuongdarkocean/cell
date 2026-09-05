@@ -61,6 +61,9 @@ export interface UseSheetResult {
   readonly style: CSSProperties;
   /** Attach to drag handle element's onPointerDown. */
   readonly onPointerDownHandle: (e: PointerEvent<HTMLDivElement>) => void;
+  /** Attach to drag handle element's onKeyDown — ArrowUp/Down resize,
+   *  Home/End → max/min (WAI-ARIA window-splitter pattern). */
+  readonly onKeyDownHandle: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   /** Attach to content element's onPointerDown. */
   readonly onPointerDownContent: (e: PointerEvent<HTMLDivElement>) => void;
 }
@@ -259,6 +262,23 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     try { target.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   }, []);
 
+  const SHEET_KEY_STEP_PX = 32; // equals --space-8
+  const onKeyDownHandle = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const avail = getAvailableHeight();
+    const min = getEffectiveMin();
+    let next: number | null = null;
+    if (e.key === 'ArrowUp') next = sheetHeightRef.current + SHEET_KEY_STEP_PX;
+    else if (e.key === 'ArrowDown') next = sheetHeightRef.current - SHEET_KEY_STEP_PX;
+    else if (e.key === 'Home') next = avail;
+    else if (e.key === 'End') next = min;
+    if (next === null) return;
+    e.preventDefault();
+    const clamped = Math.max(min, Math.min(next, avail));
+    sheetHeightRef.current = clamped;
+    setSheetHeight(clamped);
+    onHeightChangeRef.current?.(clamped);
+  }, [getAvailableHeight, getEffectiveMin]);
+
   const onPointerDownContent = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (isInteractiveTarget(e.target)) return;
     if (e.currentTarget.scrollTop > 0) return;
@@ -290,6 +310,7 @@ export function useSheet(options: UseSheetOptions = {}): UseSheetResult {
     sheetHeight,
     style,
     onPointerDownHandle,
+    onKeyDownHandle,
     onPointerDownContent,
   };
 }

@@ -46,26 +46,6 @@
   text-overflow: ellipsis;
 }
 
-.qualityBadge {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  padding: var(--space-0-5) var(--space-1-5);
-  border-radius: var(--radius-full);
-  background: var(--color-border);
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.parallelBadge {
-  margin-left: var(--space-1);
-  font-size: var(--font-size-xs);
-  flex-shrink: 0;
-  color: var(--color-primary);
-  display: inline-flex;
-  align-items: center;
-}
-
 /* === Action buttons (migrated to IconButton atom — kept for layout) === */
 .actions {
   flex-shrink: 0;
@@ -118,28 +98,6 @@
 .phasePercent.active {
   color: var(--color-primary);
 }
-
-/* === Progress bar — 4px === */
-.progressBar {
-  width: 100%;
-  height: var(--space-1);
-  background: var(--color-border);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: var(--radius-full);
-  transition: width var(--duration-normal) var(--ease-out);
-}
-
-.progressFill.downloading { background: var(--color-primary); }
-.progressFill.converting { background: var(--color-primary); }
-.progressFill.done { background: var(--color-success); }
-.progressFill.error { background: var(--color-error); }
-.progressFill.paused { background: var(--color-text-secondary); }
-.progressFill.queued { background: var(--color-text-secondary); }
 
 /* === Progress label (single-phase fallback) === */
 .progressLabel {

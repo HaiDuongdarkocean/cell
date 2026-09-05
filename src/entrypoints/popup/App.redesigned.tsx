@@ -308,7 +308,7 @@ export function AppRedesigned(): React.JSX.Element {
             <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
             <Tabs.Trigger value="downloads" data-cell-id="tab-downloads" className={styles.tabTrigger}>
               Downloads
-              {downloads.length > 0 && <Badge size="sm" variant="default" className={styles.tabBadge}>{downloads.length}</Badge>}
+              {downloads.length > 0 && <Badge size="sm" variant="default">{downloads.length}</Badge>}
             </Tabs.Trigger>
           </Tabs.List>
 

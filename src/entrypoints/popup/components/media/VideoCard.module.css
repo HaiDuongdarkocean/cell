@@ -94,104 +94,10 @@
   white-space: nowrap;
 }
 
-/* === Quality dropdown === */
-.qualityWrapper {
-  position: relative;
-  display: inline-flex;
-}
-
-.qualityTrigger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition: color var(--transition), background var(--transition), border-color var(--transition);
-  height: calc(var(--space-5) + var(--space-0-5));
-  line-height: var(--leading-none);
-  white-space: nowrap;
-}
-
-.qualityTrigger:hover {
-  color: var(--color-text);
-  background: var(--color-surface-hover);
-  border-color: var(--color-border);
-}
-
-.qualityTrigger:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.qualityWrapper:has(.qualityMenu) .qualityTrigger {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
-  border-color: var(--color-primary);
-}
-
-.chevron {
-  width: var(--space-3);
-  height: var(--space-3);
-  color: inherit;
-  transition: transform var(--duration-normal) var(--ease-out);
-  flex-shrink: 0;
-}
-
-.qualityWrapper:has(.qualityMenu) .chevron {
-  transform: rotate(180deg);
-}
-
-.qualityMenu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
-  min-width: calc(var(--space-5) * 7);
-  background: var(--color-background);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  padding: var(--space-1);
-  z-index: var(--z-dropdown);
-}
-
-.qualityOption {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-  white-space: nowrap;
-}
-
-.qualityOption:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.qualitySelected {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
 .qualitySize {
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
-}
-
-.qualitySelected .qualitySize {
-  color: var(--color-primary);
 }
 
 /* === Actions — expand chevron + download button === */
@@ -290,9 +196,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .card,
-  .qualityTrigger,
-  .chevron,
-  .qualityOption,
   .expandChevron,
   .copyBtn,
   .copyBtn svg,
