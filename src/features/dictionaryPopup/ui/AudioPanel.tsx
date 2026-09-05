@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
@@ -32,8 +32,59 @@ export function AudioPanel({
   sentence,
 }: AudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const subtabsRef = useRef<HTMLDivElement>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
   const { getUrl } = useAudioItemUrlMap(items);
+
+  // Liquid ink bar: the ::after reads its resting geometry from --ink-x/--ink-w.
+  // On a real tab change it runs a 3-phase WAAPI on the pseudo-element —
+  // shrink to half width around the current center, travel at half size to
+  // the destination center, then expand to the target width.
+  const inkAnimRef = useRef<Animation | null>(null);
+  const updateInk = useCallback((): void => {
+    const bar = subtabsRef.current;
+    const active = bar?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!bar || !active) return;
+    const x = active.offsetLeft;
+    const w = active.offsetWidth;
+    const raw = bar.style.getPropertyValue('--ink-x');
+    const fx = parseFloat(raw || '0');
+    const fw = parseFloat(bar.style.getPropertyValue('--ink-w') || '0');
+    bar.style.setProperty('--ink-x', `${x}px`);
+    bar.style.setProperty('--ink-w', `${w}px`);
+    // Skip on first measure (nothing set yet) and on no-op re-measures —
+    // ResizeObserver's initial callback re-runs this with the same geometry.
+    if (raw === '' || (x === fx && w === fw)) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    inkAnimRef.current?.cancel();
+    // Direction-anchored liquid: shrink toward the edge facing the travel
+    // direction, the half-width bar flows to the target's opposite edge,
+    // then it slowly stretches across the new tab.
+    const right = x > fx;
+    const frames: Keyframe[] = right
+      ? [
+          { left: `${fx}px`, width: `${fw}px` },
+          { left: `${fx + fw / 2}px`, width: `${fw / 2}px`, offset: 0.3, easing: 'ease-in' },
+          { left: `${x}px`, width: `${w / 2}px`, offset: 0.55, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+          { left: `${x}px`, width: `${w}px`, easing: 'cubic-bezier(0, 0, 0.2, 1)' },
+        ]
+      : [
+          { left: `${fx}px`, width: `${fw}px` },
+          { left: `${fx}px`, width: `${fw / 2}px`, offset: 0.3, easing: 'ease-in' },
+          { left: `${x + w / 2}px`, width: `${w / 2}px`, offset: 0.55, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' },
+          { left: `${x}px`, width: `${w}px`, easing: 'cubic-bezier(0, 0, 0.2, 1)' },
+        ];
+    inkAnimRef.current = bar.animate(frames, { duration: 400, pseudoElement: '::after' });
+  }, []);
+
+  useEffect(() => {
+    updateInk();
+    const bar = subtabsRef.current;
+    if (!bar) return;
+    const ro = new ResizeObserver(updateInk); // popup is user-resizable
+    ro.observe(bar);
+    return (): void => ro.disconnect();
+  }, [activeGroup, updateInk]);
 
   // Build display list: real items + TTS fallback item if no real items for group
   const displayItems = useMemo(() => {
@@ -59,7 +110,7 @@ export function AudioPanel({
         <AudioSkeleton />
       ) : (
         <>
-          <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups">
+          <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups" ref={subtabsRef}>
             {(['word', 'sentence'] as const).map((group) => (
               <button
                 key={group}
@@ -136,19 +187,19 @@ function AudioSkeleton(): React.JSX.Element {
   return (
     <div className={styles.cellAudioSkeleton} aria-hidden="true">
       <div className={styles.cellAudioSkeletonSubtabs}>
-        <Skeleton width="72px" height="var(--space-4-5)" />
-        <Skeleton width="96px" height="var(--space-4-5)" />
+        <Skeleton width="72px" height="var(--space-4-5)" className={styles.cellAudioSkeletonPart} />
+        <Skeleton width="96px" height="var(--space-4-5)" className={styles.cellAudioSkeletonPart} />
       </div>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className={styles.cellAudioSkeletonRow}>
-          <Skeleton width="var(--touch-target-mobile)" height="var(--touch-target-mobile)" shape="circle" className={styles.cellAudioSkeletonPlay} />
-          <div className={styles.cellAudioSkeletonLabel}>
-            <Skeleton width="100%" height="calc(var(--space-5) + var(--border-width-hairline))" />
-            <Skeleton width="100%" height="var(--space-4-5)" />
-          </div>
-          <Skeleton width="var(--space-4)" height="var(--space-4)" />
+      {/* One row is the minimal hint — real items mount with the staggered
+         cellAudioItemIn animation, so extra skeleton rows are unnecessary. */}
+      <div className={styles.cellAudioSkeletonRow}>
+        <Skeleton width="var(--iconbutton-size-sm)" height="var(--iconbutton-size-sm)" shape="circle" className={styles.cellAudioSkeletonPart} />
+        <div className={styles.cellAudioSkeletonLabel}>
+          <Skeleton width="45%" height="calc(var(--font-size-base) * var(--leading-normal))" className={styles.cellAudioSkeletonPart} />
+          <Skeleton width="30%" height="calc(var(--font-size-xs) * var(--leading-normal))" className={styles.cellAudioSkeletonPart} />
         </div>
-      ))}
+        <Skeleton width="var(--space-4)" height="var(--space-4)" className={`${styles.cellAudioSkeletonPart} ${styles.cellAudioSkeletonCheck}`} />
+      </div>
     </div>
   );
 }

@@ -10,6 +10,22 @@
   display: flex;
   gap: var(--space-2);
   padding: var(--space-0-5) 0 var(--space-1);
+  position: relative;
+}
+
+/* Liquid ink bar — single underline that flows between subtabs. Resting
+   geometry comes from --ink-x/--ink-w (left/width, not transform — the
+   WAAPI flow animation drives those two properties directly).
+   bottom: space-1 lifts it close under the text (container padding). */
+.cellAudioSubtabs::after {
+  content: "";
+  position: absolute;
+  left: var(--ink-x, 0px);
+  bottom: var(--space-1);
+  width: var(--ink-w, 0px);
+  height: var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
 }
 
 .cellAudioSubtab {
@@ -33,9 +49,10 @@
   color: var(--color-text);
 }
 
+/* Active tab only changes text color — the underline is the container's
+   ::after ink bar so it slides instead of fading per-tab. */
 .cellAudioSubtab--active {
   color: var(--color-text);
-  border-bottom-color: var(--color-primary);
 }
 
 /* Item list — gap drives row spacing; no margins on items. */
@@ -48,8 +65,7 @@
 .cellAudioSkeleton {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-1);
 }
 
 .cellAudioSkeletonSubtabs {
@@ -58,14 +74,26 @@
   padding: var(--space-0-5) 0 var(--space-1);
 }
 
+/* Mirrors .cellAudioItem: same padding + transparent border box. */
 .cellAudioSkeletonRow {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-card);
 }
 
-.cellAudioSkeletonPlay {
-  flex: 0 0 auto;
+/* --color-muted is nearly invisible on light surfaces; 10% text keeps the
+   placeholders perceptible in both themes. */
+.cellAudioSkeletonPart {
+  background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  flex-shrink: 0;
+}
+
+/* Mirrors .cellDefCheckBox — 16px square, radius-sm. */
+.cellAudioSkeletonCheck {
+  border-radius: var(--radius-sm);
 }
 
 .cellAudioSkeletonLabel {
