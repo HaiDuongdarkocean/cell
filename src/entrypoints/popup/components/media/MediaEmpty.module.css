@@ -13,7 +13,7 @@
 
 .emptyIcon {
   color: var(--color-text-secondary);
-  opacity: 0.5;
+  opacity: var(--opacity-50);
 }
 
 .emptyIcon svg {
@@ -22,13 +22,13 @@
 
 /* Scanning state: pulsing icon */
 .scanning .emptyIcon {
-  animation: scan-pulse var(--duration-1500) ease-in-out infinite;
-  opacity: 0.7;
+  animation: scan-pulse var(--duration-1500) var(--ease-in-out) infinite;
+  opacity: var(--opacity-70);
 }
 
 @keyframes scan-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.05); }
+  0%, 100% { opacity: var(--opacity-30); transform: scale(1); }
+  50% { opacity: var(--opacity-70); transform: scale(1.05); }
 }
 
 @media (prefers-reduced-motion: reduce) {

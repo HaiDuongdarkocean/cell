@@ -22,7 +22,7 @@
   height: 0.625rem;
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
-  opacity: 0.4;
+  opacity: var(--opacity-40);
 }
 
 .progressDotActive {
@@ -41,7 +41,7 @@
 .componentType {
   font-size: var(--font-size-sm);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wider);
   color: var(--color-text-secondary);
 }
 
@@ -146,6 +146,7 @@
   justify-content: center;
 }
 
+/* design-system: intentional override — ghost Button needs a visible surface-elevated fill for the audio controls; no standard variant maps to this fill. */
 .audioButton {
   background: var(--color-surface-elevated);
   color: var(--color-text);
@@ -205,7 +206,7 @@
 
 .notesTitle {
   font-size: var(--font-size-xs);
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
   color: var(--color-text-secondary);
   margin-bottom: var(--space-2);
@@ -238,11 +239,13 @@
   border: none;
 }
 
+/* design-system: intentional override — provide a neutral surface for the forget rating button; destructive would change the visual intent. */
 .rating .forgetButton {
   background: var(--color-surface-elevated);
   color: var(--color-text);
 }
 
+/* design-system: intentional override — warm gradient is the visual identity for "remember"; no standard Button variant maps to a warning→error gradient. */
 .rating .rememberButton {
   background: linear-gradient(135deg, var(--color-warning), var(--color-error));
   color: var(--color-text-on-primary);
