@@ -99,8 +99,10 @@ describe('useCandidate', () => {
     }));
 
     expect(result.current.status).toBe('known');
-    expect(result.current.definitionSelection.get('d1')).toBe(true);
-    expect(result.current.selectedDefinitionCount).toBe(1);
+    // Selection starts empty — the system must not pre-select on the user's
+    // behalf; defaultSelected only feeds the prefill fallback.
+    expect(result.current.definitionSelection.get('d1')).toBe(false);
+    expect(result.current.selectedDefinitionCount).toBe(0);
   });
 
   it('cycles status and sends WORD_STATUS_SET', () => {
@@ -163,7 +165,8 @@ describe('useCandidate', () => {
       type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
     }));
     expect(result.current.audioItems.length).toBeGreaterThan(0);
-    expect(result.current.selectedAudioCount).toBe(1);
+    // Opening the tab only fetches items — nothing is selected yet.
+    expect(result.current.selectedAudioCount).toBe(0);
   });
 
   it('fetches images when image tab is opened and exposes selected count', async () => {

@@ -48,7 +48,7 @@ function findSelectedWordAudio(
   selection: Map<string, boolean>,
 ): AudioItem | undefined {
   return items.find(
-    (item) => item.kind === 'word' && (selection.get(item.id) ?? item.defaultSelected),
+    (item) => item.kind === 'word' && selection.get(item.id) === true,
   );
 }
 
@@ -269,7 +269,7 @@ export function CandidateView({
             <DefinitionItem
               key={def.id}
               definition={def}
-              selected={panel.definitionSelection.get(def.id) ?? def.defaultSelected}
+              selected={panel.definitionSelection.get(def.id) === true}
               onToggle={panel.toggleDefinition}
             />
           ))
@@ -289,7 +289,7 @@ function DefinitionItem({
   readonly selected: boolean;
   readonly onToggle: (id: string, selected: boolean) => void;
 }): React.JSX.Element {
-  const checked = selected ?? definition.defaultSelected;
+  const checked = selected;
   return (
     <div
       className={checkStyles.cellDefItem}

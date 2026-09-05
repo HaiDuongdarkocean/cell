@@ -202,12 +202,13 @@ describe('CandidateView', () => {
     const audioPanel = await screen.findByTestId('dictionary-audio-panel');
     await waitFor(() => expect(within(audioPanel).getByText('Test')).toBeInTheDocument());
 
-    expect(screen.getByTestId('dictionary-tab-audio')).toHaveTextContent('1');
+    // Opening the tab only browses media — no badge until the user picks.
+    expect(screen.queryByTestId('dictionary-badge-audio')).not.toBeInTheDocument();
 
     const label = within(audioPanel).getByText('Test');
     fireEvent.click(label);
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-tab-audio')).not.toHaveTextContent('1'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-badge-audio')).toHaveTextContent('1'));
   });
 
   it('fetches and renders image panel when image tab is opened', async () => {
@@ -255,7 +256,7 @@ describe('CandidateView', () => {
     const img = within(imagePanel).getByAltText('image i1');
     fireEvent.click(img.closest('button')!);
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-tab-image')).toHaveTextContent('1'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-badge-image')).toHaveTextContent('1'));
   });
 
   it('translates and renders the translate panel', async () => {
@@ -281,7 +282,7 @@ describe('CandidateView', () => {
 
     fireEvent.click(within(translatePanel).getByText('xin chào'));
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('1'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-badge-translate')).toHaveTextContent('1'));
   });
 
   it('renders the links panel when the links tab is opened', async () => {

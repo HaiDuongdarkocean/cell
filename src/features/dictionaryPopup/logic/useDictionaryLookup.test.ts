@@ -126,7 +126,7 @@ describe('useDictionaryLookup', () => {
     );
   });
 
-  it('initializes definition selection from defaultSelected and toggles it', async () => {
+  it('initializes definition selection empty and toggles it', async () => {
     const winner = makeResult('hello', {
       definitions: [
         { id: 'd1', pos: 'n.', text: 'greeting', defaultSelected: true, source: 'test', examples: [] },
@@ -140,12 +140,12 @@ describe('useDictionaryLookup', () => {
     act(() => { result.current.search('hello'); });
     await waitFor(() => expect(result.current.currentResult).not.toBeNull());
 
-    expect(result.current.definitionSelection.get('d1')).toBe(true);
+    expect(result.current.definitionSelection.get('d1')).toBe(false);
     expect(result.current.definitionSelection.get('d2')).toBe(false);
-    expect(result.current.selectedDefinitions.map((d) => d.id)).toEqual(['d1']);
+    expect(result.current.selectedDefinitions).toEqual([]);
 
     act(() => { result.current.toggleDefinition('d2', true); });
-    expect(result.current.selectedDefinitions.map((d) => d.id)).toEqual(['d1', 'd2']);
+    expect(result.current.selectedDefinitions.map((d) => d.id)).toEqual(['d2']);
   });
 
   it('resets all state on reset()', async () => {

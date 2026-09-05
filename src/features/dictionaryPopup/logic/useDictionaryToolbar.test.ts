@@ -144,7 +144,8 @@ describe('useDictionaryToolbar', () => {
 
     await waitFor(() => expect(result.current.audioItems.length).toBe(1));
     expect(result.current.audioItems[0].id).toBe('a1');
-    expect(result.current.selectedAudioCount).toBe(1);
+    // defaultSelected does not count as a user selection.
+    expect(result.current.selectedAudioCount).toBe(0);
   });
 
   it('fetches TTS of the sentence (not the term) for the sentence audio item', async () => {
@@ -206,7 +207,8 @@ describe('useDictionaryToolbar', () => {
 
     await waitFor(() => expect(result.current.imageItems.length).toBe(2));
     expect(result.current.imageItems[0].id).toBe('i1');
-    expect(result.current.selectedImageCount).toBe(1);
+    // i2 is defaultSelected, but the count only tracks user picks.
+    expect(result.current.selectedImageCount).toBe(0);
   });
 
   it('translates on request and toggles selection', async () => {

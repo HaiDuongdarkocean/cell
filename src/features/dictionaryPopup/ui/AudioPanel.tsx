@@ -75,7 +75,7 @@ export function AudioPanel({
           </div>
 
           {displayItems.map((item) => {
-            const selected = selection.get(item.id) ?? item.defaultSelected;
+            const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
             const itemUrl = getUrl(item);
             const isTts = !itemUrl;

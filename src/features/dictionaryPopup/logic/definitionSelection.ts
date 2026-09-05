@@ -7,19 +7,19 @@ import type { LookupResult, DefinitionEntry } from '../types';
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;
 
-/** Initialize definition selection from LookupResult (default all selected). */
+/** Initialize definition selection — empty until the user explicitly picks. */
 export function initDefinitionSelection(result: LookupResult): DefinitionSelection {
   const map = new Map<string, boolean>();
   for (const def of result.definitions) {
-    map.set(def.id, def.defaultSelected);
+    map.set(def.id, false);
   }
   return map;
 }
 
-/** Get the selected definitions from a selection map. */
+/** Get the definitions the user explicitly selected. */
 export function getSelectedDefinitions(
   result: LookupResult,
   selection: DefinitionSelection,
 ): DefinitionEntry[] {
-  return result.definitions.filter((def) => selection.get(def.id) ?? def.defaultSelected);
+  return result.definitions.filter((def) => selection.get(def.id) === true);
 }
