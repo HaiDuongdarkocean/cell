@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes } from 'react';
 import styles from './ColorInput.module.css';
 
-export interface ColorInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {}
+export type ColorInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>;
 
 /**
  * ColorInput — shared color-picker atom wrapping native `input[type=color]`.

@@ -1,16 +1,18 @@
-import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react';
+import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchField.module.css';
 
-export interface SearchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange' | 'value'> {
+export interface SearchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange' | 'value' | 'prefix'> {
   /** Current value. */
   value?: string;
   /** Called with the new value when input changes. */
   onChange?: (value: string) => void;
   /** Called when the user clears the field. */
   onClear?: () => void;
+  /** Leading content. Default: search icon. Pass null to hide. */
+  prefix?: ReactNode;
 }
 
 /**
@@ -23,6 +25,7 @@ export function SearchField({
   placeholder,
   disabled,
   className,
+  prefix,
   ...rest
 }: SearchFieldProps): React.JSX.Element {
   const [internalValue, setInternalValue] = useState(value ?? '');
@@ -69,7 +72,7 @@ export function SearchField({
       placeholder={placeholder}
       disabled={disabled}
       className={className}
-      prefix={<Icon name="search" size={18} />}
+      prefix={prefix === undefined ? <Icon name="search" size={18} /> : prefix}
       suffix={suffix}
       {...rest}
     />
