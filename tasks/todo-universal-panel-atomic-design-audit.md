@@ -157,3 +157,29 @@ Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
 - [x] **`--z-ceiling` rejected**: injected CSS runs in foreign documents without our token scope — `var()` would silently fail; literals stay + documented
 - [x] **`ColorInput` atom** created (`src/shared/ui/ColorInput`), migrated SubtitleStylePanel ×3
 - [x] **Verify**: tsc ✅ build ✅ css-check 0 violations ✅ focused tests 725 ✅ e2e 7/7 ✅
+
+## Phase 7: Third-ring audit — local-player / reader / cardCreator / shared-domain / mock+options (2026-09-05)
+
+### Findings (3 parallel read-only audits)
+
+**local-player + reader** (5 P0, ~17 P1, ~12 P2/P3):
+- P0: undefined `--spacing-md/sm/xl` (reader ×12), `--space-96`, `--duration-base`; dead `SubtitleCard.tsx` references missing classes
+- P1: 9× legacy `@/shared/icons/Icon` barrel; `controlsOverlay` opacity-only hide (focusable when hidden); `<video>` no name; banners no `role=status`; TrackSelector no radiogroup; LibraryCard hand-rolled dropdown → `Select`; `role=menu` non-menuitem child; DropOverlay `aria-hidden`; PlayPauseOverlay no live-region; LibraryCard `aria-pressed`; LibraryView no list semantics + custom empty→`EmptyState`; reader `<li>` no keyboard; hidden file input; error no `role=alert`; custom empty→`EmptyState`; `<h1>`→`Heading`; TtsControlBar no `aria-pressed`
+- P2: ~20 registered-token fallbacks + spacing/duration/weight tokens
+- Dead CSS: `SubtitleCard.tsx`, `.libraryPanel`, `.term`, `.sentence`
+
+**cardCreator + shared/domain** (1 P0, ~14 P1, ~22 P2/P3):
+- P0: `PartOfSpeechTag` uses undefined `--badge-padding-y/x`
+- P1: 10× legacy Icon barrel in domain atoms; `ImageThumb` div-role-button→`Button`; `ImagePreview` raw div dialog→`Dialog` (focus trap); labels no `htmlFor`/`id` linkage; native `<button>` in `MuteButton`/`PlayPauseButton`/`VolumeControl`/`CaptionToggle`/`PlaybackSpeedControl` → `Button`; `PlaybackSpeedControl` `role=menu` missing arrow-key nav
+- P2: `gap:0`/`margin:0`/`padding:0` → `--space-0`; `opacity`/`line-height`/`border`/`font-size` literals → tokens
+
+**mock pages + content overlays + options** (1 P1 manifest-level, ~10 P1, ~8 P3):
+- P1: `manifest.json:71` `options_page` → `public/options.html` (TTS debug page shipped as user-facing Options) — **product decision deferred to user**
+- P1: OCR hitboxes = `<span>` no a11y; region-selector resize handles not focusable/keyboard; action-bar toggles missing `aria-pressed`/`aria-expanded`; mock YouTube/StreamFlix seekbars `div onClick` no keyboard; mock menus missing menu semantics; missing `type="button"`; `<a>` no href; `ButtonWire` useState-initializer leak
+- P3: fixture hardcoded values documented
+
+### Tasks
+- [ ] **T16** — P0 sweep: reader `--spacing-*`→`--space-*`; `--space-96`→`--space-24`; `--duration-base`→`--duration-normal`; `--badge-padding-y/x` tokens or `--space-*`; delete dead `SubtitleCard.tsx` + `.libraryPanel` + `.term` + `.sentence`
+- [ ] **T17** — P1 a11y+atom sweep per area (local-player, reader, cardCreator, domain atoms, ocr overlay, mock cheap fixes)
+- [ ] **T18** — P2 tokenization sweep + P3 documentation append
+- [ ] **T19** — `options_page` manifest decision — **needs user** (remove entry vs build real options UI)
