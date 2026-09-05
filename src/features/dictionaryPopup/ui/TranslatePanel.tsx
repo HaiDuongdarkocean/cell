@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
 
@@ -69,7 +70,7 @@ export function TranslatePanel({
     return (
       <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <div
-          className={`${panelStyles.cellTranslateBlock} ${selected ? panelStyles['cellTranslateBlock--selected'] : ''}`}
+          className={`${checkStyles.cellTranslateBlock} ${selected ? checkStyles['cellTranslateBlock--selected'] : ''}`}
           onClick={onToggle}
           role="button"
           aria-pressed={selected}
@@ -79,7 +80,7 @@ export function TranslatePanel({
             <div className={styles.cellTranslateTarget}>{translation}</div>
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
-          <span className={panelStyles.cellDefCheckBox} aria-hidden="true">
+          <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
             {loading ? <Spinner size="md" /> : <Icon name="check"  />}
           </span>
         </div>

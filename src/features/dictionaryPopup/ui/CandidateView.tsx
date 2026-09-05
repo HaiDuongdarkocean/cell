@@ -14,7 +14,9 @@ import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
-import styles from './DictionaryPanelView.module.css';
+import checkStyles from './DictionaryCheckable.module.css';
+import panelStyles from './DictionaryPanelView.module.css';
+import styles from './CandidateView.module.css';
 import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind } from '../types';
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
@@ -252,7 +254,7 @@ export function CandidateView({
           />
         )}
 
-        <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
+        <section className={panelStyles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <EmptyState
             size="md"
@@ -288,23 +290,23 @@ function DefinitionItem({
   const checked = selected ?? definition.defaultSelected;
   return (
     <div
-      className={styles.cellDefItem}
+      className={checkStyles.cellDefItem}
       data-cell-id="dictionary-definition"
       onClick={() => onToggle(definition.id, !checked)}
     >
       <label
-        className={`${styles.cellDefCheck} ${checked ? styles['cellDefCheck--checked'] : ''}`}
+        className={`${checkStyles.cellDefCheck} ${checked ? checkStyles['cellDefCheck--checked'] : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <input
           type="checkbox"
-          className={styles.cellDefCheckInput}
+          className={checkStyles.cellDefCheckInput}
           checked={checked}
           onChange={(e) => onToggle(definition.id, e.target.checked)}
           aria-label={`Select definition: ${definition.text}`}
         />
-        <span className={styles.cellDefCheckDot} aria-hidden="true" />
-        <span className={styles.cellDefCheckBox} aria-hidden="true">
+        <span className={checkStyles.cellDefCheckDot} aria-hidden="true" />
+        <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
           <Icon name="check"  />
         </span>
       </label>

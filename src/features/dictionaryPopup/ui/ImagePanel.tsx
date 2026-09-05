@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './ImagePanel.module.css';
 import type { ImageItem } from '../types';
@@ -104,7 +105,7 @@ export function ImagePanel({
             <button
               type="button"
               key={item.id}
-              className={`${panelStyles.cellImageCard} ${selected ? panelStyles['cellImageCard--selected'] : ''}`}
+              className={`${checkStyles.cellImageCard} ${selected ? checkStyles['cellImageCard--selected'] : ''}`}
               role="checkbox"
               aria-checked={selected}
               onClick={(): void => onToggle(item.id, !selected)}
@@ -115,7 +116,7 @@ export function ImagePanel({
                 className={styles.cellImageThumb}
                 onError={(): void => onImageError(item.id)}
               />
-              <span className={panelStyles.cellDefCheckBox} aria-hidden="true">
+              <span className={checkStyles.cellDefCheckBox} aria-hidden="true">
                 <Icon name="check"  />
               </span>
             </button>
