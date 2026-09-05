@@ -271,7 +271,10 @@
 /* Solid + colored variants */
 .solid.primary {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  /* Soft white on primary fill in every theme — --button-fg is a fixed
+     rgba(255,255,255,0.92), unlike text-inverse which flips dark in dark
+     mode. */
+  color: var(--button-fg);
   border-color: transparent;
 }
 
