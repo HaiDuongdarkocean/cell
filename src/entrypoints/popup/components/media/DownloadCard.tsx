@@ -237,10 +237,10 @@ export function DownloadCard({
           <HStack align="center" gap="1-5" className={styles.titleRow}>
             <span className={styles.title}>{download.title}</span>
             {download.quality && (
-              <Badge size="sm" variant="default" className={styles.qualityBadge}>{download.quality}</Badge>
+              <Badge size="sm" variant="secondary">{download.quality}</Badge>
             )}
             {download.usedWorkers && (
-              <Badge size="sm" variant="default" className={styles.parallelBadge} title="Parallel conversion">
+              <Badge size="sm" variant="secondary" title="Parallel conversion">
                 <Icon name="zap"  />
               </Badge>
             )}

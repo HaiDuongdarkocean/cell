@@ -101,4 +101,4 @@ prioritized summary + remediation queue.**
 | Native `type="color"` inputs | `SubtitleStylePanel` ×3 | Platform color-picker primitive; no `ColorInput` atom exists — promote when 2nd consumer appears |
 | `HStack role="button"` card rows | `SubtitleCard`, `VideoCard` | Clickable sub-region inside `Card` — `SelectableCard` renders its own Card (wrong DOM); keyboard already wired + `:focus-visible` added |
 | Launcher dead buttons (tiles, Settings, Add) | `launcher-dashboard` | WIP design-concept page — wire when product intent lands |
-| `z-index` max-int (`2147483646/7`) | overlay injection points | Intentional top-most vs host page — could later alias to `--z-ceiling` |
+| `z-index` max-int (`2147483646/7`) | overlay injection points | Intentional top-most vs host page; `var(--z-ceiling)` rejected — injected CSS runs in foreign documents where our token scope may not exist, `var()` would silently fail |

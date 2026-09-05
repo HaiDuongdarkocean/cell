@@ -378,6 +378,22 @@ function PlayerModeOverlayInner({
     });
   }, []);
 
+  // Keyboard resize (WAI-ARIA window-splitter): ArrowLeft/Right, 5%/step,
+  // Home/End → min/max. Left arrow widens content (handle is on content's left edge).
+  const onResizeKeyDown = useCallback((e: React.KeyboardEvent): void => {
+    const STEP = 5;
+    let next: number | null = null;
+    if (e.key === 'ArrowLeft') next = contentPct + STEP;
+    else if (e.key === 'ArrowRight') next = contentPct - STEP;
+    else if (e.key === 'Home') next = CONTENT_PCT_MIN;
+    else if (e.key === 'End') next = CONTENT_PCT_MAX;
+    if (next === null) return;
+    e.preventDefault();
+    const clamped = Math.min(Math.max(next, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
+    setContentPct(clamped);
+    setStorage({ [STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]: clamped }).catch(() => undefined);
+  }, [contentPct]);
+
   return (
     <div
       className={styles.overlay}
@@ -406,9 +422,13 @@ function PlayerModeOverlayInner({
           onPointerMove={onResizePointerMove}
           onPointerUp={onResizePointerUp}
           onPointerCancel={onResizePointerUp}
+          onKeyDown={onResizeKeyDown}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize subtitle list"
+          aria-valuenow={Math.round(contentPct)}
+          aria-valuemin={CONTENT_PCT_MIN}
+          aria-valuemax={CONTENT_PCT_MAX}
           tabIndex={0}
         />
 

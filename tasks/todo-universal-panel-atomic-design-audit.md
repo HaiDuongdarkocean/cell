@@ -148,3 +148,12 @@ Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
 - [x] **T14** — P3 documented in audit doc (subtitle px sizing, preview scale, crash-boundary styles, `SHEET_MARGIN_PX`, bare chrome-wrapped inputs, native color inputs)
 - [x] **T15** — Inventory regenerated; usage counts updated (Badge, EmptyState consumers)
 - [x] Bonus: 4 stale test suites fixed (token renames + Select migration leftover from 2781ba14) — 5437 pass
+
+## Phase 6b: Post-audit leftover sweep (items 1-7)
+
+- [x] **Keyboard resize**: `PlayerModeOverlay` separator — ArrowLeft/Right ±5%, Home/End → min/max, `aria-valuenow/min/max` (WAI-ARIA window-splitter); `useSheet` handle — `onKeyDownHandle` ArrowUp/Down ±32px, Home/End, role=separator
+- [x] **Dead-CSS sweep post-migration**: sidepanel `.empty`; VideoCard `.qualityWrapper/.qualityTrigger/.qualityMenu/.qualityOption/.qualitySelected/.chevron`; DownloadCard `.progressBar/.progressFill*`; redundant `.tabBadge/.qualityBadge/.parallelBadge` overrides dropped (Badge atom covers); `.select/.textInput/.numberInput` chrome duplicates removed (atom covers)
+- [x] **Launcher dead buttons** → `disabled` (tiles w/o onClick, Settings, Add)
+- [x] **`--z-ceiling` rejected**: injected CSS runs in foreign documents without our token scope — `var()` would silently fail; literals stay + documented
+- [x] **`ColorInput` atom** created (`src/shared/ui/ColorInput`), migrated SubtitleStylePanel ×3
+- [x] **Verify**: tsc ✅ build ✅ css-check 0 violations ✅ focused tests 725 ✅ e2e 7/7 ✅

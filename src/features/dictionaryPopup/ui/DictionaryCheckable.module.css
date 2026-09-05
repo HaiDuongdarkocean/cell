@@ -5,7 +5,7 @@
  * classes cannot be referenced across files.
  *
  * WARNING: every class used inside a compound selector below (the host
- * classes AND cellDefCheck*/cellDefCheckDot/cellAudioCheck--checked/
+ * classes AND cellDefCheck-prefixed / cellDefCheckDot / cellAudioCheck--checked /
  * cellImageCard--selected/cellTranslateBlock--selected) MUST stay in this
  * file. Moving one to another module silently breaks the compound — the
  * un-hashed class name will match nothing. Do not split this file. */

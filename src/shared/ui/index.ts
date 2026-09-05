@@ -18,6 +18,7 @@ export { Drawer } from './Drawer';
 export { FormGroup } from './FormGroup';
 export { Header } from './Header';
 export { Input } from './Input';
+export { ColorInput } from './ColorInput';
 export { InputField } from './InputField';
 export { IconButton } from './IconButton';
 export { Label } from './Label';

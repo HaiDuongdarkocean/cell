@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { Slider } from '@/shared/ui/Slider';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
+import { ColorInput } from '@/shared/ui/ColorInput';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -125,7 +126,6 @@ export function SubtitleStylePanel({
                 setCustomFontOpen(false);
               }
             }}
-            className={styles.select}
             aria-label="Font family"
           />
           {(customFontOpen || isCustomFont) && (
@@ -134,7 +134,6 @@ export function SubtitleStylePanel({
               value={isCustomFont ? style.fontFamily : ''}
               placeholder="e.g. 'Noto Sans JP', sans-serif"
               onChange={(e) => onChange({ fontFamily: e.target.value })}
-              className={styles.textInput}
               aria-label="Custom font family CSS string"
               data-cell-id={`style-${role}-font-family-custom`}
             />
@@ -147,12 +146,10 @@ export function SubtitleStylePanel({
             <label className={styles.label} htmlFor={`style-${role}-text-color`}>
               Text Color
             </label>
-            <input
+            <ColorInput
               id={`style-${role}-text-color`}
-              type="color"
               value={style.textColor}
               onChange={(e) => onChange({ textColor: e.target.value })}
-              className={styles.colorInput}
               aria-label="Text color"
             />
           </div>
@@ -160,12 +157,10 @@ export function SubtitleStylePanel({
             <label className={styles.label} htmlFor={`style-${role}-bg-color`}>
               Background
             </label>
-            <input
+            <ColorInput
               id={`style-${role}-bg-color`}
-              type="color"
               value={style.backgroundColor}
               onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              className={styles.colorInput}
               aria-label="Background color"
             />
           </div>
@@ -257,12 +252,10 @@ export function SubtitleStylePanel({
           <div className={styles.customShadowRow}>
             <div className={styles.row}>
               <label className={styles.label} htmlFor={`style-${role}-shadow-color`}>Shadow Color</label>
-              <input
+              <ColorInput
                 id={`style-${role}-shadow-color`}
-                type="color"
                 value={style.textShadow.color}
                 onChange={(e) => handleShadowFieldChange('color', e.target.value)}
-                className={styles.colorInput}
                 aria-label="Shadow color"
               />
             </div>
@@ -279,8 +272,7 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.blur}
                 onChange={(e) => handleShadowFieldChange('blur', Number(e.target.value))}
-                className={styles.numberInput}
-                aria-label="Shadow blur pixels"
+                  aria-label="Shadow blur pixels"
               />
             </div>
             <div className={styles.row}>
@@ -296,8 +288,7 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.offsetX}
                 onChange={(e) => handleShadowFieldChange('offsetX', Number(e.target.value))}
-                className={styles.numberInput}
-                aria-label="Shadow offset X pixels"
+                  aria-label="Shadow offset X pixels"
               />
             </div>
             <div className={styles.row}>
@@ -313,8 +304,7 @@ export function SubtitleStylePanel({
                 step={1}
                 value={style.textShadow.offsetY}
                 onChange={(e) => handleShadowFieldChange('offsetY', Number(e.target.value))}
-                className={styles.numberInput}
-                aria-label="Shadow offset Y pixels"
+                  aria-label="Shadow offset Y pixels"
               />
             </div>
           </div>
