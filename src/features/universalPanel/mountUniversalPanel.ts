@@ -16,6 +16,7 @@ import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
 import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
+import { openSettingsSection } from './deepLink';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -167,6 +168,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       initialTerm: pendingSearchTerm ?? options.dictionary?.initialTerm,
       isOpen: open,
       prefill: pendingCardCreatorContext,
+      onOpenSettings: () => { void openSettingsSection(mountController, 'resources'); },
     }) as ReactElement;
 
   const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;

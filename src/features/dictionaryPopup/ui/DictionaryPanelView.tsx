@@ -44,6 +44,8 @@ interface DictionaryPanelViewProps {
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate (chip click). */
   readonly onCandidateChange?: (term: string) => void;
+  /** Called from the empty-definitions state to open Settings → Resources. */
+  readonly onOpenSettings?: () => void;
   /** Default media tab to open when the result first appears. */
   readonly defaultActiveTab?: PopupTab | null;
   /** True when this view is inside an open panel — used for auto-focus after animation. */
@@ -70,6 +72,7 @@ export function DictionaryPanelView({
   onQuickAdd,
   onStatusChange,
   onCandidateChange,
+  onOpenSettings,
   defaultActiveTab,
   isOpen = true,
   syncStatus,
@@ -379,6 +382,7 @@ export function DictionaryPanelView({
                 onSendToCard={onSendToCard}
                 onQuickAdd={onQuickAdd}
                 onStatusChange={onStatusChange}
+                onOpenSettings={onOpenSettings}
                 defaultActiveTab={defaultActiveTab}
               />
             ))}

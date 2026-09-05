@@ -61,6 +61,8 @@ export interface CandidateViewProps {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Called from the empty-definitions state to open Settings → Resources. */
+  readonly onOpenSettings?: () => void;
   /** Default media tab to open when this candidate first appears. */
   readonly defaultActiveTab?: PopupTab | null;
 }
@@ -74,6 +76,7 @@ export function CandidateView({
   onSendToCard,
   onQuickAdd,
   onStatusChange,
+  onOpenSettings,
   defaultActiveTab,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
@@ -266,6 +269,17 @@ export function CandidateView({
             size="md"
             icon={<Icon name="info"  />}
             description="No definitions found. Import a dictionary in Settings → Resources."
+            action={onOpenSettings && (
+              <Button
+                variant="outline"
+                material="solid"
+                size="sm"
+                onClick={onOpenSettings}
+                data-cell-id="dictionary-import-dictionary"
+              >
+                <Icon name="library"  /> Import a dictionary
+              </Button>
+            )}
             data-cell-id="dictionary-definitions-empty"
           />
         ) : (

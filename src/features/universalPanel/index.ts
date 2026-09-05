@@ -5,3 +5,4 @@ export { mountUniversalPanel, type UniversalPanelMountOptions } from './mountUni
 export { SettingsTab } from './tabs/SettingsTab';
 export { DictionaryTab, type DictionaryTabProps } from './tabs/DictionaryTab';
 export { CardCreatorPanel, type CardCreatorPanelProps } from './tabs/CardCreatorPanel';
+export { openSettingsSection } from './deepLink';
