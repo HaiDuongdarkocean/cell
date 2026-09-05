@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 96px;
-  height: 96px;
+  width: var(--space-24);
+  height: var(--space-24);
   border-radius: var(--radius-full);
   background: var(--color-overlay);
   color: var(--color-overlay-text);

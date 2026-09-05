@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import type { VideoRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
-import { Icon } from '@/shared/icons/Icon';
-import { Button } from '@/shared/ui';
+import { Icon } from '@/shared/ui/Icon';
+import { Button, Select } from '@/shared/ui';
 import styles from './LibraryCard.module.css';
 
 /**
@@ -93,25 +93,23 @@ export function LibraryCard({
   onVideoDelete,
 }: LibraryCardProps): React.JSX.Element {
   const [expanded, setExpanded] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<'target' | 'native' | null>(null);
 
   const pct = resumePercentValue(video);
   const watchedLabel = formatLastWatched(video.lastWatchedAt, new Date());
   const dashOffset = RING_CIRCUMFERENCE * (1 - pct / 100);
 
-  const targetMatch = useMemo(
-    () => subtitleMatches.find((m) => m.filename === selectedTarget) ?? null,
-    [subtitleMatches, selectedTarget],
-  );
-  const nativeMatch = useMemo(
-    () => subtitleMatches.find((m) => m.filename === selectedNative) ?? null,
-    [subtitleMatches, selectedNative],
+  const subtitleOptions = useMemo(
+    () =>
+      subtitleMatches.map((m) => {
+        const lang = subtitleLangLabel(m);
+        return { value: m.filename, label: lang ? `${subtitleLabel(m)} · ${lang}` : subtitleLabel(m) };
+      }),
+    [subtitleMatches],
   );
 
   const handleExpandClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     setExpanded((prev) => !prev);
-    setOpenDropdown(null);
   };
 
   const handleDeleteClick = (e: React.MouseEvent): void => {
@@ -123,15 +121,9 @@ export function LibraryCard({
     onVideoSelect(video.id);
   };
 
-  const handleOptionClick = (match: SubtitleMatch, e: React.MouseEvent): void => {
-    e.stopPropagation();
-    onSelectTrack(match);
-    setOpenDropdown(null);
-  };
-
-  const toggleDropdown = (which: 'target' | 'native', e: React.MouseEvent): void => {
-    e.stopPropagation();
-    setOpenDropdown((prev) => (prev === which ? null : which));
+  const handleSelectTrack = (filename: string): void => {
+    const match = subtitleMatches.find((m) => m.filename === filename);
+    if (match) onSelectTrack(match);
   };
 
   return (
@@ -139,8 +131,10 @@ export function LibraryCard({
       className={[styles.item, isActive ? styles.active : '', expanded ? styles.expanded : '']
         .filter(Boolean)
         .join(' ')}
+      role="listitem"
     >
       <div className={styles.row} onClick={handleRowClick} role="button" tabIndex={0}
+        aria-pressed={isActive}
         data-cell-id="library-card"
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRowClick(); } }}
       >
@@ -178,7 +172,7 @@ export function LibraryCard({
           data-cell-id="library-card-delete"
           className={styles.deleteBtn}
         >
-          <Icon name="trash" size={16} />
+          <Icon name="trash" size="xs" />
         </Button>
         <Button shape="circle" material="solid"
           variant="ghost"
@@ -189,7 +183,7 @@ export function LibraryCard({
           data-cell-id="library-card-expand"
           className={styles.expandBtn}
         >
-          <Icon name="chevronDown" size={16} />
+          <Icon name="chevronDown" size="xs" />
         </Button>
       </div>
 
@@ -197,100 +191,34 @@ export function LibraryCard({
         <div className={styles.subs} data-cell-id="library-card-subs">
           <div className={styles.subField}>
             <span className={styles.subLabel}>
-              <Icon name="captions" size={12} />
+              <Icon name="captions" size="xs" />
               Target
             </span>
-            <div className={styles.inlineSelect}>
-              <button
-                type="button"
-                className={styles.selectTrigger}
-                aria-expanded={openDropdown === 'target'}
-                onClick={(e) => toggleDropdown('target', e)}
-                data-cell-id="library-card-subtitle-target"
-              >
-                <span className={styles.selectValue}>
-                  {targetMatch ? subtitleLabel(targetMatch) : (
-                    <span className={styles.placeholder}>No matching subtitle</span>
-                  )}
-                </span>
-                <Icon name="chevronDown" size={14} className={styles.selectChev} />
-              </button>
-              {openDropdown === 'target' && (
-                <div className={styles.selectMenu} role="listbox">
-                  {subtitleMatches.length === 0 ? (
-                    <div className={styles.selectEmpty}>No subtitles matched this video.</div>
-                  ) : (
-                    subtitleMatches.map((m) => (
-                      <button
-                        key={m.filename}
-                        type="button"
-                        className={[
-                          styles.selectOption,
-                          m.filename === selectedTarget ? styles.selectOptionSelected : '',
-                        ].filter(Boolean).join(' ')}
-                        role="option"
-                        aria-selected={m.filename === selectedTarget}
-                        onClick={(e) => handleOptionClick(m, e)}
-                        data-cell-id="library-card-subtitle"
-                      >
-                        <span className={styles.optionName}>{subtitleLabel(m)}</span>
-                        <span className={styles.optionLang}>{subtitleLangLabel(m)}</span>
-                        {m.filename === selectedTarget && <Icon name="check" size={14} className={styles.optionCheck} />}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+            <Select
+              size="sm"
+              options={subtitleOptions}
+              value={selectedTarget ?? undefined}
+              placeholder="No matching subtitle"
+              onChange={handleSelectTrack}
+              aria-label="Target subtitle"
+              data-cell-id="library-card-subtitle-target"
+            />
           </div>
 
           <div className={styles.subField}>
             <span className={styles.subLabel}>
-              <Icon name="captions" size={12} />
+              <Icon name="captions" size="xs" />
               Native
             </span>
-            <div className={styles.inlineSelect}>
-              <button
-                type="button"
-                className={styles.selectTrigger}
-                aria-expanded={openDropdown === 'native'}
-                onClick={(e) => toggleDropdown('native', e)}
-                data-cell-id="library-card-subtitle-native"
-              >
-                <span className={styles.selectValue}>
-                  {nativeMatch ? subtitleLabel(nativeMatch) : (
-                    <span className={styles.placeholder}>No matching subtitle</span>
-                  )}
-                </span>
-                <Icon name="chevronDown" size={14} className={styles.selectChev} />
-              </button>
-              {openDropdown === 'native' && (
-                <div className={styles.selectMenu} role="listbox">
-                  {subtitleMatches.length === 0 ? (
-                    <div className={styles.selectEmpty}>No subtitles matched this video.</div>
-                  ) : (
-                    subtitleMatches.map((m) => (
-                      <button
-                        key={m.filename}
-                        type="button"
-                        className={[
-                          styles.selectOption,
-                          m.filename === selectedNative ? styles.selectOptionSelected : '',
-                        ].filter(Boolean).join(' ')}
-                        role="option"
-                        aria-selected={m.filename === selectedNative}
-                        onClick={(e) => handleOptionClick(m, e)}
-                        data-cell-id="library-card-subtitle"
-                      >
-                        <span className={styles.optionName}>{subtitleLabel(m)}</span>
-                        <span className={styles.optionLang}>{subtitleLangLabel(m)}</span>
-                        {m.filename === selectedNative && <Icon name="check" size={14} className={styles.optionCheck} />}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+            <Select
+              size="sm"
+              options={subtitleOptions}
+              value={selectedNative ?? undefined}
+              placeholder="No matching subtitle"
+              onChange={handleSelectTrack}
+              aria-label="Native subtitle"
+              data-cell-id="library-card-subtitle-native"
+            />
           </div>
         </div>
       )}

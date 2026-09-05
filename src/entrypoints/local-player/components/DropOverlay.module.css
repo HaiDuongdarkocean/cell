@@ -15,6 +15,7 @@
   border: var(--border-width-status) dashed var(--color-primary);
   border-radius: var(--radius-card);
   background: color-mix(in srgb, var(--color-primary-subtle) 80%, transparent);
+  /* design-system: intentional — blur(2px) is a subtle drag-state scrim; no blur token exists for this. */
   backdrop-filter: blur(2px);
   color: var(--color-text);
   text-align: center;
@@ -35,6 +36,7 @@
 
 .hint {
   margin: 0;
+  /* design-system: intentional — 50ch caps line length for readability. */
   max-width: 50ch;
   color: var(--color-text);
   font-size: var(--font-size-lg);

@@ -4,9 +4,8 @@ import type { SortBy } from '@/features/local-player/logic/librarySort';
 import type { SubtitleMatch, MatchResult } from '@/features/local-player/logic/subtitleMatch';
 import { matchSubtitles } from '@/features/local-player/logic/subtitleMatch';
 import type { SubtitlesState } from '@/entrypoints/local-player/hooks/useLocalPlayerStore';
-import { Select } from '@/shared/ui';
-import { Button } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Button, EmptyState, Select } from '@/shared/ui';
+import { Icon } from '@/shared/ui/Icon';
 import { LibraryCard } from './LibraryCard';
 import styles from './LibraryView.module.css';
 
@@ -103,17 +102,14 @@ export function LibraryView({
   return (
     <div className={styles.root}>
       {videos.length === 0 ? (
-        <div className={styles.empty} data-cell-id="library-empty" role="status">
-          <div className={styles.emptyIcon}>
-            <Icon name="video" size={48} />
-          </div>
-          <div className={styles.emptyTitle}>No videos yet</div>
-          <div className={styles.emptyDesc}>
-            Open a video file to add it to your library.
-          </div>
-        </div>
+        <EmptyState
+          icon={<Icon name="video" size="lg" />}
+          title="No videos yet"
+          description="Open a video file to add it to your library."
+          data-cell-id="library-empty"
+        />
       ) : (
-        <div className={styles.list}>
+        <div className={styles.list} role="list">
           {videos.map((video) => {
             const matches = matchesByVideoId.get(video.id) ?? [];
             const selected = selectedByVideoId.get(video.id) ?? { target: null, native: null };
@@ -148,7 +144,7 @@ export function LibraryView({
             variant="primary"
             size="sm"
             onClick={onOpenFile}
-            leadingIcon={<Icon name="plus" size={16} />}
+            leadingIcon={<Icon name="plus" size="xs" />}
             data-cell-id="playlist-add-files"
           >
             <span className={styles.btnLabel}>Add files</span>
@@ -157,7 +153,7 @@ export function LibraryView({
             variant="secondary"
             size="sm"
             onClick={onOpenFolder}
-            leadingIcon={<Icon name="folderOpen" size={16} />}
+            leadingIcon={<Icon name="folderOpen" size="xs" />}
             data-cell-id="playlist-add-folder"
           >
             <span className={styles.btnLabel}>Add folder</span>
@@ -167,7 +163,7 @@ export function LibraryView({
               variant="ghost"
               size="sm"
               onClick={onClearAll}
-              leadingIcon={<Icon name="trash" size={16} />}
+              leadingIcon={<Icon name="trash" size="xs" />}
               data-cell-id="playlist-clear-all"
             >
               <span className={styles.btnLabel}>Clear all</span>
