@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { Card } from '@/shared/ui/Card';
 import { Center } from '@/shared/ui/Center';
-import { Button, Flex, HStack, VStack } from '@/shared/ui';
+import { Button, Flex, HStack, VStack, Select } from '@/shared/ui';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
 import { Icon } from '@/shared/icons/Icon';
@@ -32,10 +32,8 @@ export function VideoCard({
   const hasMultipleVariants = video.variants.length > 1;
   const selectedVariant = video.variants[0];
 
-  const [qualityOpen, setQualityOpen] = useState(false);
   const [urlExpanded, setUrlExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -43,22 +41,6 @@ export function VideoCard({
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    if (!qualityOpen) return;
-    const handleClickOutside = (e: MouseEvent): void => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setQualityOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [qualityOpen]);
-
-  const handleQualitySelect = (quality: VideoQuality): void => {
-    onSelectQuality(video.id, quality);
-    setQualityOpen(false);
-  };
 
   const handleCardClick = (): void => {
     if (downloading) return;
@@ -142,40 +124,26 @@ export function VideoCard({
                 )}
 
                 {hasMultipleVariants && (
-                  <div className={styles.qualityWrapper} ref={wrapperRef}>
-                    <button
-                      type="button"
-                      className={styles.qualityTrigger}
-                      onClick={(e) => { e.stopPropagation(); setQualityOpen((open) => !open); }}
-                      aria-label="Select quality"
-                      aria-expanded={qualityOpen}
-                    >
-                      {selectedVariant?.quality ?? 'Quality'}
-                      <Icon name="chevronDown" className={styles.chevron} />
-                    </button>
-
-                    {qualityOpen && (
-                      <VStack gap="0-5" className={styles.qualityMenu} role="listbox">
-                        {video.variants.map((variant) => (
-                          <HStack
-                            key={variant.url}
-                            align="center"
-                            justify="between"
-                            gap="3"
-                            className={`${styles.qualityOption} ${variant.quality === selectedVariant?.quality ? styles.qualitySelected : ''}`}
-                            role="option"
-                            aria-selected={variant.quality === selectedVariant?.quality}
-                            onClick={(e) => { e.stopPropagation(); handleQualitySelect(variant.quality); }}
-                          >
+                  <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <Select
+                      size="sm"
+                      variant="ghost"
+                      value={selectedVariant?.quality}
+                      options={video.variants.map((variant) => ({
+                        value: variant.quality,
+                        label: (
+                          <HStack align="center" justify="between" gap="3">
                             <span>{variant.quality}</span>
                             {variant.size && (
                               <span className={styles.qualitySize}>{formatFileSizeOrUnknown(variant.size)}</span>
                             )}
                           </HStack>
-                        ))}
-                      </VStack>
-                    )}
-                  </div>
+                        ),
+                      }))}
+                      onChange={(quality) => onSelectQuality(video.id, quality as VideoQuality)}
+                      aria-label="Select quality"
+                    />
+                  </span>
                 )}
               </>
             )}

@@ -54,19 +54,22 @@
 .timestamp {
   flex-shrink: 0;
   min-width: 3.2em;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
   text-align: right;
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--leading-tight);
-  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   user-select: none;
   transition: color var(--transition);
 }
 
-.timestamp:hover {
+.timestamp:hover,
+.timestamp:focus-visible {
   color: var(--color-primary);
 }
 

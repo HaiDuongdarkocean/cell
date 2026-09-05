@@ -16,7 +16,14 @@ export function SubtitleHint({
       className={styles.hint}
       data-cell-id="subtitle-hint"
       onClick={onClick}
+      onKeyDown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       role="button"
+      tabIndex={0}
       aria-label={title}
     >
       <div className={styles.dashedBox}>

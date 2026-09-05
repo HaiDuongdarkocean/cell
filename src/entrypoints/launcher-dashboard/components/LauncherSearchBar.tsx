@@ -44,6 +44,7 @@ export function LauncherSearchBar({
         className={styles.input}
         value={displayValue}
         placeholder={placeholder}
+        aria-label={placeholder}
         onChange={handleChange}
         onFocus={onFocus}
         autoComplete="off"

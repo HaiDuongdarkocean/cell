@@ -124,14 +124,14 @@
 Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
 (4 parallel audits: popup / sidepanel+launcher / subtitle / srs-study+sheets)
 
-- [ ] **T11** — P0 sweep (9 items):
-  - [ ] `--stroke-width-xl` undefined → existing token or register (`SelectionBar.module.css:38`)
-  - [ ] `VideoCard` custom listbox → shared `Select` (keyboard + ARIA)
-  - [ ] `CueList` → `role="list"`/`listitem`; timestamp span → `Button`
-  - [ ] Launcher tiles/Settings/Add buttons — wire or `disabled`
-  - [ ] `LauncherSearchBar` input → `aria-label`
-  - [ ] `SubtitleHint` → tabIndex + Enter/Space (or `Button`)
-  - [ ] `--shadow-text-soft`/`--shadow-text-cinema` undefined → register or remove (`subtitleUI.ts`)
+- [~] **T11** — P0 sweep (9 items): 8 done, 1 deferred
+  - [x] `--stroke-width-xl` → `--stroke-width-md` (`SelectionBar.module.css`)
+  - [x] `VideoCard` custom listbox → shared `Select` (options render quality+size via ReactNode label)
+  - [x] `CueList` → `role="list"`/`listitem`; timestamp span → `<button>` + `aria-label` + focus-visible
+  - [~] Launcher tiles/Settings/Add buttons — **deferred**: WIP design-concept page, handlers need product intent (can't wire fake actions)
+  - [x] `LauncherSearchBar` input → `aria-label={placeholder}`
+  - [x] `SubtitleHint` → `tabIndex={0}` + Enter/Space handler
+  - [x] `--shadow-text-soft`/`--shadow-text-cinema` → token names exist as `--shadow-textSoft`/`--shadow-textCinema` (camelCase) — fixed reference, no registration needed
 - [ ] **T12** — P1 atom migrations (~32): Badge ×3, Heading ×2, Progress, SelectableCard ×2, Button copy ×2, Select/SearchField/Input ×10, Textarea (UserCssPanel), `role="listbox"` trackList, `Sheet` a11y (title/focusTrap/close), `--color-danger` undefined fix
 - [ ] **T13** — P2 tokenization + dead CSS: opacity tokens, `ease`→`--ease-*`, `inset 0 0 0 1px`→`--border-width-hairline`, drop `var(--t, literal)` fallbacks for registered tokens, dead selectors (srs App ×10, SubtitlePanel ×5, SubtitleManagerPanel ×3, SubtitleSearchPanel ×1), destructive `ghost`→`destructive`, `@/shared/icons/Icon`→`@/shared/ui/Icon` barrel, Button CSS overrides (`.toolRow`, `.audioButton`…)
 - [ ] **T14** — P3 document intentional: subtitle content px sizing, preview scale, error-boundary crash styles, `SHEET_MARGIN_PX`
