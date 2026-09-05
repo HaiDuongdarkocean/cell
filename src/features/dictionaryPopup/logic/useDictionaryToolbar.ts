@@ -187,7 +187,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
         if (mountedRef.current && (items.length > 0 || audioItems.length > 0)) {
           setAudioItems(items);
-          setAudioSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
+          setAudioSelection(new Map());
         }
 
         return items;
@@ -223,7 +223,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           const items = response.data.items;
           if (mountedRef.current) {
             setImageItems(items);
-            setImageSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
+            setImageSelection(new Map());
           }
           return items;
         }
@@ -312,12 +312,12 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   }, [activeTab, result?.term, result?.langCode]);
 
   const selectedAudioCount = useMemo(
-    () => audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected).length,
+    () => audioItems.filter((item) => audioSelection.get(item.id) === true).length,
     [audioItems, audioSelection],
   );
 
   const selectedImageCount = useMemo(
-    () => imageItems.filter((item) => imageSelection.get(item.id) ?? item.defaultSelected).length,
+    () => imageItems.filter((item) => imageSelection.get(item.id) === true).length,
     [imageItems, imageSelection],
   );
 

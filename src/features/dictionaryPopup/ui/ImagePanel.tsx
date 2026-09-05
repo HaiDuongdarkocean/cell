@@ -100,7 +100,7 @@ export function ImagePanel({
         data-cell-id="dictionary-image-strip"
       >
         {items.map((item) => {
-          const selected = selection.get(item.id) ?? item.defaultSelected;
+          const selected = selection.get(item.id) === true;
           return (
             <button
               type="button"
