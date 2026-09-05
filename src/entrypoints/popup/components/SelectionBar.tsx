@@ -1,5 +1,5 @@
 import { Button, HStack } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './SelectionBar.module.css';
 
 interface SelectionBarProps {

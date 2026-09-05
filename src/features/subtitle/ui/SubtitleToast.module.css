@@ -17,7 +17,7 @@
   box-shadow: var(--shadow-popover);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
-  animation: toast-in var(--transition-fast) ease-out;
+  animation: toast-in var(--duration-150) var(--ease-out);
 }
 
 @keyframes toast-in {

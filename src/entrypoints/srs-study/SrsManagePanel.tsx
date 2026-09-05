@@ -160,7 +160,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
         </Button>
         <Button
           material="solid"
-          variant="ghost"
+          variant="destructive"
           size="sm"
           onClick={() => { void handleDeleteDeck(deck.id); }}
           className={styles.deckDelete}
@@ -243,7 +243,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                       {card && (
                         <Button
                           material="solid"
-                          variant="ghost"
+                          variant="destructive"
                           size="sm"
                           onClick={() => { void handleDeleteCard(card.id); }}
                         >
@@ -252,7 +252,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                       )}
                       <Button
                         material="solid"
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
                         onClick={() => { void handleDeleteNote(note.id); }}
                       >

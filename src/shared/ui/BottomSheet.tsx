@@ -1,7 +1,8 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Flex, HStack, VStack } from '.';
 import { Button } from './Button';
+import { Heading } from './Heading';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './BottomSheet.module.css';
 
@@ -98,7 +99,7 @@ export function BottomSheet({
             className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}
           >
             {title && (
-              <h2 id="bottom-sheet-title" className={styles.title}>{title}</h2>
+              <Heading level={2} id="bottom-sheet-title" className={styles.title}>{title}</Heading>
             )}
             <Button shape="circle" material="solid"
               size="sm"

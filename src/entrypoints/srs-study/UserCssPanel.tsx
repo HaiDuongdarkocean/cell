@@ -3,6 +3,7 @@ import { getSrsUserCss, setSrsUserCss } from '@/features/srs/services/userCssSto
 import { Box } from '@/shared/ui/Box';
 import { Text } from '@/shared/ui/Text';
 import { Button } from '@/shared/ui/Button';
+import { Textarea } from '@/shared/ui/Textarea';
 import styles from './UserCssPanel.module.css';
 
 export function UserCssPanel(): React.JSX.Element {
@@ -44,7 +45,7 @@ export function UserCssPanel(): React.JSX.Element {
   return (
     <Box className={styles.panel}>
       <Text className={styles.title}>Custom CSS</Text>
-      <textarea
+      <Textarea
         className={styles.textarea}
         value={css}
         onChange={handleChange}

@@ -91,6 +91,7 @@ export function ManagerLayer({
       <Sheet
         open
         onClose={onClose}
+        aria-label="Subtitle manager"
         initialHeight={
           sheetHeightVh != null
             ? Math.round(window.innerHeight * (sheetHeightVh / 100))

@@ -1,5 +1,5 @@
 import { EmptyState } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import styles from './MediaEmpty.module.css';
 
 interface MediaEmptyProps {
@@ -9,8 +9,8 @@ interface MediaEmptyProps {
 
 const EMPTY_CONFIG = {
   videos: {
-    scanningIcon: <Icon name="search" size={32} className={styles.emptyIcon} />,
-    icon: <Icon name="video" size={32} className={styles.emptyIcon} />,
+    scanningIcon: <Icon name="search" size="lg" className={styles.emptyIcon} />,
+    icon: <Icon name="video" size="lg" className={styles.emptyIcon} />,
     scanningTitle: 'Looking for media…',
     scanningHint: 'Open a page with a video player and\ndownloadable media will appear here.',
     title: 'No media found',
@@ -18,7 +18,7 @@ const EMPTY_CONFIG = {
   },
   subtitles: {
     scanningIcon: null,
-    icon: <Icon name="flag" size={32} className={styles.emptyIcon} />,
+    icon: <Icon name="flag" size="lg" className={styles.emptyIcon} />,
     scanningTitle: '',
     scanningHint: '',
     title: 'No subtitles found',
@@ -26,7 +26,7 @@ const EMPTY_CONFIG = {
   },
   downloads: {
     scanningIcon: null,
-    icon: <Icon name="download" size={32} className={styles.emptyIcon} />,
+    icon: <Icon name="download" size="lg" className={styles.emptyIcon} />,
     scanningTitle: '',
     scanningHint: '',
     title: 'No downloads yet',

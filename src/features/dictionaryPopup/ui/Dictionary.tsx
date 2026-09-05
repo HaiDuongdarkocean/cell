@@ -66,6 +66,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
       <Sheet
         open
         onClose={onClose}
+        aria-label="Dictionary"
         initialHeight={initialSheetHeight}
         onHeightChange={(h) => onSizeChange?.({ width: 0, maxHeight: 0 }, h)}
         data-cell-id="popup-dictionary"

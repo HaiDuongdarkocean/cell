@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
 import { CueList } from './components/CueList';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
@@ -252,9 +253,7 @@ export function App() {
         )}
       </div>
       {cues.length === 0 ? (
-        <div className={styles.empty}>
-          No subtitles loaded
-        </div>
+        <EmptyState title="No subtitles loaded" size="compact" />
       ) : (
         <CueList cues={cues} currentTimeMs={currentTimeMs} offsetMs={offsetMs} onSeek={handleSeek} />
       )}

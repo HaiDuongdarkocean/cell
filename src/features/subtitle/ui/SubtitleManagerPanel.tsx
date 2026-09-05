@@ -315,7 +315,7 @@ function TrackList({
   onDownload?: (role: 'target' | 'native', index: number) => void;
 }): React.JSX.Element {
   return (
-    <div className={styles.trackList} data-cell-id="manager-section-body" data-role={role}>
+    <div className={styles.trackList} role="listbox" data-cell-id="manager-section-body" data-role={role}>
       <Button material="liquid" variant="secondary"
         role="option"
         aria-selected={activeIndex === -1}

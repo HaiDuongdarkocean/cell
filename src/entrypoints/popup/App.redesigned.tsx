@@ -7,7 +7,7 @@ import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgre
 import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
 import { useMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
 import { useSubtitleLanguage } from '@/entrypoints/popup/hooks/useSubtitleLanguage';
-import { Button, Tabs } from '@/shared/ui';
+import { Button, Tabs, Badge } from '@/shared/ui';
 import { Header } from './components/layout/Header';
 import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
@@ -308,7 +308,7 @@ export function AppRedesigned(): React.JSX.Element {
             <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
             <Tabs.Trigger value="downloads" data-cell-id="tab-downloads" className={styles.tabTrigger}>
               Downloads
-              {downloads.length > 0 && <span className={styles.tabBadge}>{downloads.length}</span>}
+              {downloads.length > 0 && <Badge size="sm" variant="default" className={styles.tabBadge}>{downloads.length}</Badge>}
             </Tabs.Trigger>
           </Tabs.List>
 

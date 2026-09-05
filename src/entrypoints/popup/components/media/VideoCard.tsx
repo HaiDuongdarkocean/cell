@@ -5,7 +5,7 @@ import { Center } from '@/shared/ui/Center';
 import { Button, Flex, HStack, VStack, Select } from '@/shared/ui';
 import { Spinner } from '@/shared/ui/Spinner';
 import cardAnimations from '@/shared/ui/CardAnimations.module.css';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
 import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
 import styles from './VideoCard.module.css';

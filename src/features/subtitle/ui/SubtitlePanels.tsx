@@ -770,7 +770,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // Apple §7: enter from right, exit to right — symmetric path.
       // §4: critically damped spring feel (no overshoot).
       // flex-basis animates so the video expands smoothly as the panel slides out.
-      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-medium) var(--ease-standard),opacity var(--duration-medium) var(--ease-standard),flex-basis var(--duration-medium) var(--ease-standard);transform:translateX(100%);opacity:0.3;`;
+      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:0.3;`;
 
       // Attach a shadow root to the panel so the design-system tokens
       // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel

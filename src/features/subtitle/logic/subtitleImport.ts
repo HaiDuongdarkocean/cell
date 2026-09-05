@@ -128,8 +128,8 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     position: absolute;
     inset: calc(var(--space-0-5) * -0.75);
     border-radius: var(--radius-full);
-    backdrop-filter: blur(var(--blur-xs));
-    -webkit-backdrop-filter: blur(var(--blur-xs));
+    backdrop-filter: blur(var(--blur-sm));
+    -webkit-backdrop-filter: blur(var(--blur-sm));
     background: rgba(var(--color-background-rgb), 0.1);
     -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
@@ -148,7 +148,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
       label.style.transition = 'none';
       labelFeather.style.transition = 'none';
     } else {
-      label.style.transition = 'background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce)';
+      label.style.transition = 'background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-spring)';
       labelFeather.style.transition = 'background var(--duration-fast) ease';
     }
   };
