@@ -134,7 +134,7 @@ export function updateBadgeForTab(ctx: BackgroundContext, tabId: number): void {
   try {
     void setBadgeText({ text, tabId });
     void setBadgeBackgroundColor({ color: tokensJson.core.light.primary, tabId });
-    void setBadgeTextColor({ color: tokensJson.derived.light['color-primary-foreground'], tabId });
+    void setBadgeTextColor({ color: tokensJson.derived.light['color-text-inverse'], tabId });
   } catch (err: unknown) {
     console.warn('[background] Failed to update badge:', err);
   }
