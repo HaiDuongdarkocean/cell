@@ -33,15 +33,16 @@
 
 /* Mirrors .cellImageCard metrics: same width, 4/3 box, radius-md.
    No fixed height — aspect-ratio sizes it from the width.
-   10% text over surface keeps the placeholder perceptible on both themes
-   (--color-muted is nearly invisible on light surfaces). */
+   22% text over surface keeps the placeholder perceptible on both themes
+   (--color-muted is nearly invisible on light, 10-16% was too faint on
+   dark, and the pulse halves opacity at its low point). */
 .cellImageSkeletonCard {
   flex: 0 0 auto;
   width: calc(var(--space-10) * 3);
   min-width: calc(var(--space-10) * 3);
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
 }
 
 .cellImageStrip {

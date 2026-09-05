@@ -84,10 +84,11 @@
   border-radius: var(--radius-card);
 }
 
-/* --color-muted is nearly invisible on light surfaces; 10% text keeps the
-   placeholders perceptible in both themes. */
+/* --color-muted is nearly invisible on light surfaces and 10-16% text was
+   too faint on dark — the pulse also halves opacity at its low point, so
+   22% text keeps even the dim end perceptible in both themes. */
 .cellAudioSkeletonPart {
-  background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
   flex-shrink: 0;
 }
 
