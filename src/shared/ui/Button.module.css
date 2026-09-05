@@ -361,7 +361,8 @@
 }
 
 .solid.outline {
-  border-color: var(--color-border);
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-emphasized);
 }
 
 .solid.ghost {
