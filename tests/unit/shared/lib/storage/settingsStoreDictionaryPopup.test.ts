@@ -60,4 +60,38 @@ describe('settingsStore dictionaryPopup roundtrip', () => {
     );
     expect(loaded.dictionaryPopup?.badgePointerTrigger).not.toHaveProperty('enabled');
   });
+
+  it('fills missing nested tts fields when persisted tts slice is incomplete', async () => {
+    const incomplete = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 27,
+      dictionaryPopup: {
+        ...DEFAULT_DICTIONARY_POPUP_SETTINGS,
+        tts: { enabled: true, voices: [] },
+      },
+    } as unknown as Settings;
+    storage[STORAGE_KEYS.SETTINGS] = incomplete;
+    const loaded = await loadSettings();
+    expect(loaded.dictionaryPopup?.tts?.savedVoices).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.downloadedLanguages).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.hiddenLanguages).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.maxDisplay).toBe(3);
+  });
+
+  it('fills missing nested tts fields for unversioned persisted settings', async () => {
+    const v0 = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 0,
+      dictionaryPopup: {
+        ...DEFAULT_DICTIONARY_POPUP_SETTINGS,
+        tts: { enabled: false },
+      },
+    } as unknown as Settings;
+    storage[STORAGE_KEYS.SETTINGS] = v0;
+    const loaded = await loadSettings();
+    expect(loaded.dictionaryPopup?.tts?.savedVoices).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.downloadedLanguages).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.hiddenLanguages).toEqual([]);
+    expect(loaded.dictionaryPopup?.tts?.maxDisplay).toBe(3);
+  });
 });

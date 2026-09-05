@@ -44,6 +44,7 @@ import {
   Info,
   Languages,
   Layers,
+  LayoutGrid,
   LayoutTemplate,
   Library,
   Link,
@@ -192,6 +193,7 @@ import layersSvg from './svg/layers.svg?raw';
 import atomSvg from './svg/atom.svg?raw';
 import moleculeSvg from './svg/component.svg?raw';
 import organismSvg from './svg/users.svg?raw';
+import layoutGridSvg from './svg/layout-grid.svg?raw';
 import wireframeSvg from './svg/layout-template.svg?raw';
 import windowPageSvg from './svg/app-window.svg?raw';
 
@@ -294,6 +296,7 @@ export const ICON_CATALOG = {
   externalLink: { component: ExternalLink, svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external', 'link', 'open', 'new-tab', 'outbound'] } as IconEntry,
   checkDouble: { component: CheckCheck, svg: checkDoubleSvg, source: 'lucide/check-check', tags: ['check', 'double', 'done', 'confirm', 'verified', 'all'] } as IconEntry,
   wrench: { component: Wrench, svg: wrenchSvg, source: 'lucide/wrench', tags: ['wrench', 'settings', 'config', 'tool', 'fix', 'repair'] } as IconEntry,
+  layoutGrid: { component: LayoutGrid, svg: layoutGridSvg, source: 'lucide/layout-grid', tags: ['grid', 'tools', 'apps', 'group', 'tiles', 'squares', 'menu'] } as IconEntry,
   microphone: { component: Mic, svg: microphoneSvg, source: 'lucide/mic', tags: ['microphone', 'voice', 'audio', 'record', 'speak', 'mic'] } as IconEntry,
   volumeHigh: { component: Volume2, svg: volumeHighSvg, source: 'lucide/volume-2', tags: ['volume', 'high', 'loud', 'sound', 'audio', 'speaker'] } as IconEntry,
   volumeLow: { component: Volume1, svg: volumeLowSvg, source: 'lucide/volume-1', tags: ['volume', 'low', 'quiet', 'sound', 'audio', 'speaker'] } as IconEntry,

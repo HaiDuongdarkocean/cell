@@ -8,7 +8,7 @@ import { formatModeDescription } from '../lib/formatStepSummary';
 import type { StudyStep, StudyMode } from '@/entities/studyMode';
 import { CueStrip } from './CueStrip';
 import { StepEditor } from './StepEditor';
-import styles from './StudyModesTab.module.css';
+import styles from './CustomModeBuilder.module.css';
 
 interface CustomModeBuilderProps {
   readonly open: boolean;
@@ -174,9 +174,9 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
             />
           </FormGroup>
           {error && (
-            <Text color="secondary" as="p" className={styles.builderError}>
+            <p className={styles.builderError} role="alert">
               {error}
-            </Text>
+            </p>
           )}
 
           <div>

@@ -13,12 +13,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { Button } from '@/shared/ui/Button';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import type {
   SubtitleApiKey,
   SubtitleApiKeyProvider,
@@ -338,22 +338,22 @@ export function ApiKeyManager({ keys, onChange }: ApiKeyManagerProps): React.JSX
                         )}
                       </div>
                       <div className={styles.keyActions}>
-                        <IconButton material="solid" variant="ghost"
+                        <Button shape="circle" material="solid" variant="ghost"
                           className={styles.iconAction}
                           onClick={() => startEdit(k)}
                           aria-label={`Edit key ${k.label ?? k.id}`}
                           data-cell-id={`key-edit-${k.id}`}
                         >
                           <Icon name="pencil"  />
-                        </IconButton>
-                        <IconButton material="solid" variant="ghost"
+                        </Button>
+                        <Button shape="circle" material="solid" variant="ghost"
                           className={`${styles.iconAction} ${styles.iconActionDanger}`}
                           onClick={() => setDeleteTarget(k)}
                           aria-label={`Delete key ${k.label ?? k.id}`}
                           data-cell-id={`key-delete-${k.id}`}
                         >
                           <Icon name="trash"  />
-                        </IconButton>
+                        </Button>
                       </div>
                     </>
                   )}

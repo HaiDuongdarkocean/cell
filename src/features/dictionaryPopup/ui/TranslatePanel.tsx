@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import styles from './DictionaryPanelView.module.css';
+import panelStyles from './DictionaryPanelView.module.css';
+import styles from './TranslatePanel.module.css';
 
 export interface TranslatePanelProps {
   readonly term: string;
@@ -48,7 +49,7 @@ export function TranslatePanel({
   if (error) {
     return (
       <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
-        <div className={styles.cellTranslateError}>{error}</div>
+        <div className={panelStyles.cellTranslateError}>{error}</div>
         <EmptyState
           size="md"
           icon={<Icon name="languages"  />}
@@ -68,7 +69,7 @@ export function TranslatePanel({
     return (
       <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <div
-          className={`${styles.cellTranslateBlock} ${selected ? styles['cellTranslateBlock--selected'] : ''}`}
+          className={`${panelStyles.cellTranslateBlock} ${selected ? panelStyles['cellTranslateBlock--selected'] : ''}`}
           onClick={onToggle}
           role="button"
           aria-pressed={selected}
@@ -78,7 +79,7 @@ export function TranslatePanel({
             <div className={styles.cellTranslateTarget}>{translation}</div>
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
-          <span className={styles.cellDefCheckBox} aria-hidden="true">
+          <span className={panelStyles.cellDefCheckBox} aria-hidden="true">
             {loading ? <Spinner size="md" /> : <Icon name="check"  />}
           </span>
         </div>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Cell — Tokenize Controls · Concept G</title>
+  <style>
+    :root {
+      --font-family-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --color-background: #F9F9F7;
+      --color-surface: #FFFFFF;
+      --color-surface-elevated: #FAFAF8;
+      --color-surface-hover: #F2F2EF;
+      --color-text-primary: #2A2A2B;
+      --color-text-secondary: #6E6E73;
+      --color-text-tertiary: #9A9AA2;
+      --color-primary: #5E6AD2;
+      --color-primary-subtle: rgba(94,106,210,0.12);
+      --color-border: #E2E2DF;
+      --color-border-subtle: #EFEFEC;
+      --color-border-emphasized: #D6D6D2;
+      --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.06);
+      --space-0-5: 2px;
+      --space-1: 4px;
+      --space-1-5: 6px;
+      --space-2: 8px;
+      --space-2-5: 10px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --radius-md: 6px;
+      --radius-xl: 12px;
+      --radius-pill: 9999px;
+      --touch-target: 44px;
+      --duration-fast: 120ms;
+      --duration-normal: 200ms;
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-family-body);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--color-text-primary);
+      background: var(--color-background);
+    }
+
+    .showcase {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-5);
+    }
+
+    .showcase-header { margin-bottom: var(--space-2); }
+
+    .showcase-title {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .showcase-subtitle {
+      color: var(--color-text-secondary);
+      margin: var(--space-1) 0 0;
+    }
+
+    .g-sim {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .panel {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--color-surface);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2-5) var(--space-3);
+      min-height: var(--touch-target);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .panel-header-left, .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .panel-body {
+      min-height: 140px;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      color: var(--color-text-secondary);
+      background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+    }
+
+    .panel-status {
+      font-size: 13px;
+      color: var(--color-text-tertiary);
+    }
+
+    .close-btn {
+      width: var(--touch-target);
+      height: var(--touch-target);
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .chip {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      min-height: 32px;
+    }
+
+    .switch {
+      width: 44px;
+      height: 24px;
+      border-radius: 9999px;
+      background: var(--color-border);
+      position: relative;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-out);
+      flex-shrink: 0;
+      display: inline-block;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      transition: transform var(--duration-normal) var(--ease-spring);
+    }
+
+    .switch.on { background: var(--color-primary); }
+    .switch.on::after { transform: translateX(20px); }
+
+    .g-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: 4px 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      transition: color var(--duration-fast) var(--ease-out);
+    }
+
+    .g-toggle .g-label { transition: color var(--duration-fast) var(--ease-out); }
+
+    .g-toggle.on .g-label { color: var(--color-primary); }
+
+    .g-toggle:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      color: var(--color-text-tertiary);
+    }
+
+    .g-toggle:disabled .g-label { color: var(--color-text-tertiary); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .switch, .g-toggle { transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class='showcase'>
+    <header class='showcase-header'>
+      <h1 class='showcase-title'>Tokenize Controls</h1>
+      <p class='showcase-subtitle'>Concept G — Two direct toggles. Chosen: minimal, 1–2 taps.</p>
+    </header>
+
+    <div class='g-sim'>
+      <span>Page has video</span>
+      <div class='switch on' id='g-sim-media' role='switch' aria-checked='true' onclick='gToggleHasMedia(this)'></div>
+    </div>
+
+    <div class='panel'>
+      <header class='panel-header'>
+        <div class='panel-header-left'>
+          <select class='chip' aria-label='Language profile' style='appearance:none;padding-right:24px;background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%);background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat;'>
+            <option>English</option>
+            <option>Tiếng Việt</option>
+          </select>
+        </div>
+        <div class='panel-header-right'>
+          <button class='g-toggle' id='g-text' role='switch' aria-checked='false' onclick='gToggle(this)'>
+            <span class='g-label'>Text</span>
+            <span class='switch' id='g-text-switch'></span>
+          </button>
+          <button class='g-toggle' id='g-media' role='switch' aria-checked='false' onclick='gToggle(this)'>
+            <span class='g-label'>Media</span>
+            <span class='switch' id='g-media-switch'></span>
+          </button>
+          <button class='close-btn' aria-label='Close panel'>×</button>
+        </div>
+      </header>
+      <div class='panel-body'>
+        <div class='panel-status' id='g-status'>[ Tokenize off ]</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const gState = { text: false, media: false };
+    let gHasMedia = true;
+
+    function gApplyMediaAvailability() {
+      const mediaToggle = document.getElementById('g-media');
+      mediaToggle.disabled = !gHasMedia;
+      mediaToggle.setAttribute('aria-disabled', String(!gHasMedia));
+      if (!gHasMedia && gState.media) {
+        gState.media = false;
+        document.getElementById('g-media-switch').classList.remove('on');
+        mediaToggle.classList.remove('on');
+        mediaToggle.setAttribute('aria-checked', 'false');
+        gUpdateStatus();
+      }
+    }
+
+    function gToggleHasMedia(el) {
+      gHasMedia = !gHasMedia;
+      el.classList.toggle('on', gHasMedia);
+      el.setAttribute('aria-checked', String(gHasMedia));
+      gApplyMediaAvailability();
+    }
+
+    function gToggle(el) {
+      if (el.disabled) return;
+      const mode = el.id === 'g-text' ? 'text' : 'media';
+      gState[mode] = !gState[mode];
+      el.classList.toggle('on', gState[mode]);
+      el.setAttribute('aria-checked', String(gState[mode]));
+      const sw = document.getElementById(mode === 'text' ? 'g-text-switch' : 'g-media-switch');
+      sw.classList.toggle('on', gState[mode]);
+      gUpdateStatus();
+    }
+
+    function gUpdateStatus() {
+      const status = document.getElementById('g-status');
+      const active = [];
+      if (gState.text) active.push('Text');
+      if (gState.media) active.push('Media');
+      if (!active.length) { status.textContent = '[ Tokenize off ]'; return; }
+      status.textContent = `[ Tokenize: ${active.join(' + ')} ]`;
+    }
+  </script>
+
+</body>
+</html>

@@ -9,8 +9,8 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactElement, type DragEvent } from 'react';
 import { Alert } from '@/shared/ui/Alert';
-import { Button, Card, IconButton } from '@/shared/ui';
-import { Icon } from '@/shared/icons/Icon';
+import { Heading } from '@/shared/ui/Heading';
+import { Button, Card, Icon, Toggle, Select, Textarea, Input, Checkbox } from '@/shared/ui';
 import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
 import type { TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
 import { TtsLanguagePanel } from './TtsLanguagePanel';
@@ -62,9 +62,13 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
   const [voicesLoading, setVoicesLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Defensive fallbacks — corrupted persisted tts slices may miss these arrays.
+  const savedVoices = settings.savedVoices ?? DEFAULT_TTS_SETTINGS.savedVoices;
+  const priorityVoices = settings.voices ?? DEFAULT_TTS_SETTINGS.voices;
+
   // Card 1 — 3-slot selection state (length 3, nullable voiceName).
   const [voices3Slot, setVoices3Slot] = useState<(string | null)[]>(() =>
-    padSlots(settings.voices),
+    padSlots(priorityVoices),
   );
   const [enabled, setEnabled] = useState(settings.enabled);
   const [maxDisplay, setMaxDisplay] = useState(settings.maxDisplay);
@@ -79,11 +83,11 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
 
   // Re-sync local state when settings prop changes (e.g. after save round-trip).
   useEffect(() => {
-    setVoices3Slot(padSlots(settings.voices));
+    setVoices3Slot(padSlots(priorityVoices));
     setEnabled(settings.enabled);
     setMaxDisplay(settings.maxDisplay);
     setAutoplayCount(settings.autoplayCount);
-  }, [settings]);
+  }, [settings, priorityVoices]);
 
   // Load voices on mount via the best available TTS engine.
   // Pre-select savedVoices (settings.tts.savedVoices) so reopening options
@@ -97,7 +101,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
         if (cancelled) return;
         setVoices([...list]);
         const savedVoiceMap = new Map(
-          settings.savedVoices.map((r) => [r.voiceName, r.order]),
+          savedVoices.map((r) => [r.voiceName, r.order]),
         );
         setTesterVoices(
           list.map((v, i) => ({
@@ -119,7 +123,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
     return () => {
       cancelled = true;
     };
-  }, [settings.savedVoices]);
+  }, [savedVoices]);
 
   const countries = useMemo(() => uniqueLangPrefixes(voices), [voices]);
 
@@ -142,7 +146,6 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
         next[slotIndex] = null;
         return next;
       }
-      // Clear this voice from any other slot it occupies.
       for (let i = 0; i < next.length; i++) {
         if (next[i] === voiceName) next[i] = null;
       }
@@ -158,9 +161,10 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
       maxDisplay,
       autoplayCount,
       voices: voices3Slot.filter((v): v is string => Boolean(v)),
+      savedVoices,
     });
     setStatusMsg('Đã lưu cài đặt TTS.');
-  }, [onSave, settings, enabled, maxDisplay, autoplayCount, voices3Slot]);
+  }, [onSave, settings, enabled, maxDisplay, autoplayCount, voices3Slot, savedVoices]);
 
   const handlePlayVoice = useCallback(async (voiceName: string) => {
     const text = testText.trim() || 'Hello, this is a text-to-speech test.';
@@ -269,17 +273,17 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
       {/* === Card 1: TTS Settings === */}
       <Card className={styles.card}>
         <header className={styles.card__header}>
-          <h2 className={styles.card__title}>Text-to-Speech (TTS)</h2>
+          <Heading level={2} size={3} className={styles.card__title}>Text-to-Speech (TTS)</Heading>
         </header>
         <div className={styles.card__body}>
           <div className={styles.row}>
             <div className={styles.row__label}>Enable TTS</div>
             <div className={styles.row__control}>
-              <input
-                type="checkbox"
+              <Toggle
                 checked={enabled}
-                onChange={(e) => setEnabled(e.target.checked)}
-                data-cell-id="tts-enabled"
+                onChange={setEnabled}
+                ariaLabel="Enable TTS"
+                dataTestId="tts-enabled"
               />
               <span>Read example sentence</span>
             </div>
@@ -288,15 +292,16 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           <div className={styles.row}>
             <div className={styles.row__label}>Show buttons</div>
             <div className={styles.row__control}>
-              <select
-                value={maxDisplay}
-                onChange={(e) => setMaxDisplay(Number(e.target.value))}
+              <Select
+                value={String(maxDisplay)}
+                onChange={(v) => setMaxDisplay(Number(v))}
                 data-cell-id="tts-max-display"
-              >
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
+                options={[
+                  { value: '1', label: '1' },
+                  { value: '2', label: '2' },
+                  { value: '3', label: '3' },
+                ]}
+              />
             </div>
           </div>
 
@@ -311,14 +316,14 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 <div className={styles.voiceSelectionList} role="list" data-cell-id="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
-                      <IconButton material="solid"
+                      <Button shape="circle" material="solid"
                         size="sm"
                         onClick={() => void handlePlayVoice(v.voiceName)}
                         disabled={playing}
                         aria-label={`Phát giọng ${v.voiceName}`}
                       >
                         <Icon name="play"  />
-                      </IconButton>
+                      </Button>
                       <div className={styles.voiceSelectionSlots}>
                         {[0, 1, 2].map((slot) => (
                           <label key={slot} className={styles.slotRadio}>
@@ -344,16 +349,17 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           <div className={styles.row}>
             <div className={styles.row__label}>Autoplay</div>
             <div className={styles.row__control}>
-              <select
-                value={autoplayCount}
-                onChange={(e) => setAutoplayCount(Number(e.target.value))}
+              <Select
+                value={String(autoplayCount)}
+                onChange={(v) => setAutoplayCount(Number(v))}
                 data-cell-id="tts-autoplay"
-              >
-                <option value={0}>0</option>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
+                options={[
+                  { value: '0', label: '0' },
+                  { value: '1', label: '1' },
+                  { value: '2', label: '2' },
+                  { value: '3', label: '3' },
+                ]}
+              />
             </div>
           </div>
 
@@ -368,14 +374,15 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
       {/* === Card 2: TTS Tester === */}
       <Card className={`${styles.card} ${styles.ttsTester}`}>
         <header className={styles.card__header}>
-          <h2 className={styles.card__title}>TTS Tester</h2>
+          <Heading level={2} size={3} className={styles.card__title}>TTS Tester</Heading>
         </header>
         <div className={styles.card__body}>
           <div className={styles.row}>
             <div className={styles.row__label}>Sentence</div>
             <div className={styles.row__control}>
-              <textarea
+              <Textarea
                 rows={2}
+                resize="vertical"
                 value={testText}
                 onChange={(e) => setTestText(e.target.value)}
                 placeholder="Type a sentence to test"
@@ -387,16 +394,15 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           <div className={styles.row}>
             <div className={styles.row__label}>Filter by country</div>
             <div className={styles.row__control}>
-              <select
+              <Select
                 value={countryFilter}
-                onChange={(e) => setCountryFilter(e.target.value)}
+                onChange={setCountryFilter}
                 data-cell-id="tts-country-filter"
-              >
-                <option value="">All countries</option>
-                {countries.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'All countries' },
+                  ...countries.map((c) => ({ value: c, label: c })),
+                ]}
+              />
             </div>
           </div>
 
@@ -440,7 +446,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                     onDrop={(e) => handleDrop(e, index)}
                   >
                     <span className={styles.dragHandle} aria-hidden="true">⠿</span>
-                    <input
+                    <Input
                       type="number"
                       className={styles.orderInput}
                       value={row.order}
@@ -448,23 +454,25 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                       onChange={(e) => handleOrderChange(row.voiceName, Number(e.target.value))}
                       aria-label="Thứ tự"
                     />
-                    <IconButton material="solid" variant="ghost"
+                    <Button shape="circle" material="solid" variant="ghost"
                       className={styles.voicePlayBtn}
                       onClick={() => void handlePlayVoice(row.voiceName)}
                       disabled={playing}
                       aria-label={`Phát giọng ${row.voiceName}`}
                     >
                       <Icon name="play"  />
-                    </IconButton>
-                    <label className={styles.voiceCheckbox}>
-                      <input
-                        type="checkbox"
-                        checked={row.selected}
-                        onChange={() => handleToggleSelected(row.voiceName)}
-                      />
-                      <span className={styles.voiceName}>{row.voiceName}</span>
-                      <span className={styles.voiceLang}>{row.lang}</span>
-                    </label>
+                    </Button>
+                    <Checkbox
+                      className={styles.voiceCheckbox}
+                      checked={row.selected}
+                      onChange={() => handleToggleSelected(row.voiceName)}
+                      label={
+                        <>
+                          <span className={styles.voiceName}>{row.voiceName}</span>
+                          <span className={styles.voiceLang}>{row.lang}</span>
+                        </>
+                      }
+                    />
                   </div>
                 ))}
               </div>

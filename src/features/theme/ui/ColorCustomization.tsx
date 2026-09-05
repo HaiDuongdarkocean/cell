@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { ResolvedMode, ThemeConfig, CoreColorTokenKey } from '@/entities/theme';
-import { Tabs } from '@/shared/ui';
+import { Tabs, Icon } from '@/shared/ui';
 import styles from './ColorCustomization.module.css';
 
 interface ColorCustomizationProps {
@@ -62,8 +62,8 @@ export function ColorCustomization({ config, onColorChange }: ColorCustomization
     <div className={styles.wrapper} data-cell-id="color-customization">
       <Tabs value={tab} onValueChange={(v) => setTab(v as ResolvedMode)}>
         <Tabs.List>
-          <Tabs.Trigger value="light" data-cell-id="color-tab-light">☀️ Light</Tabs.Trigger>
-          <Tabs.Trigger value="dark" data-cell-id="color-tab-dark">🌙 Dark</Tabs.Trigger>
+          <Tabs.Trigger value="light" data-cell-id="color-tab-light"><Icon name="sun" size="xs" /> Light</Tabs.Trigger>
+          <Tabs.Trigger value="dark" data-cell-id="color-tab-dark"><Icon name="moon" size="xs" /> Dark</Tabs.Trigger>
         </Tabs.List>
       </Tabs>
       <div className={styles.grid}>

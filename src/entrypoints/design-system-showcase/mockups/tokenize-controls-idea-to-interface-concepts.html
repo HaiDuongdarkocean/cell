@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Cell — Tokenize Controls · Idea-to-Interface Concepts</title>
+  <style>
+    :root {
+      --font-family-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --color-background: #F9F9F7;
+      --color-surface: #FFFFFF;
+      --color-surface-elevated: #FAFAF8;
+      --color-surface-hover: #F2F2EF;
+      --color-surface-popover: var(--color-surface-elevated);
+      --color-text-primary: #2A2A2B;
+      --color-text-secondary: #6E6E73;
+      --color-text-tertiary: #9A9AA2;
+      --color-primary: #5E6AD2;
+      --color-primary-rgb: 94, 106, 210;
+      --color-primary-subtle: rgba(94,106,210,0.12);
+      --color-primary-hover: #4F5AC4;
+      --color-border: #E2E2DF;
+      --color-border-subtle: #EFEFEC;
+      --color-border-emphasized: #D6D6D2;
+      --color-overlay: rgba(0,0,0,0.32);
+      --shadow-md: 0 4px 8px -2px rgb(0 0 0 / 0.06);
+      --shadow-lg: 0 12px 24px -4px rgb(0 0 0 / 0.08);
+      --shadow-popover: 0 4px 6px -1px rgb(0 0 0 / 0.06);
+      --space-0-5: 2px;
+      --space-1: 4px;
+      --space-1-5: 6px;
+      --space-2: 8px;
+      --space-2-5: 10px;
+      --space-3: 12px;
+      --space-3-5: 14px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-xl: 12px;
+      --radius-pill: 9999px;
+      --touch-target: 44px;
+      --duration-fast: 120ms;
+      --duration-normal: 200ms;
+      --duration-slow: 300ms;
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-family-body);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--color-text-primary);
+      background: var(--color-background);
+    }
+
+    .showcase {
+      max-width: 440px;
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+
+    .showcase-header {
+      margin-bottom: var(--space-2);
+    }
+
+    .showcase-title {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .showcase-subtitle {
+      color: var(--color-text-secondary);
+      margin: var(--space-1) 0 0;
+    }
+
+    .concept {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .concept-meta {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-2);
+    }
+
+    .concept-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-tertiary);
+    }
+
+    .concept-name {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .concept-desc {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .panel {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--color-surface);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2-5) var(--space-3);
+      min-height: var(--touch-target);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .panel-header-left, .panel-header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .panel-body {
+      min-height: 140px;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      color: var(--color-text-secondary);
+      background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%);
+      position: relative;
+    }
+
+    .panel-status {
+      font-size: 13px;
+      color: var(--color-text-tertiary);
+    }
+
+    .close-btn {
+      width: var(--touch-target);
+      height: var(--touch-target);
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 20px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .switch {
+      width: 44px;
+      height: 24px;
+      border-radius: 9999px;
+      background: var(--color-border);
+      position: relative;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-out);
+      flex-shrink: 0;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      transition: transform var(--duration-normal) var(--ease-spring);
+    }
+
+    .switch.on { background: var(--color-primary); }
+    .switch.on::after { transform: translateX(20px); }
+
+    .switch-sm {
+      width: 36px;
+      height: 20px;
+    }
+    .switch-sm::after { width: 16px; height: 16px; }
+    .switch-sm.on::after { transform: translateX(16px); }
+
+    .chip {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+      min-height: 32px;
+    }
+
+    .chip:hover { background: var(--color-surface-hover); }
+    .chip.active {
+      background: var(--color-primary-subtle);
+      border-color: var(--color-primary-subtle);
+      color: var(--color-primary);
+    }
+
+    .advanced-btn {
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: 18px;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+
+    .advanced-btn:hover { background: var(--color-surface-hover); color: var(--color-primary); }
+    .advanced-btn.open { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--color-overlay);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-fast);
+      z-index: 100;
+    }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+
+    .sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 80vh;
+      overflow: auto;
+      background: var(--color-surface);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-4);
+      transform: translateY(100%);
+      transition: transform var(--duration-slow) var(--ease-out);
+      z-index: 101;
+    }
+    .sheet.show { transform: translateY(0); }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+    .sheet-header h4 { margin: 0; font-size: 16px; font-weight: 600; }
+    .sheet-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--color-surface-hover); color: var(--color-text-secondary); font-size: 18px; cursor: pointer;
+    }
+
+    .sheet-section + .sheet-section { margin-top: var(--space-3); }
+    .sheet-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 var(--space-2) 0;
+    }
+
+    .sheet-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: var(--space-2-5) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+      min-height: var(--touch-target);
+    }
+    .sheet-row:last-child { border-bottom: none; }
+
+    .mode-title { font-weight: 600; }
+
+    /* Concept A */
+    .a-sim {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-3);
+    }
+
+    .a-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      background: transparent;
+    }
+
+    .a-master {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: 4px 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    .a-master[aria-pressed='true'] { color: var(--color-primary); }
+
+    .a-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--color-border-emphasized);
+      opacity: 0;
+      transform: scaleY(0.8);
+      transition: opacity 0.2s var(--ease-out) 0s, transform 0.2s var(--ease-out) 0s;
+      pointer-events: none;
+    }
+
+    .a-pill .a-chip,
+    .a-pill .a-divider {
+      opacity: 0;
+      max-width: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+      transform: scale(0.9);
+      transition:
+        opacity 0.2s var(--ease-out),
+        transform 0.25s var(--ease-spring),
+        max-width 0.25s var(--ease-out),
+        padding 0.2s var(--ease-out),
+        margin 0.2s var(--ease-out);
+      pointer-events: none;
+    }
+
+    .a-pill .a-chip {
+      border: none;
+      background: transparent;
+    }
+
+    .a-pill .a-chip:hover:not(:disabled) { background: var(--color-surface-hover); }
+    .a-pill .a-chip.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .a-pill .a-chip:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      color: var(--color-text-tertiary);
+    }
+
+    .a-pill .a-chip[data-mode='text'] { transition-delay: 0.04s; }
+    .a-pill.on .a-chip[data-mode='text'] { transition-delay: 0.04s; }
+    .a-pill .a-divider { transition-delay: 0.08s; }
+    .a-pill.on .a-divider { transition-delay: 0.08s; }
+    .a-pill .a-chip[data-mode='media'] { transition-delay: 0.12s; }
+    .a-pill.on .a-chip[data-mode='media'] { transition-delay: 0.12s; }
+
+    .a-pill.on .a-divider {
+      opacity: 1;
+      max-width: 2px;
+      padding: 0;
+      margin: 0 var(--space-1);
+      pointer-events: none;
+      transform: scaleY(1);
+    }
+
+    .a-pill.on .a-chip {
+      opacity: 1;
+      max-width: 100px;
+      padding: 6px 10px;
+      margin-left: 0;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Concept B */
+    .b-master {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: 6px var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      transition: all var(--duration-fast);
+    }
+
+    .b-master.on {
+      background: var(--color-primary-subtle);
+      border-color: var(--color-primary-subtle);
+      color: var(--color-primary);
+    }
+
+    .b-drawer {
+      display: none;
+      width: 100%;
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      animation: slideDown var(--duration-slow) var(--ease-out);
+    }
+    .b-drawer.show { display: grid; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .b-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-3);
+      background: var(--color-surface);
+    }
+
+    .b-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      margin-bottom: var(--space-2);
+    }
+
+    .b-card-title { font-weight: 600; font-size: 15px; }
+
+    .b-card-opts { display: flex; flex-direction: column; gap: var(--space-1); }
+
+    .b-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-1) 0;
+    }
+
+    .b-advanced-link {
+      width: 100%;
+      margin-top: var(--space-2);
+      padding: 8px var(--space-2);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-elevated);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .b-advanced-panel { display: none; padding-top: var(--space-2); }
+    .b-advanced-panel.show { display: block; }
+
+    /* Concept C */
+    .c-hub {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1-5);
+      padding: 6px var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-pill);
+      background: var(--color-surface);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      transition: all var(--duration-fast);
+    }
+
+    .c-hub.on {
+      background: var(--color-primary-subtle);
+      border-color: var(--color-primary-subtle);
+      color: var(--color-primary);
+    }
+
+    .c-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      border-radius: 9999px;
+      background: var(--color-text-tertiary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      transition: all var(--duration-fast);
+    }
+
+    .c-hub.on .c-badge { background: var(--color-primary); }
+
+    .c-master-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: var(--space-2) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+      margin-bottom: var(--space-2);
+    }
+
+    @media (min-width: 640px) {
+      .showcase { max-width: 760px; padding: var(--space-6); }
+      .panel { max-width: 720px; margin: 0 auto; }
+      .b-drawer { grid-template-columns: 1fr 1fr; }
+      .sheet {
+        left: auto;
+        right: auto;
+        bottom: auto;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.96);
+        max-width: 360px;
+        width: 100%;
+        border-radius: var(--radius-xl);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .sheet.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class='showcase'>
+    <header class='showcase-header'>
+      <h1 class='showcase-title'>Tokenize Controls</h1>
+      <p class='showcase-subtitle'>Three mobile-first interface concepts. Tap each control to try it. Recommended: Concept A.</p>
+    </header>
+
+    <!-- Concept A -->
+    <section class='concept' data-concept='A'>
+      <div class='concept-meta'>
+        <span class='concept-label'>Concept A</span>
+        <h2 class='concept-name'>Master Pill + Inline Chips</h2>
+      </div>
+      <p class='concept-desc'>Master switch reveals two multi-select mode chips. If the page has no video, the Media chip is disabled and cannot be turned on.</p>
+
+      <div class='a-sim'>
+        <span>Page has video</span>
+        <div class='switch on' id='a-sim-media' role='switch' aria-checked='true' onclick='aToggleHasMedia(this)'></div>
+      </div>
+
+      <div class='panel'>
+        <header class='panel-header'>
+          <div class='panel-header-left'>
+            <select class='chip' aria-label='Language profile' style='appearance:none;padding-right:24px;background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%);background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat;'>
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class='panel-header-right'>
+            <div class='a-pill' id='a-pill' role='group' aria-label='Tokenize controls'>
+              <button class='a-master' id='a-master' aria-pressed='false' onclick='aToggleMaster()'>
+                <span class='switch' id='a-master-switch'></span>
+                <span>Tokenize</span>
+              </button>
+              <span class='a-divider' aria-hidden='true'></span>
+              <button class='chip a-chip' data-mode='text' onclick='aToggleChip(this)'>Text</button>
+              <button class='chip a-chip' data-mode='media' id='a-chip-media' onclick='aToggleChip(this)'>Media</button>
+            </div>
+            <button class='close-btn' aria-label='Close panel'>×</button>
+          </div>
+        </header>
+        <div class='panel-body'>
+          <div class='panel-status' id='a-status'>[ Tokenize off ]</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Concept B -->
+    <section class='concept' data-concept='B'>
+      <div class='concept-meta'>
+        <span class='concept-label'>Concept B</span>
+        <h2 class='concept-name'>Header Trigger + Body Drawer</h2>
+      </div>
+      <p class='concept-desc'>Header has one Tokenize trigger. When on, a drawer with two mode cards slides into the panel body. Each card holds its own advanced toggles.</p>
+
+      <div class='panel'>
+        <header class='panel-header'>
+          <div class='panel-header-left'>
+            <select class='chip' aria-label='Language profile' style='appearance:none;padding-right:24px;background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%);background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat;'>
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class='panel-header-right'>
+            <button class='b-master' id='b-master' aria-pressed='false' onclick='bToggleMaster()'>
+              <span class='switch' id='b-master-switch'></span>
+              <span>Tokenize</span>
+            </button>
+            <button class='close-btn' aria-label='Close panel'>×</button>
+          </div>
+        </header>
+        <div class='panel-body'>
+          <div class='panel-status' id='b-status'>[ Tokenize off ]</div>
+          <div class='b-drawer' id='b-drawer'>
+            <div class='b-card' data-mode='media'>
+              <div class='b-card-header'>
+                <span class='b-card-title'>Media</span>
+                <div class='switch' data-mode='media' onclick='bToggleMode(this)'></div>
+              </div>
+              <div class='b-card-opts'>
+                <button class='b-advanced-link' onclick='bToggleAdvanced(this)'>Advanced ⋮</button>
+                <div class='b-advanced-panel'>
+                  <div class='b-card-row'><span>Status</span><div class='switch switch-sm on' data-mode='media' data-opt='status' onclick='bToggleOpt(this)'></div></div>
+                  <div class='b-card-row'><span>Frequency</span><div class='switch switch-sm on' data-mode='media' data-opt='frequency' onclick='bToggleOpt(this)'></div></div>
+                </div>
+              </div>
+            </div>
+            <div class='b-card' data-mode='text'>
+              <div class='b-card-header'>
+                <span class='b-card-title'>Text</span>
+                <div class='switch' data-mode='text' onclick='bToggleMode(this)'></div>
+              </div>
+              <div class='b-card-opts'>
+                <button class='b-advanced-link' onclick='bToggleAdvanced(this)'>Advanced ⋮</button>
+                <div class='b-advanced-panel'>
+                  <div class='b-card-row'><span>Status</span><div class='switch switch-sm on' data-mode='text' data-opt='status' onclick='bToggleOpt(this)'></div></div>
+                  <div class='b-card-row'><span>Frequency</span><div class='switch switch-sm on' data-mode='text' data-opt='frequency' onclick='bToggleOpt(this)'></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Concept C -->
+    <section class='concept' data-concept='C'>
+      <div class='concept-meta'>
+        <span class='concept-label'>Concept C</span>
+        <h2 class='concept-name'>Badge Popover</h2>
+      </div>
+      <p class='concept-desc'>A single hub button shows the number of active modes. Tap it to open a bottom sheet (mobile) or popover (desktop) with master, modes, and advanced toggles.</p>
+
+      <div class='panel'>
+        <header class='panel-header'>
+          <div class='panel-header-left'>
+            <select class='chip' aria-label='Language profile' style='appearance:none;padding-right:24px;background-image:linear-gradient(45deg,transparent 50%,var(--color-text-secondary) 50%),linear-gradient(135deg,var(--color-text-secondary) 50%,transparent 50%);background-position:calc(100% - 10px) 50%,calc(100% - 6px) 50%;background-size:4px 4px,4px 4px;background-repeat:no-repeat;'>
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+          </div>
+          <div class='panel-header-right'>
+            <button class='c-hub' id='c-hub' onclick='cOpen()'>
+              <span>Tokenize</span>
+              <span class='c-badge' id='c-badge'>0</span>
+            </button>
+            <button class='close-btn' aria-label='Close panel'>×</button>
+          </div>
+        </header>
+        <div class='panel-body'>
+          <div class='panel-status' id='c-status'>[ Tokenize off ]</div>
+        </div>
+      </div>
+
+      <div class='overlay' id='c-overlay' onclick='cClose()'></div>
+      <div class='sheet' id='c-sheet'>
+        <div class='sheet-header'>
+          <h4>Tokenize modes</h4>
+          <button class='sheet-close' onclick='cClose()' aria-label='Close modes'>×</button>
+        </div>
+        <div class='c-master-row'>
+          <span class='mode-title'>Tokenize</span>
+          <div class='switch' id='c-master-switch' onclick='cToggleMaster()'></div>
+        </div>
+        <div class='sheet-row'>
+          <span class='mode-title'>Media</span>
+          <div class='switch' id='c-mode-media' data-mode='media' onclick='cToggleMode(this)'></div>
+        </div>
+        <div class='sheet-row'>
+          <span class='mode-title'>Text</span>
+          <div class='switch' id='c-mode-text' data-mode='text' onclick='cToggleMode(this)'></div>
+        </div>
+        <div class='sheet-section'>
+          <div class='sheet-section-title'>Advanced</div>
+          <div class='sheet-row'><span>Media · Status</span><div class='switch switch-sm on' data-mode='media' data-opt='status' onclick='cToggleOpt(this)'></div></div>
+          <div class='sheet-row'><span>Media · Frequency</span><div class='switch switch-sm on' data-mode='media' data-opt='frequency' onclick='cToggleOpt(this)'></div></div>
+          <div class='sheet-row'><span>Text · Status</span><div class='switch switch-sm on' data-mode='text' data-opt='status' onclick='cToggleOpt(this)'></div></div>
+          <div class='sheet-row'><span>Text · Frequency</span><div class='switch switch-sm on' data-mode='text' data-opt='frequency' onclick='cToggleOpt(this)'></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Concept A
+    const aState = { master: false, media: false, text: false };
+    let aHasMedia = true;
+
+    function aApplyMediaAvailability() {
+      const mediaChip = document.getElementById('a-chip-media');
+      mediaChip.disabled = !aHasMedia;
+      mediaChip.setAttribute('aria-disabled', String(!aHasMedia));
+      if (!aHasMedia && aState.media) {
+        aState.media = false;
+        mediaChip.classList.remove('active');
+        aUpdateStatus();
+      }
+    }
+
+    function aToggleHasMedia(el) {
+      aHasMedia = !aHasMedia;
+      el.classList.toggle('on', aHasMedia);
+      el.setAttribute('aria-checked', String(aHasMedia));
+      aApplyMediaAvailability();
+    }
+
+    function aToggleMaster() {
+      aState.master = !aState.master;
+      const pill = document.getElementById('a-pill');
+      const masterBtn = document.getElementById('a-master');
+      const masterSwitch = document.getElementById('a-master-switch');
+      pill.classList.toggle('on', aState.master);
+      masterBtn.setAttribute('aria-pressed', String(aState.master));
+      masterSwitch.classList.toggle('on', aState.master);
+      if (!aState.master) {
+        aState.media = false;
+        aState.text = false;
+        document.querySelectorAll('.a-chip').forEach(c => c.classList.remove('active'));
+      }
+      aApplyMediaAvailability();
+      aUpdateStatus();
+    }
+
+    function aToggleChip(el) {
+      if (!aState.master || el.disabled) return;
+      const mode = el.dataset.mode;
+      aState[mode] = !aState[mode];
+      el.classList.toggle('active', aState[mode]);
+      aUpdateStatus();
+    }
+
+    function aUpdateStatus() {
+      const status = document.getElementById('a-status');
+      if (!aState.master) { status.textContent = '[ Tokenize off ]'; return; }
+      const active = [];
+      if (aState.text) active.push('Text');
+      if (aState.media) active.push('Media');
+      if (!aHasMedia && aState.master) {
+        status.textContent = active.length ? `[ Tokenize: ${active.join(' + ')} ] (no video on page)` : '[ Tokenize on — Text only, no video ]';
+        return;
+      }
+      status.textContent = active.length ? `[ Tokenize: ${active.join(' + ')} ]` : '[ Tokenize on — choose a mode ]';
+    }
+
+    // Concept B
+    const bState = { master: false, media: false, text: false };
+
+    function bToggleMaster() {
+      bState.master = !bState.master;
+      const btn = document.getElementById('b-master');
+      const sw = document.getElementById('b-master-switch');
+      const drawer = document.getElementById('b-drawer');
+      btn.classList.toggle('on', bState.master);
+      btn.setAttribute('aria-pressed', String(bState.master));
+      sw.classList.toggle('on', bState.master);
+      drawer.classList.toggle('show', bState.master);
+      if (!bState.master) {
+        bState.media = false;
+        bState.text = false;
+        document.querySelectorAll('.b-card .switch[data-mode]').forEach(s => s.classList.remove('on'));
+        document.querySelectorAll('.b-advanced-panel').forEach(p => p.classList.remove('show'));
+      }
+      bUpdateStatus();
+    }
+
+    function bToggleMode(el) {
+      if (!bState.master) return;
+      const mode = el.dataset.mode;
+      bState[mode] = !bState[mode];
+      el.classList.toggle('on', bState[mode]);
+      bUpdateStatus();
+    }
+
+    function bToggleAdvanced(btn) {
+      const panel = btn.nextElementSibling;
+      panel.classList.toggle('show');
+      btn.textContent = panel.classList.contains('show') ? 'Advanced ▲' : 'Advanced ⋮';
+    }
+
+    function bToggleOpt(el) {
+      el.classList.toggle('on');
+      el.setAttribute('aria-checked', String(el.classList.contains('on')));
+    }
+
+    function bUpdateStatus() {
+      const status = document.getElementById('b-status');
+      if (!bState.master) { status.textContent = '[ Tokenize off ]'; return; }
+      const active = ['media', 'text'].filter(m => bState[m]);
+      status.textContent = active.length ? `[ Tokenize: ${active.map(m => m[0].toUpperCase() + m.slice(1)).join(' + ')} ]` : '[ Tokenize on — choose a mode ]';
+    }
+
+    // Concept C
+    const cState = { master: false, media: false, text: false };
+
+    function cOpen() {
+      document.getElementById('c-overlay').classList.add('show');
+      document.getElementById('c-sheet').classList.add('show');
+      cSyncSheet();
+    }
+
+    function cClose() {
+      document.getElementById('c-overlay').classList.remove('show');
+      document.getElementById('c-sheet').classList.remove('show');
+    }
+
+    function cSyncSheet() {
+      document.getElementById('c-master-switch').classList.toggle('on', cState.master);
+      document.getElementById('c-master-switch').setAttribute('aria-checked', String(cState.master));
+      document.getElementById('c-mode-media').classList.toggle('on', cState.media);
+      document.getElementById('c-mode-media').setAttribute('aria-checked', String(cState.media));
+      document.getElementById('c-mode-text').classList.toggle('on', cState.text);
+      document.getElementById('c-mode-text').setAttribute('aria-checked', String(cState.text));
+    }
+
+    function cToggleMaster() {
+      cState.master = !cState.master;
+      if (!cState.master) { cState.media = false; cState.text = false; }
+      cSyncSheet();
+      cUpdateHub();
+    }
+
+    function cToggleMode(el) {
+      if (!cState.master && !el.classList.contains('on')) return;
+      const mode = el.dataset.mode;
+      cState[mode] = !cState[mode];
+      if (cState[mode]) cState.master = true;
+      cSyncSheet();
+      cUpdateHub();
+    }
+
+    function cToggleOpt(el) {
+      el.classList.toggle('on');
+      el.setAttribute('aria-checked', String(el.classList.contains('on')));
+    }
+
+    function cUpdateHub() {
+      const hub = document.getElementById('c-hub');
+      const badge = document.getElementById('c-badge');
+      const status = document.getElementById('c-status');
+      const active = ['media', 'text'].filter(m => cState[m]);
+      hub.classList.toggle('on', cState.master || active.length > 0);
+      badge.textContent = active.length;
+      if (!cState.master && !active.length) status.textContent = '[ Tokenize off ]';
+      else status.textContent = active.length ? `[ Tokenize: ${active.map(m => m[0].toUpperCase() + m.slice(1)).join(' + ')} ]` : '[ Tokenize on — choose a mode ]';
+    }
+  </script>
+</body>
+</html>

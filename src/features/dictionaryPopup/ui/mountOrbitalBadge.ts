@@ -1,10 +1,10 @@
 import { createElement, type RefObject } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
 import type { UniversalPanelMountController } from '@/features/universalPanel/UniversalPanelController';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
-import orbitalBadgeCss from './OrbitalBadge.module.css?inline';
 
 export interface OrbitalBadgeMountOptions {
   /** Badge diameter in px. */
@@ -77,7 +77,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   const mount = mountReactShadow(badgeElement(initialPreset), {
     parent: document.body,
     position: 'fixed',
-    css: [orbitalBadgeCss],
+    css: allModuleCss,
   });
 
   mount.host.classList.add('js-cell-orbital-badge-host');

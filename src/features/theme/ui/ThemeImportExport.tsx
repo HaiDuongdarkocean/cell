@@ -5,7 +5,7 @@
 
 import { useState, useRef } from 'react';
 import type { ThemeConfig, PresetName } from '@/entities/theme';
-import { Button, Textarea, Alert } from '@/shared/ui';
+import { Button, Textarea, Alert, Icon } from '@/shared/ui';
 import styles from './ThemeImportExport.module.css';
 
 interface ThemeImportExportProps {
@@ -103,9 +103,9 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
     <div className={styles.wrapper} data-cell-id="theme-import-export">
       <div className={styles.label}>Export / Import</div>
       <div className={styles.row}>
-        <Button material="solid" variant="secondary" size="sm" onClick={handleExport} data-cell-id="theme-export">⬇ Export JSON</Button>
-        <Button material="solid" variant="secondary" size="sm" onClick={() => void handleCopy()} data-cell-id="theme-copy">📋 Copy</Button>
-        <Button material="solid" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-cell-id="theme-import-file">⬆ Import file</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={handleExport} leadingIcon={<Icon name="download" size="xs" />} data-cell-id="theme-export">Export JSON</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={() => void handleCopy()} leadingIcon={<Icon name="copy" size="xs" />} data-cell-id="theme-copy">Copy</Button>
+        <Button material="solid" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} leadingIcon={<Icon name="folderOpen" size="xs" />} data-cell-id="theme-import-file">Import file</Button>
         <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFile} className={styles.fileInput} data-cell-id="theme-file-input" />
       </div>
       <div className={styles.label}>Or paste JSON:</div>

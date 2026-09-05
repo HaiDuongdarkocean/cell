@@ -13,11 +13,11 @@ describe('ContrastBadges', () => {
     expect(screen.getByTestId('contrast-badge-Primary Foreground / Primary')).toBeInTheDocument();
   });
 
-  it('badge title shows ratio + level', () => {
+  it('badge shows ratio + level as visible text (keyboard-accessible)', () => {
     const result = validateTheme(DEFAULT_THEME_CONFIG.customColors.light);
     render(<ContrastBadges result={result} />);
     const badge = screen.getByTestId('contrast-badge-Text / Canvas');
-    expect(badge.getAttribute('title')).toMatch(/Text \/ Canvas:.*:1/);
+    expect(badge.textContent).toMatch(/Text \/ Canvas:.*:1/);
   });
 
   it('shows Fail badge when contrast fails', () => {

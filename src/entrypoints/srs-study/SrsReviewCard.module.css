@@ -1,0 +1,256 @@
+.card {
+  width: 100%;
+  max-width: 42.5rem;
+  margin-inline: auto;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.progress {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.progressDot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  opacity: 0.4;
+}
+
+.progressDotActive {
+  background: var(--color-primary);
+  opacity: 1;
+}
+
+.front {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.componentType {
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+}
+
+.stimulus {
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.stimulusType {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.stimulusField {
+  margin-bottom: var(--space-3);
+}
+
+.stimulusField:last-child {
+  margin-bottom: 0;
+}
+
+.stimulusText {
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  text-align: center;
+}
+
+.stimulusImage {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.stimulusAudio {
+  width: 100%;
+  max-width: 20rem;
+  margin-inline: auto;
+}
+
+.spellingInput {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.showAnswerButton {
+  max-width: 15rem;
+}
+
+.back {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.backHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.badgeNew {
+  display: inline-flex;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-success);
+  color: var(--color-on-success);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.targetWord {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.sentenceBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  text-align: center;
+}
+
+.sentence {
+  font-size: var(--font-size-xl);
+  line-height: 1.5;
+}
+
+.sentenceTarget {
+  font-weight: var(--font-weight-bold);
+}
+
+.audioRow {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.audioButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.translation {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.defBlock {
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.defHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.defTarget {
+  font-weight: var(--font-weight-bold);
+}
+
+.defIpa {
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+}
+
+.defStar {
+  color: var(--color-warning);
+}
+
+.imageBlock {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.notesBlock {
+  padding: var(--space-4);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.notesTitle {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.list {
+  list-style: disc;
+  padding-left: var(--space-5);
+  text-align: left;
+}
+
+.listItem {
+  margin-bottom: var(--space-1);
+}
+
+.rating {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.rating .ratingButton {
+  width: var(--space-14);
+  height: var(--space-14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-2xl);
+  border: none;
+}
+
+.rating .forgetButton {
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+}
+
+.rating .rememberButton {
+  background: linear-gradient(135deg, var(--color-warning), var(--color-error));
+  color: var(--color-text-on-primary);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

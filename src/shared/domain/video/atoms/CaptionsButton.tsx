@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './CaptionsButton.module.css';
 
@@ -26,7 +26,7 @@ export function CaptionsButton({
   ...rest
 }: CaptionsButtonProps): React.JSX.Element {
   return (
-    <IconButton material="solid"
+    <Button shape="circle" material="solid"
       active={captionsOn}
       disabled={disabled || !available}
       aria-pressed={captionsOn}
@@ -35,6 +35,6 @@ export function CaptionsButton({
       {...rest}
     >
       <Icon name="captions"  />
-    </IconButton>
+    </Button>
   );
 }

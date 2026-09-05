@@ -1,0 +1,49 @@
+/* StepEditor — one custom-mode step row (index + option chip groups). */
+
+.stepRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+}
+
+.stepIndex {
+  min-width: var(--space-5);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+}
+
+.stepOptions {
+  flex: 1;
+  min-width: 0;
+}
+
+.stepOption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stepOptionLabel {
+  min-width: var(--space-16);
+  flex-shrink: 0;
+}
+
+.stepChipGroup {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+  .stepOption {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stepChipGroup {
+    width: 100%;
+  }
+}

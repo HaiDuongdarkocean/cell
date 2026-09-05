@@ -1,6 +1,5 @@
 import styles from './Header.module.css';
-import { HStack } from '@/shared/ui';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button, HStack } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 
 interface HeaderProps {
@@ -30,9 +29,9 @@ export function Header({
       </HStack>
       <HStack align="center" gap="0-5" className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           size="sm"
-          variant={isActive ? 'ghost' : 'danger'}
+          variant={isActive ? 'ghost' : 'destructive'}
           active={!isActive}
           onClick={onToggleExtension}
           aria-label="Toggle extension"
@@ -44,10 +43,10 @@ export function Header({
           ) : (
             <Icon name="power" className={styles.icon} />
           )}
-        </IconButton>
+        </Button>
 
         {/* Auto Download toggle — primary active when ON */}
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           size="sm"
           active={isAutoDownloadActive}
           onClick={onToggleAutoDownload}
@@ -56,10 +55,10 @@ export function Header({
           title={isAutoDownloadActive ? 'Auto download: ON — URL sẽ tự tải khi ghé lại' : 'Auto download: OFF — click để whitelist trang này'}
         >
           <Icon name="download" className={styles.icon} />
-        </IconButton>
+        </Button>
 
         {/* Theme toggle */}
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           size="sm"
           onClick={onToggleTheme}
           aria-label="Toggle theme"
@@ -70,17 +69,17 @@ export function Header({
           ) : (
             <Icon name="sun" className={styles.iconSun} />
           )}
-        </IconButton>
+        </Button>
 
         {/* Settings */}
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           size="sm"
           onClick={onOpenSettings}
           aria-label="Settings"
           title="Settings"
         >
           <Icon name="settings" className={styles.icon} />
-        </IconButton>
+        </Button>
       </HStack>
     </header>
   );

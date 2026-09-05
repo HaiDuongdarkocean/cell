@@ -10,9 +10,9 @@
  */
 import type { ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { useRef, useCallback } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import type { CardCreatorQueueItem, Toast } from '../types';
 import styles from './QueueSidebar.module.css';
 
@@ -146,14 +146,14 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
           {item.status}
         </span>
       </Button>
-      <IconButton material="solid" variant="ghost"
+      <Button shape="circle" material="solid" variant="ghost"
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={`Remove ${item.term} from queue`}
         data-cell-id={`cc-queue-delete-${index}`}
       >
         <Icon name="x" className={styles['cc-queue__item-delete-icon']} />
-      </IconButton>
+      </Button>
     </li>
   );
 }

@@ -1,4 +1,4 @@
-import { IconButton, Icon } from '@/shared/ui';
+import { Button, Icon } from '@/shared/ui';
 import { useThemeStore } from '@/stores/themeStore';
 import type { PresetName } from '@/entities/theme';
 import styles from './LauncherUserBar.module.css';
@@ -28,7 +28,7 @@ export function LauncherUserBar() {
 
   return (
     <nav className={styles.userBar} aria-label="User actions">
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         size="lg"
         variant="ghost"
         onClick={cycleMode}
@@ -36,8 +36,8 @@ export function LauncherUserBar() {
         title={`Theme: ${mode}`}
       >
         <Icon name={themeIcon} size="md" />
-      </IconButton>
-      <IconButton material="solid"
+      </Button>
+      <Button shape="circle" material="solid"
         size="lg"
         variant="ghost"
         onClick={cyclePreset}
@@ -45,23 +45,23 @@ export function LauncherUserBar() {
         title={`Preset: ${config.preset}`}
       >
         <Icon name="layers" size="md" />
-      </IconButton>
-      <IconButton material="solid"
+      </Button>
+      <Button shape="circle" material="solid"
         size="lg"
         variant="ghost"
         aria-label="Settings"
         title="Settings"
       >
         <Icon name="settings" size="md" />
-      </IconButton>
-      <IconButton material="solid"
+      </Button>
+      <Button shape="circle" material="solid"
         size="lg"
         variant="ghost"
         aria-label="Add"
         title="Add"
       >
         <Icon name="plus" size="md" />
-      </IconButton>
+      </Button>
     </nav>
   );
 }

@@ -1,0 +1,70 @@
+/* DictionaryToolbar — bottom tab bar (audio/image/translate/links/pronunciation). */
+
+.cellLabel {
+  display: none;
+  font-size: var(--font-size-xs);
+}
+
+.cellToolbarTab svg {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+  flex-shrink: 0;
+}
+
+.cellToolbar {
+  display: flex;
+  gap: var(--space-1);
+  padding: 0;
+  align-items: center;
+}
+
+/* Double class = specificity beats global .btn height/padding.
+   Icon-only (label hidden via .cellLabel): min-width keeps it a 32px circle.
+   Label visible: content stretches width past min-width → pill. */
+.cellToolbar .cellToolbarTab {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  height: var(--iconbutton-size-sm);
+  min-height: var(--iconbutton-size-sm); /* beat .button min-height (--touch-target 40px) */
+  width: auto;
+  min-width: var(--iconbutton-size-sm);
+  padding: 0;
+  gap: 0;
+  justify-content: center;
+}
+
+/* Non-active (ghost) tabs get a subtle background so they're visible
+   against the panel surface. Active tabs keep .btn--primary background
+   with fixed white icon color (not theme-dependent). */
+.cellToolbarTab[aria-selected="false"] {
+  background: var(--color-surface-hover);
+}
+
+.cellToolbarTab[aria-selected="true"] {
+  color: var(--color-text-on-primary);
+}
+
+.cellToolbarLabel {
+  /* visibility is controlled by .cellLabel so container queries can hide it on narrow widths */
+}
+
+.cellToolbarBadge {
+  position: absolute;
+  top: 0;
+  right: calc(-1.5 * var(--space-0-5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-4);
+  height: var(--space-4);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: var(--z-dropdown);
+}

@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { Button } from './Button';
-import { IconButton } from './IconButton';
+
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Pagination.module.css';
@@ -176,9 +176,9 @@ export function Pagination({
             aria-label="Jump to page"
             className={styles.jumpField}
           />
-          <IconButton material="solid" aria-label="Jump to page" size="sm" variant="ghost" onClick={handleJump}>
+          <Button shape="circle" material="solid" aria-label="Jump to page" size="sm" variant="ghost" onClick={handleJump}>
             <Icon name="search" />
-          </IconButton>
+          </Button>
         </div>
       )}
     </div>

@@ -1,5 +1,7 @@
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
+import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { Heading } from '@/shared/ui/Heading';
 import { rankToBand } from '@/shared/lib/frequencyBand';
 import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciation';
 import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl';
@@ -104,31 +106,37 @@ export function CandidateView({
         <div className={styles.cellHeaderRow}>
           <div className={styles.cellHeaderMain}>
             <div className={styles.cellHeaderWordRow}>
-              <h2 className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</h2>
+              <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</Heading>
             </div>
           </div>
           <div className={styles.cellHeaderActions}>
-            <button
-              type="button"
-              className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellHeaderSend}`}
+            <Button
+              shape="circle"
+              size="sm"
+              variant="outline"
+              material="solid"
+              className={styles.cellHeaderSend}
               aria-label="Send to Card Creator"
               title="Send to Card Creator"
               onClick={panel.sendToCard}
               data-cell-id="dictionary-send-to-card"
             >
               <Icon name="pencil"  />
-            </button>
+            </Button>
             {onQuickAdd && (
-              <button
-                type="button"
-                className={`icon-btn icon-btn--sm icon-btn--filled ${styles.cellHeaderQuickAdd}`}
+              <Button
+                shape="circle"
+                size="sm"
+                variant="primary"
+                material="solid"
+                className={styles.cellHeaderQuickAdd}
                 aria-label="Quick Add"
                 title="Quick Add"
                 onClick={panel.quickAdd}
                 data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -142,25 +150,31 @@ export function CandidateView({
             </span>
           )}
           <span className={styles.cellHeaderAudioGroup}>
-            <button
-              type="button"
-              className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
+            <Button
+              shape="circle"
+              size="xs"
+              variant="ghost"
+              material="solid"
+              className={styles.cellHeaderAudio}
               aria-label="Play word audio"
               title="Play word audio"
               onClick={panel.playTerm}
               data-cell-id="dictionary-play-term"
             >
               <Icon name="audioWave"  />
-            </button>
-            <button
-              type="button"
-              className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
+            </Button>
+            <Button
+              shape="circle"
+              size="xs"
+              variant="ghost"
+              material="solid"
+              className={styles.cellHeaderAudio}
               aria-label="Play sentence audio"
               title="Play sentence audio"
               onClick={panel.playSentence}
             >
               <Icon name="messageSquare"  />
-            </button>
+            </Button>
           </span>
         </div>
         <div className={styles.cellHeaderSecond}>

@@ -11,7 +11,6 @@ import {
   VolumeControl,
 } from '@/shared/domain/video/atoms';
 import { Button } from '@/shared/ui';
-import { IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './PlayerControls.module.css';
 
@@ -152,25 +151,25 @@ export function PlayerControls({
       <div className={styles.controlsRow}>
         <div className={styles.pillLeft}>
           {onPrevVideo && (
-            <IconButton material="solid"
+            <Button shape="circle" material="solid"
               aria-label="Previous video"
               title="Previous video"
               disabled={!hasPrevVideo}
               onClick={onPrevVideo}
             >
               <Icon name="chevronLeft" />
-            </IconButton>
+            </Button>
           )}
           <PlayPauseButton playing={isPlaying} onClick={onPlayPause} />
           {onNextVideo && (
-            <IconButton material="solid"
+            <Button shape="circle" material="solid"
               aria-label="Next video"
               title="Next video"
               disabled={!hasNextVideo}
               onClick={onNextVideo}
             >
               <Icon name="chevronRight" />
-            </IconButton>
+            </Button>
           )}
           <SkipButton
             direction="backward"
@@ -202,7 +201,7 @@ export function PlayerControls({
           )}
           {hasSettingsItems && (
             <div className={styles.settingsWrap} ref={settingsRef}>
-              <IconButton material="solid"
+              <Button shape="circle" material="solid"
                 aria-label="Settings"
                 aria-haspopup="menu"
                 aria-expanded={settingsOpen}
@@ -210,7 +209,7 @@ export function PlayerControls({
                 title="Settings"
               >
                 <Icon name="settings" />
-              </IconButton>
+              </Button>
               {settingsOpen && (
                 <div className={styles.settingsMenu} role="menu">
                   <div className={styles.settingsItem}>

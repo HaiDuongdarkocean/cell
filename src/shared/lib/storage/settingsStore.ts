@@ -461,9 +461,10 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
 };
 
 /**
- * One-level shallow merge of nested object fields with their current defaults.
+ * Recursively merge nested object fields with their current defaults.
  * Keeps stored user values while ensuring any new nested fields added in later
  * defaults are present (forward-compat for incomplete persisted objects).
+ * Also coerces corrupted arrays back to their default shape.
  */
 function mergeNestedObjectDefaults(
   settings: Record<string, unknown>,
@@ -473,15 +474,47 @@ function mergeNestedObjectDefaults(
   for (const key of Object.keys(defaults)) {
     const defaultValue = defaults[key];
     const value = merged[key];
-    if (
-      defaultValue !== null &&
-      typeof defaultValue === 'object' &&
-      !Array.isArray(defaultValue) &&
-      value !== null &&
-      typeof value === 'object' &&
-      !Array.isArray(value)
-    ) {
-      merged[key] = { ...(defaultValue as Record<string, unknown>), ...(value as Record<string, unknown>) };
+    if (defaultValue !== null && typeof defaultValue === 'object' && !Array.isArray(defaultValue)) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        merged[key] = mergeNestedObjectDefaults(
+          value as Record<string, unknown>,
+          defaultValue as Record<string, unknown>,
+        );
+      } else {
+        // Stored value was missing/corrupted (e.g., undefined) — reset to defaults.
+        merged[key] = { ...(defaultValue as Record<string, unknown>) };
+      }
+    } else if (value === undefined) {
+      merged[key] = defaultValue;
+    } else if (Array.isArray(defaultValue) && !Array.isArray(value)) {
+      // Corrupted array field (e.g., persisted as a primitive) — reset to default.
+      merged[key] = [...defaultValue];
+    }
+  }
+  return merged;
+}
+
+/** Coerce corrupted top-level fields back to their default types.
+ *
+ * Adds a second line of defense for arrays and missing primitives that
+ * `mergeNestedObjectDefaults` does not cover (e.g., `keyboardShortcuts` stored
+ * as a non-array, or a string field persisted as `undefined`).
+ */
+function coerceDefaultTypes(
+  settings: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...settings };
+  for (const key of Object.keys(defaults)) {
+    const defaultValue = defaults[key];
+    const value = merged[key];
+    if (value === undefined) {
+      merged[key] = defaultValue;
+      continue;
+    }
+    if (defaultValue === null) continue;
+    if (Array.isArray(defaultValue) && !Array.isArray(value)) {
+      merged[key] = [...defaultValue];
     }
   }
   return merged;
@@ -508,13 +541,14 @@ export async function loadSettings(): Promise<Settings> {
     // Already current — merge with defaults for forward-compat (new fields added
     // in future versions that the user hasn't saved yet). Validate nav cluster
     // fields in case storage was edited externally with invalid values.
-    const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
+    let merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
     // Deep-merge dictionaryPopup so new nested fields (e.g. popupSheetHeightVh)
     // get their defaults even when stored settings replace the top-level object.
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
     const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
-    mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+    merged = mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+    merged = coerceDefaultTypes(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
     validateNavClusterFields(merged);
     validateLocalPlayerSettings(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
@@ -538,6 +572,7 @@ export async function loadSettings(): Promise<Settings> {
   // Forward-compat: ensure nested overlay style objects carry fontWeight and
   // all nested objects carry the latest default fields (e.g. tts, local player).
   migrated = mergeNestedObjectDefaults(migrated, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  migrated = coerceDefaultTypes(migrated, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   migrated.subtitleOverlayTargetStyle = normalizeOverlayStyle(migrated.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
   migrated.subtitleOverlayNativeStyle = normalizeOverlayStyle(migrated.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
   validateNavClusterFields(migrated);

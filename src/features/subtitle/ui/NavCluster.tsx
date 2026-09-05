@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { NavClusterSettings } from '@/entities/media';
 import { Icon } from '@/shared/icons/Icon';
 import type { ICON_CATALOG } from '@/shared/icons';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './NavCluster.module.css';
 
@@ -63,14 +63,14 @@ function NavClusterInner({
   if (collapsed) {
     return (
       <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
-        <IconButton material="liquid" variant="glass"
+        <Button shape="circle" material="liquid" variant="glass"
           className={styles.collapsedBtn}
           aria-label="Expand subtitle navigation"
           data-cell-id="nav-expand"
           onClick={onToggleCollapsed}
         >
           <Icon name="navRepeat"  />
-        </IconButton>
+        </Button>
       </div>
     );
   }
@@ -78,31 +78,31 @@ function NavClusterInner({
   return (
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
       <div className={styles.main} data-cell-id="nav-main">
-        <IconButton material="liquid" variant="glass" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
+        <Button shape="circle" material="liquid" variant="glass" aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
           <Icon name="navPrev"  />
-        </IconButton>
-        <IconButton material="liquid" variant="glass"
+        </Button>
+        <Button shape="circle" material="liquid" variant="glass"
           aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
           data-cell-id="nav-repeat"
           onClick={onRepeat}
           active={repeatActive}
         >
           <Icon name={repeatIcon}  />
-        </IconButton>
-        <IconButton material="liquid" variant="glass" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
+        </Button>
+        <Button shape="circle" material="liquid" variant="glass" aria-label="Next sentence" data-cell-id="nav-next" onClick={onNext}>
           <Icon name="navNext"  />
-        </IconButton>
+        </Button>
       </div>
       <div className={styles.secondary} data-cell-id="nav-secondary">
-        <IconButton material="liquid" variant="glass" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
+        <Button shape="circle" material="liquid" variant="glass" aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
           <Icon name="navRewind"  />
-        </IconButton>
-        <IconButton material="liquid" variant="glass" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
+        </Button>
+        <Button shape="circle" material="liquid" variant="glass" aria-label={isPlaying ? 'Pause video' : 'Play video'} data-cell-id="nav-play" onClick={onPlayPause}>
           <Icon name={isPlaying ? 'navPause' : 'navPlay'}  />
-        </IconButton>
-        <IconButton material="liquid" variant="glass" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
+        </Button>
+        <Button shape="circle" material="liquid" variant="glass" aria-label="Forward 10 seconds" data-cell-id="nav-forward" onClick={onForward}>
           <Icon name="navForward"  />
-        </IconButton>
+        </Button>
       </div>
     </div>
   );

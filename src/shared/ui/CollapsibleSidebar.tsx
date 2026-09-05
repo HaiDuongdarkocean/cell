@@ -1,8 +1,5 @@
 import { type ReactNode } from 'react';
 import type { ICON_CATALOG } from '@/shared/icons';
-import { Icon } from '@/shared/icons/Icon';
-import { Button } from './Button';
-import { Navigation } from './Navigation';
 import { NavItem } from './NavItem';
 import styles from './CollapsibleSidebar.module.css';
 
@@ -66,66 +63,42 @@ export function CollapsibleSidebar({
 
       <div className={styles.sections}>
         {sections.map((section) => {
-          const activeItem = section.items.find((i) => i.active);
           const sectionKey = section.id ?? section.items.map((i) => i.id).join('-');
-          if (activeItem) {
-            return (
-              <Navigation
-                key={sectionKey}
-                className={styles.nav}
-                orientation="vertical"
-                activeId={activeItem.id}
-                onActiveChange={(id) => {
-                  const item = section.items.find((i) => i.id === id);
-                  item?.onClick?.();
-                }}
-                ariaLabel={section.id ? `Sidebar ${section.id}` : 'Sidebar navigation'}
-              >
-                {section.items.map((item) => (
+          return (
+            <ul
+              key={sectionKey}
+              className={styles.section}
+              aria-label={section.id ? `Sidebar ${section.id}` : undefined}
+            >
+              {section.items.map((item) => (
+                <li key={item.id}>
                   <NavItem
-                    key={item.id}
-                    data-section-id={item.id}
                     icon={item.icon}
                     label={item.label}
                     orientation="vertical"
+                    active={item.active}
+                    aria-current={item.active ? 'true' : undefined}
+                    onClick={item.onClick}
                     data-cell-id={item['data-cell-id']}
                   />
-                ))}
-              </Navigation>
-            );
-          }
-          return (
-            <div key={sectionKey} className={styles.section} role="group">
-              {section.items.map((item) => (
-                <NavItem
-                  key={item.id}
-                  icon={item.icon}
-                  label={item.label}
-                  orientation="vertical"
-                  onClick={item.onClick}
-                  data-cell-id={item['data-cell-id']}
-                />
+                </li>
               ))}
-            </div>
+            </ul>
           );
         })}
       </div>
 
       {onCollapsedChange && (
-        <Button
-          material="solid"
-          variant="ghost"
-          shape="pill"
-          size="md"
-          fullWidth
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          onClick={() => onCollapsedChange(!collapsed)}
-          data-cell-id="collapsible-sidebar-toggle"
-          className={styles.collapseButton}
-        >
-          <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={20} />
-          <span className={styles.collapseLabel}>{collapsed ? 'Expand' : 'Collapse'}</span>
-        </Button>
+        <div className={styles.collapseSection} role="group" aria-label="Sidebar controls">
+          <NavItem
+            icon={collapsed ? 'chevronRight' : 'chevronLeft'}
+            label={collapsed ? undefined : 'Collapse'}
+            orientation="vertical"
+            aria-label={collapsed ? 'Expand sidebar' : undefined}
+            onClick={() => onCollapsedChange(!collapsed)}
+            data-cell-id="collapsible-sidebar-toggle"
+          />
+        </div>
       )}
 
       {footer && <div className={styles.footer}>{footer}</div>}

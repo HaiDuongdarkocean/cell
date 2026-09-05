@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
+import { Surface } from '@/shared/ui/Surface';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { usePopupPosition } from './usePopupPosition';
 import { Sheet } from '@/shared/ui/Sheet';
@@ -76,9 +77,9 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
 
   // Popup mode (desktop) — absolute positioned near selection.
   return (
-    <div
+    <Surface
       ref={popupRef}
-      className={styles.popup}
+      variant="popover"
       role="dialog"
       aria-modal="true"
       aria-label="Dictionary popup"
@@ -91,6 +92,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
           onClose();
         }
       }}
+      className={styles.popup}
     >
       <div
         className={styles.content}
@@ -105,9 +107,9 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
         data-cell-id="popup-dictionary-resize"
         onPointerDown={onPointerDownResize}
       >
-        <Icon name="resize" size={14} />
+        <Icon name="resize" size="xs" />
       </div>
-    </div>
+    </Surface>
   );
 }
 

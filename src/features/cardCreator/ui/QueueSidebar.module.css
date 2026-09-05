@@ -49,7 +49,7 @@
 }
 
 .cc-queue__item:hover {
-  background: var(--color-background-hover);
+  background: var(--color-surface-hover);
 }
 
 .cc-queue__item--active {

@@ -1,0 +1,101 @@
+/* AudioPanel — audio subtab bar, item rows, play button, skeleton.
+   Shared checkbox contract (cellAudioItem / cellDefCheckBox / --checked) lives
+   in DictionaryPanelView.module.css — the unified checkbox SSOT block. */
+
+.cellAudio {
+  padding: 0 var(--space-2);
+}
+
+.cellAudioSubtabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
+}
+
+.cellAudioSubtab {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-bottom: var(--space-0-5) solid transparent;
+  padding-bottom: var(--space-0-5);
+  transition: color var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.cellAudioSubtab:hover {
+  color: var(--color-text);
+}
+
+.cellAudioSubtab--active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
+}
+
+.cellAudioSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.cellAudioSkeletonSubtabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
+}
+
+.cellAudioSkeletonRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.cellAudioSkeletonPlay {
+  flex: 0 0 auto;
+}
+
+.cellAudioSkeletonLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.cellAudioPlay {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cellAudioLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.cellAudioLabelName {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.cellAudioLabelMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}

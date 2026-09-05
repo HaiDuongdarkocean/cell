@@ -16,7 +16,7 @@
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Tabs } from '@/shared/ui';
@@ -254,7 +254,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
       {/* Search row — Manage keys (left) + search bar (input + clear + search inside) + Advanced (right) */}
       <div className={styles.searchInputWrap} data-cell-id="search-input-wrap">
         {hasSearchKeys && (
-          <IconButton material="liquid"
+          <Button shape="circle" material="liquid"
             variant="ghost"
             size="md"
             active={manageKeysOpen}
@@ -264,7 +264,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
             data-cell-id="search-manage-keys-toggle"
           >
             <Wrench aria-hidden="true" />
-          </IconButton>
+          </Button>
         )}
         <div className={styles.searchBar} data-cell-id="search-bar">
           <input
@@ -280,7 +280,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           />
           <div className={styles.searchActions}>
             {query && (
-              <IconButton material="liquid"
+              <Button shape="circle" material="liquid"
                 variant="ghost"
                 size="md"
                 onClick={handleClearQuery}
@@ -288,9 +288,9 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
                 data-cell-id="search-clear"
               >
                 <X aria-hidden="true" />
-              </IconButton>
+              </Button>
             )}
-            <IconButton material="liquid"
+            <Button shape="circle" material="liquid"
               variant="ghost"
               size="md"
               onClick={handleSearchClick}
@@ -299,10 +299,10 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
               data-cell-id="search-button"
             >
               <Search aria-hidden="true" />
-            </IconButton>
+            </Button>
           </div>
         </div>
-        <IconButton material="liquid"
+        <Button shape="circle" material="liquid"
           variant="ghost"
           size="md"
           active={advancedOpen}
@@ -312,7 +312,7 @@ export function SubtitleSearchPanel({ hasSearchKeys, apiKeys, onApiKeysChange, o
           data-cell-id="search-advanced-toggle"
         >
           <SlidersHorizontal aria-hidden="true" />
-        </IconButton>
+        </Button>
       </div>
 
       {advancedOpen && (

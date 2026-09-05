@@ -4,9 +4,9 @@
 // ThemeImportExport. Wires themeStore: switchMode, updateColor, setConfig,
 // resetTheme. applyTheme chạy realtime qua ThemeProvider (options page boot).
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
-import { applyTheme, resolveMode } from '@/features/theme/logic/themeManager';
+import { resolveMode } from '@/features/theme/logic/themeManager';
 import { validateTheme } from '@/features/theme/logic/contrastValidator';
 import { Button } from '@/shared/ui';
 import { ModeCards } from './ModeCards';
@@ -21,11 +21,11 @@ export function ThemePanel(): React.JSX.Element {
   const { mode, config, switchMode, switchPreset, updateColor, setConfig, resetTheme } = useThemeStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
-  // Realtime apply khi mode/config đổi (options page đã có ThemeProvider boot,
-  // nhưng ThemePanel re-apply để preview live ngay cả trước khi store persist).
-  useEffect(() => {
-    applyTheme(resolveMode(mode), config);
-  }, [mode, config]);
+  // NOTE: ThemePanel must NOT call applyTheme itself — every real mount already
+  // has a provider (ThemeProvider on document root for light-DOM pages,
+  // ShadowThemeProvider on the inner container for shadow-mounted UI) that
+  // re-applies whenever the store changes. Writing to document.documentElement
+  // here leaks theme attributes + inline color tokens onto the host page.
 
   const resolved = resolveMode(mode);
   const contrastResult = validateTheme(config.customColors[resolved]);

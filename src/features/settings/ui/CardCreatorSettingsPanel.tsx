@@ -17,6 +17,10 @@ import type { ReactElement } from 'react';
 import type { CardCreatorSettings, AutoCompletableField, AudioFallbackStrategy } from '@/entities/settings';
 import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
 import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
+import { Select } from '@/shared/ui/Select';
+import { Toggle } from '@/shared/ui/Toggle';
+import { Text } from '@/shared/ui/Text';
 import styles from './CardCreatorSettingsPanel.module.css';
 
 interface CardCreatorSettingsPanelProps {
@@ -108,9 +112,8 @@ export function CardCreatorSettingsPanel({
         <label className={styles.fieldLabel} htmlFor="cc-anki-url">
           AnkiConnect URL
         </label>
-        <input
+        <Input
           id="cc-anki-url"
-          className={styles.urlInput}
           type="text"
           value={settings.ankiConnectUrl}
           onChange={handleUrlChange}
@@ -118,9 +121,9 @@ export function CardCreatorSettingsPanel({
           aria-label="AnkiConnect URL"
           data-cell-id="cc-anki-url-input"
         />
-        <p className={styles.hint}>
+        <Text as="p" color="secondary" className={styles.hint}>
           Default: localhost:8765. Change to your PC&apos;s IP address when using Kiwi or Edge on mobile.
-        </p>
+        </Text>
       </div>
 
       {/* Connection status bar */}
@@ -151,23 +154,28 @@ export function CardCreatorSettingsPanel({
       {/* Auto-complete toggles (spec §9.3.1, D7 — schema v14) */}
       <div className={styles.field}>
         <label className={styles.fieldLabel}>Quick Add auto-complete</label>
-        <p className={styles.hint}>
+        <Text as="p" color="secondary" className={styles.hint}>
           When ON, Quick Add auto-fills the field with best-match items. When OFF, only user-ticked items are filled.
-        </p>
+        </Text>
         <div className={styles.toggleList} role="list">
-          {(['definitions', 'wordAudios', 'sentenceAudios', 'images', 'sentenceTranslation', 'sentence'] as const).map((field) => (
-            <label key={field} className={styles.toggleRow}>
-              <input
-                type="checkbox"
-                checked={settings.autoCompleteToggles?.[field] ?? true}
-                onChange={(e) => {
-                  const toggles = { ...(settings.autoCompleteToggles ?? {}), [field]: e.target.checked };
-                  onChange({ autoCompleteToggles: toggles as Record<AutoCompletableField, boolean> });
-                }}
-              />
-              {field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}
-            </label>
-          ))}
+          {(['definitions', 'wordAudios', 'sentenceAudios', 'images', 'sentenceTranslation', 'sentence'] as const).map((field) => {
+            const fieldLabel = field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+            return (
+              <div key={field} className={styles.toggleRow}>
+                <Toggle
+                  checked={settings.autoCompleteToggles?.[field] ?? true}
+                  onChange={(next) => {
+                    const toggles = { ...(settings.autoCompleteToggles ?? {}), [field]: next };
+                    onChange({ autoCompleteToggles: toggles as Record<AutoCompletableField, boolean> });
+                  }}
+                  ariaLabel={`Auto-complete ${fieldLabel}`}
+                  size="sm"
+                  dataTestId={`cc-autocomplete-${field}`}
+                />
+                {fieldLabel}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -176,20 +184,20 @@ export function CardCreatorSettingsPanel({
         <label className={styles.fieldLabel} htmlFor="cc-audio-fallback">
           Audio fallback
         </label>
-        <select
+        <Select
           id="cc-audio-fallback"
-          className={styles.urlInput}
           value={settings.audioFallback ?? 'community-then-tts'}
-          onChange={(e) => onChange({ audioFallback: e.target.value as AudioFallbackStrategy })}
+          onChange={(v) => onChange({ audioFallback: v as AudioFallbackStrategy })}
           aria-label="Audio fallback strategy"
-        >
-          <option value="community-then-tts">Community → TTS (recommended)</option>
-          <option value="community-only">Community only</option>
-          <option value="tts-only">TTS only</option>
-        </select>
-        <p className={styles.hint}>
+          options={[
+            { value: 'community-then-tts', label: 'Community → TTS (recommended)' },
+            { value: 'community-only', label: 'Community only' },
+            { value: 'tts-only', label: 'TTS only' },
+          ]}
+        />
+        <Text as="p" color="secondary" className={styles.hint}>
           What to use when community audio is unavailable or fails to load.
-        </p>
+        </Text>
       </div>
     </div>
   );

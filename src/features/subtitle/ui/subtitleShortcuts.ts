@@ -3,18 +3,7 @@
 // ADR-005 D3: pure function in content script, guard input/textarea/contenteditable.
 
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/media';
-
-/**
- * Cell UI shadow host selectors — all extension UI panels mounted in shadow DOM.
- * Used to detect when focus/interaction is inside Cell UI so host shortcuts
- * can be blocked and dictionary lookup can be skipped.
- * Kept in sync with UI_HOST_SELECTORS in webTriggerController.ts and
- * EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts.
- */
-const CELL_UI_HOST_SELECTORS =
-  '#cell-subtitle-root, #cell-settings-dialog-host, #cell-card-creator-host, ' +
-  '#cell-universal-panel-host, .js-cell-popup-host, .js-cell-orbital-badge-host, ' +
-  '.js-cell-token-badge-host';
+import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 
 /**
  * Check if a keyboard event originated from inside a Cell UI shadow host.

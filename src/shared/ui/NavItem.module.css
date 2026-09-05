@@ -23,12 +23,10 @@
   width: 100%;
   justify-content: flex-start;
   overflow: hidden;
-  /* NavItem is self-aware: container query detects own width.
-     Label retracts at <=80px, before circle morph at <=64px. */
-  container-type: inline-size;
+  /* Collapsed shape is driven by the parent's container query (see @container below).
+     The parent (Navigation .vertical / CollapsibleSidebar .section) must be the container. */
   transition: background-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
-              filter var(--duration-fast) var(--ease-standard),
               height var(--duration-normal) ease-in-out,
               padding var(--duration-normal) ease-in-out,
               border-radius var(--duration-normal) ease-in-out,
@@ -36,7 +34,7 @@
 }
 
 .item:hover:not(:disabled) {
-  filter: brightness(1.05);
+  background: var(--color-surface-hover);
 }
 
 .item:focus-visible {
@@ -49,6 +47,11 @@
   background: var(--color-primary-subtle);
   color: var(--color-text);
   font-weight: var(--font-weight-regular);
+}
+
+.item.active:hover:not(:disabled),
+.item[aria-current="true"]:hover:not(:disabled) {
+  background: var(--button-primary-subtle-hover-bg);
 }
 
 .item.active .icon,
@@ -121,10 +124,11 @@
   z-index: 1;
 }
 
-/* === Container query: NavItem self-collapse ===
+/* === Container query: parent is the container ===
+   The vertical NavItem's parent (.section / .nav.vertical) is the container.
    Threshold 1 (<=80px): label retracts toward icon, fades out. */
 @container (width <= 80px) {
-  .label {
+  .vertical .label {
     opacity: 0;
     pointer-events: none;
   }
@@ -132,16 +136,21 @@
 
 /* === Compact circle morph (<=64px): icon-only, centered === */
 @container (width <= 64px) {
-  .item {
+  .vertical {
+    width: var(--touch-target);
     height: var(--touch-target);
-    min-height: var(--touch-target);
     padding: 0;
     border-radius: 50%;
     justify-content: center;
+    align-self: center;
     gap: 0;
   }
 
-  .label {
+  .vertical .label {
+    display: none;
+  }
+
+  .vertical .pill {
     display: none;
   }
 }

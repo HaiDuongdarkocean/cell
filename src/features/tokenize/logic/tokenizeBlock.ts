@@ -1,5 +1,6 @@
 import type { TokenBlock } from '@/features/tokenize/types';
 import { languageMatches } from '@/shared/config/languageRegistry';
+import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
 
 const FORBIDDEN_TAGS = new Set([
   'SCRIPT',
@@ -35,8 +36,7 @@ const SUBTITLE_NATIVE_CLASS = 'native';
  *  doesn't cross shadow boundaries.
  *  Sub-trees marked `data-allow-tokenize` are whitelisted (e.g. card creator
  *  preview inside the universal panel). */
-const EXTENSION_UI_HOST_SELECTORS =
-  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host, .js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host';
+const EXTENSION_UI_HOST_SELECTORS = CELL_UI_HOST_SELECTORS;
 
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit

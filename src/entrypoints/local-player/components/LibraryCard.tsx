@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import type { VideoRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import styles from './LibraryCard.module.css';
 
 /**
@@ -170,8 +170,8 @@ export function LibraryCard({
           </span>
         </span>
 
-        <IconButton material="solid"
-          variant="danger"
+        <Button shape="circle" material="solid"
+          variant="destructive"
           size="sm"
           aria-label="Delete video"
           onClick={handleDeleteClick}
@@ -179,8 +179,8 @@ export function LibraryCard({
           className={styles.deleteBtn}
         >
           <Icon name="trash" size={16} />
-        </IconButton>
-        <IconButton material="solid"
+        </Button>
+        <Button shape="circle" material="solid"
           variant="ghost"
           size="sm"
           aria-expanded={expanded}
@@ -190,7 +190,7 @@ export function LibraryCard({
           className={styles.expandBtn}
         >
           <Icon name="chevronDown" size={16} />
-        </IconButton>
+        </Button>
       </div>
 
       {expanded && (

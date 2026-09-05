@@ -4,7 +4,7 @@
 // form+input, dropzone, toast (success/error). Tất cả dùng var(--color-*) nên
 // auto-update khi themeManager.applyTheme đổi CSS vars.
 
-import { Button, Card } from '@/shared/ui';
+import { Button, Card, Input } from '@/shared/ui';
 import styles from './ThemePreview.module.css';
 
 export function ThemePreview(): React.JSX.Element {
@@ -38,7 +38,7 @@ export function ThemePreview(): React.JSX.Element {
       <div className={styles.section}>
         <div className={styles.sectionLabel}>Form</div>
         <div className={styles.row}>
-          <input className={styles.input} placeholder="Text input" />
+          <Input className={styles.input} placeholder="Text input" />
         </div>
       </div>
 

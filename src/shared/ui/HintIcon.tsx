@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactElement } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './HintIcon.module.css';
 
@@ -118,7 +118,7 @@ export function HintIcon({
 
   return (
     <span className={styles.hintWrap} ref={buttonRef}>
-      <IconButton material="solid" variant="ghost"
+      <Button shape="circle" material="solid" variant="ghost"
         id={id}
         data-cell-id={dataTestId}
         className={styles.hintBtn}
@@ -127,7 +127,7 @@ export function HintIcon({
         onClick={toggle}
       >
         <Icon name="info" />
-      </IconButton>
+      </Button>
       {isOpen && (
         <div
           ref={popoverRef}

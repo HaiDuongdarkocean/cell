@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
+import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
-import styles from './DictionaryPanelView.module.css';
+import panelStyles from './DictionaryPanelView.module.css';
+import styles from './AudioPanel.module.css';
 import type { AudioItem } from '../types';
 
 export interface AudioPanelProps {
@@ -78,10 +80,13 @@ export function AudioPanel({
             const itemUrl = getUrl(item);
             const isTts = !itemUrl;
             return (
-              <div key={item.id} className={styles.cellAudioItem}>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
+              <div key={item.id} className={panelStyles.cellAudioItem}>
+                <Button
+                  shape="circle"
+                  size="sm"
+                  variant="outline"
+                  material="solid"
+                  className={styles.cellAudioPlay}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
                     (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, hasUrl: !!itemUrl, url: itemUrl?.substring(0,50), activeGroup}));
@@ -102,7 +107,7 @@ export function AudioPanel({
                   }}
                 >
                   <Icon name="audioWave"  />
-                </button>
+                </Button>
                 <button
                   type="button"
                   className={styles.cellAudioLabel}
@@ -114,7 +119,7 @@ export function AudioPanel({
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
                 </button>
-                <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+                <span className={`${panelStyles.cellDefCheckBox} ${selected ? panelStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                   <Icon name="check"  />
                 </span>
               </div>

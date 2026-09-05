@@ -35,12 +35,12 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1),
-              transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background var(--duration-150) var(--ease-standard),
+              transform var(--duration-150) var(--ease-standard);
 }
 
 .addToggle:hover {
-  background: var(--color-primary-subtle-hover, var(--color-primary-subtle));
+  background: var(--button-primary-subtle-hover-bg);
 }
 
 .addToggle:active {
@@ -48,8 +48,8 @@
 }
 
 .addToggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 /* === Add-key form — collapsible card with slide-down animation === */
@@ -62,11 +62,11 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
   min-width: 0;
-  animation: slideDown 220ms cubic-bezier(0.32, 0.72, 0, 1);
+  animation: slideDown var(--duration-normal) var(--ease-standard);
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(calc(-1 * var(--space-2))); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -122,8 +122,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
+  min-width: var(--space-4-5);
+  height: var(--space-4-5);
   padding: 0 var(--space-1);
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
@@ -186,8 +186,8 @@
 /* Status dot — Apple-style subtle indicator, same size as meta text */
 .statusDot {
   flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
+  width: var(--space-1-5);
+  height: var(--space-1-5);
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
 }
@@ -233,16 +233,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--iconbutton-size-sm, 32px);
-  height: var(--iconbutton-size-sm, 32px);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   border: 0;
   border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1),
-              color 150ms cubic-bezier(0.23, 1, 0.32, 1),
-              transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background var(--duration-150) var(--ease-standard),
+              color var(--duration-150) var(--ease-standard),
+              transform var(--duration-150) var(--ease-standard);
 }
 
 .iconAction:hover {
@@ -255,12 +255,12 @@
 }
 
 .iconAction:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .iconActionDanger:hover {
-  background: var(--color-error-subtle, rgba(239, 68, 68, 0.1));
+  background: var(--color-error-subtle);
   color: var(--color-error);
 }
 
@@ -309,11 +309,11 @@
   gap: var(--space-2);
   padding: var(--space-6) var(--space-3);
   text-align: center;
-  animation: fadeIn 300ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: fadeIn var(--duration-300) var(--ease-standard);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(var(--space-1)); }
   to   { opacity: 1; transform: translateY(0); }
 }
 

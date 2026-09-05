@@ -1,7 +1,5 @@
 import { useRef, useState, useEffect, useCallback, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
-import { Button } from '@/shared/ui/Button';
 import { Surface } from '@/shared/ui/Surface';
-import { FlagIcon } from '@/shared/ui/FlagIcon';
 import { Dialog } from '@/shared/ui/Dialog';
 import { RadioGroup } from '@/shared/ui/RadioGroup';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
@@ -105,12 +103,15 @@ export function UniversalPanel({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const profileOptions = languageProfiles.map((p) => ({ value: p.id, label: p.name }));
   const activeProfile = languageProfiles.find((p) => p.id === activeProfileId);
-  const activeProfileName = activeProfile?.name ?? 'Select profile';
 
   const handleProfileSelect = useCallback((id: string): void => {
     onProfileChange(id);
     setIsProfileDialogOpen(false);
   }, [onProfileChange]);
+
+  const handleProfileClick = useCallback((): void => {
+    setIsProfileDialogOpen(true);
+  }, []);
 
   useFocusTrap(panelRef, isOpen);
 
@@ -151,7 +152,7 @@ export function UniversalPanel({
 
   return (
     <div
-      className={overlayClass}
+      className={`${overlayClass} js-cell-universal-panel`}
       onClick={handleBackdropClick}
       role="presentation"
       data-cell-id="universal-panel-backdrop"
@@ -179,26 +180,12 @@ export function UniversalPanel({
           tools={TOOLS}
         />
         <CollapsibleSidebar
+          as="aside"
           collapsed={isCollapsed}
           onCollapsedChange={setIsCollapsed}
           aria-label="Panel tabs"
           data-cell-id="universal-panel-tab-bar"
           className={styles.desktopSidebar}
-          header={languageProfiles.length > 0 ? (
-            <Button
-              material="solid"
-              size="md"
-              variant="ghost"
-              shape="circle"
-              className={styles.profileButton}
-              onClick={() => setIsProfileDialogOpen(true)}
-              aria-label={`Switch language profile: ${activeProfileName}`}
-              title={activeProfileName}
-              data-cell-id="universal-panel-profile-button"
-            >
-              <FlagIcon lang={activeProfile?.target ?? ''} title={activeProfileName} />
-            </Button>
-          ) : undefined}
           sections={[
             {
               id: 'tabs',
@@ -248,6 +235,8 @@ export function UniversalPanel({
             onToggleTokenize={onToggleTokenize}
             onClose={onClose}
             hasMedia={hasMedia}
+            activeProfile={activeProfile}
+            onProfileClick={handleProfileClick}
           />
 
           <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>

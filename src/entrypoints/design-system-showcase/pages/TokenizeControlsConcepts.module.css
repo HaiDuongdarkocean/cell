@@ -1,0 +1,121 @@
+.page {
+  min-height: 100dvh;
+  padding: var(--space-6);
+  background: var(--color-background);
+}
+
+.pageTitle {
+  font-weight: var(--font-weight-semibold);
+}
+
+.concept {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.conceptLabel {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.panel {
+  width: min(720px, 100%);
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 48px;
+}
+
+.panelHeaderLeft,
+.panelHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.panelBody {
+  min-height: 120px;
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profileSelect {
+  min-width: 140px;
+}
+
+.legacyToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* ─── A. Liquid Glass Dewdrop ─── */
+.glassControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
+  background: var(--color-glass-surface, var(--color-surface-hover));
+  border: 1px solid var(--color-glass-border, var(--color-border));
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+
+/* ─── B. Minimalist Editorial ─── */
+.editorialControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ─── C. Industrial Brutalist Control Board ─── */
+.industrialControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.industrialMaster {
+  padding-right: var(--space-2);
+  border-right: 1px solid var(--color-border);
+}
+
+.industrialLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 640px) {
+  .panelHeader {
+    flex-wrap: wrap;
+    height: auto;
+  }
+
+  .panelHeaderLeft,
+  .panelHeaderRight {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

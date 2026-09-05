@@ -3,7 +3,7 @@ import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popu
 import { Card } from '@/shared/ui/Card';
 import { Flex } from '@/shared/ui/Flex';
 import { HStack, VStack } from '@/shared/ui/Stack';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './DownloadCard.module.css';
 
@@ -60,7 +60,7 @@ export function DownloadCard({
   if (isActive) {
     if (isPaused) {
       actions.push(
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           key="resume"
           size="xs"
           onClick={() => onResume(download.id)}
@@ -68,11 +68,11 @@ export function DownloadCard({
           data-cell-id="resume-btn"
         >
           <Icon name="play"  />
-        </IconButton>,
+        </Button>,
       );
     } else {
       actions.push(
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           key="pause"
           size="xs"
           onClick={() => onPause(download.id)}
@@ -80,13 +80,13 @@ export function DownloadCard({
           data-cell-id="pause-btn"
         >
           <Icon name="pause"  />
-        </IconButton>,
+        </Button>,
       );
     }
   }
   if (isError) {
     actions.push(
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         key="retry"
         size="xs"
         onClick={() => onRetry(download.id)}
@@ -94,34 +94,34 @@ export function DownloadCard({
         data-cell-id="retry-btn"
       >
         <Icon name="rotateCcw"  />
-      </IconButton>,
+      </Button>,
     );
   }
   if (!isDone) {
     actions.push(
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         key="cancel"
         size="xs"
-        variant="danger"
+        variant="destructive"
         onClick={() => onCancel(download.id)}
         aria-label="Cancel"
         data-cell-id="cancel-btn"
       >
         <Icon name="x"  />
-      </IconButton>,
+      </Button>,
     );
   } else {
     actions.push(
-      <IconButton material="solid"
+      <Button shape="circle" material="solid"
         key="remove"
         size="xs"
-        variant="danger"
+        variant="destructive"
         onClick={() => onRemove(download.id)}
         aria-label="Remove"
         data-cell-id="remove-btn"
       >
         <Icon name="trash"  />
-      </IconButton>,
+      </Button>,
     );
   }
 

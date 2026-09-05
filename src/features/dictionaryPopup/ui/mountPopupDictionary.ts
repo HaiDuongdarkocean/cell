@@ -1,20 +1,12 @@
 import { createElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { PopupDictionary } from './PopupDictionary';
 import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
 import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/features/dictionaryPopup/types';
 
-import popupDictionaryCss from './PopupDictionary.module.css?inline';
-import dictionaryPanelViewCss from './DictionaryPanelView.module.css?inline';
-import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
-import inputCss from '@/shared/ui/Input.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
-import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
-import iconCss from '@/shared/icons/Icon.module.css?inline';
-import sheetCss from '@/shared/ui/Sheet.module.css?inline';
 
 const POPUP_Z_INDEX = 'var(--z-overlay-top)';
 const ORBITAL_BADGE_HOST_CLASS = 'js-cell-orbital-badge-host';
@@ -171,17 +163,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     {
       parent: getMountParent(),
       position: 'fixed',
-      css: [
-        sheetCss,
-        popupDictionaryCss,
-        dictionaryPanelViewCss,
-        searchFieldCss,
-        inputCss,
-        buttonCss,
-        spinnerCss,
-        skeletonCss,
-        iconCss,
-      ],
+      css: allModuleCss,
     },
   );
 

@@ -4,6 +4,8 @@ export { Alert } from './Alert';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export { Card } from './Card';
+export { SelectableCard } from './SelectableCard';
+export { MultiSelect } from './MultiSelect';
 export { Checkbox } from './Checkbox';
 export { CheckboxGroup } from './CheckboxGroup';
 export { CollapsibleSidebar } from './CollapsibleSidebar';

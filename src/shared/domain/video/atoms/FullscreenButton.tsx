@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { IconButton } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './FullscreenButton.module.css';
 
@@ -28,7 +28,7 @@ export function FullscreenButton({
       : true;
 
   return (
-    <IconButton material="solid"
+    <Button shape="circle" material="solid"
       active={fullscreen}
       disabled={disabled || !supported}
       aria-pressed={fullscreen}
@@ -37,6 +37,6 @@ export function FullscreenButton({
       {...rest}
     >
       <Icon name={fullscreen ? 'minimize' : 'maximize'}  />
-    </IconButton>
+    </Button>
   );
 }

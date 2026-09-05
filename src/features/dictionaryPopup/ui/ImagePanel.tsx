@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import styles from './DictionaryPanelView.module.css';
+import panelStyles from './DictionaryPanelView.module.css';
+import styles from './ImagePanel.module.css';
 import type { ImageItem } from '../types';
 
 export interface ImagePanelProps {
@@ -61,7 +62,7 @@ export function ImagePanel({
   if (error) {
     return (
       <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
-        <div className={styles.cellImageError}>{error}</div>
+        <div className={panelStyles.cellImageError}>{error}</div>
       </div>
     );
   }
@@ -103,7 +104,7 @@ export function ImagePanel({
             <button
               type="button"
               key={item.id}
-              className={`${styles.cellImageCard} ${selected ? styles['cellImageCard--selected'] : ''}`}
+              className={`${panelStyles.cellImageCard} ${selected ? panelStyles['cellImageCard--selected'] : ''}`}
               role="checkbox"
               aria-checked={selected}
               onClick={(): void => onToggle(item.id, !selected)}
@@ -114,7 +115,7 @@ export function ImagePanel({
                 className={styles.cellImageThumb}
                 onError={(): void => onImageError(item.id)}
               />
-              <span className={styles.cellDefCheckBox} aria-hidden="true">
+              <span className={panelStyles.cellDefCheckBox} aria-hidden="true">
                 <Icon name="check"  />
               </span>
             </button>

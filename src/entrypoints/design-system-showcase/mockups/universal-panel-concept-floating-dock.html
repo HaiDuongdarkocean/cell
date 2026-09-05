@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Universal Panel Concept B: Floating Quick-Action Dock</title>
+  <style>
+    :root {
+      --bg: #050B14;
+      --bg-2: #0A1525;
+      --surface: rgba(14, 25, 42, 0.82);
+      --surface-raised: rgba(22, 38, 62, 0.86);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+      --text: #F4F8FF;
+      --text-secondary: #A3B4CC;
+      --text-tertiary: #6B7D99;
+      --primary: #38BDF8;
+      --primary-subtle: rgba(56, 189, 248, 0.15);
+      --danger: #F87171;
+      --danger-subtle: rgba(248, 113, 113, 0.12);
+      --radius-outer: 40px;
+      --radius-inner: 24px;
+      --radius-pill: 999px;
+      --shadow: 0 32px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font);
+      background: radial-gradient(circle at 20% 0%, #102038 0%, transparent 50%),
+                  radial-gradient(circle at 80% 100%, #0D2038 0%, transparent 40%),
+                  var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      gap: 24px;
+    }
+
+    .meta { text-align: center; color: var(--text-secondary); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+    .page-title { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+
+    .phone {
+      width: min(420px, 100%);
+      height: 780px;
+      background: #050505;
+      border-radius: 56px;
+      padding: 14px;
+      box-shadow: 0 40px 120px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.06) inset;
+      position: relative;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #08111E, #050B14);
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+    }
+
+    .panel {
+      position: relative;
+      margin-top: auto;
+      height: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-outer) var(--radius-outer) 0 0;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(28px) saturate(140%);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+    }
+
+    .top-tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: var(--radius-pill);
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+
+    .top-tab.active {
+      background: var(--primary-subtle);
+      color: var(--primary);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.18);
+    }
+
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .profile-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1E3A5F, #38BDF8);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+    }
+
+    .close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-raised);
+      color: var(--text-secondary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 20px 120px;
+    }
+
+    .search-wrap { position: relative; margin-bottom: 20px; }
+    .search {
+      width: 100%;
+      height: 50px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface-raised);
+      padding: 0 18px;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+    }
+    .search::placeholder { color: var(--text-tertiary); }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+    .empty-state svg { width: 48px; height: 48px; color: var(--text-tertiary); margin-bottom: 16px; }
+    .empty-state h3 { margin: 0 0 8px; font-size: 18px; color: var(--text); }
+    .empty-state p { margin: 0; font-size: 15px; line-height: 1.5; }
+
+    .card-creator {
+      margin-top: 8px;
+      padding: 18px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+    .card-creator h4 {
+      margin: 0 0 14px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+    .error-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--danger-subtle);
+      border-left: 3px solid var(--danger);
+      border-radius: 14px;
+      font-size: 13px;
+      color: #FDB4B4;
+      margin-bottom: 16px;
+    }
+    .error-banner svg { width: 20px; height: 20px; color: var(--danger); flex-shrink: 0; }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      padding: 0 14px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .tokenize-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .tokenize-hint .pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--primary-subtle);
+      border-radius: var(--radius-pill);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .dock {
+      position: absolute;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(16, 28, 48, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255,255,255,0.03) inset;
+      backdrop-filter: blur(24px) saturate(160%);
+      z-index: 10;
+    }
+
+    .dock-btn {
+      width: 50px;
+      min-height: 56px;
+      border-radius: 14px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: all 180ms ease;
+      position: relative;
+    }
+    .dock-btn:hover { color: var(--text); background: var(--border-subtle); }
+    .dock-btn.primary {
+      width: 58px;
+      min-height: 66px;
+      background: var(--primary);
+      color: #0A1525;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.35);
+    }
+
+    .dock-btn .label {
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+    }
+    .dock-btn.primary .label { color: #0A1525; }
+
+    .icon { width: 22px; height: 22px; }
+  </style>
+</head>
+<body>
+  <div class="meta">Concept B — Mobile First</div>
+  <h1 class="page-title">Floating Quick-Action Dock</h1>
+
+  <div class="phone">
+    <div class="screen">
+      <div class="backdrop"></div>
+
+      <div class="panel">
+        <header class="header">
+          <div class="top-tabs">
+            <button class="top-tab active">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              Dict
+            </button>
+            <button class="top-tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M10 12h10M3 12h.01M3 18h.01M10 18h10M6 3v18"/></svg>
+              Study
+            </button>
+            <button class="top-tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Settings
+            </button>
+          </div>
+
+          <div class="header-right">
+            <button class="close" aria-label="Close">×</button>
+          </div>
+        </header>
+
+        <main class="content">
+          <div class="tokenize-hint">
+            <span>Tokenize</span>
+            <span class="pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h3M4 17v3h3M20 7V4h-3M20 17v3h-3M9 9h6v6H9z"/></svg>
+              Text
+            </span>
+          </div>
+
+          <div class="search-wrap">
+            <input type="text" class="search" placeholder="Type a word" />
+          </div>
+
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <h3>Start searching</h3>
+            <p>Enter a word or phrase to look it up.</p>
+          </div>
+
+          <div class="card-creator">
+            <h4>Card Creator</h4>
+            <div class="error-banner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+              <span>Failed to load from AnkiConnect. Check Settings → Card Creator.</span>
+            </div>
+            <div class="row">
+              <div class="field"><label>Note type</label><input type="text" /></div>
+              <div class="field"><label>Deck</label><input type="text" /></div>
+            </div>
+            <div class="field"><label>Target word</label><input type="text" placeholder="Enter the word or phrase to learn" /></div>
+          </div>
+        </main>
+
+        <div class="dock">
+          <button class="dock-btn" title="Reader">
+            <span class="label">Reader</span>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          </button>
+          <button class="dock-btn" title="SRS">
+            <span class="label">SRS</span>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </button>
+          <button class="dock-btn primary" title="Dictionary">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span class="label">Dict</span>
+          </button>
+          <button class="dock-btn" title="Player">
+            <span class="label">Player</span>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="m10 11 5 3-5 3V11Z"/></svg>
+          </button>
+          <button class="dock-btn" title="Profile">
+            <span class="label">Profile</span>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

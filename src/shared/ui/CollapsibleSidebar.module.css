@@ -2,7 +2,7 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5);
+  gap: var(--space-2);
   width: var(--sidebar-width);
   height: 100%;
   padding: 0;
@@ -18,7 +18,7 @@
 
 .header {
   flex: 0 0 auto;
-  padding: var(--space-1) 0;
+  padding: var(--space-1) var(--space-2);
 }
 
 .sections {
@@ -34,54 +34,36 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5);
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  /* Vertical NavItem queries this container to collapse to a 40×40 circle. */
+  container-type: inline-size;
 }
 
-.nav {
-  padding: 0 !important;
+.section li {
+  display: flex;
+  min-width: 0;
 }
 
-.collapseButton {
-  --button-height: var(--touch-target);
-  height: var(--touch-target);
-  padding: 0 var(--space-3) 0 var(--space-5) !important;
-  justify-content: flex-start;
-  border-radius: var(--radius-md) !important;
-  overflow: hidden;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .collapseButton:hover:not(:disabled) {
-    background: var(--color-surface-hover) !important;
+/* Collapsed: shrink the li wrapper to the 40×40 NavItem so no 48px strip remains. */
+@container (width <= 64px) {
+  .section li {
+    width: var(--touch-target);
+    align-self: center;
   }
 }
 
-.collapsed .collapseButton {
-  justify-content: center !important;
-  padding: 0 !important;
-  gap: 0;
-  border-radius: 50% !important;
-}
-
-.collapseLabel {
-  opacity: 1;
-  max-width: 120px;
-  margin-left: var(--space-2);
-  transition:
-    opacity var(--sidebar-transition-duration) ease,
-    max-width var(--sidebar-transition-duration) ease,
-    margin var(--sidebar-transition-duration) ease;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.collapsed .collapseLabel {
-  opacity: 0;
-  max-width: 0;
-  margin-left: 0;
+.collapseSection {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-2);
+  container-type: inline-size;
 }
 
 .footer {
   flex: 0 0 auto;
-  padding: var(--space-1) 0;
+  padding: var(--space-1) var(--space-2);
 }

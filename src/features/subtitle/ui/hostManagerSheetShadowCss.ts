@@ -1,45 +1,15 @@
 /**
- * Canonical CSS manifest for the host-page manager sheet in shadow DOM.
+ * CSS manifest for the host-page manager sheet in shadow DOM.
  *
  * The host content script injects these strings into the shadow root created
  * on `document.body` when a cross-origin child iframe requests the manager
- * sheet (mobile scenario). Single source of truth — mirrors the `managerShadowCss`
- * array in `mountSubtitle.tsx` plus `HostManagerSheet.module.css`.
+ * sheet (mobile scenario). `allModuleCss` auto-collects every CSS module;
+ * only the dynamic token-span CSS is appended manually.
  */
-import hostManagerSheetCss from './HostManagerSheet.module.css?inline';
-import sheetCss from '@/shared/ui/Sheet.module.css?inline';
-import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
-import subtitleSearchCss from './SubtitleSearchPanel.module.css?inline';
-import apiKeyManagerCss from '@/features/settings/ui/ApiKeyManager.module.css?inline';
-import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
-import buttonCss from '@/shared/ui/Button.module.css?inline';
-import footerBarCss from '@/shared/ui/FooterBar.module.css?inline';
-import inputCss from '@/shared/ui/Input.module.css?inline';
-import selectCss from '@/shared/ui/Select.module.css?inline';
-import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
-import tabsCss from '@/shared/ui/Tabs.module.css?inline';
-import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
-import subtitlePanelsSharedCss from './subtitlePanelsShared.module.css?inline';
-import iconCss from '@/shared/icons/Icon.module.css?inline';
+import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import { appearanceShadowCss } from './appearance/appearanceShadowCss';
 
 export const hostManagerSheetShadowCss: string[] = [
-  hostManagerSheetCss,
-  sheetCss,
-  subtitleManagerCss,
-  subtitleSearchCss,
-  apiKeyManagerCss,
-  subtitleOffsetCss,
-  buttonCss,
-  footerBarCss,
-  inputCss,
-  selectCss,
-  skeletonCss,
-  tabsCss,
-  subtitlePanelsCss,
-  subtitlePanelsSharedCss,
-  iconCss,
+  ...allModuleCss,
   buildTokenSpanCssForShadow(),
-  ...appearanceShadowCss,
 ];

@@ -1,6 +1,6 @@
 import { useState, type HTMLAttributes, type ReactNode } from 'react';
 import { HStack } from './Stack';
-import { IconButton } from './IconButton';
+import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './Alert.module.css';
 
@@ -54,7 +54,7 @@ export function Alert({
         </div>
       </HStack>
       {onDismiss && (
-        <IconButton material="solid"
+        <Button shape="circle" material="solid"
           type="button"
           className={styles.dismiss}
           aria-label="Dismiss"
@@ -63,7 +63,7 @@ export function Alert({
           onClick={handleDismiss}
         >
           <Icon name="x"  />
-        </IconButton>
+        </Button>
       )}
     </div>
   );

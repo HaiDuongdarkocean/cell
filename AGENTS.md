@@ -319,7 +319,9 @@ Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, nav
 
 **Mock site (YouTube clone)**: khởi động bằng `npm run mock` (KHÔNG `npm run mock -- --youtube`) để phục vụ TẤT CẢ mock site cùng lúc. Nếu chỉ `--youtube` thì các mock site khác (streaming, iframe) bị kill, gây ảnh hưởng tiến trình khác. URL YouTube: `http://127.0.0.1:4322/index.html`.
 
-**Browser preview**: mỗi `browser_preview` tạo 1 port proxy mới; luôn dùng URL gốc (`http://127.0.0.1:<port>/`) và đóng tab cũ trước khi mở tab mới. Không append `/index.html` vì proxy chỉ map đúng ở root `/`.
+**StreamFlix mock site**: KHÔNG dùng `npm run mock:stream` (đã xóa — build+serve static, dễ nhầm với dev). Dùng Vite dev server `npm run dev` (port 5173) và mở trực tiếp entry: `http://127.0.0.1:5173/src/entrypoints/mock-streaming-page/index.html?theme=dark&player=iframe`. Có HMR, sửa code không cần rebuild.
+
+**Browser preview**: trên Windows / môi trường này, URL proxy `http://127.0.0.1:<port>/` do `browser_preview` tạo ra thường trả về "This page can’t be found" ở trình duyệt user. **Không dùng `browser_preview` để chia sẻ UI preview nữa.** Thay vào đó, chạy dev server (`npm run design-system:dev`) và đưa user URL gốc trực tiếp, ví dụ `http://localhost:5180/src/entrypoints/design-system-showcase/mockups/<file>.html`. Nếu cần verify tự động, dùng MCP `chrome-devtools` / `playwright` / `testing-extension-browser` thay vì `browser_preview`.
 
 **Mở profile + load extension đúng (SSOT)**: dùng skill `testing-extension-browser` — Chrome 137+ blocks `--load-extension`, stealth MCP không hỗ trợ Extensions CDP domain. Script nodriver chỉ launch Chrome + load extension rồi close (không navigate): `uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --keep-profile`. Sau đó MCP `spawn_browser(user_data_dir=<clone path>, headless=false)` + `navigate(url=<test url>)` — extension auto-load từ profile Preferences. Clone từ master, auto-cleanup, 20+ agent song song.
 

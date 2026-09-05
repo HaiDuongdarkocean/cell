@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from '@/shared/ui/Button';
 import sharedStyles from './subtitlePanelsShared.module.css';
 
 export interface ClusterRightToolbarProps {
@@ -60,7 +60,7 @@ export function ClusterRightToolbar({
     <div className={wrapperClass} style={clusterRightStyle} data-cell-id={wrapperId}>
       <div className={sharedStyles.primaryCol}>
         {onQuickAdd && (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label="Quick add card"
             title="Quick add (Q)"
@@ -69,10 +69,10 @@ export function ClusterRightToolbar({
             onClick={onQuickAdd}
           >
             <Icon name="zap" />
-          </IconButton>
+          </Button>
         )}
         {onEditCard && (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label="Edit card"
             title="Edit card (E)"
@@ -81,7 +81,7 @@ export function ClusterRightToolbar({
             onClick={onEditCard}
           >
             <Icon name="pencil" />
-          </IconButton>
+          </Button>
         )}
         <div className={sharedStyles.toggleWrap}>
           <div
@@ -89,7 +89,7 @@ export function ClusterRightToolbar({
             data-cell-id="subtitle-tools-extra"
           >
             {onToggleSidePanel && (
-              <IconButton
+              <Button shape="circle"
                 material="liquid" variant="glass"
                 aria-label={sidePanelLabel}
                 title="Toggle subtitle list (T)"
@@ -98,10 +98,10 @@ export function ClusterRightToolbar({
                 onClick={onToggleSidePanel}
               >
                 <Icon name="sidePanel" />
-              </IconButton>
+              </Button>
             )}
             {onGenerateNative && (
-              <IconButton
+              <Button shape="circle"
                 material="liquid" variant="glass"
                 aria-label="Generate native subtitle"
                 title="Generate native (H)"
@@ -111,10 +111,10 @@ export function ClusterRightToolbar({
                 disabled={!generateNativeEnabled}
               >
                 <Icon name="languages" />
-              </IconButton>
+              </Button>
             )}
           </div>
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
             title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
@@ -123,12 +123,12 @@ export function ClusterRightToolbar({
             onClick={onToggleTools}
           >
             <Icon name="chevronLeft" />
-          </IconButton>
+          </Button>
         </div>
       </div>
       <div className={sharedStyles.secondaryCol}>
         {onToggleOcr && (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
             title={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
@@ -138,10 +138,10 @@ export function ClusterRightToolbar({
             active={ocrEnabled}
           >
             <Icon name="scanText" />
-          </IconButton>
+          </Button>
         )}
         {onToggleManager && (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label="Open subtitle manager"
             title="Open subtitle manager"
@@ -150,10 +150,10 @@ export function ClusterRightToolbar({
             onClick={onToggleManager}
           >
             <Icon name="subtitleManager" />
-          </IconButton>
+          </Button>
         )}
         {mode === 'overlay' ? (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
             title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
@@ -163,9 +163,9 @@ export function ClusterRightToolbar({
             active={playerMode}
           >
             <Icon name={playerMode ? 'minimize' : 'maximize'} />
-          </IconButton>
+          </Button>
         ) : (
-          <IconButton
+          <Button shape="circle"
             material="liquid" variant="glass"
             aria-label="Exit player mode"
             title="Exit player mode (Esc)"
@@ -174,7 +174,7 @@ export function ClusterRightToolbar({
             onClick={onExit}
           >
             <Icon name="minimize" />
-          </IconButton>
+          </Button>
         )}
       </div>
     </div>

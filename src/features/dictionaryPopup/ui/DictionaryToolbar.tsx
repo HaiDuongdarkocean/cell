@@ -1,6 +1,6 @@
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
-import styles from './DictionaryPanelView.module.css';
+import styles from './DictionaryToolbar.module.css';
 import type { PopupTab } from '../types';
 
 type IconName = React.ComponentProps<typeof Icon>['name'];
@@ -36,14 +36,14 @@ export function DictionaryToolbar({
         const active = activeTab === tab.key;
         const count = counts[tab.key] ?? 0;
         return (
-          <Button material="solid" variant="secondary"
+          <Button material="solid" variant={active ? 'primary' : 'ghost'}
             key={tab.key}
             role="tab"
             aria-selected={active}
             aria-pressed={active}
             aria-label={tab.label}
             title={tab.label}
-            className={`btn ${active ? 'btn--primary' : 'btn--ghost'} ${styles.cellToolbarTab}`}
+            className={styles.cellToolbarTab}
             onClick={() => onSelect(tab.key)}
             data-cell-id={`dictionary-tab-${tab.key}`}
           >

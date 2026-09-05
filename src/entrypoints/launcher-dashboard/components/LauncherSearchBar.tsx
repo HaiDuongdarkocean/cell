@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { IconButton } from '@/shared/ui/IconButton';
-import { Icon } from '@/shared/ui';
+
+import { Button, Icon } from '@/shared/ui';
 import styles from './LauncherSearchBar.module.css';
 
 export interface LauncherSearchBarProps {
@@ -50,7 +50,7 @@ export function LauncherSearchBar({
         spellCheck={false}
       />
       {displayValue.length > 0 && (
-        <IconButton material="solid" variant="ghost"
+        <Button shape="circle" material="solid" variant="ghost"
           className={styles.clear}
           onClick={() => {
             inputRef.current?.focus();
@@ -60,7 +60,7 @@ export function LauncherSearchBar({
           aria-label="Clear search"
         >
           <Icon name="x" size="sm" />
-        </IconButton>
+        </Button>
       )}
     </div>
   );

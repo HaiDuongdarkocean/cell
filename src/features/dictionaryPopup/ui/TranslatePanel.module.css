@@ -1,0 +1,53 @@
+/* TranslatePanel — translation blocks, target/native text, skeleton.
+   Shared checkbox contract (cellTranslateBlock / cellDefCheckBox / --selected)
+   lives in DictionaryPanelView.module.css. */
+
+.cellTranslate {
+  padding: 0 var(--space-2);
+}
+
+.cellTranslateText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.cellTranslateTarget {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.cellTranslateNative {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.cellTranslateSkeleton {
+  padding: var(--space-2);
+}
+
+.cellTranslateSkeletonBlock {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.cellTranslateSkeletonText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.cellTranslateSkeletonLine {
+  max-width: 100%;
+}

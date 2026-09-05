@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cell — Tokenize Header 4 High-End Variants</title>
+  <style>
+    :root {
+      --radius-outer: 28px;
+      --radius-inner: 20px;
+      --radius-pill: 999px;
+      --radius-sm: 10px;
+      --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section {
+      width: 100%;
+      min-height: auto;
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+    }
+
+    .meta {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .page-title {
+      font-family: var(--font-display, var(--font-sans));
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--text);
+    }
+
+    /* ─── Variant palettes ─── */
+    .soft {
+      --bg: radial-gradient(circle at 20% 0%, rgba(14, 165, 233, 0.05), transparent 40%),
+            radial-gradient(circle at 80% 100%, rgba(14, 165, 233, 0.03), transparent 30%),
+            #F5F7FA;
+      --surface: #FFFFFF;
+      --surface-soft: #F8FAFC;
+      --surface-elevated: #FFFFFF;
+      --border: #E7EAEE;
+      --border-subtle: #F0F2F5;
+      --text: #0F172A;
+      --text-secondary: #64748B;
+      --text-tertiary: #94A3B8;
+      --primary: #0EA5E9;
+      --primary-soft: #E0F2FE;
+      --primary-contrast: #FFFFFF;
+      --shadow-soft: 0 24px 80px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.04);
+      --panel-outer-bg: rgba(255, 255, 255, 0.7);
+      --panel-outer-border: rgba(255, 255, 255, 0.6);
+      --panel-backdrop: blur(20px) saturate(180%);
+      --inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      --tokenize-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+      --tokenize-border: var(--border);
+      --tokenize-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(15, 23, 42, 0.04);
+      --tokenize-backdrop: blur(12px);
+      --close-radius: 50%;
+      --target-transform: none;
+      --target-letter: 0;
+      --font-display: var(--font-sans);
+    }
+
+    .ethereal {
+      --bg: radial-gradient(circle at 30% 20%, rgba(56, 189, 248, 0.12), transparent 35%),
+            radial-gradient(circle at 70% 80%, rgba(14, 165, 233, 0.08), transparent 30%),
+            #050505;
+      --surface: #0B0F19;
+      --surface-soft: #0F172A;
+      --surface-elevated: #1E293B;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --text: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-tertiary: #64748B;
+      --primary: #38BDF8;
+      --primary-soft: rgba(56, 189, 248, 0.14);
+      --primary-contrast: #FFFFFF;
+      --shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+      --panel-outer-bg: rgba(255, 255, 255, 0.03);
+      --panel-outer-border: rgba(255, 255, 255, 0.08);
+      --panel-backdrop: blur(24px) saturate(180%);
+      --inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      --tokenize-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      --tokenize-border: rgba(255, 255, 255, 0.1);
+      --tokenize-shadow: 0 0 24px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      --tokenize-backdrop: blur(24px) saturate(160%);
+      --close-radius: 50%;
+      --target-transform: none;
+      --target-letter: 0;
+      --font-display: var(--font-sans);
+    }
+
+    .editorial {
+      --bg: radial-gradient(circle at 80% 0%, rgba(95, 141, 119, 0.04), transparent 40%),
+            radial-gradient(circle at 20% 100%, rgba(199, 176, 139, 0.04), transparent 30%),
+            #FDFBF7;
+      --surface: #FFFFFF;
+      --surface-soft: #F9F7F3;
+      --surface-elevated: #FFFFFF;
+      --border: #EBE8E0;
+      --border-subtle: #F3F1EC;
+      --text: #1C1917;
+      --text-secondary: #6B655D;
+      --text-tertiary: #9A938A;
+      --primary: #5F8D77;
+      --primary-soft: #EAF3EF;
+      --primary-contrast: #FFFFFF;
+      --shadow-soft: 0 24px 80px rgba(60, 40, 20, 0.08), 0 8px 24px rgba(60, 40, 20, 0.04);
+      --panel-outer-bg: rgba(255, 255, 255, 0.5);
+      --panel-outer-border: rgba(255, 255, 255, 0.7);
+      --panel-backdrop: blur(16px) saturate(140%);
+      --inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      --tokenize-bg: var(--surface-soft);
+      --tokenize-border: var(--border);
+      --tokenize-shadow: none;
+      --tokenize-backdrop: none;
+      --close-radius: 50%;
+      --target-transform: none;
+      --target-letter: 0;
+      --font-display: Georgia, 'Times New Roman', serif;
+    }
+
+    .brutal {
+      --bg: #E5E7EB;
+      --surface: #FFFFFF;
+      --surface-soft: #F3F4F6;
+      --surface-elevated: #E5E7EB;
+      --border: #000000;
+      --border-subtle: #E5E7EB;
+      --text: #000000;
+      --text-secondary: #374151;
+      --text-tertiary: #6B7280;
+      --primary: #000000;
+      --primary-soft: #E5E7EB;
+      --primary-contrast: #FFFFFF;
+      --shadow-soft: 0 12px 40px rgba(0, 0, 0, 0.2);
+      --panel-outer-bg: var(--surface);
+      --panel-outer-border: var(--border);
+      --panel-backdrop: none;
+      --inner-shadow: none;
+      --tokenize-bg: var(--surface);
+      --tokenize-border: var(--border);
+      --tokenize-shadow: none;
+      --tokenize-backdrop: none;
+      --radius-outer: 0;
+      --radius-inner: 0;
+      --radius-pill: 0;
+      --radius-sm: 0;
+      --close-radius: 0;
+      --target-transform: uppercase;
+      --target-letter: 0.05em;
+      --font-display: var(--font-mono);
+    }
+
+    /* Double-bezel panel */
+    .panel-outer {
+      width: min(720px, 100%);
+      padding: 6px;
+      background: var(--panel-outer-bg);
+      border: 1px solid var(--panel-outer-border);
+      border-radius: var(--radius-outer);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: var(--panel-backdrop);
+    }
+
+    .panel-inner {
+      background: var(--surface);
+      border-radius: var(--radius-inner);
+      box-shadow: var(--inner-shadow), 0 1px 2px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 64px;
+    }
+
+    .header-left,
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Profile select */
+    .profile-select {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: var(--radius-pill);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 120px;
+      font-family: var(--font-sans);
+      transition: border-color 0.2s var(--ease-fluid), box-shadow 0.2s var(--ease-fluid);
+    }
+
+    .profile-select:hover {
+      border-color: var(--primary);
+    }
+
+    .profile-select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    /* Legacy toggles */
+    .legacy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-family: var(--font-sans);
+    }
+
+    .legacy-switch {
+      width: 32px;
+      height: 18px;
+      border-radius: 9px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s var(--ease-fluid);
+    }
+
+    .legacy-switch.on {
+      background: var(--primary);
+    }
+
+    .legacy-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--primary-contrast);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .legacy-switch.on::after {
+      transform: translateX(14px);
+    }
+
+    /* Tokenize control — glass pill */
+    .tokenize {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      background: var(--tokenize-bg);
+      border: 1px solid var(--tokenize-border);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--tokenize-shadow);
+      backdrop-filter: var(--tokenize-backdrop);
+    }
+
+    .master {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 8px 2px 2px;
+      border-right: 1px solid var(--border-subtle);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-transform: var(--target-transform);
+      letter-spacing: var(--target-letter);
+      font-family: var(--font-sans);
+    }
+
+    .master-switch {
+      width: 38px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s var(--ease-fluid);
+    }
+
+    .master-switch.on {
+      background: var(--primary);
+    }
+
+    .master-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--primary-contrast);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      transition: transform 0.25s var(--ease-fluid);
+    }
+
+    .master-switch.on::after {
+      transform: translateX(18px);
+    }
+
+    .targets {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 2px;
+    }
+
+    .target {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      text-transform: var(--target-transform);
+      letter-spacing: var(--target-letter);
+      font-family: var(--font-sans);
+      transition: color 0.2s var(--ease-fluid), background 0.2s var(--ease-fluid), transform 0.15s var(--ease-fluid);
+    }
+
+    .target:hover:not(:disabled) {
+      color: var(--text);
+      background: rgba(128, 128, 128, 0.06);
+    }
+
+    .target.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    .target:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .target:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
+    /* Brutalist active target override */
+    .brutal .target.active {
+      background: var(--primary);
+      color: var(--primary-contrast);
+      box-shadow: none;
+    }
+
+    /* Close button */
+    .close {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--close-radius);
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text-secondary);
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s var(--ease-fluid), color 0.2s var(--ease-fluid), transform 0.15s var(--ease-fluid);
+    }
+
+    .close:hover {
+      background: var(--surface-elevated);
+      color: var(--text);
+      transform: scale(1.05);
+    }
+
+    .close:active {
+      transform: scale(0.95);
+    }
+
+    .brutal .close {
+      font-size: 24px;
+    }
+
+    /* Panel body */
+    .panel-body {
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+    }
+
+    @media (max-width: 640px) {
+      .section { padding: 40px 16px; }
+      .header { flex-wrap: wrap; gap: 12px; }
+      .header-left, .header-right { width: 100%; justify-content: flex-start; }
+      .tokenize { width: 100%; justify-content: space-between; }
+      .master { border-right: none; flex: 1; }
+      .targets { flex: 1; justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <section class="section soft">
+    <div class="meta">A. Soft Structuralism — light / glass / sky blue</div>
+    <h1 class="page-title">Tokenize Environment</h1>
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="legacy">
+              <span>Status</span>
+              <div class="legacy-switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Frequency</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Subtitle</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+          </div>
+          <div class="header-right">
+            <div class="tokenize" role="group" aria-label="Tokenize environment">
+              <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize" onclick="toggleTokenize(this)">
+                <div class="master-switch on"></div>
+                <span>Tokenize</span>
+              </div>
+              <div class="targets" role="group" aria-label="Tokenize targets">
+                <button class="target active" role="switch" aria-checked="true" data-value="media" onclick="toggleTarget(this)">Media</button>
+                <button class="target" role="switch" aria-checked="false" data-value="text" onclick="toggleTarget(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body">[ panel content — media page ]</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ethereal">
+    <div class="meta">B. Ethereal Glass — dark / glow / floating</div>
+    <h1 class="page-title">Tokenize Environment</h1>
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="legacy">
+              <span>Status</span>
+              <div class="legacy-switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Frequency</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Subtitle</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+          </div>
+          <div class="header-right">
+            <div class="tokenize" role="group" aria-label="Tokenize environment">
+              <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize" onclick="toggleTokenize(this)">
+                <div class="master-switch on"></div>
+                <span>Tokenize</span>
+              </div>
+              <div class="targets" role="group" aria-label="Tokenize targets">
+                <button class="target active" role="switch" aria-checked="true" data-value="media" onclick="toggleTarget(this)">Media</button>
+                <button class="target" role="switch" aria-checked="false" data-value="text" onclick="toggleTarget(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body">[ panel content — media page ]</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section editorial">
+    <div class="meta">C. Editorial Luxury — warm cream / sage / serif accent</div>
+    <h1 class="page-title">Tokenize Environment</h1>
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="legacy">
+              <span>Status</span>
+              <div class="legacy-switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Frequency</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Subtitle</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+          </div>
+          <div class="header-right">
+            <div class="tokenize" role="group" aria-label="Tokenize environment">
+              <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize" onclick="toggleTokenize(this)">
+                <div class="master-switch on"></div>
+                <span>Tokenize</span>
+              </div>
+              <div class="targets" role="group" aria-label="Tokenize targets">
+                <button class="target active" role="switch" aria-checked="true" data-value="media" onclick="toggleTarget(this)">Media</button>
+                <button class="target" role="switch" aria-checked="false" data-value="text" onclick="toggleTarget(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body">[ panel content — media page ]</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section brutal">
+    <div class="meta">D. Industrial Brutalist — mono / sharp / utilitarian</div>
+    <h1 class="page-title">Tokenize Environment</h1>
+    <div class="panel-outer">
+      <div class="panel-inner">
+        <header class="header" aria-label="Universal panel header">
+          <div class="header-left">
+            <select class="profile-select" aria-label="Switch language profile">
+              <option>English</option>
+              <option>Tiếng Việt</option>
+            </select>
+            <label class="legacy">
+              <span>Status</span>
+              <div class="legacy-switch on" role="switch" aria-checked="true" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Frequency</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+            <label class="legacy">
+              <span>Subtitle</span>
+              <div class="legacy-switch" role="switch" aria-checked="false" onclick="toggleLegacy(this)"></div>
+            </label>
+          </div>
+          <div class="header-right">
+            <div class="tokenize" role="group" aria-label="Tokenize environment">
+              <div class="master" role="switch" aria-checked="true" aria-label="Enable tokenize" onclick="toggleTokenize(this)">
+                <div class="master-switch on"></div>
+                <span>Tokenize</span>
+              </div>
+              <div class="targets" role="group" aria-label="Tokenize targets">
+                <button class="target active" role="switch" aria-checked="true" data-value="media" onclick="toggleTarget(this)">Media</button>
+                <button class="target" role="switch" aria-checked="false" data-value="text" onclick="toggleTarget(this)">Text</button>
+              </div>
+            </div>
+            <button class="close" aria-label="Close panel">×</button>
+          </div>
+        </header>
+        <div class="panel-body">[ panel content — media page ]</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function toggleLegacy(el) {
+      el.classList.toggle('on');
+      const on = el.classList.contains('on');
+      el.setAttribute('aria-checked', String(on));
+    }
+
+    function toggleTokenize(el) {
+      const section = el.closest('.section');
+      const masterSwitch = el.querySelector('.master-switch');
+      masterSwitch.classList.toggle('on');
+      const enabled = masterSwitch.classList.contains('on');
+      el.setAttribute('aria-checked', String(enabled));
+
+      const targets = section.querySelectorAll('.target');
+      targets.forEach(t => t.disabled = !enabled);
+
+      updateBody(section);
+    }
+
+    function getActiveList(section) {
+      const active = Array.from(section.querySelectorAll('.target.active')).map(t => t.dataset.value);
+      if (active.length === 0) return 'none';
+      if (active.length === 2) return 'media + text';
+      return active[0];
+    }
+
+    function updateBody(section) {
+      const masterSwitch = section.querySelector('.master-switch');
+      const enabled = masterSwitch.classList.contains('on');
+      const body = section.querySelector('.panel-body');
+      body.textContent = enabled
+        ? `[ panel content — ${getActiveList(section)} ]`
+        : '[ panel content — tokenize disabled ]';
+    }
+
+    function toggleTarget(el) {
+      if (el.disabled) return;
+      const section = el.closest('.section');
+      const isActive = el.classList.contains('active');
+      el.classList.toggle('active', !isActive);
+      el.setAttribute('aria-checked', String(!isActive));
+      updateBody(section);
+    }
+  </script>
+</body>
+</html>

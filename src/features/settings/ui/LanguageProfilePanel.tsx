@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { VStack, HStack } from '@/shared/ui/Stack';
@@ -232,19 +232,19 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   </span>
                 </HStack>
                 <HStack align="center" gap="1" className={styles.profileActions}>
-                  <IconButton material="solid"
+                  <Button shape="circle" material="solid"
                     type="button"
                     size="sm"
-                    variant={isActive ? 'solid' : 'ghost'}
+                    variant={isActive ? 'primary' : 'ghost'}
                     active={isActive}
                     aria-label={isActive ? 'Active profile' : 'Set as active'}
                     title={isActive ? 'Active' : 'Set active'}
                     onClick={() => setActive(profile.id)}
                     disabled={isActive}
                   >
-                    <Icon name={isActive ? 'check' : 'check'} size={16} />
-                  </IconButton>
-                  <IconButton material="solid"
+                    <Icon name={isActive ? 'check' : 'check'} size="xs" />
+                  </Button>
+                  <Button shape="circle" material="solid"
                     type="button"
                     size="sm"
                     variant="ghost"
@@ -252,23 +252,23 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                     title="Edit"
                     onClick={() => openEdit(profile)}
                   >
-                    <Icon name="pencil" size={16} />
-                  </IconButton>
-                  <IconButton material="solid"
+                    <Icon name="pencil" size="xs" />
+                  </Button>
+                  <Button shape="circle" material="solid"
                     type="button"
                     size="sm"
-                    variant="danger"
+                    variant="destructive"
                     aria-label="Delete profile"
                     title="Delete"
                     onClick={() => deleteProfile(profile.id)}
                     disabled={profiles.length === 1 && isActive}
                   >
-                    <Icon name="trash" size={16} />
-                  </IconButton>
+                    <Icon name="trash" size="xs" />
+                  </Button>
                 </HStack>
               </HStack>
               <HStack align="center" gap="1" className={styles.profileReorder}>
-                <IconButton material="solid"
+                <Button shape="circle" material="solid"
                   type="button"
                   size="sm"
                   variant="ghost"
@@ -277,9 +277,9 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   onClick={() => move(profile.id, -1)}
                   disabled={index === 0}
                 >
-                  <Icon name="moveVertical" size={16} />
-                </IconButton>
-                <IconButton material="solid"
+                  <Icon name="moveVertical" size="xs" />
+                </Button>
+                <Button shape="circle" material="solid"
                   type="button"
                   size="sm"
                   variant="ghost"
@@ -288,8 +288,8 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   onClick={() => move(profile.id, 1)}
                   disabled={index === profiles.length - 1}
                 >
-                  <Icon name="moveVertical" size={16} />
-                </IconButton>
+                  <Icon name="moveVertical" size="xs" />
+                </Button>
               </HStack>
             </div>
           );
@@ -304,7 +304,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
         disabled={!canAdd}
         data-cell-id="add-language-profile"
       >
-        <Icon name="plus" size={16} />
+        <Icon name="plus" size="xs" />
         Add profile
       </Button>
 

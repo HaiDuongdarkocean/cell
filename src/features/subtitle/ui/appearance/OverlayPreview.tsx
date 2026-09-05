@@ -4,7 +4,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitleBlock } from '../SubtitleBlock';
 import { NavCluster } from '../NavCluster';
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Button } from '@/shared/ui/Button';
 import { buildClusterCssVars } from '../subtitleUI';
 import styles from './OverlayPreview.module.css';
 
@@ -79,36 +79,36 @@ export function OverlayPreview({
 
         <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
-            <IconButton material="liquid" variant="glass" aria-label="Quick add card" size="sm" onClick={noop}>
+            <Button shape="circle" material="liquid" variant="glass" aria-label="Quick add card" size="sm" onClick={noop}>
               <Icon name="zap"  />
-            </IconButton>
-            <IconButton material="liquid" variant="glass" aria-label="Edit card" size="sm" onClick={noop}>
+            </Button>
+            <Button shape="circle" material="liquid" variant="glass" aria-label="Edit card" size="sm" onClick={noop}>
               <Icon name="pencil"  />
-            </IconButton>
+            </Button>
             <div className={styles.toggleWrap}>
               <div className={styles.extraCol}>
-                <IconButton material="liquid" variant="glass" aria-label="Open subtitle list" size="sm" onClick={noop}>
+                <Button shape="circle" material="liquid" variant="glass" aria-label="Open subtitle list" size="sm" onClick={noop}>
                   <Icon name="sidePanel"  />
-                </IconButton>
-                <IconButton material="liquid" variant="glass" aria-label="Generate native subtitle" size="sm" onClick={noop}>
+                </Button>
+                <Button shape="circle" material="liquid" variant="glass" aria-label="Generate native subtitle" size="sm" onClick={noop}>
                   <Icon name="languages"  />
-                </IconButton>
+                </Button>
               </div>
-              <IconButton material="liquid" variant="glass" aria-label="Expand tools" size="sm" onClick={noop}>
+              <Button shape="circle" material="liquid" variant="glass" aria-label="Expand tools" size="sm" onClick={noop}>
                 <Icon name="chevronLeft"  />
-              </IconButton>
+              </Button>
             </div>
           </div>
           <div className={styles.secondaryCol}>
-            <IconButton material="liquid" variant="glass" aria-label="Update current card" size="sm" onClick={noop}>
+            <Button shape="circle" material="liquid" variant="glass" aria-label="Update current card" size="sm" onClick={noop}>
               <Icon name="rotateCcw"  />
-            </IconButton>
-            <IconButton material="liquid" variant="glass" aria-label="Open subtitle manager" size="sm" onClick={noop}>
+            </Button>
+            <Button shape="circle" material="liquid" variant="glass" aria-label="Open subtitle manager" size="sm" onClick={noop}>
               <Icon name="subtitleManager"  />
-            </IconButton>
-            <IconButton material="liquid" variant="glass" aria-label="Enter player mode" size="sm" onClick={noop}>
+            </Button>
+            <Button shape="circle" material="liquid" variant="glass" aria-label="Enter player mode" size="sm" onClick={noop}>
               <Icon name="maximize"  />
-            </IconButton>
+            </Button>
           </div>
         </div>
       </div>

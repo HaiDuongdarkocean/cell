@@ -1,5 +1,5 @@
 import { loadSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
-import { DEFAULT_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SRS_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SRS_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 const storageLocalSetMock = jest.fn<Promise<void>, [Record<string, unknown>]>();
@@ -77,5 +77,35 @@ describe('loadSettings migration', () => {
 
     expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(settings.srs).toEqual(DEFAULT_SRS_SETTINGS);
+  });
+
+  it('resets undefined nested objects to their defaults', async () => {
+    const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
+    stored.cardCreator = undefined;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: stored,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.cardCreator).toEqual(DEFAULT_CARD_CREATOR_SETTINGS);
+  });
+
+  it('coerces corrupted arrays back to defaults', async () => {
+    const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
+    stored.keyboardShortcuts = { notAnArray: true };
+    stored.languageProfiles = 'corrupted';
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: stored,
+    });
+
+    const settings = await loadSettings();
+
+    expect(Array.isArray(settings.keyboardShortcuts)).toBe(true);
+    expect(Array.isArray(settings.languageProfiles)).toBe(true);
+    expect(settings.keyboardShortcuts).toEqual(DEFAULT_SETTINGS.keyboardShortcuts);
+    expect(settings.languageProfiles).toEqual(DEFAULT_SETTINGS.languageProfiles);
   });
 });

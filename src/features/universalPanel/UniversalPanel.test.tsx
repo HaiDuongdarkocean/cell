@@ -240,6 +240,27 @@ describe('UniversalPanel component', () => {
     fireEvent.click(screen.getByTestId('universal-panel-header-tokenize-media'));
     expect(onToggleTokenize).toHaveBeenCalledWith('subtitleEnabled');
   });
+
+  it('renders header as <header> and sidebar tab bar as <aside>', () => {
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    const header = screen.getByTestId('universal-panel-header');
+    expect(header.tagName.toLowerCase()).toBe('header');
+
+    const sidebar = screen.getByTestId('universal-panel-tab-bar');
+    expect(sidebar.tagName.toLowerCase()).toBe('aside');
+  });
 });
 
 describe('createUniversalPanelController', () => {

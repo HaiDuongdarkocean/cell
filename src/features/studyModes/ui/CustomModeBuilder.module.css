@@ -1,0 +1,17 @@
+/* CustomModeBuilder — dialog footer + validation error. */
+
+.sectionHeading {
+  margin: 0;
+}
+
+.builderFooter {
+  width: 100%;
+}
+
+.builderFooterRight {
+  margin-left: auto;
+}
+
+.builderError {
+  color: var(--color-error);
+}

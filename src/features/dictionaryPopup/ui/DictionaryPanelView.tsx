@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { IconButton } from '@/shared/ui/IconButton';
+
 import { useDictionaryPanel } from './useDictionaryPanel';
 import { Alert } from '@/shared/ui/Alert';
 import { HStack } from '@/shared/ui/Stack';
@@ -8,7 +8,8 @@ import { SearchField } from '@/shared/ui/SearchField';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { EmptyState } from '@/shared/ui/EmptyState';
-import { Icon } from '@/shared/icons/Icon';
+import { Heading } from '@/shared/ui/Heading';
+import { Icon } from '@/shared/ui/Icon';
 import {
   addSearchHistoryTerm,
   loadSearchHistory,
@@ -18,7 +19,6 @@ import {
 import { CandidateView } from './CandidateView';
 import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 import styles from './DictionaryPanelView.module.css';
-import componentsCss from '@/shared/styles/components.css?raw';
 
 const SEARCH_INPUT_ID = 'dictionary-panel-search-input';
 
@@ -184,18 +184,6 @@ export function DictionaryPanelView({
     input.setSelectionRange(end, end);
   }, [panel.isLoading, panel.currentResult]);
 
-  // Inject shared .btn / .icon-btn classes so popup-style markup can reuse
-  // the same global class names without duplication. Idempotent across mounts.
-  useEffect(() => {
-    const id = 'cell-dictionary-components';
-    if (!document.getElementById(id)) {
-      const style = document.createElement('style');
-      style.id = id;
-      style.textContent = componentsCss;
-      document.head.appendChild(style);
-    }
-  }, []);
-
   // Focus the search input after the panel enter animation completes.
   // If the input already has a term, move the caret to the end.
   useEffect(() => {
@@ -261,15 +249,15 @@ export function DictionaryPanelView({
 
       {variant !== 'popup' && searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
-          <IconButton material="solid" variant="ghost"
-            className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
+          <Button shape="circle" size="xs" material="solid" variant="ghost"
+            className={styles.searchHistoryClear}
             aria-label="Clear recent searches"
             title="Clear recent searches"
             onClick={handleClearHistory}
             data-cell-id="dictionary-search-history-clear"
           >
             <Icon name="trash"  />
-          </IconButton>
+          </Button>
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => (
               <li key={term} className={styles.searchHistoryItem}>
@@ -282,14 +270,14 @@ export function DictionaryPanelView({
                 >
                   {term}
                 </Button>
-                <IconButton material="solid" variant="ghost"
+                <Button shape="circle" material="solid" variant="ghost"
                   className={styles.searchHistoryRemove}
                   aria-label={`Remove ${term} from recent searches`}
                   title={`Remove ${term}`}
                   onClick={() => handleRemoveHistory(term)}
                 >
                   <Icon name="x"  />
-                </IconButton>
+                </Button>
               </li>
             ))}
           </ul>
@@ -349,9 +337,9 @@ export function DictionaryPanelView({
             <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll}>
                 {allCandidates.map((c, idx) => (
-                  <Button material="solid" variant="secondary"
+                  <Button material="solid" variant="ghost"
                     key={`${c.term}-${idx}`}
-                    className={`btn ${idx === activeChipIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
+                    className={styles.cellChip}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
                     onClick={() => handleChipClick(idx)}
                     data-cell-id={`dictionary-candidate-chip-${idx}`}
@@ -395,7 +383,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
         <div className={styles.cellHeaderRow}>
           <div className={styles.cellHeaderMain}>
             <div className={styles.cellHeaderWordRow}>
-              <h2 className={styles.cellHeaderWord} data-cell-id="dictionary-term">{term}</h2>
+              <Heading level={2} size={2} className={styles.cellHeaderWord} data-cell-id="dictionary-term">{term}</Heading>
             </div>
           </div>
           <div className={styles.cellHeaderActions}>

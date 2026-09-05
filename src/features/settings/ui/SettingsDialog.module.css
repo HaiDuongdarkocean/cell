@@ -135,7 +135,7 @@
   align-items: stretch;
   gap: var(--space-1);
   padding: 0 var(--space-3);
-  border-radius: var(--radius-m3-small);
+  border-radius: var(--radius-sm);
   min-width: 0;
 }
 
@@ -171,7 +171,7 @@
 
 /* === Card enter animation (Apple — subtle, from current position) === */
 @keyframes cardEnter {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(var(--space-1)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -201,27 +201,37 @@
   }
 }
 
-/* === Sidebar width overrides (Sidebar component base = 160px at 840px+) ===
-   Collapsed width always wins over responsive width via [data-collapsed]. === */
-.sidebarWidth {}
+/* === Sidebar width overrides (Sidebar component base = max-content) ===
+   The NavItem parent container query needs a definite width to measure —
+   `max-content` on a container-query subtree resolves to 0 and permanently
+   collapses items to icon circles. Collapsed width always wins via
+   [data-collapsed]. === */
+@media (min-width: 840px) {
+  .popoverBody .sidebarWidth {
+    width: var(--sidebar-width);
+  }
+  .popoverBody .sidebarWidth[data-collapsed] {
+    width: var(--sidebar-width-collapsed);
+  }
+}
 
 /* === 1200px+: wider sidebar === */
 @media (min-width: 1200px) {
-  .sidebarWidth {
+  .popoverBody .sidebarWidth {
     width: calc(var(--space-5) * 9);
   }
-  .sidebarWidth[data-collapsed] {
-    width: var(--space-16);
+  .popoverBody .sidebarWidth[data-collapsed] {
+    width: var(--sidebar-width-collapsed);
   }
 }
 
 /* === 1600px+: widest sidebar === */
 @media (min-width: 1600px) {
-  .sidebarWidth {
+  .popoverBody .sidebarWidth {
     width: calc(var(--space-5) * 10);
   }
-  .sidebarWidth[data-collapsed] {
-    width: var(--space-16);
+  .popoverBody .sidebarWidth[data-collapsed] {
+    width: var(--sidebar-width-collapsed);
   }
 }
 
@@ -250,7 +260,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--border-radius-md);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   border: var(--border-width-hairline) solid var(--color-border);
 }
@@ -331,7 +341,7 @@
 }
 
 .profileDialogBody {
-  min-width: 280px;
+  min-width: calc(var(--space-10) * 7);
 }
 
 .profileReadonly {

@@ -1,0 +1,604 @@
+- generic [ref=f3e1]:
+  - generic [ref=f3e5]:
+    - complementary "Library tree" [ref=f3e6]:
+      - generic [ref=f3e7]:
+        - heading "Design System" [level=2] [ref=f3e8]
+        - searchbox "Search components…" [ref=f3e14]
+      - tree "Library navigation tree" [ref=f3e16]:
+        - treeitem "Foundations Foundations" [expanded] [ref=f3e17]:
+          - generic [ref=f3e18] [cursor=pointer]
+          - generic [ref=f3e21] [cursor=pointer]: Foundations
+          - group "Foundations" [ref=f3e22]:
+            - treeitem "Overview Overview" [expanded] [ref=f3e23]:
+              - generic [ref=f3e24] [cursor=pointer]
+              - generic [ref=f3e27] [cursor=pointer]: Overview
+              - group "Overview" [ref=f3e28]:
+                - treeitem "Overview" [ref=f3e29]:
+                  - generic [aria-hidden] [ref=f3e30] [cursor=pointer]
+            - treeitem "Color" [ref=f3e32]:
+              - generic [ref=f3e33] [cursor=pointer]
+            - treeitem "Typography" [ref=f3e37]:
+              - generic [ref=f3e38] [cursor=pointer]
+            - treeitem "Spacing" [ref=f3e42]:
+              - generic [ref=f3e43] [cursor=pointer]
+        - treeitem "Atoms" [ref=f3e47]:
+          - generic [ref=f3e48] [cursor=pointer]
+        - treeitem "Molecules" [ref=f3e52]:
+          - generic [ref=f3e53] [cursor=pointer]
+        - treeitem "Organisms" [ref=f3e57]:
+          - generic [ref=f3e58] [cursor=pointer]
+        - treeitem "Pages" [ref=f3e62]:
+          - generic [ref=f3e63] [cursor=pointer]
+      - generic [ref=f3e67]:
+        - button "Color preset" [ref=f3e69] [cursor=pointer]:
+          - generic: Dawn
+        - button "Switch to dark mode" [ref=f3e70] [cursor=pointer]
+    - main [ref=f3e71]:
+      - generic [ref=f3e72]:
+        - generic [ref=f3e73]:
+          - generic [ref=f3e74]:
+            - heading "Universal Panel Page" [level=1] [ref=f3e76]
+            - generic [ref=f3e77]: Side Panel
+          - paragraph [ref=f3e78]: "Slide-in side panel with Dictionary, Study and Settings tabs. Desktop: L-shape collapsible sidebar on the left, surface-elevated header, stretchable tokenize pill. Mobile: bottom nav bar with a tools sheet. Media half disables when no video is present."
+        - generic [ref=f3e80]:
+          - generic [ref=f3e81]:
+            - button "Close Panel" [ref=f3e82] [cursor=pointer]
+            - button "Switch to Dictionary" [ref=f3e83] [cursor=pointer]
+            - button "Simulate no video" [ref=f3e84] [cursor=pointer]
+          - generic [ref=f3e85]:
+            - generic [ref=f3e86]: Web Page Content (behind panel)
+            - dialog "Universal panel" [ref=f3e88]:
+              - complementary "Panel tabs" [ref=f3e89]:
+                - generic [ref=f3e90]:
+                  - navigation "Sidebar tabs" [ref=f3e91]:
+                    - button "Dictionary" [ref=f3e92] [cursor=pointer]
+                    - button "Study Modes" [ref=f3e99] [cursor=pointer]
+                    - button "Settings" [ref=f3e105] [cursor=pointer]
+                  - group [ref=f3e113]:
+                    - button "Open Reader" [ref=f3e114] [cursor=pointer]
+                    - button "Open SRS" [ref=f3e121] [cursor=pointer]
+                    - button "Open local player" [ref=f3e130] [cursor=pointer]
+                - button "Collapse sidebar" [ref=f3e138] [cursor=pointer]:
+                  - generic: Collapse
+              - generic [ref=f3e139]:
+                - generic [ref=f3e140]:
+                  - 'button "Switch language profile: vietnamese → english" [ref=f3e141] [cursor=pointer]':
+                    - generic:
+                      - img "vietnamese → english":
+                        - img "vietnamese → english"
+                  - group "Tokenize sources" [ref=f3e142]:
+                    - button "Tokenize text" [pressed] [ref=f3e143] [cursor=pointer]
+                    - button "Tokenize media" [ref=f3e144] [cursor=pointer]
+                  - button "Close panel" [ref=f3e145] [cursor=pointer]
+                - generic [ref=f3e148]:
+                  - complementary "Settings sidebar" [ref=f3e149]:
+                    - generic [ref=f3e150]:
+                      - generic [ref=f3e151]: Settings
+                      - button "Collapse sidebar" [expanded] [ref=f3e152] [cursor=pointer]
+                    - navigation "Settings sections" [ref=f3e154]:
+                      - button "Media" [ref=f3e155] [cursor=pointer]
+                      - button "Block" [ref=f3e163] [cursor=pointer]
+                      - button "Language Profile" [ref=f3e171] [cursor=pointer]
+                      - button "Shortcuts" [ref=f3e180] [cursor=pointer]
+                      - button "Download" [ref=f3e186] [cursor=pointer]
+                      - button "Card Creator" [ref=f3e194] [cursor=pointer]
+                      - button "Dictionary Popup" [ref=f3e203] [cursor=pointer]
+                      - button "Pronunciation" [ref=f3e210] [cursor=pointer]
+                      - button "Local Pronunciation" [ref=f3e216] [cursor=pointer]
+                      - button "Local Player" [ref=f3e222] [cursor=pointer]
+                      - button "Theme" [ref=f3e230] [cursor=pointer]
+                      - button "TTS Voices" [ref=f3e241] [cursor=pointer]
+                      - button "Resources" [ref=f3e250] [cursor=pointer]
+                  - generic [ref=f3e257]:
+                    - generic [ref=f3e258]:
+                      - generic [ref=f3e259]:
+                        - heading "Media Selection" [level=4] [ref=f3e260]
+                        - paragraph [ref=f3e261]: Configure how media is automatically selected.
+                      - generic [ref=f3e263]:
+                        - generic [ref=f3e264]:
+                          - text: Auto select media
+                          - button "Show hint for Auto select media" [ref=f3e266]
+                        - 'generic "Auto select: OFF" [ref=f3e267] [cursor=pointer]':
+                          - switch "Toggle auto select" [ref=f3e268]
+                    - generic [ref=f3e269]:
+                      - generic [ref=f3e270]:
+                        - heading "Block" [level=4] [ref=f3e271]
+                        - paragraph [ref=f3e272]: Position, scale, and auto-load behavior for the unified subtitle block.
+                      - generic [ref=f3e273]:
+                        - generic [ref=f3e274]:
+                          - generic [ref=f3e275]:
+                            - text: Overlay auto-load
+                            - button "Show hint for Overlay auto-load" [ref=f3e277]
+                          - 'generic "Overlay auto-load: ON" [ref=f3e278] [cursor=pointer]':
+                            - switch "Toggle overlay auto-load" [checked] [ref=f3e279]
+                        - generic [ref=f3e280]:
+                          - generic [ref=f3e281]:
+                            - text: Auto-load YouTube ASR
+                            - button "Show hint for Auto-load YouTube ASR" [ref=f3e283]
+                          - 'generic "Auto-load YouTube ASR: OFF" [ref=f3e284] [cursor=pointer]':
+                            - switch "Toggle auto-load YouTube ASR" [ref=f3e285]
+                        - generic [ref=f3e286]:
+                          - generic [ref=f3e287]:
+                            - text: Auto-translate when native missing
+                            - button "Show hint for Auto-translate when native missing" [ref=f3e289]
+                          - 'generic "Auto-translate when native missing: ON" [ref=f3e290] [cursor=pointer]':
+                            - switch "Toggle auto-translate when native missing" [checked] [ref=f3e291]
+                    - generic [ref=f3e292]:
+                      - generic [ref=f3e293]:
+                        - heading "Language Profile" [level=4] [ref=f3e294]
+                        - paragraph [ref=f3e295]: Manage language profiles for learning. One profile is active at a time.
+                      - generic [ref=f3e296]:
+                        - generic [ref=f3e297]:
+                          - generic [ref=f3e298]: Universal native language
+                          - button "Select universal native language" [ref=f3e300] [cursor=pointer]:
+                            - generic: Tiếng Việt (Vietnamese)
+                        - list "Language profiles" [ref=f3e301]
+                        - button "Add profile" [ref=f3e302] [cursor=pointer]
+                    - generic [ref=f3e303]:
+                      - generic [ref=f3e304]:
+                        - heading "Keyboard Shortcuts" [level=4] [ref=f3e305]
+                        - paragraph [ref=f3e306]: Remap keys for subtitle panel navigation actions.
+                      - generic [ref=f3e308]:
+                        - generic [ref=f3e309]:
+                          - generic [ref=f3e310]: Navigation
+                          - generic [ref=f3e311]:
+                            - generic [ref=f3e312]:
+                              - generic [ref=f3e313]: Previous cue
+                              - button "Previous cue" [ref=f3e314] [cursor=pointer]:
+                                - generic [ref=f3e315]: A
+                            - generic [ref=f3e316]:
+                              - generic [ref=f3e317]: Next cue
+                              - button "Next cue" [ref=f3e318] [cursor=pointer]:
+                                - generic [ref=f3e319]: D
+                            - generic [ref=f3e320]:
+                              - generic [ref=f3e321]: Replay cue
+                              - button "Replay cue" [ref=f3e322] [cursor=pointer]:
+                                - generic [ref=f3e323]: S
+                            - generic [ref=f3e324]:
+                              - generic [ref=f3e325]: Play / pause video
+                              - button "Play / pause video" [ref=f3e326] [cursor=pointer]
+                        - generic [ref=f3e327]:
+                          - generic [ref=f3e328]: Toggle
+                          - generic [ref=f3e329]:
+                            - generic [ref=f3e330]:
+                              - generic [ref=f3e331]: Toggle overlay
+                              - button "Toggle overlay" [ref=f3e332] [cursor=pointer]:
+                                - generic [ref=f3e333]: W
+                            - generic [ref=f3e334]:
+                              - generic [ref=f3e335]: Toggle panel
+                              - button "Toggle panel" [ref=f3e336] [cursor=pointer]:
+                                - generic [ref=f3e337]: T
+                            - generic [ref=f3e338]:
+                              - generic [ref=f3e339]: Toggle auto-translate
+                              - button "Toggle auto-translate" [ref=f3e340] [cursor=pointer]:
+                                - generic [ref=f3e341]: Ctrl
+                                - generic [ref=f3e342]: Shift
+                                - generic [ref=f3e343]: T
+                            - generic [ref=f3e344]:
+                              - generic [ref=f3e345]: Toggle Player Mode
+                              - button "Toggle Player Mode" [ref=f3e346] [cursor=pointer]:
+                                - generic [ref=f3e347]: G
+                        - generic [ref=f3e348]:
+                          - generic [ref=f3e349]: Generate
+                          - generic [ref=f3e351]:
+                            - generic [ref=f3e352]: Generate native subtitle
+                            - button "Generate native subtitle" [ref=f3e353] [cursor=pointer]:
+                              - generic [ref=f3e354]: H
+                        - generic [ref=f3e355]:
+                          - generic [ref=f3e356]: Card Creator
+                          - generic [ref=f3e357]:
+                            - generic [ref=f3e358]:
+                              - generic [ref=f3e359]: "Card Creator: Quick update"
+                              - 'button "Card Creator: Quick update" [ref=f3e360] [cursor=pointer]':
+                                - generic [ref=f3e361]: Q
+                            - generic [ref=f3e362]:
+                              - generic [ref=f3e363]: "Card Creator: Edit card"
+                              - 'button "Card Creator: Edit card" [ref=f3e364] [cursor=pointer]':
+                                - generic [ref=f3e365]: E
+                    - generic [ref=f3e366]:
+                      - generic [ref=f3e367]:
+                        - heading "Download" [level=4] [ref=f3e368]
+                        - paragraph [ref=f3e369]: Download format, quality, concurrency, conversion, and filename options.
+                      - generic [ref=f3e370]:
+                        - generic [ref=f3e371]: Concurrency
+                        - generic [ref=f3e372]:
+                          - generic [ref=f3e373]: Downloads at once
+                          - button "3" [ref=f3e375] [cursor=pointer]
+                        - generic [ref=f3e376]: Format & Quality
+                        - generic [ref=f3e377]:
+                          - generic [ref=f3e378]:
+                            - generic [ref=f3e379]: Preferred format
+                            - button "m3u8 (HLS)" [ref=f3e381] [cursor=pointer]
+                          - generic [ref=f3e382]:
+                            - generic [ref=f3e383]: Default quality
+                            - button "Highest" [ref=f3e385] [cursor=pointer]
+                        - generic [ref=f3e386]: Conversion
+                        - generic [ref=f3e387]:
+                          - generic [ref=f3e388]: Convert to MP4
+                          - button "Always" [ref=f3e390] [cursor=pointer]
+                        - generic [ref=f3e391]:
+                          - generic [ref=f3e392]:
+                            - text: Parallel conversion
+                            - button "Show hint for Parallel conversion" [ref=f3e394]
+                          - button "Auto" [ref=f3e396] [cursor=pointer]
+                        - generic [ref=f3e397]: Filename
+                        - generic [ref=f3e398]:
+                          - generic [ref=f3e399]: Filename source
+                          - button "Title (fallback URL)" [ref=f3e401] [cursor=pointer]
+                    - generic [ref=f3e402]:
+                      - generic [ref=f3e403]:
+                        - heading "Card Creator" [level=4] [ref=f3e404]
+                        - paragraph [ref=f3e405]: Connect to Anki via AnkiConnect. Create and update flashcards from video content.
+                      - generic [ref=f3e407]:
+                        - generic [ref=f3e408]:
+                          - generic [ref=f3e409]: AnkiConnect URL
+                          - textbox "AnkiConnect URL" [ref=f3e410]:
+                            - /placeholder: http://localhost:8765
+                            - text: http://localhost:8765
+                          - paragraph [ref=f3e411]: "Default: localhost:8765. Change to your PC's IP address when using Kiwi or Edge on mobile."
+                        - generic [ref=f3e412]:
+                          - generic [ref=f3e413]:
+                            - generic [ref=f3e415]: Not tested
+                            - generic [ref=f3e416]: localhost:8765
+                          - button "Test AnkiConnect connection again" [ref=f3e417] [cursor=pointer]:
+                            - generic: Test again
+                        - generic [ref=f3e418]:
+                          - generic [ref=f3e419]: Quick Add auto-complete
+                          - paragraph [ref=f3e420]: When ON, Quick Add auto-fills the field with best-match items. When OFF, only user-ticked items are filled.
+                          - list [ref=f3e421]:
+                            - generic [ref=f3e422]:
+                              - checkbox "Definitions" [checked] [ref=f3e423]
+                              - text: Definitions
+                            - generic [ref=f3e424]:
+                              - checkbox "Word Audios" [checked] [ref=f3e425]
+                              - text: Word Audios
+                            - generic [ref=f3e426]:
+                              - checkbox "Sentence Audios" [checked] [ref=f3e427]
+                              - text: Sentence Audios
+                            - generic [ref=f3e428]:
+                              - checkbox "Images" [checked] [ref=f3e429]
+                              - text: Images
+                            - generic [ref=f3e430]:
+                              - checkbox "Sentence Translation" [checked] [ref=f3e431]
+                              - text: Sentence Translation
+                            - generic [ref=f3e432]:
+                              - checkbox "Sentence" [checked] [ref=f3e433]
+                              - text: Sentence
+                        - generic [ref=f3e434]:
+                          - generic [ref=f3e435]: Audio fallback
+                          - combobox "Audio fallback strategy" [ref=f3e436]:
+                            - option "Community → TTS (recommended)" [selected]
+                            - option "Community only"
+                            - option "TTS only"
+                          - paragraph [ref=f3e437]: What to use when community audio is unavailable or fails to load.
+                    - generic [ref=f3e438]:
+                      - generic [ref=f3e439]:
+                        - heading "Dictionary Popup" [level=4] [ref=f3e440]
+                        - paragraph [ref=f3e441]: Hover or click words in subtitles to see definitions, audio, images, and Quick Add to Anki.
+                      - generic [ref=f3e443]:
+                        - generic [ref=f3e445]:
+                          - checkbox "Enable Dictionary Popup" [checked] [ref=f3e446]
+                          - text: Enable Dictionary Popup
+                        - generic [ref=f3e447]:
+                          - generic [ref=f3e448]: Trigger mode
+                          - combobox "Trigger mode" [ref=f3e449]:
+                            - option "Click" [selected]
+                            - option "Hover"
+                            - option "Hover + Ctrl"
+                            - option "Hover + Shift"
+                            - option "Hover + Alt"
+                        - generic [ref=f3e450]:
+                          - generic [ref=f3e451]: Pointer position
+                          - combobox "Pointer position" [ref=f3e452]:
+                            - option "Top"
+                            - option "Bottom"
+                            - option "Left"
+                            - option "Right"
+                            - option "Center" [selected]
+                        - generic [ref=f3e453]:
+                          - generic [ref=f3e454]:
+                            - generic [ref=f3e455]: Badge size
+                            - generic [ref=f3e456]: 36px
+                          - slider "Orbital badge size" [ref=f3e457] [cursor=pointer]: "36"
+                        - generic [ref=f3e458]:
+                          - generic [ref=f3e459]: Default active tab
+                          - combobox "Default active tab" [ref=f3e460]:
+                            - option "None (dictionary only)" [selected]
+                            - option "Audio"
+                            - option "Image"
+                            - option "Translate"
+                            - option "Links"
+                            - option "Phonemes"
+                        - generic [ref=f3e461]:
+                          - generic [ref=f3e462]: Popup width (px)
+                          - spinbutton "Popup width (px)" [ref=f3e463]: "560"
+                        - generic [ref=f3e464]:
+                          - generic [ref=f3e465]: Popup max height (px)
+                          - spinbutton "Popup max height (px)" [ref=f3e466]: "480"
+                        - generic [ref=f3e467]:
+                          - generic [ref=f3e468]: SRS destination
+                          - combobox "SRS destination" [ref=f3e469]:
+                            - option "Anki" [selected]
+                            - option "Ocean SRS"
+                          - generic [ref=f3e470]: Choose where Quick Add sends cards.
+                    - generic [ref=f3e471]:
+                      - generic [ref=f3e472]:
+                        - heading "Pronunciation" [level=4] [ref=f3e473]
+                        - paragraph [ref=f3e474]: Choose and reorder the audio source fallback chain.
+                      - generic [ref=f3e476]:
+                        - generic [ref=f3e477]:
+                          - generic [ref=f3e478]: Audio source priority
+                          - generic [ref=f3e479]: Engines are tried in order. Drag is not supported; use the up/down buttons to reorder.
+                        - list [ref=f3e480]:
+                          - listitem [ref=f3e481]:
+                            - generic [ref=f3e482]: Local Forvo package
+                            - generic [ref=f3e483]:
+                              - button "Move Local Forvo package up" [disabled]:
+                                - generic: Up
+                              - button "Move Local Forvo package down" [ref=f3e484] [cursor=pointer]:
+                                - generic: Down
+                          - listitem [ref=f3e485]:
+                            - generic [ref=f3e486]: Community audio (Wikimedia)
+                            - generic [ref=f3e487]:
+                              - button "Move Community audio (Wikimedia) up" [ref=f3e488] [cursor=pointer]:
+                                - generic: Up
+                              - button "Move Community audio (Wikimedia) down" [ref=f3e489] [cursor=pointer]:
+                                - generic: Down
+                          - listitem [ref=f3e490]:
+                            - generic [ref=f3e491]: Supertonic cloud TTS
+                            - generic [ref=f3e492]:
+                              - button "Move Supertonic cloud TTS up" [ref=f3e493] [cursor=pointer]:
+                                - generic: Up
+                              - button "Move Supertonic cloud TTS down" [ref=f3e494] [cursor=pointer]:
+                                - generic: Down
+                          - listitem [ref=f3e495]:
+                            - generic [ref=f3e496]: Browser / Google TTS
+                            - generic [ref=f3e497]:
+                              - button "Move Browser / Google TTS up" [ref=f3e498] [cursor=pointer]:
+                                - generic: Up
+                              - button "Move Browser / Google TTS down" [ref=f3e499] [cursor=pointer]:
+                                - generic: Down
+                          - listitem [ref=f3e500]:
+                            - generic [ref=f3e501]: eSpeak on-device TTS
+                            - generic [ref=f3e502]:
+                              - button "Move eSpeak on-device TTS up" [ref=f3e503] [cursor=pointer]:
+                                - generic: Up
+                              - button "Move eSpeak on-device TTS down" [disabled]:
+                                - generic: Down
+                        - generic [ref=f3e504]:
+                          - generic [ref=f3e505]: Download eSpeak TTS data
+                          - switch "Download eSpeak TTS data on demand" [ref=f3e507] [cursor=pointer]
+                    - generic [ref=f3e508]:
+                      - generic [ref=f3e509]:
+                        - heading "Local Pronunciation" [level=4] [ref=f3e510]
+                        - paragraph [ref=f3e511]: Use a local Forvo/Lingvo DSL audio package.
+                      - generic [ref=f3e513]:
+                        - generic [ref=f3e514]:
+                          - generic [ref=f3e515]: Package type
+                          - button "Package type" [ref=f3e517] [cursor=pointer]:
+                            - generic: Single .dsl.files.zip
+                        - generic [ref=f3e518]:
+                          - generic [ref=f3e519]: Lingvo DSL index
+                          - button "Choose .dsl file" [ref=f3e520] [cursor=pointer]
+                        - generic [ref=f3e521]:
+                          - generic [ref=f3e522]: Audio archive
+                          - button "Choose .dsl.files.zip" [ref=f3e523] [cursor=pointer]
+                        - generic [ref=f3e524]:
+                          - generic [ref=f3e525]: Index build
+                          - button "Build index" [disabled]
+                    - generic [ref=f3e526]:
+                      - generic [ref=f3e527]:
+                        - heading "Local Player" [level=4] [ref=f3e528]
+                        - paragraph [ref=f3e529]: "Configure the local video player: subtitle auto-match and resume prompt."
+                      - generic [ref=f3e530]:
+                        - generic [ref=f3e531]:
+                          - generic [ref=f3e532]:
+                            - text: Subtitle auto-match
+                            - button "Show hint for Subtitle auto-match" [ref=f3e534]
+                          - 'generic "Subtitle auto-match: ON" [ref=f3e535] [cursor=pointer]':
+                            - switch "Toggle subtitle auto-match" [checked] [ref=f3e536]
+                        - generic [ref=f3e537]:
+                          - generic [ref=f3e538]:
+                            - text: Resume prompt
+                            - button "Show hint for Resume prompt" [ref=f3e540]
+                          - 'generic "Resume prompt: ON" [ref=f3e541] [cursor=pointer]':
+                            - switch "Toggle resume prompt" [checked] [ref=f3e542]
+                    - generic [ref=f3e543]:
+                      - generic [ref=f3e544]:
+                        - heading "Theme" [level=4] [ref=f3e545]
+                        - paragraph [ref=f3e546]: Light/dark/system mode.
+                      - generic [ref=f3e548]:
+                        - generic [ref=f3e549]:
+                          - heading "Mode" [level=2] [ref=f3e550]
+                          - radiogroup "Theme mode" [ref=f3e551]:
+                            - radio "Light" [ref=f3e552] [cursor=pointer]:
+                              - generic [aria-hidden] [ref=f3e553]: ☀️
+                            - radio "Dark" [checked] [ref=f3e555] [cursor=pointer]:
+                              - generic [aria-hidden] [ref=f3e556]: 🌙
+                            - radio "System" [ref=f3e558] [cursor=pointer]:
+                              - generic [aria-hidden] [ref=f3e559]: 🖥️
+                        - generic [ref=f3e561]:
+                          - heading "Preset" [level=2] [ref=f3e562]
+                          - button "Color preset" [ref=f3e564] [cursor=pointer]:
+                            - generic: Dawn
+                        - generic [ref=f3e565]:
+                          - heading "Colors" [level=2] [ref=f3e566]
+                          - generic [ref=f3e567]:
+                            - tablist [ref=f3e568]:
+                              - tab "☀️ Light" [ref=f3e569] [cursor=pointer]
+                              - tab "🌙 Dark" [selected] [ref=f3e570] [cursor=pointer]
+                            - generic [ref=f3e571]:
+                              - generic [ref=f3e572]:
+                                - textbox "Primary" [ref=f3e573] [cursor=pointer]: "#6ab2f5"
+                                - generic [ref=f3e574]: Primary
+                              - generic [ref=f3e575]:
+                                - textbox "Background" [ref=f3e576] [cursor=pointer]: "#0f202e"
+                                - generic [ref=f3e577]: Background
+                              - generic [ref=f3e578]:
+                                - textbox "Surface" [ref=f3e579] [cursor=pointer]: "#162637"
+                                - generic [ref=f3e580]: Surface
+                              - generic [ref=f3e581]:
+                                - textbox "Text" [ref=f3e582] [cursor=pointer]: "#f7f8f8"
+                                - generic [ref=f3e583]: Text
+                              - generic [ref=f3e584]:
+                                - textbox "Text Secondary" [ref=f3e585] [cursor=pointer]: "#aeb4bc"
+                                - generic [ref=f3e586]: Text Secondary
+                              - generic [ref=f3e587]:
+                                - textbox "Border" [ref=f3e588] [cursor=pointer]: "#33363a"
+                                - generic [ref=f3e589]: Border
+                              - generic [ref=f3e590]:
+                                - textbox "Success" [ref=f3e591] [cursor=pointer]: "#5fd389"
+                                - generic [ref=f3e592]: Success
+                              - generic [ref=f3e593]:
+                                - textbox "Warning" [ref=f3e594] [cursor=pointer]: "#f5b955"
+                                - generic [ref=f3e595]: Warning
+                              - generic [ref=f3e596]:
+                                - textbox "Error" [ref=f3e597] [cursor=pointer]: "#f28b82"
+                                - generic [ref=f3e598]: Error
+                          - generic [ref=f3e599]:
+                            - 'generic "Text / Canvas: 15.59:1 (AAA)" [ref=f3e600]':
+                              - text: "Text / Canvas: AAA"
+                              - generic [ref=f3e601]: 15.59:1
+                            - 'generic "Text Secondary / Canvas: 7.94:1 (AAA)" [ref=f3e602]':
+                              - text: "Text Secondary / Canvas: AAA"
+                              - generic [ref=f3e603]: 7.94:1
+                            - 'generic "Primary Foreground / Primary: 7.34:1 (AAA)" [ref=f3e604]':
+                              - text: "Primary Foreground / Primary: AAA"
+                              - generic [ref=f3e605]: 7.34:1
+                        - generic [ref=f3e606]:
+                          - heading "Preview" [level=2] [ref=f3e607]
+                          - generic [ref=f3e608]:
+                            - generic [ref=f3e609]:
+                              - generic [ref=f3e610]: Buttons
+                              - generic [ref=f3e611]:
+                                - button "Primary" [ref=f3e612] [cursor=pointer]
+                                - button "Secondary" [ref=f3e613] [cursor=pointer]
+                                - button "Disabled" [disabled]
+                            - generic [ref=f3e614]:
+                              - generic [ref=f3e615]: Typography
+                              - generic [ref=f3e616]:
+                                - generic [ref=f3e617]: Primary text — body content
+                                - generic [ref=f3e618]: Secondary text — labels, hints
+                                - generic [ref=f3e619]: Success — operation completed
+                                - generic [ref=f3e620]: Warning — check your input
+                                - generic [ref=f3e621]: Error — something went wrong
+                            - generic [ref=f3e622]:
+                              - generic [ref=f3e623]: Card
+                              - generic [ref=f3e624]: Card content — surface with border
+                            - generic [ref=f3e625]:
+                              - generic [ref=f3e626]: Form
+                              - textbox "Text input" [ref=f3e628]
+                            - generic [ref=f3e629]:
+                              - generic [ref=f3e630]: Dropzone
+                              - generic [ref=f3e631]: Drag file here or click to browse
+                            - generic [ref=f3e632]:
+                              - generic [ref=f3e633]: Toast
+                              - generic [ref=f3e634]:
+                                - generic [ref=f3e635]: Success toast
+                                - generic [ref=f3e636]: Error toast
+                        - generic [ref=f3e637]:
+                          - heading "Backup" [level=2] [ref=f3e638]
+                          - generic [ref=f3e639]:
+                            - generic [ref=f3e640]: Export / Import
+                            - generic [ref=f3e641]:
+                              - button "⬇ Export JSON" [ref=f3e642] [cursor=pointer]
+                              - button "📋 Copy" [ref=f3e643] [cursor=pointer]
+                              - button "⬆ Import file" [ref=f3e644] [cursor=pointer]
+                            - generic [ref=f3e645]: "Or paste JSON:"
+                            - 'textbox "{\"customColors\":{\"light\":{...},\"dark\":{...}}}" [ref=f3e646]'
+                            - button "Apply" [ref=f3e648] [cursor=pointer]
+                        - generic [ref=f3e649]:
+                          - heading "Reset" [level=2] [ref=f3e650]
+                          - button "Reset to defaults" [ref=f3e651] [cursor=pointer]
+                    - generic [ref=f3e652]:
+                      - generic [ref=f3e653]:
+                        - heading "TTS Voices" [level=4] [ref=f3e654]
+                        - paragraph [ref=f3e655]: Enable TTS, select voices, and configure autoplay count.
+                      - generic [ref=f3e657]:
+                        - generic [ref=f3e658]:
+                          - heading "Text-to-Speech (TTS)" [level=2] [ref=f3e660]
+                          - generic [ref=f3e661]:
+                            - generic [ref=f3e662]:
+                              - generic [ref=f3e663]: Enable TTS
+                              - generic [ref=f3e664]:
+                                - checkbox [checked] [ref=f3e665]
+                                - generic [ref=f3e666]: Read example sentence
+                            - generic [ref=f3e667]:
+                              - generic [ref=f3e668]: Show buttons
+                              - combobox [ref=f3e670]:
+                                - option "1"
+                                - option "2"
+                                - option "3" [selected]
+                            - generic [ref=f3e671]:
+                              - generic [ref=f3e672]: Voice selection
+                              - paragraph [ref=f3e674]: Không có giọng đọc nào.
+                            - generic [ref=f3e675]:
+                              - generic [ref=f3e676]: Autoplay
+                              - combobox [ref=f3e678]:
+                                - option "0" [selected]
+                                - option "1"
+                                - option "2"
+                                - option "3"
+                            - button "Save settings" [ref=f3e680] [cursor=pointer]
+                        - generic [ref=f3e681]:
+                          - heading "TTS Tester" [level=2] [ref=f3e683]
+                          - generic [ref=f3e684]:
+                            - generic [ref=f3e685]:
+                              - generic [ref=f3e686]: Sentence
+                              - textbox "Type a sentence to test" [ref=f3e688]
+                            - generic [ref=f3e689]:
+                              - generic [ref=f3e690]: Filter by country
+                              - combobox [ref=f3e692]:
+                                - option "All countries" [selected]
+                            - generic [ref=f3e693]:
+                              - generic [ref=f3e694]: Voices
+                              - generic [ref=f3e695]:
+                                - generic [ref=f3e696]:
+                                  - button "Delete selection (0)" [ref=f3e697] [cursor=pointer]
+                                  - generic [ref=f3e698]:
+                                    - button "Play all audios" [ref=f3e699] [cursor=pointer]
+                                    - button "Save TTS voice list" [ref=f3e700] [cursor=pointer]
+                                - list
+                        - generic [ref=f3e703]:
+                          - generic [ref=f3e704]: Local TTS (Supertonic v3)
+                          - switch "Bật tắt local TTS" [ref=f3e706] [cursor=pointer]
+                    - generic [ref=f3e707]:
+                      - generic [ref=f3e708]:
+                        - heading "Resources" [level=4] [ref=f3e709]
+                        - paragraph [ref=f3e710]: Import and manage dictionaries and frequency lists.
+                      - generic [ref=f3e712]:
+                        - generic [ref=f3e713]:
+                          - heading "Từ điển" [level=2] [ref=f3e714]
+                          - button "Kéo thả file từ điển (.json Cambridge, .zip Yomitan) hoặc click để chọn" [ref=f3e715] [cursor=pointer]:
+                            - paragraph [ref=f3e716]: Kéo thả file từ điển (.json Cambridge, .zip Yomitan) hoặc click để chọn
+                          - list [ref=f3e717]:
+                            - paragraph [ref=f3e734]: Chưa có từ điển nào — kéo thả file vào dropzone để bắt đầu.
+                        - generic [ref=f3e720]:
+                          - heading "Danh sách tần suất" [level=2] [ref=f3e721]
+                          - button "Kéo thả file danh sách (.txt, .json, .zip Yomitan, .db.gz Migaku) hoặc click để chọn" [ref=f3e722] [cursor=pointer]:
+                            - paragraph [ref=f3e723]: Kéo thả file danh sách (.txt, .json, .zip Yomitan, .db.gz Migaku) hoặc click để chọn
+                          - list [ref=f3e724]:
+                            - paragraph [ref=f3e735]: Chưa có danh sách nào — kéo thả .txt/.json để bắt đầu.
+  - button "Orbital dictionary badge" [ref=f3e728]:
+    - button "Open dictionary" [ref=f3e729] [cursor=pointer]
+  - dialog "Dictionary popup" [ref=f3e737]:
+    - article [ref=f3e741]:
+      - generic [ref=f3e743]:
+        - heading "voices" [level=2] [ref=f3e746]
+        - generic [ref=f3e747]:
+          - button "Send to Card Creator" [ref=f3e748] [cursor=pointer]
+          - button "Quick Add" [ref=f3e752] [cursor=pointer]
+      - generic [ref=f3e755]:
+        - generic [ref=f3e757]:
+          - button "Play word audio" [ref=f3e758] [cursor=pointer]
+          - button "Play sentence audio" [ref=f3e760] [cursor=pointer]
+        - button "unknown" [ref=f3e764] [cursor=pointer]
+        - tablist "Dictionary materials" [ref=f3e765]:
+          - tab "Audio" [ref=f3e766] [cursor=pointer]
+          - tab "Image" [ref=f3e767] [cursor=pointer]
+          - tab "Translate" [ref=f3e768] [cursor=pointer]
+          - tab "Links" [ref=f3e769] [cursor=pointer]
+          - tab "Phonemes" [ref=f3e770] [cursor=pointer]
+        - region "Definitions" [ref=f3e771]:
+          - status [ref=f3e772]:
+            - generic [ref=f3e776]: No definitions found. Import a dictionary in Settings → Resources.
