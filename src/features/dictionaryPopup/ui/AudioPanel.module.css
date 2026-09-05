@@ -38,6 +38,13 @@
   border-bottom-color: var(--color-primary);
 }
 
+/* Item list — gap drives row spacing; no margins on items. */
+.cellAudioItems {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .cellAudioSkeleton {
   display: flex;
   flex-direction: column;
@@ -88,6 +95,13 @@
   padding: 0;
   cursor: pointer;
   color: var(--color-text);
+}
+
+.cellAudioLabelName,
+.cellAudioLabelMeta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .cellAudioLabelName {

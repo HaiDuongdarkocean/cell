@@ -74,6 +74,7 @@ export function AudioPanel({
             ))}
           </div>
 
+          <div className={styles.cellAudioItems}>
           {displayItems.map((item) => {
             const selected = selection.get(item.id) === true;
             const parts = item.label.split(' · ');
@@ -84,7 +85,7 @@ export function AudioPanel({
                 <Button
                   shape="circle"
                   size="sm"
-                  variant="outline"
+                  variant="primary"
                   material="solid"
                   className={styles.cellAudioPlay}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
@@ -124,6 +125,7 @@ export function AudioPanel({
               </div>
             );
           })}
+          </div>
         </>
       )}
     </div>

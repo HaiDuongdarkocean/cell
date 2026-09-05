@@ -304,7 +304,9 @@
   background: var(--color-surface-hover);
 }
 
-.cellTranslateBlock--selected {
+/* Compound selector keeps the selected tint+ring under :hover — a checked
+   block must not fall back to the plain hover surface. */
+.cellTranslateBlock.cellTranslateBlock--selected {
   background: var(--color-primary-subtle);
   border-color: var(--color-primary);
 }
@@ -328,6 +330,13 @@
 .cellAudioItem:hover {
   background: var(--color-surface-hover);
   border-color: var(--color-border);
+}
+
+/* Checked audio row gets the translate-block treatment: primary ring +
+   subtle tint. :has() keeps it applied on hover (checked must not dim). */
+.cellAudioItem:has(.cellDefCheckBox.cellAudioCheck--checked) {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
 }
 
 /* Image card loading spinner: white so it is visible on top of
