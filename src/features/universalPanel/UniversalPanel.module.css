@@ -13,6 +13,7 @@
   height: 94%;
   max-width: calc(var(--space-5) * 64);
   display: flex;
+  box-shadow: var(--panel-shadow);
   will-change: transform, opacity;
 }
 

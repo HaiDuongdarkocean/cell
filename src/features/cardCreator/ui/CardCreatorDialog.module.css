@@ -98,14 +98,14 @@
   border-radius: var(--radius-pill);
   background: var(--color-warning-subtle);
   border: none;
-  border-left: var(--space-1) solid var(--color-warning);
+  border-left: var(--border-width-hairline) solid var(--color-warning);
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   line-height: var(--leading-normal);
 }
 
 .cc-dialog__alert--error {
-  background: var(--color-error-subtle);
+  background: var(--color-surface-elevated);
   border-left-color: var(--color-error);
 }
 
