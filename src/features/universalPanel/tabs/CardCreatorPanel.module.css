@@ -4,8 +4,8 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--color-background);
-  border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+  border-left: var(--border-width-hairline) solid var(--color-border);
 }
 
 .scrollArea {
