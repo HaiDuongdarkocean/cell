@@ -9,6 +9,10 @@ import { routeScript } from '../language/languageRouter';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
 
+/** Base styling shared by every OCR hitbox — injected inline to avoid a stylesheet
+ *  in foreign documents (content-script injected CSS must use literal values, not var()). */
+const HITBOX_BASE_CSS = 'cursor:text;pointer-events:auto;user-select:text;-webkit-user-select:text;';
+
 /** OCR hitbox — one per script-run within a detected text box. */
 export interface OcrHitbox {
   readonly id: string;
@@ -82,7 +86,12 @@ export function quadToCssRect(
 
 /** Create a DOM span element for a hitbox — invisible click target for
  *  dictionary lookup. Text is NOT rendered here (subtitle block shows OCR
- *  text); the span only captures clicks → triggerController → popup. */
+ *  text); the span only captures clicks → triggerController → popup.
+ *
+ *  A real <button> would break the existing HTMLSpanElement contract used by
+ *  SubtitleTriggerController (token spans for text-geometry hit-testing), so we
+ *  keep a <span> and expose it as a button to assistive tech / keyboard via
+ *  role="button", tabindex="0" and an Enter/Space keydown handler. */
 export function createHitboxElement(
   hitbox: OcrHitbox,
   rect: { left: number; top: number; width: number; height: number },
@@ -92,7 +101,16 @@ export function createHitboxElement(
   el.className = 'cell-ocr-hitbox';
   el.dataset.cellTerm = hitbox.text.trim();
   el.dataset.cellLang = hitbox.langCode;
-  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:text;pointer-events:auto;user-select:text;-webkit-user-select:text;`;
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('aria-label', `Look up ${hitbox.text.trim()}`);
+  el.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;${HITBOX_BASE_CSS}`;
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      el.click();
+    }
+  });
   return el;
 }
 
