@@ -82,6 +82,8 @@ project-reference/
 card-creator-desktop.png
 daemons-ep1.vtt
 player_state.png
+# Root-level ad-hoc verification/audit screenshots — never source files
+/*.png
 
 # eSpeak TTS voice data is downloaded on demand, not committed.
 public/espeakng/
