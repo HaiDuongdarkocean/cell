@@ -45,7 +45,8 @@
   - [x] `DictionaryPanelView`/`CandidateView` — term `<h2>` → `Heading level={2} size={2}` ✅; `SettingsDialogContent` 13× `h4`→`Heading level={4}` + `p.cardDesc`→`Text as="p" color="secondary"`; `TtsVoiceManagerPanel`/`CardCreatorDialogContent`/`ResourcesPanel` `h2`/`h3`→`Heading` ✅
   - [x] Tokenize `6em`→`calc(--space-3 * 7)` (exact 84px), `192px`→`calc(--space-6 * 8)`, `18px`→`--space-4-5`, `2px`→`--border-width-thick`, `9999px`→`--radius-full` (OrbitalBadge ×6), `320/420px`→space calc (PopupDictionary), `280/600px`→space calc ✅; `590px` breakpoint — media queries can't take `var()`
   - [x] `npm run test:unit` — 3123 tests pass ✅
-  - [x] `DictionaryPanelView.module.css` (972 lines) split → `AudioPanel`/`ImagePanel`/`TranslatePanel`/`LinksPanel`/`DictionaryToolbar` own modules; `cellDefCheck*` SSOT + cross-panel compound rules + host classes (`cellAudioItem`/`cellImageCard`/`cellTranslateBlock`) stay in parent; child tsx import both `styles` + `panelStyles` ✅
+  - [x] Test hygiene — `webTextDictionaryController.test.ts`: `act()` warnings 231 → 10 (all `handleLookup`/`dismissLookup`/`destroy`/`dispatchEvent`/`advanceTimers`/`updateSettings`/`Promise.resolve` flushes wrapped; residual 10 are promise-`.then` deferred mounts during `waitFor` polling — cosmetic); `phraseMatchBenchmark` flaky `<1ms` single-shot → best-of-5 ✅
+  - [x] `DictionaryPanelView.module.css` (972 → 239 lines) split → `AudioPanel`/`ImagePanel`/`TranslatePanel`/`LinksPanel`/`DictionaryToolbar`/`CandidateView` own modules + `DictionaryCheckable.module.css` owns the unified checkbox contract (`cellDefCheck*` + host classes + cross-panel compounds); parent keeps chrome/popupMode/search/chips/shared-error ✅
 
 - [~] **T4** — Study Modes *(partial)*
   - [x] `StudyModesTab` double padding — `universal-panel-content-studyModes` added to the `.content` flush rule (was dictionary+settings only; studyModes stacked space-4 + space-6) ✅

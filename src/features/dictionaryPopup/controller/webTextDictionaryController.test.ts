@@ -185,7 +185,7 @@ describe('createWebTextDictionaryController', () => {
     expect(typeof ctrl.cancelLookup).toBe('function');
     expect(typeof ctrl.showHighlight).toBe('function');
     expect(typeof ctrl.clearHighlight).toBe('function');
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('handleLookup sends LOOKUP_REQUEST and renders popup on result', async () => {
@@ -201,19 +201,21 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-1', anchorRect, range);
+    act(() => { ctrl.handleLookup(request, 'req-1', anchorRect, range) });
 
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: 'LOOKUP_REQUEST',
       payload: { requestId: 'req-1', request },
     });
 
+    await act(async () => {
     await Promise.resolve(); // flush microtasks
     await Promise.resolve();
+    });
 
     const popupHost = document.querySelector('.js-cell-popup-host');
     expect(popupHost).not.toBeNull();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('dismissLookup cancels in-flight immediately, hides popup after delay', () => {
@@ -227,8 +229,8 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest(), 'req-dismiss', new DOMRect(0, 0, 0, 0), range);
-    ctrl.dismissLookup();
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-dismiss', new DOMRect(0, 0, 0, 0), range) });
+    act(() => { ctrl.dismissLookup() });
 
     // In-flight cancel is immediate.
     expect(mockSendMessage).toHaveBeenCalledWith({
@@ -238,10 +240,10 @@ describe('createWebTextDictionaryController', () => {
     // Popup dismiss is delayed — not cleared yet.
     expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
     // Flush the 500ms dismiss timer.
-    jest.advanceTimersByTime(500);
+    act(() => { jest.advanceTimersByTime(500) });
     expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
 
@@ -256,25 +258,29 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest({ term: 'shoes' }), 'req-1', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'shoes' }), 'req-1', new DOMRect(0, 0, 0, 0), range) });
     // Let the first lookup's result resolve so highlight shows.
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
     expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
     ctrl.dismissLookup(); // schedules dismiss in 500ms
 
     // Before the timer fires, a new lookup arrives.
-    jest.advanceTimersByTime(300);
-    ctrl.handleLookup(makeRequest({ term: 'shoes' }), 'req-2', new DOMRect(0, 0, 0, 0), range);
+    act(() => { jest.advanceTimersByTime(300) });
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'shoes' }), 'req-2', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     // Flush past the original 500ms — dismiss should NOT have fired.
-    jest.advanceTimersByTime(300);
+    act(() => { jest.advanceTimersByTime(300) });
     expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
 
@@ -292,13 +298,15 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-stale', anchorRect, range);
-    ctrl.dismissLookup();
+    act(() => { ctrl.handleLookup(request, 'req-stale', anchorRect, range) });
+    act(() => { ctrl.dismissLookup() });
 
     // Flush dismiss timer + microtasks.
-    jest.advanceTimersByTime(500);
+    act(() => { jest.advanceTimersByTime(500) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     // Popup host should be removed after the delayed destroy; no term should
     // render from the stale response.
@@ -310,7 +318,7 @@ describe('createWebTextDictionaryController', () => {
     const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-cell-id="dictionary-term"]') : null;
     expect(termEl?.textContent).not.toBe(result.term);
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
 
@@ -327,9 +335,11 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-status', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(request, 'req-status', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     // Click the status badge inside the popup to cycle unknown → tracking.
     const popupHost = document.querySelector('.js-cell-popup-host') as Element & { shadowRoot?: ShadowRoot };
@@ -340,10 +350,10 @@ describe('createWebTextDictionaryController', () => {
       if (!el) throw new Error('status badge not found');
       return el;
     });
-    statusBadge.click();
+    act(() => { statusBadge.click() });
 
     expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('handleLookup logs warning on lookup failure', async () => {
@@ -358,15 +368,17 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-2', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(request, 'req-2', new DOMRect(0, 0, 0, 0), range) });
 
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     expect(warnSpy).toHaveBeenCalled();
 
     warnSpy.mockRestore();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('handleLookup appends additional candidates', async () => {
@@ -382,24 +394,26 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-3', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(request, 'req-3', new DOMRect(0, 0, 0, 0), range) });
 
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     const popupHost = document.querySelector('.js-cell-popup-host');
     expect(popupHost).not.toBeNull();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('cancelLookup sends LOOKUP_CANCEL', () => {
     const ctrl = createWebTextDictionaryController(makeDeps());
-    ctrl.cancelLookup('req-4');
+    act(() => { ctrl.cancelLookup('req-4') });
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: 'LOOKUP_CANCEL',
       payload: { requestId: 'req-4' },
     });
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('handleLookup caches results and prefetches adjacent words for instant repeat hover', async () => {
@@ -429,18 +443,22 @@ describe('createWebTextDictionaryController', () => {
     }
 
     // First lookup: network for 'take' plus prefetch for 'off'.
-    ctrl.handleLookup(request, 'req-cache-1', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(request, 'req-cache-1', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     expect(takeCalls()).toHaveLength(1);
     expect(offCalls()).toHaveLength(1);
 
     // Second lookup for the same term should hit the cache and not send a new request.
-    ctrl.handleLookup(request, 'req-cache-2', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(request, 'req-cache-2', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     expect(takeCalls()).toHaveLength(1);
     // Prefetch for 'off' is skipped because it is already cached.
@@ -448,7 +466,7 @@ describe('createWebTextDictionaryController', () => {
 
     const popupHost = document.querySelector('.js-cell-popup-host');
     expect(popupHost).not.toBeNull();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('attach and detach create/destroy WebTriggerController without error', () => {
@@ -457,7 +475,7 @@ describe('createWebTextDictionaryController', () => {
     ctrl.detach();
     ctrl.attach('click');
     ctrl.detach();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('showHighlight and clearHighlight work', () => {
@@ -468,16 +486,16 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.showHighlight(range);
+    act(() => { ctrl.showHighlight(range) });
     expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
     ctrl.clearHighlight();
     expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
-  it('updateSettings re-attaches with new trigger mode', () => {
+  it('updateSettings re-attaches with new trigger mode', async () => {
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ triggerMode: 'click' }) }));
     ctrl.attach('click');
     const settings = {
@@ -485,10 +503,12 @@ describe('createWebTextDictionaryController', () => {
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
+    await act(async () => {
     ctrl.updateSettings(settings);
+    });
     // No error + controller still functional.
     expect(typeof ctrl.handleLookup).toBe('function');
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('updateSettings creates orbital badge when enabled', async () => {
@@ -505,7 +525,7 @@ describe('createWebTextDictionaryController', () => {
       const badge = host && (host as HTMLElement).shadowRoot?.querySelector('.js-cell-orbital-badge');
       expect(badge).not.toBeNull();
     });
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('repeated updateSettings does not recreate the badge', async () => {
@@ -520,16 +540,18 @@ describe('createWebTextDictionaryController', () => {
     expect(host1).not.toBeNull();
 
     await act(async () => {
+      await act(async () => {
       ctrl.updateSettings({
         ...settings,
         dictionaryPopup: makePopupSettings({ enabled: true, badgePointerTrigger: { position: 'top', size: 36, pointerScale: 0.25 } }),
+      });
       });
     });
 
     const hosts = document.querySelectorAll('.js-cell-orbital-badge-host');
     expect(hosts.length).toBe(1);
     expect(hosts[0]).toBe(host1);
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   // Helper: toggle document.fullscreenElement (jsdom leaves it null). The
@@ -547,15 +569,17 @@ describe('createWebTextDictionaryController', () => {
     try {
       const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
       await act(async () => {
+        await act(async () => {
         ctrl.updateSettings({
           dictionaryPopup: makePopupSettings({ enabled: true }),
           cardCreator: makeCardCreatorSettings(),
           subtitleOverlayNativeLanguage: 'vi',
         });
+        });
       });
       // No badge in a child frame while the top-frame badge covers the viewport.
       expect(document.querySelector('.js-cell-orbital-badge-host')).toBeNull();
-      ctrl.destroy();
+      act(() => { ctrl.destroy() });
     } finally {
       jest.mocked(isChildFrame).mockReturnValue(false);
     }
@@ -569,15 +593,17 @@ describe('createWebTextDictionaryController', () => {
     try {
       const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
       await act(async () => {
+        await act(async () => {
         ctrl.updateSettings({
           dictionaryPopup: makePopupSettings({ enabled: true }),
           cardCreator: makeCardCreatorSettings(),
           subtitleOverlayNativeLanguage: 'vi',
         });
+        });
       });
       const host = document.querySelector('.js-cell-orbital-badge-host');
       expect(host).not.toBeNull();
-      ctrl.destroy();
+      act(() => { ctrl.destroy() });
     } finally {
       setFullscreenElement(null);
       jest.mocked(isChildFrame).mockReturnValue(false);
@@ -591,10 +617,12 @@ describe('createWebTextDictionaryController', () => {
     // covers the top viewport and the host badge cannot render over it).
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
     await act(async () => {
+      await act(async () => {
       ctrl.updateSettings({
         dictionaryPopup: makePopupSettings({ enabled: true }),
         cardCreator: makeCardCreatorSettings(),
         subtitleOverlayNativeLanguage: 'vi',
+      });
       });
     });
     const host = document.querySelector('.js-cell-orbital-badge-host') as HTMLElement;
@@ -604,14 +632,14 @@ describe('createWebTextDictionaryController', () => {
     // Simulate child iframe entering native fullscreen.
     const fakeIframe = document.createElement('iframe');
     setFullscreenElement(fakeIframe);
-    document.dispatchEvent(new Event('fullscreenchange'));
+    act(() => { document.dispatchEvent(new Event('fullscreenchange')) });
     expect(host.style.display).toBe('none'); // hidden while iframe is fullscreen
 
     // Simulate exiting fullscreen → badge restored.
     setFullscreenElement(null);
-    document.dispatchEvent(new Event('fullscreenchange'));
+    act(() => { document.dispatchEvent(new Event('fullscreenchange')) });
     expect(host.style.display).toBe('');
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('updateSettings attaches and triggers popup when enabled', async () => {
@@ -625,7 +653,9 @@ describe('createWebTextDictionaryController', () => {
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
+    await act(async () => {
     ctrl.updateSettings(settings);
+    });
 
     const p = document.createElement('p');
     p.textContent = 'Take off your shoes.';
@@ -640,16 +670,18 @@ describe('createWebTextDictionaryController', () => {
 
     const move = new MouseEvent('mousemove', { bubbles: true, clientX: 10, clientY: 10 });
     Object.defineProperty(move, 'target', { value: p });
-    document.dispatchEvent(move);
+    act(() => { document.dispatchEvent(move) });
 
-    jest.advanceTimersByTime(150);
+    act(() => { jest.advanceTimersByTime(150) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     document.caretRangeFromPoint = original;
 
     expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
 
@@ -675,10 +707,12 @@ describe('createWebTextDictionaryController', () => {
 
     const click = new MouseEvent('mouseup', { bubbles: true, clientX: 10, clientY: 10 });
     Object.defineProperty(click, 'target', { value: p });
-    document.dispatchEvent(click);
+    act(() => { document.dispatchEvent(click) });
 
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     document.caretRangeFromPoint = original;
 
@@ -696,7 +730,7 @@ describe('createWebTextDictionaryController', () => {
     expect(activeBtn).not.toBeNull();
     expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
     await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('updates default active tab at runtime and opens it after lookup', async () => {
@@ -707,10 +741,12 @@ describe('createWebTextDictionaryController', () => {
       dictionaryPopupSettings: makePopupSettings({ enabled: true, triggerMode: 'click', defaultActiveTab: null }),
     }));
     ctrl.attach('click');
+    await act(async () => {
     ctrl.updateSettings({
       dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'click', defaultActiveTab: 'image' }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
+    });
     });
 
     const p = document.createElement('p');
@@ -726,10 +762,12 @@ describe('createWebTextDictionaryController', () => {
 
     const click = new MouseEvent('mouseup', { bubbles: true, clientX: 10, clientY: 10 });
     Object.defineProperty(click, 'target', { value: p });
-    document.dispatchEvent(click);
+    act(() => { document.dispatchEvent(click) });
 
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     document.caretRangeFromPoint = original;
 
@@ -747,7 +785,7 @@ describe('createWebTextDictionaryController', () => {
     expect(activeBtn).not.toBeNull();
     expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
     await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('clears active tab when defaultActiveTab is set to null at runtime', async () => {
@@ -766,28 +804,34 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(request, 'req-1', anchorRect, range);
+    act(() => { ctrl.handleLookup(request, 'req-1', anchorRect, range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     // Now switch default to None and look up again.
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+    await act(async () => {
     ctrl.updateSettings({
       dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'click', defaultActiveTab: null }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     });
+    });
 
-    ctrl.handleLookup(request, 'req-2', anchorRect, range);
+    act(() => { ctrl.handleLookup(request, 'req-2', anchorRect, range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
     expect(host).not.toBeNull();
     const shadow = host?.shadowRoot;
     expect(shadow?.querySelector('[data-cell-id^="dictionary-tab-"][aria-selected="true"]')).toBeNull();
     expect(shadow?.querySelector('[data-cell-id="dictionary-image-panel"]')).toBeNull();
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('switches to hover mode and triggers lookup on mousemove', async () => {
@@ -798,10 +842,12 @@ describe('createWebTextDictionaryController', () => {
     }));
 
     // Switch to hover mode.
+    await act(async () => {
     ctrl.updateSettings({
       dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'hover' }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
+    });
     });
 
     const p = document.createElement('p');
@@ -817,17 +863,19 @@ describe('createWebTextDictionaryController', () => {
 
     const move = new MouseEvent('mousemove', { bubbles: true, clientX: 10, clientY: 10 });
     Object.defineProperty(move, 'target', { value: p });
-    document.dispatchEvent(move);
+    act(() => { document.dispatchEvent(move) });
 
     // Wait for hover debounce (16–50 ms) plus microtask flush.
     await new Promise((r) => setTimeout(r, 100));
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     document.caretRangeFromPoint = original;
 
     expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'LOOKUP_REQUEST' }));
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('destroy removes popup and highlight artifacts', () => {
@@ -837,9 +885,9 @@ describe('createWebTextDictionaryController', () => {
     document.body.appendChild(p);
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
-    ctrl.showHighlight(range);
+    act(() => { ctrl.showHighlight(range) });
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
 
     expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
   });
@@ -856,7 +904,7 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest(), 'req-send', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
@@ -877,7 +925,7 @@ describe('createWebTextDictionaryController', () => {
     const popupEl = popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]') as HTMLDivElement;
     expect(popupEl).not.toBeNull();
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('Send to Card from subtitle video includes captured screenshot and sentence audio', async () => {
@@ -909,7 +957,7 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(token.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest(), 'req-video-send', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-video-send', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
@@ -929,7 +977,7 @@ describe('createWebTextDictionaryController', () => {
     expect((prefill.initialMedia ?? []).map((f: { kind: string }) => f.kind)).toEqual(['image', 'audio']);
     expect(prefill.cue).toMatchObject({ start: 0, end: 1000, targetText: 'Take off your shoes.' });
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('Send to Card falls back to standalone dialog and hides popup when panelController is absent', async () => {
@@ -942,7 +990,7 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest(), 'req-fallback', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-fallback', new DOMRect(0, 0, 0, 0), range) });
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
@@ -956,7 +1004,7 @@ describe('createWebTextDictionaryController', () => {
     // Popup should hide after the async React send-to-card flow completes.
     await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]')).toBeNull());
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
   });
 
   it('pauses video on lookup and resumes on dismiss', async () => {
@@ -979,18 +1027,20 @@ describe('createWebTextDictionaryController', () => {
     const range = document.createRange();
     range.selectNodeContents(p.firstChild as Text);
 
-    ctrl.handleLookup(makeRequest(), 'req-video', new DOMRect(0, 0, 0, 0), range);
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-video', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
     await Promise.resolve();
     await Promise.resolve();
+    });
 
     expect(mockVideo.pause).toHaveBeenCalledTimes(1);
 
-    ctrl.dismissLookup();
-    jest.advanceTimersByTime(500);
+    act(() => { ctrl.dismissLookup() });
+    act(() => { jest.advanceTimersByTime(500) });
 
     expect(mockVideo.play).toHaveBeenCalledTimes(1);
 
-    ctrl.destroy();
+    act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
 });
