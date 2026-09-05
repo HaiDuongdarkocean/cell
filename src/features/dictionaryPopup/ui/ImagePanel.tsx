@@ -156,8 +156,10 @@ export function ImagePanel({
 function ImageSkeleton(): React.JSX.Element {
   return (
     <div className={styles.cellImageSkeleton} aria-hidden="true">
+      {/* 8 cards × 128px covers any resizable popup width (min 320px, user can
+         drag to ~viewport width) so the strip never shows a right-side gap. */}
       {Array.from({ length: 8 }).map((_, i) => (
-        <Skeleton key={i} width="100%" height="100%" shape="rounded" className={styles.cellImageSkeletonCard} />
+        <Skeleton key={i} shape="rounded" className={styles.cellImageSkeletonCard} />
       ))}
     </div>
   );
