@@ -132,7 +132,13 @@ Full findings: `docs/audits/post-universal-panel-areas-audit-2026-09-05.md`
   - [x] `LauncherSearchBar` input → `aria-label={placeholder}`
   - [x] `SubtitleHint` → `tabIndex={0}` + Enter/Space handler
   - [x] `--shadow-text-soft`/`--shadow-text-cinema` → token names exist as `--shadow-textSoft`/`--shadow-textCinema` (camelCase) — fixed reference, no registration needed
-- [ ] **T12** — P1 atom migrations (~32): Badge ×3, Heading ×2, Progress, SelectableCard ×2, Button copy ×2, Select/SearchField/Input ×10, Textarea (UserCssPanel), `role="listbox"` trackList, `Sheet` a11y (title/focusTrap/close), `--color-danger` undefined fix
+- [x] **T12** — P1 atom migrations + undefined-token sweep:
+  - [x] All undefined `var(--*)` fixed → registered names (`--duration-normal`, `--duration-150`, `--iconbutton-icon-md`, `--color-border-emphasized`, `--blur-sm`, `--ease-spring`, `--color-error`, `--shadow-textSoft/Cinema`, `--stroke-width-md`) — incl. files outside audit scope (local-player, VolumeControl)
+  - [x] Atom migrations: `Badge` ×3, `Heading` ×2, `Progress` (DownloadCard 4-phase), `Select` (VideoCard quality, SubtitleStylePanel font), `Input` (StylePanel text/number ×4), `Textarea` (UserCssPanel), `EmptyState` (sidepanel), Icon barrel ×8 files
+  - [x] `Sheet` a11y: `aria-label` prop + `useFocusTrap` + keyboard close handle; consumers pass labels
+  - [x] `trackList` → `role="listbox"`; SrsReviewCard progress dots → `role=list/listitem` + `aria-current`
+  - [x] Destructive actions → `variant="destructive"` (SrsManagePanel ×3, SrsReviewCardBack ×2)
+  - [~] Deferred w/ rationale: bare inputs inside styled chrome wrappers (`searchBar`, `valueField`) — shared `Input` would double-chrome, aria-label already present; `type="color"` inputs stay native (no `ColorInput` atom); `mainRow`/`copyBtn` keep role=button (inside Card) + gained `:focus-visible`
 - [ ] **T13** — P2 tokenization + dead CSS: opacity tokens, `ease`→`--ease-*`, `inset 0 0 0 1px`→`--border-width-hairline`, drop `var(--t, literal)` fallbacks for registered tokens, dead selectors (srs App ×10, SubtitlePanel ×5, SubtitleManagerPanel ×3, SubtitleSearchPanel ×1), destructive `ghost`→`destructive`, `@/shared/icons/Icon`→`@/shared/ui/Icon` barrel, Button CSS overrides (`.toolRow`, `.audioButton`…)
 - [ ] **T14** — P3 document intentional: subtitle content px sizing, preview scale, error-boundary crash styles, `SHEET_MARGIN_PX`
 - [ ] **T15** — Inventory: confirm generator picks up `SelectableCard`/`MultiSelect`/`BottomSheet` (shared/ui-only scan — feature components like `CueStrip`/`StepEditor`/`Dropzone` are out of generator scope by design)
