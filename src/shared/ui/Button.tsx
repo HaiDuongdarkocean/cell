@@ -29,6 +29,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   orientation?: ButtonOrientation;
   /** Persistent active/toggle state. Default: pale-blue subtle bg + primary color. */
   active?: boolean;
+  /** Dimmed primary look (disabled-like opacity). Lifts on hover, fully lit
+   *  when the caller sets aria-selected/aria-pressed="true". Only affects
+   *  variant="primary" material="solid". */
+  dimmed?: boolean;
   /** Active state visual: 'default' (pale-blue bg + primary color) or 'flat' (primary color only, no bg, no animation). Default: default. */
   activeStyle?: ButtonActiveStyle;
   /** Show loading spinner and disable interactions. */
@@ -67,6 +71,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   orientation = 'horizontal',
   active = false,
   activeStyle = 'default',
+  dimmed = false,
   loading = false,
   error = false,
   fullWidth = false,
@@ -136,6 +141,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     resolvedShape === 'circle' ? styles.circle : '',
     orientation === 'vertical' ? styles.vertical : '',
     active ? (activeStyle === 'flat' ? styles.activeFlat : styles.active) : '',
+    dimmed ? styles.dimmed : '',
     loading ? styles.loading : '',
     iconOnly ? styles.iconOnly : '',
     error ? styles.error : '',

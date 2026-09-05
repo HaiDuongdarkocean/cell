@@ -34,43 +34,54 @@
   justify-content: center;
 }
 
-/* Non-active (ghost) tabs get a subtle background so they're visible
-   against the panel surface. Active tabs keep .btn--primary background
-   with fixed white icon color (not theme-dependent). */
-.cellToolbarTab[aria-selected="false"] {
-  background: var(--color-surface-hover);
-}
-
-.cellToolbarTab[aria-selected="true"] {
-  color: var(--button-fg);
-}
-
-/* Popup/sheet sits on surface-elevated, where surface-hover collapses into
-   the background (~4% lightness delta) — step the ghost fill up one rung. */
-[data-cell-id="popup-dictionary"] .cellToolbarTab[aria-selected="false"] {
-  background: var(--color-surface-pressed);
-}
+/* State visuals live in Button's dimmed ladder (primary fill at
+   --button-primary-dimmed-opacity, lifted on hover, lit on
+   aria-selected/aria-pressed) — this module only sizes the tabs. */
 
 .cellToolbarLabel {
   /* visibility is controlled by .cellLabel so container queries can hide it on narrow widths */
 }
 
+.cellToolbarItem {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* J-white badge — inverse of the dimmed primary tab (button-fg chip +
+   primary number). Equal negative offsets put its center on the 45°
+   diagonal, fully outside the circle. */
 .cellToolbarBadge {
   position: absolute;
-  top: 0;
-  right: calc(-1.5 * var(--space-0-5));
+  top: calc(-1 * var(--space-1-5));
+  right: calc(-1 * var(--space-1-5));
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: var(--space-4);
   height: var(--space-4);
-  padding: 0 var(--space-1);
+  padding: 0 var(--space-0-5);
   border-radius: var(--radius-full);
-  background: var(--color-error);
-  color: var(--color-text-inverse);
+  background: var(--button-fg);
+  color: var(--color-primary);
+  border: var(--border-width-medium) solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   box-sizing: border-box;
   pointer-events: none;
   z-index: var(--z-dropdown);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+/* Badge sleeps with its tab: dimmed at rest, fully lit on hover or when
+   selected — the badge lives outside .button's overflow:hidden so it must
+   track the tab's aria-selected / hover itself. */
+.cellToolbarItem:has(.cellToolbarTab[aria-selected="false"]) .cellToolbarBadge {
+  opacity: var(--button-primary-dimmed-opacity);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cellToolbarItem:has(.cellToolbarTab[aria-selected="false"]:hover) .cellToolbarBadge {
+    opacity: 1;
+  }
 }
