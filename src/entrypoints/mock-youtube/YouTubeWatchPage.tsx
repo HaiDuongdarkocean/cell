@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, type ReactElement } from 'react';
+import { useState, useCallback, useEffect, useRef, useId, type ReactElement } from 'react';
 import type { SrtCue } from '@/entities/media';
 import jeremyChelseaMp4 from '../design-system-showcase/assets/jeremy-chelsea.mp4?url';
 import jeremyChelseaSrt from '../design-system-showcase/assets/jeremy-chelsea.srt?raw';
@@ -264,6 +264,7 @@ export function YouTubeWatchPage(): ReactElement {
   const [showMoreSubs, setShowMoreSubs] = useState(false);
   const [activeNav, setActiveNav] = useState<MobileNav>('home');
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const searchListboxId = useId();
 
   const searchWrapRef = useRef<HTMLDivElement>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
@@ -388,6 +389,11 @@ export function YouTubeWatchPage(): ReactElement {
               <input
                 className={styles.searchInput}
                 type="text"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-autocomplete="list"
+                aria-expanded={searchFocused && filteredSuggestions.length > 0}
+                aria-controls={searchListboxId}
                 placeholder="Search"
                 value={searchValue}
                 onFocus={() => setSearchFocused(true)}
@@ -398,7 +404,7 @@ export function YouTubeWatchPage(): ReactElement {
               </button>
             </div>
             {searchFocused && filteredSuggestions.length > 0 && (
-              <ul className={styles.suggestionsDropdown} role="listbox">
+              <ul id={searchListboxId} className={styles.suggestionsDropdown} role="listbox">
                 {filteredSuggestions.map(s => (
                   <li
                     key={s}
@@ -469,21 +475,22 @@ export function YouTubeWatchPage(): ReactElement {
             {/* Section 1: Home / Shorts / Subscriptions / You */}
             <div className={styles.guideSection}>
               <button
+                type="button"
                 className={`${styles.guideItem} ${view === 'home' ? styles.guideItemActive : ''}`}
                 onClick={goHome}
               >
                 <GuideIcon name="home" />
                 <span className={styles.guideLabel}>Home</span>
               </button>
-              <button className={styles.guideItem}>
+              <button type="button" className={styles.guideItem}>
                 <GuideIcon name="shorts" />
                 <span className={styles.guideLabel}>Shorts</span>
               </button>
-              <button className={styles.guideItem}>
+              <button type="button" className={styles.guideItem}>
                 <GuideIcon name="subscriptions" />
                 <span className={styles.guideLabel}>Subscriptions</span>
               </button>
-              <button className={styles.guideItem}>
+              <button type="button" className={styles.guideItem}>
                 <GuideIcon name="you" />
                 <span className={styles.guideLabel}>You</span>
                 <span className={styles.chevronRight}><ChevronRightIcon size={24} /></span>
@@ -494,7 +501,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideSection}>
               <div className={styles.guideSectionTitle}>You</div>
               {YOU_ITEMS.map(item => (
-                <button key={item.label} className={styles.guideItem}>
+                <button key={item.label} type="button" className={styles.guideItem}>
                   <GuideIcon name={item.icon} />
                   <span className={styles.guideLabel}>{item.label}</span>
                 </button>
@@ -505,7 +512,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideSection}>
               <div className={styles.guideSectionTitle}>Subscriptions</div>
               {visibleSubs.map(s => (
-                <button key={s.name} className={styles.guideItem}>
+                <button key={s.name} type="button" className={styles.guideItem}>
                   <span className={styles.guideSubAvatarWrap}>
                     <img className={styles.guideSubAvatar} src={s.avatar} alt="" />
                     {s.live && <span className={styles.liveDot} />}
@@ -515,7 +522,7 @@ export function YouTubeWatchPage(): ReactElement {
                 </button>
               ))}
               <button
-                className={styles.guideItem}
+                type="button" className={styles.guideItem}
                 onClick={() => setShowMoreSubs(v => !v)}
               >
                 <span className={styles.guideItemIcon}><ChevronRightIcon size={24} /></span>
@@ -527,7 +534,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideSection}>
               <div className={styles.guideSectionTitle}>Explore</div>
               {EXPLORE_ITEMS.map(item => (
-                <button key={item.label} className={styles.guideItem}>
+                <button key={item.label} type="button" className={styles.guideItem}>
                   <GuideIcon name={item.icon} />
                   <span className={styles.guideLabel}>{item.label}</span>
                 </button>
@@ -538,7 +545,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideFooter}>
               <div className={styles.footerLinks}>
                 {FOOTER_LINKS.map(link => (
-                  <a key={link} className={styles.footerLink}>{link}</a>
+                  <button key={link} type="button" className={styles.footerLink}>{link}</button>
                 ))}
               </div>
               <p className={styles.footerCopyright}>© 2026 Google LLC</p>
@@ -553,17 +560,17 @@ export function YouTubeWatchPage(): ReactElement {
           <div ref={guideOverlayRef} className={styles.guideOverlayPanel} onClick={e => e.stopPropagation()}>
             <div className={styles.guideSection}>
               <button
-                className={styles.guideItem}
+                type="button" className={styles.guideItem}
                 onClick={() => { goHome(); setGuideOpen(false); }}
               >
                 <GuideIcon name="home" />
                 <span className={styles.guideLabel}>Home</span>
               </button>
-              <button className={styles.guideItem}>
+              <button type="button" className={styles.guideItem}>
                 <GuideIcon name="shorts" />
                 <span className={styles.guideLabel}>Shorts</span>
               </button>
-              <button className={styles.guideItem}>
+              <button type="button" className={styles.guideItem}>
                 <GuideIcon name="subscriptions" />
                 <span className={styles.guideLabel}>Subscriptions</span>
               </button>
@@ -571,7 +578,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideSection}>
               <div className={styles.guideSectionTitle}>You</div>
               {YOU_ITEMS.map(item => (
-                <button key={item.label} className={styles.guideItem}>
+                <button key={item.label} type="button" className={styles.guideItem}>
                   <GuideIcon name={item.icon} />
                   <span className={styles.guideLabel}>{item.label}</span>
                 </button>
@@ -580,7 +587,7 @@ export function YouTubeWatchPage(): ReactElement {
             <div className={styles.guideSection}>
               <div className={styles.guideSectionTitle}>Explore</div>
               {EXPLORE_ITEMS.map(item => (
-                <button key={item.label} className={styles.guideItem}>
+                <button key={item.label} type="button" className={styles.guideItem}>
                   <GuideIcon name={item.icon} />
                   <span className={styles.guideLabel}>{item.label}</span>
                 </button>
