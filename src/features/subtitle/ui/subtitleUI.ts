@@ -14,8 +14,8 @@ import { mountToWatchVideo } from './netflixPlayback';
  */
 export function buildTextShadow(config: TextShadowConfig): string {
   if (config.preset === 'none') return 'none';
-  if (config.preset === 'soft') return `var(--shadow-text-soft) ${config.color}`;
-  if (config.preset === 'cinema') return `var(--shadow-text-cinema) ${config.color}`;
+  if (config.preset === 'soft') return `var(--shadow-textSoft) ${config.color}`;
+  if (config.preset === 'cinema') return `var(--shadow-textCinema) ${config.color}`;
   return `${config.offsetX}px ${config.offsetY}px ${config.blur}px ${config.color}`;
 }
 

@@ -66,23 +66,26 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
   }, [currentIndex, effectiveMs]);
 
   return (
-    <div ref={listRef} className={styles.list} data-cell-id="cue-list-scroll">
+    <div ref={listRef} className={styles.list} role="list" data-cell-id="cue-list-scroll">
       {cues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         return (
           <div
             key={cue.index}
             ref={(el) => { itemRefs.current[i] = el; }}
+            role="listitem"
             data-cell-id="cue-item"
             data-cue-index={cue.index}
             data-current={isCurrent ? 'true' : 'false'}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
-            <span
+            <button
+              type="button"
               data-cell-id="cue-timestamp"
               data-cue-index={cue.index}
               data-no-lookup
               onClick={() => onSeek(cue.start)}
+              aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
               className={styles.timestamp}
             >
               {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
@@ -90,7 +93,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
                   (matches overlay + highlight). onSeek still sends raw
                   cue.start; SEEK_TO handler subtracts offset. */}
               {formatTimestamp(cue.start - offsetMs, hasHours)}
-            </span>
+            </button>
             <div className={styles.text}>
               <div data-cell-id="cue-target-text" className={styles.targetText}>
                 {cue.targetText}
