@@ -161,6 +161,29 @@
   animation: cellTabContentIn var(--duration-normal) var(--ease-out) both;
 }
 
+/* Inline text link inside the empty-definitions notice — looks like a link,
+   not a button. */
+.cellEmptyLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: var(--space-0-5);
+  cursor: pointer;
+}
+
+.cellEmptyLink:hover {
+  color: var(--color-primary-hover);
+}
+
+.cellEmptyLink:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
 .cellHeaderStatus--known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);
