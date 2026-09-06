@@ -1,5 +1,6 @@
 import type { VideoQuality } from '@/entities/video/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle/types';
+import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
 // === Keyboard Shortcut Types (floating panel) ===
 
@@ -301,9 +302,18 @@ export type ParallelFallbackMode = 'sequential' | 'retry-reduced' | 'save-ts' | 
  */
 export type FilenameSource = 'title-fallback' | 'title-only' | 'url-only';
 
+/** UI copy language. `'auto'` follows the browser UI language. */
+export type UiLanguagePreference = 'auto' | 'en' | 'vi';
+
 export interface Settings {
   /** Schema version for migration (ADR-017 D8). Current: 1. */
   readonly schemaVersion?: number;
+  /**
+   * Interface-language override — the language of the app's own UI copy.
+   * Distinct from `universalNativeLanguage` (the learner's language used for
+   * content). `'auto'` = follow `chrome.i18n.getUILanguage()`. Default: 'auto'.
+   */
+  readonly uiLanguage: UiLanguagePreference;
   /** Global native language. Used when a profile's `native === ''`. Default: 'vi'. */
   readonly universalNativeLanguage: string;
   /** All language profiles, sorted by `order`. */
@@ -420,6 +430,9 @@ export interface Settings {
   // === Pronunciation (spec ocean-pronunciation-engine — schema v25) ===
   /** Pronunciation engine fallback chain and eSpeak data download setting. */
   readonly pronunciation?: PronunciationSettings;
+  // === Frequency bands (schema v28) ===
+  /** User-configurable frequency rank thresholds for band coloring (popup + tokenize). */
+  readonly frequencyBands?: FrequencyBandThresholds;
   // === Ocean Language Acquisition SRS (schema v27) ===
   /** SRS active collection/deck/study config and data lifecycle quota. */
   readonly srs: SrsSettingsSlice;

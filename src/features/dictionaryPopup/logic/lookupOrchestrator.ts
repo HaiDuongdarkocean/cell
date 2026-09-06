@@ -55,6 +55,12 @@ import type {
   RankedCandidateTrace,
 } from '../log/lookupLogTypes';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
+import { pickBestFrequencyEntry } from '@/shared/lib/frequencyBand';
+import type { Settings } from '@/entities/settings';
+import { getActiveProfileSettings } from '@/entities/settings';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
+import type { ResourceInfo } from '@/entities/dictionary';
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
@@ -126,17 +132,126 @@ export function clearDictionaryProbeCache(): void {
   probeCache.clear();
 }
 
-export async function createDictionaryProbeAsync(langCode: string): Promise<TermProbe> {
-  // T23: Return cached probe if available.
-  const cached = probeCache.get(langCode);
+/** Runtime context for resource filtering + priority across a single lookup.
+ *  Built once per lookup so every stage (probe, phrase indexes, frequency,
+ *  dictionary entries) uses the same enabled/profile/priority view. */
+type ResourceContext = {
+  /** Settings snapshot used for this lookup. */
+  readonly settings: Settings;
+  /** Active language profile id, or null when no profile is selected. */
+  readonly activeProfileId: string | null;
+  /** All resources allowed by enabled + active profile filters. */
+  readonly resources: readonly ResourceInfo[];
+  /** DICTIONARY resources allowed for this lookup. */
+  readonly dictionaryResources: readonly ResourceInfo[];
+  /** Set of all allowed resource ids (dictionary + frequency). */
+  readonly allowedResourceIds: ReadonlySet<number>;
+  /** resourceId → explicit priority (lower = higher). Unprioritized omitted. */
+  readonly priorityMap: ReadonlyMap<number, number>;
+  /** Ordered list of allowed resource ids (highest priority first). */
+  readonly resourcePriority: readonly number[];
+};
+
+/** Build a priority map from explicit resource priorities. Absent = unprioritized. */
+function buildPriorityMap(resources: readonly ResourceInfo[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const r of resources) {
+    if (r.id === undefined || r.priority === undefined) continue;
+    map.set(r.id, r.priority);
+  }
+  return map;
+}
+
+/** Build the resource priority ordering: lower explicit priority first, then
+ *  resourceId descending for unprioritized resources (newest import wins). */
+function buildResourcePriority(resources: readonly ResourceInfo[]): number[] {
+  return [...resources]
+    .sort((a, b) => {
+      const pa = a.priority ?? Number.MAX_SAFE_INTEGER;
+      const pb = b.priority ?? Number.MAX_SAFE_INTEGER;
+      if (pa !== pb) return pa - pb;
+      return (b.id ?? 0) - (a.id ?? 0);
+    })
+    .map((r) => r.id)
+    .filter((id): id is number => id !== undefined);
+}
+
+/** Load all resources for a lang and apply enabled + active profile filters.
+ *  Returns a context shared by probe, phrase matching, and frequency lookup. */
+async function buildResourceContext(langCode: string, settings: Settings): Promise<ResourceContext> {
+  const allResources = await getAllResources(langCode);
+  const activeProfile = getActiveProfileSettings(settings);
+  const activeProfileId = activeProfile?.id ?? null;
+
+  const isAllowed = (r: ResourceInfo): boolean => {
+    if (r.enabled === false) return false;
+    if (activeProfileId && r.profileIds && r.profileIds.length > 0) {
+      return r.profileIds.includes(activeProfileId);
+    }
+    return true;
+  };
+
+  const resources = allResources.filter(isAllowed);
+  const dictionaryResources = resources.filter((r) => r.type === 'DICTIONARY');
+
+  const allowedResourceIds = new Set<number>();
+  for (const r of resources) {
+    if (r.id !== undefined) allowedResourceIds.add(r.id);
+  }
+
+  const priorityMap = buildPriorityMap(resources);
+  const resourcePriority = buildResourcePriority(resources);
+
+  return {
+    settings,
+    activeProfileId,
+    resources,
+    dictionaryResources,
+    allowedResourceIds,
+    priorityMap,
+    resourcePriority,
+  };
+}
+
+function sortByResourcePriority<T extends { resourceId: number }>(
+  entries: readonly T[],
+  priorityMap: ReadonlyMap<number, number>,
+): T[] {
+  return [...entries].sort((a, b) => {
+    const pa = priorityMap.get(a.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    const pb = priorityMap.get(b.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb;
+    return b.resourceId - a.resourceId;
+  });
+}
+
+function buildResourceCacheKey(context: ResourceContext): string {
+  const ids = context.dictionaryResources
+    .map((r) => r.id)
+    .filter((id): id is number => id !== undefined)
+    .sort((a, b) => a - b)
+    .join(',');
+  return `${context.activeProfileId ?? 'none'}:${ids}`;
+}
+
+export async function createDictionaryProbeAsync(
+  langCode: string,
+  context?: ResourceContext,
+): Promise<TermProbe> {
+  const resolvedContext = context ?? await buildResourceContext(langCode, await loadSettings().catch(() => DEFAULT_SETTINGS));
+
+  // T23: Return cached probe if available. Cache key includes active profile
+  // and allowed dictionary resource ids so enabling/disabling resources or
+  // switching profiles invalidates the cache.
+  const cacheKey = buildResourceCacheKey(resolvedContext);
+  const cached = probeCache.get(cacheKey);
   if (cached) return cached;
 
-  const resources = await getAllResources(langCode);
-  const dictResources = resources.filter((r) => r.type === 'DICTIONARY');
+  const { dictionaryResources } = resolvedContext;
   const terms = new Set<string>();
 
   // Load all dictionary terms. For CEDICT this is ~120k entries.
-  for (const r of dictResources) {
+  for (const r of dictionaryResources) {
     if (r.id === undefined) continue;
     const entries = await findDictionaryByResource(langCode, r.id);
     for (const e of entries) {
@@ -145,7 +260,7 @@ export async function createDictionaryProbeAsync(langCode: string): Promise<Term
   }
 
   const probe = { hasTerm: (term: string) => terms.has(term.toLowerCase()) };
-  probeCache.set(langCode, probe);
+  probeCache.set(cacheKey, probe);
   return probe;
 }
 
@@ -154,7 +269,7 @@ export async function createDictionaryProbeAsync(langCode: string): Promise<Term
  * → result assembly.
  *
  * @param request The lookup request (term, langCode, sentence, cursor).
- * @param deps Plugin registry + optional pre-loaded phrase indexes.
+ * @param deps Plugin registry + optional pre-loaded phrase indexes + settings.
  * @param signal Optional AbortSignal for cancellation.
  */
 export async function lookupOrchestrator(
@@ -162,6 +277,7 @@ export async function lookupOrchestrator(
   deps: {
     readonly pluginRegistry?: typeof pluginRegistry;
     readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex>;
+    readonly settings?: Settings;
   } = {},
   signal?: AbortSignal,
 ): Promise<LookupResult> {
@@ -179,11 +295,16 @@ export async function lookupOrchestratorMulti(
   deps: {
     readonly pluginRegistry?: typeof pluginRegistry;
     readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex>;
+    readonly settings?: Settings;
   } = {},
   signal?: AbortSignal,
 ): Promise<LookupResult[]> {
   checkAbort(signal);
   const { langCode, contextSentence, cursorOffset, term, fallback } = request;
+
+  // Resolve settings and build the resource context once per lookup.
+  const settings = deps.settings ?? await loadSettings().catch(() => DEFAULT_SETTINGS);
+  const resourceContext = await buildResourceContext(langCode, settings);
 
   // 1. Resolve the language plugin.
   //    EN/ZH plugins are created on-the-fly (EN needs a PhraseIndex per
@@ -226,7 +347,7 @@ export async function lookupOrchestratorMulti(
     // English: run phrase matcher with all phrase indexes (ADR-037).
     const collectTrace = isDevMode;
     const allMatches = await tryEnglishPhraseMatchAll(
-      langCode, contextSentence, cursorOffset, deps, signal,
+      langCode, contextSentence, cursorOffset, deps, resourceContext, signal,
       collectTrace ? (traces) => { phraseTraces = traces; } : undefined,
     );
     if (allMatches.length > 0) {
@@ -236,7 +357,7 @@ export async function lookupOrchestratorMulti(
     }
   } else if (langCode === 'zh') {
     // Chinese: FMM segmentation to find the segment at the cursor.
-    const probe = await createDictionaryProbeAsync(langCode);
+    const probe = await createDictionaryProbeAsync(langCode, resourceContext);
     checkAbort(signal);
     const tokens = plugin.segment!(contextSentence, probe);
     const target = findTokenAtOffset(tokens, cursorOffset);
@@ -254,8 +375,8 @@ export async function lookupOrchestratorMulti(
   // 3. Build winner result: phrase match wins when valid; otherwise the surface
   //    token (with lemma fallback for definitions).
   const winnerResult = detectedPhrase
-    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal)
-    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm);
+    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, resourceContext, signal)
+    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, resourceContext, signal, surfaceTerm);
 
   const additionalResults: LookupResult[] = [];
   const seen = new Set([winnerResult.term.toLowerCase()]);
@@ -265,7 +386,7 @@ export async function lookupOrchestratorMulti(
   //    already resolved to surfaceTerm).
   if (surfaceTerm.toLowerCase() !== winnerResult.term.toLowerCase()) {
     const surfaceResult = await assembleLookupResult(
-      langCode, surfaceTerm, null, 'dictionary', plugin, signal, surfaceTerm,
+      langCode, surfaceTerm, null, 'dictionary', plugin, resourceContext, signal, surfaceTerm,
     );
     if ((surfaceResult.definitions.length > 0 || surfaceResult.frequency || surfaceResult.reading) && !seen.has(surfaceResult.term.toLowerCase())) {
       seen.add(surfaceResult.term.toLowerCase());
@@ -279,7 +400,7 @@ export async function lookupOrchestratorMulti(
       if (seen.has(candidate.toLowerCase())) continue;
       checkAbort(signal);
       const lemmaResult = await assembleLookupResult(
-        langCode, candidate, null, 'dictionary', plugin, signal,
+        langCode, candidate, null, 'dictionary', plugin, resourceContext, signal,
       );
       if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         seen.add(lemmaResult.term.toLowerCase());
@@ -291,7 +412,7 @@ export async function lookupOrchestratorMulti(
     if (lemma && !seen.has(lemma.toLowerCase())) {
       checkAbort(signal);
       const lemmaResult = await assembleLookupResult(
-        langCode, lemma, null, 'dictionary', plugin, signal,
+        langCode, lemma, null, 'dictionary', plugin, resourceContext, signal,
       );
       if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         additionalResults.push(lemmaResult);
@@ -304,7 +425,7 @@ export async function lookupOrchestratorMulti(
     if (seen.has(match.dictionaryTerm.toLowerCase())) continue;
     checkAbort(signal);
     const result = await assembleLookupResult(
-      langCode, match.dictionaryTerm, match, 'plugin', plugin, signal,
+      langCode, match.dictionaryTerm, match, 'plugin', plugin, resourceContext, signal,
     );
     if (!seen.has(result.term.toLowerCase())) {
       seen.add(result.term.toLowerCase());
@@ -339,6 +460,7 @@ async function assembleLookupResult(
   detectedPhrase: PhraseMatch | null,
   matchSource: MatchSource,
   plugin: LanguagePlugin,
+  resourceContext: ResourceContext,
   signal?: AbortSignal,
   /** If provided, the result header shows this surface term (e.g. the hovered
    *  token "is") while definitions are resolved from lookupTerm/its lemma. */
@@ -346,7 +468,13 @@ async function assembleLookupResult(
 ): Promise<LookupResult> {
   checkAbort(signal);
 
-  let dictEntries = await findDictionaryByTerm(langCode, lookupTerm);
+  const { allowedResourceIds, resourcePriority, priorityMap } = resourceContext;
+
+  let dictEntries = sortByResourcePriority(
+    (await findDictionaryByTerm(langCode, lookupTerm))
+      .filter((e) => allowedResourceIds.has(e.resourceId)),
+    priorityMap,
+  );
   checkAbort(signal);
 
   // Inflectional morphology fallback (ADR-041): if raw term not in dictionary,
@@ -359,7 +487,11 @@ async function assembleLookupResult(
     for (const candidate of candidates) {
       if (candidate.toLowerCase() === lookupTerm.toLowerCase()) continue;
       checkAbort(signal);
-      dictEntries = await findDictionaryByTerm(langCode, candidate);
+      dictEntries = sortByResourcePriority(
+        (await findDictionaryByTerm(langCode, candidate))
+          .filter((e) => allowedResourceIds.has(e.resourceId)),
+        priorityMap,
+      );
       if (dictEntries.length > 0) {
         effectiveTerm = candidate;
         break;
@@ -369,7 +501,11 @@ async function assembleLookupResult(
     // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
     const lemma = plugin.lemma(lookupTerm);
     if (lemma && lemma.toLowerCase() !== lookupTerm.toLowerCase()) {
-      dictEntries = await findDictionaryByTerm(langCode, lemma);
+      dictEntries = sortByResourcePriority(
+        (await findDictionaryByTerm(langCode, lemma))
+          .filter((e) => allowedResourceIds.has(e.resourceId)),
+        priorityMap,
+      );
       checkAbort(signal);
       if (dictEntries.length > 0) {
         effectiveTerm = lemma;
@@ -378,9 +514,11 @@ async function assembleLookupResult(
   }
 
   const surfaceTerm = displayTerm ?? effectiveTerm;
-  let freqEntries = await findFrequencyByTerm(langCode, surfaceTerm);
+  let freqEntries = (await findFrequencyByTerm(langCode, surfaceTerm))
+    .filter((e) => allowedResourceIds.has(e.resourceId));
   if (freqEntries.length === 0 && surfaceTerm !== effectiveTerm) {
-    freqEntries = await findFrequencyByTerm(langCode, effectiveTerm);
+    freqEntries = (await findFrequencyByTerm(langCode, effectiveTerm))
+      .filter((e) => allowedResourceIds.has(e.resourceId));
   }
   checkAbort(signal);
 
@@ -409,10 +547,11 @@ async function assembleLookupResult(
     ? ''
     : rawReading;
 
-  const frequency =
-    freqEntries.length > 0
-      ? { rank: freqEntries[0]!.frequency, source: 'frequency' }
-      : null;
+  // Pick the rank from the highest-priority allowed frequency list that
+  // contains the term; fall back to the best (lowest) rank when no priority
+  // order is configured.
+  const bestFreq = pickBestFrequencyEntry(freqEntries, resourcePriority);
+  const frequency = bestFreq ? { rank: bestFreq.frequency, source: 'frequency' } : null;
 
   // Status is looked up for the displayed surface term (phrase or hover word).
   const status = await getWordStatus(langCode, surfaceTerm);
@@ -434,7 +573,7 @@ async function assembleLookupResult(
 
 /**
  * Try English phrase match across all phrase indexes (multi-resource).
- * Returns ALL matches sorted by (resourceId descending, comparePhraseMatches).
+ * Returns ALL matches sorted by (priority, resourceId descending, comparePhraseMatches).
  * The first element is the winner; remaining are additional candidates.
  */
 async function tryEnglishPhraseMatchAll(
@@ -442,14 +581,23 @@ async function tryEnglishPhraseMatchAll(
   sentence: string,
   cursorOffset: number,
   deps: { readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex> },
+  resourceContext: ResourceContext,
   signal?: AbortSignal,
   /** Dev-only: nhận trace data từ mỗi matchPhraseAll call (per-resource). */
   traceCollector?: (traces: MatchTraceData[]) => void,
 ): Promise<PhraseMatch[]> {
+  const dictionaryResourceIds = new Set(
+    resourceContext.dictionaryResources
+      .map((r) => r.id)
+      .filter((id): id is number => id !== undefined),
+  );
+
   let indexes: { resourceId: number; index: PhraseIndex }[];
 
   if (deps.phraseIndexes && deps.phraseIndexes.size > 0) {
-    indexes = [...deps.phraseIndexes.entries()].map(([resourceId, index]) => ({ resourceId, index }));
+    indexes = [...deps.phraseIndexes.entries()]
+      .filter(([resourceId]) => dictionaryResourceIds.has(resourceId))
+      .map(([resourceId, index]) => ({ resourceId, index }));
   } else {
     const stored = await getAllPhraseIndexes(langCode).catch(() => []);
     if (stored.length === 0) return [];
@@ -458,6 +606,7 @@ async function tryEnglishPhraseMatchAll(
     // and fall back to word-level lookup for those resources.
     indexes = [];
     for (const s of stored) {
+      if (!dictionaryResourceIds.has(s.resourceId)) continue;
       try {
         indexes.push({ resourceId: s.resourceId, index: deserializePhraseIndex(s.blob) });
       } catch {
@@ -467,8 +616,14 @@ async function tryEnglishPhraseMatchAll(
     if (indexes.length === 0) return [];
   }
 
-  // Sort by resourceId descending (newest import wins).
-  indexes.sort((a, b) => b.resourceId - a.resourceId);
+  // Sort by priority, then resourceId descending (newest import wins).
+  const { priorityMap } = resourceContext;
+  indexes.sort((a, b) => {
+    const pa = priorityMap.get(a.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    const pb = priorityMap.get(b.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb;
+    return b.resourceId - a.resourceId;
+  });
 
   const traces: MatchTraceData[] = [];
   const candidates: { resourceId: number; match: PhraseMatch }[] = [];
@@ -490,8 +645,11 @@ async function tryEnglishPhraseMatchAll(
 
   if (candidates.length === 0) return [];
 
-  // Sort: resourceId descending, then comparePhraseMatches.
+  // Sort: priority, then resourceId descending, then comparePhraseMatches.
   candidates.sort((a, b) => {
+    const pa = priorityMap.get(a.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    const pb = priorityMap.get(b.resourceId) ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb;
     const prioDiff = b.resourceId - a.resourceId;
     if (prioDiff !== 0) return prioDiff;
     return comparePhraseMatches(a.match, b.match);

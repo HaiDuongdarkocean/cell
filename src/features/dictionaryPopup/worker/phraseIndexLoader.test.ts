@@ -85,6 +85,14 @@ describe('phraseIndexLoader — loadPhraseIndexBlob', () => {
     expect(result.resident.index.termCount).toBe(0);
     expect(result.resident.anchorMap.size).toBe(0);
   });
+
+  it('rejects a disabled resource', () => {
+    const blob = buildBlob(['take off']);
+    const result = loadPhraseIndexBlob(1, blob, { enabled: false });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe('resource-disabled');
+  });
 });
 
 describe('phraseIndexLoader — buildAnchorMap', () => {

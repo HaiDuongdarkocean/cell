@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 27 (V27 adds SRS settings slice)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(27);
+  it('CURRENT_SCHEMA_VERSION is 28 (V28 adds frequency band thresholds)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(28);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

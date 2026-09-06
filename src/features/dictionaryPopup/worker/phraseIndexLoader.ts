@@ -30,17 +30,28 @@ export type PhraseIndexLoadResult =
   | { readonly ok: true; readonly resident: ResidentPhraseIndex }
   | { readonly ok: false; readonly error: string };
 
+/** Options for phrase index loading. */
+export interface LoadPhraseIndexOptions {
+  /** If false, the loader rejects the blob as a disabled resource. */
+  readonly enabled?: boolean;
+}
+
 /**
  * Validate + deserialize a phrase blob and build the anchor index.
  *
  * Returns `{ ok: false, error }` on bad magic, version mismatch, negative
- * counts, or anchor-bound violations. Never throws — the worker must not
- * crash on a malformed blob; it reports the error and skips the resource.
+ * counts, anchor-bound violations, or a disabled resource. Never throws —
+ * the worker must not crash on a malformed blob; it reports the error and
+ * skips the resource.
  */
 export function loadPhraseIndexBlob(
   resourceId: number,
   blob: ArrayBuffer,
+  opts?: LoadPhraseIndexOptions,
 ): PhraseIndexLoadResult {
+  if (opts?.enabled === false) {
+    return { ok: false, error: 'resource-disabled' };
+  }
   if (blob.byteLength < 16) {
     return { ok: false, error: 'blob-too-small' };
   }

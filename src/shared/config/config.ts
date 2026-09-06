@@ -1,6 +1,7 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import type { CardCreatorSettings, DictionaryPopupSettings, LocalPlayerSettings, PronunciationSettings, SrsSettingsSlice } from '@/entities/settings';
+import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
 import tokensJson from '@/shared/styles/tokens.json';
 
 // === Default Configuration ===
@@ -222,6 +223,9 @@ export const DEFAULT_LOCAL_PLAYER_SETTINGS: LocalPlayerSettings = {
   lastDirectoryId: null,
 };
 
+/** Default frequency band thresholds (schema v28). */
+export const DEFAULT_FREQUENCY_BANDS = DEFAULT_BAND_THRESHOLDS;
+
 /** Default Ocean SRS settings (spec ocean-language-acquisition-srs — schema v27). */
 export const DEFAULT_SRS_SETTINGS: SrsSettingsSlice = {
   defaultStudyConfigId: null,
@@ -256,6 +260,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  uiLanguage: 'auto',
   universalNativeLanguage: 'vi',
   languageProfiles: [],
   activeProfileId: null,
@@ -304,6 +309,8 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleApiKeys: [],
   // === Pronunciation (spec ocean-pronunciation-engine — schema v25) ===
   pronunciation: DEFAULT_PRONUNCIATION_SETTINGS,
+  // === Frequency bands (schema v28) ===
+  frequencyBands: DEFAULT_FREQUENCY_BANDS,
   // === Local Player (spec local-video-player.md) — schema v22 ===
   localPlayerSettings: DEFAULT_LOCAL_PLAYER_SETTINGS,
   // === Ocean Language Acquisition SRS (schema v27) ===

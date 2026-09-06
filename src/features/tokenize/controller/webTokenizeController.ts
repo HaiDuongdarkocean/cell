@@ -16,7 +16,7 @@ import {
 import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import type { WordStatus } from '@/features/dictionaryPopup/types';
-import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
+import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
@@ -153,6 +153,7 @@ export async function createWebTokenizeController(
   // Facebook with many visible paragraphs.
   let metadataQueue: TokenBlock[] = [];
   let metadataFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  let frequencyBandOptions: Promise<FrequencyBandOptions> | null = null;
   const metadataResolved = new WeakSet<TokenBlock>();
   const metadataPending = new WeakSet<TokenBlock>();
   // Race guard: keyboard / popup status changes that happen while a metadata
@@ -222,9 +223,11 @@ export async function createWebTokenizeController(
       return;
     }
     const termList = [...terms];
-    const [statusMap, freqMaps] = await Promise.all([
+    const [statusMap, freqMaps, bandOpts] = await Promise.all([
       getWordStatuses(langCode, termList),
       getFrequencyEntries(langCode, termList),
+      frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
+        .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
     ]);
     for (const block of batch) {
       if (!block.tokens) {
@@ -234,7 +237,7 @@ export async function createWebTokenizeController(
       await resolveTokenMetadata(
         block.tokens,
         (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [])),
+        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
       );
       // Race guard: re-apply any status override with a version newer than the
       // one this flush started with, so a stale background snapshot cannot
