@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, UiLanguagePreference } from '@/entities/settings';
+import { t, setUiLanguageOverride } from '@/shared/i18n';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,
@@ -113,7 +114,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
 
   // Sidebar owns active state + scroll-spy + floating bg animation.
   // Consumer only provides: contentRef + sectionRefs for scroll-spy integration.
-  const [activeSection, setActiveSection] = useState<string>('media');
+  const [activeSection, setActiveSection] = useState<string>('general');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
 
@@ -144,7 +145,14 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
     onChange({ ...settings, cardCreator: { ...current, ...partial } });
   };
 
+  const uiLanguageOptions = [
+    { value: 'auto', label: t('settings.uiLanguage.auto') },
+    { value: 'en', label: t('settings.uiLanguage.en') },
+    { value: 'vi', label: t('settings.uiLanguage.vi') },
+  ];
+
   const sidebarItems: { id: string; label: string; icon: string }[] = [
+    { id: 'general', label: t('settings.nav.general'), icon: 'settings' },
     { id: 'media', label: 'Media', icon: 'video' },
     { id: 'block', label: 'Block', icon: 'captions' },
     { id: 'languageProfile', label: 'Language Profile', icon: 'languages' },
@@ -190,6 +198,36 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
 
           {/* === Main column (cards, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
+
+            {/* === Card 0: General === */}
+            <Card
+              ref={(el: HTMLDivElement) => { sectionRefs.current.general = el; }}
+              className={styles.sectionCard}
+              data-section="general"
+            >
+              <div className={styles.cardHeader}>
+                <Heading level={4} size={4} className={styles.cardTitle}>{t('settings.general.title')}</Heading>
+                <Text as="p" color="secondary" className={styles.cardDesc}>{t('settings.general.desc')}</Text>
+              </div>
+              <VStack className={styles.cardBody}>
+                <SettingsRow dense stacked>
+                  <label className={styles.rowLabel} htmlFor="set-ui-language">{t('settings.uiLanguage.label')}</label>
+                  <Select
+                    id="set-ui-language"
+                    value={settings.uiLanguage ?? 'auto'}
+                    options={uiLanguageOptions}
+                    onChange={(value) => {
+                      const next = value as UiLanguagePreference;
+                      setUiLanguageOverride(next);
+                      update('uiLanguage', next);
+                    }}
+                    data-cell-id="settings-ui-language"
+                    aria-label={t('settings.uiLanguage.label')}
+                  />
+                  <Text as="p" color="secondary">{t('settings.uiLanguage.hint')}</Text>
+                </SettingsRow>
+              </VStack>
+            </Card>
 
             {/* === Card 1: Media Selection === */}
             <Card
@@ -613,7 +651,11 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <Text as="p" color="secondary" className={styles.cardDesc}>Import and manage dictionaries and frequency lists.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
-                <ResourcesPanel langCode={settings.subtitleOverlayTargetLanguage || 'en'} />
+                <ResourcesPanel
+                  langCode={settings.subtitleOverlayTargetLanguage || 'en'}
+                  frequencyBands={settings.frequencyBands}
+                  onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
+                />
               </VStack>
             </Card>
 
