@@ -26,6 +26,9 @@ export interface ResourceInfo {
   readonly wordCount: number;
   readonly installationFinished: boolean;
   readonly importedAt: number;
+  readonly enabled?: boolean; // absent means enabled
+  readonly priority?: number; // lower wins; absent falls back to resourceId-descending default
+  readonly profileIds?: readonly string[]; // absent means belongs to all language profiles
   readonly metadata?: Record<string, unknown>;
 }
 
@@ -57,14 +60,23 @@ export interface ImportResult {
   readonly resourceId: number;
   readonly wordCount: number;
   readonly format: ImportFormat;
+  /** True when the file was skipped because a resource with the same signature already exists. */
+  readonly skippedAsDuplicate?: boolean;
+  /** The existing resource when skippedAsDuplicate is true. */
+  readonly existingResource?: ResourceInfo;
 }
 
 /** Progress callback for import streaming. */
 export type ImportProgressCallback = (processed: number, estimatedTotal: number) => void;
+
+/** Duplicate resolution decision. */
+export type DuplicateDecision = 'skip' | 'replace';
 
 /** Options for import orchestrator. */
 export interface ImportOptions {
   readonly langCode: string;
   readonly onProgress?: ImportProgressCallback;
   readonly onResourceCreated?: (resourceId: number) => void;
+  /** Called when a resource with the same signature already exists. Defaults to 'skip'. */
+  readonly onDuplicate?: (existing: ResourceInfo) => DuplicateDecision | Promise<DuplicateDecision>;
 }

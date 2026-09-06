@@ -94,6 +94,53 @@ export async function findDictionaryBySuffix(langCode: string, suffix: string): 
   });
 }
 
+/** Sample the first N dictionary entries for a resource via cursor over the resourceId index. */
+export async function sampleDictionaryEntries(langCode: string, resourceId: number, limit: number): Promise<DictionaryEntry[]> {
+  const db = await getDB(langCode);
+  return new Promise((resolve, reject) => {
+    const store = getStore(db, STORES.DICTIONARY, 'readonly');
+    const index = store.index(INDEXES.by_resource);
+    const request = index.openCursor(resourceId);
+    const results: DictionaryEntry[] = [];
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor && results.length < limit) {
+        const { backwardTerm, ...entry } = cursor.value as StoredDictionaryEntry;
+        results.push(entry as DictionaryEntry);
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/** Find a dictionary entry by exact term match within a single resource. */
+export async function findDictionaryEntry(langCode: string, resourceId: number, term: string): Promise<DictionaryEntry | undefined> {
+  const db = await getDB(langCode);
+  return new Promise((resolve, reject) => {
+    const store = getStore(db, STORES.DICTIONARY, 'readonly');
+    const index = store.index(INDEXES.by_term);
+    const request = index.openCursor(term);
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(undefined);
+        return;
+      }
+      const value = cursor.value as StoredDictionaryEntry;
+      if (value.resourceId === resourceId) {
+        const { backwardTerm, ...entry } = value;
+        resolve(entry as DictionaryEntry);
+        return;
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 /** Count dictionary entries for a resource. */
 export async function countDictionaryByResource(langCode: string, resourceId: number): Promise<number> {
   const db = await getDB(langCode);

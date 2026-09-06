@@ -148,6 +148,53 @@ export async function findFrequencyBySuffix(langCode: string, suffix: string): P
   });
 }
 
+/** Sample the first N frequency entries for a resource via cursor over the resourceId index. */
+export async function sampleFrequencyEntries(langCode: string, resourceId: number, limit: number): Promise<FrequencyEntry[]> {
+  const db = await getDB(langCode);
+  return new Promise((resolve, reject) => {
+    const store = getStore(db, STORES.FREQUENCY, 'readonly');
+    const index = store.index(INDEXES.by_resource);
+    const request = index.openCursor(resourceId);
+    const results: FrequencyEntry[] = [];
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor && results.length < limit) {
+        const { backwardTerm, ...entry } = cursor.value as StoredFrequencyEntry;
+        results.push(entry as FrequencyEntry);
+        cursor.continue();
+      } else {
+        resolve(results);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/** Find a frequency entry by exact term match within a single resource. */
+export async function findFrequencyEntry(langCode: string, resourceId: number, term: string): Promise<FrequencyEntry | undefined> {
+  const db = await getDB(langCode);
+  return new Promise((resolve, reject) => {
+    const store = getStore(db, STORES.FREQUENCY, 'readonly');
+    const index = store.index(INDEXES.by_term);
+    const request = index.openCursor(term);
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(undefined);
+        return;
+      }
+      const value = cursor.value as StoredFrequencyEntry;
+      if (value.resourceId === resourceId) {
+        const { backwardTerm, ...entry } = value;
+        resolve(entry as FrequencyEntry);
+        return;
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 /** Count frequency entries for a resource. */
 export async function countFrequencyByResource(langCode: string, resourceId: number): Promise<number> {
   const db = await getDB(langCode);

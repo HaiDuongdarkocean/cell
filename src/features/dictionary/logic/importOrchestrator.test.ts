@@ -5,7 +5,7 @@ import { getResource, getAllResources } from '@/features/dictionary/repositories
 import { countFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
 import { countDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
 import { hasPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
-import { DuplicateFileError } from '@/features/dictionary/logic/importErrors';
+
 import { strToU8 } from 'fflate';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
@@ -211,23 +211,60 @@ describe('importOrchestrator', () => {
   });
 
   describe('importFile — duplicate detection', () => {
-    it('throws DuplicateFileError on re-import same file', async () => {
+    it('skips duplicate and returns existing resource by default', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
-      await importFile(file, 'FREQUENCY', { langCode: LANG });
-      await expect(importFile(file, 'FREQUENCY', { langCode: LANG })).rejects.toThrow(DuplicateFileError);
+      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      const second = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      expect(second.skippedAsDuplicate).toBe(true);
+      expect(second.resourceId).toBe(first.resourceId);
+      expect(second.wordCount).toBe(first.wordCount);
+      expect(second.existingResource).toMatchObject({ id: first.resourceId });
+      expect((await getAllResources(LANG)).length).toBe(1);
     });
 
-    it('does not create resource on duplicate', async () => {
+    it('does not create resource on duplicate skip', async () => {
       const file = makeFile('words.txt', 'hello\nworld\n');
       await importFile(file, 'FREQUENCY', { langCode: LANG });
       const countBefore = (await getAllResources(LANG)).length;
-      try {
-        await importFile(file, 'FREQUENCY', { langCode: LANG });
-      } catch {
-        // expected
-      }
+      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
       const countAfter = (await getAllResources(LANG)).length;
       expect(countAfter).toBe(countBefore);
+      expect(result.skippedAsDuplicate).toBe(true);
+    });
+
+    it('replaces an existing resource when onDuplicate returns replace', async () => {
+      const file = makeFile('words.txt', 'hello\nworld\nfoo\n');
+      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
+
+      const onDuplicate = jest.fn().mockReturnValue('replace' as const);
+      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+
+      expect(onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: first.resourceId }));
+      expect(result.skippedAsDuplicate).toBeUndefined();
+      expect(result.resourceId).not.toBe(first.resourceId);
+      expect((await getAllResources(LANG)).length).toBe(1);
+      expect(await countFrequencyByResource(LANG, result.resourceId)).toBe(3);
+    });
+
+    it('supports async onDuplicate callbacks', async () => {
+      const file = makeFile('words.txt', 'hello\nworld\n');
+      await importFile(file, 'FREQUENCY', { langCode: LANG });
+
+      const onDuplicate = jest.fn().mockResolvedValue('skip' as const);
+      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+      expect(result.skippedAsDuplicate).toBe(true);
+    });
+
+    it('keeps the existing resource when onDuplicate returns skip', async () => {
+      const file = makeFile('words.txt', 'hello\nworld\n');
+      const first = await importFile(file, 'FREQUENCY', { langCode: LANG });
+
+      const onDuplicate = jest.fn().mockReturnValue('skip' as const);
+      const result = await importFile(file, 'FREQUENCY', { langCode: LANG, onDuplicate });
+
+      expect(result.skippedAsDuplicate).toBe(true);
+      expect(result.resourceId).toBe(first.resourceId);
+      expect((await getAllResources(LANG)).length).toBe(1);
     });
   });
 
@@ -269,7 +306,7 @@ describe('importOrchestrator', () => {
   });
 
   describe('listResources', () => {
-    it('returns all resources sorted by importedAt desc', async () => {
+    it('returns all resources sorted by priority asc, then resourceId desc', async () => {
       const file1 = makeFile('a.txt', 'hello\n');
       const file2 = makeFile('b.txt', 'world\n');
       await importFile(file1, 'FREQUENCY', { langCode: LANG });
