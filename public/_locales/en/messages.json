@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Video Downloader",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Detect and download video + subtitle from free streaming sites for language learners",
+    "description": "Extension description"
+  }
+}

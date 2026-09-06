@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Video Downloader",
+  "default_locale": "en",
+  "name": "__MSG_extName__",
   "version": "0.1.1",
-  "description": "Detect and download video + subtitle from free streaming sites for language learners",
+  "description": "__MSG_extDescription__",
   "permissions": [
     "webRequest",
     "declarativeNetRequest",
@@ -74,7 +75,7 @@
   },
   "action": {
     "default_popup": "src/entrypoints/popup/index.html",
-    "default_title": "Video Downloader",
+    "default_title": "__MSG_extName__",
     "default_icon": "public/icons/icon-48.png"
   },
   "icons": {
