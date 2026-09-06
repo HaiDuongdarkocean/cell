@@ -4,7 +4,7 @@
 // findBySignature (dedupe), count, deleteAll.
 
 import { getDB, getStore, STORES, INDEXES } from './baseRepository';
-import type { ResourceInfo } from '@/entities/dictionary';
+import type { ResourceInfo, ResourceType } from '@/entities/dictionary';
 
 /** Add a resource. Returns the auto-generated id. */
 export async function addResource(langCode: string, resource: Omit<ResourceInfo, 'id'>): Promise<number> {
@@ -28,7 +28,7 @@ export async function getResource(langCode: string, id: number): Promise<Resourc
   });
 }
 
-/** Get all resources (sorted by importedAt desc). */
+/** Get all resources (priority asc, then resourceId desc as the default fallback). */
 export async function getAllResources(langCode: string): Promise<ResourceInfo[]> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
@@ -37,8 +37,13 @@ export async function getAllResources(langCode: string): Promise<ResourceInfo[]>
     const request = index.getAll();
     request.onsuccess = () => {
       const results = request.result as ResourceInfo[];
-      // by_order index on importedAt — sort desc (newest first)
-      results.sort((a, b) => b.importedAt - a.importedAt);
+      // priority lower wins; absent priority is treated as Infinity so it comes last
+      results.sort((a, b) => {
+        const aPriority = a.priority ?? Number.POSITIVE_INFINITY;
+        const bPriority = b.priority ?? Number.POSITIVE_INFINITY;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        return (b.id ?? 0) - (a.id ?? 0);
+      });
       resolve(results);
     };
     request.onerror = () => reject(request.error);
@@ -77,6 +82,43 @@ export async function findResourceBySignature(langCode: string, signature: strin
     request.onsuccess = () => resolve(request.result as ResourceInfo | undefined);
     request.onerror = () => reject(request.error);
   });
+}
+
+/** Reorder resources of a given type by writing priority 0..n onto each resource in the supplied order. */
+export async function reorderResources(langCode: string, type: ResourceType, orderedIds: readonly number[]): Promise<void> {
+  const all = await getAllResources(langCode);
+  const byId = new Map<number, ResourceInfo>();
+  for (const resource of all) {
+    if (resource.type === type && resource.id !== undefined) {
+      byId.set(resource.id, resource);
+    }
+  }
+
+  for (let i = 0; i < orderedIds.length; i++) {
+    const id = orderedIds[i]!;
+    const resource = byId.get(id);
+    if (resource) {
+      await updateResource(langCode, { ...resource, priority: i });
+    }
+  }
+}
+
+/** Enable or disable a resource by id. */
+export async function setResourceEnabled(langCode: string, id: number, enabled: boolean): Promise<void> {
+  const resource = await getResource(langCode, id);
+  if (!resource) {
+    throw new Error(`Không tìm thấy resource id ${id}.`);
+  }
+  await updateResource(langCode, { ...resource, enabled });
+}
+
+/** Set the language profiles a resource belongs to. */
+export async function setResourceProfiles(langCode: string, id: number, profileIds: readonly string[]): Promise<void> {
+  const resource = await getResource(langCode, id);
+  if (!resource) {
+    throw new Error(`Không tìm thấy resource id ${id}.`);
+  }
+  await updateResource(langCode, { ...resource, profileIds });
 }
 
 /** Count resources. */

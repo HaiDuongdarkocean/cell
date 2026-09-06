@@ -11,7 +11,6 @@ import { detectFormat } from '../logic/formatDetector';
 import { computeSignature } from '../logic/signatureGenerator';
 import { resolveFormat, createStrategy } from '../strategies/strategyFactory';
 import {
-  DuplicateFileError,
   RollbackError,
   QuotaExceededError,
   isImportError,
@@ -60,7 +59,18 @@ export async function importFile(
   // 5. Check duplicate (same signature = re-import)
   const existing = await findResourceBySignature(langCode, signature);
   if (existing) {
-    throw new DuplicateFileError(signature, existing.name);
+    const decision = await (options.onDuplicate?.(existing) ?? 'skip');
+    if (decision === 'skip') {
+      return {
+        resourceId: existing.id ?? 0,
+        wordCount: existing.wordCount,
+        format: existing.format,
+        skippedAsDuplicate: true,
+        existingResource: existing,
+      };
+    }
+    // decision === 'replace': delete existing entries + resource, then import normally
+    await deleteResourceCascade(langCode, existing.id ?? 0);
   }
 
   // 6. Read full file bytes

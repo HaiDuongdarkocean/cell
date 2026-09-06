@@ -7,6 +7,8 @@ import {
   findFrequencyByTerms,
   findFrequencyByPrefix,
   findFrequencyBySuffix,
+  sampleFrequencyEntries,
+  findFrequencyEntry,
   countFrequencyByResource,
   deleteFrequencyByResource,
 } from '@/features/dictionary/repositories/frequencyRepository';
@@ -176,6 +178,47 @@ describe('frequencyRepository', () => {
 
     expect(result.get('apple')).toHaveLength(2);
     expect(result.get('banana')).toHaveLength(1);
+  });
+
+  it('sampleFrequencyEntries returns the first N entries for a resource', async () => {
+    await bulkInsertFrequencyEntries(LANG, [
+      makeEntry('apple', 1),
+      makeEntry('banana', 2),
+      makeEntry('cherry', 3),
+    ]);
+    const results = await sampleFrequencyEntries(LANG, RESOURCE_ID, 2);
+    expect(results).toHaveLength(2);
+    expect(results[0]!.term).toBe('apple');
+    expect(results[1]!.term).toBe('banana');
+    expect(results[0]).not.toHaveProperty('backwardTerm');
+  });
+
+  it('sampleFrequencyEntries respects resource isolation', async () => {
+    await bulkInsertFrequencyEntries(LANG, [makeEntry('apple', 1), makeEntry('banana', 2)]);
+    await bulkInsertFrequencyEntries(LANG, [makeEntry('other', 9, 2)]);
+    const results = await sampleFrequencyEntries(LANG, 2, 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('other');
+  });
+
+  it('findFrequencyEntry returns exact term match within a resource', async () => {
+    await bulkInsertFrequencyEntries(LANG, [
+      makeEntry('apple', 1),
+      makeEntry('banana', 2),
+      makeEntry('banana', 20, 2),
+    ]);
+    const found = await findFrequencyEntry(LANG, RESOURCE_ID, 'banana');
+    expect(found).toBeDefined();
+    expect(found!.term).toBe('banana');
+    expect(found!.resourceId).toBe(RESOURCE_ID);
+    expect(found!.frequency).toBe(2);
+    expect(found).not.toHaveProperty('backwardTerm');
+  });
+
+  it('findFrequencyEntry returns undefined when term is in another resource', async () => {
+    await bulkInsertFrequencyEntries(LANG, [makeEntry('apple', 1)]);
+    await bulkInsertFrequencyEntries(LANG, [makeEntry('banana', 2, 2)]);
+    await expect(findFrequencyEntry(LANG, RESOURCE_ID, 'banana')).resolves.toBeUndefined();
   });
 });
 

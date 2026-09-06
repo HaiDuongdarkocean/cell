@@ -8,6 +8,9 @@ import {
   findResourceBySignature,
   countResources,
   deleteAllResources,
+  reorderResources,
+  setResourceEnabled,
+  setResourceProfiles,
 } from '@/features/dictionary/repositories/resourceRepository';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import type { ResourceInfo } from '@/entities/dictionary';
@@ -78,12 +81,12 @@ describe('resourceRepository', () => {
     expect(resource).toBeUndefined();
   });
 
-  it('getAllResources returns sorted by importedAt desc', async () => {
-    await addResource(LANG, makeResource({ name: 'old', importedAt: 1000 }));
-    await addResource(LANG, makeResource({ name: 'new', importedAt: 3000 }));
-    await addResource(LANG, makeResource({ name: 'mid', importedAt: 2000 }));
+  it('getAllResources returns sorted by priority asc, then resourceId desc', async () => {
+    await addResource(LANG, makeResource({ name: 'mid-pri', priority: 1, importedAt: 1000 }));
+    await addResource(LANG, makeResource({ name: 'high-pri', priority: 0, importedAt: 500 }));
+    await addResource(LANG, makeResource({ name: 'no-pri', importedAt: 2000 }));
     const all = await getAllResources(LANG);
-    expect(all.map((r) => r.name)).toEqual(['new', 'mid', 'old']);
+    expect(all.map((r) => r.name)).toEqual(['high-pri', 'mid-pri', 'no-pri']);
   });
 
   it('updateResource replaces by id', async () => {
@@ -123,5 +126,46 @@ describe('resourceRepository', () => {
     await addResource(LANG, makeResource({ signature: 's2' }));
     await deleteAllResources(LANG);
     await expect(countResources(LANG)).resolves.toBe(0);
+  });
+
+  it('reorderResources writes priority 0..n onto existing resources of the given type', async () => {
+    const idA = await addResource(LANG, makeResource({ type: 'FREQUENCY', name: 'a' }));
+    const idB = await addResource(LANG, makeResource({ type: 'FREQUENCY', name: 'b' }));
+    const idDict = await addResource(LANG, makeResource({ type: 'DICTIONARY', name: 'dict' }));
+
+    await reorderResources(LANG, 'FREQUENCY', [idB, idA, 9999]);
+
+    const a = await getResource(LANG, idA);
+    const b = await getResource(LANG, idB);
+    const dict = await getResource(LANG, idDict);
+    expect(a?.priority).toBe(1);
+    expect(b?.priority).toBe(0);
+    expect(dict?.priority).toBeUndefined();
+  });
+
+  it('setResourceEnabled updates the enabled flag', async () => {
+    const id = await addResource(LANG, makeResource());
+    await setResourceEnabled(LANG, id, false);
+    const resource = await getResource(LANG, id);
+    expect(resource?.enabled).toBe(false);
+
+    await setResourceEnabled(LANG, id, true);
+    const updated = await getResource(LANG, id);
+    expect(updated?.enabled).toBe(true);
+  });
+
+  it('setResourceEnabled throws for a missing resource', async () => {
+    await expect(setResourceEnabled(LANG, 9999, false)).rejects.toThrow('Không tìm thấy resource id 9999');
+  });
+
+  it('setResourceProfiles updates the profileIds', async () => {
+    const id = await addResource(LANG, makeResource());
+    await setResourceProfiles(LANG, id, ['profile-a', 'profile-b']);
+    const resource = await getResource(LANG, id);
+    expect(resource?.profileIds).toEqual(['profile-a', 'profile-b']);
+  });
+
+  it('setResourceProfiles throws for a missing resource', async () => {
+    await expect(setResourceProfiles(LANG, 9999, ['x'])).rejects.toThrow('Không tìm thấy resource id 9999');
   });
 });

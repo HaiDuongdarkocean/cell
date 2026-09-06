@@ -6,6 +6,8 @@ import {
   findDictionaryByTerm,
   findDictionaryByPrefix,
   findDictionaryBySuffix,
+  sampleDictionaryEntries,
+  findDictionaryEntry,
   countDictionaryByResource,
   deleteDictionaryByResource,
 } from '@/features/dictionary/repositories/dictionaryRepository';
@@ -120,5 +122,45 @@ describe('dictionaryRepository', () => {
     await bulkInsertDictionaryEntries(LANG, [makeDictEntry('a'), makeDictEntry('b')]);
     await deleteDictionaryByResource(LANG, RESOURCE_ID);
     await expect(countDictionaryByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
+  });
+
+  it('sampleDictionaryEntries returns the first N entries for a resource', async () => {
+    await bulkInsertDictionaryEntries(LANG, [
+      makeDictEntry('apple'),
+      makeDictEntry('banana'),
+      makeDictEntry('cherry'),
+    ]);
+    const results = await sampleDictionaryEntries(LANG, RESOURCE_ID, 2);
+    expect(results).toHaveLength(2);
+    expect(results[0]!.term).toBe('apple');
+    expect(results[1]!.term).toBe('banana');
+    expect(results[0]).not.toHaveProperty('backwardTerm');
+  });
+
+  it('sampleDictionaryEntries respects resource isolation', async () => {
+    await bulkInsertDictionaryEntries(LANG, [makeDictEntry('apple'), makeDictEntry('banana')]);
+    await bulkInsertDictionaryEntries(LANG, [makeDictEntry('other', 2)]);
+    const results = await sampleDictionaryEntries(LANG, 2, 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('other');
+  });
+
+  it('findDictionaryEntry returns exact term match within a resource', async () => {
+    await bulkInsertDictionaryEntries(LANG, [
+      makeDictEntry('apple'),
+      makeDictEntry('banana'),
+      makeDictEntry('banana', 2),
+    ]);
+    const found = await findDictionaryEntry(LANG, RESOURCE_ID, 'banana');
+    expect(found).toBeDefined();
+    expect(found!.term).toBe('banana');
+    expect(found!.resourceId).toBe(RESOURCE_ID);
+    expect(found).not.toHaveProperty('backwardTerm');
+  });
+
+  it('findDictionaryEntry returns undefined when term is in another resource', async () => {
+    await bulkInsertDictionaryEntries(LANG, [makeDictEntry('apple')]);
+    await bulkInsertDictionaryEntries(LANG, [makeDictEntry('banana', 2)]);
+    await expect(findDictionaryEntry(LANG, RESOURCE_ID, 'banana')).resolves.toBeUndefined();
   });
 });
