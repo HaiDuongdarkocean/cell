@@ -7,7 +7,7 @@ import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/log
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
-import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
+import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 
 const DEFAULT_WINDOW = 1;
@@ -78,6 +78,7 @@ export function createSubtitleTokenizeController(
   const stateStore: TokenizeStateStore = createTokenizeStateStore({ initialEnabled: false });
   const targetCache = new Map<number, PreparedCue>();
   let targetCues: readonly SrtCue[] = [];
+  let frequencyBandOptions: Promise<FrequencyBandOptions> | null = null;
   let lastTargetIndex = -1;
   let currentTargetBlock: TokenBlock | null = null;
 
@@ -112,14 +113,16 @@ export function createSubtitleTokenizeController(
     const tokens = tokenizeTextBlock(text, langCode);
     const terms = [...new Set(tokens.filter((t) => !t.isSeparator).map((t) => t.term))];
     if (terms.length > 0) {
-      const [statusMap, freqMaps] = await Promise.all([
+      const [statusMap, freqMaps, bandOpts] = await Promise.all([
         getWordStatuses(langCode, terms),
         getFrequencyEntries(langCode, terms),
+        frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
+          .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
       ]);
       await resolveTokenMetadata(
         tokens,
         (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [])),
+        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
       );
     }
     cache.set(index, { text, tokens });

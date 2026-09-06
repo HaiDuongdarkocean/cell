@@ -1,5 +1,12 @@
 import { loadSettings, CURRENT_SCHEMA_VERSION } from './settingsStore';
-import { DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SRS_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_CARD_CREATOR_SETTINGS,
+  DEFAULT_PRONUNCIATION_SETTINGS,
+  DEFAULT_SRS_SETTINGS,
+  DEFAULT_FREQUENCY_BANDS,
+  STORAGE_KEYS,
+} from '@/shared/config/config';
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 const storageLocalSetMock = jest.fn<Promise<void>, [Record<string, unknown>]>();
@@ -77,6 +84,38 @@ describe('loadSettings migration', () => {
 
     expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(settings.srs).toEqual(DEFAULT_SRS_SETTINGS);
+  });
+
+  it('migrates v27 settings to v28 and adds frequencyBands', async () => {
+    const v27Settings = { ...DEFAULT_SETTINGS, schemaVersion: 27 } as Record<string, unknown>;
+    delete v27Settings.frequencyBands;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v27Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(settings.frequencyBands).toEqual(DEFAULT_FREQUENCY_BANDS);
+  });
+
+  it('preserves partial frequencyBands overrides across migration', async () => {
+    const v27Settings = { ...DEFAULT_SETTINGS, schemaVersion: 27 } as Record<string, unknown>;
+    v27Settings.frequencyBands = { core: 1000 };
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v27Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.frequencyBands).toEqual({
+      core: 1000,
+      common: 5000,
+      general: 10000,
+      advanced: 20000,
+    });
   });
 
   it('resets undefined nested objects to their defaults', async () => {

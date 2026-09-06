@@ -12,12 +12,12 @@
  * V1 reads on every call (settings are small + infrequent — no perf concern).
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS } from '@/shared/config/config';
+import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_LOCAL_PLAYER_SETTINGS, DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
 import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '@/entities/settings';
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 27;
+export const CURRENT_SCHEMA_VERSION = 28;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -456,6 +456,15 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // Existing users get null active IDs + default dataLifecycle quota.
   26: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 27 } as Record<string, unknown>;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v27 → v28: add configurable frequency band thresholds.
+  // Existing users get the default core/common/general/advanced thresholds.
+  27: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 28 } as Record<string, unknown>;
+    if (!merged.frequencyBands || typeof merged.frequencyBands !== 'object') {
+      merged.frequencyBands = { ...DEFAULT_FREQUENCY_BANDS };
+    }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

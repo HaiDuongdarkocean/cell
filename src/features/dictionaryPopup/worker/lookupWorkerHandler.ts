@@ -42,6 +42,10 @@ export interface LookupWorkerState {
   readonly hydrationErrors: Map<number, string>;
   /** Cancelled requestIds — LOOKUP results for these are dropped. */
   readonly cancelled: Set<string>;
+  /** resourceId → explicit priority (lower = higher). Set by the host. */
+  priorityMap?: ReadonlyMap<number, number>;
+  /** Set of disabled resourceIds — HYDRATE_CHUNK will skip these. */
+  disabledResourceIds?: ReadonlySet<number>;
 }
 
 /** Create a fresh worker state. */
@@ -55,6 +59,22 @@ export function createLookupWorkerState(): LookupWorkerState {
   };
 }
 
+/** Attach an explicit resource priority map to a worker state. */
+export function setWorkerPriorityMap(
+  state: LookupWorkerState,
+  priorityMap: ReadonlyMap<number, number>,
+): void {
+  state.priorityMap = priorityMap;
+}
+
+/** Attach the set of disabled resourceIds to a worker state. */
+export function setWorkerDisabledResourceIds(
+  state: LookupWorkerState,
+  disabledResourceIds: ReadonlySet<number>,
+): void {
+  state.disabledResourceIds = disabledResourceIds;
+}
+
 /**
  * Handle one worker message. Returns zero or more response messages to post
  * back to the host. Pure with respect to `state` (mutates `state` in place,
@@ -66,11 +86,17 @@ export function handleWorkerMessage(
 ): WorkerLookupResultMessage[] {
   switch (msg.type) {
     case 'HYDRATE_CHUNK': {
-      const result = loadPhraseIndexBlob(msg.resourceId, msg.payload);
+      if (state.disabledResourceIds?.has(msg.resourceId)) {
+        // Disabled resources are never loaded into resident memory.
+        return [];
+      }
+      const result = loadPhraseIndexBlob(msg.resourceId, msg.payload, {
+        enabled: !state.disabledResourceIds?.has(msg.resourceId),
+      });
       if (result.ok) {
         state.residentIndexes.set(msg.resourceId, result.resident);
         state.hydrationErrors.delete(msg.resourceId);
-      } else {
+      } else if (result.error !== 'resource-disabled') {
         // Fail closed: record the error, do not crash. The resource is
         // skipped for lookup; the host can re-hydrate or report.
         state.hydrationErrors.set(msg.resourceId, result.error);
@@ -137,15 +163,19 @@ function handleLookup(
  * Run the phrase match against all resident indexes in priority order.
  *
  * Collects the best match per resource, then picks the overall winner by:
- * (1) resource priority (newest resourceId first, or explicit priorityMap),
- * (2) the matcher's deterministic ranking tuple (comparePhraseMatches).
+ * (1) explicit resource priority (lower rank wins),
+ * (2) resourceId descending for unprioritized resources,
+ * (3) the matcher's deterministic ranking tuple (comparePhraseMatches).
  *
  * The winning sourceResourceId is the real resourceId — never a sentinel.
  */
 function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupResult {
   const { contextSentence, cursorOffset, term, langCode } = msg.payload;
 
-  const sorted = sortResidentIndexesByPriority(state.residentIndexes.values());
+  const residents = [...state.residentIndexes.values()].filter(
+    (r) => !state.disabledResourceIds?.has(r.resourceId),
+  );
+  const sorted = sortResidentIndexesByPriority(residents, state.priorityMap);
   const candidates: { resident: ResidentPhraseIndex; match: PhraseMatch }[] = [];
 
   for (const resident of sorted) {
@@ -161,12 +191,12 @@ function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupRe
   }
 
   if (candidates.length > 0) {
-    // Pick the winner: priority order is already applied via sort. The first
-    // candidate is from the highest-priority resource. Ties (same priority)
-    // are broken by comparePhraseMatches.
+    // Pick the winner: explicit priority first, then resourceId descending,
+    // then comparePhraseMatches. Mirrors the host orchestrator ordering.
     candidates.sort((a, b) => {
-      // Priority is resourceId-descending (already the sort order); preserve
-      // that as the primary key, then comparePhraseMatches as tie-break.
+      const pa = state.priorityMap?.get(a.resident.resourceId) ?? Number.MAX_SAFE_INTEGER;
+      const pb = state.priorityMap?.get(b.resident.resourceId) ?? Number.MAX_SAFE_INTEGER;
+      if (pa !== pb) return pa - pb;
       const prioDiff = b.resident.resourceId - a.resident.resourceId;
       if (prioDiff !== 0) return prioDiff;
       return comparePhraseMatches(a.match, b.match);

@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 27 (V27 adds SRS settings slice)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(27);
+  it('CURRENT_SCHEMA_VERSION is 28 (V28 adds frequency band thresholds)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(28);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {

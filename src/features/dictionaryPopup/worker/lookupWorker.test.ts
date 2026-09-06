@@ -17,6 +17,8 @@ import {
   buildWorkerReadyMessage,
   createLookupWorkerState,
   handleWorkerMessage,
+  setWorkerPriorityMap,
+  setWorkerDisabledResourceIds,
 } from './lookupWorkerHandler';
 import {
   compilePhraseIndex,
@@ -359,5 +361,37 @@ describe('lookupWorkerHandler — worker restart safety', () => {
     expect(s2.hydrated).toBe(true);
     expect(s2.residentIndexes.size).toBe(1);
     expect(s2.cancelled.size).toBe(0);
+  });
+});
+
+describe('lookupWorkerHandler — explicit priority + disabled resources', () => {
+  it('picks the lowest-priority resource over newest resourceId', () => {
+    const state = createLookupWorkerState();
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, hydrateChunk(5, buildBlob(['take off'])));
+    setWorkerPriorityMap(state, new Map([
+      [1, 1],
+      [5, 10],
+    ]));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+    expect(responses[0]!.ok).toBe(true);
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(1);
+  });
+
+  it('ignores disabled resources during hydration and lookup', () => {
+    const state = createLookupWorkerState();
+    setWorkerDisabledResourceIds(state, new Set([1]));
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, hydrateChunk(5, buildBlob(['take off'])));
+    expect(state.residentIndexes.size).toBe(1);
+    expect(state.residentIndexes.has(1)).toBe(false);
+    expect(state.residentIndexes.has(5)).toBe(true);
+
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+    const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+    expect(responses[0]!.ok).toBe(true);
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(5);
   });
 });

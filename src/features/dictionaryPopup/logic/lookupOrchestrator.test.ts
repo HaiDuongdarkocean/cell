@@ -14,6 +14,13 @@ import {
   type PhraseIndexInput,
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
+import type { Settings, LanguageProfile } from '@/entities/settings';
+import {
+  DEFAULT_SETTINGS,
+  DEFAULT_DICTIONARY_POPUP_SETTINGS,
+  DEFAULT_OVERLAY_STYLE_TARGET,
+  DEFAULT_OVERLAY_STYLE_NATIVE,
+} from '@/shared/config/config';
 
 // Mock devMode (import.meta.env not available in Jest CJS) + lookupLogStore
 // (chrome.storage.local persistence — dev-only, mocked to no-op).
@@ -100,6 +107,31 @@ async function seedEnglishDictionary(
     });
   }
   return resourceId;
+}
+
+function makeProfile(id: string, target: string): LanguageProfile {
+  return {
+    id,
+    target,
+    native: 'vi',
+    name: `Test ${id}`,
+    order: 1,
+    subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+    subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+    subtitleOverlayAutoLoad: true,
+    subtitleOverlayAutoLoadAsr: false,
+    subtitleOverlayAutoTranslate: false,
+    dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
+    resourceIds: [],
+  };
+}
+
+function settingsWithActiveProfile(profileId: string): Settings {
+  return {
+    ...DEFAULT_SETTINGS,
+    activeProfileId: profileId,
+    languageProfiles: [makeProfile(profileId, 'en')],
+  };
 }
 
 async function seedChineseDictionary(entries: { term: string; definition: string; reading?: string }[]): Promise<number> {
@@ -677,5 +709,260 @@ describe('createDictionaryProbeAsync', () => {
     const probe = await createDictionaryProbeAsync('en');
     expect(probe.hasTerm('hello')).toBe(true);
     expect(probe.hasTerm('HELLO')).toBe(true);
+  });
+});
+
+describe('lookupOrchestrator — resource controls', () => {
+  it('excludes disabled dictionary resources from phrase matching', async () => {
+    const enabledId = await addResource('en', {
+      name: 'enabled.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'enabled',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now(),
+      enabled: true,
+    });
+    const disabledId = await addResource('en', {
+      name: 'disabled.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'disabled',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now() + 1,
+      enabled: false,
+    });
+
+    await addDictionaryEntry('en', {
+      resourceId: enabledId,
+      term: 'ocean',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'a large body of salt water',
+      pos: 'noun',
+      examples: '',
+      audio: '',
+    });
+    await addDictionaryEntry('en', {
+      resourceId: disabledId,
+      term: 'unknownword',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'should not appear',
+      pos: 'noun',
+      examples: '',
+      audio: '',
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'unknownword',
+      langCode: 'en',
+      contextSentence: 'This is an unknownword here.',
+      cursorOffset: 11,
+    });
+
+    expect(result.term).toBe('unknownword');
+    expect(result.definitions).toEqual([]);
+  });
+
+  it('filters dictionary resources by active language profile', async () => {
+    const globalId = await addResource('en', {
+      name: 'global.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'global',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now(),
+    });
+    const profileOnlyId = await addResource('en', {
+      name: 'profile.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'profile',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now() + 1,
+      profileIds: ['p1'],
+    });
+
+    await addDictionaryEntry('en', {
+      resourceId: globalId,
+      term: 'ocean',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'a large body of salt water',
+      pos: 'noun',
+      examples: '',
+      audio: '',
+    });
+    await addDictionaryEntry('en', {
+      resourceId: profileOnlyId,
+      term: 'unknownword',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'should not appear for p2',
+      pos: 'noun',
+      examples: '',
+      audio: '',
+    });
+
+    const settings = settingsWithActiveProfile('p2');
+    const result = await lookupOrchestrator(
+      {
+        term: 'unknownword',
+        langCode: 'en',
+        contextSentence: 'This is an unknownword here.',
+        cursorOffset: 11,
+      },
+      { settings },
+    );
+
+    expect(result.term).toBe('unknownword');
+    expect(result.definitions).toEqual([]);
+  });
+
+  it('uses explicit resource priority over resourceId descending', async () => {
+    const lowPriorityId = await addResource('en', {
+      name: 'low-priority.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'low-priority',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now(),
+      priority: 5,
+    });
+    const highPriorityId = await addResource('en', {
+      name: 'high-priority.json',
+      langCode: 'en',
+      type: 'DICTIONARY',
+      format: 'cambridge-json',
+      signature: 'high-priority',
+      wordCount: 1,
+      installationFinished: true,
+      importedAt: Date.now() + 1,
+      priority: 1,
+    });
+
+    const inputs: PhraseIndexInput[] = ['take off'].map((t, i) => {
+      const parsed = parsePhraseTemplate(t, { inflectableLiterals: TEST_VERBS });
+      if (parsed.status !== 'supported') throw new Error(`unsupported: ${t}`);
+      return {
+        templateId: i,
+        sourceTerm: parsed.sourceTerm,
+        normalizedTerm: parsed.normalizedTerm,
+        nodes: parsed.nodes,
+        fixedTokenCount: parsed.fixedTokenCount,
+        minSurfaceTokens: parsed.minSurfaceTokens,
+        maxSurfaceTokens: parsed.maxSurfaceTokens,
+        frequencyRank: 0,
+      };
+    });
+    const index = compilePhraseIndex(inputs);
+
+    await putPhraseIndex('en', lowPriorityId, serializePhraseIndex(index), {
+      compilerVersion: index.compilerVersion,
+      termCount: index.termCount,
+    });
+    await putPhraseIndex('en', highPriorityId, serializePhraseIndex(index), {
+      compilerVersion: index.compilerVersion,
+      termCount: index.termCount,
+    });
+
+    await addDictionaryEntry('en', {
+      resourceId: lowPriorityId,
+      term: 'take off',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'wrong winner',
+      pos: 'verb',
+      examples: '',
+      audio: '',
+    });
+    await addDictionaryEntry('en', {
+      resourceId: highPriorityId,
+      term: 'take off',
+      reading: '',
+      altterm: '',
+      pronunciation: '',
+      definition: 'right winner',
+      pos: 'verb',
+      examples: '',
+      audio: '',
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'take',
+      langCode: 'en',
+      contextSentence: 'The plane will take off soon.',
+      cursorOffset: 20,
+    });
+
+    expect(result.term).toBe('take off');
+    expect(result.definitions[0]!.text).toBe('right winner');
+  });
+
+  it('picks frequency rank from the highest-priority resource', async () => {
+    const globalId = await addResource('en', {
+      name: 'global-freq.json',
+      langCode: 'en',
+      type: 'FREQUENCY',
+      format: 'cambridge-json',
+      signature: 'global-freq',
+      wordCount: 0,
+      installationFinished: true,
+      importedAt: Date.now(),
+    });
+    const highPriorityId = await addResource('en', {
+      name: 'priority-freq.json',
+      langCode: 'en',
+      type: 'FREQUENCY',
+      format: 'cambridge-json',
+      signature: 'priority-freq',
+      wordCount: 0,
+      installationFinished: true,
+      importedAt: Date.now() + 1,
+      priority: 1,
+    });
+
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+
+    await addFrequencyEntry('en', {
+      resourceId: globalId,
+      term: 'hello',
+      reading: '',
+      frequency: 500,
+    });
+    await addFrequencyEntry('en', {
+      resourceId: highPriorityId,
+      term: 'hello',
+      reading: '',
+      frequency: 15000,
+    });
+
+    const result = await lookupOrchestrator({
+      term: 'hello',
+      langCode: 'en',
+      contextSentence: 'Hello world.',
+      cursorOffset: 0,
+    });
+
+    // Highest-priority resource has rank 15000 (worse absolute rank), but
+    // its rank wins because it is the highest-priority frequency list.
+    expect(result.frequency).not.toBeNull();
+    expect(result.frequency?.rank).toBe(15000);
   });
 });
