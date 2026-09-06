@@ -1,0 +1,78 @@
+{
+  "ui.searchField.clear": "Clear",
+
+  "settings.nav.general": "General",
+  "settings.general.title": "General",
+  "settings.general.desc": "App-level preferences.",
+  "settings.uiLanguage.label": "Interface language",
+  "settings.uiLanguage.hint": "Only changes the app's own text — your learning languages stay in Language Profile.",
+  "settings.uiLanguage.auto": "Auto (browser)",
+  "settings.uiLanguage.en": "English",
+  "settings.uiLanguage.vi": "Tiếng Việt",
+
+  "dict.popup.aria": "Dictionary popup",
+  "dict.sheet.aria": "Dictionary",
+  "dict.badge.aria": "Dictionary badge",
+  "dict.badge.drag": "Drag to move",
+  "dict.badge.open": "Open dictionary",
+
+  "dict.toolbar.aria": "Dictionary materials",
+  "dict.tab.audio": "Audio",
+  "dict.tab.image": "Image",
+  "dict.tab.translate": "Translate",
+  "dict.tab.links": "Links",
+  "dict.tab.pronunciation": "Sounds",
+
+  "dict.search.aria": "Search a word",
+  "dict.search.placeholder": "Type a word",
+  "dict.history.aria": "Recent searches",
+  "dict.history.remove": "Remove $1 from recent searches",
+  "dict.history.removeShort": "Remove $1",
+  "dict.history.clear": "Clear recent searches",
+
+  "dict.status.lookingUp": "Looking up…",
+  "dict.status.cycle": "Status: $1 · next: $2",
+
+  "dict.empty.title": "Ready when you are",
+  "dict.empty.desc": "Search for a word to explore its meaning.",
+
+  "dict.definitions.aria": "Definitions",
+  "dict.definitions.empty": "No definitions found.",
+  "dict.definitions.import": "Import a dictionary",
+  "dict.definitions.emptyHint": "No definitions found. Import a dictionary in Settings → Resources.",
+
+  "dict.action.sendToCard": "Send to Card Creator",
+  "dict.action.quickAdd": "Quick Add",
+
+  "dict.audio.groups.aria": "Audio groups",
+  "dict.audio.group.word": "Play word",
+  "dict.audio.group.sentence": "Play sentence",
+  "dict.audio.play": "Play $1",
+  "dict.audio.playWord": "Play word audio",
+  "dict.audio.playSentence": "Play sentence audio",
+
+  "dict.images.empty": "No images for this word.",
+  "dict.images.searchMore": "Search Google Images →",
+  "dict.images.scrollLeft": "Scroll images left",
+  "dict.images.scrollRight": "Scroll images right",
+
+  "dict.translate.empty": "No translation for this word.",
+  "dict.translate.action": "Translate to $1",
+
+  "dict.links.empty": "No external links for this word.",
+
+  "dict.error.lookup": "Couldn't look that word up. Try again.",
+  "dict.error.audio": "Couldn't load audio. Try again.",
+  "dict.error.images": "Couldn't load images. Try again.",
+  "dict.error.translate": "Couldn't load the translation. Try again.",
+
+  "dict.toast.quickAddNeedDeck": "Quick Add needs a deck and note type. Open Card Creator first to set them up.",
+  "dict.toast.quickAddNeedMapping": "Quick Add needs field mapping. Open Card Creator first to set it up.",
+  "dict.toast.quickAddCollecting": "Quick Add — collecting media…",
+  "dict.toast.quickAddFailed": "Quick Add failed: $1",
+  "dict.toast.duplicate": "This card already exists.",
+  "dict.toast.cardAdded": "Card added to $1 (#$2).",
+  "dict.toast.srsAdding": "Adding to Ocean SRS…",
+  "dict.toast.srsAdded": "Added to Ocean SRS.",
+  "dict.toast.srsFailed": "Couldn't add to Ocean SRS: $1"
+}

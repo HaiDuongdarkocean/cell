@@ -1,0 +1,78 @@
+{
+  "ui.searchField.clear": "Xóa",
+
+  "settings.nav.general": "Chung",
+  "settings.general.title": "Chung",
+  "settings.general.desc": "Cài đặt chung của ứng dụng.",
+  "settings.uiLanguage.label": "Ngôn ngữ giao diện",
+  "settings.uiLanguage.hint": "Chỉ đổi chữ trên giao diện — ngôn ngữ học nằm trong mục Language Profile.",
+  "settings.uiLanguage.auto": "Tự động (theo trình duyệt)",
+  "settings.uiLanguage.en": "English",
+  "settings.uiLanguage.vi": "Tiếng Việt",
+
+  "dict.popup.aria": "Từ điển bật lên",
+  "dict.sheet.aria": "Từ điển",
+  "dict.badge.aria": "Nút từ điển",
+  "dict.badge.drag": "Kéo để di chuyển",
+  "dict.badge.open": "Mở từ điển",
+
+  "dict.toolbar.aria": "Tài liệu từ điển",
+  "dict.tab.audio": "Âm thanh",
+  "dict.tab.image": "Hình ảnh",
+  "dict.tab.translate": "Dịch",
+  "dict.tab.links": "Liên kết",
+  "dict.tab.pronunciation": "Phát âm",
+
+  "dict.search.aria": "Tra một từ",
+  "dict.search.placeholder": "Nhập một từ",
+  "dict.history.aria": "Từ đã tra gần đây",
+  "dict.history.remove": "Xóa $1 khỏi từ đã tra gần đây",
+  "dict.history.removeShort": "Xóa $1",
+  "dict.history.clear": "Xóa từ đã tra gần đây",
+
+  "dict.status.lookingUp": "Đang tra…",
+  "dict.status.cycle": "Trạng thái: $1 · tiếp: $2",
+
+  "dict.empty.title": "Sẵn sàng khi bạn cần",
+  "dict.empty.desc": "Tra một từ để xem nghĩa của nó.",
+
+  "dict.definitions.aria": "Nghĩa của từ",
+  "dict.definitions.empty": "Chưa tìm thấy nghĩa.",
+  "dict.definitions.import": "Nhập từ điển",
+  "dict.definitions.emptyHint": "Chưa tìm thấy nghĩa. Nhập từ điển trong Cài đặt → Tài nguyên.",
+
+  "dict.action.sendToCard": "Gửi sang Card Creator",
+  "dict.action.quickAdd": "Thêm nhanh",
+
+  "dict.audio.groups.aria": "Nhóm âm thanh",
+  "dict.audio.group.word": "Nghe từ",
+  "dict.audio.group.sentence": "Nghe câu",
+  "dict.audio.play": "Nghe $1",
+  "dict.audio.playWord": "Nghe phát âm từ",
+  "dict.audio.playSentence": "Nghe phát âm câu",
+
+  "dict.images.empty": "Chưa có hình cho từ này.",
+  "dict.images.searchMore": "Tìm trên Google Images →",
+  "dict.images.scrollLeft": "Cuộn hình sang trái",
+  "dict.images.scrollRight": "Cuộn hình sang phải",
+
+  "dict.translate.empty": "Chưa có bản dịch cho từ này.",
+  "dict.translate.action": "Dịch sang $1",
+
+  "dict.links.empty": "Chưa có liên kết ngoài cho từ này.",
+
+  "dict.error.lookup": "Chưa tra được từ này. Thử lại nhé.",
+  "dict.error.audio": "Chưa tải được âm thanh. Thử lại nhé.",
+  "dict.error.images": "Chưa tải được hình. Thử lại nhé.",
+  "dict.error.translate": "Chưa dịch được. Thử lại nhé.",
+
+  "dict.toast.quickAddNeedDeck": "Thêm nhanh cần chọn bộ thẻ và loại thẻ. Mở Card Creator để cài đặt trước.",
+  "dict.toast.quickAddNeedMapping": "Thêm nhanh cần ghép trường. Mở Card Creator để cài đặt trước.",
+  "dict.toast.quickAddCollecting": "Thêm nhanh — đang thu thập media…",
+  "dict.toast.quickAddFailed": "Thêm nhanh thất bại: $1",
+  "dict.toast.duplicate": "Thẻ này đã tồn tại.",
+  "dict.toast.cardAdded": "Đã thêm thẻ vào $1 (#$2).",
+  "dict.toast.srsAdding": "Đang thêm vào Ocean SRS…",
+  "dict.toast.srsAdded": "Đã thêm vào Ocean SRS.",
+  "dict.toast.srsFailed": "Chưa thêm được vào Ocean SRS: $1"
+}

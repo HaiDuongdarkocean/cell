@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Video Downloader",
+    "description": "Tên extension"
+  },
+  "extDescription": {
+    "message": "Phát hiện và tải video + phụ đề từ các trang xem miễn phí, dành cho người học ngoại ngữ",
+    "description": "Mô tả extension"
+  }
+}
