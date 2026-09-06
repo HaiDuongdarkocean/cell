@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { DeleteConfirmModal } from '@/features/dictionary/ui/DeleteConfirmModal';
 import type { ResourceInfo } from '@/entities/dictionary';
 
-function makeResource(): ResourceInfo {
+function makeResource(overrides: Partial<ResourceInfo> = {}): ResourceInfo {
   return {
     id: 1,
     name: 'words.txt',
@@ -13,14 +13,33 @@ function makeResource(): ResourceInfo {
     wordCount: 100,
     installationFinished: true,
     importedAt: Date.now(),
+    ...overrides,
   };
 }
 
 describe('DeleteConfirmModal', () => {
-  it('renders with resource name + wordCount', () => {
+  it('derives frequency wording from resource.type', () => {
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={jest.fn()} />);
-    expect(screen.getByText(/words.txt/)).toBeInTheDocument();
-    expect(screen.getByText(/100 mục/)).toBeInTheDocument();
+    expect(screen.getByText('Xóa danh sách?')).toBeInTheDocument();
+    expect(screen.getByText(/Xóa vĩnh viễn "words\.txt" và 100 từ của nó\./)).toBeInTheDocument();
+  });
+
+  it('derives dictionary wording from resource.type', () => {
+    render(<DeleteConfirmModal resource={makeResource({ type: 'DICTIONARY' })} onConfirm={jest.fn()} onCancel={jest.fn()} />);
+    expect(screen.getByText('Xóa từ điển?')).toBeInTheDocument();
+  });
+
+  it('renders generic title/description for bulk confirm', () => {
+    render(
+      <DeleteConfirmModal
+        title="Xóa tất cả 3 từ điển?"
+        description="Xóa vĩnh viễn toàn bộ từ điển trong mục này và dữ liệu của chúng."
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Xóa tất cả 3 từ điển?')).toBeInTheDocument();
+    expect(screen.getByText(/Xóa vĩnh viễn toàn bộ từ điển/)).toBeInTheDocument();
   });
 
   it('calls onConfirm when delete button clicked', () => {
@@ -30,10 +49,10 @@ describe('DeleteConfirmModal', () => {
     expect(onConfirm).toHaveBeenCalled();
   });
 
-  it('calls onCancel when cancel button clicked', () => {
+  it('calls onCancel when "Giữ lại" clicked', () => {
     const onCancel = jest.fn();
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText('Hủy bỏ'));
+    fireEvent.click(screen.getByText('Giữ lại'));
     expect(onCancel).toHaveBeenCalled();
   });
 
@@ -47,7 +66,7 @@ describe('DeleteConfirmModal', () => {
   it('does not call onCancel when modal content clicked (stopPropagation)', () => {
     const onCancel = jest.fn();
     render(<DeleteConfirmModal resource={makeResource()} onConfirm={jest.fn()} onCancel={onCancel} />);
-    fireEvent.click(screen.getByText('Xác nhận xóa'));
+    fireEvent.click(screen.getByText('Xóa danh sách?'));
     expect(onCancel).not.toHaveBeenCalled();
   });
 });

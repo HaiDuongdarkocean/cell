@@ -4,13 +4,16 @@ import { useRef, useState, useCallback, type ReactElement, type DragEvent, type 
 import styles from './Dropzone.module.css';
 
 interface DropzoneProps {
+  /** Short verb-first action label, e.g. "Thêm từ điển". */
   readonly label: string;
+  /** Optional secondary hint line (formats, drag-drop note). */
+  readonly hint?: string;
   readonly accept: string;
   readonly disabled: boolean;
   readonly onFiles: (files: File[]) => void;
 }
 
-export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): ReactElement {
+export function Dropzone({ label, hint, accept, disabled, onFiles }: DropzoneProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -63,6 +66,7 @@ export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): R
       data-cell-id="dropzone"
     >
       <p className={styles.label}>{label}</p>
+      {hint && <p className={styles.hint}>{hint}</p>}
       <input
         ref={inputRef}
         type="file"

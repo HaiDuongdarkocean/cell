@@ -1,11 +1,18 @@
 .card {
+  --card-padding: var(--space-2) var(--space-3);
+  --card-radius: var(--radius-dialog);
+}
+
+/* Visual-only dimming for disabled resources — controls remain usable. */
+.cardDisabled {
+  opacity: 0.5;
+}
+
+.row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-height: var(--touch-target-mobile);
-  --card-padding: var(--space-3) var(--space-4);
-  --card-radius: var(--radius-dialog);
 }
 
 .info {
@@ -13,6 +20,7 @@
   flex-direction: column;
   gap: var(--space-0-5);
   min-width: 0;
+  flex: 1;
 }
 
 .name {
@@ -30,6 +38,118 @@
   color: var(--color-text-secondary);
   font-family: var(--font-family);
   letter-spacing: var(--tracking-normal);
+}
+
+.priority {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+
+.reorder {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+/* --- Expanded detail --- */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1) var(--space-1);
+  border-top: var(--border-width-hairline) solid var(--color-border);
+}
+
+.detailNote {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sampleList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sampleItem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+}
+
+.sampleTerm {
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sampleMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+}
+
+.lookupRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lookupInput {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+}
+
+.lookupInput:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.lookupResult {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.lookupMiss {
+  color: var(--color-text-secondary);
+}
+
+.profileBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.profileLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-family);
 }
 
 .skeleton {
