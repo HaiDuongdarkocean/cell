@@ -10,7 +10,7 @@ describe('DictionaryToolbar', () => {
     expect(screen.getByTestId('dictionary-tab-image')).toHaveTextContent('Image');
     expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('Translate');
     expect(screen.getByTestId('dictionary-tab-links')).toHaveTextContent('Links');
-    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('Phonemes');
+    expect(screen.getByTestId('dictionary-tab-pronunciation')).toHaveTextContent('Sounds');
   });
 
   it('calls onSelect with the clicked tab', () => {

@@ -69,7 +69,7 @@ describe('useDictionaryPanel', () => {
 
     act(() => { result.current.search('hello'); });
 
-    await waitFor(() => expect(result.current.error).toBe('lookup failed'));
+    await waitFor(() => expect(result.current.error).toBe("Couldn't look that word up. Try again."));
     expect(result.current.isLoading).toBe(false);
     expect(result.current.currentResult).toBeNull();
   });

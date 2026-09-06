@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/shared/ui/Button';
 
 import { useDictionaryPanel } from './useDictionaryPanel';
+import { t } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { HStack } from '@/shared/ui/Stack';
 import { SearchField } from '@/shared/ui/SearchField';
@@ -286,7 +287,8 @@ export function DictionaryPanelView({
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Type a word"
+            placeholder={t('dict.search.placeholder')}
+            aria-label={t('dict.search.aria')}
             disabled={panel.isLoading}
             className={styles.searchField}
             prefix={null}
@@ -295,7 +297,7 @@ export function DictionaryPanelView({
       )}
 
       {variant !== 'popup' && searchHistory.length > 0 && (
-        <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
+        <section className={styles.searchHistory} aria-label={t('dict.history.aria')} data-cell-id="dictionary-search-history">
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => {
               const isActive = panel.currentResult?.term.toLowerCase() === term.toLowerCase();
@@ -315,8 +317,8 @@ export function DictionaryPanelView({
                   </Button>
                   <Button material="solid" variant="ghost"
                     className={styles.searchHistoryRemove}
-                    aria-label={`Remove ${term} from recent searches`}
-                    title={`Remove ${term}`}
+                    aria-label={t('dict.history.remove', [term])}
+                    title={t('dict.history.removeShort', [term])}
                     onClick={() => handleRemoveHistory(term)}
                     data-cell-id={`dictionary-search-history-remove-${term}`}
                   >
@@ -328,8 +330,8 @@ export function DictionaryPanelView({
           </ul>
           <Button shape="circle" size="xs" material="solid" variant="ghost"
             className={styles.searchHistoryClear}
-            aria-label="Clear recent searches"
-            title="Clear recent searches"
+            aria-label={t('dict.history.clear')}
+            title={t('dict.history.clear')}
             onClick={handleClearHistory}
             data-cell-id="dictionary-search-history-clear"
           >
@@ -343,7 +345,7 @@ export function DictionaryPanelView({
           ? <CandidateSkeleton term={panel.searchTerm.trim()} />
           : <HStack align="center" justify="center" gap="2" className={styles.loading} role="status" data-cell-id="dictionary-loading">
               <Spinner size="md" />
-              <span>Looking up…</span>
+              <span>{t('dict.status.lookingUp')}</span>
             </HStack>
       )}
 
@@ -362,8 +364,8 @@ export function DictionaryPanelView({
           size="compact"
           className={styles.dictionaryEmpty}
           icon={<Icon name="bookOpen"  />}
-          title="Ready when you are"
-          description="Search for a word to explore its meaning."
+          title={t('dict.empty.title')}
+          description={t('dict.empty.desc')}
           data-cell-id="dictionary-empty"
         />
       )}
@@ -475,7 +477,7 @@ function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Eleme
           <Skeleton width={btnSm} height={btnSm} shape="rounded" />
         </div>
 
-        <section className={styles.cellDef} aria-label="Definitions">
+        <section className={styles.cellDef} aria-label={t('dict.definitions.aria')}>
           <div className={checkStyles.cellDefItem}>
             <div className={candidateStyles.cellDefRow}>
               <span className={checkStyles.cellDefCheck}>

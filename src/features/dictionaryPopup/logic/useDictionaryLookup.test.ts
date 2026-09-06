@@ -65,7 +65,7 @@ describe('useDictionaryLookup', () => {
     const { result } = renderHook(() => useDictionaryLookup({ langCode: 'en', sourceLang: 'en', targetLang: 'vi' }));
 
     act(() => { result.current.search('missing'); });
-    await waitFor(() => expect(result.current.error).toBe('lookup failed'));
+    await waitFor(() => expect(result.current.error).toBe("Couldn't look that word up. Try again."));
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.currentResult).toBeNull();

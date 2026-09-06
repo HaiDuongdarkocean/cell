@@ -80,7 +80,7 @@ describe('useDictionaryToolbar — hanging orchestrator', () => {
 
     // The outer 15s timeout on orchestrator.resolve should fire and produce an error.
     await waitFor(
-      () => expect(result.current.audioError).toContain('timeout after 15000ms'),
+      () => expect(result.current.audioError).toBe("Couldn't load audio. Try again."),
       { timeout: 20_000 },
     );
 

@@ -7,6 +7,7 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './TranslatePanel.module.css';
+import { t } from '@/shared/i18n';
 
 export interface TranslatePanelProps {
   readonly term: string;
@@ -54,10 +55,10 @@ export function TranslatePanel({
         <EmptyState
           size="md"
           icon={<Icon name="languages"  />}
-          title="No translation"
+          title={t('dict.translate.empty')}
           action={
             <Button material="solid" variant="outline" size="md" onClick={onTranslate}>
-              Translate to {targetLang}
+              {t('dict.translate.action', [targetLang])}
             </Button>
           }
           data-cell-id="dictionary-translate-empty"
@@ -93,10 +94,10 @@ export function TranslatePanel({
       <EmptyState
         size="md"
         icon={<Icon name="languages"  />}
-        title="No translation"
+        title={t('dict.translate.empty')}
         action={
           <Button material="solid" variant="outline" size="md" loading={loading} onClick={onTranslate}>
-            Translate to {targetLang}
+            {t('dict.translate.action', [targetLang])}
           </Button>
         }
         data-cell-id="dictionary-translate-empty"

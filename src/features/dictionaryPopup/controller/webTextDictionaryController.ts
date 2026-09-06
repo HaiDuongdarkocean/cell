@@ -59,6 +59,7 @@ import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/med
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
+import { t } from '@/shared/i18n';
 import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
 
 /** Minimal cue range used for sentence audio capture. */
@@ -1403,15 +1404,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const tags = restored?.tags ?? freshCcSettings.defaultTags;
 
     if (!deck || !noteType) {
-      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', deps.container, { variant: 'error' });
+      showToast(t('dict.toast.quickAddNeedDeck'), deps.container, { variant: 'error' });
       return;
     }
     if (Object.keys(fieldMapping).length === 0) {
-      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', deps.container, { variant: 'error' });
+      showToast(t('dict.toast.quickAddNeedMapping'), deps.container, { variant: 'error' });
       return;
     }
 
-    showToast('Quick Add — collecting media…', deps.container, { variant: 'info' });
+    showToast(t('dict.toast.quickAddCollecting'), deps.container, { variant: 'info' });
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
 
@@ -1466,25 +1467,25 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     if (result.ok) {
       if (result.noteId === null) {
-        showToast('Card not added — a duplicate may already exist.', deps.container, { variant: 'warning' });
+        showToast(t('dict.toast.duplicate'), deps.container, { variant: 'warning' });
       } else {
-        showToast(`Card added to "${deck}" (#${result.noteId}).`, deps.container, { variant: 'success' });
+        showToast(t('dict.toast.cardAdded', [deck, result.noteId]), deps.container, { variant: 'success' });
       }
     } else {
-      showToast(`Quick Add failed: ${result.error}`, deps.container, { variant: 'error' });
+      showToast(t('dict.toast.quickAddFailed', [result.error ?? '']), deps.container, { variant: 'error' });
     }
   }
 
   async function handlePopupAddToSrs(prefill: PopupCardCreatorPrefill): Promise<void> {
     closePopup();
-    showToast('Adding to Ocean SRS…', deps.container, { variant: 'info' });
+    showToast(t('dict.toast.srsAdding'), deps.container, { variant: 'info' });
     try {
       await addToOceanSrs(prefill);
-      showToast('Added to Ocean SRS.', deps.container, { variant: 'success' });
+      showToast(t('dict.toast.srsAdded'), deps.container, { variant: 'success' });
       await openSrsStudyPage();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showToast(`Add to Ocean SRS failed: ${msg}`, deps.container, { variant: 'error' });
+      showToast(t('dict.toast.srsFailed', [msg]), deps.container, { variant: 'error' });
     }
   }
 

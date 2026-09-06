@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes, type R
 import { Button } from './Button';
 import { Input } from './Input';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
 import styles from './SearchField.module.css';
 
 export interface SearchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange' | 'value' | 'prefix'> {
@@ -57,7 +58,7 @@ export function SearchField({
   const suffix = currentValue && !disabled ? (
     <Button shape="circle" material="solid" variant="ghost"
       className={styles.clear}
-      aria-label="Clear"
+      aria-label={t('ui.searchField.clear')}
       onClick={handleClear}
     >
       <Icon name="x" size={16} />

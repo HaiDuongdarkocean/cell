@@ -8,6 +8,7 @@ import { useOrbitalGesture } from '@/features/dictionaryPopup/badgePointer/useOr
 import { loadOrbitalBadgePosition, saveOrbitalBadgePosition, type OrbitalBadgePosition } from '@/stores/orbitalBadgeStore';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import styles from './OrbitalBadge.module.css';
+import { t } from '@/shared/i18n';
 
 export interface OrbitalBadgeState {
   expanded: boolean;
@@ -377,7 +378,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       }}
       data-edge={isAtEdge ? edge : undefined}
       data-cell-id="orbital-badge"
-      aria-label="Orbital dictionary badge"
+      aria-label={t('dict.badge.aria')}
       role="button"
       onPointerDown={gesture.onPointerDown}
       onPointerMove={gesture.onPointerMove}
@@ -386,7 +387,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     >
       <Button shape="circle" material="solid"
         className={styles.badge}
-        aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
+        aria-label={expanded ? t('dict.badge.drag') : t('dict.badge.open')}
         data-cell-id="orbital-badge-button"
       />
       {(expanded || !isAtEdge || collapsedAtEdge) && (

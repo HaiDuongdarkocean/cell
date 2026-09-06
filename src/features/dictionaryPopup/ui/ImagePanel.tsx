@@ -7,6 +7,7 @@ import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './ImagePanel.module.css';
 import type { ImageItem } from '../types';
+import { t } from '@/shared/i18n';
 
 export interface ImagePanelProps {
   readonly items: readonly ImageItem[];
@@ -74,7 +75,7 @@ export function ImagePanel({
         <EmptyState
           size="md"
           icon={<Icon name="image"  />}
-          title="No images"
+          title={t('dict.images.empty')}
           action={
             <a
               href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
@@ -82,7 +83,7 @@ export function ImagePanel({
               rel="noopener noreferrer"
               className={styles.cellImageEmptyAction}
             >
-              Search Google Images →
+              {t('dict.images.searchMore')}
             </a>
           }
           data-cell-id="dictionary-image-empty"
@@ -129,7 +130,7 @@ export function ImagePanel({
         size="xs"
         shape="circle"
         className={styles.cellImageNavLeft}
-        aria-label="Scroll images left"
+        aria-label={t('dict.images.scrollLeft')}
         disabled={!canScrollLeft}
         onClick={(): void => scroll('left')}
         data-cell-id="dictionary-image-scroll-left"
@@ -142,7 +143,7 @@ export function ImagePanel({
         size="xs"
         shape="circle"
         className={styles.cellImageNavRight}
-        aria-label="Scroll images right"
+        aria-label={t('dict.images.scrollRight')}
         disabled={!canScrollRight}
         onClick={(): void => scroll('right')}
         data-cell-id="dictionary-image-scroll-right"

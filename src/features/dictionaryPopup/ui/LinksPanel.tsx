@@ -2,6 +2,7 @@ import { Icon } from '@/shared/ui/Icon';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import styles from './LinksPanel.module.css';
 import type { ExternalDictLink } from '../types';
+import { t } from '@/shared/i18n';
 
 export interface LinksPanelProps {
   readonly links: readonly ExternalDictLink[];
@@ -14,7 +15,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
         <EmptyState
           size="md"
           icon={<Icon name="link"  />}
-          title="No external links"
+          title={t('dict.links.empty')}
           data-cell-id="dictionary-links-empty"
         />
       ) : (
