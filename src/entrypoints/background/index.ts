@@ -71,6 +71,7 @@ import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
 import { registerFrequencyHandlers } from './handlers/frequency';
+import { registerResourceHandlers } from './handlers/resources';
 import { registerTtsHandlers } from './handlers/tts';
 import { registerLocalTtsHandlers } from './handlers/localTts';
 import { registerTtsDownloadHandlers } from './handlers/ttsDownload';
@@ -269,6 +270,7 @@ export class BackgroundService implements BackgroundContext {
     registerLookupHandlers(this);
     registerWordStatusHandlers(this);
     registerFrequencyHandlers(this);
+    registerResourceHandlers(this);
     registerTtsHandlers(this);
     registerLocalTtsHandlers(this);
     registerTtsDownloadHandlers(this);

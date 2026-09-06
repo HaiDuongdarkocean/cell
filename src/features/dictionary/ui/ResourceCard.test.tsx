@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ResourceCard } from '@/features/dictionary/ui/ResourceCard';
 import type { ResourceInfo } from '@/entities/dictionary';
 
-jest.mock('@/features/dictionary/repositories', () => ({
+jest.mock('@/features/dictionary/services/resourceClient', () => ({
   setResourceEnabled: jest.fn().mockResolvedValue(undefined),
   setResourceProfiles: jest.fn().mockResolvedValue(undefined),
   reorderResources: jest.fn().mockResolvedValue(undefined),
@@ -17,7 +17,7 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   saveSettings: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { setResourceEnabled, sampleFrequencyEntries } from '@/features/dictionary/repositories';
+import { setResourceEnabled, sampleFrequencyEntries } from '@/features/dictionary/services/resourceClient';
 
 const setResourceEnabledMock = setResourceEnabled as jest.MockedFunction<typeof setResourceEnabled>;
 const sampleFrequencyEntriesMock = sampleFrequencyEntries as jest.MockedFunction<typeof sampleFrequencyEntries>;

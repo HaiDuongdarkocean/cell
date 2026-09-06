@@ -1,4 +1,7 @@
-import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
+// NOTE: tokenize controllers run in content scripts — repositories must be
+// reached through resourceClient (background proxy), never directly, or the
+// reads would hit the PAGE's IndexedDB and always come back empty.
+import { listResources } from '@/features/dictionary/services/resourceClient';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 
@@ -24,7 +27,7 @@ export interface FrequencyBandOptions {
  * a storage listener would be the upgrade path if live reload is needed.
  */
 export async function loadFrequencyBandOptions(langCode: string): Promise<FrequencyBandOptions> {
-  const [settings, resources] = await Promise.all([loadSettings(), getAllResources(langCode)]);
+  const [settings, resources] = await Promise.all([loadSettings(), listResources(langCode)]);
   return {
     thresholds: settings.frequencyBands ?? DEFAULT_BAND_THRESHOLDS,
     resourcePriority: resources

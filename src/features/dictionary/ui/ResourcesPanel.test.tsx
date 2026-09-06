@@ -1,18 +1,15 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
-import * as orchestrator from '@/features/dictionary/logic/importOrchestrator';
+import * as client from '@/features/dictionary/services/resourceClient';
 import type { ResourceInfo, ImportResult } from '@/entities/dictionary';
 
-// Mock importOrchestrator
-jest.mock('@/features/dictionary/logic/importOrchestrator', () => ({
+// Mock the resource client — all data ops are proxied to the background
+// because IndexedDB is origin-isolated (in-page panel can't reach the
+// extension's IDB directly).
+jest.mock('@/features/dictionary/services/resourceClient', () => ({
   listResources: jest.fn(),
-  importFile: jest.fn(),
-  deleteResourceCascade: jest.fn(),
-}));
-
-// Mock the repositories barrel — contract fns (reorder/toggle/profiles/samples)
-// are added by the data layer; the UI consumes them from here.
-jest.mock('@/features/dictionary/repositories', () => ({
+  importResourceFile: jest.fn(),
+  deleteResource: jest.fn(),
   reorderResources: jest.fn().mockResolvedValue(undefined),
   setResourceEnabled: jest.fn().mockResolvedValue(undefined),
   setResourceProfiles: jest.fn().mockResolvedValue(undefined),
@@ -27,11 +24,11 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   saveSettings: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { reorderResources } from '@/features/dictionary/repositories';
+import { reorderResources } from '@/features/dictionary/services/resourceClient';
 
-const listResources = orchestrator.listResources as jest.MockedFunction<typeof orchestrator.listResources>;
-const importFile = orchestrator.importFile as jest.MockedFunction<typeof orchestrator.importFile>;
-const deleteResourceCascade = orchestrator.deleteResourceCascade as jest.MockedFunction<typeof orchestrator.deleteResourceCascade>;
+const listResources = client.listResources as jest.MockedFunction<typeof client.listResources>;
+const importFile = client.importResourceFile as jest.MockedFunction<typeof client.importResourceFile>;
+const deleteResourceCascade = client.deleteResource as jest.MockedFunction<typeof client.deleteResource>;
 const reorderResourcesMock = reorderResources as jest.MockedFunction<typeof reorderResources>;
 
 function makeResource(overrides: Partial<ResourceInfo> = {}): ResourceInfo {
