@@ -16,7 +16,7 @@ import {
   sampleFrequencyEntries,
   findFrequencyEntry,
   setResourceProfiles,
-} from '@/features/dictionary/repositories';
+} from '@/features/dictionary/services/resourceClient';
 import type { DictionaryEntry, FrequencyEntry, ResourceInfo } from '@/entities/dictionary';
 import type { LanguageProfile } from '@/entities/settings';
 import styles from './ResourceCard.module.css';

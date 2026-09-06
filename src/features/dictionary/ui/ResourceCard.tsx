@@ -9,7 +9,7 @@ import { useState, type ReactElement } from 'react';
 import { Button, Card } from '@/shared/ui';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Icon } from '@/shared/ui/Icon';
-import { setResourceEnabled } from '@/features/dictionary/repositories';
+import { setResourceEnabled } from '@/features/dictionary/services/resourceClient';
 import type { ResourceInfo } from '@/entities/dictionary';
 import { formatRelativeTime } from './relativeTime';
 import { ResourceDetail } from './ResourceDetail';

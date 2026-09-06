@@ -15,8 +15,14 @@ import { ResourceCard, ResourceCardSkeleton } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { FrequencyBandsEditor } from './FrequencyBandsEditor';
-import { listResources, importFile, deleteResourceCascade } from '@/features/dictionary/logic/importOrchestrator';
-import { reorderResources } from '@/features/dictionary/repositories';
+// Proxied via background: IndexedDB is origin-isolated — direct repo calls
+// from this in-page panel would touch the page's IDB, invisible to lookups.
+import {
+  listResources,
+  importResourceFile as importFile,
+  deleteResource as deleteResourceCascade,
+  reorderResources,
+} from '@/features/dictionary/services/resourceClient';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
 import type { ReadableFile } from '@/features/dictionary/logic/fileDetector';
 import type {

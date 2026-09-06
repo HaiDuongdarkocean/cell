@@ -119,7 +119,18 @@ export type MessageType =
   // Ocean SRS (spec ocean-language-acquisition-srs.md)
   | 'SRS_ADD_NOTE'
   | 'SRS_GET_DECKS_NOTETYPES'
-  | 'SRS_OPEN_STUDY_PAGE';
+  | 'SRS_OPEN_STUDY_PAGE'
+  // Dictionary resources — proxied to background because IndexedDB is
+  // origin-isolated: in-page panels must not touch the page's IDB.
+  | 'RESOURCE_LIST'
+  | 'RESOURCE_DELETE'
+  | 'RESOURCE_REORDER'
+  | 'RESOURCE_SET_ENABLED'
+  | 'RESOURCE_SET_PROFILES'
+  | 'RESOURCE_SAMPLE'
+  | 'RESOURCE_FIND'
+  | 'RESOURCE_IMPORT_CHUNK'
+  | 'RESOURCE_IMPORT_PROGRESS';
 
 // === Message Request ===
 
