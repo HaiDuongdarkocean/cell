@@ -7,6 +7,7 @@ import { Sheet } from '@/shared/ui/Sheet';
 import styles from './PopupDictionary.module.css';
 import type { ComponentProps } from 'react';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
+import { t } from '@/shared/i18n';
 
 export type DictionaryPanelProps = ComponentProps<typeof DictionaryPanelView>;
 
@@ -66,7 +67,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
       <Sheet
         open
         onClose={onClose}
-        aria-label="Dictionary"
+        aria-label={t('dict.sheet.aria')}
         initialHeight={initialSheetHeight}
         onHeightChange={(h) => onSizeChange?.({ width: 0, maxHeight: 0 }, h)}
         data-cell-id="popup-dictionary"
@@ -83,7 +84,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
       variant="popover"
       role="dialog"
       aria-modal="true"
-      aria-label="Dictionary popup"
+      aria-label={t('dict.popup.aria')}
       tabIndex={-1}
       style={{ ...style, ...incomingStyle }}
       data-cell-id="popup-dictionary"

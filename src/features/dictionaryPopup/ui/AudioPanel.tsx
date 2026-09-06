@@ -6,6 +6,7 @@ import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemU
 import checkStyles from './DictionaryCheckable.module.css';
 import styles from './AudioPanel.module.css';
 import type { AudioItem } from '../types';
+import { t } from '@/shared/i18n';
 
 export interface AudioPanelProps {
   readonly items: readonly AudioItem[];
@@ -110,7 +111,7 @@ export function AudioPanel({
         <AudioSkeleton />
       ) : (
         <>
-          <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups" ref={subtabsRef}>
+          <div className={styles.cellAudioSubtabs} role="tablist" aria-label={t('dict.audio.groups.aria')} ref={subtabsRef}>
             {(['word', 'sentence'] as const).map((group) => (
               <button
                 key={group}
@@ -120,7 +121,7 @@ export function AudioPanel({
                 className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
                 onClick={(): void => setActiveGroup(group)}
               >
-                Play {group}
+                {t(group === 'word' ? 'dict.audio.group.word' : 'dict.audio.group.sentence')}
               </button>
             ))}
           </div>
@@ -139,7 +140,7 @@ export function AudioPanel({
                   variant="primary"
                   material="solid"
                   className={styles.cellAudioPlay}
-                  aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
+                  aria-label={t('dict.audio.play', [item.label])}
                   onClick={(): void => {
                     if (isTts || !itemUrl) {
                       if (activeGroup === 'word') onTtsWord();

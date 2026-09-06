@@ -8,7 +8,7 @@ describe('LinksPanel', () => {
     render(<LinksPanel links={[]} />);
 
     const panel = screen.getByTestId('dictionary-links-panel');
-    expect(within(panel).getByText('No external links')).toBeInTheDocument();
+    expect(within(panel).getByText('No external links for this word.')).toBeInTheDocument();
   });
 
   it('renders external links with safe target and rel attributes', () => {

@@ -12,6 +12,7 @@ import type { LookupResult, LookupRequest, WordStatus, DefinitionEntry } from '.
 import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
 import { initDefinitionSelection, getSelectedDefinitions } from './definitionSelection';
+import { t } from '@/shared/i18n';
 
 export interface UseDictionaryLookupOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -200,7 +201,8 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
         if (response?.success && response.data) {
           applyResult(response.data, trimmed, sentence);
         } else {
-          setError(response?.error ?? 'Lookup failed');
+          if (response?.error) console.warn('[dict] lookup failed:', response.error);
+          setError(t('dict.error.lookup'));
           resetResultState();
         }
       })
@@ -208,7 +210,8 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
         if (requestIdRef.current !== requestId) return;
         requestIdRef.current = null;
         setIsLoading(false);
-        setError(err instanceof Error ? err.message : String(err));
+        console.warn('[dict] lookup threw:', err);
+        setError(t('dict.error.lookup'));
         resetResultState();
       });
   }, [langCode, applyResult, resetResultState]);

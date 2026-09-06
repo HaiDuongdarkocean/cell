@@ -66,7 +66,7 @@ describe('AudioPanel', () => {
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
+    const playBtn = within(panel).getByRole('button', { name: /Play .+ TTS/i });
     fireEvent.click(playBtn);
     expect(onTtsWord).toHaveBeenCalled();
   });
@@ -83,7 +83,7 @@ describe('AudioPanel', () => {
 
     const panel = screen.getByTestId('dictionary-audio-panel');
     fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
-    const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
+    const playBtn = within(panel).getByRole('button', { name: /Play .+ TTS/i });
     fireEvent.click(playBtn);
     expect(onTtsSentence).toHaveBeenCalled();
   });

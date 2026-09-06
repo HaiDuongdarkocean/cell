@@ -21,6 +21,7 @@ import type {
   FetchImagesResponse,
   TtsFetchAudioResponse,
 } from '../types';
+import { t } from '@/shared/i18n';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -182,7 +183,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         const items: AudioItem[] = [...wordItems, ...sentenceItems];
 
         if (items.length === 0) {
-          setAudioError(sentenceTtsRes?.error ?? 'Audio fetch failed');
+          if (sentenceTtsRes?.error) console.warn('[dict] audio fetch failed:', sentenceTtsRes.error);
+          setAudioError(t('dict.error.audio'));
         }
 
         if (mountedRef.current && (items.length > 0 || audioItems.length > 0)) {
@@ -193,7 +195,8 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         return items;
       } catch (err: unknown) {
         if (mountedRef.current) {
-          setAudioError(err instanceof Error ? err.message : String(err));
+          console.warn('[dict] audio fetch threw:', err);
+          setAudioError(t('dict.error.audio'));
         }
         return [];
       } finally {
@@ -227,11 +230,17 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           }
           return items;
         }
-        if (mountedRef.current) setImageError(response?.error ?? 'Image fetch failed');
+        if (mountedRef.current) {
+          if (response?.error) console.warn('[dict] image fetch failed:', response.error);
+          setImageError(t('dict.error.images'));
+        }
         return [];
       })
       .catch((err: unknown) => {
-        if (mountedRef.current) setImageError(err instanceof Error ? err.message : String(err));
+        if (mountedRef.current) {
+          console.warn('[dict] image fetch threw:', err);
+          setImageError(t('dict.error.images'));
+        }
         return [];
       })
       .finally(() => {
@@ -251,13 +260,14 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       .then((res) => {
         if (mountedRef.current) {
           setTranslation(res);
-          if (!res) setTranslationError('Translation failed. Please try again.');
+          if (!res) setTranslationError(t('dict.error.translate'));
         }
         return res;
       })
       .catch((err: unknown) => {
         if (mountedRef.current) {
-          setTranslationError(err instanceof Error ? err.message : String(err));
+          console.warn('[dict] translate threw:', err);
+          setTranslationError(t('dict.error.translate'));
         }
         return '';
       })

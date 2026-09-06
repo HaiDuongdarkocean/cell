@@ -143,7 +143,7 @@ describe('DictionaryPanelView', () => {
       />,
     );
 
-    await waitFor(() => expect(screen.getByTestId('dictionary-error')).toHaveTextContent('lookup failed'));
+    await waitFor(() => expect(screen.getByTestId('dictionary-error')).toHaveTextContent("Couldn't look that word up. Try again."));
   });
 
   it('renders empty state before search', async () => {

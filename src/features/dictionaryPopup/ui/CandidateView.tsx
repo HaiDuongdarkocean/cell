@@ -1,13 +1,16 @@
+import { useState, useEffect } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Heading } from '@/shared/ui/Heading';
-import { rankToBand } from '@/shared/lib/frequencyBand';
+import { rankToBand, DEFAULT_BAND_THRESHOLDS, type FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciation';
 import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
 import type { AudioEngineKind } from '@/features/pronunciation/types';
 import { nextStatus } from '../services/wordStatusStore';
+import { t } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
 import { AudioPanel } from './AudioPanel';
 import { ImagePanel } from './ImagePanel';
@@ -18,6 +21,13 @@ import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
 import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind } from '../types';
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms)),
+  ]);
+}
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
   if (!reading) return '';
@@ -99,7 +109,19 @@ export function CandidateView({
   const selectedWordAudio = findSelectedWordAudio(panel.audioItems, panel.audioSelection);
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
-  const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';
+  const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
+  useEffect(() => {
+    let cancelled = false;
+    withTimeout(loadSettings(), 5_000)
+      .then((s) => {
+        const next = s.frequencyBands ?? DEFAULT_BAND_THRESHOLDS;
+        if (!cancelled && next !== frequencyThresholds) setFrequencyThresholds(next);
+      })
+      .catch(() => { /* keep defaults */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank, frequencyThresholds) : 'none';
 
   return (
     <article
@@ -120,8 +142,8 @@ export function CandidateView({
               variant="outline"
               material="solid"
               className={styles.cellHeaderSend}
-              aria-label="Send to Card Creator"
-              title="Send to Card Creator"
+              aria-label={t('dict.action.sendToCard')}
+              title={t('dict.action.sendToCard')}
               onClick={panel.sendToCard}
               data-cell-id="dictionary-send-to-card"
             >
@@ -134,8 +156,8 @@ export function CandidateView({
                 variant="primary"
                 material="solid"
                 className={styles.cellHeaderQuickAdd}
-                aria-label="Quick Add"
-                title="Quick Add"
+                aria-label={t('dict.action.quickAdd')}
+                title={t('dict.action.quickAdd')}
                 onClick={panel.quickAdd}
                 data-cell-id="dictionary-quick-add"
               >
@@ -160,8 +182,8 @@ export function CandidateView({
               variant="ghost"
               material="solid"
               className={styles.cellHeaderAudio}
-              aria-label="Play word audio"
-              title="Play word audio"
+              aria-label={t('dict.audio.playWord')}
+              title={t('dict.audio.playWord')}
               onClick={panel.playTerm}
               data-cell-id="dictionary-play-term"
             >
@@ -173,8 +195,8 @@ export function CandidateView({
               variant="ghost"
               material="solid"
               className={styles.cellHeaderAudio}
-              aria-label="Play sentence audio"
-              title="Play sentence audio"
+              aria-label={t('dict.audio.playSentence')}
+              title={t('dict.audio.playSentence')}
               onClick={panel.playSentence}
               data-cell-id="dictionary-play-sentence"
             >
@@ -187,7 +209,7 @@ export function CandidateView({
             type="button"
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
             onClick={panel.cycleStatus}
-            title={`Click to cycle: ${panel.status} → ${nextStatus(panel.status)}`}
+            title={t('dict.status.cycle', [panel.status, nextStatus(panel.status)])}
             data-cell-id="dictionary-status-cycle"
           >
             {panel.status}
@@ -263,23 +285,23 @@ export function CandidateView({
         )}
         </div>
 
-        <section className={panelStyles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
+        <section className={panelStyles.cellDef} aria-label={t('dict.definitions.aria')} data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <EmptyState
             size="md"
             description={onOpenSettings ? (
               <>
-                No definitions found —{' '}
+                {t('dict.definitions.empty')}{' '}
                 <button
                   type="button"
                   className={styles.cellEmptyLink}
                   onClick={onOpenSettings}
                   data-cell-id="dictionary-import-dictionary"
                 >
-                  Import a dictionary
+                  {t('dict.definitions.import')}
                 </button>
               </>
-            ) : 'No definitions found. Import a dictionary in Settings → Resources.'}
+            ) : t('dict.definitions.emptyHint')}
             data-cell-id="dictionary-definitions-empty"
           />
         ) : (
@@ -314,7 +336,6 @@ function DefinitionItem({
       data-cell-id="dictionary-definition"
       role="checkbox"
       aria-checked={checked}
-      aria-label={`Select definition: ${definition.text}`}
       tabIndex={0}
       onClick={() => onToggle(definition.id, !checked)}
       onKeyDown={(e) => {
