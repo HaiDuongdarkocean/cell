@@ -33,6 +33,14 @@
 .label {
   margin: 0;
   font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
+
+.hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   font-family: var(--font-family);
 }

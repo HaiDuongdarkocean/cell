@@ -7,6 +7,25 @@ describe('Dropzone', () => {
     expect(screen.getByText('Kéo thả file')).toBeInTheDocument();
   });
 
+  it('renders the secondary hint line when provided', () => {
+    render(
+      <Dropzone
+        label="Thêm từ điển"
+        hint="Kéo thả hoặc chọn file · .json, .zip (Yomitan)"
+        accept=".json,.zip"
+        disabled={false}
+        onFiles={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Kéo thả hoặc chọn file · .json, .zip (Yomitan)')).toBeInTheDocument();
+  });
+
+  it('omits the hint line when not provided', () => {
+    render(<Dropzone label="Thêm từ điển" accept=".txt" disabled={false} onFiles={jest.fn()} />);
+    expect(screen.getByText('Thêm từ điển')).toBeInTheDocument();
+    expect(screen.getByTestId('dropzone').querySelectorAll('p')).toHaveLength(1);
+  });
+
   it('calls onFiles when file selected via input', () => {
     const onFiles = jest.fn();
     render(<Dropzone label="test" accept=".txt" disabled={false} onFiles={onFiles} />);

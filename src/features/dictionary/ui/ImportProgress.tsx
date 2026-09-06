@@ -24,7 +24,7 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
         aria-label="Import progress"
       />
       <span className={styles.label}>
-        {processed}{total > 0 ? ` / ${total}` : ''} mục
+        Đang thêm… {processed}{total > 0 ? ` / ${total}` : ''} mục
       </span>
       {onCancel && (
         <Button material="solid" variant="outline" size="sm" onClick={onCancel}>
