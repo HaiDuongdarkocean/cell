@@ -136,7 +136,7 @@ Ask the user to walk through how they do the job **without the tool**.
   6. Desired outcome
   7. Constraint
   8. Scope (MVP + out-of-scope + chosen method)
-- If user cannot answer abstract questions, switch to prototype elicitation (Step 7 `design-from-idea` → Step 8–14 of `interview-me`)
+- If user cannot answer abstract questions, switch to prototype elicitation (Step 7 `/idea-to-interface` generates 3 concepts + live mockup, user picks one, then Step 8–14 of `interview-me` build the real component prototype)
 
 ## Step 4: Doubt-Driven Development (Stress-Test)
 

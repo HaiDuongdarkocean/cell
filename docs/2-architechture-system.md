@@ -1,5 +1,7 @@
 # Architecture System — Video Downloader Extension
 
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+
 > **Đọc file này đầu tiên** sau mỗi context reset để biết cấu trúc dự án.
 > File này là bản đồ: biết sửa file nào, ảnh hưởng file nào.
 > **Update mỗi khi thêm/xóa/sửa file cấu trúc.**

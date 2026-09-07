@@ -44,6 +44,7 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 | W6 | **1 khái niệm = 1 từ, toàn app** | Cùng thứ 2 tên → fail |
 | W7 | **Scan được** — heading mô tả (không phải câu hỏi), bullet thay đoạn | Đọc riêng heading hiểu cấu trúc? |
 | W8 | **Không dùng chữ vá UI** — "click to…", "nhấn vào đây" = design bug | Copy đang giải thích cách dùng → báo UI bug, không viết dài hơn |
+| W9 | **Label nói ý nghĩa tính năng, không nói ID/tên nội bộ** | Người dùng đọc label có biết hệ thống sẽ làm gì không? |
 
 ### Nhóm S — theo bề mặt
 
@@ -83,6 +84,36 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 | L5 | **Cùng ý = cùng key** — không clone message cho từng file | Grep `messages/en.json` trước khi thêm key |
 | L6 | **Error code nội bộ không được trôi ra UI** — map tại boundary sang copy thân thiện | `'worker-not-hydrated'` → `t('dict.error.lookup')` + `console.warn` raw |
 
+## Hỏi trước khi rewrite
+
+> **Một rewrite tốt bắt đầu bằng câu hỏi đúng, không phải cảm tính ngôn từ.**
+
+Khi chuẩn bị viết lại một chuỗi, hãy chạy 16 câu hỏi này. Câu nào trả lời "chưa" hoặc "không" → đó chính là lỗi cần sửa.
+
+| # | Câu hỏi | Luật | Khi nào đặc biệt chú ý |
+|---|---------|------|------------------------|
+| 1 | Người dùng hiểu hành động/kết quả sau 3 giây không? | W1 | Button, heading, error |
+| 2 | Từ quan trọng nhất đã đứng đầu chưa? | W2 | Heading, description, error |
+| 3 | Câu đang dùng chủ động (active voice) hay bị động? | W3 | Tooltip, description, error |
+| 4 | Có ghép 2 ý vào cùng một chuỗi không? | W4 | Description, empty state |
+| 5 | Trẻ 10 tuổi đọc được không? Jargon đã giải thích chưa? | W5 | Tất cả, đặc biệt setting/feature name |
+| 6 | Cùng khái niệm đang được gọi bằng 2 từ khác nhau không? | W6 | Cross-file, cross-card |
+| 7 | Có thể scan qua heading/bullet mà vẫn hiểu cấu trúc không? | W7 | Card title, group label, section |
+| 8 | Chuỗi có đang "vá" lỗi UI ("click to…", "nhấn vào đây") không? | W8 | Button, link, tooltip |
+| 9 | Label đang mô tả tác vụ/kết quả, không phải feature? | S Label | Label hành động, nhóm |
+| 10 | Button có bắt đầu bằng động từ và kết quả rõ không? | S Button | Commit button |
+| 11 | Error có nói nguyên nhân + cách sửa, không đổ lỗi không? | S Error | Toast, alert, inline error |
+| 12 | Placeholder có thay label không? | S Label | Input, search field |
+| 13 | Tooltip có thêm thông tin mới, không lặp label không? | S Tooltip | Icon-only button, dot, badge |
+| 14 | Copy có bình tĩnh, không phán xét, phù hợp 5→80 tuổi không? | E2/E4 | Error, empty state, warning |
+| 15 | Đã qua `t(key)` và có đủ `en` + `vi` chưa? | L1/L3 | Mọi chuỗi ship |
+|| 16 | Đã trace code để biết tính năng này thực sự làm gì chưa? | W9 | Label hành động, nhóm, feature name |
+
+**Nguồn bổ sung để hỏi sâu hơn:**
+- `/inquiry-creativity` — khi cần 5W1H, first-principles, hoặc trade-off matrix trước khi quyết định rewrite.
+- `/education-ui-principles` — khi cần gate persona 5→80, cognitive load, calm tone trước khi build UI.
+- Microsoft Writing Style, Material Content Design, GOV.UK Service Manual, Apple Style Guide — cho các quyết định ngôn ngữ Anh.
+
 ## Workflow
 
 ### Step 1 — Extract
@@ -114,7 +145,26 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 
 **Mục tiêu:** đề xuất chuỗi mới + key.
 
+**Actions:**
+1. Trace code: tìm handler/consumer của action/prop để hiểu tính năng thực sự làm gì (không chỉ dịch từ tên `action` hoặc từ tiếng Anh).
+2. Chạy 16 câu hỏi trong mục **Hỏi trước khi rewrite**. Nếu trả lời được ngay → rewrite. Nếu không → invoke `/inquiry-creativity` hoặc `/education-ui-principles`.
+3. Viết đề xuất vào dòng output.
+4. Đặt message key theo L4.
+
 **Output per dòng:** `file:line | surface | hiện tại | FAIL(mã) | đề xuất | message key`.
+
+**Ví dụ rewrite thường gặp:**
+
+| Sai | Đúng | Luật | Lý do |
+|-----|------|------|-------|
+| `Toggle overlay` | `Show/hide subtitles` | W5/W9 | `Overlay` là jargon; người dùng chỉ thấy phụ đề trên video. |
+| `Toggle panel` | `Show/hide subtitle list` | W5/W9 | `Panel` không nói đó là danh sách câu phụ đề. |
+| `Toggle player mode` | `Full-screen viewing mode` | W5/W9 | `Player mode` là tên nội bộ; cần nói rõ chế độ xem rộng. |
+| `Generate native subtitle` | `Translate to native language` | W5/W9 | `Native` mơ hồ; thực chất là dịch sang ngôn ngữ gốc. |
+| `Card Creator: Quick update` | `Quick add words` | W4/W6/W9 | `Update` sai nghĩa; thực chất là thêm từ mới nhanh. |
+| `Play / pause video` | `Play/pause video` | W1 | Bỏ khoảng trắng thừa, gọn hơn. |
+| `This key is already used by another action` | `Another shortcut uses this key.` | W3/W6 | Active voice + nhất quán thuật ngữ `shortcut`. |
+| `Remap keys for subtitle panel navigation actions` | `Set keys for subtitles, video, and flashcards.` | W2/W5/W9 | Frontload động từ + mô tả đúng phạm vi. |
 
 **Guard:** Rewrite phải sửa đúng luật bị fail — fail W5 thì đơn giản hóa, không được chỉ đổi casing.
 
@@ -159,6 +209,8 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 | Dùng `chrome.i18n.getMessage` cho UI copy | Không tồn tại ngoài extension context → showcase/jest chết | `t()` resolve từ JSON import |
 | Audit riêng từng file rồi dừng | W6 (nhất quán thuật ngữ) chỉ thấy khi nhìn cross-file | Step 6 consistency pass |
 | Viết lại copy trong showcase/test | Demo copy không ship | Out of scope, ghi chú thôi |
+| Nhóm heading chỉ là động từ chung (Toggle / Generate / Navigation) | Không nói *vùng miền* của các action | Dùng danh từ miền: `Display`, `Translation`, `Playback`, `Flashcards` |
+| Dịch từ tiếng Anh mà không trace code | Tên `action` / ID thường gây nhầm | Trace handler → viết theo hành động thực sự xảy ra |
 
 ## Common rationalizations
 
@@ -168,14 +220,19 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 | "String này nội bộ thôi" | Nếu nó render ra màn hình → user-visible → L1. |
 | "Sửa từng từ khi cần" | Không chuẩn = mỗi lần sửa một văn phong → app nói nhiều giọng. Audit theo surface. |
 | "TTS/Card Creator ai cũng hiểu" | Trẻ 10 tuổi không hiểu. Giải thích hoặc đổi từ (W5). |
+| "Cứ dịch từ tiếng Anh sang tiếng Việt là đủ" | Tiếng Anh cũng có thể là jargon. Mọi locale đều cần viết theo ý nghĩa (W9). |
+| "Tên nội bộ/ID là tên đúng" | Tên nội bộ dành cho dev, không phải người dùng. Label phải diễn đạt hành động. |
 
 ## Verification checklist
 
 - [ ] Bảng extract đầy đủ (không sót error text từ hook/controller).
 - [ ] Mọi dòng FAIL có mã luật.
+- [ ] 16 câu hỏi trong mục **Hỏi trước khi rewrite** đã được chạy trước khi viết đề xuất.
+- [ ] Đã trace code của từng action/feature trước khi viết lại label.
 - [ ] Mọi rewrite kèm message key đúng naming.
 - [ ] Không literal user-visible mới trong `.tsx` sau sửa (grep verify).
 - [ ] `dist/_locales/` tồn tại sau build.
+- [ ] Mọi locale (en + vi) được viết theo ý nghĩa tính năng, không chỉ dịch từ tiếng Anh.
 - [ ] Consistency pass W6 chạy cross-file.
 - [ ] Đọc lại trên Chrome thật, viewport 320px.
 
@@ -183,5 +240,6 @@ Nguồn: NN/g (3 C's, copy sizes), Microsoft Writing Style, Material Content Des
 
 - Audit token/CSS/component → `design-system-guardian`.
 - Gate nguyên tắc trước khi build UI → `education-ui-principles`.
+- Cần đặt câu hỏi sắc, first-principles, hoặc trade-off trước khi rewrite → `inquiry-creativity`.
 - Verify trên browser thật → `testing-extension-browser`.
 - Không rõ skill → `using-agent-skills`.

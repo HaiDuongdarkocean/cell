@@ -1,12 +1,13 @@
 # Project Context — Cell
 
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+
 > Context không thay đổi giữa các feature. Skill `elicitation` load file này đầu tiên.
 > Update khi user nói khác. Không tự sửa mà chưa confirm.
 > Tham chiếu: `AGENTS.md` (conventions), `docs/1-share-language.md` (glossary), `docs/2-architechture-system.md` (architecture).
 
 ## design system story
- <!-- anh muốn hệ thống đi theo liquid glass design system. -->
- tôi là Dương, dương của hải dương cũng là dương của thái dương, tôi yêu thiên
+tôi là Dương, dương của hải dương cũng là dương của thái dương, tôi yêu thiên
   nhiên, bản mệnh là mộc, tôi thích những hàng cây với những tán lá đung đưa theo gió, tôi yêu nước vì nó yên bình, nhẹ nhàng, lả
   lướt, mọi thứ đều cần nước để tồn tại, nước phản ánh bản tâm, phản ánh thế giới, cell được sinh ra cũng từ nước lớn lên và phát
   triển, những cú cá tung tắng ở dưới nước làm mặt hồ gợn sóng, những viên sỏi nằm ở dưới đáy hồ cũng làm tôi cảm thấy chúng có một

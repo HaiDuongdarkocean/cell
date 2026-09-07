@@ -215,26 +215,29 @@ If you've gone several rounds and still can't predict: "I've asked X questions a
 
 **Skip in interview-only mode.** Validate with prototype when user can't articulate.
 
-### Step 7: Design Brief (design-from-idea)
+### Step 7: Design Concepts & Mockup (idea-to-interface)
 
-**Before writing code, ground the prototype in the project's design system.**
+**Before writing code, explore alternatives and let the user pick a direction.**
 
 **Actions:**
-- Invoke `/design-from-idea` with the confirmed 8-field frame as the raw idea.
-- Get: component design brief with Design Read, 3 dials (DESIGN_VARIANCE, MOTION_INTENSITY, VISUAL_DENSITY), color/token mapping, typography, layout (320/768/1280/1920), states, component reuse plan, and anti-patterns.
-- The brief becomes the SSOT for the prototype's visual and interaction decisions.
+- Invoke `/idea-to-interface` with the confirmed 8-field frame as the raw idea or confirmed intent.
+- Run the full pipeline: Socratic anchoring → 3 unconstrained concepts → interactive mockup site (Real panel + Concept A/B/C + Mobile/Desktop + Light/Dark) → user choice.
+- Get: `docs/intent/[topic]-design-brief.md` with 3 concept cards, and `src/entrypoints/mockup-[topic]/` with the live mockup.
+- Once the user picks a concept, get `docs/intent/[topic]-component-mapping.md` (reuse / extend / redesign / create).
+- The chosen concept's brief + component mapping become the SSOT for the prototype's visual, interaction, and component decisions.
 
-**Loop back:** If the brief conflicts with the 8-field frame, reconcile with the user before building the prototype.
+**Loop back:** If none of the 3 concepts match the 8-field frame, return to `/idea-to-interface` Step 1 to re-anchor, or reconcile with the user before building the prototype.
 
 ### Step 8: Generate Prototype Page
 
 **Real Cell components, not throwaway HTML.**
 
-1. Create showcase page: import from `@/shared/ui/`, use tokens from `tokens.css`
-2. Logic: state model (React hooks) — flow from frame: detect → list → pick → action → result
-3. UI: real components, responsive (desktop + tablet + Android)
-4. Build: `npx vite build --mode development`
-5. Open via `browser_preview` or showcase URL (see `redesign-in-showcase`)
+1. Use `docs/intent/[topic]-component-mapping.md` from Step 7 to decide reuse / extend / redesign / create for every UI element.
+2. Create showcase page: import from `@/shared/ui/`, use tokens from `tokens.css`
+3. Logic: state model (React hooks) — flow from frame: detect → list → pick → action → result
+4. UI: real components, responsive (desktop + tablet + Android)
+5. Build: `npx vite build --mode development`
+6. Open via `browser_preview` or showcase URL (see `redesign-in-showcase`)
 
 **Logic + UI in parallel.** Not sequential — evolve together.
 

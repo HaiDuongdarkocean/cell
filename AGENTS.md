@@ -3,6 +3,12 @@
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
 > Workflow (LOOP, ponytail, quality gates): các skill trong `.agents/skills/`.
 
+## Quy tắc tự chủ (user mandate)
+
+- **Không cần hỏi user** trước khi thực thi — kể cả hỏi clarifying question hay xin phép. Tự quyết theo judgment tốt nhất, bằng mọi giá đáp ứng được goal đã nêu.
+- Tiếp tục làm cho tới khi goal đạt được; không dừng giữa chừng để hỏi "có muốn tiếp tục không".
+- Vẫn giữ: không phá destructive vô cớ (xóa data, force-push), không commit secret, fix root cause không patch triệu chứng.
+
 ## pipeline 
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -212,6 +218,8 @@ Dùng với mọi máy mobile, tablet, desktop
     -  DON'T inline SVG trong component — import từ `ICON_CATALOG`.
 
 - IF UI/UX task → ALWAYS FIRST READ `src/shared/styles/README.md` (design system trong codebase) → USE token từ `tokens.css` + component pattern từ `src/shared/ui/`.
+
+- Cấu trúc HTML tốt sẽ giảm bớt CSS rất nhiều — sửa markup trước, đừng vá bằng CSS.
 
 ## Ranh giới
 
