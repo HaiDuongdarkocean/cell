@@ -105,7 +105,7 @@ function AccordionTrigger({ children, className }: AccordionTriggerProps): React
   const expanded = Array.isArray(value) ? value.includes(itemValue) : value === itemValue;
 
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={[styles.trigger, expanded ? styles.expanded : '', className ?? ''].filter(Boolean).join(' ')}
       aria-expanded={expanded}
       onClick={() => toggle(itemValue)}

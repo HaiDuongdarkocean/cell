@@ -1,5 +1,5 @@
 .item {
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 .trigger {

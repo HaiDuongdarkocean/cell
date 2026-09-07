@@ -1,5 +1,6 @@
 .capsule {
   flex: 1;
+  flex-shrink: 1;
   min-width: 0;
   display: inline-flex;
   align-items: center;
@@ -8,6 +9,8 @@
   border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   background: color-mix(in srgb, var(--universal-panel-tokenize-capsule-bg) 96%, var(--color-text) 4%);
   box-shadow: var(--shadow-sm);
 }

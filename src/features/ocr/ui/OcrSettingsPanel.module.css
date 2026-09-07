@@ -113,10 +113,9 @@
 }
 
 /* Select — full width in stacked layout.
-   No background/border override: the trigger uses --input-bg which the
-   glass scope (subtitlePanelsShared.module.css) remaps to
-   --color-glass-input-bg automatically. Overriding here with --color-muted
-   would break glass compatibility (solid color on translucent surface). */
+   No background/border override: the trigger uses --input-bg which inherits
+   the surrounding surface automatically. Overriding here with --color-muted
+   would break contrast with the solid panel surface. */
 .langSelect {
   width: 100%;
 }

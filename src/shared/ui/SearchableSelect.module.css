@@ -1,43 +1,55 @@
 /* === SearchableSelect atom — single-select dropdown with embedded search (settings-controls-restyle spec F5) ===
    Reuses MultiSelect filter logic but single-select semantics with check mark.
-   Consumes tokens only — no raw hex/radius. */
+   Consumes tokens only — no raw hex/radius.
+   Visuals synced with Select (Select.module.css): --input-* tokens, borderless
+   filled trigger, shadow-focus (not outline), elevated popover, rounded options. */
 
 .container {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
-/* === Trigger button (same visual as CustomSelect) === */
-.trigger {
+/* === Trigger button — pixel-synced with Select's triggerOutline (SSOT):
+   --input-* tokens, hairline --input-border, focus = shadow-focus, open =
+   border-focus. Scoped under .container so it beats the Button variant
+   classes regardless of CSS order. === */
+.container .trigger {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  min-height: var(--touch-target);
-  padding: var(--space-2-5) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: var(--color-text);
+  min-height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-hairline) solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-fg);
   font-family: var(--font-family);
-  font-size: var(--font-size-base);
+  font-size: var(--input-font-size);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--transition), background var(--transition);
+  transition:
+    border-color var(--duration-fast) var(--ease-in-out),
+    background var(--duration-fast) var(--ease-in-out),
+    box-shadow var(--duration-fast) var(--ease-in-out);
 }
 
-.trigger:hover {
-  border-color: var(--color-text-secondary);
-  background: var(--color-surface-hover);
+.container .trigger:hover {
+  background: var(--color-field-hover);
 }
 
-.trigger:focus-visible,
-.triggerOpen {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-  background: var(--color-background);
+.container .trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.container .triggerOpen {
+  border-color: var(--color-border-focus);
+  background: var(--color-field-hover);
 }
 
 .value {
@@ -48,17 +60,16 @@
   white-space: nowrap;
 }
 
+/* Anchor icon — rendered via Button's trailingIcon prop (a direct flex child
+   of the trigger, so it lands at the outer right edge with no positioning). */
 .chevron {
-  width: var(--space-4);
-  height: var(--space-4);
-  flex-shrink: 0;
   color: var(--color-text-secondary);
-  transition: transform var(--transition), color var(--transition);
+  transition: transform var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
-.triggerOpen .chevron {
-  transform: rotate(180deg);
+.chevronOpen {
   color: var(--color-primary);
+  transform: rotate(180deg);
 }
 
 .triggerDisabled {
@@ -67,48 +78,48 @@
   pointer-events: none;
 }
 
-/* === Menu (with embedded search) === */
-/* Width follows content so a narrow trigger doesn't clip long options,
-   but never shrinks below the trigger and is capped to guard very long
-   items. (ux-dropdown-width-follows-content) */
+/* === Menu (with embedded search) ===
+   In-flow expansion (not an overlay): the menu takes layout space so the
+   containing card grows to fit it — no overflow:hidden clipping, no z-index
+   fights, and nothing covers the content below. */
 .menu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  width: max-content;
-  min-width: 100%;
-  max-width: min(calc(var(--space-5) * 16), calc(100vw - var(--space-8)));
+  position: static;
+  margin-top: var(--space-1);
   display: flex;
   flex-direction: column;
-  background: var(--color-background);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-  z-index: var(--z-dropdown);
+  width: 100%;
+  background: var(--color-surface-elevated);
+  border: none;
+  border-radius: var(--dialog-radius);
+  box-shadow: var(--shadow-popover);
   max-height: min(var(--searchable-select-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow: hidden;
 }
 
-/* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
-.menuAlignLeft {
-  left: 0;
-}
+/* The alignment classes are kept as no-op markers: in-flow menus always
+   expand full-width below the trigger. */
+.menuAlignLeft {}
 
-/* Right-aligned: menu's right edge aligns with trigger's right edge (opens
-   leftward). Use when the select sits on the right side of a row so the
-   menu doesn't overflow the card/container. */
-.menuAlignRight {
-  right: 0;
-  left: auto;
-}
+.menuAlignRight {}
 
-/* === Search input === */
+/* === Search field — the wrap IS the input box: icon lives inside it.
+   focus lands on the wrap via :focus-within, not an outline on the inner
+   <input>. === */
 .searchWrap {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-surface);
+  margin: var(--space-2);
+  min-height: var(--input-height);
+  padding: 0 var(--input-padding-x);
+  background: var(--input-bg);
+  border: var(--border-width-hairline) solid var(--input-border);
+  border-radius: var(--input-radius);
+}
+
+.searchWrap:focus-within {
+  box-shadow: var(--shadow-focus);
 }
 
 .searchIcon {
@@ -121,21 +132,17 @@
 .searchInput {
   flex: 1;
   min-width: 0;
+  min-height: var(--input-height);
   border: none;
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
+  outline: none;
 }
 
 .searchInput::placeholder {
   color: var(--color-text-secondary);
-}
-
-.searchInput:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-  border-radius: var(--radius-sm);
 }
 
 /* === Options list === */
@@ -144,8 +151,11 @@
   flex: 1 1 auto;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--space-1);
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -155,9 +165,11 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  transition: background var(--transition);
+  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
 .option:hover,
@@ -167,6 +179,7 @@
 
 .optionSelected {
   background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .optionLabel {
@@ -177,6 +190,10 @@
   white-space: nowrap;
   font-size: var(--font-size-base);
   color: var(--color-text);
+}
+
+.optionSelected .optionLabel {
+  color: var(--color-primary);
 }
 
 .checkMark {
@@ -195,8 +212,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trigger,
-  .chevron {
+  .container .trigger,
+  .chevron,
+  .option {
     transition: none;
   }
 }

@@ -4,8 +4,8 @@
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  transition: width var(--duration-200) var(--ease-standard),
-    height var(--duration-200) var(--ease-standard);
+  transition: width var(--duration-normal) var(--ease-standard),
+    height var(--duration-normal) var(--ease-standard);
   box-shadow: var(--color-shadow);
 }
 

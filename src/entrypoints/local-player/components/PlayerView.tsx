@@ -410,7 +410,7 @@ export function PlayerView({
               <div className={styles.noSubtitleBanner} data-cell-id="no-subtitle-banner">
                 <Icon name="captions" size={20} />
                 <span>No subtitle found</span>
-                <Button material="solid" variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
+                <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
                   Open subtitle file
                 </Button>
               </div>
@@ -420,7 +420,7 @@ export function PlayerView({
               <div className={styles.noSubtitleBanner} data-cell-id="subtitle-error-banner">
                 <Icon name="triangleAlert" size={16} />
                 <span>Subtitle access unavailable on this browser</span>
-                <Button material="solid" variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
+                <Button variant="secondary" size="sm" onClick={onOpenSubtitle} leadingIcon={<Icon name="fileVideo" size={16} />}>
                   Open subtitle file
                 </Button>
               </div>
@@ -440,7 +440,6 @@ export function PlayerView({
 
             <div className={styles.controlsOverlay} data-cell-id="controls-overlay"
               data-visible={controlsVisible}
-              style={{ opacity: controlsVisible ? '1' : '0', pointerEvents: controlsVisible ? 'auto' : 'none' }}
             >
               <PlayerControls
                 isPlaying={controls.isPlaying}

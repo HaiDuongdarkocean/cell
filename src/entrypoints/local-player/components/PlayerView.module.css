@@ -72,10 +72,13 @@
               visibility var(--duration-normal);
 }
 
-/* Hidden state (data-visible="false" — toggled inline via opacity):
-   visibility removes the controls from the tab order / a11y tree once the
-   fade-out finishes (visibility transitions as a discrete step at the end). */
+/* Hidden state (data-visible="false" — opacity/pointer-events toggle here,
+   not inline). visibility removes the controls from the tab order / a11y
+   tree once the fade-out finishes (visibility transitions as a discrete
+   step at the end); pointer-events must drop immediately during the fade. */
 .controlsOverlay[data-visible="false"] {
+  opacity: 0;
+  pointer-events: none;
   visibility: hidden;
 }
 

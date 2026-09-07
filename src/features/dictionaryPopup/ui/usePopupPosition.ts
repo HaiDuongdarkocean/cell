@@ -291,8 +291,8 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     }
     // Sheet content drag released above dismiss threshold — spring back to
     // resting position instead of snapping instantly. --ease-spring gives a
-    // subtle overshoot that feels like iOS sheet physics. Mirrors --duration-200.
-    setTransition('transform var(--duration-200) var(--ease-spring)');
+    // subtle overshoot that feels like iOS sheet physics.
+    setTransition('transform var(--duration-normal) var(--ease-spring)');
     setTransform('translateY(0)');
     if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
     snapBackTimerRef.current = setTimeout(() => {

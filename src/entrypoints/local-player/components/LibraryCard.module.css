@@ -68,8 +68,8 @@
 
 .pct {
   position: relative;
-  /* design-system: intentional — 11px fits the % readout inside the 40px progress ring. */
-  font-size: 11px;
+  /* design-system: --font-size-xs (12px) is the closest token to 11px for the % readout inside the 40px progress ring. */
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
   color: var(--color-text);
@@ -158,17 +158,17 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  /* design-system: intentional — .04em tracking for the uppercase micro-label. */
-  letter-spacing: 0.04em;
+  /* design-system: --tracking-wide (0.03em) is the closest token to 0.04em for the uppercase micro-label. */
+  letter-spacing: var(--tracking-wide);
 }
 
 /* === Responsive — mobile === */
 @media (max-width: 599px) {
-  .leading { width: 36px; height: 36px; } /* design-system: intentional — 36px shrinks the ring below the 40px (--space-10) desktop size; no 36px space token exists. */
-  .pct { font-size: 10px; } /* design-system: intentional — 10px fits the % readout inside the 36px mobile ring. */
+  .leading { width: var(--space-9); height: var(--space-9); } /* 36px ring shrinks below the 40px (--space-10) desktop size. */
+  .pct { font-size: var(--font-size-2xs); } /* 10px % readout fits the 36px mobile ring. */
   .name { font-size: var(--font-size-sm); }
   .meta { gap: var(--space-1-5); }
-  .subs { padding-left: calc(var(--space-3) + 36px + var(--space-2)); } /* design-system: intentional — 36px tracks the mobile .leading width; no 36px space token exists. */
+  .subs { padding-left: calc(var(--space-3) + var(--space-9) + var(--space-2)); } /* --space-9 tracks the mobile .leading width. */
 }
 
 @media (prefers-reduced-motion: reduce) {

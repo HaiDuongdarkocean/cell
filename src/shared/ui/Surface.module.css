@@ -36,18 +36,6 @@
   border-radius: var(--card-radius);
 }
 
-/* Glass — translucent frosted surface using liquid-glass tokens */
-.glass {
-  background: var(--color-glass-surface);
-  color: var(--color-glass-text-primary);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
-  border-radius: var(--radius-2xl);
-  box-shadow:
-    var(--shadow-floating),
-    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
-  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
-}
-
 /* Padding scale (only applied when prop is passed) */
 .padding0 { padding: var(--space-0); }
 .padding0-5 { padding: var(--space-0-5); }

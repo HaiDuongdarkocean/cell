@@ -139,7 +139,7 @@ export function CardCreatorSettingsPanel({
             {buildStatusDetail(status, version, settings.ankiConnectUrl)}
           </span>
         </div>
-        <Button material="solid"
+        <Button
           variant="outline"
           size="sm"
           onClick={handleTest}
@@ -169,7 +169,6 @@ export function CardCreatorSettingsPanel({
                     onChange({ autoCompleteToggles: toggles as Record<AutoCompletableField, boolean> });
                   }}
                   ariaLabel={`Auto-complete ${fieldLabel}`}
-                  size="sm"
                   dataTestId={`cc-autocomplete-${field}`}
                 />
                 {fieldLabel}

@@ -12,6 +12,7 @@
   width: 94%;
   height: 94%;
   max-width: calc(var(--space-5) * 64);
+  min-width: 0;
   display: flex;
   box-shadow: var(--panel-shadow);
   will-change: transform, opacity;

@@ -6,11 +6,13 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { mockTargetCues, mockNativeCues } from './mockCues';
-import { MOCK_LOOKUP_RESULT } from './mockDictionary';
+import { getMockCues, getMockCueActiveIndex } from './mockCues';
+import { getMockLookupResult, MOCK_LOOKUP_RESULT } from './mockDictionary';
+import { getMockCardCreatorQueue } from './showcaseFixtures';
+import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 import { createEmptyDraft } from '@/features/cardCreator/state/cardDraft';
 import type { CardCreatorState, LoadStatus } from '@/features/cardCreator/ui/useCardCreatorState';
-import type { CardCreatorQueueItem, Toast } from '@/features/cardCreator/types';
+import type { Toast } from '@/features/cardCreator/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrtCue } from '@/entities/media/types';
 import type { LookupResult } from '@/features/dictionaryPopup/types';
@@ -27,12 +29,16 @@ export const MockCuesContext = createContext<MockCuesValue | null>(null);
 
 export function MockCuesProvider({ children }: { readonly children: ReactNode }): React.JSX.Element {
   const value: MockCuesValue = useMemo(
-    () => ({
-      targetCues: mockTargetCues,
-      nativeCues: mockNativeCues,
-      targetActiveIndex: 1,
-      nativeActiveIndex: 1,
-    }),
+    () => {
+      const { targetCues, nativeCues } = getMockCues(SHOWCASE_DATA);
+      const activeIndex = getMockCueActiveIndex(SHOWCASE_DATA);
+      return {
+        targetCues,
+        nativeCues,
+        targetActiveIndex: activeIndex,
+        nativeActiveIndex: activeIndex,
+      };
+    },
     [],
   );
   return <MockCuesContext.Provider value={value}>{children}</MockCuesContext.Provider>;
@@ -46,12 +52,16 @@ export function useMockCues(): MockCuesValue {
 
 function useMockCuesValue(): MockCuesValue {
   return useMemo(
-    () => ({
-      targetCues: mockTargetCues,
-      nativeCues: mockNativeCues,
-      targetActiveIndex: 1,
-      nativeActiveIndex: 1,
-    }),
+    () => {
+      const { targetCues, nativeCues } = getMockCues(SHOWCASE_DATA);
+      const activeIndex = getMockCueActiveIndex(SHOWCASE_DATA);
+      return {
+        targetCues,
+        nativeCues,
+        targetActiveIndex: activeIndex,
+        nativeActiveIndex: activeIndex,
+      };
+    },
     [],
   );
 }
@@ -64,7 +74,7 @@ export interface MockDictionaryValue {
 export const MockDictionaryContext = createContext<MockDictionaryValue | null>(null);
 
 export function MockDictionaryProvider({ children }: { readonly children: ReactNode }): React.JSX.Element {
-  const value: MockDictionaryValue = useMemo(() => ({ lookupResult: MOCK_LOOKUP_RESULT }), []);
+  const value: MockDictionaryValue = useMemo(() => ({ lookupResult: getMockLookupResult(SHOWCASE_DATA) }), []);
   return <MockDictionaryContext.Provider value={value}>{children}</MockDictionaryContext.Provider>;
 }
 
@@ -95,26 +105,43 @@ function makePlaceholderAudioFile(filename: string): MediaFile {
   return { kind: 'audio', filename, mimeType: 'audio/wav', data };
 }
 
-const INITIAL_QUEUE: readonly CardCreatorQueueItem[] = [
-  { term: 'serendipity', definitions: 'the occurrence of events by chance in a happy or beneficial way', status: 'unknown' },
-  { term: 'ephemeral', definitions: 'lasting for a very short time', status: 'tracking' },
-];
+function getMockTags(variant: DataVariant): string {
+  if (variant === 'empty') return '';
+  if (variant === 'overflow') {
+    return Array.from({ length: 40 }, (_, i) => `tag${i + 1}`).join(', ');
+  }
+  return 'demo, showcase';
+}
+
+function getMockImages(variant: DataVariant): MediaFile[] {
+  if (variant === 'empty') return [];
+  if (variant === 'overflow') {
+    return [
+      makePlaceholderImageFile('overflow-screenshot.svg'),
+      makePlaceholderImageFile('overflow-image-2.svg'),
+    ];
+  }
+  return [makePlaceholderImageFile('card-preview-1.svg')];
+}
 
 function useMockCardCreatorState(): CardCreatorState {
   const [state, setState] = useState<CardCreatorState>(() => {
+    const queue = getMockCardCreatorQueue(SHOWCASE_DATA);
+    const firstItem = queue[0];
     const draft = createEmptyDraft('Basic', 'Default');
+    const variant = SHOWCASE_DATA;
     return {
       draft: {
         ...draft,
         fields: {
           ...draft.fields,
-          targetWord: INITIAL_QUEUE[0].term,
-          sentence: 'We found the restaurant by pure serendipity.',
+          targetWord: firstItem?.term ?? '',
+          sentence: variant === 'empty' ? '' : 'We found the restaurant by pure serendipity.',
           sentenceTranslation: '',
-          definitions: INITIAL_QUEUE[0].definitions,
-          images: [makePlaceholderImageFile('card-preview-1.svg')],
-          sentenceAudios: [makePlaceholderAudioFile('sentence-audio.wav')],
-          wordAudios: [makePlaceholderAudioFile('word-audio.wav')],
+          definitions: firstItem?.definitions ?? '',
+          images: getMockImages(variant),
+          sentenceAudios: variant === 'empty' ? [] : [makePlaceholderAudioFile('sentence-audio.wav')],
+          wordAudios: variant === 'empty' ? [] : [makePlaceholderAudioFile('word-audio.wav')],
           note: '',
           moreExample: '',
         },
@@ -126,7 +153,7 @@ function useMockCardCreatorState(): CardCreatorState {
           sentenceAudios: 'Audio',
           wordAudios: 'Audio',
         },
-        tags: 'demo, showcase',
+        tags: getMockTags(variant),
         mediaUpdateMode: 'overwrite',
       },
       decks: ['Default', 'Learning'],
@@ -140,9 +167,9 @@ function useMockCardCreatorState(): CardCreatorState {
       capturingMedia: false,
       toasts: [],
       initialAction: undefined,
-      queueItems: INITIAL_QUEUE,
-      queueActiveIndex: 0,
-      queueSidebarOpen: true,
+      queueItems: queue,
+      queueActiveIndex: queue.length > 0 ? 0 : -1,
+      queueSidebarOpen: queue.length >= 2,
       selectQueueItem: () => {},
       deleteQueueItem: () => {},
       undoDeleteQueueItem: () => {},

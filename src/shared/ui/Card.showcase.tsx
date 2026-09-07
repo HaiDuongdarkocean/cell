@@ -33,9 +33,9 @@ export function Showcase(): ReactElement {
         <strong>{selected ? 'Selected' : 'Selectable'}</strong>
         <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Click to toggle.</p>
       </Card>
-      <Card variant="glass" style={medium}>
-        <strong>Glass</strong>
-        <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Frosted, translucent surface.</p>
+      <Card variant="interactive" style={medium}>
+        <strong>Interactive Medium</strong>
+        <p style={{ margin: 'var(--space-1) 0 0', fontSize: 'var(--font-size-sm)' }}>Solid surface on hover.</p>
       </Card>
       <Card style={{ padding: 'var(--space-4)' }}>
         <Button size="sm">Action inside</Button>

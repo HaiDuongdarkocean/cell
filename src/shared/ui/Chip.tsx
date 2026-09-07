@@ -57,7 +57,7 @@ export function Chip({
     const { as: _as, ...buttonRest } = rest;
     void _as;
     return (
-      <Button material="solid" variant="secondary" className={cls} aria-pressed={selected} {...buttonRest}>
+      <Button variant="secondary" className={cls} aria-pressed={selected} {...buttonRest}>
         {icon}
         <span className={styles.label}>{children}</span>
       </Button>

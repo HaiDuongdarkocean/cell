@@ -7,7 +7,7 @@ import {
 } from '@/features/theme/logic/themeStorage';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
-import type { ThemeConfig, CoreColorTokens, CoreColorTokenKey } from '@/entities/theme';
+import type { ThemeConfig, CoreColorTokens } from '@/entities/theme';
 
 // --- chrome.storage.local mock ---
 
@@ -131,4 +131,4 @@ describe('themeStorage', () => {
 });
 
 // Re-export for type-checking the unused-import lint guard (no runtime use).
-export type { CoreColorTokens, CoreColorTokenKey };
+export type { CoreColorTokens };

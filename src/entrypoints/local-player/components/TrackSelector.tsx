@@ -37,7 +37,7 @@ function TrackSelectorInner({
         {options.map((opt) => {
           const isActive = opt.filename === currentTarget || opt.filename === currentNative;
           return (
-            <Button material="solid" variant="secondary"
+            <Button variant="secondary"
               key={opt.filename}
               className={`${styles.item} ${isActive ? styles.active : ''}`}
               onClick={() => onSelectTrack(opt)}

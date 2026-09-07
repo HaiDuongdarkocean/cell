@@ -57,6 +57,9 @@ export function BottomSheet({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
+      // Consume the key so ancestor surfaces (e.g. UniversalPanel) don't
+      // close too — one Escape closes one layer.
+      e.stopPropagation();
       onOpenChange?.(false);
     }
   };
@@ -101,7 +104,7 @@ export function BottomSheet({
             {title && (
               <Heading level={2} id="bottom-sheet-title" className={styles.title}>{title}</Heading>
             )}
-            <Button shape="circle" material="solid"
+            <Button shape="circle"
               size="sm"
               variant="ghost"
               aria-label="Close"

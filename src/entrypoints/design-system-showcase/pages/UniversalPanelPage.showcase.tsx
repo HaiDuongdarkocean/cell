@@ -7,6 +7,7 @@ import type { UniversalPanelTab } from '@/features/universalPanel/types';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { PresetName } from '@/entities/theme';
 import { installMockDictionarySendMessage } from '../mockDictionary';
+import { getMockUniversalPanelProfiles } from '../showcaseFixtures';
 import styles from './UniversalPanelPage.module.css';
 
 // Install mock sendMessage so DictionaryPanelView can fetch mock data
@@ -19,11 +20,7 @@ const INITIAL_TOKENIZE: TokenizePanelState = {
   subtitleEnabled: false,
 };
 
-const LANGUAGE_PROFILES = [
-  { id: 'vi-en', name: 'vietnamese → english', target: 'vi' },
-  { id: 'en-vi', name: 'english → vietnamese', target: 'en' },
-  { id: 'ja-en', name: 'japanese → english', target: 'ja' },
-];
+const LANGUAGE_PROFILES = getMockUniversalPanelProfiles();
 
 const VALID_TABS: UniversalPanelTab[] = ['dictionary', 'studyModes', 'settings'];
 const VALID_PRESETS: PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
@@ -48,7 +45,7 @@ export function Showcase(): ReactElement {
   const [activeTab, setActiveTab] = useState<UniversalPanelTab>(initial.tab);
   const [tokenizeState, setTokenizeState] = useState<TokenizePanelState>(INITIAL_TOKENIZE);
   const [hasMedia, setHasMedia] = useState(true);
-  const [activeProfileId, setActiveProfileId] = useState('vi-en');
+  const [activeProfileId, setActiveProfileId] = useState(LANGUAGE_PROFILES[0]?.id ?? '');
 
   const handleToggleTokenize = (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled'): void => {
     setTokenizeState((prev) => ({ ...prev, [key]: !prev[key] }));

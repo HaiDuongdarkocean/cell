@@ -1,0 +1,397 @@
+.maPage {
+  min-height: 100vh;
+  padding: var(--space-4);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+}
+
+.maHeader {
+  max-width: 960px;
+  margin: 0 auto var(--space-5);
+}
+
+.maTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.maSubtitle {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-relaxed);
+}
+
+.maControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.maSeg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-pill);
+}
+
+.maSeg button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  min-height: var(--touch-target-desktop);
+}
+
+.maSeg button[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.maSeg button:hover {
+  background: var(--color-surface-hover);
+}
+
+.maConceptNote {
+  max-width: 960px;
+  margin: 0 auto var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.maStage {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  container-type: inline-size;
+}
+
+.maStage[data-viewport="desktop"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.maStage[data-viewport="mobile"] {
+  grid-template-columns: 1fr;
+}
+
+.maStageCol {
+  min-width: 0;
+}
+
+/* Real panel */
+.realCard {
+  width: 100%;
+}
+
+.realHeader {
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.realTitle {
+  margin: 0 0 var(--space-1);
+}
+
+.realDesc {
+  margin: 0;
+}
+
+.realBody {
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+/* Concept frames */
+.conceptFrame {
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.conceptSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.conceptHint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.conceptLabel {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.conceptField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.conceptSeg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.conceptChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.conceptTimelineRow {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+}
+
+.conceptTimelineRow:last-child {
+  border-bottom: none;
+}
+
+.conceptTimelineNum {
+  flex: 0 0 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--space-2);
+}
+
+.conceptTimelineBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.conceptTimelineLabel {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* Concept C2 — Connected timeline */
+.conceptTimelineConnected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.conceptTimelineItem {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.conceptTimelineTrack {
+  flex: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+}
+
+.conceptTimelineDot {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.conceptTimelineLine {
+  flex: 1;
+  width: 2px;
+  min-height: var(--space-4);
+  background: var(--color-primary);
+  opacity: 0.3;
+}
+
+.conceptTimelineContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  min-width: 0;
+}
+
+/* Pill group */
+.pillGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.pill {
+  appearance: none;
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  min-height: var(--touch-target-desktop);
+}
+
+.pill:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.pillActive {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  border-color: var(--color-primary);
+}
+
+.pillActive:hover {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* Concept C3 — Step cards */
+.conceptStepCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.conceptStepCard {
+  padding: var(--space-3);
+}
+
+.conceptStepHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.conceptStepNum {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.conceptStepTitle {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* Orbital card */
+.orbitalCard {
+  width: 100%;
+}
+
+.orbitalHeader {
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+
+.orbitalTitle {
+  margin: 0 0 var(--space-1);
+}
+
+.orbitalDesc {
+  margin: 0;
+}
+
+.orbitalBody {
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.orbitalPreviewBox {
+  position: relative;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.orbitalPreviewBadge {
+  position: relative;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  box-shadow: var(--shadow-popover);
+  pointer-events: none;
+}
+
+.orbitalPreviewPointer {
+  display: block;
+}
+
+.orbitalField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.orbitalLabel {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.orbitalSliderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.orbitalValue {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}

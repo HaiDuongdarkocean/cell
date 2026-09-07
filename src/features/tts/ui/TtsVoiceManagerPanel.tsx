@@ -33,6 +33,8 @@ export const DEFAULT_TTS_SETTINGS: TtsSettings = {
 interface TtsVoiceManagerPanelProps {
   readonly settings: TtsSettings;
   readonly onSave: (tts: TtsSettings) => void;
+  /** Whether to show the local TTS language-pack card at the bottom. */
+  readonly showLocalTtsCard?: boolean;
 }
 
 /** Tester row — a voice with selection + order state for the tester card. */
@@ -57,7 +59,11 @@ function uniqueLangPrefixes(voices: readonly TtsVoiceInfo[]): string[] {
   return Array.from(set).sort();
 }
 
-export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelProps): ReactElement {
+export function TtsVoiceManagerPanel({
+  settings,
+  onSave,
+  showLocalTtsCard = true,
+}: TtsVoiceManagerPanelProps): ReactElement {
   const [voices, setVoices] = useState<TtsVoiceInfo[]>([]);
   const [voicesLoading, setVoicesLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -316,7 +322,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 <div className={styles.voiceSelectionList} role="list" data-cell-id="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
-                      <Button shape="circle" material="solid"
+                      <Button shape="circle"
                         size="sm"
                         onClick={() => void handlePlayVoice(v.voiceName)}
                         disabled={playing}
@@ -364,7 +370,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           </div>
 
           <div className={styles.actions}>
-            <Button material="solid" variant="primary" onClick={handleSaveSlots} data-cell-id="tts-save-settings">
+            <Button variant="primary" onClick={handleSaveSlots} data-cell-id="tts-save-settings">
               Save settings
             </Button>
           </div>
@@ -410,7 +416,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             <div className={styles.row__label}>Voices</div>
             <div className={styles.row__control}>
               <div className={styles.ttsHeader}>
-                <Button material="solid"
+                <Button
                   variant="secondary"
                   onClick={handleDeleteSelection}
                   data-cell-id="tts-clear-selection"
@@ -418,7 +424,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                   Delete selection ({selectedCount})
                 </Button>
                 <div className={styles.ttsHeader__actions}>
-                  <Button material="solid"
+                  <Button
                     variant="primary"
                     onClick={() => void handlePlayAll()}
                     loading={playing}
@@ -426,7 +432,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                   >
                     Play all audios
                   </Button>
-                  <Button material="solid"
+                  <Button
                     variant="secondary"
                     onClick={handleSaveVoiceList}
                     data-cell-id="tts-save-voice-list"
@@ -454,7 +460,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                       onChange={(e) => handleOrderChange(row.voiceName, Number(e.target.value))}
                       aria-label="Thứ tự"
                     />
-                    <Button shape="circle" material="solid" variant="ghost"
+                    <Button shape="circle" variant="ghost"
                       className={styles.voicePlayBtn}
                       onClick={() => void handlePlayVoice(row.voiceName)}
                       disabled={playing}
@@ -480,9 +486,11 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           </div>
         </div>
       </Card>
-      <Card className={styles.localTtsCard} data-cell-id="local-tts-languages-card">
-        <TtsLanguagePanel settings={settings} onSave={onSave} />
-      </Card>
+      {showLocalTtsCard && (
+        <Card className={styles.localTtsCard} data-cell-id="local-tts-languages-card">
+          <TtsLanguagePanel settings={settings} onSave={onSave} />
+        </Card>
+      )}
     </div>
   );
 }

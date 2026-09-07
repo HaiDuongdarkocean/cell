@@ -4,11 +4,13 @@ import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBot
 import { Button } from '@/shared/ui/Button';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import type { CardCreatorOpenContext } from '@/features/cardCreator/types';
+import { getMockCardCreatorQueue } from '../showcaseFixtures';
 import styles from './CardCreatorDialogPage.module.css';
 
 const MOCK_CONTEXT: CardCreatorOpenContext = {
   sourceLang: 'en',
   targetLang: 'vi',
+  queue: getMockCardCreatorQueue(),
   prefill: {
     targetWord: 'serendipity',
     definitions: 'the occurrence of events by chance in a happy or beneficial way',

@@ -12,6 +12,8 @@ import type { CardCreatorState, LoadStatus } from '@/features/cardCreator/ui/use
 import { createEmptyDraft } from '@/features/cardCreator/state/cardDraft';
 import type { CardCreatorQueueItem, Toast } from '@/features/cardCreator/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
+import { getMockCardCreatorQueue } from './showcaseFixtures';
+import { SHOWCASE_DATA } from './showcaseParams';
 import styles from './App.module.css';
 
 const SILENT_WAV_BASE64 = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
@@ -36,26 +38,25 @@ function makePlaceholderAudioFile(filename: string): MediaFile {
   return { kind: 'audio', filename, mimeType: 'audio/wav', data };
 }
 
-const INITIAL_QUEUE: readonly CardCreatorQueueItem[] = [
-  { term: 'serendipity', definitions: 'the occurrence of events by chance in a happy or beneficial way', status: 'unknown' },
-  { term: 'ephemeral', definitions: 'lasting for a very short time', status: 'tracking' },
-  { term: 'luminous', definitions: 'full of or shedding light; bright or shining', status: 'unknown' },
-];
+const INITIAL_QUEUE = getMockCardCreatorQueue(SHOWCASE_DATA);
 
 function initialState(): CardCreatorState {
+  const queue = INITIAL_QUEUE;
+  const firstItem = queue[0];
+  const variant = SHOWCASE_DATA;
   const draft = createEmptyDraft('Basic', 'Default');
   return {
     draft: {
       ...draft,
       fields: {
         ...draft.fields,
-        targetWord: INITIAL_QUEUE[0].term,
-        sentence: 'We found the restaurant by pure serendipity.',
+        targetWord: firstItem?.term ?? '',
+        sentence: variant === 'empty' ? '' : 'We found the restaurant by pure serendipity.',
         sentenceTranslation: '',
-        definitions: INITIAL_QUEUE[0].definitions,
-        images: [makePlaceholderImageFile('card-preview-1.svg')],
-        sentenceAudios: [makePlaceholderAudioFile('sentence-audio.wav')],
-        wordAudios: [makePlaceholderAudioFile('word-audio.wav')],
+        definitions: firstItem?.definitions ?? '',
+        images: variant === 'empty' ? [] : [makePlaceholderImageFile('card-preview-1.svg')],
+        sentenceAudios: variant === 'empty' ? [] : [makePlaceholderAudioFile('sentence-audio.wav')],
+        wordAudios: variant === 'empty' ? [] : [makePlaceholderAudioFile('word-audio.wav')],
         note: '',
         moreExample: '',
       },
@@ -64,7 +65,7 @@ function initialState(): CardCreatorState {
         sentence: 'Back',
         definitions: 'Definitions',
       },
-      tags: 'demo, showcase',
+      tags: variant === 'overflow' ? Array.from({ length: 40 }, (_, i) => `tag${i + 1}`).join(', ') : 'demo, showcase',
       mediaUpdateMode: 'overwrite',
     },
     decks: ['Default', 'Learning', 'French'],
@@ -77,9 +78,9 @@ function initialState(): CardCreatorState {
     submitting: false,
     capturingMedia: false,
     toasts: [],
-    queueItems: INITIAL_QUEUE,
-    queueActiveIndex: 0,
-    queueSidebarOpen: true,
+    queueItems: queue,
+    queueActiveIndex: queue.length > 0 ? 0 : -1,
+    queueSidebarOpen: queue.length >= 2,
     initialAction: undefined,
     selectQueueItem: () => {},
     deleteQueueItem: () => {},

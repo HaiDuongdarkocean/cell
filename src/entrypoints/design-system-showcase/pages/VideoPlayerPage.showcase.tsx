@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState, useCallback, type ReactElement } from 'react';
 import { SubtitlePanels } from '@/features/subtitle/ui/SubtitlePanels';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
-import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import { useCuesStore } from '@/stores/cuesStore';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelsTypes';
-import helloSrt from '../assets/hello.srt?raw';
+import { getMockCues, getMockBilingualCues } from '../mockCues';
 import helloMp4 from '../assets/hello.mp4?url';
 import styles from './VideoPlayerPage.module.css';
 
-// Parse SRT → SrtCue[] once at module load (pure function, no side effects)
-const TARGET_CUES: SrtCue[] = parseSrt(helloSrt).cues;
-// Native cues = same timing, empty text (no translation for this demo)
-const NATIVE_CUES: SrtCue[] = TARGET_CUES.map((c) => ({ ...c, text: '' }));
+const { targetCues, nativeCues } = getMockCues();
+const BILINGUAL_CUES = getMockBilingualCues();
 
 const TARGET_ITEMS: SubtitlePanelItem[] = [
   { id: 't1', name: 'English (Hello — Adele)', format: 'srt', size: 5269, source: 'auto', role: 'target', index: 0 },
@@ -45,7 +42,7 @@ export function Showcase(): ReactElement {
   // Seed cues store on mount
   useEffect(() => {
     const store = useCuesStore.getState();
-    store.setCues(TARGET_CUES, NATIVE_CUES);
+    store.setCues(targetCues, nativeCues);
     store.setActiveIndex(-1, -1);
   }, []);
 
@@ -53,8 +50,8 @@ export function Showcase(): ReactElement {
     const video = videoRef.current;
     if (!video) return;
     const timeMs = video.currentTime * 1000;
-    const tIdx = findActiveIndex(TARGET_CUES, timeMs);
-    const nIdx = findActiveIndex(NATIVE_CUES, timeMs);
+    const tIdx = findActiveIndex(targetCues, timeMs);
+    const nIdx = findActiveIndex(nativeCues, timeMs);
     useCuesStore.getState().setActiveIndex(tIdx, nIdx);
   }, []);
 
@@ -84,7 +81,7 @@ export function Showcase(): ReactElement {
     const video = videoRef.current;
     if (!video) return;
     const timeMs = video.currentTime * 1000;
-    const prev = [...TARGET_CUES].reverse().find(c => c.end < timeMs);
+    const prev = [...targetCues].reverse().find(c => c.end < timeMs);
     if (prev) video.currentTime = prev.start / 1000;
   }, []);
 
@@ -92,7 +89,7 @@ export function Showcase(): ReactElement {
     const video = videoRef.current;
     if (!video) return;
     const timeMs = video.currentTime * 1000;
-    const next = TARGET_CUES.find(c => c.start > timeMs);
+    const next = targetCues.find(c => c.start > timeMs);
     if (next) video.currentTime = next.start / 1000;
   }, []);
 
@@ -154,13 +151,7 @@ export function Showcase(): ReactElement {
             }}
             generateNativeEnabled
             videoAspectRatio={16 / 9}
-            cues={TARGET_CUES.map((t, i) => ({
-              index: t.index,
-              start: t.start,
-              end: t.end,
-              targetText: t.text,
-              nativeText: NATIVE_CUES[i]?.text ?? '',
-            }))}
+            cues={BILINGUAL_CUES}
             currentTimeMs={videoRef.current?.currentTime ? videoRef.current.currentTime * 1000 : 0}
             onSeek={handleSeekTo}
           />

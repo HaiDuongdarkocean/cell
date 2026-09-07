@@ -110,7 +110,7 @@ function TabsTrigger({ value: tabValue, children, className, ...rest }: TabsTrig
   const isActive = value === tabValue;
 
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={[styles.trigger, isActive ? styles.active : '', className ?? ''].filter(Boolean).join(' ')}
       role="tab"
       aria-selected={isActive}

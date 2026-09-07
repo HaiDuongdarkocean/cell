@@ -16,18 +16,16 @@ describe('DictionaryPopupSettingsPanel', () => {
   it('calls onChange with selected default active tab (image)', () => {
     const props = makeProps({ defaultActiveTab: null });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    fireEvent.click(screen.getByLabelText(/Default active tab/i));
-    fireEvent.click(screen.getByRole('option', { name: 'Image' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Image' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: 'image' }),
     );
   });
 
-  it('calls onChange with null when selecting None', () => {
+  it('calls onChange with null when selecting Dictionary', () => {
     const props = makeProps({ defaultActiveTab: 'audio' });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    fireEvent.click(screen.getByLabelText(/Default active tab/i));
-    fireEvent.click(screen.getByRole('option', { name: 'None (dictionary only)' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Dictionary' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: null }),
     );
@@ -39,8 +37,7 @@ describe('DictionaryPopupSettingsPanel', () => {
       defaultActiveTabPerLang: { en: 'audio' },
     });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    fireEvent.click(screen.getByLabelText(/Default active tab/i));
-    fireEvent.click(screen.getByRole('option', { name: 'Image' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Image' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTab: 'image', defaultActiveTabPerLang: undefined }),
     );
@@ -52,10 +49,18 @@ describe('DictionaryPopupSettingsPanel', () => {
       defaultActiveTabPerLang: { en: 'audio' },
     });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    const checkbox = screen.getByLabelText(/Enable Dictionary Popup/i) as HTMLInputElement;
-    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByRole('radio', { name: 'Hover' }));
     expect(props.onChange).toHaveBeenCalledWith(
       expect.objectContaining({ defaultActiveTabPerLang: { en: 'audio' } }),
+    );
+  });
+
+  it('calls onChange with selected SRS destination', () => {
+    const props = makeProps({ srsDestination: 'anki' });
+    render(<DictionaryPopupSettingsPanel {...props} />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Ocean SRS' }));
+    expect(props.onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ srsDestination: 'ocean-srs' }),
     );
   });
 });

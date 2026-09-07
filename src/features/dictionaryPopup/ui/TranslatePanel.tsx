@@ -57,7 +57,7 @@ export function TranslatePanel({
           icon={<Icon name="languages"  />}
           title={t('dict.translate.empty')}
           action={
-            <Button material="solid" variant="outline" size="md" onClick={onTranslate}>
+            <Button variant="outline" size="md" onClick={onTranslate}>
               {t('dict.translate.action', [targetLang])}
             </Button>
           }
@@ -96,7 +96,7 @@ export function TranslatePanel({
         icon={<Icon name="languages"  />}
         title={t('dict.translate.empty')}
         action={
-          <Button material="solid" variant="outline" size="md" loading={loading} onClick={onTranslate}>
+          <Button variant="outline" size="md" loading={loading} onClick={onTranslate}>
             {t('dict.translate.action', [targetLang])}
           </Button>
         }

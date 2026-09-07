@@ -110,7 +110,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
           {/* Actions — expand chevron + download button */}
           <HStack align="center" gap="1" className={styles.actions}>
-            <Button shape="circle" material="solid"
+            <Button shape="circle"
               size="sm"
               onClick={handleExpandClick}
               aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
@@ -128,7 +128,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                   <Spinner size="md" color="secondary" aria-hidden="true" />
                 </Center>
               ) : (
-                <Button shape="circle" material="solid"
+                <Button shape="circle"
                   size="sm"
                   variant="ghost"
                   onClick={handleActionClick}
@@ -145,16 +145,18 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
         {/* === URL panel — only when expanded === */}
         {urlExpanded && (
           <HStack align="center" gap="2" className={`${styles.urlPanel} ${cardAnimations.urlPanel}`} data-cell-id="subtitle-url-row">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               className={styles.copyBtn}
+              leadingIcon={<Icon name="copy"  />}
               onClick={handleUrlClick}
               data-cell-id="subtitle-url"
               title="Click to copy URL"
+              aria-label="Copy URL"
             >
-              <Icon name="copy"  />
               <span className={styles.urlText}>{subtitle.url}</span>
-            </button>
+            </Button>
             {copied && <span className={`${styles.copiedBadge} ${cardAnimations.copiedBadge}`} data-cell-id="subtitle-copied-toast">Copied</span>}
           </HStack>
         )}

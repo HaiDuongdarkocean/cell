@@ -1,14 +1,15 @@
 import { useEffect, type ReactElement } from 'react';
 import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes/studyModeStore';
-import { INITIAL_STUDY_MODE_STATE } from '@/features/studyModes/lib/migrateStudyModeState';
+import { getMockStudyModeState } from '../showcaseFixtures';
 import styles from './StudyModesPanelPage.module.css';
 
 export function Showcase(): ReactElement {
   useEffect(() => {
-    // In a real browser without chrome.*, loadStudyModeState falls back to defaults.
-    // For the showcase, ensure defaults are present synchronously so the first paint is immediate.
-    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true });
+    // Seed the store with the data-state variant first so the first paint is
+    // immediate, then let loadStudyModeState reconcile against the mock chrome
+    // storage installed by App.tsx.
+    useStudyModeStore.setState({ ...getMockStudyModeState(), isLoaded: true });
     void loadStudyModeState();
   }, []);
 

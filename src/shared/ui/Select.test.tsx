@@ -127,12 +127,11 @@ describe('Select', () => {
     expect(menu.className).toMatch(/menuAlignLeft|menuAlignRight/);
   });
 
-  it('sets dynamic placement styles on the menu', () => {
+  it('sets dynamic height cap on the in-flow menu', () => {
     render(<Select options={longOptions} value="opt-0" />);
     fireEvent.click(screen.getByRole('button'));
     const menu = screen.getByRole('listbox').parentElement;
     expect(menu).toBeTruthy();
-    expect(menu?.style.getPropertyValue('max-width')).toBeTruthy();
     expect(menu?.style.getPropertyValue('max-height')).toBeTruthy();
   });
 

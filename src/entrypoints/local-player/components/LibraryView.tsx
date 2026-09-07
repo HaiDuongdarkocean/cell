@@ -140,7 +140,7 @@ export function LibraryView({
           className={styles.sortSelect}
         />
         <div className={styles.buttonRow}>
-          <Button material="solid"
+          <Button
             variant="primary"
             size="sm"
             onClick={onOpenFile}
@@ -149,7 +149,7 @@ export function LibraryView({
           >
             <span className={styles.btnLabel}>Add files</span>
           </Button>
-          <Button material="solid"
+          <Button
             variant="secondary"
             size="sm"
             onClick={onOpenFolder}
@@ -159,7 +159,7 @@ export function LibraryView({
             <span className={styles.btnLabel}>Add folder</span>
           </Button>
           {videos.length > 0 && (
-            <Button material="solid"
+            <Button
               variant="ghost"
               size="sm"
               onClick={onClearAll}

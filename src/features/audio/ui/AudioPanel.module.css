@@ -1,0 +1,110 @@
+/* AudioPanel — unified Audio settings card body (Concept H "Audio Pipeline").
+   Rendered inside the Audio card, so it uses plain sections and lightweight
+   containers — never a nested Card. Design tokens only, mobile-first. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rowLabel {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-normal);
+}
+
+/* --- Output mode segmented control --- */
+
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-pill);
+}
+
+/* (0,2,0) beats shared Button's .button/.transparent chrome — the module
+   classes own the segmented-control look inside the .segmented track. */
+.segmented .mode {
+  flex: 1 1 auto;
+  min-height: var(--touch-target);
+  height: auto;
+  padding: var(--space-1) var(--space-2-5);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.segmented .mode:hover {
+  background: var(--color-surface-elevated);
+}
+
+.segmented .mode:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.segmented .modeActive,
+.segmented .modeActive:hover,
+.segmented .modeActive:active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+/* --- Compact audio tester --- */
+
+.tester {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.tester > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.status {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+}
+
+/* --- Autoplay --- */
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented .mode {
+    transition: none;
+  }
+}

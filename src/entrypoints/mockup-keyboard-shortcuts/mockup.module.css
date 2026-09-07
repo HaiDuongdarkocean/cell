@@ -1,0 +1,928 @@
+/* === Keyboard Shortcuts mockup shell — tokens only, mobile-first === */
+
+:root {
+  --mks-page-width: calc(var(--space-5) * 38);
+  --mks-stage-mobile: calc(var(--space-5) * 19);
+  --mks-stage-desktop: calc(var(--space-5) * 32);
+}
+
+.mksPage {
+  min-height: 100vh;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.mksHeader {
+  width: min(var(--mks-page-width), 100%);
+}
+
+.mksTitle {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksSubtitle {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.mksControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mksSeg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.mksSeg > button {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.mksSeg > button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.mksConceptNote {
+  width: min(var(--mks-page-width), 100%);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* === Stage === */
+.mksStage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.mksStage[data-viewport='mobile'] .mksCard { max-width: var(--mks-stage-mobile); }
+.mksStage[data-viewport='desktop'] .mksCard { max-width: var(--mks-stage-desktop); }
+
+/* === Section-card frame — the responsive container for each concept === */
+.mksCard {
+  container-type: inline-size;
+  width: 100%;
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.mksCardHeader {
+  padding: var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.mksCardTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksCardDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mksCardBody {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* === Group label === */
+.mksGroupLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) 0 var(--space-1);
+  margin-top: var(--space-2);
+}
+
+/* === Action row (shared by list concepts) === */
+.mksActionRow {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  min-width: 0;
+}
+
+@container (min-width: 480px) {
+  .mksActionRow {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+.mksActionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mksActionInput {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.mksActionInput [role='button'] {
+  width: 100%;
+  min-width: 0;
+}
+
+@container (min-width: 480px) {
+  .mksActionInput [role='button'] {
+    width: auto;
+    min-width: calc(var(--space-5) * 7);
+  }
+}
+
+/* === Conflict dot === */
+.mksConflictDot {
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-destructive);
+  flex-shrink: 0;
+}
+
+/* === Shortcut display pill === */
+.mksPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: calc(var(--space-5) * 3);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  user-select: none;
+}
+
+.mksPillKey {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.mksEmptyPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--space-5) * 3);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* === Real production layout (mirrors SettingsDialogContent) === */
+.mksRealGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mksRealGroup .mksGroupLabel {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+}
+
+.mksRealGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mksRealGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@container (min-width: 600px) {
+  .mksRealGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.mksRealField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  min-width: 0;
+}
+
+.mksRealField .mksActionInput {
+  display: flex;
+  width: 100%;
+}
+
+.mksRealField .mksActionInput [role='button'] {
+  flex: 1;
+  min-width: 0;
+}
+
+/* === Concept A — refined list === */
+.mksList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mksList .mksGroupLabel {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+.mksList .mksActionRow {
+  padding: var(--space-1) var(--space-3);
+}
+
+@container (min-width: 480px) {
+  .mksList .mksActionRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.mksList .mksActionRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.mksList .mksActionRow:focus-within {
+  background: var(--color-primary-subtle);
+}
+
+/* === Concept B — keyboard map === */
+.mksMapTools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+@container (min-width: 480px) {
+  .mksMapTools {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.mksSearch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.mksSearch:focus-within {
+  border-color: var(--color-primary);
+}
+
+.mksSearchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.mksChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.mksChip {
+  border: none;
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-hover);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.mksChip[aria-pressed='true'] {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+}
+
+.mksKeyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-background-muted);
+  overflow-x: auto;
+}
+
+.mksKeyboardRow {
+  display: flex;
+  gap: var(--space-0-5);
+  justify-content: center;
+}
+
+.mksKeycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  min-width: var(--space-6);
+  min-height: var(--space-6);
+  padding: 0;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.mksKeycap:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
+}
+
+.mksKeycap:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.mksKeycapActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.mksKeycapActive .mksKeycapBadge {
+  position: absolute;
+  top: calc(-1 * var(--space-1));
+  right: calc(-1 * var(--space-1));
+  min-width: var(--space-3);
+  height: var(--space-3);
+  padding: 0 var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-2xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mksKeycapConflict {
+  border-color: var(--color-destructive);
+  background: var(--color-error-subtle);
+  color: var(--color-destructive);
+}
+
+.mksMapActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+@container (min-width: 480px) {
+  .mksMapActions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* === Concept C — action lanes === */
+.mksLanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mksLane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.mksLaneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.mksLaneTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.mksLaneBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-x: auto;
+}
+
+.mksLaneRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+}
+
+.mksLaneRail {
+  position: relative;
+  min-height: var(--space-7);
+  min-width: calc(var(--space-6) * 27);
+  border-radius: var(--radius-full);
+  background: var(--color-background-muted);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.mksRailTicks {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-2xs);
+  pointer-events: none;
+}
+
+.mksBead {
+  position: absolute;
+  left: calc((var(--mks-key-index, -1) / 25) * 100%);
+  transform: translateX(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-6);
+  height: var(--space-6);
+  padding: 0 var(--space-1-5);
+  border: var(--border-width-hairline) solid var(--color-primary);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  transition: left var(--duration-fast) var(--ease-spring);
+}
+
+.mksBeadUnassigned {
+  left: var(--space-2);
+  transform: none;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.mksBeadCount {
+  margin-left: var(--space-0-5);
+  font-size: var(--font-size-2xs);
+  opacity: 0.85;
+}
+
+/* === Concept D — two-pane editor === */
+.mksTwoPane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@container (min-width: 600px) {
+  .mksTwoPane {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+}
+
+.mksPaneLeft {
+  flex: 1 1 55%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mksPaneRight {
+  flex: 1 1 45%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-background-muted);
+}
+
+.mksPaneRightHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-0-5);
+  text-align: center;
+}
+
+.mksPaneHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.mksPaneSelection {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksTwoPaneList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.mksTwoPaneRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.mksTwoPaneRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.mksTwoPaneRow:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.mksTwoPaneRowSelected {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.mksTwoPaneLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mksTwoPaneValue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.mksMiniKeyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.mksMiniKeyboard .mksKeyboardRow {
+  gap: var(--space-1);
+}
+
+.mksMiniKeycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-7);
+  height: var(--space-7);
+  min-width: var(--space-7);
+  min-height: var(--space-7);
+  padding: 0;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.mksMiniKeycap:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
+}
+
+.mksMiniKeycap:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.mksMiniKeycapActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.mksMiniKeycapSelected {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+.mksMiniKeycapConflict {
+  border-color: var(--color-destructive);
+  background: var(--color-error-subtle);
+  color: var(--color-destructive);
+}
+
+/* === Concept E — press-first recorder === */
+.mksRecorder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mksCapture {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: calc(var(--space-6) * 4);
+  padding: var(--space-4);
+  border: var(--border-width-hairline) dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-background-muted);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+
+.mksCapture:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
+}
+
+.mksCapture:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.mksCaptureActive {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.mksCaptureLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksCaptureHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.mksCaptureKeys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.mksCaptureStatus {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-destructive);
+}
+
+.mksRecorderList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mksRecorderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+}
+
+.mksRecorderRow:hover {
+  background: var(--color-surface-hover);
+}
+
+.mksRecorderRowSelected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.mksAssignBtn {
+  border: none;
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.mksAssignBtn:hover {
+  background: var(--color-primary-hover);
+}
+
+/* === Concept F — bento cards === */
+.mksBento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@container (min-width: 420px) {
+  .mksBento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (min-width: 720px) {
+  .mksBento {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@container (min-width: 960px) {
+  .mksBento {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.mksBentoTile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: calc(var(--space-6) * 4);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  overflow: hidden;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
+}
+
+.mksBentoTile:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
+}
+
+.mksBentoTile:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.mksBentoTileActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.mksBentoAccent {
+  height: var(--space-1);
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-3)) var(--space-2);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.mksBentoLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.mksBentoValue {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+}
+
+.mksBentoValue [role='button'] {
+  flex: 1;
+  min-width: 0;
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  .mksSeg > button,
+  .mksChip,
+  .mksKeycap,
+  .mksBead {
+    transition: none;
+  }
+}

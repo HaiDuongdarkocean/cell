@@ -315,10 +315,10 @@ export function AppRedesigned(): React.JSX.Element {
           <Tabs.Content value="media" className={styles.tabContent}>
             {hasMedia && (
               <div className={styles.actionsRow}>
-                <Button material="solid" variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
+                <Button variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
                   {allSelected ? 'Deselect All' : 'Select All'}
                 </Button>
-                <Button material="solid" variant="link" size="sm" onClick={handleDownload} data-cell-id="download-button">
+                <Button variant="link" size="sm" onClick={handleDownload} data-cell-id="download-button">
                   {selectionCount > 0 ? `Download (${selectionCount})` : 'Download All'}
                 </Button>
               </div>

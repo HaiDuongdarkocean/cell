@@ -4,7 +4,7 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './TokenizeControlsConcepts.module.css';
 
-type Variant = 'glass' | 'editorial' | 'industrial';
+type Variant = 'solid' | 'editorial' | 'industrial';
 type TokenizeTarget = 'media' | 'text';
 
 const PROFILES = [
@@ -42,9 +42,9 @@ function TokenizeControl({
     />
   );
 
-  if (variant === 'glass') {
+  if (variant === 'solid') {
     return (
-      <div className={styles.glassControl} role="group" aria-label="Tokenize environment">
+      <div className={styles.solidControl} role="group" aria-label="Tokenize environment">
         <HStack align="center" gap="1">
           {common}
           <Text as="span" variant="supporting" color="primary">
@@ -56,7 +56,6 @@ function TokenizeControl({
             size="sm"
             shape="pill"
             variant={target === 'media' ? 'primarySubtle' : 'ghost'}
-            material="solid"
             disabled={targetDisabled}
             onClick={() => onTargetChange('media')}
             aria-pressed={target === 'media'}
@@ -69,7 +68,6 @@ function TokenizeControl({
             size="sm"
             shape="pill"
             variant={target === 'text' ? 'primarySubtle' : 'ghost'}
-            material="solid"
             disabled={targetDisabled}
             onClick={() => onTargetChange('text')}
             aria-pressed={target === 'text'}
@@ -109,7 +107,6 @@ function TokenizeControl({
           <Button
             size="sm"
             variant="ghost"
-            material="solid"
             disabled={targetDisabled}
             onClick={() => onTargetChange('media')}
             aria-pressed={target === 'media'}
@@ -123,7 +120,6 @@ function TokenizeControl({
           <Button
             size="sm"
             variant="ghost"
-            material="solid"
             disabled={targetDisabled}
             onClick={() => onTargetChange('text')}
             aria-pressed={target === 'text'}
@@ -159,7 +155,6 @@ function TokenizeControl({
           size="sm"
           shape="pill"
           variant={target === 'media' ? 'primary' : 'outline'}
-          material="solid"
           disabled={targetDisabled}
           onClick={() => onTargetChange('media')}
           aria-pressed={target === 'media'}
@@ -173,7 +168,6 @@ function TokenizeControl({
           size="sm"
           shape="pill"
           variant={target === 'text' ? 'primary' : 'outline'}
-          material="solid"
           disabled={targetDisabled}
           onClick={() => onTargetChange('text')}
           aria-pressed={target === 'text'}
@@ -260,7 +254,6 @@ function ConceptPanel({ variant, label }: ConceptPanelProps): ReactElement {
               onTargetChange={setTarget}
             />
             <IconButton
-              material="solid"
               size="md"
               variant="ghost"
               aria-label="Close panel"
@@ -287,7 +280,7 @@ export function Showcase(): ReactElement {
       <Text as="h1" variant="heading-1" color="primary" className={styles.pageTitle}>
         Tokenize Header Concepts
       </Text>
-      <ConceptPanel variant="glass" label="A. Liquid Glass Dewdrop" />
+      <ConceptPanel variant="solid" label="A. Solid Dewdrop" />
       <ConceptPanel variant="editorial" label="B. Minimalist Editorial" />
       <ConceptPanel variant="industrial" label="C. Industrial Brutalist Control Board" />
     </VStack>
@@ -296,7 +289,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Tokenize Controls Concepts',
-  description: 'Three design concepts for the Universal Panel Tokenize environment switch: Liquid Glass, Minimalist Editorial, and Industrial Brutalist. Hỗ trợ user bật/tắt tokenize và chọn Media page / Text page.',
+  description: 'Three design concepts for the Universal Panel Tokenize environment switch: Solid, Minimalist Editorial, and Industrial Brutalist. Hỗ trợ user bật/tắt tokenize và chọn Media page / Text page.',
   level: 'pages' as const,
   category: 'Universal Panel',
   order: 60,

@@ -84,7 +84,7 @@ describe('SearchableSelect', () => {
     fireEvent.click(screen.getByTestId('language-select'));
     const search = screen.getByLabelText('Search options');
     fireEvent.change(search, { target: { value: 'klingon' } });
-    expect(screen.getByText('No languages found')).toBeInTheDocument();
+    expect(screen.getByText('No results found.')).toBeInTheDocument();
   });
 
   it('closes the menu when Escape is pressed in search input', () => {

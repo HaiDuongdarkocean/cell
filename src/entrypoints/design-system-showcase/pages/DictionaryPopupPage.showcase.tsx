@@ -3,34 +3,13 @@ import { PopupDictionary } from '@/features/dictionaryPopup/ui/PopupDictionary';
 import { OrbitalBadge } from '@/features/dictionaryPopup/ui/OrbitalBadge';
 import { Button } from '@/shared/ui/Button';
 import type { PopupAnchor } from '@/features/dictionaryPopup/ui/usePopupPosition';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
 import { installMockDictionarySendMessage } from '../mockDictionary';
+import { getMockLookupResult } from '../mockDictionary';
 import styles from './DictionaryPopupPage.module.css';
 
 installMockDictionarySendMessage();
 
-const MOCK_RESULT: LookupResult = {
-  term: 'serendipity',
-  langCode: 'en',
-  reading: '/ˌser.ənˈdɪp.ə.ti/',
-  readingKind: 'ipa',
-  frequency: { rank: 1234, source: 'wordfreq' },
-  status: 'unknown',
-  partsOfSpeech: ['noun'],
-  definitions: [
-    {
-      id: '1',
-      pos: 'noun',
-      text: 'the occurrence of events by chance in a happy or beneficial way',
-      examples: ['We found the restaurant by pure serendipity.'],
-      source: 'cambridge',
-      defaultSelected: true,
-    },
-  ],
-  rawDefinitions: ['the occurrence of events by chance in a happy or beneficial way'],
-  detectedPhrase: null,
-  matchSource: 'dictionary',
-};
+const MOCK_RESULT = getMockLookupResult(undefined, 'serendipity');
 
 export function Showcase(): ReactElement {
   const [isOpen, setIsOpen] = useState(false);

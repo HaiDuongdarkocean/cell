@@ -1,0 +1,533 @@
+/* === Download Settings mockup shell — tokens only, mobile-first === */
+
+:root {
+  --mks-page-width: calc(var(--space-5) * 38);
+  /* 375px stage (375 = 20px × 18.75) */
+  --mks-stage-mobile: calc(var(--space-5) * 18.75);
+  /* 720px desktop stage */
+  --mks-stage-desktop: calc(var(--space-5) * 36);
+}
+
+.mksPage {
+  min-height: 100vh;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.mksHeader {
+  width: min(var(--mks-page-width), 100%);
+}
+
+.mksTitle {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksSubtitle {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.mksControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mksSeg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.mksSeg > button {
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.mksSeg > button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.mksConceptNote {
+  width: min(var(--mks-page-width), 100%);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* === Stage === */
+.mksStage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.mksStage > * {
+  width: 100%;
+}
+
+.mksStage[data-viewport='mobile'] > * {
+  max-width: var(--mks-stage-mobile);
+}
+
+.mksStage[data-viewport='desktop'] > * {
+  max-width: var(--mks-stage-desktop);
+}
+
+/* === Section-card frame — the responsive container for each concept === */
+.mksCard {
+  container-type: inline-size;
+  width: 100%;
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.mksCardNoClip {
+  overflow: visible;
+}
+
+/* Real panel — same frame applied to the shared Card component. */
+.mksSectionCard {
+  --card-padding: 0;
+  container-type: inline-size;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+
+.mksCardHeader {
+  padding: var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.mksCardTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksCardDesc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mksCardBody {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* === Group label — small uppercase divider (mirrors .groupLabel) === */
+.mksGroupLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.mksCardBody > .mksGroupLabel:first-child {
+  margin-top: 0;
+}
+
+/* === Row label (mirrors .rowLabel) === */
+.mksRowLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-normal);
+  user-select: none;
+  min-width: 0;
+}
+
+/* === Select wrapper — full-width trigger, ≥44px touch target === */
+.mksSelect {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.mksSelect button {
+  width: 100%;
+  min-height: var(--touch-target-mobile);
+}
+
+/* === Child field — indented under a parent select (mirrors .childField) === */
+.mksChildField {
+  grid-column: 1 / -1;
+  margin-left: var(--space-4);
+  padding-left: var(--space-3);
+  border-left: var(--space-0-5) solid var(--color-border-subtle);
+}
+
+@container (max-width: 480px) {
+  .mksChildField,
+  .mksAChildField {
+    margin-left: var(--space-3);
+    padding-left: var(--space-2);
+  }
+}
+
+/* === Two-field grid — stacked on mobile, side-by-side on wide containers === */
+.mksPairGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@container (min-width: 480px) {
+  .mksPairGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+}
+
+/* === Field column — vertical list of stacked fields === */
+.mksFieldColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* === Concept A — proximity groups (no cards, no glass, no borders) === */
+.mksAFrame {
+  container-type: inline-size;
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.mksAHeader {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.mksATitle {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.mksADesc {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mksAGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4);
+}
+
+.mksAGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mksAGroupTitle {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+}
+
+.mksAChildField {
+  grid-column: 1 / -1;
+  margin-left: var(--space-4);
+  padding-left: var(--space-3);
+}
+
+/* === Concept B — nature dashboard tiles === */
+.mksTileGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+}
+
+@container (min-width: 480px) {
+  .mksTileGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@container (min-width: 640px) {
+  .mksTileGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.mksTile {
+  --mks-accent: var(--color-primary);
+  --mks-accent-subtle: var(--color-primary-subtle);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-floating);
+  overflow: hidden;
+  transition: background var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+
+.mksTile[data-accent='sky'] {
+  --mks-accent: var(--color-primary);
+  --mks-accent-subtle: var(--color-primary-subtle);
+}
+
+.mksTile[data-accent='leaf'] {
+  --mks-accent: var(--color-success);
+  --mks-accent-subtle: var(--color-success-subtle);
+}
+
+.mksTile[data-accent='sun'] {
+  --mks-accent: var(--color-warning);
+  --mks-accent-subtle: var(--color-warning-subtle);
+}
+
+.mksTile[data-accent='stone'] {
+  --mks-accent: var(--color-text-secondary);
+  --mks-accent-subtle: var(--color-surface-hover);
+}
+
+.mksTile::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: var(--space-3);
+  right: var(--space-3);
+  height: var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--mks-accent);
+}
+
+.mksTile:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-emphasized);
+}
+
+.mksTileTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.mksTileIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-lg);
+  background: var(--mks-accent-subtle);
+  color: var(--mks-accent);
+  flex-shrink: 0;
+}
+
+.mksTileText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.mksTileLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.mksTileValue {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mksTileBlurb {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--leading-snug);
+}
+
+/* === Concept C — progressive accordion === */
+.mksSummaryBar {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) var(--space-2);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-floating);
+}
+
+.mksSummaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.mksSummaryKey {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-tertiary);
+}
+
+.mksAccList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mksAccGroup {
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  overflow: hidden;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.mksAccGroup:has(.mksAccHeader[aria-expanded='true']) {
+  border-color: var(--color-border-emphasized);
+}
+
+.mksAccHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch-target-mobile);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.mksAccHeader:hover {
+  background: var(--color-surface-hover);
+}
+
+.mksAccHeader:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: calc(-1 * var(--space-0-5));
+}
+
+.mksAccTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  flex-shrink: 0;
+}
+
+.mksAccMeta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-align: right;
+}
+
+.mksAccChevron {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.mksAccChevronOpen {
+  color: var(--color-primary);
+  flex-shrink: 0;
+  transform: rotate(180deg);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.mksAccBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  .mksSeg > button,
+  .mksTile,
+  .mksAccHeader,
+  .mksAccChevron,
+  .mksAccChevronOpen {
+    transition: none;
+  }
+}

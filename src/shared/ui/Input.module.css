@@ -36,20 +36,9 @@
 }
 
 /* === Variants === */
-.glass {
-  background: var(--input-glass-bg);
-  border-color: var(--input-glass-border);
-  backdrop-filter: blur(var(--blur-md)) saturate(140%);
-  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
-  box-shadow:
-    inset 0 1px 0 var(--input-inner-highlight),
-    0 1px 2px var(--input-shadow);
-}
-
 .filled {
   background: var(--input-filled-bg);
   border-color: var(--input-filled-border);
-  box-shadow: inset 0 1px 0 var(--input-inner-highlight);
 }
 
 .outline {
@@ -157,20 +146,22 @@
 
 /* === States === */
 .input:hover:not(:disabled, .readOnly) {
-  background: var(--color-glass-surface-hover);
-  border-color: var(--color-border-emphasized);
+  background: var(--color-field-hover);
 }
 
 .ghost:hover:not(:disabled, .readOnly) {
-  background: var(--color-glass-surface-hover);
+  background: var(--color-field-hover);
   border-color: var(--input-ghost-border);
+}
+
+.outline:hover:not(:disabled, .readOnly) {
+  border-color: var(--color-border-emphasized);
+  background: var(--color-field-hover);
 }
 
 .input:focus-visible {
   border-color: var(--input-border-focus);
-  box-shadow:
-    0 0 0 var(--space-0-5) var(--input-focus-ring),
-    inset 0 1px 0 var(--input-inner-highlight);
+  box-shadow: 0 0 0 var(--space-0-5) var(--input-focus-ring);
 }
 
 .input:disabled {
@@ -181,7 +172,7 @@
 }
 
 .readOnly {
-  background: var(--color-glass-surface);
+  background: var(--color-surface);
   cursor: default;
 }
 
@@ -191,9 +182,7 @@
 }
 
 .error:focus-visible {
-  box-shadow:
-    0 0 0 var(--space-0-5) var(--input-error-focus-ring),
-    inset 0 1px 0 var(--input-inner-highlight);
+  box-shadow: 0 0 0 var(--space-0-5) var(--input-error-focus-ring);
 }
 
 .success,
@@ -202,9 +191,7 @@
 }
 
 .success:focus-visible {
-  box-shadow:
-    0 0 0 var(--space-0-5) var(--input-success-focus-ring),
-    inset 0 1px 0 var(--input-inner-highlight);
+  box-shadow: 0 0 0 var(--space-0-5) var(--input-success-focus-ring);
 }
 
 .loading {
@@ -230,5 +217,12 @@
 @media (prefers-reduced-motion: reduce) {
   .input {
     transition: none;
+  }
+}
+
+/* === Contrast === */
+@media (prefers-contrast: more) {
+  .input:not(.ghost) {
+    border-color: var(--color-border);
   }
 }

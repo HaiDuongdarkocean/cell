@@ -1,12 +1,11 @@
 .panel {
-  width: 280px;
+  width: min(280px, 100%);
   max-width: calc(100vw - var(--space-4));
   padding: var(--space-4);
   background-color: var(--color-surface-popover);
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-popover);
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }

@@ -8,22 +8,10 @@
   align-items: center;
 }
 
-/* === Hint button === */
+/* === Hint button — size comes from Button sm + iconOnly (32×32), icon 20px === */
 .hintBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-5);
-  min-width: var(--touch-target);
-  height: var(--space-5);
-  min-height: var(--touch-target);
-  padding: 0;
-  border: none;
-  background: transparent;
   color: var(--color-text-secondary);
   cursor: help;
-  border-radius: var(--radius-full);
-  transition: color var(--transition), background var(--transition);
   flex-shrink: 0;
 }
 
@@ -59,8 +47,9 @@
   line-height: var(--leading-normal);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface-hover);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-popover);
   z-index: var(--z-tooltip);
   animation: hintPop var(--duration-fast) var(--ease-standard);
   pointer-events: none;
@@ -73,7 +62,7 @@
   top: 100%;
   left: var(--space-2);
   border: var(--space-1-5) solid transparent;
-  border-top-color: var(--color-border);
+  border-top-color: var(--color-surface-hover);
 }
 
 /* === Boundary detection variants === */

@@ -32,7 +32,6 @@ interface TokenizeHalfProps {
 function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }: TokenizeHalfProps): React.JSX.Element {
   return (
     <Button
-      material="solid"
       shape="pill"
       variant={active ? 'primarySubtle' : 'ghost'}
       fullWidth

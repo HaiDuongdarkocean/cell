@@ -5,34 +5,16 @@ import styles from './Navigation.module.css';
 export type NavigationOrientation = 'vertical' | 'horizontal';
 
 export interface NavigationProps {
-  /** Navigation content — typically NavItem elements with data-section-id. */
   children: ReactNode;
-  /** Layout orientation. Default: 'vertical'. */
   orientation?: NavigationOrientation;
-  /** Controlled active section id. If omitted, Navigation manages internally. */
   activeId?: string;
-  /** Called when active section changes (click or scroll-spy). */
   onActiveChange?: (id: string) => void;
-  /** Content scroll container ref — required for scroll-spy + click-to-scroll. */
   contentRef?: Ref<HTMLElement>;
-  /** Section refs map — consumer provides refs to content sections for scroll-spy. */
   sectionRefs?: React.MutableRefObject<Record<string, HTMLElement | null>>;
-  /** Accessible label for the navigation landmark. */
   ariaLabel?: string;
-  /** Optional class name. */
   className?: string;
 }
 
-/**
- * Navigation — self-contained navigation organism.
- *
- * - Supports `orientation="vertical"` (sidebar/drawer) and `orientation="horizontal"` (tabs/chip-bar).
- * - Owns: active state, scroll-spy, scroll-to-active.
- * - Consumer provides: contentRef + sectionRefs for scroll-spy integration (optional).
- *
- * Children should be `NavItem` elements with `data-section-id` attribute.
- * Navigation injects `aria-current`, `orientation`, and click handler via event delegation.
- */
 export function Navigation({
   children,
   orientation = 'vertical',
@@ -57,7 +39,6 @@ export function Navigation({
     [controlledActiveId, onActiveChange],
   );
 
-  // Auto-scroll navigation container to keep active item in view.
   const scrollNavToId = useCallback(
     (sectionId: string): void => {
       const nav = navRef.current;
@@ -66,7 +47,7 @@ export function Navigation({
       if (!item) return;
 
       if (orientation === 'horizontal') {
-        const itemCenter = item.offsetLeft - nav.offsetLeft + item.offsetWidth / 2;
+        const itemCenter = item.offsetLeft + item.offsetWidth / 2;
         const ideal = itemCenter - nav.clientWidth / 2;
         const clamped = Math.max(0, Math.min(ideal, nav.scrollWidth - nav.clientWidth));
         nav.scrollTo({ left: clamped, behavior: 'smooth' });
@@ -85,7 +66,6 @@ export function Navigation({
     [orientation],
   );
 
-  // Sync aria-current on children and scroll nav container when activeId changes.
   useLayoutEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
@@ -102,7 +82,6 @@ export function Navigation({
     if (activeId) scrollNavToId(activeId);
   }, [activeId, scrollNavToId]);
 
-  // Scroll-spy: on content scroll, find section closest to viewport top.
   useEffect(() => {
     const content = contentRef as React.RefObject<HTMLElement> | undefined;
     const root = content?.current;
@@ -141,7 +120,6 @@ export function Navigation({
     return () => root.removeEventListener('scroll', onScroll);
   }, [contentRef, sectionRefs, setActiveId]);
 
-  // Click-driven: set active, scroll content, suppress scroll-spy while scrolling.
   const handleItemClick = (sectionId: string): void => {
     const root = (contentRef as React.RefObject<HTMLElement> | undefined)?.current;
     const target = sectionRefs?.current[sectionId];
@@ -157,7 +135,6 @@ export function Navigation({
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     scrollNavToId(sectionId);
 
-    // Unlock scroll-spy once content scroll settles
     let lastScroll = -1;
     let stableCount = 0;
     const pollScroll = (): void => {
@@ -178,7 +155,6 @@ export function Navigation({
     window.setTimeout(() => requestAnimationFrame(pollScroll), 800);
   };
 
-  // Event delegation: click on nav captures [data-section-id]
   const handleNavClick = (e: React.MouseEvent<HTMLElement>): void => {
     const target = (e.target as HTMLElement).closest('[data-section-id]') as HTMLElement | null;
     if (!target) return;

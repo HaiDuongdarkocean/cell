@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useSheet } from './useSheet';
 import { useFocusTrap } from './useFocusTrap';
+import { pushEscapeLayer } from './escapeLayerStack';
 import styles from './Sheet.module.css';
 
 export interface SheetProps {
@@ -55,16 +56,14 @@ export function Sheet({
   useFocusTrap(sheetRef, open);
 
   // ESC to close — fullscreen-aware (let browser exit fullscreen first).
+  // Registered on the shared Escape stack so the sheet consumes the key
+  // without letting it bubble to ancestor surfaces (e.g. UniversalPanel).
   useEffect(() => {
     if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        if (document.fullscreenElement) return;
-        onClose?.();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return pushEscapeLayer(() => {
+      if (document.fullscreenElement) return;
+      onClose?.();
+    });
   }, [open, onClose]);
 
   if (!open) return null;

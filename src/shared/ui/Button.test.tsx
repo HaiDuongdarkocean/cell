@@ -18,14 +18,9 @@ describe('Button', () => {
     }
   });
 
-  it('applies solid class by default', () => {
-    const { container } = render(<Button>Solid</Button>);
-    expect(container.firstChild).toHaveClass('solid');
-  });
-
-  it('applies liquid class for liquid material', () => {
-    const { container } = render(<Button material="liquid">Liquid</Button>);
-    expect(container.firstChild).not.toHaveClass('solid');
+  it('does not inject any glass filter SVG', () => {
+    const { container } = render(<Button>Primary</Button>);
+    expect(container.querySelector('svg[class*="glass"], span[aria-hidden] svg')).toBeNull();
   });
 
   it('renders all sizes', () => {
@@ -35,26 +30,6 @@ describe('Button', () => {
       expect(screen.getByRole('button', { name: size })).toBeInTheDocument();
       unmount();
     }
-  });
-
-  it('supports Apple-inspired liquid glass styles on glass buttons', () => {
-    const liquidStyles = [
-      ['regular', 'liquidRegular'],
-      ['clear', 'liquidClear'],
-      ['prominent', 'liquidProminent'],
-    ] as const;
-    for (const [liquidStyle, className] of liquidStyles) {
-      const { unmount } = render(<Button material="liquid" variant="glass" liquidStyle={liquidStyle}>Liquid</Button>);
-      expect(screen.getByRole('button', { name: 'Liquid' })).toHaveClass(className);
-      unmount();
-    }
-  });
-
-  it('does not expose liquidStyle as a DOM attribute on non-glass buttons', () => {
-    render(<Button variant="primary" liquidStyle="clear">Primary</Button>);
-    const button = screen.getByRole('button', { name: 'Primary' });
-    expect(button).not.toHaveAttribute('liquidstyle');
-    expect(button).not.toHaveClass('liquidClear');
   });
 
   it('disables and sets aria-busy when loading', () => {

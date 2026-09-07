@@ -7,6 +7,7 @@
   justify-content: space-around;
   gap: var(--space-1);
   padding: 0;
+  min-width: 0;
   background: var(--universal-panel-bottom-nav-bg);
   border-top: var(--border-width-hairline) solid var(--universal-panel-bottom-nav-border);
 }
@@ -21,6 +22,30 @@
   flex: 1;
   min-width: 0;
   height: var(--universal-panel-bottom-nav-item-height);
+}
+
+.bottomNav .navItem {
+  /* Beat Button's min-width: min-content so 4 items can share the row
+     and shrink below their label content regardless of CSS load order. */
+  min-width: 0;
+}
+
+@media (max-width: 359px) {
+  .bottomNav .navItem {
+    /* Compact label token for the narrowest phones; the Button's vertical
+       label picks this up via its --button-vertical-label-size variable. */
+    --button-vertical-label-size: var(--font-size-2xs);
+  }
+
+  .bottomNav .navItem > span:nth-child(2) {
+    /* Button's label is the second <span> (leading icon first, label second).
+       Keep the icon token size and let the label shrink with ellipsis. */
+    font-size: var(--font-size-2xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
 }
 
 /* Active tab — color-only indicator, no fill. Mobile bottom navs show state

@@ -18,43 +18,23 @@
 @media (hover: hover) and (pointer: fine) {
   .interactive:hover {
     background: var(--color-surface-hover);
-    border-color: var(--color-border);
     transform: translateY(calc(var(--space-0-5) * -0.5));
     box-shadow: var(--shadow-md);
   }
 }
 
 .selected {
-  border-color: var(--color-primary);
   background: var(--color-primary-subtle);
   color: var(--color-text-accent);
-  box-shadow: 0 0 0 calc(var(--space-0-5) * 0.5) color-mix(in srgb, var(--color-primary) 20%, transparent);
+  box-shadow: var(--shadow-inset-selected);
 }
 
 .selected:hover {
-  border-color: var(--color-primary);
   background: var(--color-primary-subtle);
   transform: translateY(calc(var(--space-0-5) * -0.5));
-  box-shadow: 0 var(--space-0-5) var(--space-2) color-mix(in srgb, var(--color-primary) 15%, transparent);
-}
-
-/* Glass — translucent frosted card using liquid-glass tokens */
-.glass {
-  background: var(--color-glass-surface);
-  color: var(--color-glass-text-primary);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
   box-shadow:
-    var(--shadow-floating),
-    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
-  backdrop-filter: blur(var(--blur-xl)) saturate(160%);
-}
-
-.glass:hover {
-  background: var(--color-glass-surface-hover);
-  transform: translateY(calc(var(--space-0-5) * -0.5));
-  box-shadow:
-    var(--shadow-md),
-    inset 0 var(--border-width-hairline) 0 var(--color-glass-inner-highlight);
+    var(--shadow-inset-selected),
+    0 var(--space-0-5) var(--space-2) color-mix(in srgb, var(--color-primary) 15%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

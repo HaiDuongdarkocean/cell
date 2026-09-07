@@ -151,7 +151,7 @@ export function PlayerControls({
       <div className={styles.controlsRow}>
         <div className={styles.pillLeft}>
           {onPrevVideo && (
-            <Button shape="circle" material="solid"
+            <Button shape="circle"
               aria-label="Previous video"
               title="Previous video"
               disabled={!hasPrevVideo}
@@ -162,7 +162,7 @@ export function PlayerControls({
           )}
           <PlayPauseButton playing={isPlaying} onClick={onPlayPause} />
           {onNextVideo && (
-            <Button shape="circle" material="solid"
+            <Button shape="circle"
               aria-label="Next video"
               title="Next video"
               disabled={!hasNextVideo}
@@ -201,7 +201,7 @@ export function PlayerControls({
           )}
           {hasSettingsItems && (
             <div className={styles.settingsWrap} ref={settingsRef}>
-              <Button shape="circle" material="solid"
+              <Button shape="circle"
                 aria-label="Settings"
                 aria-haspopup="menu"
                 aria-expanded={settingsOpen}
@@ -219,7 +219,7 @@ export function PlayerControls({
                     />
                   </div>
                   {hasMultipleTracks && onToggleTrackSelector && (
-                    <Button material="solid" variant="secondary"
+                    <Button variant="secondary"
                       role="menuitem"
                       className={styles.settingsMenuItem}
                       onClick={() => {

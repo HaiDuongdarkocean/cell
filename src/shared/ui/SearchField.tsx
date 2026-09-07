@@ -56,7 +56,7 @@ export function SearchField({
   };
 
   const suffix = currentValue && !disabled ? (
-    <Button shape="circle" material="solid" variant="ghost"
+    <Button shape="circle" variant="ghost"
       className={styles.clear}
       aria-label={t('ui.searchField.clear')}
       onClick={handleClear}

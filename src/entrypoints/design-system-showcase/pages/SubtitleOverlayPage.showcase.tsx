@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { SubtitlePanels } from '@/features/subtitle/ui/SubtitlePanels';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelsTypes';
-import { mockTargetCues, mockNativeCues } from '../mockCues';
+import { getMockCues, getMockCueActiveIndex } from '../mockCues';
 import { useCuesStore } from '@/stores/cuesStore';
 import styles from './SubtitleOverlayPage.module.css';
 
@@ -19,9 +19,11 @@ export function Showcase(): ReactElement {
 
   // Seed the cues store so SubtitleBlock renders mock cues
   useEffect(() => {
+    const { targetCues, nativeCues } = getMockCues();
+    const activeIndex = getMockCueActiveIndex();
     const store = useCuesStore.getState();
-    store.setCues(mockTargetCues, mockNativeCues);
-    store.setActiveIndex(1, 1);
+    store.setCues(targetCues, nativeCues);
+    store.setActiveIndex(activeIndex, activeIndex);
   }, []);
 
   return (

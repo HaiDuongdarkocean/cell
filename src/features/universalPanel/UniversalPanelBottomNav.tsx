@@ -50,7 +50,6 @@ export function UniversalPanelBottomNav({
           return (
             <Button
               key={tab.key}
-              material="solid"
               variant="ghost"
               shape="pill"
               size="md"
@@ -66,7 +65,6 @@ export function UniversalPanelBottomNav({
           );
         })}
         <Button
-          material="solid"
           variant="ghost"
           shape="pill"
           size="md"
@@ -92,7 +90,6 @@ export function UniversalPanelBottomNav({
           {tools.map((tool) => (
             <li key={tool.id}>
               <Button
-                material="solid"
                 variant="ghost"
                 shape="pill"
                 className={styles.toolRow}

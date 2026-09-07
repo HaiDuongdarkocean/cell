@@ -28,7 +28,7 @@ export function LauncherUserBar() {
 
   return (
     <nav className={styles.userBar} aria-label="User actions">
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         size="lg"
         variant="ghost"
         onClick={cycleMode}
@@ -37,7 +37,7 @@ export function LauncherUserBar() {
       >
         <Icon name={themeIcon} size="md" />
       </Button>
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         size="lg"
         variant="ghost"
         onClick={cyclePreset}
@@ -46,7 +46,7 @@ export function LauncherUserBar() {
       >
         <Icon name="layers" size="md" />
       </Button>
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         size="lg"
         variant="ghost"
         aria-label="Settings"
@@ -55,7 +55,7 @@ export function LauncherUserBar() {
       >
         <Icon name="settings" size="md" />
       </Button>
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         size="lg"
         variant="ghost"
         aria-label="Add"

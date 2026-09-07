@@ -4,10 +4,8 @@ import {
   ChevronRight,
   Download,
   EyeOff,
-  Image,
   Search,
   SlidersHorizontal,
-  Sun,
   X,
 } from 'lucide-react';
 import { useId, type ReactElement, type ReactNode } from 'react';
@@ -36,14 +34,17 @@ export function Showcase(): ReactElement {
     <div className={styles.root}>
       <Section
         title="Variants"
-        caption="6 canonical variants. Primary, Outline, Ghost, Success, and Destructive use the solid material by default; Glass still uses the neutral smoked-blue liquid-glass material. Token-driven, theme-agnostic."
+        caption="9 canonical variants, all solid. Primary is the single main action; destructive is reserved for irreversible actions; link navigates. Token-driven, theme-agnostic."
       >
         <Button variant="primary">Primary</Button>
-        <Button material="liquid" variant="glass">Glass</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="primarySubtle">Primary Subtle</Button>
         <Button variant="outline">Outline</Button>
         <Button variant="ghost">Ghost</Button>
         <Button variant="success">Success</Button>
         <Button variant="destructive">Destructive</Button>
+        <Button variant="link">Link</Button>
+        <Button variant="transparent">Transparent</Button>
       </Section>
 
       <Section
@@ -62,7 +63,7 @@ export function Showcase(): ReactElement {
       >
         <Button variant="primary" aria-label="Download"><Download size={18} aria-hidden="true" /></Button>
         <Button variant="primary">Label only</Button>
-        <Button material="liquid" variant="glass" leadingIcon={<Download size={18} aria-hidden="true" />}>Horizontal</Button>
+        <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>Horizontal</Button>
         <Button variant="outline" trailingIcon={<ChevronRight size={18} aria-hidden="true" />}>Next</Button>
       </Section>
 
@@ -90,46 +91,20 @@ export function Showcase(): ReactElement {
       </Section>
 
       <Section
-        title="Liquid Glass — Apple materials"
-        caption="3 material directions, switched through one API. Use the showcase preset switcher above to preview Dawn, Forest, Ocean, and Warmth."
-      >
-        <Button material="liquid" variant="glass" liquidStyle="regular" leadingIcon={<Search size={18} aria-hidden="true" />}>Regular</Button>
-        <Button material="liquid" variant="glass" liquidStyle="clear" leadingIcon={<Image size={18} aria-hidden="true" />}>Clear</Button>
-        <Button material="liquid" variant="glass" liquidStyle="prominent" leadingIcon={<Sun size={18} aria-hidden="true" />}>Prominent</Button>
-        <Button material="liquid" variant="glass" liquidStyle="regular" elevation="med">Elevated</Button>
-        <Button material="liquid" variant="glass" liquidStyle="clear" fullWidth leadingIcon={<Download size={20} aria-hidden="true" />}>Download video</Button>
-      </Section>
-
-      <Section
-        title="Solid"
-        caption="Flat, opaque material for non-glass contexts. Works with any variant: primary, success, destructive, secondary, outline, ghost, link."
-      >
-        <Button material="solid" variant="primary">Primary</Button>
-        <Button material="solid" variant="success">Success</Button>
-        <Button material="solid" variant="destructive">Destructive</Button>
-        <Button material="solid" variant="secondary">Secondary</Button>
-        <Button material="solid" variant="outline">Outline</Button>
-        <Button material="solid" variant="ghost">Ghost</Button>
-        <Button material="solid" variant="link">Link</Button>
-        <Button material="solid" disabled>Disabled</Button>
-        <Button material="solid" loading>Loading</Button>
-      </Section>
-
-      <Section
         title="Surfaces"
-        caption="Extreme white and black surfaces to verify the conic rim and contact shadow remain visible; solid stays opaque and legible."
+        caption="Extreme white and black surfaces to verify the solid surfaces stay opaque and legible on both themes."
       >
         <div data-theme="light" className={styles.surfaceWhite}>
           <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>White</Button>
           <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
-          <Button material="liquid" variant="glass" size="lg">Large</Button>
-          <Button material="solid" variant="primary">Solid</Button>
+          <Button variant="primary" size="lg">Large</Button>
+          <Button variant="secondary">Secondary</Button>
         </div>
         <div data-theme="dark" className={styles.surfaceBlack}>
           <Button variant="primary" leadingIcon={<Download size={18} aria-hidden="true" />}>Black</Button>
           <Button variant="ghost" aria-label="Close"><X size={18} aria-hidden="true" /></Button>
-          <Button material="liquid" variant="glass" size="lg">Large</Button>
-          <Button material="solid" variant="primary">Solid</Button>
+          <Button variant="primary" size="lg">Large</Button>
+          <Button variant="secondary">Secondary</Button>
         </div>
       </Section>
     </div>
@@ -138,7 +113,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Button',
-  description: 'Button atom — Liquid Glass + Solid. 7 canonical variants (primary, glass, outline, ghost, solid, success, destructive) + 3 aliases (secondary, primarySubtle, link). 4 sizes (sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, caustic highlights, smoked-blue glass, no idle motion. Token-driven, theme-agnostic.',
+  description: 'Button atom — solid only (Liquid Glass removed 2026-09-08). 9 canonical variants (primary, secondary, primarySubtle, outline, ghost, success, destructive, link, transparent). 5 sizes (xs/sm/md/lg/xl). 2 orientations. 8 states (default, hover, focus, pressed, active, disabled, loading, error). Pill shape, theme-agnostic tokens.',
   level: 'atoms',
   category: 'Action',
   group: 'Shared UI — Action',

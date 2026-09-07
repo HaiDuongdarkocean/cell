@@ -34,7 +34,7 @@ export function BackButton({
 }: BackButtonProps): React.JSX.Element {
   const cls = [styles.backBtn, styles[size], className ?? ''].filter(Boolean).join(' ');
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={cls}
       aria-label="Go back"
       {...rest}

@@ -14,6 +14,9 @@
   position: relative;
   display: flex;
   align-items: stretch;
+  /* flex children shrink to 0 because overflow:hidden resets the automatic
+     minimum — without this the whole list squeezes instead of scrolling. */
+  flex-shrink: 0;
   gap: 0;
   border: var(--border-width-hairline) solid var(--cue-list-item-border);
   border-radius: var(--cue-list-item-radius);
@@ -39,7 +42,7 @@
   height: 60%;
   border-radius: var(--cue-list-indicator-radius);
   background: var(--cue-list-indicator-color);
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 .cueCurrent {
@@ -90,12 +93,14 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
 }
 
 .nativeText {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
   margin-top: var(--space-0-5);
 }
 

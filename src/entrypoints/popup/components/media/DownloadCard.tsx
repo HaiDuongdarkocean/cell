@@ -62,7 +62,7 @@ export function DownloadCard({
   if (isActive) {
     if (isPaused) {
       actions.push(
-        <Button shape="circle" material="solid"
+        <Button shape="circle"
           key="resume"
           size="xs"
           onClick={() => onResume(download.id)}
@@ -74,7 +74,7 @@ export function DownloadCard({
       );
     } else {
       actions.push(
-        <Button shape="circle" material="solid"
+        <Button shape="circle"
           key="pause"
           size="xs"
           onClick={() => onPause(download.id)}
@@ -88,7 +88,7 @@ export function DownloadCard({
   }
   if (isError) {
     actions.push(
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         key="retry"
         size="xs"
         onClick={() => onRetry(download.id)}
@@ -101,7 +101,7 @@ export function DownloadCard({
   }
   if (!isDone) {
     actions.push(
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         key="cancel"
         size="xs"
         variant="destructive"
@@ -114,7 +114,7 @@ export function DownloadCard({
     );
   } else {
     actions.push(
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         key="remove"
         size="xs"
         variant="destructive"

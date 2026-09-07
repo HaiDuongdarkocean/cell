@@ -33,7 +33,7 @@
   justify-content: space-between;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }

@@ -32,16 +32,16 @@
    against container right edge. Slide-in from right on open, slide-out
    to right on close (see [data-state] animations below).
    Width: min(100% container, 360px). Height: 100% capped at 660px.
-   Background: --color-glass-sidebar-panel (0.65 alpha for readability).
-   Token SSOT: --color-glass-sidebar-panel. */
+   Background: --color-surface (opaque, readable over any host video).
+   Token SSOT: --color-surface. */
 @media (min-width: 840px) {
   .panel {
     flex: 0 1 auto;
     width: min(100%, var(--dialog-max-width-sm));
     height: 100%;
-    max-height: 660px;
+    max-height: min(100%, 660px); /* local cap; no --dialog-max-height token */
     border-radius: var(--radius-element) 0 0 var(--radius-element);
-    background: var(--color-glass-sidebar-panel);
+    background: var(--color-surface);
     overflow: hidden;
     animation: panelSlideIn var(--duration-300) cubic-bezier(0.32, 0.72, 0, 1) both;
   }
@@ -99,7 +99,7 @@
   justify-content: space-between;
   min-height: var(--space-10);
   padding: var(--space-1) var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 /* Stack — relative container for sliding header content, clips overflow.
@@ -129,7 +129,7 @@
 /* Entering slide — interactive */
 .headerSlide[data-state='entering'] {
   pointer-events: auto;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 /* Forward: new enters from right, old exits to left */
@@ -256,7 +256,7 @@
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-sticky);
 }
 
 @media (min-width: 600px) {
@@ -348,7 +348,7 @@
   background: var(--color-primary-subtle);
 }
 
-/* Glass panel (desktop ≥840px): selected row blends into panel — no inset bar.
+/* Sidebar panel (desktop ≥840px): selected row blends into panel — no inset bar.
    The active track is conveyed by text color (.trackActive .trackName) only.
    Header + footer keep hairline border for elevation boundary. */
 @media (min-width: 840px) {
@@ -356,13 +356,13 @@
     box-shadow: none;
   }
   .header {
-    border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   }
   .sectionBar {
     border-bottom: 0;
   }
   .tabsList {
-    border-bottom: var(--border-width-hairline) solid var(--color-glass-border);
+    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   }
   .tabTrigger {
     border-bottom: var(--border-width-thick) solid transparent;
@@ -500,8 +500,8 @@
   flex: 1 1 auto;
   display: flex;
   align-items: stretch;
-  border: var(--border-width-hairline) solid var(--color-border);
-  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--input-border);
+  background: var(--color-field);
   border-radius: var(--radius-pill);
   overflow: hidden;
   transition: border-color var(--duration-fast) var(--ease-out);
@@ -529,13 +529,13 @@
   flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
-  align-items: center;
-  border-left: var(--border-width-hairline) solid var(--color-border);
-  border-right: var(--border-width-hairline) solid var(--color-border);
+  align-items: stretch;
+  border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-right: var(--border-width-hairline) solid var(--color-border-subtle);
   background: var(--color-surface);
 }
 
-.valueInput {
+.valueField .valueInput {
   width: 100%;
   height: var(--space-10);
   padding: 0 var(--space-2);
@@ -549,8 +549,14 @@
   outline: none;
 }
 
-.valueInput::-webkit-outer-spin-button,
-.valueInput::-webkit-inner-spin-button {
+.valueField .valueInput:hover,
+.valueField .valueInput:focus-visible {
+  background: transparent;
+  box-shadow: none;
+}
+
+.valueField .valueInput::-webkit-outer-spin-button,
+.valueField .valueInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
@@ -577,7 +583,7 @@
 .previewWrap {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: var(--z-dropdown);
   padding: var(--space-1-5) var(--space-2);
   background: var(--color-surface-popover);
 }
@@ -666,7 +672,7 @@
   }
 }
 
-/* ─── Glass panel overrides (desktop ≥840px) — MUST be last for cascade ───
+/* ─── Sidebar panel overrides (desktop ≥840px) — MUST be last for cascade ───
    Base rules above define borders on .pillGroup, .valueField, .tabContent, etc.
    These overrides remove them for the YouTube-style uniform charcoal surface.
    Placed last so same-specificity rules win the cascade. */
@@ -683,20 +689,20 @@
   .tabContent {
     padding-top: var(--space-1);
   }
-  /* Glass fills for track rows + latency pill — translucent light on dark panel. */
+  /* Solid fills for track rows + latency pill on the sidebar panel. */
   .track {
-    background: var(--color-glass-surface);
+    background: var(--color-surface);
   }
   .track:hover {
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
   }
   .trackActive {
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
   }
   .offRow {
-    background: var(--color-glass-surface);
+    background: var(--color-surface);
   }
   .pillGroup {
-    background: var(--color-glass-input-bg);
+    background: var(--color-surface);
   }
 }

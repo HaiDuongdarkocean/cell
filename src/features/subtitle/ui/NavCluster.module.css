@@ -19,16 +19,31 @@
   background: transparent;
 }
 
-.cluster :global(button),
-.cluster :global([role='button']) {
+/* Doubled class = specificity (0,2,1) beats Button's `.md.circle` /
+   `.sm.circle` (0,2,0) regardless of injection order, so --cluster-btn-size
+   (adaptive clamp + popup settings) actually governs. Same trick:
+   UniversalPanel.module.css `.desktopSidebar.desktopSidebar`. */
+.cluster.cluster :global(button),
+.cluster.cluster :global([role='button']) {
   width: var(--cluster-btn-size);
   height: var(--cluster-btn-size);
   min-width: var(--cluster-btn-size);
   min-height: var(--cluster-btn-size);
 }
 
+/* Collapsed drag handle fills its fixed --space-10 container. Equal
+   specificity (0,2,1) — declared later, so it wins over the rule above. */
+.cluster.collapsed :global(button) {
+  width: 100%;
+  height: 100%;
+}
+
+/* !important: beats Button's `.md.circle .label > svg` icon-size rules
+   (0,3,1) and any host-page CSS on the injected overlay. */
 .cluster :global(button) :global(span),
-.cluster :global([role='button']) :global(span) {
+.cluster :global(button) :global(svg),
+.cluster :global([role='button']) :global(span),
+.cluster :global([role='button']) :global(svg) {
   width: var(--cluster-icon-size) !important;
   height: var(--cluster-icon-size) !important;
 }

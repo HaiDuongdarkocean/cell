@@ -57,7 +57,7 @@ export function CopyButton({
   const cls = [styles.copyBtn, copied ? styles.copied : '', className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <Button material="solid" variant="secondary" className={cls} aria-label={ariaLabel} onClick={handleClick} {...rest}>
+    <Button variant="secondary" className={cls} aria-label={ariaLabel} onClick={handleClick} {...rest}>
       <span className={styles.icon}>
         <Icon name={copied ? 'checkDouble' : 'copy'}  />
       </span>

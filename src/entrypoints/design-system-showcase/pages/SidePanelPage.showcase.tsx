@@ -1,15 +1,9 @@
 import { useState, type ReactElement } from 'react';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
-import type { BilingualCue } from '@/entities/media';
+import { getMockBilingualCues } from '../mockCues';
 import styles from './SidePanelPage.module.css';
 
-const MOCK_CUES: BilingualCue[] = [
-  { index: 1, start: 0, end: 3000, targetText: 'Hello, welcome to the show.', nativeText: 'Xin chào, chào mừng đến chương trình.' },
-  { index: 2, start: 3200, end: 6000, targetText: 'Today we are learning languages.', nativeText: 'Hôm nay chúng ta học ngôn ngữ.' },
-  { index: 3, start: 6200, end: 9000, targetText: 'Please repeat after me.', nativeText: 'Hãy nhắc lại sau tôi.' },
-  { index: 4, start: 9200, end: 12000, targetText: 'Language learning is a journey.', nativeText: 'Học ngôn ngữ là một hành trình.' },
-  { index: 5, start: 12200, end: 15000, targetText: 'Every word brings you closer.', nativeText: 'Mỗi từ đưa bạn đến gần hơn.' },
-];
+const MOCK_CUES = getMockBilingualCues();
 
 export function Showcase(): ReactElement {
   const [currentTimeMs, setCurrentTimeMs] = useState(4500);

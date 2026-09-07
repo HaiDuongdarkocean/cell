@@ -2,6 +2,8 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { UniversalPanel } from './UniversalPanel';
 import { createUniversalPanelController } from './UniversalPanelController';
+import { Dialog } from '@/shared/ui/Dialog';
+import { Select } from '@/shared/ui/Select';
 import type { UniversalPanelTab } from './types';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 
@@ -127,6 +129,88 @@ describe('UniversalPanel component', () => {
     );
     fireEvent.keyDown(screen.getByTestId('universal-panel'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('Escape inside a nested Dialog closes only the dialog, not the panel', () => {
+    const onClose = jest.fn();
+    const onDialogChange = jest.fn();
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={
+          <Dialog open onOpenChange={onDialogChange} data-cell-id="inner-dialog">
+            <input data-cell-id="inner-input" />
+          </Dialog>
+        }
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    fireEvent.keyDown(screen.getByTestId('inner-dialog'), { key: 'Escape' });
+    expect(onDialogChange).toHaveBeenCalledWith(false);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('Escape in an open Select listbox closes only the menu, then the next Escape closes the panel', () => {
+    const onClose = jest.fn();
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={
+          <Select
+            placeholder="Pick one"
+            options={[
+              { value: 'a', label: 'Option A' },
+              { value: 'b', label: 'Option B' },
+            ]}
+          />
+        }
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Pick one' }));
+    const listbox = screen.getByRole('listbox');
+    // First Escape: the listbox layer consumes it (capture-phase stack), so
+    // only the menu closes — the panel stays open.
+    fireEvent.keyDown(listbox, { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    // Second Escape: no inner layer remains, the panel closes.
+    fireEvent.keyDown(screen.getByTestId('universal-panel'), { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Escape in the Tools bottom sheet closes only the sheet, not the panel', () => {
+    const onClose = jest.fn();
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+        studyModesPanel={studyModesPanel}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('universal-panel-mobile-tools'));
+    expect(screen.getByTestId('universal-panel-tools-sheet')).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByTestId('universal-panel-tools-sheet'), { key: 'Escape' });
+    expect(screen.queryByTestId('universal-panel-tools-sheet')).not.toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('renders the universal header with split tokenize capsule + close button', () => {

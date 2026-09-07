@@ -1,5 +1,6 @@
-import { useState, useRef, useMemo, type KeyboardEvent, type ReactElement } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './MultiSelect.module.css';
 
 /** A single selectable option. */
@@ -13,155 +14,195 @@ export interface MultiSelectProps {
   /** Test-id prefix used for data-cell-id attributes on sub-elements. */
   testId: string;
   /** All available options. */
-  options: MultiSelectOption[];
+  options: readonly MultiSelectOption[];
   /** Currently selected values. */
-  selectedValues: string[];
-  /** Called with the new selection array whenever a toggle occurs. */
+  selectedValues: readonly string[];
+  /** Called with the new selection array whenever a chip is added/removed. */
   onChange: (values: string[]) => void;
-  /** Search input placeholder. Defaults to "Search...". */
+  /** Search input placeholder. Defaults to the i18n placeholder. */
   placeholder?: string;
-  /** Max height of the option list in pixels. Defaults to 220. */
+  /** Max height of the suggestion list in pixels. */
   maxHeight?: number;
+  /**
+   * Values that are mutually exclusive with every other selection
+   * (e.g. an 'all' sentinel): adding one clears the rest, adding a
+   * specific value drops all exclusive values.
+   */
+  exclusiveValues?: readonly string[];
+  /** Quick-pick values shown as chips when nothing is selected. */
+  popularValues?: readonly string[];
 }
 
 /**
- * Multi-select with search and iOS-style toggle switches.
+ * Multi-select as a tag field (Concept C).
  *
- * Filtering matches the option label case-insensitively, including the
- * native name in parentheses (e.g. "Spanish (Español)" matches "español").
- *
- * Design:
- * - Clean search bar with subtle focus ring
- * - Selected items pinned to top with a divider
- * - iOS-style toggle switches (pure CSS, no checkbox)
- * - Smooth transitions, accessible keyboard navigation
+ * Selected values are removable chips inside the input; typing filters an
+ * in-flow suggestion list; Enter adds the first match, Backspace removes the
+ * last chip, Escape blurs. Exclusive values (e.g. 'all') behave as a mode,
+ * not a sibling item.
  */
 export function MultiSelect({
   testId,
   options,
   selectedValues,
   onChange,
-  placeholder = 'Search languages...',
+  placeholder,
   maxHeight,
+  exclusiveValues = [],
+  popularValues = [],
 }: MultiSelectProps): ReactElement {
   const [query, setQuery] = useState('');
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const selectedSet = useMemo(
-    () => new Set(selectedValues),
-    [selectedValues],
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  const exclusiveSet = useMemo(() => new Set(exclusiveValues), [exclusiveValues]);
+  const optionByValue = useMemo(
+    () => new Map(options.map((o) => [o.value, o])),
+    [options],
   );
 
-  const filtered = useMemo(() => {
+  const add = (value: string): void => {
+    if (selectedSet.has(value)) return;
+    const base = exclusiveSet.has(value)
+      ? []
+      : selectedValues.filter((v) => !exclusiveSet.has(v));
+    onChange([...base, value]);
+    setQuery('');
+    inputRef.current?.focus();
+  };
+
+  const remove = (value: string): void => {
+    onChange(selectedValues.filter((v) => v !== value));
+  };
+
+  const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((opt) => opt.label.toLowerCase().includes(q));
-  }, [options, query]);
+    return options.filter(
+      (o) => !selectedSet.has(o.value) && (!q || o.label.toLowerCase().includes(q)),
+    );
+  }, [options, selectedSet, query]);
 
-  const sorted = useMemo(() => {
-    // Selected items follow the order they were added (oldest first, newest last)
-    const filteredByValue = new Map(filtered.map((opt) => [opt.value, opt]));
-    const selected = selectedValues
-      .map((v) => filteredByValue.get(v))
-      .filter((opt): opt is MultiSelectOption => Boolean(opt));
-    const unselected = filtered.filter((opt) => !selectedSet.has(opt.value));
-    return { selected, unselected };
-  }, [filtered, selectedSet, selectedValues]);
-
-  const selectedCount = selectedValues.length;
-
-  const toggle = (value: string): void => {
-    if (selectedSet.has(value)) {
-      onChange(selectedValues.filter((v) => v !== value));
-    } else {
-      onChange([...selectedValues, value]);
-    }
-  };
-
-  const handleOptionKeyDown = (e: KeyboardEvent<HTMLLIElement>, value: string): void => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggle(value);
-    }
-  };
-
-  const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Escape') {
-      searchRef.current?.blur();
-    }
-  };
-
-  const renderOption = (opt: MultiSelectOption, isSelected: boolean): ReactElement => (
-    <li
-      key={opt.value}
-      className={`${styles.option} ${isSelected ? styles.optionSelected : ''}`}
-      role="option"
-      aria-selected={isSelected}
-      data-cell-id={`${testId}-option-${opt.value}`}
-      tabIndex={0}
-      onClick={() => toggle(opt.value)}
-      onKeyDown={(e) => handleOptionKeyDown(e, opt.value)}
-    >
-      <span className={styles.optionLabel}>{opt.label}</span>
-      <span className={styles.toggleSwitch} data-toggle="switch" aria-hidden="true">
-        <span className={styles.toggleKnob} />
-      </span>
-    </li>
+  const popular = useMemo(
+    () =>
+      popularValues
+        .map((v) => optionByValue.get(v))
+        .filter((o): o is MultiSelectOption => o !== undefined && !selectedSet.has(o.value)),
+    [popularValues, optionByValue, selectedSet],
   );
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' && suggestions[0]) {
+      e.preventDefault();
+      add(suggestions[0].value);
+    } else if (e.key === 'Backspace' && !query && selectedValues.length > 0) {
+      remove(selectedValues[selectedValues.length - 1]);
+    } else if (e.key === 'Escape') {
+      // The first Escape only blurs the input — consume it so an ancestor
+      // surface (e.g. UniversalPanel) doesn't close on the same keypress.
+      e.stopPropagation();
+      inputRef.current?.blur();
+    }
+  };
+
+  const showSuggestions = focused || query.trim().length > 0;
 
   return (
     <div className={styles.container} data-cell-id={testId}>
-      {/* Search bar */}
-      <div className={styles.searchWrap}>
+      {/* Chip field — the selection itself */}
+      <div
+        className={`${styles.field} ${focused ? styles.fieldFocused : ''}`}
+        onClick={() => inputRef.current?.focus()}
+      >
         <Icon name="search" size="xs" className={styles.searchIcon} />
+        {selectedValues.map((value) => {
+          const opt = optionByValue.get(value);
+          const label = opt?.label ?? value;
+          return (
+            <span
+              key={value}
+              className={`${styles.chip} ${exclusiveSet.has(value) ? styles.chipExclusive : ''}`}
+              data-cell-id={`${testId}-chip-${value}`}
+            >
+              {label}
+              <button
+                type="button"
+                className={styles.chipRemove}
+                aria-label={t('ui.multiSelect.removeChip', [label])}
+                data-cell-id={`${testId}-remove-${value}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(value);
+                }}
+              >
+                <Icon name="x" size="xs" />
+              </button>
+            </span>
+          );
+        })}
         <input
-          ref={searchRef}
+          ref={inputRef}
           type="search"
-          className={styles.searchInput}
-          placeholder={placeholder}
-          aria-label="Search languages"
+          className={styles.input}
+          placeholder={selectedValues.length > 0 ? '' : (placeholder ?? t('ui.multiSelect.searchPlaceholder'))}
+          aria-label={t('ui.multiSelect.addAria')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
         />
-        {selectedCount > 0 && (
-          <span className={styles.badge} data-cell-id={`${testId}-count`}>
-            {selectedCount}
-          </span>
-        )}
       </div>
 
-      {/* Options list */}
-      <ul
-        className={styles.list}
-        role="listbox"
-        style={maxHeight !== undefined ? { '--multi-select-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
-      >
-        {sorted.selected.length > 0 && (
-          <>
-            <li className={styles.sectionHeader} role="presentation">
-              <span>Selected</span>
-              <span className={styles.sectionCount}>{sorted.selected.length}</span>
+      {/* Popular quick-picks when the field is empty */}
+      {selectedValues.length === 0 && !query && popular.length > 0 && (
+        <div className={styles.popular}>
+          <span className={styles.popularLabel}>{t('ui.multiSelect.popular')}</span>
+          {popular.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className={styles.popChip}
+              data-cell-id={`${testId}-popular-${o.value}`}
+              onClick={() => add(o.value)}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Suggestions — in-flow so the parent card grows with the list */}
+      {showSuggestions && (
+        <ul
+          className={styles.suggestions}
+          role="listbox"
+          aria-label={t('common.searchOptions.aria')}
+          style={maxHeight !== undefined ? ({ '--multi-select-max-height': `${maxHeight}px` } as React.CSSProperties) : undefined}
+        >
+          {suggestions.map((o) => (
+            <li key={o.value} role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={false}
+                className={styles.suggest}
+                data-cell-id={`${testId}-option-${o.value}`}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => add(o.value)}
+              >
+                <span className={styles.suggestLabel}>{o.label}</span>
+                <Icon name="plus" size="xs" className={styles.suggestAdd} />
+              </button>
             </li>
-            {sorted.selected.map((opt) => renderOption(opt, true))}
-            {sorted.unselected.length > 0 && <li className={styles.divider} role="presentation" />}
-          </>
-        )}
-        {sorted.unselected.length > 0 && (
-          <>
-            <li className={styles.sectionHeader} role="presentation">
-              <span>{query ? 'Results' : 'All languages'}</span>
-              <span className={styles.sectionCount}>{sorted.unselected.length}</span>
+          ))}
+          {suggestions.length === 0 && (
+            <li className={styles.empty} role="presentation">
+              {t('common.noResults')}
             </li>
-            {sorted.unselected.map((opt) => renderOption(opt, false))}
-          </>
-        )}
-        {filtered.length === 0 && (
-          <li className={styles.emptyState} role="presentation">
-            No languages found
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

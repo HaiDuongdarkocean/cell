@@ -53,6 +53,12 @@
   gap: var(--space-0-5);
 }
 
+/* chevronDown rotated to point up — used by the expand toggle (when open)
+   and the move-up action. The icon catalog has no chevronUp entry. */
+.iconUp {
+  transform: rotate(180deg);
+}
+
 /* --- Expanded detail --- */
 
 .detail {
@@ -60,7 +66,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-1) var(--space-1);
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 .detailNote {
@@ -111,21 +117,11 @@
   gap: var(--space-2);
 }
 
-.lookupInput {
+/* Shared Input renders a .root wrapper — the wrapper, not the inner input,
+   is the flex child that must grow/shrink in the row. */
+.lookupRow > :first-child {
   flex: 1;
   min-width: 0;
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-}
-
-.lookupInput:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: 0;
 }
 
 .lookupResult {
@@ -154,7 +150,7 @@
 
 .skeleton {
   background: var(--color-surface-card);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-dialog);
   padding: var(--space-3) var(--space-4);
   min-height: var(--touch-target-mobile);

@@ -123,7 +123,6 @@ export function PronunciationPanel({
               key={idx}
               variant="outline"
               size="sm"
-              material="solid"
               active={activeIndex === idx}
               className={`${styles.phoneme} ${isStress ? styles.phonemeStress : ''}`}
               onClick={() => handleClick(phoneme, idx)}

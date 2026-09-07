@@ -4,8 +4,8 @@
    Dialog and SearchableSelect). */
 
 .root {
-  position: relative;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
@@ -17,7 +17,7 @@
   gap: var(--space-2);
   width: 100%;
   min-height: var(--input-height);
-  padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
+  padding: var(--input-padding-y) var(--input-padding-x);
   border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
   background: var(--input-bg);
@@ -36,32 +36,32 @@
 
 /* Variants */
 .triggerOutline {
-  border-color: var(--input-border);
-  background: var(--input-bg);
+  border-color: var(--input-outline-border);
+  background: var(--input-outline-bg);
 }
 
 .triggerOutline:hover {
   border-color: var(--color-border-emphasized);
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover);
 }
 
 .triggerOutline.triggerOpen {
   border-color: var(--color-border-focus);
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover);
 }
 
 .triggerFilled {
-  border-color: var(--color-border-subtle);
-  background: var(--color-surface-elevated);
+  border-color: transparent;
+  background: var(--input-filled-bg);
 }
 
 .triggerFilled:hover {
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover);
 }
 
 .triggerFilled.triggerOpen {
   border-color: var(--color-border-focus);
-  background: var(--color-surface-hover);
+  background: var(--color-field-hover);
 }
 
 .triggerGhost {
@@ -117,19 +117,19 @@
 /* Sizes */
 .triggerSm {
   min-height: var(--input-height-sm);
-  padding: var(--input-padding-y-sm) var(--space-6) var(--input-padding-y-sm) var(--input-padding-x-sm);
+  padding: var(--input-padding-y-sm) var(--input-padding-x-sm);
   font-size: var(--input-font-size-sm);
 }
 
 .triggerMd {
   min-height: var(--input-height);
-  padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
+  padding: var(--input-padding-y) var(--input-padding-x);
   font-size: var(--input-font-size);
 }
 
 .triggerLg {
   min-height: var(--input-height-lg);
-  padding: var(--input-padding-y-lg) var(--space-10) var(--input-padding-y-lg) var(--input-padding-x-lg);
+  padding: var(--input-padding-y-lg) var(--input-padding-x-lg);
   font-size: var(--input-font-size-lg);
 }
 
@@ -141,42 +141,33 @@
   white-space: nowrap;
 }
 
+/* Anchor icon — rendered via Button's trailingIcon prop (a direct flex child
+   of the trigger, so it lands at the outer right edge with no positioning). */
 .chevron {
-  position: absolute;
-  top: 50%;
-  right: var(--space-3);
-  width: var(--space-4);
-  height: var(--space-4);
-  transform: translateY(-50%);
   color: var(--color-text-secondary);
-  pointer-events: none;
   transition: transform var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
-.triggerOpen .chevron {
-  color: var(--color-primary);
-}
-
 .chevronOpen {
-  transform: translateY(-50%) rotate(180deg);
+  color: var(--color-primary);
+  transform: rotate(180deg);
 }
 
-/* --- Menu --- */
+/* --- Menu ---
+   In-flow expansion (not an overlay): the menu takes layout space so the
+   containing card grows to fit it — no overflow:hidden clipping, no z-index
+   fights, and nothing covers the content below. */
 .menu {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
+  position: static;
+  margin-top: var(--space-1);
   display: flex;
   flex-direction: column;
-  width: max-content;
-  min-width: 100%;
-  max-width: min(calc(var(--space-5) * 16), calc(100vw - var(--space-8)));
+  width: 100%;
   max-height: min(calc(var(--space-5) * 11), 50vh);
   background: var(--color-surface-elevated);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--dialog-radius);
   box-shadow: var(--shadow-popover);
-  z-index: var(--z-dropdown);
   overflow: hidden;
 }
 
@@ -297,5 +288,11 @@
   .chevron,
   .option {
     transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .trigger:not(.triggerGhost) {
+    border-color: var(--color-border);
   }
 }

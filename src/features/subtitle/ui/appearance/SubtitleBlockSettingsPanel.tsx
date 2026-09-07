@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { SubtitleBlockSettings } from '@/entities/settings';
 import { Slider } from '@/shared/ui/Slider';
+import { Label } from '@/shared/ui/Label';
 import styles from './SubtitleBlockSettingsPanel.module.css';
 
 interface SubtitleBlockSettingsPanelProps {
@@ -25,9 +26,9 @@ export function SubtitleBlockSettingsPanel({
         {/* Position */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="block-y-offset">
+            <Label className={styles.label} htmlFor="block-y-offset">
               Position
-            </label>
+            </Label>
             <span className={styles.value}>{settings.yOffsetPercent}%</span>
           </div>
           <Slider
@@ -46,9 +47,9 @@ export function SubtitleBlockSettingsPanel({
         {/* Size */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="block-global-scale">
+            <Label className={styles.label} htmlFor="block-global-scale">
               Size
-            </label>
+            </Label>
             <span className={styles.value}>{settings.globalScale.toFixed(1)}×</span>
           </div>
           <Slider
@@ -66,9 +67,9 @@ export function SubtitleBlockSettingsPanel({
         {/* Background */}
         <div className={styles.row}>
           <div className={styles.sliderHeader}>
-            <label className={styles.label} htmlFor="block-bg-opacity">
+            <Label className={styles.label} htmlFor="block-bg-opacity">
               Background
-            </label>
+            </Label>
             <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
           </div>
           <Slider

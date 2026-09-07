@@ -16,6 +16,7 @@ import type { ReactElement } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
+import { Label } from '@/shared/ui/Label';
 import { Select } from '@/shared/ui/Select';
 import { FieldRow, FieldAutoGrowInput } from './FieldRow';
 import { MediaList } from './MediaList';
@@ -90,7 +91,7 @@ export function CardCreatorDialogContent({
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
   const headerSettings = isPanel ? (
-    <Button material="solid"
+    <Button
       variant="ghost"
       size="sm"
       disabled
@@ -103,7 +104,7 @@ export function CardCreatorDialogContent({
   ) : undefined;
 
   const headerQueue = isPanel ? (
-    <Button material="solid"
+    <Button
       variant="ghost"
       size="sm"
       onClick={toggleQueueSidebar}
@@ -142,7 +143,7 @@ export function CardCreatorDialogContent({
         <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Card destination</Heading>
         <div className={styles['cc-dialog__pair-row']}>
           <div className={styles['cc-dialog__field']}>
-            <label className={styles['cc-dialog__field-label']}>Note type</label>
+            <Label className={styles['cc-dialog__field-label']}>Note type</Label>
             <Select
               value={draft.noteType}
               options={noteTypes.map((n) => ({ value: n, label: n }))}
@@ -152,7 +153,7 @@ export function CardCreatorDialogContent({
             />
           </div>
           <div className={styles['cc-dialog__field']}>
-            <label className={styles['cc-dialog__field-label']}>Deck</label>
+            <Label className={styles['cc-dialog__field-label']}>Deck</Label>
             <Select
               value={draft.deck}
               options={decks.map((d) => ({ value: d, label: d }))}
@@ -220,7 +221,7 @@ export function CardCreatorDialogContent({
             aria-label="Sentence translation"
             dataId="cc-sentence-translation"
           />
-          <Button material="solid" variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
+          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
             Translate
           </Button>
         </FieldRow>
@@ -349,7 +350,7 @@ export function CardCreatorDialogContent({
       {/* Footer */}
       <div className={styles['cc-dialog__footer']}>
         <div className={styles['cc-dialog__footer-mode']}>
-          <label className={styles['cc-dialog__field-label']}>Update mode</label>
+          <Label className={styles['cc-dialog__field-label']}>Update mode</Label>
           <Select
             value={draft.mediaUpdateMode}
             options={[
@@ -363,10 +364,10 @@ export function CardCreatorDialogContent({
           />
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
-          <Button material="solid" variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
+          <Button variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
             Cancel
           </Button>
-          <Button material="solid"
+          <Button
             variant="secondary"
             size="sm"
             onClick={() => submit('add')}
@@ -375,7 +376,7 @@ export function CardCreatorDialogContent({
           >
             Add
           </Button>
-          <Button material="solid"
+          <Button
             variant="primary"
             size="sm"
             onClick={() => submit('update')}
@@ -415,11 +416,17 @@ export function CardCreatorDialogContent({
     );
   }
 
+  const withQueueClass = [
+    styles['cc-dialog__with-queue'],
+    variant === 'mobile' && styles['cc-dialog--mobile'],
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-cell-id="card-creator-content">
+    <div className={hasQueue ? withQueueClass : undefined} data-cell-id="card-creator-content">
       {body}
       {hasQueue && queueSidebarOpen && (
         <QueueSidebar
+          mobile={variant === 'mobile'}
           queueItems={queueItems}
           queueActiveIndex={queueActiveIndex}
           onSelectQueueItem={selectQueueItem}

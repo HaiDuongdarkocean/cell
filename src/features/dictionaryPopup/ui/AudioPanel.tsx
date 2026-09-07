@@ -113,16 +113,17 @@ export function AudioPanel({
         <>
           <div className={styles.cellAudioSubtabs} role="tablist" aria-label={t('dict.audio.groups.aria')} ref={subtabsRef}>
             {(['word', 'sentence'] as const).map((group) => (
-              <button
+              <Button
                 key={group}
-                type="button"
+                variant="transparent"
+                ripple={false}
                 role="tab"
                 aria-selected={activeGroup === group}
                 className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
                 onClick={(): void => setActiveGroup(group)}
               >
                 {t(group === 'word' ? 'dict.audio.group.word' : 'dict.audio.group.sentence')}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -138,7 +139,6 @@ export function AudioPanel({
                   shape="circle"
                   size="sm"
                   variant="primary"
-                  material="solid"
                   className={styles.cellAudioPlay}
                   aria-label={t('dict.audio.play', [item.label])}
                   onClick={(): void => {
@@ -160,8 +160,9 @@ export function AudioPanel({
                 >
                   <Icon name="audioWave"  />
                 </Button>
-                <button
-                  type="button"
+                <Button
+                  variant="transparent"
+                  ripple={false}
                   className={styles.cellAudioLabel}
                   aria-pressed={selected}
                   onClick={(): void => onToggle(item.id, !selected)}
@@ -170,7 +171,7 @@ export function AudioPanel({
                   {parts.length > 1 && (
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
-                </button>
+                </Button>
                 <span className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                   <Icon name="check" size="md" />
                 </span>

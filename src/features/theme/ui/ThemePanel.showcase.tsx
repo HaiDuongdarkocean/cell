@@ -19,7 +19,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Theme Panel',
-  description: 'Theme customization panel: ModeCards (light/dark/system), ColorCustomization (primary, background, text, border), ThemePreview (live preview), ContrastBadges (WCAG AA/AAA), ThemeImportExport (JSON backup/restore), Reset to defaults with confirm.',
+  description: 'Theme customization panel: ModeCards (light/dark/system) and PresetSwitcher (Dawn/Forest/Ocean/Warmth).',
   level: 'organisms' as const,
   category: 'Theme',
   order: 10,

@@ -3,267 +3,155 @@ import { MultiSelect } from '@/shared/ui/MultiSelect';
 import type { MultiSelectOption } from '@/shared/ui/MultiSelect';
 
 const options: MultiSelectOption[] = [
+  { value: 'all', label: 'All languages' },
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Spanish (Español)' },
   { value: 'zh', label: 'Chinese (中文)' },
   { value: 'fr', label: 'French (Français)' },
 ];
 
-describe('MultiSelect', () => {
+const renderMultiSelect = (
+  props: Partial<Parameters<typeof MultiSelect>[0]> = {},
+  onChange = jest.fn(),
+) => {
+  render(
+    <MultiSelect
+      testId="lang"
+      options={options}
+      selectedValues={[]}
+      onChange={onChange}
+      {...props}
+    />,
+  );
+  return onChange;
+};
+
+describe('MultiSelect (tag field)', () => {
   // === Rendering ===
 
-  it('renders search input and option list', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
+  it('renders the search input', () => {
+    renderMultiSelect();
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
+  it('uses the i18n default search placeholder when nothing is selected', () => {
+    renderMultiSelect();
+    expect(screen.getByRole('searchbox')).toHaveAttribute('placeholder', 'Search languages…');
+  });
+
+  it('renders selected values as chips', () => {
+    renderMultiSelect({ selectedValues: ['en', 'fr'] });
+    expect(screen.getByTestId('lang-chip-en')).toHaveTextContent('English');
+    expect(screen.getByTestId('lang-chip-fr')).toHaveTextContent('French');
+  });
+
+  // === Suggestions ===
+
+  it('shows the suggestion listbox when the input is focused', () => {
+    renderMultiSelect();
+    fireEvent.focus(screen.getByRole('searchbox'));
     expect(screen.getByRole('listbox')).toBeInTheDocument();
-    // All options rendered by default
-    expect(screen.getAllByRole('option')).toHaveLength(4);
+    expect(screen.getAllByRole('option')).toHaveLength(options.length);
   });
 
-  it('uses default search placeholder', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByRole('searchbox')).toHaveAttribute('placeholder', 'Search languages...');
-  });
-
-  // === Filtering ===
-
-  it('filters options by label when typing in search', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
+  it('filters suggestions by label when typing', () => {
+    renderMultiSelect();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'Span' } });
     const visible = screen.getAllByRole('option');
     expect(visible).toHaveLength(1);
     expect(visible[0]).toHaveTextContent('Spanish');
   });
 
-  it('search is case-insensitive', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'french' } });
-    const visible = screen.getAllByRole('option');
-    expect(visible).toHaveLength(1);
-    expect(visible[0]).toHaveTextContent('French');
-  });
-
-  it('matches native name in parentheses', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
+  it('matches native name in parentheses, case-insensitive', () => {
+    renderMultiSelect();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'español' } });
     const visible = screen.getAllByRole('option');
     expect(visible).toHaveLength(1);
     expect(visible[0]).toHaveTextContent('Spanish');
   });
 
-  // === Selection toggling ===
+  it('hides already-selected values from suggestions', () => {
+    renderMultiSelect({ selectedValues: ['en'] });
+    fireEvent.focus(screen.getByRole('searchbox'));
+    expect(screen.queryByTestId('lang-option-en')).not.toBeInTheDocument();
+  });
 
-  it('clicking an unselected option adds it to selectedValues via onChange', () => {
-    const onChange = jest.fn();
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={onChange}
-      />,
-    );
+  it('shows empty state when search yields no results', () => {
+    renderMultiSelect();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'klingon' } });
+    expect(screen.getByText('No results found.')).toBeInTheDocument();
+  });
+
+  // === Add / remove ===
+
+  it('clicking a suggestion adds it via onChange', () => {
+    const onChange = renderMultiSelect();
+    fireEvent.focus(screen.getByRole('searchbox'));
     screen.getByTestId('lang-option-en').click();
     expect(onChange).toHaveBeenCalledWith(['en']);
   });
 
-  it('clicking a selected option removes it from selectedValues via onChange', () => {
-    const onChange = jest.fn();
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['en', 'zh']}
-        onChange={onChange}
-      />,
-    );
-    screen.getByTestId('lang-option-en').click();
+  it('clicking a chip remove button removes it via onChange', () => {
+    const onChange = renderMultiSelect({ selectedValues: ['en', 'zh'] });
+    screen.getByTestId('lang-remove-en').click();
     expect(onChange).toHaveBeenCalledWith(['zh']);
   });
 
-  // === Selection state ===
-
-  it('aria-selected reflects selection state', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['en']}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.getByTestId('lang-option-en')).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('lang-option-zh')).toHaveAttribute('aria-selected', 'false');
+  it('Enter adds the first suggestion', () => {
+    const onChange = renderMultiSelect();
+    const input = screen.getByRole('searchbox');
+    fireEvent.change(input, { target: { value: 'chin' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith(['zh']);
   });
 
-  it('toggle switch is shown for all items (selected and unselected)', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['en']}
-        onChange={() => {}}
-      />,
-    );
-    const enOption = screen.getByTestId('lang-option-en');
-    const zhOption = screen.getByTestId('lang-option-zh');
-    // Toggle switch should be present for both selected and unselected
-    expect(enOption.querySelector('[data-toggle="switch"]')).toBeInTheDocument();
-    expect(zhOption.querySelector('[data-toggle="switch"]')).toBeInTheDocument();
-  });
-
-  it('selected items appear first in the list with section header', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['zh', 'fr']}
-        onChange={() => {}}
-      />,
-    );
-    const allOptions = screen.getAllByRole('option');
-    // Selected items (zh, fr) should come first
-    expect(allOptions[0]).toHaveTextContent('Chinese');
-    expect(allOptions[1]).toHaveTextContent('French');
-    // Unselected items (en, es) should come after
-    expect(allOptions[2]).toHaveTextContent('English');
-    expect(allOptions[3]).toHaveTextContent('Spanish');
-    // Section headers should be present
-    expect(screen.getByText('Selected')).toBeInTheDocument();
-    expect(screen.getByText('All languages')).toBeInTheDocument();
-  });
-
-  it('only "All languages" section appears when no items selected', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.queryByText('Selected')).not.toBeInTheDocument();
-    expect(screen.getByText('All languages')).toBeInTheDocument();
-    expect(screen.queryByTestId('lang-footer')).not.toBeInTheDocument();
-  });
-
-  it('count badge shows number of selected items', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['en', 'es']}
-        onChange={() => {}}
-      />,
-    );
-    const badge = screen.getByTestId('lang-count');
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveTextContent('2');
-  });
-
-  it('count badge is hidden when no items selected', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    expect(screen.queryByTestId('lang-count')).not.toBeInTheDocument();
-  });
-
-  it('shows empty state when search yields no results', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'klingon' } });
-    expect(screen.getByText('No languages found')).toBeInTheDocument();
-  });
-
-  // === Keyboard ===
-
-  it('Enter key on an option toggles selection', () => {
-    const onChange = jest.fn();
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={onChange}
-      />,
-    );
-    fireEvent.keyDown(screen.getByTestId('lang-option-fr'), { key: 'Enter' });
-    expect(onChange).toHaveBeenCalledWith(['fr']);
-  });
-
-  it('Space key on an option toggles selection', () => {
-    const onChange = jest.fn();
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={['fr']}
-        onChange={onChange}
-      />,
-    );
-    fireEvent.keyDown(screen.getByTestId('lang-option-fr'), { key: ' ' });
-    expect(onChange).toHaveBeenCalledWith([]);
+  it('Backspace on empty query removes the last chip', () => {
+    const onChange = renderMultiSelect({ selectedValues: ['en', 'fr'] });
+    fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Backspace' });
+    expect(onChange).toHaveBeenCalledWith(['en']);
   });
 
   it('Escape blurs the search input', () => {
-    render(
-      <MultiSelect
-        testId="lang"
-        options={options}
-        selectedValues={[]}
-        onChange={() => {}}
-      />,
-    );
-    const search = screen.getByRole('searchbox');
-    search.focus();
-    expect(document.activeElement).toBe(search);
-    fireEvent.keyDown(search, { key: 'Escape' });
-    expect(document.activeElement).not.toBe(search);
+    renderMultiSelect();
+    const input = screen.getByRole('searchbox');
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  // === Exclusive values (e.g. 'all') ===
+
+  it('adding an exclusive value clears other selections', () => {
+    const onChange = renderMultiSelect({ selectedValues: ['en', 'fr'], exclusiveValues: ['all'] });
+    fireEvent.focus(screen.getByRole('searchbox'));
+    screen.getByTestId('lang-option-all').click();
+    expect(onChange).toHaveBeenCalledWith(['all']);
+  });
+
+  it('adding a specific value while an exclusive is set drops the exclusive', () => {
+    const onChange = renderMultiSelect({ selectedValues: ['all'], exclusiveValues: ['all'] });
+    fireEvent.focus(screen.getByRole('searchbox'));
+    screen.getByTestId('lang-option-es').click();
+    expect(onChange).toHaveBeenCalledWith(['es']);
+  });
+
+  // === Popular quick-picks ===
+
+  it('shows popular chips when nothing is selected', () => {
+    renderMultiSelect({ popularValues: ['en', 'fr'] });
+    expect(screen.getByTestId('lang-popular-en')).toBeInTheDocument();
+    expect(screen.getByTestId('lang-popular-fr')).toBeInTheDocument();
+  });
+
+  it('hides popular row once something is selected', () => {
+    renderMultiSelect({ selectedValues: ['es'], popularValues: ['en', 'fr'] });
+    expect(screen.queryByTestId('lang-popular-en')).not.toBeInTheDocument();
+  });
+
+  it('clicking a popular chip adds it via onChange', () => {
+    const onChange = renderMultiSelect({ popularValues: ['en'] });
+    screen.getByTestId('lang-popular-en').click();
+    expect(onChange).toHaveBeenCalledWith(['en']);
   });
 });

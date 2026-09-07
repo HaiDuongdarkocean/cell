@@ -1,0 +1,109 @@
+.pipeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.stepWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+}
+
+/* (0,2,0) beats shared Button's .button/.transparent chrome — the module
+   class owns the step pill look. Button wraps children in an inline-flex
+   .label span, so the dot/icon/label gap lives on that wrapper. */
+.stepWrapper .step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  height: auto;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-field);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+/* Button's .label wrapper — carries the row gap between dot, icon, text. */
+.stepWrapper .step > span {
+  gap: var(--space-1);
+}
+
+.stepWrapper .step:hover {
+  background: var(--color-field-hover);
+}
+
+.stepWrapper .step:focus-visible {
+  outline: var(--border-width-thick) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.stepWrapper .selected,
+.stepWrapper .selected:hover,
+.stepWrapper .selected:active {
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  border-color: var(--color-primary);
+}
+
+.dot {
+  width: var(--space-1-5);
+  height: var(--space-1-5);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  background: var(--color-text-disabled);
+}
+
+.ready {
+  background: var(--color-success);
+}
+
+.missing {
+  background: var(--color-warning);
+}
+
+.disabled {
+  background: var(--color-text-disabled);
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.arrow {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  user-select: none;
+}
+
+/* Mobile: scroll the pipeline horizontally instead of wrapping. */
+@media (max-width: 599px) {
+  .pipeline {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: var(--space-1);
+  }
+
+  .stepWrapper {
+    flex: 0 0 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stepWrapper .step {
+    transition: none;
+  }
+}

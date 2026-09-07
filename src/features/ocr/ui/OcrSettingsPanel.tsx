@@ -201,7 +201,7 @@ export function OcrSettingsPanel({
             icon={<Icon name="scanText" size="sm" />}
             label="Detect burned-in subtitles"
             trailing={
-              <Button shape="circle" material="solid" variant="ghost"
+              <Button shape="circle" variant="ghost"
                 className={styles.infoBtn}
                 aria-label="What is OCR?"
                 aria-expanded={hintOpen}
@@ -242,7 +242,7 @@ export function OcrSettingsPanel({
                 icon={<Icon name="languages" size="sm" />}
                 label="Target language"
               />
-              <Button shape="circle" material="solid" variant="ghost"
+              <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
                 aria-label="Reset target language to system default"
                 data-cell-id="ocr-target-lang-reset"
@@ -269,7 +269,7 @@ export function OcrSettingsPanel({
                 icon={<Icon name="languages" size="sm" />}
                 label="Native language"
               />
-              <Button shape="circle" material="solid" variant="ghost"
+              <Button shape="circle" variant="ghost"
                 className={styles.resetBtn}
                 aria-label="Reset native language to system default"
                 data-cell-id="ocr-native-lang-reset"
@@ -322,7 +322,7 @@ export function OcrSettingsPanel({
               <SettingsRow stacked divider>
                 <LabelGroup label="Top half" sublabel="Which language stream runs in the top half" />
                 <div className={styles.segmentButtons}>
-                  <Button material="solid"
+                  <Button
                     variant="outline"
                     size="sm"
                     fullWidth
@@ -332,7 +332,7 @@ export function OcrSettingsPanel({
                   >
                     Top = Target
                   </Button>
-                  <Button material="solid"
+                  <Button
                     variant="outline"
                     size="sm"
                     fullWidth
@@ -441,7 +441,7 @@ export function OcrSettingsPanel({
           {/* Region action buttons — horizontal (icon + label inline) */}
           <SettingsRow stacked divider>
             <div className={styles.regionButtons}>
-              <Button material="solid"
+              <Button
                 variant="outline"
                 size="sm"
                 collapseLabel
@@ -452,7 +452,7 @@ export function OcrSettingsPanel({
                 Select
               </Button>
               {hasCustomRegion && (
-                <Button material="solid"
+                <Button
                   variant="outline"
                   size="sm"
                   collapseLabel
@@ -463,7 +463,7 @@ export function OcrSettingsPanel({
                   Edit
                 </Button>
               )}
-              <Button material="solid"
+              <Button
                 variant="ghost"
                 size="sm"
                 collapseLabel

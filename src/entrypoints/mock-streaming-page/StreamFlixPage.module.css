@@ -1,4 +1,4 @@
-/* StreamFlixPage — iOS Liquid Glass / frosted-glass streaming mock. */
+/* StreamFlixPage — solid-surface streaming mock. */
 
 .page {
   min-height: 100dvh;
@@ -25,13 +25,10 @@
   gap: var(--space-4);
   padding: var(--space-2) var(--space-3);
   width: 100%;
-  background: color-mix(in srgb, var(--color-glass-surface) 72%, transparent);
-  backdrop-filter: blur(var(--blur-xl)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(180%);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
   box-shadow:
-    inset 0 var(--space-0-5) 0 0 var(--color-glass-inner-highlight),
     0 var(--space-3) var(--space-8) calc(var(--space-1) * -1) color-mix(in srgb, var(--color-shadow) 60%, transparent);
 }
 
@@ -84,14 +81,13 @@
 @media (hover: hover) {
   .navLink:hover {
     color: var(--color-text);
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
   }
 }
 
 .navLinkActive {
   color: var(--color-text-on-primary);
   background: var(--color-primary);
-  box-shadow: inset 0 var(--space-0-5) 0 0 color-mix(in srgb, var(--color-button-liquid-caustic) 50%, transparent);
 }
 
 .headerRight {
@@ -113,7 +109,7 @@
 @media (hover: hover) {
   .iconBtn:hover {
     color: var(--color-text);
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
   }
 }
 
@@ -122,8 +118,8 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1);
-  background: var(--color-glass-input-bg);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out);
@@ -183,13 +179,10 @@
 }
 
 .glassCard {
-  background: color-mix(in srgb, var(--color-glass-surface) 64%, transparent);
-  backdrop-filter: blur(var(--blur-lg)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(160%);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-3xl);
   box-shadow:
-    inset 0 var(--space-0-5) 0 0 var(--color-glass-inner-highlight),
     0 var(--space-4) var(--space-10) calc(var(--space-1) * -1) color-mix(in srgb, var(--color-shadow) 50%, transparent);
 }
 
@@ -207,8 +200,8 @@
   display: inline-flex;
   gap: var(--space-0-5);
   padding: var(--space-1);
-  background: var(--color-glass-input-bg);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
 }
 
@@ -234,7 +227,7 @@
   .serverTab:hover,
   .subModeTab:hover {
     color: var(--color-text);
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
   }
 }
 
@@ -242,7 +235,6 @@
 .subModeTab[aria-selected="true"] {
   color: var(--color-text-on-primary);
   background: var(--color-primary);
-  box-shadow: inset 0 var(--space-0-5) 0 0 color-mix(in srgb, var(--color-button-liquid-caustic) 45%, transparent);
 }
 
 .subModeRow {
@@ -421,7 +413,7 @@
 
 @media (hover: hover) {
   .episodeItem:hover {
-    background: var(--color-glass-surface-hover);
+    background: var(--color-surface-hover);
     transform: translateX(var(--space-0-5));
   }
 }
@@ -476,7 +468,7 @@
   aspect-ratio: 2 / 3;
   border-radius: var(--radius-2xl);
   object-fit: cover;
-  background: var(--color-glass-input-bg);
+  background: var(--color-surface);
   transition: box-shadow var(--duration-fast) var(--ease-out);
 }
 
@@ -490,9 +482,7 @@
 
 .footer {
   margin-top: var(--space-8);
-  background: var(--color-glass-surface);
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
+  background: var(--color-surface);
   box-shadow:
     0 calc(var(--space-0-5) * -1) var(--space-2) calc(var(--space-0-5) * -1) color-mix(in srgb, var(--color-shadow) 40%, transparent);
 }
@@ -532,7 +522,7 @@
   padding: var(--space-4) 0;
   text-align: center;
   color: var(--color-text-secondary);
-  border-top: var(--border-width-hairline) solid var(--color-glass-border);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 .childRoot {
@@ -581,13 +571,10 @@
     flex-direction: column;
     padding: var(--space-3);
     gap: var(--space-1);
-    background: color-mix(in srgb, var(--color-glass-surface) 90%, transparent);
-    backdrop-filter: blur(var(--blur-xl)) saturate(180%);
-    -webkit-backdrop-filter: blur(var(--blur-xl)) saturate(180%);
-    border: var(--border-width-hairline) solid var(--color-glass-border);
+    background: var(--color-surface);
+    border: var(--border-width-hairline) solid var(--color-border-subtle);
     border-radius: var(--radius-3xl);
     box-shadow:
-      inset 0 var(--space-0-5) 0 0 var(--color-glass-inner-highlight),
       0 var(--space-4) var(--space-12) calc(var(--space-1) * -1) color-mix(in srgb, var(--color-shadow) 60%, transparent);
   }
 

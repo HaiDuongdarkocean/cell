@@ -16,16 +16,24 @@
   pointer-events: auto;
 }
 
-.clusterRight :global(button),
-.clusterRight :global([role='button']) {
+/* Doubled class = specificity (0,2,1) beats Button's `.md.circle` /
+   `.sm.circle` (0,2,0) regardless of injection order, so --cluster-btn-size
+   (adaptive clamp + popup settings) actually governs. Same trick:
+   UniversalPanel.module.css `.desktopSidebar.desktopSidebar`. */
+.clusterRight.clusterRight :global(button),
+.clusterRight.clusterRight :global([role='button']) {
   width: var(--cluster-btn-size);
   height: var(--cluster-btn-size);
   min-width: var(--cluster-btn-size);
   min-height: var(--cluster-btn-size);
 }
 
+/* !important: beats Button's `.sm.circle .label > svg` icon-size rules
+   (0,3,1) and any host-page CSS on the injected overlay. */
 .clusterRight :global(button) :global(span),
-.clusterRight :global([role='button']) :global(span) {
+.clusterRight :global(button) :global(svg),
+.clusterRight :global([role='button']) :global(span),
+.clusterRight :global([role='button']) :global(svg) {
   width: var(--cluster-icon-size) !important;
   height: var(--cluster-icon-size) !important;
 }
@@ -87,7 +95,7 @@
   inset: 0;
   pointer-events: auto;
   z-index: 2;
-  background: var(--color-glass-sidebar-backdrop);
+  background: var(--color-overlay);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -100,34 +108,11 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Desktop ≥840px: glass panel — scoped token remap so all child modules
-   (SubtitleManagerPanel, search, appearance, shared Button/Input/Select/
-   IconButton/Tabs/FooterBar) inherit translucent light-on-dark values
-   instead of their default opaque theme-aware tokens. Mobile <840px sheet
-   keeps opaque tokens (see media query below).
-   No backdrop on desktop — panel floats directly over video (no dimming). */
+/* Desktop ≥840px: no backdrop — panel floats directly over video
+   (no dimming). Child modules use default opaque theme-aware tokens. */
 @media (min-width: 840px) {
   .panelLayer {
     background: transparent;
-    --color-surface: var(--color-glass-surface);
-    --color-surface-hover: var(--color-glass-surface-hover);
-    --color-surface-popover: var(--color-glass-surface-popover);
-    --color-surface-card: var(--color-glass-surface);
-    --input-bg: var(--color-glass-input-bg);
-    --color-border: transparent;
-    --color-border-subtle: var(--color-glass-border);
-    --color-text-primary: var(--color-glass-text-primary);
-    --color-text-secondary: var(--color-glass-text-secondary);
-    --color-background: var(--color-glass-background);
-    --color-track: var(--color-glass-track);
-    --color-primary-subtle: transparent;
-    /* Button hover/active — var() in custom property resolves at :root scope,
-       so overriding --color-surface-hover above does NOT re-resolve these.
-       Override directly to keep button states translucent on glass. */
-    --iconbutton-hover-bg: var(--color-glass-surface-hover);
-    --button-ghost-hover-bg: var(--color-glass-surface-hover);
-    --button-outline-hover-bg: var(--color-glass-surface-hover);
-    --button-secondary-hover-bg: var(--color-glass-surface-hover);
   }
 }
 
@@ -143,8 +128,6 @@
     width: 94%;
     max-height: 75vh;
     background: var(--color-surface-popover);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     border-radius: var(--radius-element);
     align-items: stretch;
     justify-content: flex-end;

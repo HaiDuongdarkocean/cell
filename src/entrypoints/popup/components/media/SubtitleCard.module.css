@@ -129,30 +129,17 @@
 
 
 
-.copyBtn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+/* Copy-URL row — shared Button (ghost/xs) stretched full-width, label
+   left-aligned. Scoped under .urlPanel so the overrides beat Button's own
+   .button/.xs layout rules (same 0-1-0 specificity would be order-tied). */
+.urlPanel .copyBtn {
   flex: 1;
   min-width: 0;
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-family: var(--font-family);
+  justify-content: flex-start;
   text-align: left;
-  transition: color var(--transition);
-}
-
-.copyBtn:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-  border-radius: var(--radius-sm);
 }
 
 .copyBtn svg {
-  width: var(--space-3-5);
-  height: var(--space-3-5);
   color: var(--color-text-secondary);
   flex-shrink: 0;
   transition: color var(--transition);
@@ -164,11 +151,12 @@
 
 .urlText {
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
   color: var(--color-text-secondary);
   white-space: nowrap;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-family);
   user-select: all;
   transition: color var(--transition);
 }

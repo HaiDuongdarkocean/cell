@@ -1,18 +1,11 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { PlayerModeOverlay } from '@/features/subtitle/ui/PlayerModeOverlay';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
-import { mockTargetCues, mockNativeCues } from '../mockCues';
+import { getMockCues, getMockBilingualCues, getMockCueActiveIndex } from '../mockCues';
 import { useCuesStore } from '@/stores/cuesStore';
-import type { BilingualCue } from '@/entities/media';
 import styles from './PlayerModeOverlayPage.module.css';
 
-const MOCK_CUES: BilingualCue[] = mockTargetCues.map((t, i) => ({
-  index: t.index,
-  start: t.start,
-  end: t.end,
-  targetText: t.text,
-  nativeText: mockNativeCues[i]?.text ?? '',
-}));
+const MOCK_CUES = getMockBilingualCues();
 
 export function Showcase(): ReactElement {
   const [isPlaying, setIsPlaying] = useState(true);
@@ -22,9 +15,11 @@ export function Showcase(): ReactElement {
   const [currentTimeMs, setCurrentTimeMs] = useState(4500);
 
   useEffect(() => {
+    const { targetCues, nativeCues } = getMockCues();
+    const activeIndex = getMockCueActiveIndex();
     const store = useCuesStore.getState();
-    store.setCues(mockTargetCues, mockNativeCues);
-    store.setActiveIndex(1, 1);
+    store.setCues(targetCues, nativeCues);
+    store.setActiveIndex(activeIndex, activeIndex);
   }, []);
 
   return (

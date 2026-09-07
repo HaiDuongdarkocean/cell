@@ -59,8 +59,8 @@
 .cellHeaderIpa {
   font-size: var(--font-size-md);
   color: var(--color-text-secondary);
-  white-space: nowrap;
-  flex-shrink: 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .cellHeaderReading {
@@ -111,12 +111,15 @@
   flex-shrink: 0;
 }
 
-.cellHeaderStatus {
+/* (0,2,0) beats shared Button's .button/.transparent chrome — the module
+   classes own the pastel fill, size, and spacing of the status pill. */
+.cellHeaderSecond .cellHeaderStatus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
   min-width: calc(var(--space-3) * 7);
+  min-height: 0;
   height: var(--space-5);
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
@@ -130,19 +133,19 @@
   transition: background var(--duration-fast) var(--ease-out);
 }
 
-.cellHeaderStatus:hover {
+.cellHeaderSecond .cellHeaderStatus:hover {
   filter: brightness(0.95);
 }
 
 /* Theme-invariant pastel chips (--chip-status-* literals, same in every
    theme): soft pastel fill + deep-shade text, and stays independent of
    --color-token-status-* which also colors tokenized words. */
-.cellHeaderStatus--unknown {
+.cellHeaderSecond .cellHeaderStatus--unknown {
   background: var(--chip-status-unknown-bg);
   color: var(--chip-status-unknown-fg);
 }
 
-.cellHeaderStatus--tracking {
+.cellHeaderSecond .cellHeaderStatus--tracking {
   background: var(--chip-status-tracking-bg);
   color: var(--chip-status-tracking-fg);
 }
@@ -184,12 +187,12 @@
   border-radius: var(--radius-sm);
 }
 
-.cellHeaderStatus--known {
+.cellHeaderSecond .cellHeaderStatus--known {
   background: var(--chip-status-known-bg);
   color: var(--chip-status-known-fg);
 }
 
-.cellHeaderStatus--ignore {
+.cellHeaderSecond .cellHeaderStatus--ignore {
   background: var(--chip-status-ignore-bg);
   color: var(--chip-status-ignore-fg);
 }
@@ -258,6 +261,7 @@
 .cellDefText {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
   padding-bottom: var(--space-1);
 }
 
@@ -268,6 +272,7 @@
 
 .cellDefExamples {
   margin-top: var(--space-0-5);
+  overflow-wrap: anywhere;
   /* Align with the text column: item padding (4) + check column (20) + gap (4). */
   padding-left: var(--space-7);
   font-size: var(--font-size-xs);

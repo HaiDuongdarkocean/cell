@@ -38,7 +38,7 @@
 /* Viewport Pills */
 .pills {
   display: inline-flex;
-  background: var(--color-surface-2, var(--color-surface-hover));
+  background: var(--color-surface-hover);
   padding: var(--space-0-5);
   border-radius: var(--radius-sm);
   gap: var(--space-0-5);
@@ -96,7 +96,7 @@
 
 .primaryAction:hover {
   background: var(--color-primary);
-  color: var(--color-primary-contrast, #fff);
+  color: var(--color-primary-foreground);
 }
 
 /* ─── Stage Canvas Frame ─── */
@@ -106,7 +106,7 @@
   align-items: flex-start;
   min-height: 580px;
   padding: var(--space-4);
-  background: var(--color-surface-2, #f5f7fb);
+  background: var(--color-surface);
   border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   overflow: auto;
@@ -114,7 +114,7 @@
 }
 
 [data-theme="dark"] .canvasArea {
-  background: var(--color-surface-sunken, #111418);
+  background: var(--color-field);
 }
 
 .deviceBezel {

@@ -23,11 +23,13 @@
 
 .text {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: var(--leading-normal);
 }
 
 .statusText {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: var(--leading-normal);
   font-style: italic;
   opacity: var(--opacity-70);

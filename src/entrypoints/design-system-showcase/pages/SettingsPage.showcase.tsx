@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
 import { SettingsDialogContent } from '@/features/settings/ui/SettingsDialogContent';
-import { DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { Settings } from '@/entities/media';
+import type { Settings } from '@/entities/settings';
+import { setUiLanguageOverride } from '@/shared/i18n';
 import { ViewportFrame, type ViewportWidth } from '../ViewportFrame';
+import { getMockSettings } from '../showcaseFixtures';
+import { SHOWCASE_DATA } from '../showcaseParams';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './SettingsPage.module.css';
 
@@ -26,8 +28,11 @@ const VIEWPORT_OPTIONS: ViewportOption[] = [
 
 const HEIGHT_OPTIONS = [580, 720, 850];
 
+// ?lang=vi|en — lets QA exercise the localized strings in-context.
+setUiLanguageOverride(new URLSearchParams(location.search).get('lang') ?? '');
+
 export function Showcase(): ReactElement {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings>(getMockSettings());
   const [viewportWidth, setViewportWidth] = useState<ViewportWidth>(840);
   const [canvasHeight, setCanvasHeight] = useState<number>(720);
   const [viewMode, setViewMode] = useState<'direct' | 'dialog'>('direct');
@@ -77,7 +82,7 @@ export function Showcase(): ReactElement {
   const openStandaloneWindow = (): void => {
     const origin = window.location.origin;
     const pathname = window.location.pathname;
-    const targetUrl = `${origin}${pathname}?showcase=Settings+Dialog+Page&mode=${themeMode}&viewport=${viewportWidth}&view=${viewMode}`;
+    const targetUrl = `${origin}${pathname}?showcase=Settings+Dialog+Page&mode=${themeMode}&viewport=${viewportWidth}&view=${viewMode}&data=${SHOWCASE_DATA}`;
     window.open(targetUrl, '_blank');
   };
 
@@ -291,7 +296,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Settings Dialog Page',
-  description: 'Full settings dialog with 12 sections: Download (quality, format, concurrency, conversion), Subtitle (languages, overlay, auto-load, auto-translate), Theme (mode, colors, contrast, backup), TTS (voice selection, tester), Dictionary Resources (import, delete), Card Creator, Dictionary Popup, Nav Cluster, Shortcuts. Hỗ trợ điều chỉnh kích thước responsive từ 320px đến màn hình lớn, phóng to toàn màn hình và mở standalone URL.',
+  description: 'Full settings dialog with 12 sections: Download (quality, format, concurrency, conversion), Subtitle (languages, overlay, auto-load, auto-translate), Theme (mode, preset), TTS (voice selection, tester), Dictionary Resources (import, delete), Card Creator, Dictionary Popup, Nav Cluster, Shortcuts. Hỗ trợ điều chỉnh kích thước responsive từ 320px đến màn hình lớn, phóng to toàn màn hình và mở standalone URL.',
   level: 'pages' as const,
   category: 'Settings',
   order: 50,

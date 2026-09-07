@@ -13,7 +13,7 @@ const ITEMS = [
   { id: 'resources', label: 'Resources', icon: 'library' },
 ];
 
-function SidebarDemo({ collapsible }: { collapsible?: boolean }): ReactElement {
+function SidebarDemo(): ReactElement {
   const [activeId, setActiveId] = useState('media');
   const contentRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -22,7 +22,6 @@ function SidebarDemo({ collapsible }: { collapsible?: boolean }): ReactElement {
     <div style={{ display: 'flex', gap: 'var(--space-4)', height: 360 }}>
       <Sidebar
         ariaLabel="Demo sections"
-        collapsible={collapsible}
         header="Settings"
       >
         <Navigation
@@ -68,7 +67,7 @@ function SidebarDemo({ collapsible }: { collapsible?: boolean }): ReactElement {
 function SidebarCustomContentDemo(): ReactElement {
   return (
     <div style={{ display: 'flex', gap: 'var(--space-4)', height: 260 }}>
-      <Sidebar header="Filters & Actions" collapsible>
+      <Sidebar header="Filters & Actions">
         <div style={{ padding: 'var(--space-3)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>Custom Body Slot</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
@@ -96,7 +95,7 @@ export function Showcase(): ReactElement {
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
           Sidebar as Shell (wrapping Navigation with scroll-spy)
         </h3>
-        <SidebarDemo collapsible />
+        <SidebarDemo />
       </div>
       <div>
         <h3 style={{ margin: '0 0 var(--space-3) 0', fontSize: 'var(--text-sm)', fontWeight: 600 }}>
@@ -110,7 +109,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Sidebar',
-  description: 'Responsive layout shell container (container > header + body). Co giãn theo content bên trong, quản lý collapsible + toggle.',
+  description: 'Responsive layout shell container (container > header + body). Co giãn theo content bên trong, hỗ trợ collapsed được điều khiển từ parent.',
   level: 'templates' as const,
   category: 'Layout',
   order: 10,

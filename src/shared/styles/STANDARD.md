@@ -47,7 +47,9 @@ Foundation chứa các quyết định toàn cục:
 
 **Không thuộc foundation:**
 - component tokens (gắn với component cụ thể)
-- domain tokens (token-freq, token-status, glass/liquid, nếu dùng trong feature riêng)
+- domain tokens (token-freq, token-status, nếu dùng trong feature riêng)
+
+> **Glass/liquid tokens đã bị loại (2026-09-08):** `--color-glass-*`, `--color-liquid-blob-*`, `--color-button-liquid-*`, `--shadow-liquid-*`, `backdrop-filter` không còn được dùng cho UI mới. Migration đang chờ — chưa dùng các token này trong code mới. Cơ sở lý thuyết và luật quyết định: `docs/design-system/DESIGN_RATIONALE.md`.
 - presets (dawn/forest/ocean/warmth) — là lớp trên foundation, có rationale riêng
 
 Một token chỉ bị xóa khi có bằng chứng nó không còn consumer trực tiếp, gián tiếp, trong Shadow DOM, content script, preset, test, hay generated asset.
@@ -66,11 +68,16 @@ Có 9 core color keys: `primary`, `background`, `surface`, `text`, `textSecondar
 |---|---|
 | `--color-background` | Page/window background |
 | `--color-surface` | Card, panel, primary container |
+| `--color-field` | Control nằm trong card (input/select/tonal row) — resting inset, borderless |
+| `--color-field-hover` | Hover trên field |
+| `--color-field-active` | Pressed/trạng thái giữ trên field |
 | `--color-surface-elevated` | Popover, dropdown, tooltip, elevated card |
 | `--color-surface-hover` | Hover state trên surface |
 | `--color-surface-pressed` | Active/pressed state trên surface |
 | `--color-background-muted` | Subtle section background |
 | `--color-background-elevated` | Slightly raised page area (nếu dùng) |
+
+**Borderless policy (L-BORDER):** component mặc định không viền — hierarchy do ladder trên + spacing + shadow-chỉ-cho-floating gánh. `border` chỉ khi mang thông tin: variant `outline`, state (focus/error/success/selected), affordance vật lý (drag/kbd/thumb cutout), separator cấu trúc (`--color-border-subtle`), và `prefers-contrast: more`/`forced-colors`. Luật đầy đủ: `docs/design-system/DESIGN_RATIONALE.md` L-BORDER.
 
 ### 3.3 Text roles
 

@@ -9,42 +9,25 @@
   min-height: var(--touch-target);
   height: var(--button-height);
   padding: var(--button-padding-y) var(--button-padding-x);
-  border: none;
+  border: var(--border-width-hairline) solid var(--button-solid-border);
   border-radius: var(--button-radius);
   font-family: var(--font-family);
   font-size: var(--button-font-size);
   font-weight: var(--button-font-weight);
-  color: var(--button-liquid-foreground);
+  color: var(--button-solid-foreground);
   text-decoration: none;
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   isolation: isolate;
-  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
-  backdrop-filter: var(--button-liquid-filter-url, blur(12px) saturate(150%));
-  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(12px) saturate(150%));
-  box-shadow:
-    inset -2px -2px 4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 12%), transparent),
-    0 4px 14px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 8%), transparent);
-  text-shadow: var(--button-liquid-text-shadow);
+  background: var(--button-solid-surface);
+  box-shadow: var(--button-solid-shadow);
   transition:
     background-color var(--duration-slow) var(--ease-out),
     color var(--duration-slow) var(--ease-out),
     border-color var(--duration-slow) var(--ease-out),
     box-shadow var(--duration-slow) var(--ease-out);
-}
-
-/* Hidden SVG filter reference; zero-size, never participates in layout.
-   Scoped as .button > .glassFilter so its position: absolute beats
-   the .button > * position: relative that otherwise re-enters it into
-   the flex flow and creates an unwanted gap. */
-.button > .glassFilter {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  pointer-events: none;
 }
 
 .button > * {
@@ -53,64 +36,32 @@
   z-index: calc(var(--z-base) + 1);
 }
 
-/* Rim — bright top-left, dark bottom-right, soft inner glow. */
-.button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: none;
-  box-shadow:
-    inset 2px 2px 0px -2px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 75%), transparent),
-    inset 0 0 3px 1px color-mix(in srgb, var(--button-liquid-edge-light) calc(var(--button-liquid-reflex-light) * 55%), transparent),
-    inset -2px -2px 4px color-mix(in srgb, var(--button-liquid-edge-dark) calc(var(--button-liquid-reflex-dark) * 12%), transparent);
-  z-index: var(--z-base);
-  opacity: 0.85;
-  transition: opacity var(--duration-slow) var(--ease-out);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .button:hover {
-    background: color-mix(in srgb, var(--button-liquid-surface-hover) 30%, transparent);
-    filter: brightness(1.04);
-  }
-
-  .button:hover::before {
-    opacity: 1;
+    background: var(--button-solid-surface-hover);
   }
 }
 
 .button:active {
-  filter: brightness(0.98);
-  transition: filter var(--button-press-duration) var(--button-press-ease);
+  background: var(--button-solid-surface-active);
+  transition: background-color var(--button-press-duration) var(--button-press-ease);
 }
 
 .button:focus-visible {
-  outline: 2px solid color-mix(in srgb, currentColor 60%, transparent);
+  outline: 2px solid var(--button-solid-focus-ring);
   outline-offset: 3px;
 }
 
 .button:disabled {
-  opacity: 0.4;
+  opacity: var(--button-disabled-opacity);
   pointer-events: none;
   cursor: not-allowed;
 }
-
-.button:disabled::before {
-  opacity: 0.3;
-}
-
-
 
 .button.loading {
   opacity: 0.78;
   pointer-events: none;
   cursor: wait;
-}
-
-.button.loading::before {
-  opacity: 0.4;
 }
 
 /* === Sizes === */
@@ -172,8 +123,6 @@
   padding: var(--button-padding-y-xl) var(--button-padding-x-xl);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  backdrop-filter: var(--button-liquid-filter-url, blur(18px) saturate(160%));
-  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(18px) saturate(160%));
 }
 
 .xl .leadingIcon,
@@ -184,92 +133,8 @@
 
 /* === Variants === */
 
-/* All action variants share the same neutral liquid-glass material. */
-.primary,
-.secondary,
-.glass,
-.success,
-.destructive,
-.error,
-.primarySubtle {
-  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
-  color: var(--button-liquid-foreground);
-}
-
-.primarySubtle {
-  font-weight: var(--button-primary-subtle-font-weight);
-}
-
-/* Outline — same liquid-glass material; the rim provides the outline. */
-.outline,
-.outline:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
-  color: var(--button-liquid-foreground);
-}
-
-/* Ghost — no fill, no border; light opacity on hover. */
-.ghost {
-  background: transparent;
-  color: var(--color-text-primary);
-  border: none;
-  box-shadow: none;
-  text-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.ghost::before {
-  display: none;
-}
-
-.ghost:hover {
-  opacity: 0.8;
-}
-
-/* Transparent — no fill, no border, no hover surface. */
-.transparent,
-.transparent:hover,
-.transparent:active {
-  background: transparent;
-  color: var(--color-text-primary);
-  box-shadow: none;
-  text-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  transform: none;
-}
-
-.transparent::before {
-  display: none;
-}
-
-/* Solid — flat, opaque material for non-glass contexts. */
-.solid {
-  background: var(--button-solid-surface);
-  color: var(--button-solid-foreground);
-  border: var(--border-width-hairline) solid var(--button-solid-border);
-  box-shadow: var(--button-solid-shadow);
-  text-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.solid::before {
-  display: none;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .solid:hover {
-    background: var(--button-solid-surface-hover);
-  }
-}
-
-.solid:active {
-  background: var(--button-solid-surface-active);
-}
-
-/* Solid + colored variants */
-.solid.primary {
+/* Primary — action duy nhất của màn hình (L-SCARCITY). */
+.primary {
   background: var(--color-primary);
   /* Soft white on primary fill in every theme — --button-fg is a fixed
      rgba(255,255,255,0.92), unlike text-inverse which flips dark in dark
@@ -279,198 +144,153 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.primary:hover {
+  .primary:hover {
     background: var(--color-primary-hover);
   }
 }
 
-.solid.primary:active {
+.primary:active {
   background: var(--color-primary-active);
 }
 
 /* Dimmed — primary fill rendered at disabled-like opacity; the caller's
    aria-selected/aria-pressed marks the lit item, hover lights it fully. */
-.solid.primary.dimmed {
+.primary.dimmed {
   opacity: var(--button-primary-dimmed-opacity);
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.primary.dimmed:hover {
+  .primary.dimmed:hover {
     opacity: 1;
   }
 }
 
-.solid.primary.dimmed:is([aria-selected="true"], [aria-pressed="true"]) {
+.primary.dimmed:is([aria-selected="true"], [aria-pressed="true"]) {
   opacity: 1;
 }
 
-.solid.primarySubtle {
+.primarySubtle {
   background: var(--color-primary-subtle);
   color: var(--color-text-accent);
   border-color: transparent;
+  font-weight: var(--button-primary-subtle-font-weight);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.primarySubtle:hover {
+  .primarySubtle:hover {
     background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 12%);
   }
 }
 
-.solid.primarySubtle:active {
+.primarySubtle:active {
   background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 22%);
 }
 
-.solid.success {
+.success {
   background: var(--color-success);
   color: var(--color-text-inverse);
   border-color: transparent;
 }
 
-.solid.destructive {
+.destructive {
   background: var(--color-error);
   color: var(--color-text-inverse);
   border-color: transparent;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.success:hover,
-  .solid.destructive:hover {
+  .success:hover,
+  .destructive:hover {
     filter: brightness(1.05);
   }
 }
 
-.solid.success:active,
-.solid.destructive:active {
+.success:active,
+.destructive:active {
   filter: brightness(0.95);
 }
 
-.solid.error {
+.error {
   background: var(--color-error-subtle);
   color: var(--color-error);
 }
 
-/* Solid + low-emphasis variants */
-.solid.outline,
-.solid.ghost,
-.solid.link,
-.solid.transparent {
+/* Low-emphasis variants */
+.outline,
+.ghost,
+.link,
+.transparent {
   background: transparent;
   box-shadow: none;
   filter: none;
 }
 
-.solid.outline {
+.outline {
   background: var(--color-surface-elevated);
   border-color: var(--color-border-emphasized);
 }
 
-.solid.ghost {
-  border: none;
+@media (hover: hover) and (pointer: fine) {
+  .outline:hover {
+    background: var(--button-solid-surface-hover);
+  }
 }
 
-.solid.link {
-  color: var(--color-primary);
-  text-decoration: underline;
+.outline:active {
+  background: var(--button-solid-surface-active);
+}
+
+.ghost {
+  border: none;
+  color: var(--color-text-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .solid.outline:hover {
-    background: var(--button-solid-surface-hover);
-  }
-
-  .solid.ghost:hover {
+  .ghost:hover {
     background: transparent;
     filter: brightness(0.92);
   }
 }
 
-.solid.outline:active {
-  background: var(--button-solid-surface-active);
-}
-
-.solid.ghost:active {
+.ghost:active {
   background: transparent;
   filter: brightness(0.88);
 }
 
-.solid.link:hover {
-  color: var(--color-primary-hover);
-}
-
-/* Focus & disabled for all solid */
-.solid:focus-visible {
-  outline: 2px solid var(--button-solid-focus-ring);
-  outline-offset: 3px;
-}
-
-.solid:disabled {
-  opacity: var(--button-disabled-opacity);
-}
-
-/* Link — inline text, no glass. */
+/* Link — inline text. */
 .link {
   display: inline-flex;
   height: auto;
   padding: var(--space-1) var(--space-2);
-  background: transparent;
-  color: var(--color-text-primary);
-  box-shadow: none;
-  text-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.link::before {
-  display: none;
+  border: none;
+  color: var(--color-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .link:hover {
+    color: var(--color-primary-hover);
     text-decoration: underline;
     background: var(--color-primary-subtle);
   }
 }
 
-/* === Liquid Glass material styles (variant='glass') === */
-
-.liquidRegular,
-.liquidClear,
-.liquidProminent {
-  background: color-mix(in srgb, var(--button-liquid-surface) 20%, transparent);
-  color: var(--button-liquid-foreground);
-  backdrop-filter: var(--button-liquid-filter-url, blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation)));
-  -webkit-backdrop-filter: var(--button-liquid-filter-url, blur(var(--button-liquid-backdrop-blur)) saturate(var(--button-liquid-backdrop-saturation)));
-}
-
-.liquidClear {
-  background: color-mix(in srgb, var(--button-liquid-surface) 11%, transparent);
-  border: var(--border-width-hairline) solid var(--color-glass-border-subtle);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .liquidClear:hover {
-    background: color-mix(in srgb, var(--button-liquid-surface-hover) 16%, transparent);
-  }
-
-  .liquidProminent:hover {
-    background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
-    filter: brightness(1.05);
-  }
+/* Transparent — no fill, no border, no hover surface. */
+.transparent,
+.transparent:hover,
+.transparent:active {
+  border: none;
+  color: var(--color-text-primary);
+  transform: none;
 }
 
 /* === States === */
 
 .active,
 .active:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
-  color: var(--button-liquid-foreground);
-  filter: brightness(1.06);
-}
-
-.active::before,
-.active:hover::before {
-  opacity: 0.5;
+  background: var(--color-primary-subtle);
+  color: var(--color-text-accent);
+  border-color: transparent;
 }
 
 .activeFlat,
@@ -482,8 +302,8 @@
 
 .error,
 .error:hover {
-  background: color-mix(in srgb, var(--button-liquid-surface-active) 35%, transparent);
-  color: var(--button-liquid-foreground);
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
 .loading,
@@ -515,13 +335,7 @@
   height: var(--button-vertical-icon-size);
 }
 
-/* No rim on vertical or full-width bars — the pill rim reads wrong on a rectangle. */
-.button.vertical::before,
-.button.fullWidth::before {
-  box-shadow: none;
-}
-
-/* === Icon-only / Circle — circular dewdrop when a single icon is the only content === */
+/* === Icon-only / Circle === */
 
 .iconOnly,
 .circle {
@@ -637,12 +451,6 @@
   width: 100%;
 }
 
-/* In the liquid glass concept, buttons must stay pill-shaped. Solid bars can still be flat. */
-.solid.fullWidth,
-.solid.vertical {
-  border-radius: 0;
-}
-
 /* === Elevation === */
 
 .elevation_low {
@@ -674,12 +482,7 @@
   }
 }
 
-/* === Ripple — water-surface wave expanding from the touch point ===
-   AC: liquid-glass-dewdrop-v4.html
-   Light: 0.35 → 0.15 → transparent at 70%.
-   Dark: 0.18 → 0.06 → transparent at 70%.
-   Primary / success: 0.28 → transparent at 70%.
-   Scale 0 → 2.8 over 0.7s ease-out, opacity 0.6 → 0. */
+/* === Ripple — wave expanding from the touch point === */
 
 .rippleHost {
   overflow: hidden;
@@ -690,8 +493,8 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    var(--button-liquid-ripple) 0%,
-    var(--button-liquid-ripple-mid) 40%,
+    color-mix(in srgb, currentColor 30%, transparent) 0%,
+    color-mix(in srgb, currentColor 12%, transparent) 40%,
     transparent 70%
   );
   transform: scale(0);
@@ -705,7 +508,7 @@
 .success .ripple {
   background: radial-gradient(
     circle,
-    var(--button-liquid-ripple-primary) 0%,
+    color-mix(in srgb, var(--button-fg) 28%, transparent) 0%,
     transparent 70%
   );
 }
@@ -731,7 +534,7 @@
   min-width: 0;
 }
 
-/* === Reduced motion / transparency / contrast === */
+/* === Reduced motion / contrast === */
 
 @media (prefers-reduced-motion: reduce) {
   .button {
@@ -743,31 +546,9 @@
   }
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .button,
-  .liquidRegular,
-  .liquidClear,
-  .liquidProminent {
-    background: var(--color-surface);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  .button::before,
-  .liquidRegular::before,
-  .liquidClear::before,
-  .liquidProminent::before {
-    display: none;
-  }
-}
-
 @media (prefers-contrast: more) {
   .button,
-  .outline,
-  .ghost,
-  .liquidRegular,
-  .liquidClear,
-  .liquidProminent {
+  .outline {
     border: var(--border-width-hairline) solid currentColor;
   }
 

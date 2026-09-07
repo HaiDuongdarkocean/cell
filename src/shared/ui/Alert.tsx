@@ -54,7 +54,7 @@ export function Alert({
         </div>
       </HStack>
       {onDismiss && (
-        <Button shape="circle" material="solid"
+        <Button shape="circle"
           type="button"
           className={styles.dismiss}
           aria-label="Dismiss"

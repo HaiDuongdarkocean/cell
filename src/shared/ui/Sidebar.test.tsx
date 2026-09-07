@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Sidebar } from './Sidebar';
 
 describe('Sidebar', () => {
@@ -8,16 +8,16 @@ describe('Sidebar', () => {
     expect(screen.getByText('Custom Body Content')).toBeInTheDocument();
   });
 
-  it('toggles collapsed state', () => {
-    const onCollapsedChange = jest.fn();
-    render(<Sidebar collapsible onCollapsedChange={onCollapsedChange}>Nav</Sidebar>);
-    fireEvent.click(screen.getByLabelText('Collapse sidebar'));
-    expect(onCollapsedChange).toHaveBeenCalledWith(true);
+  it('renders collapsed state', () => {
+    const { container } = render(<Sidebar collapsed>Nav</Sidebar>);
+    expect(container.firstChild).toHaveClass('collapsed');
+    expect(screen.queryByLabelText('Expand sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Collapse sidebar')).not.toBeInTheDocument();
   });
 
-  it('renders collapsed state', () => {
-    const { container } = render(<Sidebar collapsed collapsible>Nav</Sidebar>);
-    expect(container.firstChild).toHaveClass('collapsed');
-    expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+  it('does not render a collapse button', () => {
+    render(<Sidebar collapsed={false}>Nav</Sidebar>);
+    expect(screen.queryByLabelText('Expand sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Collapse sidebar')).not.toBeInTheDocument();
   });
 });
