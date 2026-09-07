@@ -1,0 +1,16 @@
+{
+  "id": "portal-ownerdocument-iframe-tree",
+  "title": "createPortal + listeners phải dùng ownerDocument, không dùng global document/window",
+  "category": ["rendering", "ux"],
+  "tags": ["react", "createPortal", "iframe", "popover", "overflow-hidden", "clipping", "ownerdocument", "menu", "flip"],
+  "trigger": "Khi render popover/menu/tooltip cần thoát clipping ancestor (overflow:hidden, scroll container), hoặc component có thể nằm trong iframe (showcase ViewportFrame, sandbox preview)",
+  "principle": "Hai lỗi thường gặp cùng lúc: (1) popover absolute-in-tree bị ancestor overflow:hidden (vd .sectionCard) cắt mất item — fix bằng portal + position:fixed tính từ trigger rect, tự flip-up khi sát mép viewport; (2) portal vào document.body global sẽ render SAI document khi component bị portal vào iframe (menu biến mất khỏi iframe, xuất hiện ngoài trang cha). Luôn resolve doc = triggerRef.current.ownerDocument và win = doc.defaultView cho portal target, event listeners, và innerHeight. Đóng menu khi scroll vì fixed popover sẽ tách khỏi trigger.",
+  "cases": [
+    {
+      "context": "LanguageProfilePanel kebab menu: .sectionCard { overflow:hidden } cắt mất item 'Xóa' khi menu mở từ card cuối. Sau khi portal, menu không render trong iframe của design-system showcase vì document.body trỏ vào trang cha.",
+      "bad": "{open && createPortal(<div role='menu' style={{top, left}}/>, document.body)}\n// + document.addEventListener / window.innerHeight trong effect",
+      "good": "const doc = triggerRef.current?.ownerDocument ?? document;\nconst win = doc.defaultView ?? window;\ndoc.addEventListener('mousedown', onDocClick);\nwin.addEventListener('scroll', close, true);\n{open && createPortal(<div role='menu'/>, wrapRef.current.ownerDocument.body)}"
+    }
+  ],
+  "applyFor": ["Kebab/overflow menu", "Tooltip/popover/select dropdown thoát overflow:hidden", "Component render trong iframe portal (ViewportFrame showcase)", "Flip-up positioning khi gần mép dưới viewport", "Close-on-scroll cho floating layer"]
+}

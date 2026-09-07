@@ -1,6 +1,6 @@
 ---
 name: education-ui-principles
-description: Gate every UI task in Cell through education-domain principles (learners aged 5–80, language learning, low-spec devices) before writing interface code, then through the repo's engineering rules before calling it done. Use when designing, generating, or reviewing UI pages, components, panels, or study flows. Not for non-UI logic, mechanical token audits (use design-system-guardian), or vague design briefs (use design-from-idea).
+description: Gate every UI task in Cell through education-domain principles (learners aged 5–80, language learning, low-spec devices) before writing interface code, then through the repo's engineering rules before calling it done. Use when designing, generating, or reviewing UI pages, components, panels, or study flows. Not for non-UI logic, mechanical token audits (use design-system-guardian), or vague design briefs (use idea-to-interface).
 ---
 
 # Education UI Principles — cổng nguyên tắc trước khi tạo giao diện
@@ -21,7 +21,7 @@ Skill này là **pre-flight gate**: chạy trước khi viết UI code, và tự
 
 - Logic thuần, parser, messaging, background — không có UI.
 - Audit cơ học sau khi code xong → `design-system-guardian`.
-- Biến ý tưởng mơ hồ thành brief → `design-from-idea`.
+- Biến ý tưởng mơ hồ thành brief → `idea-to-interface`.
 - Audit UI có sẵn để redesign → `audit-ui-ux-then-redesign`.
 
 ## Step 0 — Nạp context bắt buộc
@@ -126,7 +126,7 @@ READY TO BUILD / NEEDS REDESIGN / NEEDS USER DECISION
 
 ## Router boomerang
 
-- Cần brief thiết kế từ ý tưởng mơ hồ → `design-from-idea`.
+- Cần brief thiết kế từ ý tưởng mơ hồ → `idea-to-interface`.
 - Đã qua gate, cần build → `frontend-ui-engineering` + `incremental-implementation`.
 - Code xong, cần audit cơ học → `design-system-guardian`.
 - Audit UI cũ trước redesign → `audit-ui-ux-then-redesign`.

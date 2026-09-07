@@ -1,5 +1,7 @@
 # RUNBOOK
 
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+
 | Date | Page | User said | Turned out to be | Dial | Best finding | What was missed | Outcome |
 |---|---|---|---|---|---|---|---|
 | 2026-05-30 | Foundation showcase | border quá nhiều, _section_ không có gap, content bị che, thiếu ghi chú | main block chưa flex, section margin 0, card-in-card 3 lớp, thiếu caption/token note | DESIGN_VARIANCE 3, MOTION 2, DENSITY 7 | `.section` margin-bottom 0; `.main` display block | Cần xem thêm mobile scroll restore | Brief P0-P2 đã xác định |

@@ -1,5 +1,7 @@
 # Spec: Launcher Dashboard — Liquid Glass Prototype Entrypoint
 
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+
 > Intent: prototype a full-screen Liquid Glass launcher for Cell to validate the `liquid-glass-concept.md` language on a real page before applying it to popup/sidepanel/options.  
 > Status: Draft for plan approval  
 > Confirmed: 2026-08-30

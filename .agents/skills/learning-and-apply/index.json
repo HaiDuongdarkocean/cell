@@ -1319,6 +1319,14 @@
       "category": ["build", "data"],
       "tags": ["csp", "unsafe-eval", "mv3", "emscripten", "opencv", "function-constructor", "post-build", "patch"],
       "trigger": "Emscripten/WASM library uses new Function() or Function() constructor — blocked by MV3 CSP script-src 'self' 'wasm-unsafe-eval'"
+    },
+    {
+      "type": "experience",
+      "id": "portal-ownerdocument-iframe-tree",
+      "title": "createPortal + listeners phải dùng ownerDocument, không dùng global document/window",
+      "category": ["rendering", "ux"],
+      "tags": ["react", "createPortal", "iframe", "popover", "overflow-hidden", "clipping", "ownerdocument", "menu", "flip"],
+      "trigger": "Khi render popover/menu/tooltip cần thoát clipping ancestor (overflow:hidden, scroll container), hoặc component có thể nằm trong iframe (showcase ViewportFrame, sandbox preview)"
     }
   ]
 }

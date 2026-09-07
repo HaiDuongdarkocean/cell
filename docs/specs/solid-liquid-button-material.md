@@ -1,5 +1,7 @@
 # Spec: Solid/Liquid Button Material
 
+> ⚠️ **Superseded note (2026-09-08):** Tài liệu này tham chiếu Liquid Glass / glass material / blur — vật liệu này đã bị loại khỏi Cell. Luật thiết kế hiện hành: `docs/design-system/DESIGN_RATIONALE.md`; checklist: `docs/design-system/DESIGN.md`. Nội dung yêu cầu tính năng trong tài liệu vẫn hiệu lực; chỉ các mô tả visual kiểu glass/blur không còn áp dụng.
+
 > Intent: `docs/intent/solid-liquid-button-material.md`  
 > Status: Draft for approval  
 > Confirmed: 2026-08-27

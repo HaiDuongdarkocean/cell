@@ -27,7 +27,7 @@ It follows three frames:
 - The user gives a concrete, bounded task → just do it.
 - The user wants a single fact or quick lookup → use `web_search` directly.
 - The user wants code implemented → use `frontend-ui-engineering` or `source-driven-development`.
-- The user wants a design brief from a vague UI feeling → use `design-from-idea`.
+- The user wants a design brief from a vague UI feeling → use `idea-to-interface`.
 - The user wants an audit of existing UI → use `audit-ui-ux-then-redesign`.
 
 ---
@@ -398,13 +398,13 @@ Use these to keep asking until the answer reveals itself:
 - [ ] First-principles / unconstrained best-practice option is described and scored.
 - [ ] Tie-break rule applied: if constrained winner ties with unconstrained best practice, best practice is chosen.
 - [ ] Output includes at least one template (Knowledge Brief, Question Ladder, or Critical Decision Brief).
-- [ ] Next action or skill is named (e.g., `design-from-idea`, `audit-ui-ux-then-redesign`, `spec-driven-development`).
+- [ ] Next action or skill is named (e.g., `idea-to-interface`, `audit-ui-ux-then-redesign`, `spec-driven-development`).
 
 ---
 
 ## Router Boomerang
 
-- Need a UI design brief? → `design-from-idea`.
+- Need a UI design brief? → `idea-to-interface`.
 - Need to audit existing UI before designing? → `audit-ui-ux-then-redesign`.
 - Need to implement the answer? → `frontend-ui-engineering`, `source-driven-development`, or `spec-driven-development`.
 - Need to extract requirements from a vague human? → `interview-me` or `elicitation`.

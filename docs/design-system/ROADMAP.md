@@ -34,6 +34,8 @@ Target không phải “có nhiều component nhất”. Target là hệ thống
   dương của bầu trời, tiếp đó là màu xanh lá của cây, trong suốt của nước, màu xám của các viên sỏi, màu nâu của đất, màu vàng của
   ánh mặt trời. tôi muốn chúng là một phần của hệ thống này.
 
+> ⚠️ **Cập nhật 2026-09-08 — supersede:** Liquid Glass **không còn** là design system style của Cell. Câu chuyện thiên nhiên (trời xanh, lá, nước, sỏi, đất, mặt trời) vẫn là nguồn gốc của **palette màu**, nhưng vật liệu glass/blur đã bị loại. Luật quyết định mới: `docs/design-system/DESIGN_RATIONALE.md`.
+
 ### 2.2 Nguyên tắc quyết định
 
 1. **Learning first:** nội dung học và hành động tiếp theo luôn nổi bật hơn chrome trang trí.
