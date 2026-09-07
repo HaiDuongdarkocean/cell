@@ -13,6 +13,7 @@
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 
 import { Icon } from '@/shared/ui/Icon';
 import type { MediaFile } from '../media/mediaFile';
@@ -97,11 +98,9 @@ function useBlobUrl(file: MediaFile | null): string | null {
 function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void }): ReactElement {
   const url = useBlobUrl(file);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    // Shared Escape stack: the preview consumes the key so the surrounding
+    // card-creator sheet/dialog doesn't close on the same keypress.
+    return pushEscapeLayer(() => onClose());
   }, [onClose]);
   return (
     <div
@@ -112,7 +111,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       aria-label="Image preview"
       data-cell-id="media-image-preview"
     >
-      <Button material="solid" variant="secondary"
+      <Button variant="secondary"
         className={styles['cc-media__preview-close']}
         onClick={onClose}
         aria-label="Close preview"
@@ -140,7 +139,7 @@ function EmptyDropzone({
 }): ReactElement {
   const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={styles['cc-media__empty']}
       onClick={onAdd}
       disabled={addDisabled}
@@ -212,7 +211,7 @@ function ImageThumb({
       data-cell-id={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
-      <Button material="solid" variant="secondary"
+      <Button variant="secondary"
         className={styles['cc-media__thumb-remove']}
         aria-label={`Remove ${file.filename}`}
         onClick={(e) => {
@@ -342,7 +341,7 @@ function ImageGallery({
           dataId={dataId}
         />
       ))}
-      <Button shape="circle" material="solid" variant="ghost"
+      <Button shape="circle" variant="ghost"
         className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
@@ -478,7 +477,7 @@ function AudioList({
             onDragEnd={handleDragEnd}
             data-index={index}
           >
-            <Button shape="circle" material="solid" variant="ghost"
+            <Button shape="circle" variant="ghost"
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
@@ -487,7 +486,7 @@ function AudioList({
               <ThumbIcon kind="audio" size="xs" />
             </Button>
             <span className={styles['cc-media__name']}>{file.filename}</span>
-            <Button material="solid" variant="secondary"
+            <Button variant="secondary"
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
@@ -499,7 +498,7 @@ function AudioList({
         );
       })}
       {files.length > 0 && (
-        <Button material="solid" variant="secondary"
+        <Button variant="secondary"
           className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}

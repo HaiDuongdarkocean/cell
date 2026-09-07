@@ -27,13 +27,17 @@ export function App() {
           <LauncherSearchBar value={query} onChange={setQuery} placeholder="Search Cell…" />
         </header>
         <main className={styles.main}>
-          <ul className={styles.grid}>
-            {filteredTiles.map((tile) => (
-              <li key={tile.id} className={styles.tileWrapper}>
-                <LauncherTile icon={tile.icon} label={tile.label} />
-              </li>
-            ))}
-          </ul>
+          {filteredTiles.length === 0 ? (
+            <p className={styles.emptyText}>No matches for “{query}”.</p>
+          ) : (
+            <ul className={styles.grid}>
+              {filteredTiles.map((tile) => (
+                <li key={tile.id} className={styles.tileWrapper}>
+                  <LauncherTile icon={tile.icon} label={tile.label} />
+                </li>
+              ))}
+            </ul>
+          )}
         </main>
         <footer className={styles.footer}>
           <LauncherUserBar />

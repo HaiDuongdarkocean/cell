@@ -303,7 +303,7 @@ export function DictionaryPanelView({
               const isActive = panel.currentResult?.term.toLowerCase() === term.toLowerCase();
               return (
                 <li key={term} className={`${styles.searchHistoryItem} ${isActive ? styles.searchHistoryItemActive : ''}`}>
-                  <Button material="solid" variant="secondary"
+                  <Button variant="secondary"
                     className={styles.searchHistoryTerm}
                     aria-current={isActive ? 'true' : undefined}
                     leadingIcon={<Icon name="rotateCcw" size="xs" />}
@@ -315,7 +315,7 @@ export function DictionaryPanelView({
                   >
                     {term}
                   </Button>
-                  <Button material="solid" variant="ghost"
+                  <Button variant="ghost"
                     className={styles.searchHistoryRemove}
                     aria-label={t('dict.history.remove', [term])}
                     title={t('dict.history.removeShort', [term])}
@@ -328,7 +328,7 @@ export function DictionaryPanelView({
               );
             })}
           </ul>
-          <Button shape="circle" size="xs" material="solid" variant="ghost"
+          <Button shape="circle" size="xs" variant="ghost"
             className={styles.searchHistoryClear}
             aria-label={t('dict.history.clear')}
             title={t('dict.history.clear')}
@@ -394,7 +394,7 @@ export function DictionaryPanelView({
             <div className={styles.cellCandidatesChips}>
               <div className={styles.cellCandidatesChipsScroll}>
                 {allCandidates.map((c, idx) => (
-                  <Button material="solid" variant="ghost"
+                  <Button variant="ghost"
                     key={`${c.term}-${idx}`}
                     className={styles.cellChip}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}

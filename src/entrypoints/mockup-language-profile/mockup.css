@@ -1,0 +1,485 @@
+/* Mockup shell + selected "selectable cards" direction for Language Profile.
+   Tokens only — no hardcoded colors/spacing. Mobile-first. */
+
+/* === Shell === */
+html,
+body {
+  background: var(--color-background);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mlp-page {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text);
+  padding: var(--space-6) var(--space-4);
+}
+
+.mlp-header {
+  max-width: 960px;
+  margin: 0 auto var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mlp-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.mlp-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.mlp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.mlp-seg {
+  display: inline-flex;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.mlp-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1-5) var(--space-3);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.mlp-seg button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.mlp-stage {
+  margin: 0 auto;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  transition: max-width var(--duration-normal) var(--ease-out);
+  /* Container context: concepts adapt to the stage width, not the window —
+     so the Mobile/Desktop toggle previews real responsive behavior. */
+  container-type: inline-size;
+}
+
+.mlp-stage[data-viewport='mobile'] { max-width: 400px; }
+.mlp-stage[data-viewport='desktop'] { max-width: 880px; }
+
+.mlp-concept-note {
+  max-width: 960px;
+  margin: 0 auto var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-primary-subtle);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.mlp-concept-note strong { color: var(--color-text); }
+
+/* === Shared bits across concepts === */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.grow { flex: 1 1 auto; min-width: 0; }
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+@media (hover: hover) {
+  .icon-btn:hover { background: var(--color-overlay-hover); color: var(--color-text); }
+}
+
+.icon-btn:active { background: var(--color-overlay-pressed); }
+.icon-btn.danger { color: var(--color-error); }
+.icon-btn:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+.icon-btn:disabled { opacity: 0.4; cursor: default; }
+
+.primary-btn,
+.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+  min-height: 36px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.primary-btn {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+@media (hover: hover) {
+  .primary-btn:hover { background: var(--color-primary-hover); }
+}
+
+.ghost-btn {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+}
+
+@media (hover: hover) {
+  .ghost-btn:hover { background: var(--color-overlay-hover); }
+}
+
+.primary-btn:focus-visible,
+.ghost-btn:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+.primary-btn:disabled { opacity: 0.5; cursor: default; }
+
+.menu-pop {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  min-width: 160px;
+  background: var(--color-surface-popover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-1);
+  z-index: 10;
+}
+
+.menu-pop button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .menu-pop button:hover { background: var(--color-overlay-hover); }
+}
+
+.menu-pop button.danger { color: var(--color-error); }
+.menu-pop button:disabled { opacity: 0.4; cursor: default; }
+.menu-wrap { position: relative; }
+
+/* Global native banner (A + B reuse) */
+.native-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-emphasized);
+  border-radius: var(--radius-xl);
+  background: var(--color-background-muted);
+  margin-bottom: var(--space-4);
+}
+
+.native-banner.editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.native-banner .label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.native-banner .value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  border: 1px dashed var(--color-border-emphasized);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-secondary);
+}
+
+.empty-state .icon {
+  color: var(--color-text-tertiary);
+}
+
+.empty-state .title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Add-form (inline, opens directly under the list toolbar) */
+.add-form {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-elevated);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.add-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.add-form .field-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.add-form .hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.add-form .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.add-form .error {
+  font-size: var(--font-size-sm);
+  color: var(--color-error);
+  background: var(--color-error-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Toolbar above a profile list — the "new profile" entry point lives here so it
+   is reachable without scrolling through a long list. */
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.section-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Text-style action — primary color, no chrome. Used for "New profile" in the
+   toolbar so the entry point stays visible but visually light. */
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  padding: var(--space-1) var(--space-1-5);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+@media (hover: hover) {
+  .link-btn:hover { background: var(--color-primary-subtle); }
+}
+
+.link-btn:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+/* Progressive disclosure trigger (Advanced sections) */
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .disclosure:hover { color: var(--color-text); }
+}
+
+.disclosure:focus-visible { box-shadow: var(--shadow-focus); outline: none; border-radius: var(--radius-sm); }
+.disclosure .hint { margin-left: auto; font-weight: var(--font-weight-normal); }
+
+/* Radio-card choices (AddForm "Start from") */
+.choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  text-align: left;
+  font: inherit;
+  color: var(--color-text);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+@media (hover: hover) {
+  .choice:hover { border-color: var(--color-border-emphasized); }
+}
+
+.choice:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.choice[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.choice-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.choice-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+@container (max-width: 420px) {
+  .choice-grid { grid-template-columns: 1fr; }
+}
+
+/* === Concept A — selectable cards === */
+.ca-list { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.ca-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+@media (hover: hover) {
+  .ca-card:hover { border-color: var(--color-border-emphasized); background: var(--color-surface-hover); }
+}
+
+.ca-card:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.ca-card[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  box-shadow: var(--shadow-inset-selected);
+}
+
+.ca-radio {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border-emphasized);
+  display: grid;
+  place-items: center;
+  transition: var(--transition);
+}
+
+.ca-card[aria-checked='true'] .ca-radio { border-color: var(--color-primary); }
+
+.ca-card[aria-checked='true'] .ca-radio::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+}
+
+.ca-flags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.ca-name { font-weight: var(--font-weight-medium); }
+.ca-meta { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mlp-stage, .ca-card, .icon-btn, .primary-btn, .ghost-btn, .link-btn {
+    transition: none;
+  }
+}

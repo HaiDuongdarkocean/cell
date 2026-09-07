@@ -91,7 +91,7 @@ function AudioRow({ state }: { state: BoxState }): ReactElement {
   const indeterminate = state === 'indeterminate' && !selected;
   return (
     <div className={`${checkStyles.cellAudioItem} ${disabled ? checkStyles['cellAudioItem--disabled'] : ''}`}>
-      <Button shape="circle" size="sm" variant="outline" material="solid" aria-label="Play word pronunciation">
+      <Button shape="circle" size="sm" variant="outline" aria-label="Play word pronunciation">
         <Icon name="audioWave" />
       </Button>
       <button

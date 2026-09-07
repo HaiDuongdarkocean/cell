@@ -210,7 +210,7 @@
   position: absolute;
   top: calc(-1 * var(--space-1-5));
   right: calc(-1 * var(--space-1-5));
-  z-index: 1;
+  z-index: calc(var(--z-base) + 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -220,9 +220,9 @@
   min-height: var(--space-4);
   margin: 0;
   padding: 0;
-  /* 0.5px hairline in the theme's text color — white in dark mode,
+  /* Hairline in the theme's text color — white in dark mode,
      black in light — just enough to separate the badge from the chip. */
-  border: 0.5px solid var(--color-text);
+  border: var(--border-width-hairline) solid var(--color-text);
   border-radius: var(--radius-full);
   color: var(--color-text);
   background: var(--color-surface-elevated);

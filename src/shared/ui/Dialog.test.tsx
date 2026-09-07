@@ -34,6 +34,19 @@ describe('Dialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it('consumes Escape so ancestor keydown handlers (e.g. a parent panel) do not close', () => {
+    const onParentKeyDown = jest.fn();
+    const onOpenChange = jest.fn();
+    render(
+      <div onKeyDown={onParentKeyDown}>
+        <Dialog open title="Title" onOpenChange={onOpenChange} />
+      </div>,
+    );
+    fireEvent.keyDown(screen.getByRole('presentation'), { key: 'Escape' });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onParentKeyDown).not.toHaveBeenCalled();
+  });
+
   it('renders close button and closes on click', () => {
     const onOpenChange = jest.fn();
     render(<Dialog open title="Title" onOpenChange={onOpenChange} showCloseButton />);

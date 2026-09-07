@@ -31,8 +31,8 @@ export function DeleteConfirmModal({ resource, title, description, onConfirm, on
 
   const footer = (
     <>
-      <Button material="solid" variant="outline" onClick={onCancel}>Giữ lại</Button>
-      <Button material="solid" variant="destructive" onClick={onConfirm} data-cell-id="confirm-delete">Xóa</Button>
+      <Button variant="outline" onClick={onCancel}>Giữ lại</Button>
+      <Button variant="destructive" onClick={onConfirm} data-cell-id="confirm-delete">Xóa</Button>
     </>
   );
 

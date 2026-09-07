@@ -97,7 +97,7 @@
   align-items: center;
   gap: var(--space-1);
   width: 100%; /* design-system: intentional — fill field row */
-  background: var(--color-surface);
+  background: var(--input-bg);
   border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
   transition: border-color var(--duration-fast) var(--ease-in-out);

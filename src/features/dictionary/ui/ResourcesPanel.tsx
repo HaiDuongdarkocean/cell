@@ -171,7 +171,6 @@ function ResourceSection({
               <span>Đã có sẵn &quot;{state.duplicate.existing.name}&quot; — chọn thay thế hoặc bỏ qua.</span>
               <span className={styles.duplicateActions}>
                 <Button
-                  material="solid"
                   variant="outline"
                   size="xs"
                   onClick={() => onResolveDuplicate('replace')}
@@ -180,7 +179,6 @@ function ResourceSection({
                   Thay thế
                 </Button>
                 <Button
-                  material="solid"
                   variant="ghost"
                   size="xs"
                   onClick={() => onResolveDuplicate('skip')}
@@ -229,7 +227,6 @@ function ResourceSection({
       {resources.length > 0 && (
         <div className={styles.sectionFooter}>
           <Button
-            material="solid"
             variant="destructive"
             size="sm"
             onClick={onDeleteAll}

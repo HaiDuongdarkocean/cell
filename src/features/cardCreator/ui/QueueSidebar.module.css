@@ -16,6 +16,17 @@
   overflow-y: auto;
 }
 
+/* Mobile: queue renders above the form as a capped horizontal strip. */
+.cc-queue--mobile {
+  order: -1;
+  border-left: 0;
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  min-width: 0;
+  max-width: none;
+  max-height: calc(var(--space-6) * 5);
+  flex-shrink: 0;
+}
+
 .cc-queue__header {
   display: flex;
   align-items: center;

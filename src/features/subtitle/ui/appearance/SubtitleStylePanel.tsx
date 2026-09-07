@@ -5,6 +5,7 @@ import { Slider } from '@/shared/ui/Slider';
 import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { ColorInput } from '@/shared/ui/ColorInput';
+import { Label } from '@/shared/ui/Label';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -74,10 +75,10 @@ export function SubtitleStylePanel({
       <div className={styles.card}>
         {/* Font size */}
         <div className={styles.row}>
-          <label className={styles.label} htmlFor={`style-${role}-font-size`}>
+          <Label className={styles.label} htmlFor={`style-${role}-font-size`}>
             Size
             <span className={styles.valueBadge}>{style.fontSize}px</span>
-          </label>
+          </Label>
           <Slider
             id={`style-${role}-font-size`}
             min={12}
@@ -92,10 +93,10 @@ export function SubtitleStylePanel({
 
         {/* Font weight */}
         <div className={styles.row}>
-          <label className={styles.label} htmlFor={`style-${role}-font-weight`}>
+          <Label className={styles.label} htmlFor={`style-${role}-font-weight`}>
             Weight
             <span className={styles.valueBadge}>{style.fontWeight ?? defaultStyle.fontWeight}</span>
-          </label>
+          </Label>
           <Slider
             id={`style-${role}-font-weight`}
             min={100}
@@ -110,7 +111,7 @@ export function SubtitleStylePanel({
 
         {/* Font family */}
         <div className={styles.row}>
-          <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font</label>
+          <Label className={styles.label} htmlFor={`style-${role}-font-family`}>Font</Label>
           <Select
             id={`style-${role}-font-family`}
             value={isCustomFont ? '__custom__' : style.fontFamily}
@@ -143,9 +144,9 @@ export function SubtitleStylePanel({
         {/* Text color + Background color */}
         <div className={styles.pairRow}>
           <div className={styles.row}>
-            <label className={styles.label} htmlFor={`style-${role}-text-color`}>
+            <Label className={styles.label} htmlFor={`style-${role}-text-color`}>
               Text Color
-            </label>
+            </Label>
             <ColorInput
               id={`style-${role}-text-color`}
               value={style.textColor}
@@ -154,9 +155,9 @@ export function SubtitleStylePanel({
             />
           </div>
           <div className={styles.row}>
-            <label className={styles.label} htmlFor={`style-${role}-bg-color`}>
+            <Label className={styles.label} htmlFor={`style-${role}-bg-color`}>
               Background
-            </label>
+            </Label>
             <ColorInput
               id={`style-${role}-bg-color`}
               value={style.backgroundColor}
@@ -172,10 +173,10 @@ export function SubtitleStylePanel({
       <div className={styles.card}>
         <div className={styles.pairRow}>
           <div className={styles.row}>
-            <label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
+            <Label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
               Text
               <span className={styles.valueBadge}>{style.textOpacity.toFixed(2)}</span>
-            </label>
+            </Label>
             <Slider
               id={`style-${role}-text-opacity`}
               min={0}
@@ -188,10 +189,10 @@ export function SubtitleStylePanel({
             />
           </div>
           <div className={styles.row}>
-            <label className={styles.label} htmlFor={`style-${role}-bg-opacity`}>
+            <Label className={styles.label} htmlFor={`style-${role}-bg-opacity`}>
               Background
               <span className={styles.valueBadge}>{style.backgroundOpacity.toFixed(2)}</span>
-            </label>
+            </Label>
             <Slider
               id={`style-${role}-bg-opacity`}
               min={0}
@@ -211,10 +212,10 @@ export function SubtitleStylePanel({
       <div className={styles.card}>
         {/* Alignment — segmented control */}
         <div className={styles.row}>
-          <label className={styles.label}>Alignment</label>
+          <Label className={styles.label}>Alignment</Label>
           <div className={styles.segmented} role="radiogroup" aria-label="Alignment">
             {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
-              <Button material="liquid" variant="secondary"
+              <Button variant="secondary"
                 key={align}
                 role="radio"
                 aria-checked={style.horizontalAlign === align}
@@ -230,10 +231,10 @@ export function SubtitleStylePanel({
 
         {/* Shadow — segmented control */}
         <div className={styles.row}>
-          <label className={styles.label}>Shadow</label>
+          <Label className={styles.label}>Shadow</Label>
           <div className={styles.segmented} role="radiogroup" aria-label="Shadow style">
             {TEXT_SHADOW_PRESETS.map((preset) => (
-              <Button material="liquid" variant="secondary"
+              <Button variant="secondary"
                 key={preset}
                 role="radio"
                 aria-checked={style.textShadow.preset === preset}
@@ -251,7 +252,7 @@ export function SubtitleStylePanel({
         {style.textShadow.preset === 'custom' && (
           <div className={styles.customShadowRow}>
             <div className={styles.row}>
-              <label className={styles.label} htmlFor={`style-${role}-shadow-color`}>Shadow Color</label>
+              <Label className={styles.label} htmlFor={`style-${role}-shadow-color`}>Shadow Color</Label>
               <ColorInput
                 id={`style-${role}-shadow-color`}
                 value={style.textShadow.color}
@@ -260,10 +261,10 @@ export function SubtitleStylePanel({
               />
             </div>
             <div className={styles.row}>
-              <label className={styles.label} htmlFor={`style-${role}-shadow-blur`}>
+              <Label className={styles.label} htmlFor={`style-${role}-shadow-blur`}>
                 Blur
                 <span className={styles.valueBadge}>{style.textShadow.blur}px</span>
-              </label>
+              </Label>
               <Input
                 id={`style-${role}-shadow-blur`}
                 type="number"
@@ -276,10 +277,10 @@ export function SubtitleStylePanel({
               />
             </div>
             <div className={styles.row}>
-              <label className={styles.label} htmlFor={`style-${role}-shadow-offset-x`}>
+              <Label className={styles.label} htmlFor={`style-${role}-shadow-offset-x`}>
                 Offset X
                 <span className={styles.valueBadge}>{style.textShadow.offsetX}px</span>
-              </label>
+              </Label>
               <Input
                 id={`style-${role}-shadow-offset-x`}
                 type="number"
@@ -292,10 +293,10 @@ export function SubtitleStylePanel({
               />
             </div>
             <div className={styles.row}>
-              <label className={styles.label} htmlFor={`style-${role}-shadow-offset-y`}>
+              <Label className={styles.label} htmlFor={`style-${role}-shadow-offset-y`}>
                 Offset Y
                 <span className={styles.valueBadge}>{style.textShadow.offsetY}px</span>
-              </label>
+              </Label>
               <Input
                 id={`style-${role}-shadow-offset-y`}
                 type="number"
@@ -314,7 +315,7 @@ export function SubtitleStylePanel({
       {/* ─── Reset ─── */}
       <div className={styles.resetRow}>
         {!showResetConfirm ? (
-          <Button material="liquid"
+          <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowResetConfirm(true)}
@@ -326,10 +327,10 @@ export function SubtitleStylePanel({
         ) : (
           <div className={styles.confirmRow} data-cell-id={`style-${role}-reset-confirm`}>
             <span>Reset to defaults?</span>
-            <Button material="liquid" variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
+            <Button variant="destructive" size="sm" onClick={() => { onReset(); setShowResetConfirm(false); }}>
               Reset
             </Button>
-            <Button material="liquid" variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
+            <Button variant="outline" size="sm" onClick={() => setShowResetConfirm(false)}>
               Cancel
             </Button>
           </div>

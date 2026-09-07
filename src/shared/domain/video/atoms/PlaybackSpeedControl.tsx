@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import styles from './PlaybackSpeedControl.module.css';
 
 interface PlaybackSpeedControlProps {
@@ -52,6 +53,13 @@ export function PlaybackSpeedControl({
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [open]);
 
+  // Close on Escape regardless of focus — via the shared Escape stack so the
+  // menu consumes the key before ancestor surfaces can react to it.
+  useEffect(() => {
+    if (!open) return;
+    return pushEscapeLayer(() => setOpen(false));
+  }, [open]);
+
   const toggle = (): void => {
     if (disabled) return;
     setOpen((prev) => !prev);
@@ -65,6 +73,7 @@ export function PlaybackSpeedControl({
   const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLUListElement>): void => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       setOpen(false);
     }
   };

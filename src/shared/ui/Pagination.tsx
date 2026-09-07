@@ -70,7 +70,7 @@ export function Pagination({
 
   return (
     <div className={`${styles.pagination} ${className ?? ''}`.trim()}>
-      <Button material="solid"
+      <Button
         aria-label="First page"
         size="sm"
         variant="ghost"
@@ -80,7 +80,7 @@ export function Pagination({
       >
         ‹‹
       </Button>
-      <Button material="solid"
+      <Button
         aria-label="Previous page"
         size="sm"
         variant="ghost"
@@ -97,7 +97,7 @@ export function Pagination({
             const side = p === 'ellipsis-left' ? 'left' : 'right';
             return (
               <span key={`ellipsis-${i}`} className={styles.ellipsisWrap}>
-                <Button material="solid"
+                <Button
                   aria-label={`More pages ${side}`}
                   size="sm"
                   variant="ghost"
@@ -111,7 +111,7 @@ export function Pagination({
                     <div className={styles.popupHeader}>Jump to page</div>
                     <div className={styles.popupList}>
                       {Array.from({ length: total }, (_, idx) => idx + 1).map((n) => (
-                        <Button material="solid"
+                        <Button
                           key={n}
                           variant="ghost"
                           size="sm"
@@ -128,7 +128,7 @@ export function Pagination({
             );
           }
           return (
-            <Button material="solid"
+            <Button
               key={p}
               variant={p - 1 === current ? 'primarySubtle' : 'ghost'}
               size="sm"
@@ -142,7 +142,7 @@ export function Pagination({
         })}
       </div>
 
-      <Button material="solid"
+      <Button
         aria-label="Next page"
         size="sm"
         variant="ghost"
@@ -152,7 +152,7 @@ export function Pagination({
       >
         ›
       </Button>
-      <Button material="solid"
+      <Button
         aria-label="Last page"
         size="sm"
         variant="ghost"
@@ -176,7 +176,7 @@ export function Pagination({
             aria-label="Jump to page"
             className={styles.jumpField}
           />
-          <Button shape="circle" material="solid" aria-label="Jump to page" size="sm" variant="ghost" onClick={handleJump}>
+          <Button shape="circle" aria-label="Jump to page" size="sm" variant="ghost" onClick={handleJump}>
             <Icon name="search" />
           </Button>
         </div>

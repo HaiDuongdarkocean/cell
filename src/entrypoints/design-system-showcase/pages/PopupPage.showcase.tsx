@@ -123,7 +123,7 @@ export function Showcase(): ReactElement {
                     onRemove={() => {}}
                   />
                 ))}
-                <MediaEmpty type="downloads" />
+                {downloads.length === 0 && <MediaEmpty type="downloads" />}
               </div>
             </Tabs.Content>
           </Tabs>

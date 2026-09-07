@@ -2,9 +2,9 @@
   width: 100%;
   min-height: var(--space-20);
   padding: var(--space-2) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-pill);
-  background: var(--color-background);
+  background: var(--color-field);
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -18,7 +18,7 @@
 }
 
 .textarea:hover:not(:disabled) {
-  border-color: var(--color-border-focus);
+  background: var(--color-field-hover);
 }
 
 .textarea:focus-visible {

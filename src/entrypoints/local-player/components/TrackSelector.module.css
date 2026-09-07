@@ -8,8 +8,11 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-modal);
   padding: var(--space-2);
-  /* design-system: intentional — 240px min-width / 320px max-height size the popover panel; not layout spacing. */
-  min-width: 240px;
+  /* design-system: intentional — 240px min-width / 320px max-height size the popover panel; not layout spacing.
+     Width is clamped to the viewport: the panel is inset right: --space-4, so
+     subtracting 2x --space-4 keeps a matching left inset. */
+  min-width: min(240px, calc(100vw - var(--space-8)));
+  max-width: calc(100vw - var(--space-8));
   max-height: 320px;
   overflow-y: auto;
 }

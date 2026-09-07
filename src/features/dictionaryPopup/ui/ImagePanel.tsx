@@ -125,7 +125,6 @@ export function ImagePanel({
         })}
       </div>
       <Button
-        material="solid"
         variant="secondary"
         size="xs"
         shape="circle"
@@ -138,7 +137,6 @@ export function ImagePanel({
         <Icon name="chevronLeft"  />
       </Button>
       <Button
-        material="solid"
         variant="secondary"
         size="xs"
         shape="circle"

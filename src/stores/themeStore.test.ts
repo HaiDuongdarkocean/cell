@@ -110,23 +110,6 @@ describe('useThemeStore', () => {
     });
   });
 
-  describe('updateColor', () => {
-    it('updates 1 token for dark mode + persists config', () => {
-      useThemeStore.getState().updateColor('dark', 'primary', '#ff0000');
-      const state = useThemeStore.getState();
-      expect(state.config.customColors.dark.primary).toBe('#ff0000');
-      // Light unchanged.
-      expect(state.config.customColors.light.primary).toBe(DEFAULT_THEME_CONFIG.customColors.light.primary);
-      expect(storageLocalSetMock).toHaveBeenCalledWith({ [STORAGE_KEYS.THEME_CONFIG]: state.config });
-    });
-
-    it('updates 1 token for light mode only', () => {
-      useThemeStore.getState().updateColor('light', 'background', '#eeeeee');
-      expect(useThemeStore.getState().config.customColors.light.background).toBe('#eeeeee');
-      expect(useThemeStore.getState().config.customColors.dark.background).toBe(DEFAULT_THEME_CONFIG.customColors.dark.background);
-    });
-  });
-
   describe('setConfig', () => {
     it('replaces whole config + persists', () => {
       const newConfig: ThemeConfig = {
@@ -142,14 +125,6 @@ describe('useThemeStore', () => {
     });
   });
 
-  describe('resetTheme', () => {
-    it('resets config to default + persists', () => {
-      useThemeStore.getState().updateColor('dark', 'primary', '#ff0000');
-      useThemeStore.getState().resetTheme();
-      expect(useThemeStore.getState().config).toEqual(DEFAULT_THEME_CONFIG);
-      expect(storageLocalSetMock).toHaveBeenLastCalledWith({ [STORAGE_KEYS.THEME_CONFIG]: DEFAULT_THEME_CONFIG });
-    });
-  });
 });
 
 export type { ThemeMode };

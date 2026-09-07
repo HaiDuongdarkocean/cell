@@ -26,7 +26,7 @@ export function CloseButton({
   const cls = [styles.closeBtn, styles[size], styles[variant], className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <Button shape="circle" material="solid" variant={variant === 'solid' ? 'primary' : 'ghost'} className={cls} aria-label={ariaLabel} {...rest}>
+    <Button shape="circle" variant={variant === 'solid' ? 'primary' : 'ghost'} className={cls} aria-label={ariaLabel} {...rest}>
       <Icon name="x"  />
     </Button>
   );

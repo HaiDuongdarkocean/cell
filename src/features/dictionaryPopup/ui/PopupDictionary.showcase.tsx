@@ -2,41 +2,9 @@ import { useState, useRef, useEffect, type ReactElement } from 'react';
 import { PopupDictionary } from './PopupDictionary';
 import { Button } from '@/shared/ui/Button';
 import type { PopupAnchor } from './usePopupPosition';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
+import { getMockLookupResult } from '@/entrypoints/design-system-showcase/mockDictionary';
 
-const MOCK_RESULT: LookupResult = {
-  term: 'serendipity',
-  langCode: 'en',
-  reading: '/ˌser.ənˈdɪp.ə.ti/',
-  readingKind: 'ipa',
-  frequency: { rank: 1234, source: 'wordfreq' },
-  status: 'unknown',
-  partsOfSpeech: ['noun'],
-  definitions: [
-    {
-      id: '1',
-      pos: 'noun',
-      text: 'the occurrence of events by chance in a happy or beneficial way',
-      examples: ['We found the restaurant by pure serendipity.'],
-      source: 'cambridge',
-      defaultSelected: true,
-    },
-    {
-      id: '2',
-      pos: 'noun',
-      text: 'a fortunate accident',
-      examples: [],
-      source: 'wiktionary',
-      defaultSelected: false,
-    },
-  ],
-  rawDefinitions: [
-    'the occurrence of events by chance in a happy or beneficial way',
-    'a fortunate accident',
-  ],
-  detectedPhrase: null,
-  matchSource: 'dictionary',
-};
+const MOCK_RESULT = getMockLookupResult(undefined, 'serendipity');
 
 export function Showcase(): ReactElement {
   const [isOpen, setIsOpen] = useState(false);

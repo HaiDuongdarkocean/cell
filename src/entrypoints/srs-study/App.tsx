@@ -7,14 +7,20 @@ import { SrsReviewCard } from './SrsReviewCard';
 import styles from './App.module.css';
 
 export function App() {
-  const { loading, error, finished, start, session, stats } = useSrsStudy();
+  const { loading, error, finished, start, session, stats, dismissError } = useSrsStudy();
   const [view, setView] = useState<'study' | 'manage'>('study');
 
   return (
     <Box className={styles.page}>
       {error ? (
         <Box className={styles.card}>
+          <Heading level={1} className={styles.title}>
+            Ocean SRS
+          </Heading>
           <Text className={styles.error}>{error}</Text>
+          <Button variant="secondary" onClick={dismissError}>
+            Back
+          </Button>
         </Box>
       ) : session ? (
         <SrsReviewCard />
@@ -47,7 +53,6 @@ export function App() {
           <Button
             className={styles.manageButton}
             variant="secondary"
-            material="solid"
             onClick={() => { setView('manage'); }}
           >
             Manage

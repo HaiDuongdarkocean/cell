@@ -2,7 +2,7 @@ import { forwardRef, type ReactNode } from 'react';
 import { Button, type ButtonProps } from './Button';
 
 type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
-type IconButtonVariant = 'solid' | 'outline' | 'ghost' | 'transparent' | 'danger' | 'glass';
+type IconButtonVariant = 'solid' | 'outline' | 'ghost' | 'transparent' | 'danger';
 
 interface IconButtonProps extends Omit<ButtonProps, 'variant' | 'size' | 'shape' | 'leadingIcon' | 'trailingIcon' | 'orientation' | 'collapseLabel'> {
   /** Size: xs=28, sm=32, md=40, lg=48. Default 'md'. */
@@ -18,7 +18,6 @@ const variantMap: Record<IconButtonVariant, ButtonProps['variant']> = {
   ghost: 'ghost',
   transparent: 'transparent',
   danger: 'destructive',
-  glass: 'glass',
 };
 
 /**

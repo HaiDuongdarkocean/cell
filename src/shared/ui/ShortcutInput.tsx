@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
+import { t, type MessageKey } from '@/shared/i18n';
 import styles from './ShortcutInput.module.css';
 
 /** Shortcut value — single key + optional modifiers (ADR-021 D7 combo support). */
@@ -25,11 +26,15 @@ interface ShortcutInputProps {
 /** Modifier keys that should not be captured as the final key (only as modifiers). */
 const MODIFIER_KEYS = new Set(['control', 'shift', 'alt', 'meta', 'controlleft', 'shiftleft', 'altleft', 'metaleft', 'controlright', 'shiftright', 'altright', 'metaright']);
 
+const MODIFIER_LABELS: Record<'ctrl' | 'shift' | 'alt', MessageKey> = {
+  ctrl: 'shortcut.modifier.ctrl',
+  shift: 'shortcut.modifier.shift',
+  alt: 'shortcut.modifier.alt',
+};
+
 /** Display label for a modifier. */
 function modifierLabel(mod: 'ctrl' | 'shift' | 'alt'): string {
-  if (mod === 'ctrl') return 'Ctrl';
-  if (mod === 'shift') return 'Shift';
-  return 'Alt';
+  return t(MODIFIER_LABELS[mod]);
 }
 
 /** Normalize a KeyboardEvent.key to a lowercase shortcut key. */
@@ -46,14 +51,17 @@ function normalizeKey(key: string): string {
   return lower;
 }
 
+const KEY_LABELS: Record<string, MessageKey> = {
+  arrowleft: 'shortcut.key.arrowLeft',
+  arrowright: 'shortcut.key.arrowRight',
+  arrowup: 'shortcut.key.arrowUp',
+  arrowdown: 'shortcut.key.arrowDown',
+  space: 'shortcut.key.space',
+};
+
 /** Display label for a key (uppercase for single chars). */
 function keyDisplayLabel(key: string): string {
-  if (key === 'arrowleft') return '←';
-  if (key === 'arrowright') return '→';
-  if (key === 'arrowup') return '↑';
-  if (key === 'arrowdown') return '↓';
-  if (key === 'space') return '␣';
-  return key.toUpperCase();
+  return KEY_LABELS[key] ? t(KEY_LABELS[key]) : key.toUpperCase();
 }
 
 /**

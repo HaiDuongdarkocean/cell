@@ -1,5 +1,4 @@
 .toggle {
-
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -16,6 +15,11 @@
 }
 
 /* === Sizes === */
+.xs {
+  --toggle-h: var(--space-5);
+  --toggle-w: var(--space-9);
+}
+
 .sm {
   --toggle-h: var(--space-8);
   --toggle-w: calc(var(--toggle-h) * 2 - var(--space-1));
@@ -73,18 +77,31 @@
 .thumb {
   fill: var(--toggle-dot);
   display: block;
-  width: calc(100% - var(--space-1));
-  height: calc(100% - var(--space-1));
+  width: calc(var(--toggle-h) - var(--space-1));
+  height: calc(var(--toggle-h) - var(--space-1));
   position: absolute;
   left: var(--space-0-5);
   top: var(--space-0-5);
   pointer-events: none;
   filter: drop-shadow(0 0.5px 0.5px var(--toggle-dot-shadow));
   transform-origin: 50% 50%;
+  transition:
+    transform var(--duration-300) linear,
+    left var(--duration-300) linear;
+  will-change: transform;
 }
 
 .toggle.checked .thumb {
-  transform: scaleX(-1);
+  /* Slide to the right end: track width - thumb width - left offset */
+  transform: translateX(calc(var(--toggle-w) - var(--toggle-h)));
+}
+
+.toggle:not(.disabled):hover .thumb {
+  transform: scale(1.08);
+}
+
+.toggle.checked:not(.disabled):hover .thumb {
+  transform: translateX(calc(var(--toggle-w) - var(--toggle-h))) scale(1.08);
 }
 
 .input:focus-visible {
@@ -93,7 +110,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .input {
+  .input,
+  .thumb {
     transition: none;
   }
 }

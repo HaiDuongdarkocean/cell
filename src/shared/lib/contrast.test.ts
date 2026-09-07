@@ -127,9 +127,9 @@ describe('contrast engine', () => {
       'color-text': '#2A2A2B',
       'color-text-muted': 'var(--color-text-secondary)',
       'color-text-secondary': '#6E6E73',
-      'color-glass-surface': 'rgba(255,255,255,0.85)',
-      'color-glass-liquid-surface': 'color-mix(in srgb, var(--color-glass-surface), transparent 55%)',
-      'color-liquid-blob-strong': 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
+      'color-surface': 'rgba(255,255,255,0.85)',
+      'color-surface-soft': 'color-mix(in srgb, var(--color-surface), transparent 55%)',
+      'color-primary-wash': 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
     };
 
     it('resolves hex var', () => {
@@ -147,7 +147,7 @@ describe('contrast engine', () => {
     });
 
     it('resolves color-mix with transparent', () => {
-      const mixed = resolveColor('var(--color-glass-liquid-surface)', tokenMap);
+      const mixed = resolveColor('var(--color-surface-soft)', tokenMap);
       // 45% rgba(255,255,255,0.85) + 55% transparent -> alpha 0.3825
       expect(mixed.a).toBeCloseTo(0.3825, 3);
     });

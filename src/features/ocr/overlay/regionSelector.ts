@@ -68,6 +68,10 @@ const ACCENT = STATIC_TOKENS['--overlay-ocr-region-accent'] ?? '#0066ff';
 const FILL = STATIC_TOKENS['--overlay-ocr-region-fill'] ?? 'rgba(0, 102, 255, 0.05)';
 const FILL_ACTIVE = STATIC_TOKENS['--overlay-ocr-region-fill-active'] ?? 'rgba(0, 102, 255, 0.12)';
 const RADIUS_PILL = STATIC_TOKENS['--radius-pill'] ?? '9999px';
+// On-media overlay neutrals — always white/black regardless of theme.
+const OVL_TEXT = STATIC_TOKENS['--overlay-text'] ?? '#fff';
+const OVL_TEXT_RGB = STATIC_TOKENS['--overlay-text-rgb'] ?? '255, 255, 255';
+const OVL_BG_RGB = STATIC_TOKENS['--overlay-background-rgb'] ?? '0, 0, 0';
 
 /** CSS injected once: class-based styling (hover/transition need a stylesheet, not inline styles).
  *  Also hides the universal panel during selection (was a separate style tag). */
@@ -91,15 +95,15 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
 .cell-ocr-region-label {
   position: absolute; top: -22px; left: -2px; padding: 2px 8px;
   font-family: ${FONT}; font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: 0.2px;
-  color: ${ACCENT}; background: rgba(0, 0, 0, 0.75); border-radius: 5px;
+  color: ${ACCENT}; background: rgba(${OVL_BG_RGB}, 0.75); border-radius: 5px;
   white-space: nowrap; pointer-events: none;
 }
 .cell-ocr-region-handle {
   position: absolute; width: 10px; height: 10px;
-  background: ${ACCENT}; border: 1px solid rgba(0, 0, 0, 0.55); border-radius: 3px;
+  background: ${ACCENT}; border: 1px solid rgba(${OVL_BG_RGB}, 0.55); border-radius: 3px;
   pointer-events: auto;
 }
-.cell-ocr-region-handle:hover { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35); }
+.cell-ocr-region-handle:hover { box-shadow: 0 0 0 3px rgba(${OVL_TEXT_RGB}, 0.35); }
 .cell-ocr-region-handle[data-handle="nw"] { left: -5px; top: -5px; cursor: nwse-resize; }
 .cell-ocr-region-handle[data-handle="n"]  { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
 .cell-ocr-region-handle[data-handle="ne"] { right: -5px; top: -5px; cursor: nesw-resize; }
@@ -115,14 +119,14 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
   cursor: pointer; pointer-events: auto; transition: filter 120ms ease, background 120ms ease;
 }
 .cell-ocr-region-btn svg { width: 13px; height: 13px; display: block; }
-.cell-ocr-region-btn--apply { background: ${ACCENT}; color: #fff; }
+.cell-ocr-region-btn--apply { background: ${ACCENT}; color: ${OVL_TEXT}; }
 .cell-ocr-region-btn--apply:hover { filter: brightness(1.15); }
-.cell-ocr-region-btn--cancel { background: rgba(0, 0, 0, 0.6); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.cell-ocr-region-btn--cancel { background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; box-shadow: inset 0 0 0 1px rgba(${OVL_TEXT_RGB}, 0.35); }
 .cell-ocr-region-btn--cancel:hover { background: rgba(170, 0, 0, 0.85); box-shadow: none; }
-.cell-ocr-split-half { position: absolute; background: rgba(255, 255, 255, 0.08); pointer-events: none; }
-.cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(255, 255, 255, 0.85); font-family: ${FONT}; }
+.cell-ocr-split-half { position: absolute; background: rgba(${OVL_TEXT_RGB}, 0.08); pointer-events: none; }
+.cell-ocr-split-half[data-label]::after { content: attr(data-label); position: absolute; left: 4px; top: 2px; font-size: 10px; color: rgba(${OVL_TEXT_RGB}, 0.85); font-family: ${FONT}; }
 .cell-ocr-split-divider { position: absolute; left: 0; width: 100%; height: 14px; transform: translateY(-50%); cursor: ns-resize; pointer-events: auto; }
-.cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255, 255, 255, 0.9); border-radius: 1px; }
+.cell-ocr-split-divider::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(${OVL_TEXT_RGB}, 0.9); border-radius: 1px; }
 .cell-ocr-action-bar { position: absolute; bottom: 4px; right: 4px; display: flex; align-items: center; gap: 4px; pointer-events: auto; z-index: 99999; }
 .cell-ocr-action-bar-inner { display: flex; align-items: center; gap: 4px; overflow: hidden; transition: max-width 200ms ease, opacity 150ms ease; }
 .cell-ocr-action-bar-inner[data-collapsed="true"] { max-width: 0; opacity: 0; }
@@ -130,7 +134,7 @@ body[data-ocr-region-selecting="true"] #cell-universal-panel-host { display: non
 .cell-ocr-action-btn {
   appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; margin: 0; border: none; border-radius: ${RADIUS_PILL};
-  background: rgba(0, 0, 0, 0.6); color: #fff; cursor: pointer; pointer-events: auto;
+  background: rgba(${OVL_BG_RGB}, 0.6); color: ${OVL_TEXT}; cursor: pointer; pointer-events: auto;
   transition: filter 120ms ease, background 120ms ease; flex-shrink: 0;
 }
 .cell-ocr-action-btn svg { width: 14px; height: 14px; display: block; }

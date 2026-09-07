@@ -41,7 +41,7 @@ export function DictionaryToolbar({
            undimmed while the tab sits at dimmed opacity. */
         return (
           <span key={tab.key} className={styles.cellToolbarItem} role="presentation">
-            <Button material="solid" variant="primary" dimmed={!active}
+            <Button variant="primary" dimmed={!active}
               role="tab"
               aria-selected={active}
               aria-pressed={active}

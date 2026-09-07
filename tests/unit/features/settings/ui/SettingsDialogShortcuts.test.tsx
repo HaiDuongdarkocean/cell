@@ -1,7 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, jest } from '@jest/globals';
 import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/types/media';
+
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+});
 
 function makeSettings(overrides: Partial<Settings> = {}): Settings {
   return { ...DEFAULT_SETTINGS, ...overrides };
@@ -109,12 +124,12 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    expect(screen.getByText(/previous cue/i)).toBeInTheDocument();
-    expect(screen.getByText(/next cue/i)).toBeInTheDocument();
-    expect(screen.getByText(/replay cue/i)).toBeInTheDocument();
-    expect(screen.getByText(/play \/ pause video/i)).toBeInTheDocument();
-    expect(screen.getByText(/toggle overlay/i)).toBeInTheDocument();
-    expect(screen.getByText(/toggle panel/i)).toBeInTheDocument();
-    expect(screen.getByText(/toggle auto-translate/i)).toBeInTheDocument();
+    expect(screen.getByText(/previous sentence/i)).toBeInTheDocument();
+    expect(screen.getByText(/next sentence/i)).toBeInTheDocument();
+    expect(screen.getByText(/replay sentence/i)).toBeInTheDocument();
+    expect(screen.getByText(/play\/pause video/i)).toBeInTheDocument();
+    expect(screen.getByText(/show\/hide subtitles/i)).toBeInTheDocument();
+    expect(screen.getByText(/show\/hide subtitle list/i)).toBeInTheDocument();
+    expect(screen.getByText(/auto-translate subtitles/i)).toBeInTheDocument();
   });
 });

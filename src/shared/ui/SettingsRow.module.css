@@ -13,6 +13,12 @@
   min-width: 0;
 }
 
+/* Each part must be allowed to shrink so long labels/controls don't force
+   the row (or a parent grid/flex container) to overflow. */
+.row > * {
+  min-width: 0;
+}
+
 /* ─── Stacked — vertical flex for slider rows ─── */
 .stacked {
   flex-direction: column;
@@ -36,8 +42,9 @@
   gap: var(--space-1);
 }
 
-/* ─── Dense — padding 0 vertical, parent gap owns spacing. M3 Box Contract. ─── */
+/* ─── Dense — padding 0, parent (cardBody 16px + gap) owns spacing.
+   M3 Box Contract: the container owns the inset, rows stay flush. ─── */
 .dense {
-  padding: 0 var(--space-4);
+  padding: 0;
   min-height: var(--touch-target);
 }

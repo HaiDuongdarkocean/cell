@@ -12,6 +12,7 @@ import { Spinner } from '@/shared/ui/Spinner';
 import { Tabs } from '@/shared/ui/Tabs';
 import { Text } from '@/shared/ui/Text';
 import { Icon } from '@/shared/icons/Icon';
+import { getMockSearchResults } from '../showcaseFixtures';
 import styles from './PatternSearchResult.module.css';
 
 type SearchStatus = 'idle' | 'loading' | 'empty' | 'error' | 'results';
@@ -22,12 +23,7 @@ interface ResultItem {
   language: string;
 }
 
-const MOCK_RESULTS: ResultItem[] = [
-  { id: '1', title: 'The Witcher - S01E01', language: 'en' },
-  { id: '2', title: 'Crash Landing on You - E03', language: 'ja' },
-  { id: '3', title: 'Squid Game - S01E02', language: 'en' },
-  { id: '4', title: 'Demon Slayer - Mugen Train', language: 'ja' },
-];
+const MOCK_RESULTS: ResultItem[] = getMockSearchResults();
 
 const LANGUAGE_TABS = [
   { value: 'all', label: 'All' },

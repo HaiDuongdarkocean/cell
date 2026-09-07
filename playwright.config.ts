@@ -41,6 +41,15 @@ export default defineConfig({
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,
     },
+    {
+      // Language Profile mockup page — hosts the live LanguageProfilePanel.
+      // Reuses the Vite dev server (already running during development);
+      // falls back to starting `npm run dev` when it isn't.
+      command: 'npm run dev',
+      url: 'http://localhost:5173/src/entrypoints/mockup-language-profile/index.html',
+      timeout: 60_000,
+      reuseExistingServer: !process.env.CI,
+    },
   ],
   projects: [
     {
@@ -62,6 +71,14 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://127.0.0.1:8124/src/entrypoints/launcher-dashboard/index.html',
+      },
+    },
+    {
+      name: 'profile-panel',
+      testMatch: '**/profile-panel*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:5173/src/entrypoints/mockup-language-profile/index.html',
       },
     },
   ],

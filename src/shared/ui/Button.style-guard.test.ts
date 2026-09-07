@@ -17,20 +17,12 @@ describe('Button style contract guard', () => {
     }
   });
 
-  it('forces zero border-radius for solid vertical and full-width buttons', () => {
-    const block = css.match(/\.solid\.(?:vertical|fullWidth)\s*\{[^{}]*\}/)?.[0] ?? '';
-    expect(block).toMatch(/border-radius\s*:\s*0\b/);
+  it('has no backdrop-filter anywhere (solid-only material)', () => {
+    expect(css).not.toMatch(/backdrop-filter/);
   });
 
-  it('has no semantic color fill on liquid/glass variants', () => {
-    const prominentBlock = css.match(/\.liquidProminent\s*\{[^{}]*\}/)?.[0] ?? '';
-    // Prominent must not be a solid primary fill; it must use a neutral token.
-    expect(prominentBlock).not.toMatch(/background-color:\s*var\(--color-primary\)/);
-  });
-
-  it('removes backdrop filter on solid variant', () => {
-    const solidBlock = css.match(/\.solid\s*\{[^{}]*\}/)?.[0] ?? '';
-    expect(solidBlock).toMatch(/backdrop-filter\s*:\s*none/);
-    expect(solidBlock).toMatch(/-webkit-backdrop-filter\s*:\s*none/);
+  it('has no liquid-glass tokens or classes', () => {
+    expect(css).not.toMatch(/--button-liquid|--color-glass|--color-liquid|--color-button-liquid|--shadow-liquid/);
+    expect(css).not.toMatch(/\.liquid|\.glass|\.solid\b/);
   });
 });

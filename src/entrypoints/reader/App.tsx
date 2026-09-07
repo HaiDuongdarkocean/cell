@@ -52,7 +52,8 @@ export function ReaderApp(): React.JSX.Element {
 
   const handleFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.currentTarget.files?.[0];
+      const input = event.currentTarget;
+      const file = input.files?.[0];
       if (!file) return;
       try {
         const parsed = await parseTxtBook(file);
@@ -68,7 +69,7 @@ export function ReaderApp(): React.JSX.Element {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to import file');
       } finally {
-        event.currentTarget.value = '';
+        input.value = '';
       }
     },
     [loadBooks],
@@ -284,7 +285,7 @@ export function ReaderApp(): React.JSX.Element {
           </span>
         )}
         {view === 'reader' && (
-          <Button material="solid" variant="outline" size="sm" onClick={handleBack}>
+          <Button variant="outline" size="sm" onClick={handleBack}>
             Back
           </Button>
         )}
@@ -294,10 +295,10 @@ export function ReaderApp(): React.JSX.Element {
               ref={fileInputRef}
               type="file"
               accept=".txt,text/plain"
-              style={{ display: 'none' }}
+              hidden
               onChange={handleFileChange}
             />
-            <Button material="solid" onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
+            <Button onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
           </>
         )}
       </header>
@@ -320,7 +321,7 @@ export function ReaderApp(): React.JSX.Element {
                   <span className={styles.bookMeta}>
                     {book.paragraphs.length} paragraphs
                   </span>
-                  <Button material="solid"
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={(event) => {

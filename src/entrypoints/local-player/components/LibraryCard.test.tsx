@@ -224,8 +224,8 @@ describe('LibraryCard — real sample data (video-entries.json)', () => {
       />,
     );
     fireEvent.click(screen.getByTestId('library-card-expand'));
-    fireEvent.click(screen.getByTestId('library-card-subtitle-target'));
-    fireEvent.click(screen.getByTestId('library-card-subtitle'));
+    fireEvent.click(screen.getByRole('button', { name: 'Target subtitle' }));
+    fireEvent.click(screen.getByRole('option', { name: /noop\.en\.srt/ }));
     expect(onSelectTrack).toHaveBeenCalledWith(noopMatch);
   });
 });

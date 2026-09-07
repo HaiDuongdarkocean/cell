@@ -31,7 +31,7 @@ export function PinButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <Button shape="circle" material="solid" variant="ghost"
+    <Button shape="circle" variant="ghost"
       className={cls}
       aria-pressed={pinned}
       aria-label={pinned ? 'Unpin' : 'Pin'}

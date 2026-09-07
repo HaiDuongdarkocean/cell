@@ -13,17 +13,16 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-field);
   color: var(--color-text);
   text-decoration: none;
   font-size: var(--font-size-xs);
 }
 
 .cellLinksItem:hover {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
+  background: var(--color-field-hover);
 }
 
 .cellLinksItem svg {

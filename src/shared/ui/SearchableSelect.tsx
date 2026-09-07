@@ -1,6 +1,8 @@
 import { useState, useRef, useMemo, useEffect, useId, type KeyboardEvent, type ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
+import { t } from '@/shared/i18n';
+import { pushEscapeLayer } from './escapeLayerStack';
 import styles from './SearchableSelect.module.css';
 
 /** A single selectable option. */
@@ -47,7 +49,7 @@ export interface SearchableSelectProps {
  * - Menu opens with search input auto-focused
  * - Type to filter, Arrow Up/Down to navigate, Enter to select, Esc to close
  * - Selected item shows check mark (single-select, not toggle)
- * - "No languages found" empty state
+ * - "No results found." empty state
  */
 export function SearchableSelect({
   testId = 'searchable-select',
@@ -93,6 +95,7 @@ export function SearchableSelect({
 
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Escape') {
+      e.stopPropagation();
       setIsOpen(false);
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -128,6 +131,13 @@ export function SearchableSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  // Close menu on Escape regardless of focus — via the shared Escape stack so
+  // the menu consumes the key before ancestor surfaces (e.g. UniversalPanel).
+  useEffect(() => {
+    if (!isOpen) return;
+    return pushEscapeLayer(() => setIsOpen(false));
+  }, [isOpen]);
+
   // Clamp highlighted index when the filtered list shrinks (e.g. search query narrows).
   useEffect(() => {
     setHighlightedIndex((prev) => Math.min(prev, Math.max(filtered.length - 1, 0)));
@@ -143,7 +153,7 @@ export function SearchableSelect({
   return (
     <div className={styles.container} ref={menuRef}>
       {/* Trigger button */}
-      <Button material="solid" variant="secondary"
+      <Button variant="secondary"
         id={id}
         data-cell-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
@@ -152,11 +162,16 @@ export function SearchableSelect({
         aria-haspopup="listbox"
         onClick={disabled ? undefined : handleTriggerClick}
         disabled={disabled}
+        trailingIcon={
+          <Icon
+            name="chevronDown"
+            className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
+          />
+        }
       >
         <span className={styles.value}>
           {selectedOption?.label || placeholder}
         </span>
-        <Icon name="chevronDown" className={styles.chevron} />
       </Button>
 
       {/* Menu */}
@@ -173,7 +188,7 @@ export function SearchableSelect({
               type="search"
               className={styles.searchInput}
               placeholder={placeholder}
-              aria-label="Search options"
+              aria-label={t('common.searchOptions.aria')}
               role="combobox"
               aria-expanded={isOpen}
               aria-controls={listboxId}
@@ -209,7 +224,7 @@ export function SearchableSelect({
               ))
             ) : (
               <li className={styles.emptyState} role="presentation">
-                No languages found
+                {t('common.noResults')}
               </li>
             )}
           </ul>

@@ -18,8 +18,9 @@
 }
 
 .progressDot {
-  width: 0.625rem;
-  height: 0.625rem;
+  /* --space-2-5 (10px) is the exact token for 0.625rem. */
+  width: var(--space-2-5);
+  height: var(--space-2-5);
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
   opacity: var(--opacity-40);

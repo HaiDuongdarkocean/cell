@@ -150,7 +150,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
     return nodes.map(({ deck, children }) => (
       <Box key={deck.id} className={styles.deckRow}>
         <Button
-          material="solid"
           variant={selectedDeckId === deck.id ? 'primary' : 'ghost'}
           size="sm"
           onClick={() => { setSelectedDeckId(deck.id); }}
@@ -159,7 +158,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
           {deck.name}
         </Button>
         <Button
-          material="solid"
           variant="destructive"
           size="sm"
           onClick={() => { void handleDeleteDeck(deck.id); }}
@@ -179,7 +177,7 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
       <Box className={styles.header}>
         <Heading level={2} className={styles.title}>Manage</Heading>
         {onBack && (
-          <Button material="solid" variant="ghost" size="sm" onClick={onBack}>
+          <Button variant="ghost" size="sm" onClick={onBack}>
             Back to Study
           </Button>
         )}
@@ -197,7 +195,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
             aria-label="New deck name"
           />
           <Button
-            material="solid"
             variant="secondary"
             size="sm"
             onClick={() => { void handleCreateDeck(null); }}
@@ -206,7 +203,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
             Create deck
           </Button>
           <Button
-            material="solid"
             variant="secondary"
             size="sm"
             onClick={() => { void handleCreateDeck(selectedDeckId ?? null); }}
@@ -242,7 +238,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                     <Box className={styles.noteActions}>
                       {card && (
                         <Button
-                          material="solid"
                           variant="destructive"
                           size="sm"
                           onClick={() => { void handleDeleteCard(card.id); }}
@@ -251,7 +246,6 @@ export function SrsManagePanel({ onBack }: SrsManagePanelProps): React.JSX.Eleme
                         </Button>
                       )}
                       <Button
-                        material="solid"
                         variant="destructive"
                         size="sm"
                         onClick={() => { void handleDeleteNote(note.id); }}

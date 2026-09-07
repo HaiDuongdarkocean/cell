@@ -32,6 +32,7 @@ interface SrsStudyContextValue {
   readonly markStudyAgain: (componentType: ComponentType) => Promise<void>;
   readonly resetCurrentComponent: () => Promise<void>;
   readonly resetCurrentCard: () => Promise<void>;
+  readonly dismissError: () => void;
 }
 
 const SrsStudyContext = createContext<SrsStudyContextValue | null>(null);
@@ -182,6 +183,10 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
     setSession({ ...session, card: updated });
   }, [session, config, refreshStats]);
 
+  const dismissError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const value: SrsStudyContextValue = useMemo(
     () => ({
       ready,
@@ -198,6 +203,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       markStudyAgain,
       resetCurrentComponent,
       resetCurrentCard,
+      dismissError,
     }),
     [
       ready,
@@ -214,6 +220,7 @@ export function SrsStudyProvider({ children }: { children: ReactNode }) {
       markStudyAgain,
       resetCurrentComponent,
       resetCurrentCard,
+      dismissError,
     ],
   );
 

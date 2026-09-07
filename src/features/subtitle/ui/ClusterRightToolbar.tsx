@@ -61,7 +61,7 @@ export function ClusterRightToolbar({
       <div className={sharedStyles.primaryCol}>
         {onQuickAdd && (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label="Quick add card"
             title="Quick add (Q)"
             data-cell-id="quick-add-btn"
@@ -73,7 +73,7 @@ export function ClusterRightToolbar({
         )}
         {onEditCard && (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label="Edit card"
             title="Edit card (E)"
             data-cell-id="edit-card-btn"
@@ -90,7 +90,7 @@ export function ClusterRightToolbar({
           >
             {onToggleSidePanel && (
               <Button shape="circle"
-                material="liquid" variant="glass"
+                variant="secondary"
                 aria-label={sidePanelLabel}
                 title="Toggle subtitle list (T)"
                 data-cell-id="panel-toggle-btn"
@@ -102,7 +102,7 @@ export function ClusterRightToolbar({
             )}
             {onGenerateNative && (
               <Button shape="circle"
-                material="liquid" variant="glass"
+                variant="secondary"
                 aria-label="Generate native subtitle"
                 title="Generate native (H)"
                 data-cell-id="generate-native-btn"
@@ -115,7 +115,7 @@ export function ClusterRightToolbar({
             )}
           </div>
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
             title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
             data-cell-id="tools-toggle-btn"
@@ -129,7 +129,7 @@ export function ClusterRightToolbar({
       <div className={sharedStyles.secondaryCol}>
         {onToggleOcr && (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
             title={ocrEnabled ? 'Disable OCR' : 'Enable OCR'}
             data-cell-id="ocr-toggle-btn"
@@ -142,7 +142,7 @@ export function ClusterRightToolbar({
         )}
         {onToggleManager && (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label="Open subtitle manager"
             title="Open subtitle manager"
             data-cell-id="manager-toggle-btn"
@@ -154,7 +154,7 @@ export function ClusterRightToolbar({
         )}
         {mode === 'overlay' ? (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
             title={playerMode ? 'Exit player mode (Esc)' : 'Enter player mode (G)'}
             data-cell-id="player-mode-btn"
@@ -166,7 +166,7 @@ export function ClusterRightToolbar({
           </Button>
         ) : (
           <Button shape="circle"
-            material="liquid" variant="glass"
+            variant="secondary"
             aria-label="Exit player mode"
             title="Exit player mode (Esc)"
             data-cell-id="player-mode-exit-btn"

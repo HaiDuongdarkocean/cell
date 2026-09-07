@@ -38,6 +38,9 @@ export function Drawer({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
+      // Consume the key so ancestor surfaces (e.g. UniversalPanel) don't
+      // close too — one Escape closes one layer.
+      e.stopPropagation();
       onOpenChange?.(false);
     }
   };
@@ -65,7 +68,7 @@ export function Drawer({
         {title && (
           <div className={styles.header}>
             <h2 id="drawer-title" className={styles.title}>{title}</h2>
-            <Button material="solid" variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
               ×
             </Button>
           </div>

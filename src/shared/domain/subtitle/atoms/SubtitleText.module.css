@@ -6,7 +6,7 @@
   max-width: 90%;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-2xs);
-  background: rgb(0 0 0 / var(--subtitle-bg-opacity, 0.5));
+  background: rgb(var(--overlay-background-rgb) / var(--subtitle-bg-opacity, 0.5));
   color: var(--color-text-inverse);
   font-family: var(--font-family);
   font-size: var(--subtitle-font-size, var(--font-size-lg));

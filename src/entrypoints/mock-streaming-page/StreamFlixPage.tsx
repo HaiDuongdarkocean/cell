@@ -169,7 +169,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
           </nav>
 
           <Flex gap="3" align="center" className={styles.headerRight}>
-            <Button shape="circle" material="solid"
+            <Button shape="circle"
               variant="ghost"
               size="md"
               aria-label="Search"
@@ -193,13 +193,12 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
               </span>
             </button>
 
-            <Button material="solid" size="sm" variant="primary">
+            <Button size="sm" variant="primary">
               Login
             </Button>
 
             <Button shape="circle"
               ref={mobileMenuBtnRef}
-              material="solid"
               variant="ghost"
               size="md"
               aria-label="Open menu"
@@ -273,7 +272,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                   <Flex gap="2" wrap="wrap" className={styles.serverList}>
                     <Text variant="label" color="secondary" as="span" className={styles.serverType}>Soft Sub</Text>
                     {SERVERS.map((s) => (
-                      <Button material="solid"
+                      <Button
                         key={s.id}
                         size="sm"
                         variant={activeServer === s.id ? 'primary' : 'secondary'}
@@ -344,10 +343,10 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                           {c.text}
                         </Text>
                         <Flex gap="3" className={styles.commentActions}>
-                          <Button material="solid" size="sm" variant="ghost" leadingIcon={<Icon name="check" size="xs" />}>
+                          <Button size="sm" variant="ghost" leadingIcon={<Icon name="check" size="xs" />}>
                             {c.likes}
                           </Button>
-                          <Button material="solid" size="sm" variant="ghost">
+                          <Button size="sm" variant="ghost">
                             Reply
                           </Button>
                         </Flex>
@@ -363,7 +362,7 @@ export function StreamFlixPage({ mode }: StreamFlixPageProps): ReactElement {
                 <Heading level={3} size={5} className={styles.sidebarTitle}>
                   Episodes
                 </Heading>
-                <Button material="solid" size="sm" variant="outline" fullWidth className={styles.rangeBtn}>
+                <Button size="sm" variant="outline" fullWidth className={styles.rangeBtn}>
                   001–012
                 </Button>
                 <div className={styles.episodeList}>

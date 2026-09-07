@@ -1,8 +1,3 @@
-/* === Sidebar — responsive layout shell container ===
-   Structure: container > header + body.
-   Co giãn linh hoạt theo kích thước phần tử bên trong (fit-content).
-   Consumes design tokens only — no raw hex/radius. */
-
 .sidebar {
   display: flex;
   flex-direction: column;
@@ -10,18 +5,16 @@
   width: max-content;
   min-width: var(--space-16);
   height: 100%;
-  background: var(--sidebar-bg, var(--color-surface-elevated));
   color: var(--sidebar-fg, var(--color-text));
   border-right: var(--border-width-hairline) solid var(--color-border-subtle);
   overflow: hidden;
   transition: width var(--duration-normal) ease-in-out, min-width var(--duration-normal) ease-in-out;
 }
 
-/* ─── Header bar (desktop / default) ─── */
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
@@ -39,7 +32,6 @@
   flex: 1;
 }
 
-/* ─── Body slot ─── */
 .body {
   flex: 1;
   display: flex;
@@ -48,7 +40,6 @@
   min-width: 0;
 }
 
-/* ─── Collapsed state (icon-only width) ─── */
 .collapsed {
   width: var(--space-16);
   min-width: var(--space-16);
@@ -59,88 +50,36 @@
 }
 
 .collapsed .topbar {
-  justify-content: center;
   padding: var(--space-2);
 }
 
-/* Flip collapse chevron icon */
-.collapsed .topbar :global(svg) {
-  transform: scaleX(-1);
+[data-orientation="horizontal"].sidebar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  max-height: calc(var(--touch-target) + var(--space-2) * 2);
+  border-right: none;
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
-.topbar :global(svg) {
-  transition: transform var(--duration-normal) var(--ease-spring);
+[data-orientation="horizontal"] .topbar {
+  display: none;
 }
 
-/* ─── Tablet: 600–839px — horizontal bar (bottom of stacking order in DOM) ─── */
-@media (max-width: 839px) {
-  .sidebar {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    border-right: none;
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-
-  .topbar {
-    padding: var(--space-1) var(--space-2);
-  }
-
-  .collapsed {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-/* ─── Mobile: < 600px — Sticky Horizontal Chip Bar ─── */
-@media (max-width: 599px) {
-  .sidebar {
-    /* Ghim cố định đầu trang — không cuộn cùng content */
-    position: sticky;
-    top: 0;
-    z-index: var(--z-sticky);
-
-    /* Layout ngang cuộn được */
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    max-height: calc(var(--touch-target) + var(--space-2) * 2);
-
-    /* Kính mờ: tạo chiều sâu layering khi cuộn content qua phía dưới */
-    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
-    backdrop-filter: blur(var(--blur-lg)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(160%);
-
-    border-right: none;
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-
-  /* Ẩn header title trên mobile — chip bar đủ compact, không cần label */
-  .topbar {
-    display: none;
-  }
-
-  /* Body = chip bar cuộn ngang */
-  .body {
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-    padding: var(--space-1) var(--space-2);
-    gap: var(--space-1);
-    align-items: center;
-  }
-
-  .body::-webkit-scrollbar {
-    display: none;
-  }
+[data-orientation="horizontal"] .body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .topbar :global(svg) {
+  .sidebar {
     transition: none;
     animation: none;
   }

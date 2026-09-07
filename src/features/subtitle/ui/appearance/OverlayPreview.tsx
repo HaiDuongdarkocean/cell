@@ -79,34 +79,34 @@ export function OverlayPreview({
 
         <div className={styles.clusterRight} style={toolbarStyle} data-cell-id="overlay-preview-toolbar">
           <div className={styles.primaryCol}>
-            <Button shape="circle" material="liquid" variant="glass" aria-label="Quick add card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="secondary" aria-label="Quick add card" size="sm" onClick={noop}>
               <Icon name="zap"  />
             </Button>
-            <Button shape="circle" material="liquid" variant="glass" aria-label="Edit card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="secondary" aria-label="Edit card" size="sm" onClick={noop}>
               <Icon name="pencil"  />
             </Button>
             <div className={styles.toggleWrap}>
               <div className={styles.extraCol}>
-                <Button shape="circle" material="liquid" variant="glass" aria-label="Open subtitle list" size="sm" onClick={noop}>
+                <Button shape="circle" variant="secondary" aria-label="Open subtitle list" size="sm" onClick={noop}>
                   <Icon name="sidePanel"  />
                 </Button>
-                <Button shape="circle" material="liquid" variant="glass" aria-label="Generate native subtitle" size="sm" onClick={noop}>
+                <Button shape="circle" variant="secondary" aria-label="Generate native subtitle" size="sm" onClick={noop}>
                   <Icon name="languages"  />
                 </Button>
               </div>
-              <Button shape="circle" material="liquid" variant="glass" aria-label="Expand tools" size="sm" onClick={noop}>
+              <Button shape="circle" variant="secondary" aria-label="Expand tools" size="sm" onClick={noop}>
                 <Icon name="chevronLeft"  />
               </Button>
             </div>
           </div>
           <div className={styles.secondaryCol}>
-            <Button shape="circle" material="liquid" variant="glass" aria-label="Update current card" size="sm" onClick={noop}>
+            <Button shape="circle" variant="secondary" aria-label="Update current card" size="sm" onClick={noop}>
               <Icon name="rotateCcw"  />
             </Button>
-            <Button shape="circle" material="liquid" variant="glass" aria-label="Open subtitle manager" size="sm" onClick={noop}>
+            <Button shape="circle" variant="secondary" aria-label="Open subtitle manager" size="sm" onClick={noop}>
               <Icon name="subtitleManager"  />
             </Button>
-            <Button shape="circle" material="liquid" variant="glass" aria-label="Enter player mode" size="sm" onClick={noop}>
+            <Button shape="circle" variant="secondary" aria-label="Enter player mode" size="sm" onClick={noop}>
               <Icon name="maximize"  />
             </Button>
           </div>

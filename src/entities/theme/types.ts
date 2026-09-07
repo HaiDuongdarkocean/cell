@@ -1,7 +1,7 @@
 // Theme entity types (ADR-022)
 //
 // Runtime-customizable theme system. Storage tách riêng (themeMode + themeConfig)
-// khỏi settings — theme có lifecycle riêng (change thường xuyên, import/export, reset).
+// khỏi settings — theme có lifecycle riêng (mode/preset switch + config sync).
 
 /** Theme mode — source of truth ở chrome.storage.local.themeMode (riêng, không trong settings). */
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -41,5 +41,4 @@ export interface ThemeConfig {
   };
 }
 
-/** Key of a core color token (for updateColor action typing). */
-export type CoreColorTokenKey = keyof CoreColorTokens;
+

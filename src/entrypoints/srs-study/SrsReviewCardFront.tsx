@@ -69,7 +69,6 @@ export function SrsReviewCardFront({
       )}
 
       <Button
-        material="solid"
         variant="secondary"
         fullWidth
         onClick={onShowAnswer}

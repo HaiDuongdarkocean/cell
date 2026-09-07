@@ -23,8 +23,6 @@
   width: 100%;
   justify-content: flex-start;
   overflow: hidden;
-  /* Collapsed shape is driven by the parent's container query (see @container below).
-     The parent (Navigation .vertical / CollapsibleSidebar .section) must be the container. */
   transition: background-color var(--duration-fast) var(--ease-standard),
               color var(--duration-fast) var(--ease-standard),
               height var(--duration-normal) ease-in-out,
@@ -59,6 +57,22 @@
   color: var(--color-primary);
 }
 
+.horizontal.active,
+.horizontal[aria-current="true"] {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.horizontal.active .icon,
+.horizontal[aria-current="true"] .icon {
+  color: var(--color-primary);
+}
+
+.horizontal.active:hover:not(:disabled),
+.horizontal[aria-current="true"]:hover:not(:disabled) {
+  background: transparent;
+}
+
 .pill {
   position: absolute;
   left: 0;
@@ -79,7 +93,13 @@
 }
 
 .horizontal .pill {
-  display: none;
+  left: 50%;
+  top: auto;
+  bottom: var(--space-0-5);
+  transform: translateX(-50%);
+  width: var(--space-5);
+  height: var(--border-width-thick);
+  border-radius: var(--radius-full);
 }
 
 .disabled {
@@ -89,11 +109,15 @@
 
 .horizontal {
   flex-direction: row;
-  padding: var(--space-1-5) var(--space-3);
+  justify-content: center;
+  width: auto;
+  min-width: var(--touch-target);
+  padding: 0;
+  gap: 0;
 }
 
 .horizontal .label {
-  flex: 1 1 auto;
+  display: none;
 }
 
 .vertical {
@@ -124,9 +148,6 @@
   z-index: 1;
 }
 
-/* === Container query: parent is the container ===
-   The vertical NavItem's parent (.section / .nav.vertical) is the container.
-   Threshold 1 (<=80px): label retracts toward icon, fades out. */
 @container (width <= 80px) {
   .vertical .label {
     opacity: 0;
@@ -134,7 +155,6 @@
   }
 }
 
-/* === Compact circle morph (<=64px): icon-only, centered === */
 @container (width <= 64px) {
   .vertical {
     width: var(--touch-target);
@@ -155,30 +175,13 @@
   }
 }
 
-/* === Mobile chip bar (<600px): icon-only, no label ===
-   Chip bar ngang trên mobile chỉ hiển thị icon — label ẩn đi. */
-@media (max-width: 599px) {
-  .item {
-    width: auto;
-    min-width: var(--touch-target);
-    padding: 0;
-    justify-content: center;
-    gap: 0;
-  }
-
-  .label {
-    display: none;
-  }
-}
-
-/* === Ripple on press === */
 .ripple {
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    var(--button-liquid-ripple) 0%,
-    var(--button-liquid-ripple-mid) 40%,
+    var(--button-ripple) 0%,
+    var(--button-ripple-mid) 40%,
     transparent 70%
   );
   transform: scale(0);

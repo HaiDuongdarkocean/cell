@@ -31,7 +31,7 @@ export function MaximizeButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <Button shape="circle" material="solid" variant="ghost"
+    <Button shape="circle" variant="ghost"
       className={cls}
       aria-pressed={maximized}
       aria-label={maximized ? 'Restore' : 'Maximize'}

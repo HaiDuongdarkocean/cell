@@ -126,6 +126,10 @@ export function UniversalPanel({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
+      // A descendant overlay already consumed this Escape (marked
+      // preventDefault or stopped propagation earlier) — topmost layer wins,
+      // so the panel must not close on the same keypress.
+      if (e.defaultPrevented) return;
       e.preventDefault();
       onClose();
     }

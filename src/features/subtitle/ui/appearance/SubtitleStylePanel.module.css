@@ -186,7 +186,8 @@
 .segmentActive {
   background: var(--color-surface);
   color: var(--color-text-primary);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .segmentActive:active {

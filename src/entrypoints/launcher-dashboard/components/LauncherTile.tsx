@@ -11,7 +11,7 @@ export interface LauncherTileProps {
 
 export function LauncherTile({ icon, label, onClick }: LauncherTileProps) {
   return (
-    <Button material="solid" variant="secondary" className={styles.tile} onClick={onClick} disabled={!onClick}>
+    <Button variant="secondary" className={styles.tile} onClick={onClick} disabled={!onClick}>
       <span className={styles.icon}>
         <Icon name={icon} size="lg" />
       </span>

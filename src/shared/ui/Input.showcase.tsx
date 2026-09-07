@@ -199,12 +199,9 @@ export function Showcase(): ReactElement {
         <SectionHead
           tag="Variants"
           title="Hình dạng & phong cách"
-          desc="Glass là mặc định. Filled dùng trên nền phức tạp. Outline cho form nghiêm túc. Ghost cho inline edit."
+          desc="Filled là mặc định. Outline cho form nghiêm túc. Ghost cho inline edit."
         />
         <div className={styles.row}>
-          <Field label="Glass">
-            <Input variant="glass" placeholder="Trong suốt, blur nền" />
-          </Field>
           <Field label="Filled">
             <Input variant="filled" placeholder="Nền đục nhẹ" />
           </Field>
@@ -287,7 +284,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Input',
-  description: 'Styled text input with sizes (sm, md, lg), variants (glass, filled, outline, ghost), error/success/loading states, and prefix/suffix slots.',
+  description: 'Styled text input with sizes (sm, md, lg), variants (filled, outline, ghost), error/success/loading states, and prefix/suffix slots.',
   level: 'atoms',
   category: 'Input',
   group: 'Shared UI — Input',

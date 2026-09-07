@@ -3,12 +3,12 @@ import { Spinner } from './Spinner';
 import styles from './Input.module.css';
 
 type InputSize = 'sm' | 'md' | 'lg';
-type InputVariant = 'glass' | 'filled' | 'outline' | 'ghost';
+type InputVariant = 'filled' | 'outline' | 'ghost';
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'prefix'> {
   /** Size. Default: md. */
   size?: InputSize;
-  /** Visual variant. Default: glass. */
+  /** Visual variant. Default: filled. */
   variant?: InputVariant;
   /** Error state. */
   error?: boolean;
@@ -27,13 +27,13 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 }
 
 /**
- * Input — styled text input with liquid glass, focus, error, success,
+ * Input — styled text input with solid surface, focus, error, success,
  * disabled, loading, and prefix/suffix support.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     size = 'md',
-    variant = 'glass',
+    variant = 'filled',
     error = false,
     success = false,
     loading = false,

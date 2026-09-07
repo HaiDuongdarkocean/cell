@@ -245,8 +245,8 @@
 .btn--destructive { background: var(--button-destructive-bg); color: var(--button-destructive-fg); }
 .btn--destructive:hover { background: var(--button-destructive-hover-bg); }
 
-.btn--sm { height: var(--button-height-sm); padding: var(--button-padding-sm-y) var(--button-padding-sm-x); font-size: var(--button-font-size-sm); }
-.btn--lg { height: var(--button-height-lg); padding: var(--button-padding-lg-y) var(--button-padding-lg-x); font-size: var(--button-font-size-lg); }
+.btn--sm { height: var(--button-height-sm); padding: var(--button-padding-y-sm) var(--button-padding-x-sm); font-size: var(--button-font-size-sm); }
+.btn--lg { height: var(--button-height-lg); padding: var(--button-padding-y-lg) var(--button-padding-x-lg); font-size: var(--button-font-size-lg); }
 
 
 @media (prefers-reduced-motion: reduce) {

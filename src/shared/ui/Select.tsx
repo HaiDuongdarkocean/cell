@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
+import { pushEscapeLayer } from './escapeLayerStack';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -76,7 +77,7 @@ export function Select({
   disabled,
   error,
   size = 'md',
-  variant = 'outline',
+  variant = 'filled',
   state,
   onChange,
   className,
@@ -101,7 +102,7 @@ export function Select({
 
   const validationState = state ?? (error ? 'error' : undefined);
 
-  const { placement, maxWidth, maxHeight } = useMenuPlacement({
+  const { placement, maxHeight } = useMenuPlacement({
     isOpen,
     menuAlign,
     menuMaxHeight,
@@ -164,18 +165,16 @@ export function Select({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, closeMenu]);
 
-  // Close on Esc and focus stays inside.
+  // Close on Esc and focus stays inside. Registered on the shared Escape
+  // stack (capture phase) so a nested overlay like this menu consumes the key
+  // before ancestor surfaces (e.g. UniversalPanel) can react to it.
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e: globalThis.KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeMenu();
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return pushEscapeLayer((e) => {
+      e.preventDefault();
+      closeMenu();
+      triggerRef.current?.focus();
+    });
   }, [isOpen, closeMenu]);
 
   // Move focus to the listbox (or search input) when the menu opens.
@@ -200,6 +199,7 @@ export function Select({
   const handleSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       closeMenu();
       triggerRef.current?.focus();
       return;
@@ -319,7 +319,7 @@ export function Select({
 
   const triggerClass = [
     styles.trigger,
-    styles[`trigger${(variant ?? 'outline').charAt(0).toUpperCase()}${(variant ?? 'outline').slice(1)}` as keyof typeof styles],
+    styles[`trigger${(variant ?? 'filled').charAt(0).toUpperCase()}${(variant ?? 'filled').slice(1)}` as keyof typeof styles],
     styles[`trigger${(size ?? 'md').charAt(0).toUpperCase()}${(size ?? 'md').slice(1)}` as keyof typeof styles],
     isOpen ? styles.triggerOpen : '',
     validationState
@@ -333,19 +333,14 @@ export function Select({
 
   const menuClass = [styles.menu, menuAlignClass].filter(Boolean).join(' ');
 
-  const menuStyle = {
-    top: placement.vpos === 'bottom' ? 'calc(100% + var(--space-1))' : 'auto',
-    bottom: placement.vpos === 'top' ? 'calc(100% + var(--space-1))' : 'auto',
-    left: placement.align === 'left' ? 0 : 'auto',
-    right: placement.align === 'right' ? 0 : 'auto',
-    maxWidth,
-    maxHeight,
-  } as React.CSSProperties;
+  // In-flow menu: position offsets don't apply (static). Only the height cap
+  // is still meaningful — it keeps the expanded region scrollable, not huge.
+  const menuStyle = { maxHeight } as React.CSSProperties;
 
   return (
     <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
       {name && <input type="hidden" name={name} value={value ?? ''} />}
-      <Button material="solid" variant="secondary"
+      <Button variant="secondary"
         ref={triggerRef}
         id={id}
         className={triggerClass}
@@ -356,12 +351,14 @@ export function Select({
         aria-label={ariaLabel}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
+        trailingIcon={
+          <Icon
+            name="chevronDown"
+            className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
+          />
+        }
       >
         <span className={styles.value}>{triggerLabel}</span>
-        <Icon
-          name="chevronDown"
-          className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
-        />
       </Button>
 
       {isOpen && (

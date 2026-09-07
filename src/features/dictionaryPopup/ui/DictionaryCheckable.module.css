@@ -293,7 +293,7 @@
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-card);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   background: var(--color-surface);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out),
@@ -350,7 +350,6 @@
 
 .cellAudioItem:hover {
   background: var(--color-surface-hover);
-  border-color: var(--color-border);
 }
 
 /* Checked audio row gets the translate-block treatment: primary ring +

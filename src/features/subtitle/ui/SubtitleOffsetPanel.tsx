@@ -96,7 +96,7 @@ export function SubtitleOffsetPanel({
 
       <div className={styles.steppers}>
         {STEPS.map((step) => (
-          <Button material="liquid" key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-cell-id={`offset-step-${step.label}`}>
+          <Button key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-cell-id={`offset-step-${step.label}`}>
             {step.label}
           </Button>
         ))}
@@ -114,10 +114,10 @@ export function SubtitleOffsetPanel({
           data-cell-id="offset-input"
           className={styles.offsetInput}
         />
-        <Button material="liquid" size="sm" variant="primary" onClick={handleInputCommit} data-cell-id="offset-apply">
+        <Button size="sm" variant="primary" onClick={handleInputCommit} data-cell-id="offset-apply">
           Apply
         </Button>
-        <Button material="liquid" size="sm" variant="ghost" onClick={handleReset} data-cell-id="offset-reset">
+        <Button size="sm" variant="ghost" onClick={handleReset} data-cell-id="offset-reset">
           Reset
         </Button>
       </div>

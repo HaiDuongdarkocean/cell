@@ -1,7 +1,7 @@
 import { forwardRef, type HTMLAttributes, type ReactNode, type Ref } from 'react';
 import styles from './Card.module.css';
 
-type CardVariant = 'default' | 'interactive' | 'selected' | 'glass';
+type CardVariant = 'default' | 'interactive' | 'selected';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /** Visual variant. Default: default. */

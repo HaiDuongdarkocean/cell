@@ -94,7 +94,7 @@
     pointer-events: auto;
     touch-action: none;
     position: relative;
-    z-index: 1;
+    z-index: var(--z-base);
     transition: background var(--transition);
   }
 
@@ -125,7 +125,7 @@
   /* Content: fixed width % (default 30%, user-resizable 20-60%). */
   .contentOther {
     flex: 0 0 var(--content-pct, 30%);
-    min-width: 200px;
+    min-width: min(200px, 100%);
     max-width: 60%;
     height: 100% !important; /* override inline height from geometry */
   }
@@ -138,14 +138,14 @@
   flex: 0 0 auto;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(var(--touch-target-mobile), auto);
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(var(--touch-target-mobile), auto); /* 92px is a local minimum for the nav cluster; no exact space token matches */
   grid-template-areas: 'nav subtitle actions';
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
   background: var(--color-surface);
-  border-top: var(--border-width-hairline) solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
   pointer-events: auto;
   container-type: inline-size;
 }

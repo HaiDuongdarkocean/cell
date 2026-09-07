@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, type ReactElement } from 'react';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
+import { pushEscapeLayer } from './escapeLayerStack';
 import styles from './HintIcon.module.css';
 
 /** Props for the HintIcon component. */
@@ -102,23 +103,16 @@ export function HintIcon({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Esc key dismiss
+  // Esc key dismiss — via the shared Escape stack so the popover consumes the
+  // key before ancestor surfaces (e.g. UniversalPanel) can react to it.
   useEffect(() => {
     if (!isOpen) return;
-
-    const handleEsc = (e: Event): void => {
-      if (e instanceof KeyboardEvent && e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    return pushEscapeLayer(() => setIsOpen(false));
   }, [isOpen]);
 
   return (
     <span className={styles.hintWrap} ref={buttonRef}>
-      <Button shape="circle" material="solid" variant="ghost"
+      <Button shape="circle" variant="ghost" size="sm"
         id={id}
         data-cell-id={dataTestId}
         className={styles.hintBtn}
@@ -126,7 +120,7 @@ export function HintIcon({
         aria-label={ariaLabel}
         onClick={toggle}
       >
-        <Icon name="info" />
+        <Icon name="info" size="var(--iconbutton-icon-md)" />
       </Button>
       {isOpen && (
         <div

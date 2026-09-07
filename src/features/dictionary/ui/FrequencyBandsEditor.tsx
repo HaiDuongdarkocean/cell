@@ -5,6 +5,7 @@
 // self-loads via loadSettings and persists via saveSettings.
 
 import { useEffect, useState, type ReactElement } from 'react';
+import { Input, Label } from '@/shared/ui';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_FREQUENCY_BANDS } from '@/shared/config/config';
 import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
@@ -56,10 +57,11 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
   return (
     <div className={styles.bands} data-cell-id="frequency-bands-editor">
       {FIELDS.map(({ key, label }) => (
-        <label key={key} className={styles.bandField}>
+        <Label key={key} className={styles.bandField}>
           <span className={styles.bandLabel}>{label}</span>
-          <input
+          <Input
             type="number"
+            size="sm"
             className={styles.bandInput}
             min={0}
             step={100}
@@ -67,7 +69,7 @@ export function FrequencyBandsEditor({ value, onChange }: FrequencyBandsEditorPr
             onChange={(e) => commit(key, e.target.value)}
             data-cell-id={`band-input-${key}`}
           />
-        </label>
+        </Label>
       ))}
     </div>
   );

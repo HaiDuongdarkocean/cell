@@ -27,7 +27,7 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
         Đang thêm… {processed}{total > 0 ? ` / ${total}` : ''} mục
       </span>
       {onCancel && (
-        <Button material="solid" variant="outline" size="sm" onClick={onCancel}>
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Hủy
         </Button>
       )}
@@ -36,7 +36,7 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
           variant="error"
           description={error}
           role="alert"
-          style={{ marginTop: 'var(--space-2)' }}
+          className={styles.error}
         />
       )}
     </div>

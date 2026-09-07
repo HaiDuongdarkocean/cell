@@ -9,7 +9,8 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
-import { Button, Tabs } from '@/shared/ui';
+import { Button, Tabs, Input, Label } from '@/shared/ui';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from './subtitlePanelModel';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
@@ -152,7 +153,7 @@ function ItemRow({
       </span>
       {onDownload && (
         <span className={styles.trackActions}>
-          <Button shape="circle" material="liquid"
+          <Button shape="circle"
             size="md"
             variant="ghost"
             aria-label={`Download ${item.name}`}
@@ -251,7 +252,7 @@ function OffsetStepper({
       </div>
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
-          <Button material="liquid"
+          <Button
             variant="primary"
             size="md"
             leadingIcon={<Minus aria-hidden="true" />}
@@ -261,8 +262,8 @@ function OffsetStepper({
           >
             <span className={styles.stepLabel}>-0.5s</span>
           </Button>
-          <label className={styles.valueField}>
-            <input
+          <Label className={styles.valueField}>
+            <Input
               type="text"
               inputMode="decimal"
               className={styles.valueInput}
@@ -272,10 +273,11 @@ function OffsetStepper({
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               aria-label={`${label} latency in seconds`}
+              variant="ghost"
               data-cell-id={`manager-offset-input-${role}`}
             />
-          </label>
-          <Button material="liquid"
+          </Label>
+          <Button
             variant="primary"
             size="md"
             leadingIcon={<Plus aria-hidden="true" />}
@@ -286,7 +288,7 @@ function OffsetStepper({
             <span className={styles.stepLabel}>+0.5s</span>
           </Button>
         </div>
-        <Button shape="circle" material="liquid"
+        <Button shape="circle"
           size="md"
           variant="outline"
           aria-label="Reset latency"
@@ -316,7 +318,7 @@ function TrackList({
 }): React.JSX.Element {
   return (
     <div className={styles.trackList} role="listbox" data-cell-id="manager-section-body" data-role={role}>
-      <Button material="liquid" variant="secondary"
+      <Button variant="secondary"
         role="option"
         aria-selected={activeIndex === -1}
         className={[styles.track, styles.offRow, activeIndex === -1 && styles.trackActive].filter(Boolean).join(' ')}
@@ -479,16 +481,14 @@ export function SubtitleManagerPanel({
   useEffect(() => {
     // Skip ESC handling when inside shared Sheet atom — Sheet has its own.
     if (inSheet) return;
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
-        // In fullscreen: let browser exit fullscreen, manager stays open.
-        // Not in fullscreen: close manager.
-        if (document.fullscreenElement) return;
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    // Via the shared Escape stack so a nested layer (e.g. an open Select
+    // menu inside the manager) wins over the manager itself.
+    return pushEscapeLayer(() => {
+      // In fullscreen: let browser exit fullscreen, manager stays open.
+      // Not in fullscreen: close manager.
+      if (document.fullscreenElement) return;
+      onClose();
+    });
   }, [onClose, inSheet]);
 
   const transitionTo = useCallback((newView: 'tracks' | 'appearance' | 'search' | 'ocr', direction: 'forward' | 'backward'): void => {
@@ -533,7 +533,7 @@ export function SubtitleManagerPanel({
     return (
       <>
         {v !== 'tracks' && (
-          <Button shape="circle" material="liquid"
+          <Button shape="circle"
             ref={backBtnRef}
             variant="ghost"
             aria-label="Back to subtitles"
@@ -588,7 +588,7 @@ export function SubtitleManagerPanel({
             {renderHeaderContent(view)}
           </div>
         </div>
-        <Button shape="circle" material="liquid"
+        <Button shape="circle"
           aria-label="Close subtitle manager"
           onClick={onClose}
           data-cell-id="subtitle-manager-close"
@@ -615,7 +615,7 @@ export function SubtitleManagerPanel({
                 </Tabs.List>
                 <div className={styles.sectionActions}>
                   {onImport && (
-                    <Button shape="circle" material="liquid"
+                    <Button shape="circle"
                       size="md"
                       variant="ghost"
                       aria-label={`Import ${activeLabel} subtitle`}
@@ -626,7 +626,7 @@ export function SubtitleManagerPanel({
                     </Button>
                   )}
                   {onHideSection && (
-                    <Button shape="circle" material="liquid"
+                    <Button shape="circle"
                       size="md"
                       variant="ghost"
                       active={activeHidden}

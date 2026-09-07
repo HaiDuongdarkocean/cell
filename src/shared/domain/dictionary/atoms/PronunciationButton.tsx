@@ -52,7 +52,7 @@ export function PronunciationButton({
   const cls = [styles.btn, className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={cls}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}

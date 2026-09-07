@@ -120,7 +120,7 @@ describe('SearchableSelect', () => {
     const searchInput = screen.getByLabelText('Search options');
     fireEvent.change(searchInput, { target: { value: 'xyz' } });
 
-    expect(screen.getByText('No languages found')).toBeInTheDocument();
+    expect(screen.getByText('No results found.')).toBeInTheDocument();
   });
 
   it('calls onChange when option clicked', () => {

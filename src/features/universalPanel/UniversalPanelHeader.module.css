@@ -1,5 +1,6 @@
 .header {
   flex: 0 0 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -12,14 +13,18 @@
 
 .closeButton {
   margin-left: auto;
+  flex-shrink: 0;
 }
 
-/* Profile button is flag-only (no label) — sits at the far left of the header. */
-.profileButton {
+/* Profile button is flag-only (no label) — sits at the far left of the header.
+   Scope under .header to beat Button's .md.circle width/height and keep the
+   intended 34×34 flag size. */
+.header .profileButton {
   width: var(--universal-panel-profile-flag-size);
   height: var(--universal-panel-profile-flag-size);
   padding: var(--space-0);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .profileButton [class*="flag"] {

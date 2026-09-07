@@ -1,222 +1,211 @@
-/* === MultiSelect — toggle switch design === */
+/* === MultiSelect — tag field (chips + inline search + in-flow suggestions) === */
 
 .container {
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
 }
 
-/* === Search bar === */
-.searchWrap {
-  position: relative;
+/* === Chip field — the selection itself === */
+.field {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2-5) var(--space-3-5);
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-2);
+  border: var(--border-width-hairline) solid var(--input-border);
+  border-radius: var(--radius-md);
+  background: var(--color-field);
+  cursor: text;
   transition: border-color var(--duration-fast) ease;
 }
 
-.searchWrap:focus-within {
+.fieldFocused,
+.field:focus-within {
   border-color: var(--color-primary);
 }
 
 .searchIcon {
-  width: var(--space-4);
-  height: var(--space-4);
   color: var(--color-text-secondary);
   flex-shrink: 0;
-  pointer-events: none;
-  transition: color var(--duration-fast) ease;
 }
 
-.searchWrap:focus-within .searchIcon {
+.fieldFocused .searchIcon,
+.field:focus-within .searchIcon {
   color: var(--color-primary);
 }
 
-.searchInput {
+.input {
   flex: 1;
-  min-width: 0;
+  min-width: var(--space-20, 80px);
   border: none;
+  outline: none;
   background: transparent;
   font-family: var(--font-family);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
+  padding: var(--space-0-5) 0;
 }
 
-.searchInput::placeholder {
+.input::placeholder {
   color: var(--color-text-secondary);
 }
 
-.searchInput:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
+/* === Chips === */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-1) var(--space-0-5) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-pill);
 }
 
-/* Selection count badge */
-.badge {
+/* Exclusive values (e.g. 'all') — filled mode chip */
+.chipExclusive {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+}
+
+.chipRemove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-5);
-  height: var(--space-5);
-  padding: 0 var(--space-1-5);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-inverse);
-  background: var(--color-primary);
+  width: var(--space-4);
+  height: var(--space-4);
+  padding: 0;
+  border: none;
   border-radius: var(--radius-full);
-  flex-shrink: 0;
-  animation: badgePop var(--duration-normal) ease;
-}
-
-@keyframes badgePop {
-  0% { transform: scale(0.8); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .searchWrap,
-  .searchIcon,
-  .option,
-  .toggleSwitch,
-  .toggleKnob,
-  .badge {
-    transition: none;
-    animation: none;
-  }
-}
-
-/* === Options list === */
-.list {
-  composes: themed from '@/shared/ui/Scrollable.module.css';
-  max-height: min(var(--multi-select-max-height, calc(var(--space-5) * 11)), 50vh);
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: var(--space-1-5);
-}
-
-/* === Section header === */
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-2-5) var(--space-1-5);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  user-select: none;
-}
-
-.sectionCount {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  background: var(--color-surface-hover);
-  padding: var(--space-0-5) var(--space-1-5);
-  border-radius: var(--radius-sm);
-  letter-spacing: var(--tracking-normal);
-  text-transform: none;
-}
-
-/* === Divider between selected and unselected === */
-.divider {
-  height: var(--border-width-hairline);
-  margin: var(--space-1-5) var(--space-2-5);
-  background: var(--color-border-subtle);
-  list-style: none;
-}
-
-/* === Option row === */
-.option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2-5) var(--space-3);
-  margin-bottom: var(--space-0-5);
-  border-radius: var(--radius-pill);
+  background: transparent;
+  color: inherit;
   cursor: pointer;
-  user-select: none;
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-  transition: background var(--duration-fast) var(--ease-in-out);
 }
 
-.option:hover {
+.chipRemove:hover {
   background: var(--color-surface-hover);
 }
 
-.option:focus-visible {
+.chipRemove:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
 
-.optionLabel {
+/* === Popular quick-picks === */
+.popular {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.popularLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.popChip {
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--color-field);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2-5);
+  cursor: pointer;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.popChip:hover {
+  background: var(--color-field-hover);
+  color: var(--color-primary);
+}
+
+.popChip:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+/* === Suggestions — in-flow so the parent card grows === */
+.suggestions {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-field);
+  max-height: var(--multi-select-max-height, calc(var(--space-9) * 5));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.suggest:hover {
+  background: var(--color-surface-hover);
+}
+
+.suggest:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.suggestLabel {
   flex: 1;
   min-width: 0;
-  line-height: var(--leading-snug);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* === iOS-style toggle switch === */
-.toggleSwitch {
-  position: relative;
-  width: var(--space-9);
-  height: var(--space-5);
-  background: var(--color-border);
-  border-radius: var(--radius-card);
+.suggestAdd {
+  color: var(--color-text-secondary);
   flex-shrink: 0;
-  transition: background var(--duration-normal) ease;
 }
 
-.toggleKnob {
-  position: absolute;
-  top: var(--space-0-5);
-  left: var(--space-0-5);
-  width: var(--space-4);
-  height: var(--space-4);
-  background: var(--color-text-inverse);
-  border-radius: var(--radius-full);
-  transition: transform var(--duration-normal) var(--ease-in-out);
-}
-
-/* Selected state */
-.optionSelected {
-  background: var(--color-primary-subtle);
-}
-
-.optionSelected:hover {
-  background: var(--color-primary-subtle);
-}
-
-.optionSelected .optionLabel {
+.suggest:hover .suggestAdd {
   color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
 }
 
-.optionSelected .toggleSwitch {
-  background: var(--color-primary);
-}
-
-.optionSelected .toggleKnob {
-  transform: translateX(var(--space-4));
-}
-
-/* === Empty state === */
-.emptyState {
-  padding: var(--space-6) var(--space-2-5);
+.empty {
+  padding: var(--space-3) var(--space-2);
   text-align: center;
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field,
+  .popChip {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .field,
+  .popChip {
+    border-color: var(--color-border);
+  }
 }

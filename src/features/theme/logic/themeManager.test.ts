@@ -68,7 +68,7 @@ describe('themeManager', () => {
         DEFAULT_THEME_CONFIG.customColors.dark.primary,
       );
       expect(root.style.getPropertyValue('--color-primary-subtle')).toBe(
-        'rgba(106,178,245,0.16)',
+        'rgba(106,178,245,0.12)',
       );
     });
 

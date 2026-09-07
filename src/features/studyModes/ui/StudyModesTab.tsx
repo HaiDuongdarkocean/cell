@@ -132,19 +132,6 @@ export function StudyModesTab(): ReactElement {
                 onDelete={handleDeleteMode}
               />
             ))}
-            <SelectableCard
-              role="button"
-              className={styles.newModeCard}
-              onSelect={handleNewMode}
-              data-cell-id="new-mode-card"
-              aria-label="New mode"
-            >
-              <Icon name="plus" size="lg" className={styles.newModeIcon} />
-              <Text variant="heading-2" as="p">New mode</Text>
-              <Text color="secondary" as="p" className={styles.newModeHint}>
-                Build your own study flow
-              </Text>
-            </SelectableCard>
           </div>
         </section>
 
@@ -208,7 +195,7 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
         data-cell-id={`mode-card-${mode.id}`}
       >
         <Icon name={mode.icon} size="lg" className={styles.modeIcon} />
-        <Text variant="heading-2" as="p" className={styles.modeTitle}>
+        <Text variant="heading-3" as="p" className={styles.modeTitle}>
           {mode.title}
         </Text>
         <Text color="secondary" as="p" className={styles.modeDesc}>

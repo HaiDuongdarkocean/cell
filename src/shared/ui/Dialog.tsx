@@ -52,6 +52,9 @@ export function Dialog({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
+      // Consume the key so ancestor surfaces (e.g. UniversalPanel) don't
+      // close too — one Escape closes one layer.
+      e.stopPropagation();
       onOpenChange?.(false);
     }
   };

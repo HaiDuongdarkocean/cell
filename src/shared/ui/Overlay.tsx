@@ -1,4 +1,5 @@
 import { useEffect, type HTMLAttributes, type ReactNode } from 'react';
+import { pushEscapeLayer } from './escapeLayerStack';
 import styles from './Overlay.module.css';
 
 type OverlayElevation = 'low' | 'med' | 'high';
@@ -35,14 +36,12 @@ export function Overlay({
   className,
   ...rest
 }: OverlayProps): React.JSX.Element | null {
+  // Escape goes through the shared layer stack so the topmost overlay wins
+  // and the key never bubbles up to ancestor surfaces (e.g. UniversalPanel).
   useEffect(() => {
     if (!visible || !onClose) return;
     const handler = onClose;
-    function handleKeyDown(e: globalThis.KeyboardEvent) {
-      if (e.key === 'Escape') handler!();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return pushEscapeLayer(() => handler());
   }, [visible, onClose]);
 
   const cls = [

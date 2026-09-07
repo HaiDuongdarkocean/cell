@@ -51,7 +51,7 @@ export function CollapseButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={cls}
       aria-expanded={!collapsed}
       aria-controls={controlsId}

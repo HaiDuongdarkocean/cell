@@ -140,7 +140,6 @@ export function CandidateView({
               shape="circle"
               size="sm"
               variant="outline"
-              material="solid"
               className={styles.cellHeaderSend}
               aria-label={t('dict.action.sendToCard')}
               title={t('dict.action.sendToCard')}
@@ -154,7 +153,6 @@ export function CandidateView({
                 shape="circle"
                 size="sm"
                 variant="primary"
-                material="solid"
                 className={styles.cellHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}
                 title={t('dict.action.quickAdd')}
@@ -180,7 +178,6 @@ export function CandidateView({
               shape="circle"
               size="xs"
               variant="ghost"
-              material="solid"
               className={styles.cellHeaderAudio}
               aria-label={t('dict.audio.playWord')}
               title={t('dict.audio.playWord')}
@@ -193,7 +190,6 @@ export function CandidateView({
               shape="circle"
               size="xs"
               variant="ghost"
-              material="solid"
               className={styles.cellHeaderAudio}
               aria-label={t('dict.audio.playSentence')}
               title={t('dict.audio.playSentence')}
@@ -205,15 +201,15 @@ export function CandidateView({
           </span>
         </div>
         <div className={styles.cellHeaderSecond}>
-          <button
-            type="button"
+          <Button
+            variant="transparent"
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
             onClick={panel.cycleStatus}
             title={t('dict.status.cycle', [panel.status, nextStatus(panel.status)])}
             data-cell-id="dictionary-status-cycle"
           >
             {panel.status}
-          </button>
+          </Button>
           {candidate.frequency && (
             <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-cell-id="dictionary-frequency">
               <span className={styles.cellHeaderFrequencySource}>{candidate.frequency.source}</span>

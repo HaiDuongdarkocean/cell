@@ -58,7 +58,6 @@ export function ResourceCard({
     >
       <div className={styles.row}>
         <Button
-          material="solid"
           variant="ghost"
           size="sm"
           onClick={() => setExpanded((v) => !v)}
@@ -69,7 +68,7 @@ export function ResourceCard({
           <Icon
             name="chevronDown"
             size="xs"
-            style={expanded ? { transform: 'rotate(180deg)' } : undefined}
+            className={expanded ? styles.iconUp : undefined}
           />
         </Button>
 
@@ -90,7 +89,6 @@ export function ResourceCard({
         {canReorder && (
           <div className={styles.reorder}>
             <Button
-              material="solid"
               variant="ghost"
               size="sm"
               onClick={() => onMove(-1)}
@@ -98,10 +96,9 @@ export function ResourceCard({
               aria-label={`Nâng ưu tiên ${resource.name}`}
               data-cell-id={`move-up-${resource.id}`}
             >
-              <Icon name="chevronDown" size="xs" style={{ transform: 'rotate(180deg)' }} />
+              <Icon name="chevronDown" size="xs" className={styles.iconUp} />
             </Button>
             <Button
-              material="solid"
               variant="ghost"
               size="sm"
               onClick={() => onMove(1)}
@@ -122,7 +119,6 @@ export function ResourceCard({
         />
 
         <Button
-          material="solid"
           variant="ghost"
           size="sm"
           onClick={onDelete}

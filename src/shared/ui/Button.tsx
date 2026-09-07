@@ -1,26 +1,19 @@
-import { Children, forwardRef, isValidElement, useId, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
+import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
-import { getButtonGlassFilter } from './ButtonGlassFilter';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'glass' | 'destructive' | 'link' | 'success' | 'transparent';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'transparent';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
-type ButtonLiquidStyle = 'regular' | 'clear' | 'prominent';
 type ButtonOrientation = 'horizontal' | 'vertical';
 type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 type ButtonActiveStyle = 'default' | 'flat';
-type ButtonMaterial = 'liquid' | 'solid';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
   variant?: ButtonVariant;
   /** Hide label when nested in a container narrower than 380px. */
   collapseLabel?: boolean;
-  /** Surface material. Default: solid. */
-  material?: ButtonMaterial;
-  /** Apple-inspired material for glass buttons. Default: regular. */
-  liquidStyle?: ButtonLiquidStyle;
   /** Size. Default: md. */
   size?: ButtonSize;
   /** Shape. Default: pill. Icon-only buttons auto-switch to circle. */
@@ -31,7 +24,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
   /** Dimmed primary look (disabled-like opacity). Lifts on hover, fully lit
    *  when the caller sets aria-selected/aria-pressed="true". Only affects
-   *  variant="primary" material="solid". */
+   *  variant="primary". */
   dimmed?: boolean;
   /** Active state visual: 'default' (pale-blue bg + primary color) or 'flat' (primary color only, no bg, no animation). Default: default. */
   activeStyle?: ButtonActiveStyle;
@@ -64,8 +57,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
-  material = 'solid',
-  liquidStyle = 'regular',
   size = 'md',
   shape,
   orientation = 'horizontal',
@@ -89,9 +80,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   ...rest
 }: ButtonProps, ref): React.JSX.Element {
   const [pulsing, setPulsing] = useState(false);
-  const rawFilterId = useId();
-  const filterId = rawFilterId.replace(/[^a-zA-Z0-9]/g, '');
-  const filterSvg = getButtonGlassFilter(filterId);
   const pulseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
@@ -124,19 +112,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const iconOnly = !hasTextChild && !leadingIcon && !trailingIcon && !loading && (onlyChildIsElement || childCount === 0);
   const resolvedShape = shape ?? (iconOnly ? 'circle' : 'pill');
 
-  const liquidClass = variant === 'glass'
-    ? liquidStyle === 'clear'
-      ? styles.liquidClear
-      : liquidStyle === 'prominent'
-        ? styles.liquidProminent
-        : styles.liquidRegular
-    : '';
-
   const cls = [
     styles.button,
     styles[variant],
-    liquidClass,
-    material === 'solid' ? styles.solid : '',
     styles[size],
     resolvedShape === 'circle' ? styles.circle : '',
     orientation === 'vertical' ? styles.vertical : '',
@@ -160,23 +138,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type="button"
       className={cls}
-      style={{
-        ...style,
-        ['--button-liquid-filter-url' as string]: material === 'liquid' ? `url(#${filterId})` : 'none',
-      }}
+      style={style}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-invalid={error || undefined}
       onPointerDown={handlePointerDown}
       {...rest}
     >
-      {material === 'liquid' && (
-        <span
-          className={styles.glassFilter}
-          aria-hidden="true"
-          dangerouslySetInnerHTML={{ __html: filterSvg }}
-        />
-      )}
       {loading && <Spinner size="md" color="current" aria-hidden="true" />}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}
       {children && <span className={styles.label}>{children}</span>}

@@ -5,10 +5,15 @@
   padding-top: var(--space-2);
 }
 
-.bandField {
+/* (0,2,0) beats shared Label's .label chrome — the field stays a column
+   stack and inherits the surrounding font (the inner .bandLabel span sets
+   its own size/color). */
+.bands .bandField {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-0-5);
+  font: inherit;
 }
 
 .bandLabel {
@@ -18,18 +23,8 @@
   white-space: nowrap;
 }
 
-.bandInput {
+/* Shared Input covers padding/border/radius/focus via tokens — only the
+   fixed field width is local. (0,2,0) beats Input's width:100%. */
+.bands .bandInput {
   width: calc(var(--space-10) * 3);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family);
-  color: var(--color-text);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-}
-
-.bandInput:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: 0;
 }

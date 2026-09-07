@@ -34,7 +34,7 @@ export function MinimizeButton({
     .filter(Boolean)
     .join(' ');
   return (
-    <Button shape="circle" material="solid" variant={variant}
+    <Button shape="circle" variant={variant}
       className={cls}
       aria-label={ariaLabel}
       {...rest}

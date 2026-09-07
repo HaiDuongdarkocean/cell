@@ -42,14 +42,11 @@ afterAll(() => {
 });
 
 describe('ThemePanel', () => {
-  it('renders panel with all sections', () => {
+  it('renders panel with mode and preset sections', () => {
     render(<ThemePanel />);
     expect(screen.getByTestId('theme-panel')).toBeInTheDocument();
     expect(screen.getByTestId('mode-cards')).toBeInTheDocument();
-    expect(screen.getByTestId('color-customization')).toBeInTheDocument();
-    expect(screen.getByTestId('theme-preview')).toBeInTheDocument();
-    expect(screen.getByTestId('contrast-badges')).toBeInTheDocument();
-    expect(screen.getByTestId('theme-import-export')).toBeInTheDocument();
+    expect(screen.getByTestId('theme-preset-switcher')).toBeInTheDocument();
   });
 
   it('switching mode via ModeCards calls themeStore.switchMode', () => {
@@ -58,26 +55,10 @@ describe('ThemePanel', () => {
     expect(useThemeStore.getState().mode).toBe('system');
   });
 
-  it('reset shows confirm dialog, cancel keeps config', () => {
+  it('switching preset via PresetSwitcher calls themeStore.switchPreset', () => {
     render(<ThemePanel />);
-    fireEvent.click(screen.getByTestId('theme-reset-btn'));
-    expect(screen.getByTestId('theme-reset-confirm')).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('theme-reset-no'));
-    expect(screen.queryByTestId('theme-reset-confirm')).not.toBeInTheDocument();
-  });
-
-  it('reset confirm Yes calls resetTheme', () => {
-    // Mutate config first
-    useThemeStore.getState().updateColor('dark', 'primary', '#ff0000');
-    render(<ThemePanel />);
-    fireEvent.click(screen.getByTestId('theme-reset-btn'));
-    fireEvent.click(screen.getByTestId('theme-reset-yes'));
-    expect(useThemeStore.getState().config).toEqual(DEFAULT_THEME_CONFIG);
-  });
-
-  it('shows contrast badges for resolved mode', () => {
-    render(<ThemePanel />);
-    // dark mode default → 3 badges
-    expect(screen.getByTestId('contrast-badge-Text / Canvas')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Color preset' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Ocean' }));
+    expect(useThemeStore.getState().config.preset).toBe('ocean');
   });
 });

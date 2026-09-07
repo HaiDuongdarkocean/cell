@@ -19,7 +19,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       className={styles.selectionBar}
       data-cell-id="selection-bar"
     >
-      <Button shape="circle" material="solid"
+      <Button shape="circle"
         size="sm"
         onClick={onClear}
         aria-label="Clear selection"
@@ -30,7 +30,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
       <span className={styles.count} data-cell-id="selection-count">
         {selectionCount} selected
       </span>
-      <Button material="solid"
+      <Button
         variant="primary"
         size="sm"
         onClick={onDownload}

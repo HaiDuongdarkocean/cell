@@ -1,84 +1,448 @@
-/* LanguageProfilePanel — profile list, rows, readonly view, hints
-   (moved from SettingsDialog.module.css). Shared rowLabel stays in the dialog module. */
+/* LanguageProfilePanel — selectable-cards direction (approved mockup).
+   Tokens only. Animations: card state via Card transitions, form/menu
+   mount keyframes, radio dot scale; all gated by prefers-reduced-motion. */
 
-/* === Language Profile panel === */
-.profileList {
+/* Section body inset — mirrors .cardHeader (space-3 space-4, space-4 space-5
+   at 600px+). .cardBody in SettingsDialog.module.css is a dead class (no
+   rule), so the panel must pad itself or its content sits flush to the card
+   edges. */
+.panel {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+@media (min-width: 600px) {
+  .panel {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+}
+
+/* === Universal native banner === */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  background: var(--color-primary-subtle);
+  border: 1px dashed var(--color-border);
+}
+
+/* Narrow panels: let the Change action drop to its own row instead of
+   squeezing the banner text to a few characters. */
+@media (max-width: 480px) {
+  .banner {
+    flex-wrap: wrap;
+  }
+  /* Text keeps a sane minimum so the Change button wraps to its own row
+     instead of squeezing label+value to a few characters. */
+  .bannerText {
+    min-width: min(var(--space-24), 40%);
+  }
+  .banner > button,
+  .banner > [role='button'] {
+    margin-left: auto;
+  }
+}
+
+.banner.editing,
+.bannerEditing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.bannerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.bannerText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bannerLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bannerValue {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bannerActions {
+  display: flex;
+  justify-content: flex-end;
   gap: var(--space-2);
-  padding: var(--space-2) 0;
 }
 
-.profileItem {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+/* Keep the Change action from shrinking when the banner text is long. */
+.banner > button,
+.banner > [role='button'] {
+  flex-shrink: 0;
 }
 
-.profileItem[aria-current='true'] {
-  border-color: var(--color-primary);
-  background: var(--color-primary-muted);
-}
-
-.profileRow {
+/* === List toolbar === */
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.profileInfo {
+.sectionLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Text action — primary color, no chrome (the bordered "link" variant is too
+   heavy next to the section label). */
+.linkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  padding: var(--space-1) var(--space-1-5);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-in-out);
+}
+
+@media (hover: hover) {
+  .linkBtn:hover { background: var(--color-primary-subtle); }
+}
+
+.linkBtn:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.linkBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* === Profile cards === */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.item {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  flex: 1 1 auto;
+  gap: var(--space-1);
   min-width: 0;
 }
 
-.profileName {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--color-text);
+.card {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  /* Card reads padding via --card-padding; override the var so the value
+     wins regardless of CSS-module load order (sectionCard zeroes it). */
+  --card-padding: var(--space-1) var(--space-2);
 }
 
-.profileMeta {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  white-space: nowrap;
+/* Custom radio dot — visual mirror of aria-checked on the card. */
+.radio {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border-emphasized);
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
-.profileActions {
+.radio::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transform: scale(0);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+/* Profile list is a radio switcher, not a collection of actionable tiles —
+   neutralize Card's interactive/selected hover (surface swap + lift + shadow)
+   and keep the resting look. Scoped under .list so it beats Card's
+   .interactive:hover / .selected:hover on specificity, not load order. */
+@media (hover: hover) and (pointer: fine) {
+  .list .card:hover {
+    background: var(--card-background);
+    border: var(--card-border);
+    transform: none;
+    box-shadow: none;
+  }
+
+  .list .card[aria-checked='true']:hover {
+    background: var(--color-primary-subtle);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 calc(var(--space-0-5) * 0.5) color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+.card[aria-checked='true'] .radio {
+  border-color: var(--color-primary);
+}
+
+.card[aria-checked='true'] .radio::after {
+  transform: scale(1);
+}
+
+.flags {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  color: var(--color-text-tertiary);
   flex-shrink: 0;
 }
 
-.profileReorder {
+.cardText {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.cardName {
+  display: block;
+  min-width: 0;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMeta {
+  display: block;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* === Kebab popover ===
+   The menu is portaled to body (escapes .sectionCard overflow:hidden), so this
+   wrapper only keeps the trigger from shrinking — no positioning context. */
+.menuWrap {
+  flex-shrink: 0;
+}
+
+/* Portaled to document.body → position: fixed, coordinates set inline from
+   the trigger rect. Escapes every clipping ancestor (sectionCard
+   overflow:hidden, scrollable columns). */
+.menu {
+  position: fixed;
+  z-index: var(--z-popover);
+  min-width: 190px;
+  background: var(--color-surface-elevated);
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-floating);
+  padding: var(--space-1-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  transform-origin: top right;
+  animation: menuIn var(--duration-fast) var(--ease-out);
+}
+
+.menuFlip {
+  transform-origin: bottom right;
+}
+
+.menuItem {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-}
-
-.profileDialogBody {
-  min-width: calc(var(--space-10) * 7);
-}
-
-.profileReadonly {
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: transparent;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  font-size: var(--font-size-base);
+  text-align: left;
+  cursor: pointer;
 }
 
-.profileHint {
+@media (hover: hover) {
+  .menuItem:hover { background: var(--color-overlay-hover); }
+}
+
+.menuItem:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.menuItem:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.menuItemDanger { color: var(--color-error); }
+
+/* === Inline profile form (add + edit) === */
+.profileForm {
+  border: none;
+  border-radius: var(--radius-xl);
+  background: var(--color-field);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1 1 auto;
+  min-width: 0;
+  animation: formIn var(--duration-normal) var(--ease-out);
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+}
+
+.formLabel {
   font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.formHint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.formError {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2-5) var(--space-3);
+  font-size: var(--font-size-sm);
+  animation: formIn var(--duration-fast) var(--ease-out);
+}
+
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  cursor: pointer;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-md);
+}
+
+.disclosure .formHint {
+  margin-left: auto;
+  font-weight: var(--font-weight-normal);
+}
+
+.disclosure:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  animation: formIn var(--duration-fast) var(--ease-out);
+}
+
+.choice {
+  border: 1px solid transparent;
+  background: var(--color-field);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  font: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-in-out),
+    background-color var(--duration-fast) var(--ease-in-out);
+}
+
+.choice[aria-checked='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.choice:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+
+.choiceTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.choiceDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* === Motion === */
+@keyframes formIn {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) * -1));
+  }
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(calc(var(--space-0-5) * -1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .profileForm,
+  .formError,
+  .choiceGrid {
+    animation: none;
+  }
+
+  .radio,
+  .radio::after,
+  .choice {
+    transition: none;
+  }
 }

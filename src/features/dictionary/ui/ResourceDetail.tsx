@@ -6,7 +6,7 @@
 // Inline "Thử tra từ" lookup runs find*Entry against this resource only.
 
 import { useEffect, useState, type ReactElement } from 'react';
-import { Button } from '@/shared/ui';
+import { Button, Input } from '@/shared/ui';
 import { Checkbox } from '@/shared/ui/Checkbox';
 import { Spinner } from '@/shared/ui/Spinner';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -136,9 +136,9 @@ export function ResourceDetail({ resource, onChanged }: ResourceDetailProps): Re
 
       {/* Test lookup */}
       <div className={styles.lookupRow}>
-        <input
+        <Input
           type="text"
-          className={styles.lookupInput}
+          size="sm"
           placeholder="Thử tra từ…"
           value={term}
           onChange={(e) => setTerm(e.target.value)}
@@ -147,7 +147,6 @@ export function ResourceDetail({ resource, onChanged }: ResourceDetailProps): Re
           data-cell-id={`lookup-input-${resourceId}`}
         />
         <Button
-          material="solid"
           variant="outline"
           size="sm"
           onClick={() => void handleLookup()}

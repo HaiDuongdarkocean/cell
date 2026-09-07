@@ -5,7 +5,7 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--color-surface-card);
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: none;
   border-radius: var(--radius-dialog);
 }
 
@@ -20,4 +20,9 @@
   white-space: nowrap;
   font-family: var(--font-family);
   letter-spacing: var(--tracking-normal);
+}
+
+/* Extra breathing room when the error alert wraps below the row. */
+.error {
+  margin-top: var(--space-2);
 }

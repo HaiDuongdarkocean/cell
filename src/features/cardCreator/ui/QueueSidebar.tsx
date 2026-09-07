@@ -31,6 +31,8 @@ interface QueueSidebarProps {
   toasts: readonly Toast[];
   /** Dismiss a toast by id. */
   onDismissToast: (id: number) => void;
+  /** Mobile layout: render as a capped top strip instead of a right rail. */
+  mobile?: boolean;
 }
 
 export function QueueSidebar({
@@ -41,6 +43,7 @@ export function QueueSidebar({
   onUndoDeleteQueueItem,
   toasts,
   onDismissToast,
+  mobile = false,
 }: QueueSidebarProps): ReactElement {
   const asideRef = useRef<HTMLElement>(null);
 
@@ -89,7 +92,7 @@ export function QueueSidebar({
   return (
     <aside
       ref={asideRef}
-      className={styles['cc-queue']}
+      className={`${styles['cc-queue']}${mobile ? ` ${styles['cc-queue--mobile']}` : ''}`}
       aria-label="Card creator queue"
       onKeyDown={handleKeyDown}
       data-cell-id="cc-queue-sidebar"
@@ -133,7 +136,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
       data-index={index}
       data-cell-id={`cc-queue-item-${index}`}
     >
-      <Button material="solid" variant="secondary"
+      <Button variant="secondary"
         className={styles['cc-queue__item-btn']}
         onClick={onSelect}
         aria-label={`Select ${item.term}`}
@@ -146,7 +149,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
           {item.status}
         </span>
       </Button>
-      <Button shape="circle" material="solid" variant="ghost"
+      <Button shape="circle" variant="ghost"
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={`Remove ${item.term} from queue`}
@@ -170,7 +173,7 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
   const lastToast = toasts[toasts.length - 1];
   if (!lastToast || lastToast.kind !== 'warning' || !lastToast.message.includes('Removed')) return null;
   return (
-    <Button material="solid" variant="secondary"
+    <Button variant="secondary"
       className={styles['cc-queue__undo']}
       onClick={() => {
         onUndo();

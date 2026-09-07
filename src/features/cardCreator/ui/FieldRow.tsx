@@ -24,7 +24,9 @@
 import { useRef, type ChangeEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Select, type SelectOption } from '@/shared/ui/Select';
+import { Label } from '@/shared/ui/Label';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import styles from './FieldRow.module.css';
 
 interface FieldRowProps {
@@ -58,13 +60,14 @@ export function FieldRow({
   // mapping a source field to any Anki field (e.g. don't send the screenshot
   // for this card). When mappedField is '' the select shows "None".
   const showMap = mappedField !== undefined && availableFields !== undefined && onMapChange !== undefined;
+  const noneLabel = t('cardCreator.fieldMap.none');
   const options: SelectOption[] = showMap
-    ? [{ value: '', label: 'None' }, ...availableFields!.map((f) => ({ value: f, label: f }))]
+    ? [{ value: '', label: noneLabel }, ...availableFields!.map((f) => ({ value: f, label: f }))]
     : [];
   return (
     <div className={styles.fieldRow} data-cell-id={dataId ? `${dataId}-row` : undefined}>
       <div className={styles.fieldRow__header}>
-        <label className={styles.fieldRow__label}>{label}</label>
+        <Label className={styles.fieldRow__label}>{label}</Label>
         {showMap && (
           <span className={styles.fieldRow__map}>
             <Select
@@ -140,6 +143,7 @@ export function FieldAutoGrowInput({
   // derive `rows` from line count so the textarea grows vertically.
   const lineCount = Math.max(1, value.split('\n').length);
 
+  const clearLabel = t('ui.searchField.clear');
   const controlClass = [styles.fieldInput__control, className ?? ''].filter(Boolean).join(' ');
 
   return (
@@ -153,9 +157,9 @@ export function FieldAutoGrowInput({
         {...rest}
       />
       {clearable && value.length > 0 && (
-        <Button shape="circle" material="solid" variant="ghost"
+        <Button shape="circle" variant="ghost"
           className={styles.fieldInput__clear}
-          aria-label="Clear"
+          aria-label={clearLabel}
           onClick={handleClear}
         >
           <Icon name="x"  />

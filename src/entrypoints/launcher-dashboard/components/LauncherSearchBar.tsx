@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 
-import { Button, Icon } from '@/shared/ui';
+import { Button, Icon, Input } from '@/shared/ui';
 import styles from './LauncherSearchBar.module.css';
 
 export interface LauncherSearchBarProps {
@@ -35,13 +35,27 @@ export function LauncherSearchBar({
 
   return (
     <div className={styles.searchBar}>
-      <span className={styles.icon}>
-        <Icon name="search" size="md" />
-      </span>
-      <input
+      <Input
         ref={inputRef}
         type="search"
+        variant="ghost"
         className={styles.input}
+        prefix={<Icon name="search" size="md" />}
+        suffix={
+          displayValue.length > 0 ? (
+            <Button shape="circle" variant="ghost"
+              className={styles.clear}
+              onClick={() => {
+                inputRef.current?.focus();
+                onChange?.('');
+                setInternal('');
+              }}
+              aria-label="Clear search"
+            >
+              <Icon name="x" size="sm" />
+            </Button>
+          ) : undefined
+        }
         value={displayValue}
         placeholder={placeholder}
         aria-label={placeholder}
@@ -50,19 +64,6 @@ export function LauncherSearchBar({
         autoComplete="off"
         spellCheck={false}
       />
-      {displayValue.length > 0 && (
-        <Button shape="circle" material="solid" variant="ghost"
-          className={styles.clear}
-          onClick={() => {
-            inputRef.current?.focus();
-            onChange?.('');
-            setInternal('');
-          }}
-          aria-label="Clear search"
-        >
-          <Icon name="x" size="sm" />
-        </Button>
-      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // themeStore — Zustand store cho theme system (ADR-022 D1).
 //
 // Single source of truth cho themeMode + themeConfig. Actions: init, switchMode,
-// updateColor, setConfig, resetTheme. Used by ThemePanel (options), SettingsDialog
+// switchPreset, setConfig. Used by ThemePanel (options), SettingsDialog
 // (popup shortcut), ThemeProvider (popup/options/sidepanel boot), themeTokens
 // (content-script read-only qua themeStorage).
 
@@ -10,7 +10,7 @@ import { loadThemeMode, loadThemeConfig, saveThemeMode, saveThemeConfig, DEFAULT
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getPresetColors } from '@/shared/lib/tokens';
-import type { ThemeMode, ThemeConfig, ResolvedMode, CoreColorTokenKey, PresetName } from '@/entities/theme';
+import type { ThemeMode, ThemeConfig, PresetName } from '@/entities/theme';
 
 interface ThemeStore {
   /** Current theme mode ('light'|'dark'|'system'). Source of truth. */
@@ -23,14 +23,10 @@ interface ThemeStore {
   init(): Promise<void>;
   /** Switch mode (persist + notify listeners qua storage.onChanged). */
   switchMode(mode: ThemeMode): void;
-  /** Update 1 core color token cho 1 mode (persist config). */
-  updateColor(mode: ResolvedMode, token: CoreColorTokenKey, hex: string): void;
   /** Switch to a named preset. */
   switchPreset(preset: PresetName): void;
-  /** Replace whole config (import JSON). */
+  /** Replace whole config (import JSON / sync from storage). */
   setConfig(config: ThemeConfig): void;
-  /** Reset config to DEFAULT_THEME_CONFIG (persist). */
-  resetTheme(): void;
 }
 
 export const useThemeStore = create<ThemeStore>((set, get) => ({
@@ -70,19 +66,6 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
     void saveThemeMode(mode);
   },
 
-  updateColor(resolvedMode, token, hex) {
-    const current = get().config;
-    const updated: ThemeConfig = {
-      ...current,
-      customColors: {
-        ...current.customColors,
-        [resolvedMode]: { ...current.customColors[resolvedMode], [token]: hex },
-      },
-    };
-    set({ config: updated });
-    void saveThemeConfig(updated);
-  },
-
   switchPreset(preset) {
     const next: ThemeConfig = {
       ...get().config,
@@ -96,10 +79,5 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
   setConfig(config) {
     set({ config });
     void saveThemeConfig(config);
-  },
-
-  resetTheme() {
-    set({ config: DEFAULT_THEME_CONFIG });
-    void saveThemeConfig(DEFAULT_THEME_CONFIG);
   },
 }));

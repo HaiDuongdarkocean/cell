@@ -45,7 +45,6 @@ export function UniversalPanelHeader({
     <header className={styles.header} data-cell-id="universal-panel-header">
       {activeProfile && onProfileClick && (
         <Button
-          material="solid"
           size="md"
           variant="ghost"
           shape="circle"
@@ -67,7 +66,6 @@ export function UniversalPanelHeader({
       />
 
       <Button shape="circle"
-        material="solid"
         size="md"
         variant="ghost"
         aria-label="Close panel"

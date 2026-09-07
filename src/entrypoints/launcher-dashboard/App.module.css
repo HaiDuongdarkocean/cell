@@ -68,6 +68,12 @@
   display: flex;
 }
 
+.emptyText {
+  margin: var(--space-4) auto 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
 .footer {
   margin-top: var(--space-4);
   padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));

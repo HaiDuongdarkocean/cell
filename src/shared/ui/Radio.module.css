@@ -29,9 +29,9 @@
   width: var(--space-4);
   height: var(--space-4);
   flex-shrink: 0;
-  border: var(--border-width-hairline) solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-full);
-  background: var(--radio-bg, var(--color-background));
+  background: var(--radio-bg, var(--color-field));
   color: var(--radio-dot, var(--color-primary-foreground));
   transition: border-color var(--duration-fast) var(--ease-in-out),
               background-color var(--duration-fast) var(--ease-in-out);
@@ -67,7 +67,6 @@
 
 .input:disabled + .box {
   background: var(--color-muted);
-  border-color: var(--color-border);
 }
 
 .error .box {
@@ -99,4 +98,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .box { transition: none; animation: none; }
+}
+
+@media (prefers-contrast: more) {
+  .box { border-color: var(--color-border); }
 }

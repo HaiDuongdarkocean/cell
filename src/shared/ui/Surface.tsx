@@ -1,7 +1,7 @@
 import { forwardRef, type HTMLAttributes, type ReactNode, type Ref } from 'react';
 import styles from './Surface.module.css';
 
-type SurfaceVariant = 'panel' | 'dialog' | 'popover' | 'card' | 'glass';
+type SurfaceVariant = 'panel' | 'dialog' | 'popover' | 'card';
 type SurfaceAs = 'div' | 'section' | 'article' | 'aside' | 'main' | 'header' | 'footer' | 'nav';
 type SurfacePadding =
   | '0'
@@ -41,12 +41,11 @@ const variantClass: Record<SurfaceVariant, string> = {
   dialog: styles.dialog,
   popover: styles.popover,
   card: styles.card,
-  glass: styles.glass,
 };
 
 /**
  * Surface — SSOT visual shell for panels, dialogs, popovers, and cards.
- * Owns background, border, border-radius, shadow, and (for glass) blur.
+ * Owns background, border, border-radius, and shadow.
  * Use `Card` for padded content cards with hover/interactive states.
  */
 export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(

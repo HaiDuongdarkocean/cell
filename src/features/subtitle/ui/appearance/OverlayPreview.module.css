@@ -8,13 +8,11 @@
   height: 160px;
   overflow: hidden;
   border-radius: var(--radius-element);
-  /* Glass container — translucent surface + blur, auto dark/light via tokens.
+  /* Solid container — opaque surface, auto dark/light via tokens.
      Replaces the old hardcoded --overlay-background (#000) which only matched
      the dark video player and ignored light mode. */
-  background: var(--color-glass-surface);
-  border: var(--border-width-hairline) solid var(--color-glass-border);
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   padding: var(--space-2);
   container-type: inline-size;
   margin-inline: auto;
@@ -30,7 +28,7 @@
    to frame width. */
 .overlayRoot {
   position: absolute;
-  top: calc(var(--sb-y, 75) * 1%);
+  top: calc(var(--sb-y, 75) * 1%); /* runtime progress var, numeric fallback */
   left: 0;
   width: 300cqw;
   transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.3333);
