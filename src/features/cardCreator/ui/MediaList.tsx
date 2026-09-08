@@ -140,10 +140,10 @@ function EmptyDropzone({
       onClick={onAdd}
       disabled={addDisabled}
       aria-label={addLabel}
+      leadingIcon={<ThumbIcon kind={kind} size="sm" />}
       data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
-      <ThumbIcon kind={kind} size="sm" />
-      <span>{text}</span>
+      {text}
     </Button>
   );
 }
@@ -348,10 +348,10 @@ function ImageGallery({
         className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
+        leadingIcon={<Icon name="plus" size="sm" />}
         data-cell-id={dataId ? `${dataId}-add` : undefined}
       >
-        <Icon name="plus" size="sm" />
-        <span>{addLabel}</span>
+        {addLabel}
       </Button>
     </div>
   );
@@ -507,10 +507,10 @@ function AudioList({
           className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}
+          leadingIcon={<Icon name="plus" size="sm" />}
           data-cell-id={dataId ? `${dataId}-add` : undefined}
         >
-          <Icon name="plus" size="sm" />
-          <span>{addLabel}</span>
+          {addLabel}
         </Button>
       )}
     </div>
