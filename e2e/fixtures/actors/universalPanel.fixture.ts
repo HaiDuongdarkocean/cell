@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { test as base } from './cellEnvironment.fixture';
+import { test as base } from '../cellEnvironment.fixture';
 
 /**
  * Stable data-cell-id selectors for the Universal Panel and its sub-features.
