@@ -72,54 +72,21 @@
 }
 
 /* === Empty dropzone (image or audio) ===
- * Image empty: full-width dashed card matching the image strip.
- * Audio empty: a single row matching an audio row.
+ * Image empty: full-width secondary button matching the image strip.
+ * Audio empty: a single full-width secondary button matching an audio row.
  */
 .cc-media__empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  border: var(--border-width-hairline) dashed var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-family: inherit;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: border-color var(--duration-fast) var(--ease-in-out),
-              color var(--duration-fast) var(--ease-in-out),
-              background var(--duration-fast) var(--ease-in-out);
+  min-width: 100%;
 }
 
 .cc-media__empty--image {
-  width: 100%;
-  min-width: 100%;
   min-height: var(--input-height);
 }
 
 .cc-media__empty--audio {
-  width: 100%;
   min-height: var(--input-height);
   padding: var(--space-1) var(--space-2);
-}
-
-.cc-media__empty:hover {
-  border-color: var(--color-border-focus);
-  color: var(--color-text);
-  background: var(--color-surface-hover);
-}
-
-.cc-media__empty:disabled {
-  opacity: var(--opacity-50);
-  cursor: not-allowed;
-}
-
-.cc-media__empty:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
 }
 
 /* === Image gallery === */
