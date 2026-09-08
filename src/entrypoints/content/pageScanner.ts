@@ -1,8 +1,24 @@
-import { VIDEO_URL_PATTERNS, SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
+import {
+  VIDEO_URL_PATTERNS,
+  SUBTITLE_URL_PATTERNS,
+} from '@/shared/config/urls';
+import {
+  isValidIsoCode,
+  labelToIsoCode,
+  toIso6391,
+} from '@/shared/config/languageRegistry';
+
+export interface ScannedTrack {
+  url: string;
+  label: string;
+  language: string;
+  isDefault: boolean;
+}
 
 export interface ScannedUrls {
   videoUrls: string[];
   subtitleUrls: string[];
+  trackSubtitles: ScannedTrack[];
 }
 
 function matchesPattern(url: string, patterns: readonly RegExp[]): boolean {
@@ -21,6 +37,47 @@ function dedupe(items: string[]): string[] {
   return Array.from(new Set(items));
 }
 
+function dedupeBy<T>(items: T[], keyFn: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = keyFn(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isNetworkUrl(url: string): boolean {
+  return !/^(blob|data):/i.test(url);
+}
+
+function resolveTrackLanguage(label: string, srclang: string): string {
+  const srclangLower = srclang.trim().toLowerCase();
+  if (srclangLower) {
+    const primary = srclangLower.split('-')[0] ?? '';
+    if (isValidIsoCode(primary)) {
+      return toIso6391(primary);
+    }
+  }
+  const fromLabel = labelToIsoCode(label.trim());
+  if (fromLabel) {
+    return toIso6391(fromLabel);
+  }
+  return 'unknown';
+}
+
+function resolveTrackDisplayName(label: string, srclang: string, url: string): string {
+  const labelText = label.trim();
+  if (labelText) return labelText;
+  const srclangText = srclang.trim();
+  if (srclangText) return srclangText;
+  try {
+    return new URL(url).pathname.split('/').pop() ?? '';
+  } catch {
+    return '';
+  }
+}
+
 /**
  * PageScanner scans the page DOM for video and subtitle URLs and observes
  * the DOM for dynamically loaded media content.
@@ -28,7 +85,7 @@ function dedupe(items: string[]): string[] {
 export class PageScanner {
   private observer: MutationObserver | null = null;
   private onScanCallback: ((urls: ScannedUrls) => void) | null = null;
-  private lastScanned: ScannedUrls = { videoUrls: [], subtitleUrls: [] };
+  private lastScanned: ScannedUrls = { videoUrls: [], subtitleUrls: [], trackSubtitles: [] };
 
   constructor() {
     // no-op
@@ -60,6 +117,7 @@ export class PageScanner {
     const patternSubtitleUrls: string[] = [];
     // <track>-origin URLs: trusted as subtitles regardless of URL shape.
     const trackSubtitleUrls: string[] = [];
+    const trackSubtitles: ScannedTrack[] = [];
 
     // <video> elements: collect the element's own src plus child <source> srcs.
     const videos = Array.from(doc.querySelectorAll('video'));
@@ -87,12 +145,24 @@ export class PageScanner {
     }
 
     // <track> elements are subtitles — trust the element, skip pattern filter.
+    // Keep track metadata (label, srclang, default) so background can assign
+    // the correct language and display name instead of falling back to
+    // URL-based detection, which fails for blob: URLs created by players.
     const tracks = Array.from(doc.querySelectorAll('track'));
     for (const track of tracks) {
       const src = track.getAttribute('src');
-      if (src) {
-        trackSubtitleUrls.push(src);
-      }
+      if (!src) continue;
+      trackSubtitleUrls.push(src);
+      const label = track.getAttribute('label') ?? '';
+      const srclang = track.getAttribute('srclang') ?? '';
+      const language = resolveTrackLanguage(label, srclang);
+      const displayName = resolveTrackDisplayName(label, srclang, src);
+      trackSubtitles.push({
+        url: src,
+        label: displayName,
+        language,
+        isDefault: track.default,
+      });
     }
 
     // <a> elements: classify hrefs against video/subtitle patterns.
@@ -111,13 +181,22 @@ export class PageScanner {
 
     // Filter and deduplicate. <track> URLs are already classified by the
     // element — only dedupe, do not pattern-filter.
-    const filteredVideo = dedupe(videoUrls.filter(isVideoUrl));
-    const filteredPatternSubtitle = dedupe(patternSubtitleUrls);
+    // Blob / data URLs are player-local object URLs: they cannot be re-fetched
+    // from the network, but a <track src="blob:..."> is the decrypted subtitle
+    // stream the player created. The page scanner trusts the track and passes
+    // the URL along; the content script can fetch the blob directly.
+    const filteredVideo = dedupe(videoUrls.filter(isVideoUrl).filter(isNetworkUrl));
+    const filteredPatternSubtitle = dedupe(patternSubtitleUrls.filter(isNetworkUrl));
     const filteredTrackSubtitle = dedupe(trackSubtitleUrls);
+    const filteredTrackSubtitles = dedupeBy(
+      trackSubtitles,
+      (t) => t.url,
+    );
 
     return {
       videoUrls: filteredVideo,
       subtitleUrls: dedupe([...filteredPatternSubtitle, ...filteredTrackSubtitle]),
+      trackSubtitles: filteredTrackSubtitles,
     };
   }
 
@@ -137,7 +216,10 @@ export class PageScanner {
       const hasNewSubtitle = current.subtitleUrls.some(
         (u) => !this.lastScanned.subtitleUrls.includes(u),
       );
-      if (hasNewVideo || hasNewSubtitle) {
+      const hasNewTrack = current.trackSubtitles.some(
+        (t) => !this.lastScanned.trackSubtitles.some((lt) => lt.url === t.url),
+      );
+      if (hasNewVideo || hasNewSubtitle || hasNewTrack) {
         this.lastScanned = current;
         this.onScanCallback?.(current);
       }

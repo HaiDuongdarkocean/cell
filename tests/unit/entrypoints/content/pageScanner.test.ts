@@ -63,6 +63,42 @@ describe('PageScanner', () => {
       expect(result.subtitleUrls).toContain(
         'https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtW',
       );
+      expect(result.trackSubtitles).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            url: 'https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtW',
+            label: 'English',
+            language: 'en',
+            isDefault: false,
+          }),
+        ]),
+      );
+    });
+
+    it('extracts blob:<track> URLs with metadata from OnzLoad-style players', () => {
+      document.body.innerHTML =
+        '<video src="blob:https://onzload.com/abc"><track kind="subtitles" label="Tiếng Việt" srclang="vi" default src="blob:https://onzload.com/vi"></track><track kind="subtitles" label="Song ngữ" srclang="mul" src="blob:https://onzload.com/mul"></track></video>';
+
+      const result = scanner.extractUrlsFromDOM(document);
+
+      expect(result.subtitleUrls).toContain('blob:https://onzload.com/vi');
+      expect(result.subtitleUrls).toContain('blob:https://onzload.com/mul');
+      expect(result.trackSubtitles).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            url: 'blob:https://onzload.com/vi',
+            label: 'Tiếng Việt',
+            language: 'vi',
+            isDefault: true,
+          }),
+          expect.objectContaining({
+            url: 'blob:https://onzload.com/mul',
+            label: 'Song ngữ',
+            language: 'unknown',
+            isDefault: false,
+          }),
+        ]),
+      );
     });
 
     it('still pattern-filters <a> subtitle hrefs (only <track> bypasses the filter)', () => {

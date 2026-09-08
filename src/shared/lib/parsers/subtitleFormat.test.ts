@@ -13,6 +13,7 @@ describe('formatFromContent', () => {
 
   it('detects SRT', () => {
     expect(formatFromContent('1\n00:00:00,000 --> 00:00:01,000\nHello')).toBe('srt');
+    expect(formatFromContent('1\r\n00:00:00,000 --> 00:00:01,000\r\nHello')).toBe('srt');
   });
 
   it('returns null for unrecognised content', () => {

@@ -25,6 +25,8 @@ import {
   isPhimwarSubtitleUrl,
   decryptPhimwarSrtFromUrl,
 } from '@/shared/lib/parsers/phimwarDecryption';
+import { getCachedSubtitleBody, waitForCachedSubtitleBody } from './subtitleResponseCache';
+import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitleFormat, ParseResult } from '@/entities/subtitle';
@@ -149,39 +151,62 @@ export async function fetchAndParseSubtitle(
     return { success: true, cues: cached.cues, format: cached.format as SubtitleFormat };
   }
 
-  let content: string;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    let response: Response;
+  // Ephemeral-token subtitle URLs are cached when the player fetches them.
+  // `blob:` URLs can only be read in the MAIN world, so we wait for the
+  // interceptor to deliver the body before falling back. Ordinary `https:`
+  // URLs are replayable in most cases, so we only do a cheap cache peek.
+  let content: string | undefined;
+  if (/^blob:/i.test(url)) {
+    content = await waitForCachedSubtitleBody(url, 5000);
+  } else {
+    content = getCachedSubtitleBody(url);
+  }
+  if (!content) {
     try {
-      response = await fetch(url, { signal: controller.signal });
-    } catch (err) {
-      clearTimeout(timeoutId);
-      // AbortError = our 15s timeout → return immediately (no background retry).
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        return { success: false, cues: [], format, error: 'Fetch timeout (15s)' };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      let response: Response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } catch (err) {
+        clearTimeout(timeoutId);
+        // AbortError = our 15s timeout → return immediately (no background retry).
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return { success: false, cues: [], format, error: 'Fetch timeout (15s)' };
+        }
+        throw err;
       }
-      throw err;
-    }
-    clearTimeout(timeoutId);
-    if (!response.ok) {
-      // Non-ok (403/404) → try background fallback before giving up.
-      content = await fetchViaBackground(url, tabUrl, initiator);
-    } else {
-      content = await response.text();
-    }
-  } catch {
-    // TypeError (CORS blocked) → background fallback.
-    try {
-      content = await fetchViaBackground(url, tabUrl, initiator);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        // Non-ok (403/404) → try background fallback before giving up.
+        content = await fetchViaBackground(url, tabUrl, initiator);
+      } else {
+        content = await response.text();
+      }
+    } catch {
+      // TypeError (CORS blocked) → background fallback.
+      try {
+        content = await fetchViaBackground(url, tabUrl, initiator);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+      }
     }
   }
 
-  // PhimWar serves AES-GCM-encrypted base64 payloads instead of plaintext.
+  if (!content) {
+    // The MAIN-world interceptor may have delivered the body just after the
+    // wait timeout or after a failed replay. Check the cache one final time
+    // before giving up on token-signed URLs.
+    content = getCachedSubtitleBody(url);
+    if (!content) {
+      return { success: false, cues: [], format, error: 'Subtitle content unavailable' };
+    }
+  }
+
+  // PhimWar-style encrypted payloads must be decrypted before
+  // format detection. Prefer content-based format detection so a wrong default
+  // (e.g. SRT for an API endpoint) does not break parsing.
   if (isPhimwarSubtitleUrl(url)) {
     try {
       content = await decryptPhimwarSrtFromUrl(url, content);
@@ -196,18 +221,35 @@ export async function fetchAndParseSubtitle(
     }
   }
 
+  // Decrypt HUBPHIM-style payloads and sniff the real format. Trust content
+  // over the caller-supplied format, because API endpoints like tophim's
+  // /api/subtitles/play have no extension to reveal the format.
+  // Guard: malformed encrypted payloads can throw; fetchAndParseSubtitle must
+  // never throw (it returns ParseResult with success:false).
+  let detectedFormat: SubtitleFormat = format;
+  try {
+    const { content: decryptedContent, format: contentFormat } = decryptAndDetectFormat(content);
+    content = decryptedContent;
+    if (contentFormat) {
+      detectedFormat = contentFormat;
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, cues: [], format, error: `Decryption failed: ${msg}` };
+  }
+
   // ASS/SSA → convert to SRT, then parse as SRT.
-  if (format === 'ass' || format === 'ssa') {
+  if (detectedFormat === 'ass' || detectedFormat === 'ssa') {
     const srtContent = convertAssToSrt(content);
     if (!srtContent) {
-      return { success: false, cues: [], format, error: 'ASS conversion produced no cues' };
+      return { success: false, cues: [], format: detectedFormat, error: 'ASS conversion produced no cues' };
     }
     const result = parseSubtitle(srtContent, 'srt');
     if (result.success) subtitleCache.set(url, { cues: result.cues, format: 'srt' });
     return result;
   }
 
-  const result = parseSubtitle(content, format);
+  const result = parseSubtitle(content, detectedFormat);
   if (result.success) subtitleCache.set(url, { cues: result.cues, format: result.format });
   return result;
 }

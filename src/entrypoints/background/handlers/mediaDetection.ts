@@ -91,6 +91,10 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     // `details.initiator` and the DNR rule is never registered.
     const initiator = payload.pageUrl;
 
+    const trackSubtitles = payload.trackSubtitles ?? [];
+    const trackUrlSet = new Set(trackSubtitles.map((t) => t.url));
+    const acceptedTrackUrls = new Set<string>();
+
     for (const url of payload.videoUrls) {
       if (existingVideoUrls.has(url)) {
         continue;
@@ -111,7 +115,53 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
       }
     }
 
+    // Process track metadata first so the richer label/language from the
+    // <track> element wins over URL-based detection. This is essential for
+    // blob: URLs created by players (e.g. OnzLoad) — they have no path or
+    // extension to derive language from, and the srclang/label attributes are
+    // the only correct source.
+    for (const track of trackSubtitles) {
+      if (existingSubtitleUrls.has(track.url)) {
+        acceptedTrackUrls.add(track.url);
+        continue;
+      }
+      const networkRequest: NetworkRequest = {
+        url: track.url,
+        method: 'GET',
+        tabId,
+        type: 'media',
+        timeStamp: now,
+        initiator,
+      };
+      if (
+        detectSubtitle(networkRequest, {
+          trustAsSubtitle: true,
+          language: track.language,
+          displayName: track.label,
+        })
+      ) {
+        ctx.networkInterceptor.handleRequest(
+          buildDetails(track.url, tabId, now, initiator),
+          {
+            trustAsSubtitle: true,
+            language: track.language,
+            displayName: track.label,
+          },
+        );
+        existingSubtitleUrls.add(track.url);
+        acceptedTrackUrls.add(track.url);
+        addedNew = true;
+      }
+    }
+
     for (const url of payload.subtitleUrls) {
+      // Track URLs are processed with richer metadata above. Only re-process a
+      // track URL if it was accepted; rejected tracks (e.g. label/URL matches
+      // NON_SUBTITLE_KEYWORDS, data: URL) must not sneak back in through the
+      // pattern-based subtitleUrls list.
+      if (trackUrlSet.has(url) && !acceptedTrackUrls.has(url)) {
+        continue;
+      }
       if (existingSubtitleUrls.has(url)) {
         continue;
       }
@@ -133,6 +183,7 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
           buildDetails(url, tabId, now, initiator),
           { trustAsSubtitle: true },
         );
+        existingSubtitleUrls.add(url);
         addedNew = true;
       }
     }

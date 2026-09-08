@@ -104,7 +104,7 @@ export class NetworkInterceptor {
    */
   handleRequest(
     details: chrome.webRequest.OnBeforeRequestDetails,
-    opts?: { trustAsSubtitle?: boolean },
+    opts?: { trustAsSubtitle?: boolean; language?: string; displayName?: string },
   ): void {
     // Ignore requests initiated by the extension itself (background service
     // worker, offscreen documents, etc.). Without this filter, a `fetch()` call
@@ -122,8 +122,10 @@ export class NetworkInterceptor {
     // Stremio addon and generic subtitle listings: the URL returns a JSON
     // listing of subtitle URLs, not a subtitle file. Fire the listing callback
     // (async, not awaited) so the caller can fetch/parse and re-inject the
-    // real subtitle URLs. `detectSubtitle` also rejects listing URLs.
-    if (this.listingListener && (isStremioSubtitleListing(details.url) || this.listingMatcher?.(details.url))) {
+    // real subtitle URLs, then skip plain subtitle file detection; the
+    // discovery pipeline will add the resolved entries as ready subtitles.
+    const isListing = isStremioSubtitleListing(details.url) || this.listingMatcher?.(details.url);
+    if (this.listingListener && isListing) {
       this.listingListener(details.url, details.tabId, details.initiator);
     }
 
@@ -136,8 +138,11 @@ export class NetworkInterceptor {
       initiator: details.initiator,
     };
 
+    // Always detect videos (e.g. .m3u8 playlists may also be listings).
+    // Skip plain subtitle detection for listing URLs so the pipeline resolves
+    // them with the correct label/format after decrypt/parsing.
     const video = detectVideo(request);
-    const subtitle = detectSubtitle(request, opts);
+    const subtitle = isListing ? null : detectSubtitle(request, opts);
 
     let detectedNewMedia = false;
 

@@ -9,6 +9,6 @@ export function formatFromContent(content: string): SubtitleFormat | null {
   const head = stripped.slice(0, 40).toUpperCase();
   if (head.startsWith('WEBVTT')) return 'vtt';
   if (head.startsWith('[SCRIPT INFO]') || head.startsWith('DIALOGUE:')) return 'ass';
-  if (/^\d+\s*\n\d{1,2}:\d{2}:/.test(stripped.slice(0, 40))) return 'srt';
+  if (/^\d+\s*(?:\r?\n|\r)\d{1,2}:\d{2}:/.test(stripped.slice(0, 40))) return 'srt';
   return null;
 }

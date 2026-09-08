@@ -1,0 +1,37 @@
+{
+  "tracks": [
+    {
+      "id": "c3389127-c0fc-44f2-ba20-4f624407fb76",
+      "label": "Tiếng Việt",
+      "language": "vi",
+      "kind": "SUBTITLES",
+      "isDefault": true,
+      "src": "/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitle/c3389127-c0fc-44f2-ba20-4f624407fb76?v=mtjvldjn"
+    },
+    {
+      "id": "4ea94b63-9905-421a-81bf-8c1f56e29a30",
+      "label": "Tiếng Anh",
+      "language": "en",
+      "kind": "SUBTITLES",
+      "isDefault": false,
+      "src": "/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitle/4ea94b63-9905-421a-81bf-8c1f56e29a30?v=mtjvlj16"
+    },
+    {
+      "id": "d7f3a05b-2d1e-4d03-9f34-538a88d75405",
+      "label": "Tiếng Trung",
+      "language": "cn",
+      "kind": "SUBTITLES",
+      "isDefault": false,
+      "src": "/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitle/d7f3a05b-2d1e-4d03-9f34-538a88d75405?v=mtjvlqph"
+    },
+    {
+      "id": "dd09c41c-e714-407a-98fd-4edd5a49ee08",
+      "label": "Tiếng Trung (PinYin)",
+      "language": "cn",
+      "kind": "SUBTITLES",
+      "isDefault": false,
+      "updatedAt": "2026-09-03T20:11:55.417Z",
+      "src": "/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitle/dd09c41c-e714-407a-98fd-4edd5a49ee08?v=mtlyo0wp"
+    }
+  ]
+}

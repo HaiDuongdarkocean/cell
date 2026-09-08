@@ -315,6 +315,20 @@ describe('detectSubtitle', () => {
       ).toBeNull();
     });
 
+    it('rejects a <track> whose displayName contains a non-subtitle keyword', () => {
+      // A player may create a <track src="blob:..." label="Thumbnails">. The
+      // URL is a generic blob and carries no keyword, so the label/displayName
+      // must be the rejection signal.
+      const url = 'blob:https://example.com/abc-123';
+      const request = makeRequest(url);
+      const result = detectSubtitle(request, {
+        trustAsSubtitle: true,
+        language: 'en',
+        displayName: 'Thumbnails',
+      });
+      expect(result).toBeNull();
+    });
+
     it('trustAsSubtitle does not change behavior for URLs that already match patterns', () => {
       const url = 'https://example.com/subs/en.vtt';
       const withoutFlag = detectSubtitle(makeRequest(url));
@@ -324,6 +338,22 @@ describe('detectSubtitle', () => {
       expect(withFlag?.url).toBe(withoutFlag?.url);
       expect(withFlag?.format).toBe(withoutFlag?.format);
       expect(withFlag?.language).toBe(withoutFlag?.language);
+    });
+
+    it('rejects blob: URLs by default and accepts them when trustAsSubtitle=true with track metadata', () => {
+      const url = 'blob:https://onzload.com/abc-123';
+      const request = makeRequest(url);
+      expect(detectSubtitle(request)).toBeNull();
+      const result = detectSubtitle(request, {
+        trustAsSubtitle: true,
+        language: 'vi',
+        displayName: 'Tiếng Việt',
+      });
+      expect(result).not.toBeNull();
+      expect(result?.url).toBe(url);
+      expect(result?.format).toBe('vtt');
+      expect(result?.language).toBe('vi');
+      expect(result?.displayName).toBe('Tiếng Việt');
     });
   });
 

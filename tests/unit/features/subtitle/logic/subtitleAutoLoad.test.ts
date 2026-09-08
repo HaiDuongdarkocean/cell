@@ -6,6 +6,7 @@ import {
   handleAutoLoadSubtitles,
   clearAutoLoadCache,
 } from '@/features/subtitle/logic/subtitleAutoLoad';
+import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
 import type { SubtitleForOverlayResult } from '@/types/message';
 
 // Mock parseSubtitle: default to real implementation, override per-test for
@@ -141,6 +142,7 @@ describe('subtitleAutoLoad', () => {
       mockParseSubtitle.mockReset();
       mockParseSubtitle.mockImplementation(jest.requireActual<typeof import('@/features/subtitle/logic/subtitleParser')>('@/features/subtitle/logic/subtitleParser').parseSubtitle);
       clearAutoLoadCache();
+      clearSubtitleBodyCache();
     });
 
     it('fetches + parses SRT and caches by URL', async () => {
@@ -219,6 +221,68 @@ describe('subtitleAutoLoad', () => {
       const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
       expect(result.success).toBe(false);
       expect(result.error).toMatch(/HTTP 403/);
+    });
+
+    it('uses the cached body for blob: URLs instead of fetching', async () => {
+      const { cacheSubtitleBody } = await import('@/features/subtitle/logic/subtitleResponseCache');
+      const blobUrl = 'blob:https://onzload.com/abc-123';
+      cacheSubtitleBody(blobUrl, SAMPLE_SRT);
+
+      const result = await fetchAndParseSubtitle(blobUrl, 'srt');
+
+      expect(result.success).toBe(true);
+      expect(result.cues).toHaveLength(1);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('decrypts HUBPHIM_ENC payloads and parses the real subtitle', async () => {
+      function encryptRc4Hex(plain: string, prefix: string, key: string): string {
+        const S = new Array<number>(256);
+        for (let i = 0; i < 256; i++) S[i] = i;
+
+        let j = 0;
+        for (let i = 0; i < 256; i++) {
+          j = (j + S[i] + key.charCodeAt(i % key.length)) & 0xff;
+          [S[i], S[j]] = [S[j], S[i]];
+        }
+
+        let i = 0;
+        j = 0;
+        let encoded = '';
+        for (let n = 0; n < plain.length; n++) {
+          i = (i + 1) & 0xff;
+          j = (j + S[i]) & 0xff;
+          [S[i], S[j]] = [S[j], S[i]];
+          const k = S[(S[i] + S[j]) & 0xff];
+          const code = plain.charCodeAt(n) ^ k;
+          encoded += code.toString(16).padStart(4, '0');
+        }
+
+        return `${prefix}${encoded}`;
+      }
+
+      const original = '1\n00:00:00,000 --> 00:00:01,000\nHello\n';
+      const encrypted = encryptRc4Hex(original, 'HUBPHIM_ENC:', 'hubphim_sub_secret_key_2026');
+      mockFetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(encrypted) } as Response);
+
+      const result = await fetchAndParseSubtitle('https://example.com/api/subtitles/play?id=123', 'srt');
+
+      expect(result.success).toBe(true);
+      expect(result.format).toBe('srt');
+      expect(result.cues).toHaveLength(1);
+      expect(result.cues[0]?.text).toBe('Hello');
+    });
+
+    it('returns error (never throws) on a malformed encrypted payload', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve('HUBPHIM_ENC:nothex'),
+      } as Response);
+
+      const result = await fetchAndParseSubtitle('https://example.com/api/subtitles/play?id=123', 'srt');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/Decryption failed/);
     });
   });
 
