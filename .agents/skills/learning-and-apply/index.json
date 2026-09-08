@@ -1327,6 +1327,22 @@
       "category": ["rendering", "ux"],
       "tags": ["react", "createPortal", "iframe", "popover", "overflow-hidden", "clipping", "ownerdocument", "menu", "flip"],
       "trigger": "Khi render popover/menu/tooltip cần thoát clipping ancestor (overflow:hidden, scroll container), hoặc component có thể nằm trong iframe (showcase ViewportFrame, sandbox preview)"
+    },
+    {
+      "type": "experience",
+      "id": "async-observer-unlock-on-scrollend-not-animation-end",
+      "title": "IntersectionObserver unlock phải align với slowest async op (scrollend), không phải fastest (rAF)",
+      "category": ["async", "state", "ux"],
+      "tags": ["intersectionobserver", "scrollintoview", "requestanimationframe", "race-condition", "scrollend", "active-indicator", "sidebar", "unlock-timing"],
+      "trigger": "Khi suppress IntersectionObserver trong click-driven scroll + rAF animation chạy song song scrollIntoView smooth"
+    },
+    {
+      "type": "experience",
+      "id": "mv3-service-worker-localhost-csp-cors-preflight",
+      "title": "MV3 service worker fetch đến localhost API bị CSP connect-src và CORS preflight",
+      "category": ["messaging", "build"],
+      "tags": ["mv3", "service-worker", "fetch", "localhost", "anki-connect", "cors", "preflight", "csp", "connect-src", "content-security-policy", "text-plain", "simple-request", "chrome-extension"],
+      "trigger": "Chrome MV3 extension service worker fetch tới HTTP API local (AnkiConnect http://localhost:8765) bị lỗi CORS/CSP, DevTools console báo 'Refused to connect' hoặc preflight không pass."
     }
   ]
 }
