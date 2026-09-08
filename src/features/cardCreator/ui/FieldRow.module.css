@@ -52,28 +52,9 @@
   height: auto;
   width: auto;
   padding: var(--space-0-5) var(--space-1);
-  border: none;
   border-radius: var(--radius-none);
-  background: transparent;
   box-shadow: none;
-  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
-  outline: none;
-}
-
-.fieldRow__mapSelect button:hover {
-  color: var(--color-text-secondary);
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.fieldRow__mapSelect button:focus-visible,
-.fieldRow__mapSelect:focus-within button {
-  color: var(--color-primary);
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
 }
 
 .fieldRow__mapSelect button span {

@@ -83,6 +83,8 @@ export function FieldRow({
                   aria-label={t('cardCreator.fieldMap.aria', [label])}
                   data-cell-id={dataId ? `${dataId}-map` : undefined}
                   menuAlign="right"
+                  variant="ghost"
+                  size="sm"
                 />
               </span>
             )}
