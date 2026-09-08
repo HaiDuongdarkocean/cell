@@ -38,7 +38,7 @@ describe('MediaList — image gallery', () => {
     const onAdd = jest.fn();
     render(<MediaList files={[]} kind="image" addLabel="Add image" onAdd={onAdd} onRemove={jest.fn()} dataId="cc-images" />);
     expect(screen.getByTestId('cc-images-empty')).toBeInTheDocument();
-    expect(screen.getByText('Drop image here')).toBeInTheDocument();
+    expect(screen.getByText('Drop image here or click to add')).toBeInTheDocument();
   });
 
   it('calls onAdd when the empty dropzone is clicked', () => {
@@ -251,7 +251,7 @@ describe('MediaList — audio list', () => {
     );
 
     expect(screen.getByTestId('cc-audio-empty')).toBeInTheDocument();
-    expect(screen.getByText('Drop audio here')).toBeInTheDocument();
+    expect(screen.getByText('Drop audio here or click to add')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('cc-audio-empty'));
     expect(onAdd).toHaveBeenCalled();
   });
