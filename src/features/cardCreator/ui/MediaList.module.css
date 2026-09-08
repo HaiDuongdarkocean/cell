@@ -14,6 +14,14 @@
   border-radius: var(--radius-md);
 }
 
+/* Empty state: the wrapper should not add its own surface — the empty button
+ * becomes the single input-sized target. */
+.cc-media--empty {
+  padding: 0;
+  background: transparent;
+  gap: 0;
+}
+
 /* === Dropzone ===
  * Wraps the actual media content. Drag-over highlight stays inside this
  * wrapper so it never surrounds the standalone "Add" button.
@@ -49,13 +57,6 @@
   animation: none;
 }
 
-.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty,
-.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty--image,
-.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty--audio {
-  border-color: var(--color-border-focus);
-  background: var(--color-surface-hover);
-}
-
 @keyframes cc-media-drop-pulse {
   0%, 100% {
     background-color: var(--color-surface-hover);
@@ -71,10 +72,9 @@
   }
 }
 
-/* === Empty dropzone (image or audio) ===
- * Image empty: full-width dashed card matching the image strip.
- * Audio empty: a single dashed row matching an audio row.
- */
+/* === Empty dropzone ===
+ * Renders as a full-width button that matches the other text inputs:
+ * same height, padding, font, background, and border. */
 .cc-media__empty {
   display: inline-flex;
   align-items: center;
@@ -82,18 +82,21 @@
   gap: var(--space-2);
   width: 100%;
   min-width: 100%;
-  padding: var(--space-2);
-  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  min-height: calc(var(--input-height) + 2 * var(--border-width-hairline));
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  background: var(--input-bg);
+  color: var(--input-placeholder);
+  font-size: var(--input-font-size);
   font-family: inherit;
+  box-sizing: border-box;
   cursor: pointer;
   overflow: hidden;
   transition: border-color var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out),
-              background var(--duration-fast) var(--ease-in-out);
+              background var(--duration-fast) var(--ease-in-out),
+              box-shadow var(--duration-fast) var(--ease-in-out);
 }
 
 .cc-media__empty > span {
@@ -102,19 +105,9 @@
   white-space: nowrap;
 }
 
-.cc-media__empty--image {
-  min-height: var(--input-height);
-}
-
-.cc-media__empty--audio {
-  min-height: var(--input-height);
-  padding: var(--space-1) var(--space-2);
-}
-
 .cc-media__empty:hover {
   border-color: var(--color-border-focus);
   color: var(--color-text);
-  background: var(--color-surface-hover);
 }
 
 .cc-media__empty:disabled {
@@ -123,8 +116,16 @@
 }
 
 .cc-media__empty:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
+  outline: none;
+  border-color: transparent;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--color-primary);
+}
+
+/* Drag-over highlight should still feel like an input being focused. */
+.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty {
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 /* === Image gallery === */
@@ -231,21 +232,6 @@
 .cc-media__thumb-remove:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
-}
-
-/* Image icon has more continuous strokes (rect frame + mountain + sun) than the
- * audio waveform, so it visually pops more. Tone it down slightly so it sits at
- * the same perceived brightness as the waveform icon. */
-.cc-media__icon--image {
-  opacity: var(--opacity-85);
-}
-
-.cc-media__icon--image svg {
-  stroke-width: var(--stroke-width-sm);
-}
-
-.cc-media__icon--audio svg {
-  stroke-width: var(--stroke-width-md);
 }
 
 /* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */

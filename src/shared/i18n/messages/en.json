@@ -197,8 +197,6 @@
   "cardCreator.add.image": "Add image",
   "cardCreator.add.sentenceAudio": "Add sentence audio",
   "cardCreator.add.wordAudio": "Add word audio",
-  "cardCreator.empty.image": "Drop image here or click to add",
-  "cardCreator.empty.audio": "Drop audio here or click to add",
   "cardCreator.updateMode.label": "Update mode",
   "cardCreator.updateMode.overwrite": "Overwrite",
   "cardCreator.updateMode.append": "Append",

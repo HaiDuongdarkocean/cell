@@ -41,15 +41,6 @@ interface MediaListProps {
   readonly dataId?: string;
 }
 
-/** Image icon for empty dropzone and audio waveform icon. */
-function ThumbIcon({ kind, size = 'sm' }: { kind: 'image' | 'audio'; size?: 'xs' | 'sm' | 'md' | 'lg' }): ReactElement {
-  return kind === 'image' ? (
-    <Icon name="image" size={size} className={styles['cc-media__icon--image']} />
-  ) : (
-    <Icon name="audioWave" size={size} className={styles['cc-media__icon--audio']} />
-  );
-}
-
 /** Determine whether a File is an image or an audio file.
  *  Prefer the MIME type; fall back to filename extension for files with an empty type. */
 function isAcceptedFile(file: File, kind: 'image' | 'audio'): boolean {
@@ -124,28 +115,26 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
 
 /** Empty dropzone with icon + label. */
 function EmptyDropzone({
-  kind,
+  addLabel,
   onAdd,
   addDisabled,
   dataId,
 }: {
-  kind: 'image' | 'audio';
+  addLabel: string;
   onAdd: () => void;
   addDisabled?: boolean;
   dataId?: string;
 }): ReactElement {
-  const text = kind === 'image' ? t('cardCreator.empty.image') : t('cardCreator.empty.audio');
-  const modifier = kind === 'image' ? styles['cc-media__empty--image'] : styles['cc-media__empty--audio'];
   return (
     <button
       type="button"
-      className={`${styles['cc-media__empty']} ${modifier}`}
+      className={styles['cc-media__empty']}
       onClick={onAdd}
       disabled={addDisabled}
       data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
-      <ThumbIcon kind={kind} size="sm" />
-      <span>{text}</span>
+      <Icon name="plus" size="sm" />
+      <span>{addLabel}</span>
     </button>
   );
 }
@@ -573,9 +562,10 @@ export function MediaList({
   const dropzoneClass = dropzoneModifier
     ? `${dropzoneBase} ${dropzoneModifier}`
     : dropzoneBase;
+  const mediaClass = [styles['cc-media'], isEmpty ? styles['cc-media--empty'] : ''].filter(Boolean).join(' ');
   return (
     <div
-      className={styles['cc-media']}
+      className={mediaClass}
       data-kind={kind}
     >
       <div
@@ -588,7 +578,7 @@ export function MediaList({
       >
         {isEmpty ? (
           <EmptyDropzone
-            kind={kind}
+            addLabel={addLabel}
             onAdd={onAdd}
             addDisabled={addDisabled}
             dataId={dataId}
