@@ -144,8 +144,11 @@ export interface WebTextDictionaryController {
   /** Open the Card Creator dialog with the given context + optional action. */
   readonly openCardCreator: (context: CardCreatorOpenContext, action?: 'quick-add' | 'quick-update' | 'edit-card') => void;
   /** Send the context to the integrated Card Creator in the universal panel.
+   *  `selection` carries the full popup prefill (lookup result + loaded media
+   *  + selection snapshot) so the integrated Dictionary can initialize as an
+   *  exact clone of the popup (Task 4).
    *  Falls back to the standalone dialog when no panel controller is available. */
-  readonly sendToCard: (context: CardCreatorOpenContext, action?: 'quick-add' | 'quick-update' | 'edit-card') => void;
+  readonly sendToCard: (context: CardCreatorOpenContext, action?: 'quick-add' | 'quick-update' | 'edit-card', selection?: PopupCardCreatorPrefill) => void;
   /** Whether the Card Creator dialog is currently open. */
   readonly isCardCreatorOpen: () => boolean;
 }
@@ -1005,6 +1008,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function sendToCard(
     context: CardCreatorOpenContext,
     action?: 'quick-add' | 'quick-update' | 'edit-card',
+    selection?: PopupCardCreatorPrefill,
   ): void {
     if (!deps.panelController) {
       openCardCreator(context, action);
@@ -1013,7 +1017,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     const firstQueueItem = context.queue?.[0];
     const sentence = context.prefill?.sentence ?? context.cue?.targetText ?? '';
-    const translation = context.prefill?.sentenceTranslation ?? context.cue?.nativeText ?? '';
+    const translation =
+      context.prefill?.sentenceTranslation ??
+      context.cue?.nativeText ??
+      selection?.translation ??
+      '';
     const definitionsText =
       firstQueueItem?.definitions ?? context.prefill?.definitions ?? '';
     const term =
@@ -1022,26 +1030,56 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       context.cue?.targetText ??
       '';
 
+    const contextDefinitions: { readonly pos?: string; readonly text: string }[] = definitionsText
+      ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
+      : [];
+    const definitions = contextDefinitions.length > 0
+      ? contextDefinitions
+      : (selection?.definitions ?? []);
+
+    const rawDefinitions: string[] =
+      selection?.rawDefinitions && selection.rawDefinitions.length > 0
+        ? [...selection.rawDefinitions]
+        : definitionsText
+          ? definitionsText.split('\n').filter((line) => line.trim())
+          : [];
+
+    const wordAudioUrls = context.prefill?.wordAudioUrls?.length
+      ? context.prefill.wordAudioUrls
+      : (selection?.wordAudioUrls ?? []);
+    const sentenceAudioUrls = context.prefill?.sentenceAudioUrls?.length
+      ? context.prefill.sentenceAudioUrls
+      : (selection?.sentenceAudioUrls ?? []);
+    const imageUrls = context.prefill?.imageUrls?.length
+      ? context.prefill.imageUrls
+      : (selection?.imageUrls ?? []);
+
     const prefill: DictionaryPanelPrefill = {
       term,
       langCode: context.sourceLang,
-      reading: '',
-      definitions: definitionsText
-        ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
-        : [],
-      rawDefinitions: definitionsText
-        ? definitionsText.split('\n').filter((line) => line.trim())
-        : [],
+      reading: selection?.reading ?? '',
+      definitions,
+      rawDefinitions,
       contextSentence: sentence,
       translation,
-      wordAudioUrls: context.prefill?.wordAudioUrls ?? [],
-      sentenceAudioUrls: context.prefill?.sentenceAudioUrls ?? [],
-      imageUrls: context.prefill?.imageUrls ?? [],
+      wordAudioUrls,
+      sentenceAudioUrls,
+      imageUrls,
+      // Clone the full popup lookup result and loaded media items so the
+      // integrated Dictionary can re-render the exact candidate + tabs.
+      lookupResult: selection?.lookupResult,
+      audioItems: selection?.audioItems,
+      imageItems: selection?.imageItems,
       video: context.video,
       cue: context.cue,
       initialMedia: context.initialMedia,
       queue: context.queue,
       initialAction: action,
+      // Popup selection snapshot — cloned by the integrated Dictionary.
+      selectedImageIds: selection?.selectedImageIds,
+      selectedAudioIds: selection?.selectedAudioIds,
+      selectedDefinitionIds: selection?.selectedDefinitionIds,
+      translationSelected: selection?.translationSelected,
     };
 
     deps.panelController.sendToCard(prefill).catch((err: unknown) => {
@@ -1364,7 +1402,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             },
           };
 
-          sendToCard(context, action);
+          sendToCard(context, action, prefill);
         } catch (err: unknown) {
           console.warn('[web-text-dict] sendToCard failed:', err);
         }

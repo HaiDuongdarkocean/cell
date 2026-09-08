@@ -105,6 +105,57 @@ describe('useCandidate', () => {
     expect(result.current.selectedDefinitionCount).toBe(0);
   });
 
+  it('hydrates state from a selection snapshot', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
+        { id: 'd2', pos: 'v', text: 'to greet', examples: [], source: 'test', defaultSelected: false },
+      ],
+    });
+
+    const snapshot: PopupCardCreatorPrefill = {
+      term: 'hello',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: 'hello world',
+      translation: 'xin chào',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+      audioItems: [makeAudio('a2', 'word', 'https://example.com/a2.mp3')],
+      imageItems: [makeImage('i2')],
+      selectedDefinitionIds: ['d2'],
+      selectedAudioIds: ['a2'],
+      selectedImageIds: ['i2'],
+      translationSelected: true,
+    };
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: 'hello world',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      selectionSnapshot: snapshot,
+    }));
+
+    expect(result.current.definitionSelection.get('d1')).toBe(false);
+    expect(result.current.definitionSelection.get('d2')).toBe(true);
+    expect(result.current.selectedDefinitionCount).toBe(1);
+
+    expect(result.current.audioItems).toEqual(snapshot.audioItems);
+    expect(result.current.audioSelection.get('a2')).toBe(true);
+    expect(result.current.selectedAudioCount).toBe(1);
+
+    expect(result.current.imageItems).toEqual(snapshot.imageItems);
+    expect(result.current.imageSelection.get('i2')).toBe(true);
+    expect(result.current.selectedImageCount).toBe(1);
+
+    expect(result.current.translation).toBe('xin chào');
+    expect(result.current.translationSelected).toBe(true);
+  });
+
   it('cycles status and sends WORD_STATUS_SET', () => {
     const candidate = makeResult('hello', { status: 'unknown' });
 
@@ -206,11 +257,14 @@ describe('useCandidate', () => {
 
     await waitFor(() => expect(result.current.translation).toBe('xin chào'));
 
+    act(() => { result.current.toggleTranslation(); });
+
     await act(async () => { await result.current.sendToCard(); });
 
     expect(onSendToCard).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
       translation: 'xin chào',
+      translationSelected: true,
     }));
   });
 
@@ -243,6 +297,13 @@ describe('useCandidate', () => {
       wordAudioUrls: ['https://audio/1'],
       sentenceAudioUrls: ['https://audio/tts'],
       imageUrls: ['https://example.com/i1.jpg'],
+      // Selection snapshot for the integrated Dictionary clone: audio/image
+      // mirror the effective selection (defaultSelected when never toggled),
+      // definitions mirror explicit ticks, translation checkbox stays off.
+      selectedAudioIds: ['a1'],
+      selectedImageIds: [],
+      selectedDefinitionIds: [],
+      translationSelected: false,
     }));
   });
 

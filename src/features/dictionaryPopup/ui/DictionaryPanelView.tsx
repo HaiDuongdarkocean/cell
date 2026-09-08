@@ -19,7 +19,7 @@ import {
 } from '@/features/universalPanel/searchHistory';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { CandidateView } from './CandidateView';
-import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '../types';
 import candidateStyles from './CandidateView.module.css';
 import checkStyles from './DictionaryCheckable.module.css';
 import toolbarStyles from './DictionaryToolbar.module.css';
@@ -55,6 +55,8 @@ interface DictionaryPanelViewProps {
   readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
   /** Render mode: 'popup' is compact (no search row/history), 'integrated' is the full panel. */
   readonly variant?: 'popup' | 'integrated';
+  /** Optional popup selection snapshot used to clone checked state. */
+  readonly selectionSnapshot?: PopupSelectionSnapshot;
 }
 
 export function DictionaryPanelView({
@@ -78,6 +80,7 @@ export function DictionaryPanelView({
   isOpen = true,
   syncStatus,
   variant = 'integrated',
+  selectionSnapshot,
 }: DictionaryPanelViewProps): React.JSX.Element {
   const panel = useDictionaryPanel({
     langCode,
@@ -373,21 +376,32 @@ export function DictionaryPanelView({
       {allCandidates.length > 0 && (
         <>
           <div className={styles.candidateList} data-cell-id="dictionary-candidate-list">
-            {allCandidates.map((candidate, idx) => (
-              <CandidateView
-                key={`${candidate.term}-${idx}`}
-                candidate={candidate}
-                index={idx}
-                contextSentence={panel.contextSentence}
-                sourceLang={sourceLang}
-                targetLang={targetLang}
-                onSendToCard={onSendToCard}
-                onQuickAdd={onQuickAdd}
-                onStatusChange={onStatusChange}
-                onOpenSettings={onOpenSettings}
-                defaultActiveTab={defaultActiveTab}
-              />
-            ))}
+            {allCandidates.map((candidate, idx) => {
+              // Pass the snapshot to the original popup winner when the snapshot
+              // has no term, or to the candidate that matches the snapshot term.
+              const fullSnapshot = selectionSnapshot as Partial<PopupCardCreatorPrefill> | undefined;
+              const snapshotTerm = fullSnapshot?.term;
+              const snapshotLang = fullSnapshot?.langCode;
+              const matchesSnapshot = snapshotTerm
+                ? candidate.term === snapshotTerm && candidate.langCode === (snapshotLang ?? candidate.langCode)
+                : idx === 0;
+              return (
+                <CandidateView
+                  key={`${candidate.term}-${idx}`}
+                  candidate={candidate}
+                  index={idx}
+                  contextSentence={panel.contextSentence}
+                  sourceLang={sourceLang}
+                  targetLang={targetLang}
+                  onSendToCard={onSendToCard}
+                  onQuickAdd={onQuickAdd}
+                  onStatusChange={onStatusChange}
+                  onOpenSettings={onOpenSettings}
+                  defaultActiveTab={defaultActiveTab}
+                  selectionSnapshot={matchesSnapshot ? selectionSnapshot : undefined}
+                />
+              );
+            })}
           </div>
 
           {allCandidates.length > 1 && (

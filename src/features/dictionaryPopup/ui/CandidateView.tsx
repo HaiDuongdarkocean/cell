@@ -20,7 +20,7 @@ import { DictionaryToolbar } from './DictionaryToolbar';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '../types';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -75,6 +75,8 @@ export interface CandidateViewProps {
   readonly onOpenSettings?: () => void;
   /** Default media tab to open when this candidate first appears. */
   readonly defaultActiveTab?: PopupTab | null;
+  /** Optional popup selection snapshot used to clone checked state. */
+  readonly selectionSnapshot?: PopupSelectionSnapshot;
 }
 
 export function CandidateView({
@@ -88,6 +90,7 @@ export function CandidateView({
   onStatusChange,
   onOpenSettings,
   defaultActiveTab,
+  selectionSnapshot,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -98,6 +101,7 @@ export function CandidateView({
     onQuickAdd,
     onStatusChange,
     defaultActiveTab,
+    selectionSnapshot,
   });
 
   const { pronunciation } = usePronunciation({

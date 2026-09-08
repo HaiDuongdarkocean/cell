@@ -20,6 +20,8 @@ export interface MediaFile {
   readonly mimeType: string;
   /** Raw file bytes. */
   readonly data: ArrayBuffer;
+  /** Original source URL, when this file was fetched from a prefill URL. */
+  readonly sourceUrl?: string;
 }
 
 /** Convert ArrayBuffer to base64 string (no data: prefix). */
@@ -104,6 +106,7 @@ export async function fetchUrlAsMediaFile(
     filename: generateMediaFilename(prefix, ext),
     mimeType,
     data,
+    sourceUrl: url,
   };
 }
 
@@ -140,6 +143,7 @@ async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<Me
     filename: generateMediaFilename(prefix, ext),
     mimeType,
     data: dataUrlToArrayBuffer(dataUrl),
+    sourceUrl: url,
   };
 }
 

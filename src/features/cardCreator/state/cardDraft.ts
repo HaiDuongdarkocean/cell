@@ -17,6 +17,7 @@
  */
 import type { MediaFile } from '../media/mediaFile';
 import type { FieldMapping } from '../service/fieldMapping';
+import type { CardCreatorPrefill } from '../types';
 
 /** Update mode for media + fields when updating an existing note. */
 export type MediaUpdateMode = 'overwrite' | 'append' | 'skip';
@@ -201,4 +202,158 @@ export function createEmptyDraft(noteType: string, deck: string): CardDraft {
   };
 }
 
+/** Merge plan for a single media collection (images, word/sentence audio).
+ *  `keptByUrl` maps source URLs to existing MediaFiles that should be reused.
+ *  `orderedUrls` is the final desired order (kept URLs + new URLs to fetch).
+ *  `unmapped` holds media that came from outside the prefill (screenshots,
+ *  disk uploads, captured audio) and are preserved at the end. */
+export interface MediaMergePlan {
+  /** Existing media keyed by source URL that are still selected. */
+  readonly keptByUrl: Readonly<Record<string, MediaFile>>;
+  /** Final ordered source URLs (existing + new, in prefill order). */
+  readonly orderedUrls: readonly string[];
+  /** Existing media without a source URL to preserve at the end. */
+  readonly unmapped: readonly MediaFile[];
+}
 
+/** Result of merging a new prefill into an existing draft. */
+export interface PrefillMergeResult {
+  /** Draft with text fields merged. Media arrays are left as-is and must be
+   *  rebuilt from `media` after the caller fetches any missing URLs. */
+  readonly draft: CardDraft;
+  readonly media: {
+    readonly images: MediaMergePlan;
+    readonly wordAudios: MediaMergePlan;
+    readonly sentenceAudios: MediaMergePlan;
+  };
+}
+
+/** Split a formatted definition string into individual bullet lines. */
+function splitDefinitionLines(value: string): string[] {
+  return value
+    .split(/\n\s*\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/** Normalize a definition line for matching (collapse whitespace). */
+function normalizeDefinitionLine(line: string): string {
+  return line.replace(/\s+/g, ' ').trim();
+}
+
+/** Merge two definition strings by diff/merge of their bullet lines.
+ *  Deterministic and idempotent for identical inputs. */
+function mergeDefinitionLines(current: string, next: string | undefined, mode: MediaUpdateMode): string {
+  if (next === undefined) return current;
+  if (mode === 'overwrite') return next;
+  if (mode === 'skip') return current.trim() === '' ? next : current;
+
+  const currentLines = splitDefinitionLines(current);
+  const nextLines = splitDefinitionLines(next);
+  const currentByNormal = new Map<string, string>();
+  for (const line of currentLines) {
+    const key = normalizeDefinitionLine(line);
+    if (!currentByNormal.has(key)) currentByNormal.set(key, line);
+  }
+  const merged = nextLines.map((line) => {
+    const key = normalizeDefinitionLine(line);
+    return currentByNormal.get(key) ?? line;
+  });
+  return merged.join('\n\n');
+}
+
+/** Merge a single text field according to `mediaUpdateMode`. */
+function mergeTextField(current: string, next: string | undefined, mode: MediaUpdateMode): string {
+  if (next === undefined) return current;
+  if (mode === 'overwrite') return next;
+  if (mode === 'skip') return current.trim() === '' ? next : current;
+  // append: replace with the new selection when it differs and is non-empty.
+  return next && next !== current ? next : current;
+}
+
+/** Build a merge plan for one media collection. */
+function buildMediaMergePlan(
+  current: readonly MediaFile[],
+  nextUrls: readonly string[] | undefined,
+  mode: MediaUpdateMode,
+): MediaMergePlan {
+  const ordered = nextUrls ?? [];
+  const bySourceUrl: Record<string, MediaFile> = {};
+  const currentSourceUrls: string[] = [];
+  const unmapped: MediaFile[] = [];
+
+  for (const file of current) {
+    if (file.sourceUrl) {
+      if (!bySourceUrl[file.sourceUrl]) bySourceUrl[file.sourceUrl] = file;
+      if (!currentSourceUrls.includes(file.sourceUrl)) currentSourceUrls.push(file.sourceUrl);
+    } else {
+      unmapped.push(file);
+    }
+  }
+
+  if (mode === 'skip' && current.length > 0) {
+    return { keptByUrl: bySourceUrl, orderedUrls: currentSourceUrls, unmapped };
+  }
+
+  const kept: Record<string, MediaFile> = {};
+  for (const url of ordered) {
+    if (bySourceUrl[url] && !kept[url]) kept[url] = bySourceUrl[url];
+  }
+
+  if (mode === 'overwrite') {
+    return { keptByUrl: kept, orderedUrls: ordered, unmapped: [] };
+  }
+
+  if (mode === 'append') {
+    return { keptByUrl: kept, orderedUrls: ordered, unmapped };
+  }
+
+  // skip with an empty current collection
+  return { keptByUrl: {}, orderedUrls: ordered, unmapped: [] };
+}
+
+/** Compare the new prefill with the current draft and produce a merge plan.
+ *  Respects `mediaUpdateMode`: `overwrite` replaces, `append` diff/merges,
+ *  `skip` only fills empty fields. The function is pure, deterministic, and
+ *  idempotent for identical inputs. */
+export function mergePrefillIntoDraft(draft: CardDraft, prefill: CardCreatorPrefill): PrefillMergeResult {
+  const { fields, mediaUpdateMode } = draft;
+
+  const nextFields: CardFields = {
+    ...fields,
+    targetWord: mergeTextField(fields.targetWord, prefill.targetWord, mediaUpdateMode),
+    sentence: mergeTextField(fields.sentence, prefill.sentence, mediaUpdateMode),
+    sentenceTranslation: mergeTextField(fields.sentenceTranslation, prefill.sentenceTranslation, mediaUpdateMode),
+    definitions: mergeDefinitionLines(fields.definitions, prefill.definitions, mediaUpdateMode),
+    note: prefill.note === undefined ? fields.note : mergeTextField(fields.note, prefill.note, mediaUpdateMode),
+    moreExample: prefill.moreExample === undefined ? fields.moreExample : mergeTextField(fields.moreExample, prefill.moreExample, mediaUpdateMode),
+  };
+
+  return {
+    draft: { ...draft, fields: nextFields },
+    media: {
+      images: buildMediaMergePlan(fields.images, prefill.imageUrls, mediaUpdateMode),
+      wordAudios: buildMediaMergePlan(fields.wordAudios, prefill.wordAudioUrls, mediaUpdateMode),
+      sentenceAudios: buildMediaMergePlan(fields.sentenceAudios, prefill.sentenceAudioUrls, mediaUpdateMode),
+    },
+  };
+}
+
+/** Return the source URLs from a merge plan that need to be fetched. */
+export function mediaUrlsToFetch(plan: MediaMergePlan): readonly string[] {
+  return plan.orderedUrls.filter((url) => !plan.keptByUrl[url]);
+}
+
+/** Build the final media array by combining kept + newly fetched files. */
+export function buildMergedMediaArray(
+  plan: MediaMergePlan,
+  fetchedByUrl: Record<string, MediaFile | undefined>,
+): readonly MediaFile[] {
+  const result: MediaFile[] = [];
+  for (const url of plan.orderedUrls) {
+    const file = plan.keptByUrl[url] ?? fetchedByUrl[url];
+    if (file) result.push(file);
+  }
+  result.push(...plan.unmapped);
+  return result;
+}

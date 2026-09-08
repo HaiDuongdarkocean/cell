@@ -289,11 +289,27 @@ export interface QuickAddResponse {
 // React `PopupDictionary` path. Keeping them in this pure type module lets us
 // delete the legacy UI files without breaking downstream consumers.
 
+/** Selection snapshot cloned from the popup dictionary at sendToCard time so
+ *  the integrated Dictionary in the Universal Panel can initialize with the
+ *  same checked state (spec: card-creator-bottom-sheet-mobile, Task 4).
+ *  All fields optional — absent when the sender has no selection state
+ *  (e.g. subtitle queue actions). */
+export interface PopupSelectionSnapshot {
+  /** Ids of image items checked for the card (effective selection). */
+  readonly selectedImageIds?: readonly string[];
+  /** Ids of audio items checked for the card (effective selection). */
+  readonly selectedAudioIds?: readonly string[];
+  /** Ids of definitions the user explicitly ticked. */
+  readonly selectedDefinitionIds?: readonly string[];
+  /** Whether the translation checkbox was selected. */
+  readonly translationSelected?: boolean;
+}
+
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
  *  Built from the lookup result + selections + context sentence + translation.
  *  Word audio, sentence audio and image are treated as mandatory: at least one
  *  of each is always included (selected first, then fallback to first available). */
-export interface PopupCardCreatorPrefill {
+export interface PopupCardCreatorPrefill extends PopupSelectionSnapshot {
   readonly term: string;
   readonly langCode: string;
   readonly reading: string;
@@ -305,6 +321,13 @@ export interface PopupCardCreatorPrefill {
   readonly wordAudioUrls?: readonly string[];
   readonly sentenceAudioUrls?: readonly string[];
   readonly imageUrls?: readonly string[];
+  /** The original lookup result used to build this prefill. Carried so the
+   *  integrated Dictionary can render the same candidate without re-searching. */
+  readonly lookupResult?: LookupResult;
+  /** Audio items loaded for the popup candidate. Mirrors the popup's audio tab. */
+  readonly audioItems?: readonly AudioItem[];
+  /** Image items loaded for the popup candidate. Mirrors the popup's image tab. */
+  readonly imageItems?: readonly ImageItem[];
 }
 
 export type PopupCardCreatorAction = 'quick-add' | 'edit-card';
