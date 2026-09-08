@@ -74,7 +74,7 @@ export async function invokeAnkiConnect(
   let timer: ReturnType<typeof setTimeout> | undefined;
   const fetchPromise = fetchFn(baseUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(body),
   }).finally(() => { if (timer) clearTimeout(timer); });
 
