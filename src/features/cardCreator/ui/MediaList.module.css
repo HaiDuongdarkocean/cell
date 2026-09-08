@@ -29,6 +29,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
+  width: 100%;
   border: var(--border-width-hairline) dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: transparent;
@@ -36,7 +37,6 @@
   font-size: var(--font-size-sm);
   font-family: inherit;
   cursor: pointer;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: border-color var(--duration-fast) var(--ease-in-out),
@@ -45,10 +45,9 @@
 }
 
 .cc-media__empty--image {
-  width: calc(var(--space-10) * 3);
-  min-width: calc(var(--space-10) * 3);
-  aspect-ratio: 4 / 3;
-  min-height: auto;
+  width: 100%;
+  min-width: 100%;
+  min-height: var(--input-height);
 }
 
 .cc-media__empty--audio {
@@ -178,10 +177,11 @@
 }
 
 .cc-media__gallery-add {
-  align-self: flex-start;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
+  width: 100%;
   padding: var(--space-1) var(--space-2);
   border: var(--border-width-hairline) dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
@@ -375,10 +375,11 @@
 }
 
 .cc-media__list-add {
-  align-self: flex-start;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
+  width: 100%;
   padding: var(--space-1) var(--space-2);
   border: var(--border-width-hairline) dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
