@@ -20,7 +20,7 @@
 
 .scrollArea .panelBody {
   min-width: 0;
-  padding: var(--space-4);
+  padding: var(--space-2);
 }
 
 /* Loading / empty state vertical centering */
