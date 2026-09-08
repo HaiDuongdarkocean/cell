@@ -106,12 +106,15 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       aria-label="Image preview"
       data-cell-id="media-image-preview"
     >
-      <Button variant="secondary"
+      <Button
+        size="sm"
+        shape="circle"
+        variant="secondary"
         className={styles['cc-media__preview-close']}
         onClick={onClose}
         aria-label="Close preview"
       >
-        <Icon name="x" size="md" />
+        <Icon name="x" size="sm" />
       </Button>
       {url && <img className={styles['cc-media__preview-img']} src={url} alt={file.filename} />}
     </div>
@@ -210,8 +213,8 @@ function ImageThumb({
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
       <Button
+        size="sm"
         shape="circle"
-        size="xs"
         variant="ghost"
         className={styles['cc-media__thumb-remove']}
         aria-label={`Remove ${file.filename}`}
@@ -221,7 +224,7 @@ function ImageThumb({
         }}
         data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
-        <Icon name="x" size="xs" />
+        <Icon name="x" size="sm" />
       </Button>
     </div>
   );
@@ -459,13 +462,16 @@ function AudioList({
               <Icon name="audioWave" size="xs" />
             </Button>
             <span className={styles['cc-media__name']}>{file.filename}</span>
-            <Button shape="circle" size="xs" variant="ghost"
+            <Button
+              size="sm"
+              shape="circle"
+              variant="ghost"
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
-              <Icon name="x" size="xs" />
+              <Icon name="x" size="sm" />
             </Button>
           </div>
         );

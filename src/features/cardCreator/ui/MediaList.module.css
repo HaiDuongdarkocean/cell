@@ -163,8 +163,8 @@
   position: absolute;
   top: var(--space-0-5);
   right: var(--space-0-5);
-  width: var(--space-5);
-  height: var(--space-5);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,28 +234,6 @@
   position: fixed;
   top: var(--space-4);
   right: var(--space-4); /* design-system: fixed close in top-right */
-  width: var(--button-height-lg);
-  height: var(--button-height-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-2xl);
-  line-height: var(--leading-none);
-  cursor: pointer;
-  transition: background var(--duration-fast) var(--ease-in-out);
-}
-
-.cc-media__preview-close:hover {
-  background: var(--color-secondary-hover);
-}
-
-.cc-media__preview-close:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
 }
 
 /* === Audio list === */
@@ -329,8 +307,8 @@
 }
 
 .cc-media__row-remove {
-  width: var(--space-5);
-  height: var(--space-5);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   display: flex;
   align-items: center;
   justify-content: center;
