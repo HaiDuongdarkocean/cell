@@ -43,7 +43,7 @@ async function searchDictionaryInPanel(page: Page, term: string, timeout = 10_00
       const host = document.getElementById('cell-universal-panel-host');
       if (host) {
         const root = host.shadowRoot ?? host;
-        const input = root.querySelector('[data-cell-id="dictionary-search-input"] input') as HTMLInputElement | null;
+        const input = root.querySelector('input[data-cell-id="dictionary-search-input"]') as HTMLInputElement | null;
         if (input) {
           input.focus();
           input.value = searchTerm;
