@@ -14,6 +14,11 @@
 3. **Never create ad-hoc components.** Reuse `src/shared/ui/*`; if a component is missing, add it to `src/shared/ui/` first, then use it.
 4. **Prototype in the design-system showcase is the final UI.** After user confirmation, the same code integrates into production.
 5. **Every UI change must pass the audit commands at the bottom of this file.**
+6. **Close/dismiss buttons are always `variant="ghost"`** — never `primary`. A close control is not the primary action.
+7. **Ghost buttons on overlay chrome carry a border + theme-primary hover** — visible affordance on busy video, hover tint `var(--color-primary)` instead of a neutral surface.
+8. **Overlay previews must not be dwarfed by the media they configure.** If a preview (e.g. Customize view) reads smaller than the video/context it edits, enlarge it — a preview that can't be judged can't be set.
+9. **Every element maps to a component.** If it doesn't exist in `src/shared/ui/*`: reuse the closest component, or if it's similar-but-different create a variant of the existing component; only a genuinely specialized element may stay custom — and that needs written justification.
+10. **Never comment — write quality code instead.** Names, structure, and tokens carry intent. No explanatory comments for what code should say itself.
 
 ---
 
