@@ -412,7 +412,24 @@ export function Select({
     </div>
   ) : null;
 
-  const portalContainer = rootRef.current?.ownerDocument?.body ?? document.body;
+  // Portal target: stay inside the same document / shadow root so the menu
+  // keeps its CSS and z-index context. If the trigger is inside a ShadowRoot,
+  // find the topmost rendered element (the React root container) to keep event
+  // delegation working; otherwise fall back to the document body.
+  const getPortalContainer = (): Element | DocumentFragment => {
+    const node = rootRef.current;
+    if (!node) return document.body;
+    const root = node.getRootNode();
+    if (root instanceof ShadowRoot) {
+      let el = node as Node;
+      while (el.parentNode && el.parentNode !== root) {
+        el = el.parentNode;
+      }
+      return el instanceof Element ? el : root;
+    }
+    return (root as Document).body ?? document.body;
+  };
+  const portalContainer = getPortalContainer();
 
   return (
     <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
