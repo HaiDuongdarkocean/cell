@@ -95,7 +95,8 @@ function autoSeedAssets(mode: string): Plugin {
   // Production builds should not ship test seed files (~42.7MB).
   // Dev builds (`npx vite build --mode development`) keep seeds so the
   // extension works out-of-the-box when loaded from `dist/`.
-  if (mode !== 'development') return { name: 'auto-seed-assets' };
+  // Fast builds skip seeds entirely.
+  if (mode === 'fast' || mode !== 'development') return { name: 'auto-seed-assets' };
   const primaryRoot = resolve(import.meta.dirname, 'data', 'resource');
   const fallbackRoot = resolve(import.meta.dirname, 'tests', 'data-test', 'resource');
   const seedRoot = existsSync(primaryRoot) ? primaryRoot : fallbackRoot;
@@ -123,8 +124,58 @@ function autoSeedAssets(mode: string): Plugin {
   };
 }
 
-export default defineConfig(({ mode }) => ({
-  plugins: [crx({ manifest }), hoverOnlyOnHoverDevices(), autoSeedAssets(mode)],
+// Fast build drops test/secondary entry points so the bundler processes fewer
+// modules. It is meant for quick UI/overlay iteration, not for a releasable
+// extension. Use `npm run build` for production-ready output.
+const FAST_INPUT = {
+  sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
+};
+
+// Mock pages are built separately with `npm run build:mock` so the main
+// extension build does not pay the cost of bundling test/standalone pages.
+const MOCK_INPUT = {
+  mockStreamingPage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-page/index.html'),
+  mockStreamingIframePage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
+  mockIframePlayer: resolve(import.meta.dirname, 'src/entrypoints/mock-iframe-player/index.html'),
+  mockYouTube: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube/index.html'),
+  mockHardSubPage: resolve(import.meta.dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
+  mockYouTubeHardsub: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
+};
+
+const FULL_INPUT = {
+  // The CRX plugin handles the popup and background entries; add the
+  // offscreen document and side panel explicitly so they are built
+  // and emitted as loadable chrome-extension:// pages.
+  offscreen: resolve(import.meta.dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
+  sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
+  cardCreatorTest: resolve(import.meta.dirname, 'src/entrypoints/test/cardCreatorTest.html'),
+  localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
+  reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
+  mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
+  mockupAudio: resolve(import.meta.dirname, 'src/entrypoints/mockup-audio/index.html'),
+  mockupDictionaryPopup: resolve(import.meta.dirname, 'src/entrypoints/mockup-dictionary-popup/index.html'),
+  mockupResources: resolve(import.meta.dirname, 'src/entrypoints/mockup-resources/index.html'),
+  launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
+  srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
+};
+
+export default defineConfig(({ mode }) => {
+  const isFast = mode === 'fast';
+  const isMock = mode === 'mock';
+  const isExtension = !isMock;
+  const outDir = isMock ? 'dist/mock-pages' : 'dist';
+  const buildInput = isMock ? MOCK_INPUT : (isFast ? FAST_INPUT : FULL_INPUT);
+  return {
+    define: {
+      // Compile-time flag so the content script can skip heavy optional
+      // features (OCR, study mode) during `build:fast`.
+      __CELL_FAST_BUILD__: isFast ? 'true' : 'false',
+    },
+    plugins: [
+      ...(isExtension ? [crx({ manifest })] : []),
+      hoverOnlyOnHoverDevices(),
+      autoSeedAssets(mode),
+    ],
   // Rolldown (Vite 8) changed default CJS interop. React is CJS and has no
   // `__esModule` / default export, so `import React from 'react'` used by
   // zustand can resolve to an incorrect named export without this legacy flag.
@@ -139,36 +190,18 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
   },
   build: {
-    outDir: 'dist',
+    outDir,
     emptyOutDir: true,
+    // Fast and mock builds skip expensive minification and source maps.
+    minify: (isFast || isMock) ? false : undefined,
+    sourcemap: (isFast || isMock) ? false : undefined,
     // Vite 8 defaults to lightningcss for CSS minification, which silently
     // strips valid CSS properties (overflow-y, overscroll-behavior, min-height)
     // from CSS modules — especially ?inline imports for shadow DOM injection.
     // esbuild preserves all properties. See vitejs/vite#22649.
     cssMinify: false,
-    rollupOptions: {
-      input: {
-        // The CRX plugin handles the popup and background entries; add the
-        // offscreen document and side panel explicitly so they are built
-        // and emitted as loadable chrome-extension:// pages.
-        offscreen: resolve(import.meta.dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
-        sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
-        cardCreatorTest: resolve(import.meta.dirname, 'src/entrypoints/test/cardCreatorTest.html'),
-        mockStreamingPage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-page/index.html'),
-        mockStreamingIframePage: resolve(import.meta.dirname, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
-        mockIframePlayer: resolve(import.meta.dirname, 'src/entrypoints/mock-iframe-player/index.html'),
-        mockYouTube: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube/index.html'),
-        mockHardSubPage: resolve(import.meta.dirname, 'src/entrypoints/mock-hardsub-page/index.html'),
-        mockYouTubeHardsub: resolve(import.meta.dirname, 'src/entrypoints/mock-youtube-hardsub/index.html'),
-        localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
-        reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
-        mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
-        mockupAudio: resolve(import.meta.dirname, 'src/entrypoints/mockup-audio/index.html'),
-        mockupDictionaryPopup: resolve(import.meta.dirname, 'src/entrypoints/mockup-dictionary-popup/index.html'),
-        mockupResources: resolve(import.meta.dirname, 'src/entrypoints/mockup-resources/index.html'),
-        launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
-        srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
-      },
+    rolldownOptions: {
+      input: buildInput,
       output: {
         manualChunks(id) {
           const normalizedId = id.replaceAll('\\', '/');
@@ -184,4 +217,5 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-}));
+};
+});

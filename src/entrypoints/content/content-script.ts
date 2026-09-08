@@ -1,3 +1,5 @@
+declare const __CELL_FAST_BUILD__: boolean;
+
 import { sendMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
 import { clearAutoLoadCache, initContentScriptController } from '@/features/subtitle';
@@ -12,9 +14,7 @@ import { mountUniversalPanel, type UniversalPanelMountController } from '@/featu
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
-import { initOcrContentScript } from './ocrContentScript';
-import { initializeStudyModeController } from '@/features/studyModes/content/studyModeController';
-import { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
+import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
 import { createElement } from 'react';
@@ -1147,33 +1147,42 @@ onStorageChanged((changes, area) => {
   }
 });
 
-// === OCR (Orca) — T18/T19/T20: init content script with trigger controller ===
-// Lazily creates a SubtitleTriggerController wired to webTextCtrl so OCR
-// hitbox clicks dispatch dictionary lookups (T16). initOcrContentScript
-// registers chrome.storage.onChanged (toggle ON/OFF) + SPA nav listeners.
-function createOcrTriggerController(): SubtitleTriggerController | null {
-  if (!isTopFrame) return null;
-  const ctrl = ensureWebTextCtrl();
-  return new SubtitleTriggerController({
-    triggerMode: 'click',
-    onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => {
-      const range = document.createRange();
-      range.selectNodeContents(highlightTarget);
-      ctrl.handleLookup(request, requestId, anchorRect, range);
-    },
-    onCancel: (requestId: string) => { ctrl.cancelLookup(requestId); },
-    onClear: () => { ctrl.dismissLookup(); },
-  });
+// === OCR (Orca) + study mode — lazily loaded at runtime.
+// `build:fast` skips these heavy optional features entirely at build time
+// via the __CELL_FAST_BUILD__ compile-time flag.
+async function initHeavyFeatures(): Promise<void> {
+  if (__CELL_FAST_BUILD__) return;
+  try {
+    const [{ initOcrContentScript }, { initializeStudyModeController }, { SubtitleTriggerController }] = await Promise.all([
+      import('./ocrContentScript'),
+      import('@/features/studyModes/content/studyModeController'),
+      import('@/features/dictionaryPopup/trigger/subtitleTriggerController'),
+    ]);
+    function createOcrTriggerController(): SubtitleTriggerController | null {
+      if (!isTopFrame) return null;
+      const ctrl = ensureWebTextCtrl();
+      return new SubtitleTriggerController({
+        triggerMode: 'click',
+        onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => {
+          const range = document.createRange();
+          range.selectNodeContents(highlightTarget);
+          ctrl.handleLookup(request, requestId, anchorRect, range);
+        },
+        onCancel: (requestId: string) => { ctrl.cancelLookup(requestId); },
+        onClear: () => { ctrl.dismissLookup(); },
+      });
+    }
+    initOcrContentScript(createOcrTriggerController);
+    initializeStudyModeController();
+  } catch (err) {
+    console.warn('[content-script] initHeavyFeatures failed', err);
+  }
 }
 
 if (isTopFrame) {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      initOcrContentScript(createOcrTriggerController);
-      initializeStudyModeController();
-    });
+    document.addEventListener('DOMContentLoaded', () => { void initHeavyFeatures(); });
   } else {
-    initOcrContentScript(createOcrTriggerController);
-    initializeStudyModeController();
+    void initHeavyFeatures();
   }
 }
