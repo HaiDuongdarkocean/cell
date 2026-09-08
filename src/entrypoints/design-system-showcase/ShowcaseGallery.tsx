@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Button, Badge, Box, Card, Heading, SearchField, Text, Tree } from '@/shared/ui';
+import { Button, Badge, Box, Card, Heading, SearchField, Select, Text, Tree } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { type TreeNode } from '@/shared/ui/Tree';
 import { PresetSwitcher } from '@/features/theme/ui/PresetSwitcher';
@@ -14,25 +14,95 @@ import {
 } from './autoDiscovery';
 import { ShowcaseNavigationContext } from './ShowcaseNavigationContext';
 import type { PresetName } from '@/entities/theme';
+import {
+  SHOWCASE_DATA,
+  SHOWCASE_VIEWPORT,
+  getViewportHeight,
+} from './showcaseParams';
+import type { DataVariant } from './showcaseParams';
+import { type ViewportWidth, VIEWPORT_PRESETS } from './ViewportFrame';
 import styles from './ShowcaseGallery.module.css';
 
 type ThemeMode = 'light' | 'dark';
 
+const VALID_PRESETS: PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
+
 interface ShowcasesById {
   [id: string]: DiscoveredShowcase;
+}
+
+function parseInitialMode(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  const value = new URLSearchParams(window.location.search).get('mode');
+  return value === 'dark' ? 'dark' : 'light';
+}
+
+function parseInitialPreset(): PresetName {
+  if (typeof window === 'undefined') return 'dawn';
+  const value = new URLSearchParams(window.location.search).get('preset') as PresetName | null;
+  return value && VALID_PRESETS.includes(value) ? value : 'dawn';
 }
 
 export function ShowcaseGallery(): ReactElement | null {
   const [filter, setFilter] = useState('');
   const [activeShowcaseId, setActiveShowcaseId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
-  const [mode, setMode] = useState<ThemeMode>('light');
-  const [preset, setPreset] = useState<PresetName>('dawn');
+  const [mode, setMode] = useState<ThemeMode>(parseInitialMode);
+  const [preset, setPreset] = useState<PresetName>(parseInitialPreset);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
     document.documentElement.setAttribute('data-preset', preset);
+    // Keep the URL in sync so a later data/viewport reload keeps the
+    // chosen theme instead of snapping back to the default.
+    const params = new URLSearchParams(window.location.search);
+    params.set('mode', mode);
+    params.set('preset', preset);
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
   }, [mode, preset]);
+
+  const currentData: DataVariant = SHOWCASE_DATA;
+  const currentViewport: ViewportWidth = SHOWCASE_VIEWPORT;
+  const currentViewportHeight = useMemo(
+    () => getViewportHeight(currentViewport),
+    [currentViewport],
+  );
+
+  const dataOptions = useMemo(
+    () => [
+      { value: 'full', label: 'Mock data' },
+      { value: 'empty', label: 'No mock data' },
+      { value: 'overflow', label: 'Overflow' },
+    ],
+    [],
+  );
+
+  const viewportOptions = useMemo(
+    () => VIEWPORT_PRESETS.map((p) => ({ value: String(p.value), label: p.label })),
+    [],
+  );
+
+  const applyData = useCallback((next: DataVariant) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('data', next);
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  }, []);
+
+  const applyViewport = useCallback((next: ViewportWidth) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('viewport', String(next));
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  }, []);
+
+  const stageStyle = useMemo(() => {
+    if (currentViewport === 'full') {
+      return { width: '100%' as const, height: '100%' as const };
+    }
+    return {
+      width: `${currentViewport}px`,
+      height: currentViewportHeight ? `${currentViewportHeight}px` : '100%',
+    };
+  }, [currentViewport, currentViewportHeight]);
 
   const allShowcases = useMemo(() => {
     const found = discoverShowcases();
@@ -166,6 +236,24 @@ export function ShowcaseGallery(): ReactElement | null {
               ariaLabel="Library navigation tree"
             />
           </div>
+          <div className={styles.sidebarControls}>
+            <Select
+              value={currentData}
+              options={dataOptions}
+              onChange={(value) => applyData(value as DataVariant)}
+              aria-label="Mock data mode"
+              data-cell-id="showcase-data-select"
+              size="sm"
+            />
+            <Select
+              value={String(currentViewport)}
+              options={viewportOptions}
+              onChange={(value) => applyViewport(value as ViewportWidth)}
+              aria-label="Preview viewport"
+              data-cell-id="showcase-viewport-select"
+              size="sm"
+            />
+          </div>
           <div className={styles.sidebarFooter}>
             <PresetSwitcher value={preset} onChange={setPreset} data-cell-id="showcase-preset-switcher" />
             <Button shape="circle"
@@ -219,7 +307,13 @@ export function ShowcaseGallery(): ReactElement | null {
                     )}
                   </header>
                   <Box as="section" padding="4" className={styles.stage}>
-                    <activeShowcase.Component />
+                    <div
+                      className={styles.stageViewport}
+                      style={stageStyle}
+                      data-cell-id="showcase-stage-viewport"
+                    >
+                      <activeShowcase.Component />
+                    </div>
                   </Box>
                 </Card>
               </ShowcaseNavigationContext.Provider>
