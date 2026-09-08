@@ -28,6 +28,7 @@ import { buildAnkiFields } from '../service/buildAnkiFields';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
 import { DraftAutosaver, type CardDraft } from '../state/cardDraft';
+import { t } from '@/shared/i18n';
 import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
@@ -289,21 +290,21 @@ export function useCardCreatorState(
           try {
             fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
-            useCardCreatorStore.getState().pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
           }
         }
         for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
           try {
             fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
-            useCardCreatorStore.getState().pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
           }
         }
         for (const imageUrl of prefill?.imageUrls ?? []) {
           try {
             fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
           } catch {
-            useCardCreatorStore.getState().pushToast('warning', `Could not fetch image: ${imageUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
           }
         }
         if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
@@ -395,7 +396,7 @@ export function useCardCreatorState(
       const msg = err instanceof Error ? err.message : String(err);
       store.setLoadError(msg);
       store.setLoadStatus('error');
-      useCardCreatorStore.getState().pushToast('error', `AnkiConnect: ${msg}`);
+      useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
     }
   }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote]);
 
@@ -512,7 +513,7 @@ export function useCardCreatorState(
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      useCardCreatorStore.getState().pushToast('error', `Screenshot failed: ${msg}`);
+      useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.screenshotFailed', [msg]));
     } finally {
       store.setCapturingMedia(false);
     }
@@ -535,11 +536,11 @@ export function useCardCreatorState(
           fields: { ...prev.fields, sentenceAudios: [...prev.fields.sentenceAudios, result.file] },
         }));
       } else if (result.reason === 'unsupported') {
-        store.pushToast('warning', 'Audio capture not supported on this browser. Screenshot still works.');
+        store.pushToast('warning', t('cardCreator.toast.audioCapture.unsupported'));
       } else if (result.reason === 'hidden') {
-        store.pushToast('warning', 'Tab is hidden — audio capture skipped. Switch to the tab and try again.');
+        store.pushToast('warning', t('cardCreator.toast.audioCapture.hidden'));
       } else {
-        store.pushToast('error', `Audio capture failed: ${result.error ?? 'unknown'}`);
+        store.pushToast('error', t('cardCreator.toast.audioCapture.failed', [result.error ?? 'unknown']));
       }
     } finally {
       store.setCapturingMedia(false);
@@ -558,8 +559,12 @@ export function useCardCreatorState(
         }));
       }
       if (invalidCount > 0) {
-        const kindLabel = kind === 'images' ? 'images' : 'audio files';
-        store.pushToast('warning', `Ignored ${invalidCount} unsupported file(s). Drop only ${kindLabel} here.`);
+        store.pushToast(
+          'warning',
+          kind === 'images'
+            ? t('cardCreator.toast.addFiles.invalid.image', [invalidCount])
+            : t('cardCreator.toast.addFiles.invalid.audio', [invalidCount]),
+        );
       }
     },
     [],
@@ -655,7 +660,7 @@ export function useCardCreatorState(
     // Else Google Translate the current sentence (from cue or prefill).
     const sentence = ctx.cue?.targetText ?? ctx.prefill?.sentence ?? '';
     if (!sentence) {
-      useCardCreatorStore.getState().pushToast('warning', 'No sentence to translate.');
+      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.translate.noSentence'));
       return;
     }
     const translated = await translateSentence(
@@ -666,7 +671,7 @@ export function useCardCreatorState(
     if (translated) {
       updateField('sentenceTranslation', translated);
     } else {
-      useCardCreatorStore.getState().pushToast('warning', 'Translation failed. Fill in the translation manually.');
+      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.translate.failed'));
     }
   }, [updateField]);
 
@@ -677,7 +682,7 @@ export function useCardCreatorState(
     if (!ctx) return;
     const targetWord = useCardCreatorStore.getState().draft.fields.targetWord.trim();
     if (!targetWord) {
-      useCardCreatorStore.getState().pushToast('warning', 'Enter a target word first.');
+      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
       return;
     }
     const prefill = ctx.prefill;
@@ -685,7 +690,7 @@ export function useCardCreatorState(
       || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
       || (prefill?.imageUrls?.length ?? 0) > 0;
     if (!hasUrls) {
-      useCardCreatorStore.getState().pushToast('warning', 'No media source available for this target.');
+      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.noMedia'));
       return;
     }
     useCardCreatorStore.getState().setCapturingMedia(true);
@@ -698,7 +703,7 @@ export function useCardCreatorState(
         try {
           fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
         } catch {
-          useCardCreatorStore.getState().pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
+          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
         }
       }
     }
@@ -707,7 +712,7 @@ export function useCardCreatorState(
         try {
           fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
         } catch {
-          useCardCreatorStore.getState().pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
+          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
         }
       }
     }
@@ -716,7 +721,7 @@ export function useCardCreatorState(
         try {
           fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
         } catch {
-          useCardCreatorStore.getState().pushToast('warning', `Could not fetch image: ${imageUrl}`);
+          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
         }
       }
     }
@@ -730,9 +735,9 @@ export function useCardCreatorState(
           images: [...prev.fields.images, ...fetchedImages],
         },
       }));
-      useCardCreatorStore.getState().pushToast('success', 'Generated missing media.');
+      useCardCreatorStore.getState().pushToast('success', t('cardCreator.toast.generate.success'));
     } else {
-      useCardCreatorStore.getState().pushToast('warning', 'No missing media to generate.');
+      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.empty'));
     }
     useCardCreatorStore.getState().setCapturingMedia(false);
   }, []);
@@ -783,9 +788,9 @@ export function useCardCreatorState(
           });
           if (!r.ok) throw new Error(r.error);
           if (r.value === null) {
-            store.pushToast('warning', 'Card not added — a duplicate may already exist in this deck.');
+            store.pushToast('warning', t('cardCreator.toast.add.duplicate'));
           } else {
-            store.pushToast('success', `Card added to "${draft.deck}" (#${r.value}).`);
+            store.pushToast('success', t('cardCreator.toast.add.success', [draft.deck, r.value]));
             await autosaverRef.current.clear();
           }
           // Queue auto-next: advance to next item or signal queue exhausted.
@@ -814,7 +819,7 @@ export function useCardCreatorState(
           const fresh = await refreshRecentNote(draft.deck, draft.noteType);
           const updateNoteId = fresh.id;
           if (updateNoteId === null) {
-            store.pushToast('error', `No card found in "${draft.deck}" to update. Add a new card first.`);
+            store.pushToast('error', t('cardCreator.toast.update.noCard', [draft.deck]));
             return;
           }
           // For update, we need existing fields to apply append/skip modes.
@@ -834,7 +839,7 @@ export function useCardCreatorState(
             }
           }
           if (Object.keys(updateFields).length === 0) {
-            store.pushToast('warning', 'Nothing to update — every field is already filled (skip mode).');
+            store.pushToast('warning', t('cardCreator.toast.update.skip'));
             return;
           }
           const r = await updateNote(ankiConnectUrl, updateNoteId, updateFields, 'overwrite', existing);
@@ -843,10 +848,10 @@ export function useCardCreatorState(
           if (tags.length > 0) {
             const tagsR = await addNoteTags(ankiConnectUrl, updateNoteId, tags);
             if (!tagsR.ok) {
-              store.pushToast('warning', `Card updated, but tags could not be synced: ${tagsR.error}`);
+              store.pushToast('warning', t('cardCreator.toast.update.tagsFailed', [tagsR.error]));
             }
           }
-          store.pushToast('success', `Card updated (#${updateNoteId}).`);
+          store.pushToast('success', t('cardCreator.toast.update.success', [updateNoteId]));
           await autosaverRef.current.clear();
           // Queue auto-next (same as Add path).
           const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
@@ -867,8 +872,11 @@ export function useCardCreatorState(
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        const action = mode === 'add' ? 'add' : 'update';
-        useCardCreatorStore.getState().pushToast('error', `Could not ${action} card — ${msg}. Check AnkiConnect and try again.`);
+        if (mode === 'add') {
+          useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.add.error', [msg]));
+        } else {
+          useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.update.error', [msg]));
+        }
       } finally {
         useCardCreatorStore.getState().setSubmitting(false);
       }

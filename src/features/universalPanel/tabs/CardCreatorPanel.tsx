@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Spinner } from '@/shared/ui/Spinner';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { t } from '@/shared/i18n';
 import { CardCreatorDialogContent } from '@/features/cardCreator/ui/CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from '@/features/cardCreator/ui/useCardCreatorState';
 import type { CardCreatorSettings } from '@/entities/settings';
@@ -157,8 +158,8 @@ export function CardCreatorPanel({
       <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
         <EmptyState
           icon={<Spinner size="md" />}
-          title="Loading Card Creator"
-          description="Retrieving your card creator settings..."
+          title={t('cardCreator.loading.title')}
+          description={t('cardCreator.loading.description')}
         />
       </div>
     );

@@ -55,6 +55,7 @@
  *   Note ids are timestamp-based (ms since epoch) → sorting by id desc gives
  *   newest-first without needing `edited:`/`added:` filters.
  */
+import { t } from '@/shared/i18n';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type {
@@ -340,8 +341,7 @@ export async function ensureDefaultModel(url: string): Promise<Result<void>> {
   if (!recheckR.value.includes('Cell Video Card')) {
     return {
       ok: false,
-      error:
-        'createModel is not supported on AnkiconnectAndroid. Please create the "Cell Video Card" note type manually in AnkiDroid with fields: TargetWord, Sentence, SentenceTranslation, Definitions, Image, SentenceAudio, WordAudio, Note, MoreExample, Tags.',
+      error: t('cardCreator.error.createModelNotSupported'),
     };
   }
   return { ok: true, value: undefined };

@@ -14,6 +14,7 @@ import type { CardCreatorOpenContext } from '../types';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState } from './useCardCreatorState';
+import { t } from '@/shared/i18n';
 import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
 
 interface CardCreatorBottomSheetProps {
@@ -68,7 +69,7 @@ export function CardCreatorBottomSheet({
     <BottomSheet
       open={open}
       onOpenChange={handleOpenChange}
-      title="Card Creator"
+      title={t('cardCreator.title')}
       centerTitle
       data-cell-id="card-creator-bottom-sheet"
     >

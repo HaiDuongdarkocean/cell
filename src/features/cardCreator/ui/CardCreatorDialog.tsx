@@ -14,6 +14,7 @@ import type { CardCreatorOpenContext } from '../types';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState } from './useCardCreatorState';
+import { t } from '@/shared/i18n';
 import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
 
 interface CardCreatorDialogProps {
@@ -75,7 +76,7 @@ export function CardCreatorDialog({
       variant="ghost"
       size="sm"
       onClick={state.toggleQueueSidebar}
-      aria-label={state.queueSidebarOpen ? 'Hide queue' : 'Show queue'}
+      aria-label={state.queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')}
       data-cell-id="cc-queue-toggle"
     >
       <Icon name="panelRight" />
@@ -86,7 +87,7 @@ export function CardCreatorDialog({
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
-      title="Card Creator"
+      title={t('cardCreator.title')}
       showCloseButton
       centerTitle
       headerExtra={headerExtra}

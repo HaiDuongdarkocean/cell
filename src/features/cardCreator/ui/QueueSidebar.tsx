@@ -13,6 +13,7 @@ import { Button } from '@/shared/ui/Button';
 
 import { useRef, useCallback } from 'react';
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import type { CardCreatorQueueItem, Toast } from '../types';
 import styles from './QueueSidebar.module.css';
 
@@ -93,16 +94,16 @@ export function QueueSidebar({
     <aside
       ref={asideRef}
       className={`${styles['cc-queue']}${mobile ? ` ${styles['cc-queue--mobile']}` : ''}`}
-      aria-label="Card creator queue"
+      aria-label={t('cardCreator.queue.aria')}
       onKeyDown={handleKeyDown}
       data-cell-id="cc-queue-sidebar"
     >
       <div className={styles['cc-queue__header']}>
         <span className={styles['cc-queue__title']}>
-          Queue ({queueActiveIndex + 1}/{queueItems.length})
+          {t('cardCreator.queue.title', [queueActiveIndex + 1, queueItems.length])}
         </span>
       </div>
-      <ul className={styles['cc-queue__list']} aria-label="Queue items">
+      <ul className={styles['cc-queue__list']} aria-label={t('cardCreator.queue.itemsAria')}>
         {queueItems.map((item, i) => (
           <QueueItemRow
             key={`${item.term}-${i}`}
@@ -139,7 +140,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
       <Button variant="secondary"
         className={styles['cc-queue__item-btn']}
         onClick={onSelect}
-        aria-label={`Select ${item.term}`}
+        aria-label={t('cardCreator.queue.select', [item.term])}
         aria-current={isActive ? 'true' : undefined}
       >
         <span className={styles['cc-queue__item-term']}>{item.term}</span>
@@ -155,7 +156,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
         variant="ghost"
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
-        aria-label={`Remove ${item.term} from queue`}
+        aria-label={t('cardCreator.queue.remove', [item.term])}
         data-cell-id={`cc-queue-delete-${index}`}
       >
         <Icon name="x" size="sm" />
@@ -170,11 +171,11 @@ interface UndoButtonProps {
   onDismissToast: (id: number) => void;
 }
 
-/** Shows an undo button when the latest toast is a warning containing "Removed".
+/** Shows an undo button when the latest toast is an undoable warning.
  *  Clicking it calls onUndo + dismisses the toast. */
 function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactElement | null {
   const lastToast = toasts[toasts.length - 1];
-  if (!lastToast || lastToast.kind !== 'warning' || !lastToast.message.includes('Removed')) return null;
+  if (!lastToast || lastToast.kind !== 'warning' || !lastToast.undoable) return null;
   return (
     <Button variant="secondary"
       className={styles['cc-queue__undo']}
@@ -182,11 +183,11 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
         onUndo();
         onDismissToast(lastToast.id);
       }}
-      aria-label="Undo last deletion"
+      aria-label={t('cardCreator.queue.undo')}
       leadingIcon={<Icon name="rotateCcw" />}
       data-cell-id="cc-queue-undo"
     >
-      Undo
+      {t('cardCreator.action.undo')}
     </Button>
   );
 }

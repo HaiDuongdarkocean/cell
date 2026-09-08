@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { t } from '@/shared/i18n';
 import {
   createEmptyDraft,
   type CardDraft,
@@ -100,7 +101,7 @@ interface CardCreatorStore {
   toggleQueueSidebar: () => void;
 
   /** Push a new toast. Auto-dismiss after 4s. */
-  pushToast: (kind: Toast['kind'], message: string) => void;
+  pushToast: (kind: Toast['kind'], message: string, undoable?: boolean) => void;
   /** Dismiss a toast by id. */
   dismissToast: (id: number) => void;
 
@@ -225,7 +226,7 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
       queueActiveIndex: newActive,
       draft: nextDraft,
     });
-    get().pushToast('warning', `Removed "${deleted.term}" from queue.`);
+    get().pushToast('warning', t('cardCreator.queue.removed', [deleted.term]), true);
   },
 
   undoDeleteQueueItem: () => {
@@ -254,14 +255,14 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
   toggleQueueSidebar: () =>
     set((state) => ({ queueSidebarOpen: !state.queueSidebarOpen })),
 
-  pushToast: (kind, message) => {
+  pushToast: (kind, message, undoable = false) => {
     const id = ++toastIdCounter;
     const timer = setTimeout(() => {
       get().dismissToast(id);
     }, 4000);
     toastTimers.set(id, timer);
     set((state) => ({
-      toasts: [...state.toasts, { id, kind, message }],
+      toasts: [...state.toasts, { id, kind, message, undoable }],
     }));
   },
 
