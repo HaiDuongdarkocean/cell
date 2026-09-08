@@ -55,21 +55,17 @@
   border: none;
   border-radius: var(--radius-none);
   background: transparent;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   outline: none;
-}
-
-.fieldRow__mapSelect button > span:last-child {
-  order: -1;
 }
 
 .fieldRow__mapSelect button:hover {
   color: var(--color-text-secondary);
   background: transparent;
   border-color: transparent;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .fieldRow__mapSelect button:focus-visible,
@@ -77,7 +73,7 @@
   color: var(--color-primary);
   background: transparent;
   border-color: transparent;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .fieldRow__mapSelect button span {
