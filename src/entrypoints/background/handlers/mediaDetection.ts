@@ -159,7 +159,7 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
   });
 
   // DETECTED_SUBTITLE_URL: main-world fetch interceptor caught a subtitle fetch.
-  ctx.on(MESSAGE_TYPES.DETECTED_SUBTITLE_URL, (request): MessageResponse => {
+  ctx.on(MESSAGE_TYPES.DETECTED_SUBTITLE_URL, async (request): Promise<MessageResponse> => {
     const parsed = DetectedSubtitleUrlPayloadSchema.safeParse(request.payload);
     if (!parsed.success) {
       return { success: false, error: `Invalid DETECTED_SUBTITLE_URL payload: ${parsed.error.message}` };
@@ -170,12 +170,35 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
       return { success: false, error: 'Missing tabId or url' };
     }
 
+    let resolvedUrl = payload.url;
+    let initiator: string | undefined;
+    if (!/^https?:\/\//i.test(resolvedUrl)) {
+      try {
+        const tab = await new Promise<chrome.tabs.Tab | undefined>((resolve) => {
+          chrome.tabs.get(tabId, (t) => {
+            if (chrome.runtime.lastError) {
+              resolve(undefined);
+            } else {
+              resolve(t);
+            }
+          });
+        });
+        if (tab?.url) {
+          resolvedUrl = new URL(resolvedUrl, tab.url).href;
+          initiator = tab.url;
+        }
+      } catch {
+        // Leave relative; handleRequest will do best-effort parsing.
+      }
+    }
+
     const syntheticDetails = {
-      url: payload.url,
+      url: resolvedUrl,
       method: 'GET',
       tabId,
       type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
       timeStamp: Date.now(),
+      initiator,
     } as chrome.webRequest.OnBeforeRequestDetails;
 
     ctx.networkInterceptor.handleRequest(syntheticDetails);

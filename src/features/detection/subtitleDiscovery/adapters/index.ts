@@ -9,7 +9,7 @@ import { createHtmlVariableAdapter } from './htmlVariable';
 import { createPlayerStateAdapter } from './playerState';
 import { createHlsAdapter } from './hls';
 import { createEncryptedAdapter } from './encrypted';
-import { createPhimwarAdapter } from './phimwar';
+import { createSvelteKitSubtitlesAdapter } from './svelteKitSubtitles';
 import {
   cinesrcProfile,
   kisskhProfile,
@@ -90,6 +90,6 @@ export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
     createHlsAdapter(onflixProfile),
     createEncryptedAdapter(videasyProfile),
     createEncryptedAdapter(peachifyEncryptedProfile),
-    createPhimwarAdapter(),
+    createSvelteKitSubtitlesAdapter(),
   ];
 }

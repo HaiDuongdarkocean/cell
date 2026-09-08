@@ -1,4 +1,7 @@
-import { createPhimwarAdapter, parsePhimwarGetSubtitles } from './phimwar';
+import {
+  createSvelteKitSubtitlesAdapter,
+  parseSvelteKitSubtitles,
+} from './svelteKitSubtitles';
 import type { SubtitleDiscoveryContext, SubtitleSignal } from '../types';
 
 const SAMPLE_LISTING = JSON.stringify({
@@ -50,9 +53,9 @@ const context: SubtitleDiscoveryContext = {
   timestamp: Date.now(),
 };
 
-describe('phimwar listing adapter', () => {
+describe('sveltekit subtitles adapter', () => {
   it('parses a SvelteKit-deferred subtitle listing', () => {
-    const entries = parsePhimwarGetSubtitles(SAMPLE_LISTING);
+    const entries = parseSvelteKitSubtitles(SAMPLE_LISTING);
     expect(entries).toHaveLength(2);
     expect(entries?.[0]).toEqual({
       id: 164931,
@@ -73,8 +76,8 @@ describe('phimwar listing adapter', () => {
   });
 
   it('returns null for redirect / invalid bodies', () => {
-    expect(parsePhimwarGetSubtitles('{"type":"redirect"}')).toBeNull();
-    expect(parsePhimwarGetSubtitles('not json')).toBeNull();
+    expect(parseSvelteKitSubtitles('{"type":"redirect"}')).toBeNull();
+    expect(parseSvelteKitSubtitles('not json')).toBeNull();
   });
 
   it('matches and discovers candidates from a network-response signal', async () => {
@@ -89,7 +92,7 @@ describe('phimwar listing adapter', () => {
       type: 'xmlhttprequest',
     };
 
-    const adapter = createPhimwarAdapter();
+    const adapter = createSvelteKitSubtitlesAdapter();
     expect(adapter.match(signal)).toBe(true);
 
     const env = {
@@ -116,7 +119,7 @@ describe('phimwar listing adapter', () => {
   });
 
   it('does not match an empty body', () => {
-    const adapter = createPhimwarAdapter();
+    const adapter = createSvelteKitSubtitlesAdapter();
     const signal: SubtitleSignal = {
       kind: 'network-response',
       url: 'https://phimwar.com/_app/remote/1odrich/getSubtitles?payload=WyJxQk1HIl0',

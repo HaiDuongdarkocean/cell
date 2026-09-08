@@ -8,6 +8,8 @@ import {
   decryptPhimwarSrtFromUrl,
 } from '@/shared/lib/parsers/phimwarDecryption';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
+import { sendTabMessage } from '@/shared/lib/chrome-apis/tabs';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type {
   ByteRange,
   DetectedVideo,
@@ -310,35 +312,71 @@ export class Downloader {
     // `Referer` before the request leaves the network stack. The rule is
     // removed after the fetch completes (success or failure).
     const refererSource = subtitle.initiator ?? videoContext?.videoTabUrl;
-    let ruleId: number | undefined;
-    if (refererSource) {
+
+    const isPhimwar = isPhimwarSubtitleUrl(subtitle.url);
+    const isSameOrigin = (() => {
       try {
-        ruleId = await setRefererRule(subtitle.url, refererSource);
+        const subOrigin = new URL(subtitle.url).origin;
+        const pageUrl = subtitle.initiator ?? videoContext?.videoTabUrl ?? '';
+        const pageOrigin = pageUrl ? new URL(pageUrl).origin : '';
+        return subOrigin !== '' && subOrigin === pageOrigin;
+      } catch {
+        return false;
+      }
+    })();
+
+    let content: string | undefined;
+    if (isSameOrigin || isPhimwar) {
+      // Same-origin subtitle endpoints often require the page's authenticated
+      // session cookies; the service worker / offscreen fetch cannot send them.
+      // Ask the content script, which runs in the page origin, to fetch the raw
+      // text, then fall back to the service worker if it fails.
+      try {
+        const res = await sendTabMessage<{ success: boolean; content?: string; error?: string }>(
+          subtitle.tabId,
+          {
+            type: MESSAGE_TYPES.FETCH_SUBTITLE_PAGE_CONTEXT,
+            payload: { url: subtitle.url },
+          },
+        );
+        if (res?.success && typeof res.content === 'string') {
+          content = res.content;
+        }
       } catch (err) {
-        console.warn('[downloadSubtitle] setRefererRule failed, proceeding without DNR rule:', err);
+        console.warn('[downloadSubtitle] page-context fetch failed, falling back to service worker:', err);
       }
     }
 
-    let response: Response;
-    try {
-      response = await fetch(subtitle.url, { credentials: 'same-origin' });
-    } finally {
-      if (ruleId !== undefined) {
-        void removeRefererRule(ruleId).catch(() => {});
+    if (content === undefined) {
+      let ruleId: number | undefined;
+      if (refererSource) {
+        try {
+          ruleId = await setRefererRule(subtitle.url, refererSource);
+        } catch (err) {
+          console.warn('[downloadSubtitle] setRefererRule failed, proceeding without DNR rule:', err);
+        }
       }
+      let response: Response;
+      try {
+        response = await fetch(subtitle.url, { credentials: 'same-origin' });
+      } finally {
+        if (ruleId !== undefined) {
+          void removeRefererRule(ruleId).catch(() => {});
+        }
+      }
+      if (!response.ok) {
+        throw new Error(`Failed to fetch subtitle: ${response.status}`);
+      }
+      content = await response.text();
     }
-    if (!response.ok) {
-      throw new Error(`Failed to fetch subtitle: ${response.status}`);
-    }
-    let content = await response.text();
 
-    // PhimWar serves AES-GCM-encrypted base64 payloads instead of plaintext.
-    if (isPhimwarSubtitleUrl(subtitle.url)) {
+    // PhimWar and similar sites serve AES-GCM-encrypted base64 payloads.
+    if (isPhimwar) {
       try {
         content = await decryptPhimwarSrtFromUrl(subtitle.url, content);
       } catch (err) {
         throw new Error(
-          `PhimWar subtitle decryption failed: ${
+          `Encrypted subtitle decryption failed: ${
             err instanceof Error ? err.message : String(err)
           }`,
         );

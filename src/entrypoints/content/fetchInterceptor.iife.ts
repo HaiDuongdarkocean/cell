@@ -36,7 +36,7 @@
     /sources-with-title/i,
     /eat-peach\.sbs/i,
     /\.m3u8(?:\?|$)/i,
-    /phimwar\.com\/_app\/remote\/[^/]+\/getSubtitles\?payload=/i,
+    /\/_app\/remote\/[^/]+\/getSubtitles\?payload=/i,
   ];
 
   const MAX_BODY_BYTES = 200_000;
