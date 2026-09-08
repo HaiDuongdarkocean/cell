@@ -2,8 +2,8 @@
 /**
  * Serve mock streaming pages for extension testing.
  *
- * Builds the extension, copies mock page HTML + assets to a standalone folder,
- * fixes asset paths to relative, and serves via http-server.
+ * Builds the mock pages (`npm run build:mock`), copies mock page HTML + assets
+ * to a standalone folder, fixes asset paths to relative, and serves via http-server.
  *
  * Usage:
  *   node scripts/serve-mock-pages.mjs              # serve both (default ports 4321/4322)
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const DIST = resolve(ROOT, 'dist');
+const DIST = resolve(ROOT, 'dist/mock-pages');
 const TMP = resolve(ROOT, '.mock-servers');
 
 const PAGES = [
@@ -153,7 +153,7 @@ function servePage(page) {
 console.log('=== Mock Streaming Pages Server ===\n');
 
 if (!noBuild) {
-  run('npm run build', 'Building extension + mock pages');
+  run('npm run build:mock', 'Building mock pages');
 }
 
 for (const page of selected) {

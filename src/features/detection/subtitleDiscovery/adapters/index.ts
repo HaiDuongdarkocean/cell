@@ -66,6 +66,15 @@ export const peachifyEncryptedProfile = {
   decryptor: 'peachify',
 } as const;
 
+export const mockIframeHashProfile = {
+  id: 'mock-iframe-hash',
+  priority: 10,
+  urlPattern: /^(https?:)?\/\/(127\.0\.0\.1|localhost):4324\//i,
+  hashKey: 'subs',
+  origin: 'http://127.0.0.1:4324',
+  provider: 'mock',
+} as const;
+
 export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
   return [
     createJsonListingAdapter(cinesrcProfile),
@@ -74,6 +83,7 @@ export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
     createJsonListingAdapter(broodingmoviesProfile),
     createJsonListingAdapter(peachifyProfile),
     createIframeHashAdapter(lunastreamProfile),
+    createIframeHashAdapter(mockIframeHashProfile),
     createHtmlVariableAdapter(myasiantvProfile),
     createPlayerStateAdapter(noxxProfile),
     createHlsAdapter(onflixProfile),
