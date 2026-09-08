@@ -29,8 +29,10 @@
 .fieldRow__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-1);
   min-width: 0;
+  margin-left: auto;
 }
 
 .fieldRow__map {
@@ -46,10 +48,10 @@
 .fieldRow__mapSelect button {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-0-5);
   height: auto;
   width: auto;
-  padding: var(--space-0-5) var(--space-3) var(--space-0-5) var(--space-1);
+  padding: var(--space-0-5) var(--space-1);
   border: none;
   border-radius: var(--radius-none);
   background: transparent;
@@ -57,6 +59,10 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   outline: none;
+}
+
+.fieldRow__mapSelect button > span:last-child {
+  order: -1;
 }
 
 .fieldRow__mapSelect button:hover {
@@ -77,19 +83,10 @@
 .fieldRow__mapSelect button span {
   flex: 0 0 auto;
   min-width: 0;
+  max-width: 8rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.fieldRow__mapSelect button svg {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  width: var(--space-2);
-  height: var(--space-2);
-  color: inherit;
-  transform: translateY(-50%);
 }
 
 /* === Auto-grow input — BEM block: .field-input ===

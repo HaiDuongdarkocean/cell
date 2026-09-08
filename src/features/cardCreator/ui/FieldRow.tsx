@@ -73,7 +73,6 @@ export function FieldRow({
         <Label className={styles.fieldRow__label}>{label}</Label>
         {(trailing || showMap) && (
           <div className={styles.fieldRow__actions}>
-            {trailing}
             {showMap && (
               <span className={styles.fieldRow__map}>
                 <Select
@@ -87,6 +86,7 @@ export function FieldRow({
                 />
               </span>
             )}
+            {trailing}
           </div>
         )}
       </div>
