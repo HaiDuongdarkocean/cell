@@ -11,20 +11,20 @@ Run Cell's two-stage Playwright E2E tests on StreamFlix.
 ```ts
 import { test } from '../fixtures/cellEnvironment.fixture';
 
-test('my feature', async ({ streamFlixPage }) => {
-  // interact + assert
-});
+test('my feature', async ({ streamFlixPage }) => { /* ... */ });
 ```
 
-Save new tests in `e2e/stage2/<feature>.spec.ts`.
+Save new tests in `e2e/stage2/<name>.spec.ts`.
 
 ## Commands
 
 ```bash
-npm run build
-npm run build:mock
-npx playwright test --config=playwright.stream.config.ts e2e/stage2/ --project=chromium
-npx playwright test --config=playwright.stream.config.ts e2e/stage2/stream-universal-dictionary.spec.ts --project=chromium --headed
+bash scripts/e2e.sh                       # build + run all stage-2
+bash scripts/e2e.sh stream-universal      # build + run one file
+bash scripts/e2e.sh "e2e/stage2/**/*.ts"  # build + Playwright pattern
+bash scripts/e2e.sh --stage2              # run all, skip build
+bash scripts/e2e.sh --stage2 stream-uni   # run one, skip build
+bash scripts/e2e.sh --build               # build only
 ```
 
-Build extension first, then mock pages. Use `--headed` to watch the browser.
+Build order: `npm run build` (extension) trước, sau đó `npm run build:mock` (mock pages). Dùng `--headed` trong `npx playwright` nếu muốn xem màn hình.
