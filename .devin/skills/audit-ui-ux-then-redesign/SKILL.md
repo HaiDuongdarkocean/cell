@@ -1,15 +1,15 @@
 ---
 name: audit-ui-ux-then-redesign
-description: Audit any UI page or component like a senior product designer — with taxonomy, evidence, and reasoning. Use when a page feels off, before a redesign, or when validating a design system decision. Not for logic bugs, backend, or brand-new ideas without a target.
+description: Question-first UI/UX audit. Reframe user feedback into the right design question, then run a taxonomy-driven, evidence-based critique and produce a redesign brief. Use when a page feels off, before a redesign, or when validating a design system decision. Not for logic bugs, backend, or brand-new ideas without a target.
 ---
 
 # Audit UI/UX then Redesign
 
-> **A redesign brief is only as good as the critique that produces it.**
+> **The right question produces the right method. The right method works in more than one context.**
 
-This skill turns a page or component into a **conditional, evidence-based redesign brief**. It behaves like an opinionated senior product designer: it classifies, questions, compares, and argues — then proposes only the changes that survive scrutiny.
+This skill is a **question-first design audit**. It does not start by listing what looks wrong. It starts by asking *what problem the design is supposed to solve*, then uses a taxonomy and evidence to find where the design fails that problem.
 
-It does not settle for vague feelings. It asks *why* something feels off, cites the principle, and traces the symptom back to a root cause.
+The output is a conditional, evidence-based redesign brief that any other agent can implement.
 
 ## When to Use
 
@@ -17,6 +17,7 @@ It does not settle for vague feelings. It asks *why* something feels off, cites 
 - You are about to redesign a page, component, or flow.
 - You want to validate whether a new UI matches the project's design system.
 - You need a redesign brief before implementation.
+- You want to compare a UI against first principles and generate a reusable method.
 
 ## When NOT to Use
 
@@ -30,17 +31,71 @@ It does not settle for vague feelings. It asks *why* something feels off, cites 
 
 ## Core Principle
 
-> **Audit for root cause, not preference.**
+> **Audit for root cause, not preference — and the root cause is found by asking the right question.**
 
-A senior designer does not say "I don't like the blue". They say:
-> "The blue competes with the primary accent because both sit at the same luminance and saturation. This breaks the neutral-first rule and weakens the hierarchy."
+A senior designer does not say "I don't like the blue". They ask:
+> "What job is this color doing? Is it an accent, a semantic signal, or a background? Which rule does it break, and what is the cheapest, highest-leverage fix?"
 
 Every finding in this skill must:
-1. Name the **aspect** (taxonomy).
-2. Ask the **right question**.
-3. Provide **evidence** (DOM, computed style, token, screenshot, or reference).
-4. Cite a **standard** (codebase or external, with reasoning).
-5. Propose a **change/keep/reject** with risk.
+1. **Start with a question** that names the design tension.
+2. **Name the aspect** (taxonomy).
+3. **Provide evidence** (DOM, computed style, token, screenshot, or reference).
+4. **Cite a standard** (codebase or external, with reasoning).
+5. **Propose a change/keep/reject** with risk.
+
+---
+
+## Question-First Method
+
+The taxonomy is a checklist. The question ladder is the method. The same ladder works for a page, a component, a flow, a color decision, or a design system rule.
+
+### 0. Reframe the request
+
+Before touching the taxonomy, turn the user's feeling into a design question.
+
+| User complaint | Reframe into a design question |
+|---|---|
+| "It looks ugly" | "Which principle does it violate: color, spacing, typography, shape, or motion?" |
+| "It's confusing" | "What is the primary job, and where does the hierarchy fail to support it?" |
+| "Too slow" | "Is the bottleneck perceived performance (motion/layout) or cognitive load (too many choices)?" |
+| "Doesn't fit" | "Which design system rule is broken: token, component, spacing, or shape?" |
+| "Too dense" | "What is the right level of disclosure for this user at this step?" |
+| "Looks cheap" | "Which detail breaks quiet confidence: color harmony, alignment, radius, or shadow?" |
+
+### 1. Ask in three levels
+
+Every audit question should climb from surface to principle.
+
+| Level | Question type | Example |
+|---|---|---|
+| **L1 — Observable** | *What do I see?* | "The error banner is red and sits at the top of the panel." |
+| **L2 — Structural** | *How does it relate?* | "The banner competes with the primary job because it is the most saturated element." |
+| **L3 — Principle** | *Why is it wrong?* | "It breaks the neutral-first, single-accent rule and triggers anxiety before the user has done anything wrong." |
+
+### 2. Find the design tension
+
+Most UI problems are not "wrong vs right". They are tensions between two valid principles:
+- **Minimalism vs. discoverability** (hide advanced fields / but power users need them).
+- **Consistency vs. context** (use the same button / but this action is destructive).
+- **Speed vs. safety** (one-tap action / but needs confirmation).
+- **Calm vs. urgency** (quiet confidence / but errors need attention).
+
+A good audit names the tension and picks a side with evidence. If you cannot name the tension, you are still at the symptom.
+
+### 3. Strip to first principles
+
+Ask: *If we remove the current implementation, current deadlines, and our favorite pattern, what is the ideal solution?*
+
+Then compare the ideal to the constrained reality. If they tie, choose the ideal. If reality has a hard constraint (e.g., WCAG, MV3, low-end device), choose the constrained winner and document the gap.
+
+### 4. Cross-context check
+
+Ask:
+- *If this method works for this screen, would it work for a similar screen?*
+- *If we solve it with this pattern, how many other places can reuse the same pattern?*
+- *Is the fix local, or does it belong in a shared token/component?*
+
+If the answer is "only this screen", the method is too specific. Lift it one level.
 
 ---
 
@@ -85,17 +140,17 @@ Before recommending a change, ask:
 
 ## Audit Taxonomy
 
-Use these nine aspects as the skeleton of every audit. Do not skip an aspect because it feels irrelevant — classify it as "not applicable" with one sentence.
+Use these nine aspects as the skeleton of every audit. For each aspect, run the **L1 → L2 → L3 question ladder**. Do not skip an aspect because it feels irrelevant — classify it as "not applicable" with one sentence.
 
 ### 1. Strategy & Purpose
 
 > *Why does this page exist? Who is it for? What is the one primary job?*
 
-**Questions:**
-- What is the primary user job on this page?
-- How many secondary jobs exist? Are they truly secondary or competing?
-- Does the visual hierarchy match the job priority?
-- Is there a clear entry point, progress path, and exit/confirmation?
+**L1 — Observable:** What is the first thing a user sees? What can they do in one tap?
+
+**L2 — Structural:** How many jobs are competing for primary attention? Are secondary jobs truly secondary?
+
+**L3 — Principle:** Does the visual hierarchy match the user's primary job? Does it respect the project's persona and device context?
 
 **Common failures:**
 - Multiple primary CTAs fighting for attention.
@@ -106,11 +161,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *How is content grouped, labeled, and sequenced?*
 
-**Questions:**
-- Are related items close together (Gestalt proximity)?
-- Are labels consistent with the project's shared language (`docs/1-share-language.md`)?
-- Is the reading order natural at 320px and 1280px?
-- Are empty, loading, and error states designed, not afterthoughts?
+**L1 — Observable:** What is grouped together? What is separated?
+
+**L2 — Structural:** Does the grouping follow the user's mental model and the task sequence?
+
+**L3 — Principle:** Does it use Gestalt proximity, progressive disclosure, and a clear reading order? Are empty, loading, and error states designed, not afterthoughts?
 
 **Common failures:**
 - Form fields scattered across unrelated cards.
@@ -121,13 +176,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Color, typography, spacing, shape, elevation — are they singing the same song?*
 
-**Questions:**
-- Are colors taken from `tokens.css` (`--color-*`), or hardcoded?
-- Is the palette neutral-first with a single accent, or are there multiple accents competing?
-- Does typography stay within the type scale (`--font-size-*`, `--font-weight-*`, `--leading-*`, `--tracking-*`)?
-- Is spacing from the 4px token scale (`--space-*`)?
-- Are radii from the radius scale (`--radius-*`)?
-- Do shadows match the elevation scale (`--shadow-*`) and serve a hierarchy purpose?
+**L1 — Observable:** What colors, type sizes, radii, and shadows are actually used?
+
+**L2 — Structural:** Do they form a consistent system, or are there one-off values?
+
+**L3 — Principle:** Does the palette follow the project's identity (e.g., quiet confidence, neutral-first, single accent)? Do values map to `tokens.css`?
 
 **Common failures:**
 - `--md-sys-color-*` or hardcoded hex in CSS.
@@ -139,13 +192,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Does the layout adapt without breaking, hiding, or overflowing?*
 
-**Questions:**
-- Is it mobile-first? (Design for 320px, then 768px, then 1280px.)
-- At 320px, is anything cut off, overlapping, or requiring horizontal scroll?
-- At 1280px, is whitespace purposeful or accidental?
-- Do breakpoints match `STANDARD.md` §9 (compact <600, medium 600–839, expanded 840–1199, large 1200–1599, extra-large ≥1600)?
-- Are media queries in CSS using hardcoded `px` values (required) or `var(--breakpoint-*)` (forbidden)?
-- Does content reflow gracefully under zoom and text-size changes?
+**L1 — Observable:** What happens at 320px, 768px, and 1280px?
+
+**L2 — Structural:** Does the reflow keep the hierarchy and task order?
+
+**L3 — Principle:** Is it mobile-first? Do breakpoints match `STANDARD.md` §9? Does whitespace serve a purpose?
 
 **Common failures:**
 - Two-column layout becomes unusable on mobile.
@@ -156,13 +207,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Are the right shared components used, and do they carry every state they need?*
 
-**Questions:**
-- Could a `src/shared/ui/*` component replace a custom element?
-- If a custom element is necessary, does it justify its existence?
-- Does every interactive element have: default, hover, active/pressed, focus-visible, disabled, loading, error, and (if togglable) on/off states?
-- Are focus rings visible and consistent?
-- Do buttons have enough touch target (mobile 44px, desktop 40px)?
-- Is an `IconButton` used when only an icon is needed, or is a `Button` being misused?
+**L1 — Observable:** What interactive elements exist? What states are visible in the screenshot?
+
+**L2 — Structural:** Could a `src/shared/ui/*` component replace a custom element? Does each element expose all needed states?
+
+**L3 — Principle:** Does every interactive element follow the design system's component contract (default, hover, active, focus, disabled, loading, error)? Are touch targets large enough?
 
 **Common failures:**
 - Custom `<button>` without focus or disabled styles.
@@ -174,11 +223,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Is motion purposeful, restrained, and accessible?*
 
-**Questions:**
-- Does every animation solve a problem (orientation, state change, delight with restraint)?
-- Do durations and easings come from `tokens.css` (`--duration-*`, `--ease-*`)?
-- Is `prefers-reduced-motion` respected?
-- Are loading, success, and error states communicated without relying only on color?
+**L1 — Observable:** What animates? What is instant?
+
+**L2 — Structural:** Does motion explain a state change or orient the user?
+
+**L3 — Principle:** Are durations and easings from `tokens.css`? Is `prefers-reduced-motion` respected? Are loading, success, and error states communicated without relying only on color?
 
 **Common failures:**
 - Motion for motion's sake.
@@ -190,13 +239,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Can the page be used by keyboard, screen reader, low vision, and motion-sensitive users?*
 
-**Questions:**
-- Does color alone convey meaning? (It should not.)
-- Are normal text contrast ratios ≥ 4.5:1 and large text ≥ 3:1? (`STANDARD.md` §10.1)
-- Is the focus order logical and visible?
-- Are ARIA labels, roles, and states correct?
-- Are interactive targets large enough and well-spaced?
-- Does it pass `prefers-reduced-motion`, `prefers-reduced-transparency`, `prefers-contrast: more`?
+**L1 — Observable:** Is color the only way something is conveyed? Are labels visible?
+
+**L2 — Structural:** Is the focus order logical? Are targets large and well-spaced?
+
+**L3 — Principle:** Does it pass WCAG 2.2 AA (`STANDARD.md` §10.1)? Does it respect `prefers-reduced-motion`, `prefers-reduced-transparency`, `prefers-contrast: more`?
 
 **Common failures:**
 - Placeholder used as label.
@@ -208,13 +255,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *Are the invisible details right?*
 
-**Questions:**
-- Is everything aligned to the 4px baseline or the project's grid?
-- Do text baselines line up across adjacent elements?
-- Are there awkward half-pixel gaps or double borders?
-- Do hover/active states feel responsive, not delayed?
-- Is there a consistent pattern for empty, loading, and error placeholders?
-- Do icons come from `ICON_CATALOG` and follow 24×24, 1.5px stroke, `currentColor`?
+**L1 — Observable:** Is anything misaligned, cropped, or pixel-hugging?
+
+**L2 — Structural:** Do baselines, grids, and spacing form a consistent rhythm?
+
+**L3 — Principle:** Are all values from tokens? Do icons come from `ICON_CATALOG`? Is there a consistent pattern for empty, loading, and error states?
 
 **Common failures:**
 - 1px misalignment between cards.
@@ -226,12 +271,11 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 > *If I fix this, how many files should change?*
 
-**Questions:**
-- Are values pulled from `tokens.css` or hardcoded?
-- Are shared UI components used, or is the page reimplementing its own?
-- Is the same visual pattern duplicated in multiple files?
-- Does the page update `docs/2-architechture-system.md` and `docs/0-wiki.md` when structure changes? (per `AGENTS.md`)
-- Is the design brief written in a way another agent can implement without guessing?
+**L1 — Observable:** Where is the value defined? Is it hardcoded?
+
+**L2 — Structural:** Is the pattern duplicated elsewhere?
+
+**L3 — Principle:** Is the fix in the right place — token, shared component, or page? Does the brief let another agent implement it without guessing?
 
 **Common failures:**
 - Same button style copied into three page CSS files.
@@ -240,16 +284,54 @@ Use these nine aspects as the skeleton of every audit. Do not skip an aspect bec
 
 ---
 
+## Question Bank
+
+Use these questions whenever the audit stalls.
+
+### Reframing
+- What is the user trying to do, and what is getting in their way?
+- If I remove the current UI, what is the smallest interface that would still work?
+- What would a wrong answer look like?
+- What is the cheapest test that would prove or disprove this?
+
+### First principles
+- If we had no legacy code, what would we build?
+- What is the one rule this screen must never break?
+- Is this a local fix or a pattern fix?
+
+### Design tension
+- What two valid principles are in conflict here?
+- Which side are we optimizing for, and what do we give up?
+- Would the same trade-off make sense on a different screen?
+
+### Cross-context
+- If this method works here, where else can we use it?
+- Is the fix reusable, or is it a one-off hack?
+- Does it belong in a shared component/token, or in the page?
+
+---
+
 ## Decision Pipeline
 
 ```text
+0. REFRAME → turn the user's feeling into a design question
 1. SCOPE    → page, component, viewport, user job
 2. READ     → code, DOM, computed styles, tokens, shared UI
 3. CLASSIFY → taxonomy above, reuse/extend/create/remove
-4. AUDIT    → run every aspect, evidence first
+4. AUDIT    → run every aspect with L1/L2/L3 questions
 5. DECIDE   → change / keep / reject, with risk
 6. BRIEF    → implementable, verifiable, SSOT-aware
+7. VERIFY   → typecheck, build, design-system audit
 ```
+
+### Step 0 — Reframe
+
+- Capture the user's exact words.
+- Translate them into a design question using the reframe table.
+- Name the primary job and the user's context (device, age, task).
+- State the **Design Read** in one sentence.
+
+**Guard:** You can answer "What is the real question we are trying to answer?" before moving on.
 
 ### Step 1 — Scope
 
@@ -283,8 +365,8 @@ For every UI element:
 
 Run all nine aspects above. For each finding, record:
 
-| Aspect | Question | Evidence | Standard | Severity | Current | Proposed | Risk |
-|---|---|---|---|---|---|---|---|
+| Aspect | L1/L2/L3 Question | Evidence | Standard | Severity | Current | Proposed | Risk |
+|---|---|---|---|---|---|---|---|---|
 
 Stop when you have one P0 or two P1 findings that explain the user's feedback. Do not chase P2/P3 unless the user asks.
 
@@ -297,6 +379,7 @@ Stop when you have one P0 or two P1 findings that explain the user's feedback. D
 ### Step 5 — Decide
 
 For each finding, produce:
+- **Question:** the L3 question that exposed the issue.
 - **Current:** what is wrong, with evidence.
 - **Proposed:** what to change, mapped to token/component/standard.
 - **Risk:** technical, accessibility, or maintenance risk of the change.
@@ -314,8 +397,8 @@ Check technical feasibility:
 Output a brief with this table:
 
 ```markdown
-| Finding | Current | Proposed | Risk | Priority | Principle |
-|---|---|---|---|---|---|
+| Finding | Question | Current | Proposed | Risk | Priority | Principle |
+|---|---|---|---|---|---|---|
 ```
 
 Then:
@@ -328,16 +411,18 @@ Then:
 
 ## Output Format
 
-Begin with a short **Design Read**.
+Begin with a short **Design Read** that includes the **reframed question**.
 
 Then present findings in priority order. Each finding must contain:
 
 ```markdown
 ### [P0/P1/P2] [Aspect] — [Short title]
 
+**Question:** ... (the L3 question that exposed the issue)
+
 **Current:** ... (with evidence: file line, computed style, token, or screenshot)
 
-**Question from taxonomy:** ...
+**Design tension:** ... (if any)
 
 **Standard:** ... (citation from codebase or external, with reasoning)
 
@@ -356,6 +441,8 @@ If the audit is intended as input for `idea-to-interface`, also append a `## Han
 ## Hand-off to idea-to-interface
 
 **Design Read:** [one line]
+
+**Reframed question:** [one line]
 
 **Top constraints (P0/P1):**
 1. [Finding] → [what the new design must solve]
@@ -380,13 +467,16 @@ If the audit is intended as input for `idea-to-interface`, also append a `## Han
 | Don't | Why |
 |---|---|
 | Audit by personal taste only | Without a principle, it is not design critique. |
+| Skip the reframe step | You will answer the wrong question and produce a local fix. |
+| Ask "is this beautiful?" | Beauty is not measurable. Ask "which principle does it violate?" |
+| Treat symptoms as root cause | A red error banner is not the problem; the problem is why the user sees it before acting. |
+| Ignore design tension | Most real problems are trade-offs. Pick a side with evidence. |
 | Hardcode values in the brief | Every proposal must map to a token or shared component. |
 | Skip mobile-first | The default persona is a 10–25-year-old learner on a phone. (`AGENTS.md` personas) |
 | Ignore `prefers-reduced-motion` | Accessibility is not optional. |
 | Add motion to feel "premium" | Motion is a risk, not a feature. |
 | Copy a reference 1:1 | References teach principles, not output. |
 | Propose changes that violate SSOT | If one change requires editing five files, the fix is in the wrong place. |
-| Ask open-ended questions | Use binary or one-choice questions. |
 | Rely only on image vision | Use DOM, computed styles, and code; vision is optional context only. |
 
 ---
@@ -395,20 +485,22 @@ If the audit is intended as input for `idea-to-interface`, also append a `## Han
 
 | User says | Respond with |
 |---|---|
-| "Just make it look better" | "Better for whom, doing what, on which screen?" |
-| "I don't like it" | "Which aspect feels off: density, color, hierarchy, motion, or layout?" |
+| "Just make it look better" | "Better for whom, doing what, on which screen? What is the one principle it breaks?" |
+| "I don't like it" | "Which aspect feels off: density, color, hierarchy, motion, or layout? I'll reframe it into a question." |
 | "Make it like YouTube" | "Which specific feeling: pill controls, dark glass, or timeline behavior? I'll trace it to our tokens or propose a new one." |
-| "Use blue and green" | "Which is dominant, which is accent, and what neutral ties them?" |
+| "Use blue and green" | "Which is dominant, which is accent, and what neutral ties them? Does it compete with our single-accent rule?" |
 | "This page is special" | "Which part of the design system does it legitimately diverge from, and why?" |
 
 ---
 
 ## Verification Checklist
 
-- [ ] Page, component, and design system located.
+- [ ] User complaint reframed into a design question.
 - [ ] Design Read declared with evidence.
+- [ ] Page, component, and design system located.
 - [ ] ASCII wireframes for 320px and 1280px.
-- [ ] All nine aspects audited; each skipped aspect marked N/A.
+- [ ] All nine aspects audited with L1/L2/L3 questions; skipped aspects marked N/A.
+- [ ] At least one design tension named and resolved.
 - [ ] Every finding tied to a named principle and severity.
 - [ ] Every proposal mapped to token, component, or codebase standard.
 - [ ] Internet/external sources used only with reasoning.
