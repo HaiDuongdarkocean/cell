@@ -48,7 +48,7 @@ function prepareUblockClean(workerIndex: number): string {
 }
 
 const launchContext = async (
-  headless: boolean | 'shell',
+  headless: boolean,
   uBlockClean: string,
   profileDir: string,
 ): Promise<BrowserContext> =>
@@ -70,8 +70,10 @@ export const test = base.extend<CellEnvironmentFixtures>({
           testResultsDir,
           `.extension-profile-${workerInfo.workerIndex}-${Date.now()}`,
         );
-        const headless: boolean | 'shell' =
-          process.env.EXTENSION_HEADLESS === 'true' ? 'shell' : false;
+        // Note: headless Chrome cannot load extensions in this Playwright
+        // version, so default is headed (visible). Set EXTENSION_HEADLESS=true
+        // only if you are running under a virtual display.
+        const headless = process.env.EXTENSION_HEADLESS === 'true';
         persistentContext = await launchContext(headless, uBlockClean, profileDir);
         isContextClosed = false;
         persistentContext.on('close', () => {
@@ -79,6 +81,14 @@ export const test = base.extend<CellEnvironmentFixtures>({
         });
       }
       await use(persistentContext);
+      // Worker-scoped teardown: close the persistent browser context after
+      // all tests in this worker finish so a long pipeline does not keep
+      // Chrome / temp profiles open.
+      if (persistentContext) {
+        await persistentContext.close();
+        isContextClosed = true;
+        persistentContext = null;
+      }
     },
     { scope: 'worker' },
   ],

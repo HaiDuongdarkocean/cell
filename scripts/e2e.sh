@@ -2,18 +2,27 @@
 set -e
 
 # Usage:
-#   bash scripts/e2e.sh                         # build + run all stage-2 (headless)
-#   bash scripts/e2e.sh --headed                # build + run all (headed)
-#   bash scripts/e2e.sh stream-universal        # build + run one stage-2 file
-#   bash scripts/e2e.sh "e2e/stage2/**/*.ts"    # build + run Playwright pattern
+#   bash scripts/e2e.sh                         # build + run all (browser visible)
+#   bash scripts/e2e.sh --headed                # build + run all (browser visible)
+#   bash scripts/e2e.sh stream-universal        # build + run one file
+#   bash scripts/e2e.sh brick1 brick2 brick3    # build + run multiple files/patterns
+#   bash scripts/e2e.sh "e2e/stage2/**/*.ts"    # build + Playwright pattern
 #   bash scripts/e2e.sh --stage2 [name|pattern] # run only, skip build
-#   bash scripts/e2e.sh --stage2 --headed       # run all, headed, skip build
+#   bash scripts/e2e.sh --stage2 --headed       # run only, browser visible
 #   bash scripts/e2e.sh --build                 # build only
+#
+# Note: headless Chrome cannot load extensions with this Playwright version,
+# so all test runs default to headed. Use a virtual display for CI headless.
+
+# On Windows without Git Bash, use the equivalent npm scripts in package.json:
+#   npm run test:e2e:full                       # build + all stage-2
+#   npm run test:e2e:stage2 -- brick1 brick2    # run only
+#   npm run test:e2e:build                      # build only
 
 do_build=true
 run_tests=true
 headed=false
-spec=""
+specs=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -33,17 +42,17 @@ while [ $# -gt 0 ]; do
       ;;
     *)
       if [[ "$1" == e2e/* ]] || [[ "$1" == *.spec.ts ]] || [[ "$1" == *"/"* ]] || [[ "$1" == *"*"* ]]; then
-        spec="$1"
+        specs+=("$1")
       else
-        spec="e2e/stage2/${1}.spec.ts"
+        specs+=("e2e/stage2/${1}.spec.ts")
       fi
       shift
       ;;
   esac
 done
 
-if [ -z "$spec" ] && [ "$run_tests" = true ]; then
-  spec="e2e/stage2/"
+if [ ${#specs[@]} -eq 0 ] && [ "$run_tests" = true ]; then
+  specs=("e2e/stage2/")
 fi
 
 if [ "$do_build" = true ]; then
@@ -52,11 +61,12 @@ if [ "$do_build" = true ]; then
 fi
 
 if [ "$run_tests" = true ]; then
+  # Default to headed so Chrome can load the Cell + uBlock extensions.
+  # For headless CI, wrap this script in a virtual display (e.g. xvfb-run).
+  export EXTENSION_HEADLESS=false
   if [ "$headed" = true ]; then
-    export EXTENSION_HEADLESS=false
-    npx playwright test --config=playwright.stream.config.ts "$spec" --project=chromium --headed
+    npx playwright test --config=playwright.stream.config.ts "${specs[@]}" --project=chromium --headed
   else
-    export EXTENSION_HEADLESS=true
-    npx playwright test --config=playwright.stream.config.ts "$spec" --project=chromium
+    npx playwright test --config=playwright.stream.config.ts "${specs[@]}" --project=chromium
   fi
 fi
