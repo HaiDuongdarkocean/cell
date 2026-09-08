@@ -44,6 +44,8 @@ interface FieldRowProps {
   readonly onMapChange?: (field: string) => void;
   /** The value input/textarea element. */
   readonly children: ReactNode;
+  /** Optional trailing action(s) rendered in the header next to the map select. */
+  readonly trailing?: ReactNode;
   /** Optional data id — applied to the wrapper div as `<id>-row`. */
   readonly dataId?: string;
 }
@@ -54,6 +56,7 @@ export function FieldRow({
   availableFields,
   onMapChange,
   children,
+  trailing,
   dataId,
 }: FieldRowProps): ReactElement {
   // ADR-026: prepend a "None" option (value '') so the user can opt out of
@@ -68,18 +71,23 @@ export function FieldRow({
     <div className={styles.fieldRow} data-cell-id={dataId ? `${dataId}-row` : undefined}>
       <div className={styles.fieldRow__header}>
         <Label className={styles.fieldRow__label}>{label}</Label>
-        {showMap && (
-          <span className={styles.fieldRow__map}>
-            <Select
-              className={styles.fieldRow__mapSelect}
-              value={mappedField}
-              options={options}
-              onChange={onMapChange}
-              aria-label={t('cardCreator.fieldMap.aria', [label])}
-              data-cell-id={dataId ? `${dataId}-map` : undefined}
-              menuAlign="right"
-            />
-          </span>
+        {(trailing || showMap) && (
+          <div className={styles.fieldRow__actions}>
+            {trailing}
+            {showMap && (
+              <span className={styles.fieldRow__map}>
+                <Select
+                  className={styles.fieldRow__mapSelect}
+                  value={mappedField}
+                  options={options}
+                  onChange={onMapChange}
+                  aria-label={t('cardCreator.fieldMap.aria', [label])}
+                  data-cell-id={dataId ? `${dataId}-map` : undefined}
+                  menuAlign="right"
+                />
+              </span>
+            )}
+          </div>
         )}
       </div>
       {children}
