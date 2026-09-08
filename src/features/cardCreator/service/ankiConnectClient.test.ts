@@ -18,10 +18,10 @@ function mockFetch(response: { ok: boolean; status: number; body: unknown }): Fe
 /** Build a mock fetch that inspects the request body (for asserting action/params). */
 function mockFetchInspecting(
   body: unknown,
-  inspect: (req: { url: string; body: string }) => void,
+  inspect: (req: { url: string; body: string; method?: string; headers?: Record<string, string> }) => void,
 ): FetchFn {
   return async (url, init) => {
-    inspect({ url, body: init?.body ?? '' });
+    inspect({ url, body: init?.body ?? '', method: init?.method, headers: init?.headers });
     return { ok: true, status: 200, json: async () => body };
   };
 }
@@ -71,8 +71,8 @@ describe('ankiConnectClient', () => {
       );
     });
 
-    it('sends POST with version 6 + action + params', async () => {
-      let captured: { url: string; body: string } | null = null;
+    it('sends POST with version 6 + action + params and text/plain to avoid preflight', async () => {
+      let captured: { url: string; body: string; method?: string; headers?: Record<string, string> } | null = null;
       const fetchFn = mockFetchInspecting({ result: null, error: null }, (req) => {
         captured = req;
       });
@@ -81,6 +81,8 @@ describe('ankiConnectClient', () => {
       });
       expect(captured).not.toBeNull();
       expect(captured!.url).toBe('http://localhost:8765');
+      expect(captured!.method).toBe('POST');
+      expect(captured!.headers?.['Content-Type']).toBe('text/plain');
       const parsed = JSON.parse(captured!.body);
       expect(parsed.version).toBe(6);
       expect(parsed.action).toBe('addNote');
