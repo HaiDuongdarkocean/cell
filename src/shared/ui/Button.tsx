@@ -2,7 +2,7 @@ import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTML
 import { Spinner } from './Spinner';
 import styles from './Button.module.css';
 
-type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'transparent';
+type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'transparent' | 'overlay';
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type ButtonShape = 'pill' | 'circle';
 type ButtonOrientation = 'horizontal' | 'vertical';
@@ -52,7 +52,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Button — primary click target with consistent hover, active, focus, disabled,
  * and loading states across the extension.
  *
- * Variants: primary, secondary, outline, ghost, destructive, link.
+ * Variants: primary, secondary, outline, ghost, destructive, link, overlay.
  * Sizes: sm, md, lg.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({

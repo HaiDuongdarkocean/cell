@@ -10,6 +10,9 @@
   --cluster-icon-size: clamp(var(--space-3), 2.8cqw, var(--space-5));
   --cluster-text-opacity: 1;
   --cluster-bg-opacity: var(--opacity-20);
+  --button-overlay-bg: color-mix(in srgb, var(--color-overlay-background) calc(var(--cluster-bg-opacity) * 100%), transparent);
+  --button-overlay-bg-hover: color-mix(in srgb, var(--color-overlay-background) calc(var(--cluster-bg-opacity-hover, calc(var(--cluster-bg-opacity) + 0.06)) * 100%), transparent);
+  --button-overlay-fg: color-mix(in srgb, var(--color-overlay-text) calc(var(--cluster-text-opacity) * 100%), transparent);
 }
 
 .clusterRight > * {
@@ -26,6 +29,8 @@
   height: var(--cluster-btn-size);
   min-width: var(--cluster-btn-size);
   min-height: var(--cluster-btn-size);
+  backdrop-filter: blur(var(--button-overlay-blur));
+  -webkit-backdrop-filter: blur(var(--button-overlay-blur));
 }
 
 /* !important: beats Button's `.sm.circle .label > svg` icon-size rules

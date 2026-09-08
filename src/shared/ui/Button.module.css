@@ -284,6 +284,28 @@
   transform: none;
 }
 
+.overlay {
+  background: var(--button-overlay-bg);
+  color: var(--button-overlay-fg);
+  border: none;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .overlay:hover {
+    background: var(--button-overlay-bg-hover);
+  }
+}
+
+.overlay:active {
+  background: var(--button-overlay-bg-hover);
+}
+
+.overlay:focus-visible {
+  outline: 2px solid var(--button-overlay-fg);
+  outline-offset: 1px;
+}
+
 /* === States === */
 
 .active,

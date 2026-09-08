@@ -253,7 +253,7 @@ function OffsetStepper({
       <div className={styles.latencyRow}>
         <div className={styles.pillGroup}>
           <Button
-            variant="primary"
+            variant="secondary"
             size="md"
             leadingIcon={<Minus aria-hidden="true" />}
             aria-label={`Decrease ${label} latency by ${OFFSET_STEP} seconds`}
@@ -278,7 +278,7 @@ function OffsetStepper({
             />
           </Label>
           <Button
-            variant="primary"
+            variant="secondary"
             size="md"
             leadingIcon={<Plus aria-hidden="true" />}
             aria-label={`Increase ${label} latency by ${OFFSET_STEP} seconds`}
@@ -589,6 +589,7 @@ export function SubtitleManagerPanel({
           </div>
         </div>
         <Button shape="circle"
+          variant="ghost"
           aria-label="Close subtitle manager"
           onClick={onClose}
           data-cell-id="subtitle-manager-close"

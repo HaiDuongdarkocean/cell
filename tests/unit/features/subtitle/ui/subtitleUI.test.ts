@@ -51,16 +51,8 @@ describe('buildClusterCssVars — SSOT for cluster CSS custom properties', () =>
     };
     expect(buildClusterCssVars({ buttonSize: size, textOpacity: 1, bgOpacity: 0.2, enabled: true }) as ClusterVars).toEqual({
       ...expected,
-      '--iconbutton-liquid-surface': 'rgba(10, 16, 26, 0.2)',
-      '--iconbutton-liquid-surface-hover': 'rgba(14, 22, 34, 0.26)',
-      '--iconbutton-liquid-surface-active': 'rgba(14, 22, 34, 0.32)',
-      '--iconbutton-liquid-foreground': 'rgba(247, 248, 248, 1)',
-      '--iconbutton-liquid-specular': 'rgba(255, 255, 255, 0.55)',
-      '--iconbutton-liquid-caustic': 'rgba(160, 184, 220, 0.42)',
-      '--iconbutton-liquid-inner-shadow': 'rgba(0, 0, 0, 0.3)',
-      '--iconbutton-liquid-contact-shadow': 'rgba(0, 0, 0, 0.2)',
-      '--iconbutton-liquid-focus-ring': 'rgba(255, 255, 255, 0.35)',
-      '--iconbutton-liquid-backdrop-blur': 'var(--blur-lg)',
+      '--cluster-bg-opacity-hover': '0.26',
+      '--cluster-bg-opacity-active': '0.32',
     });
   });
 });

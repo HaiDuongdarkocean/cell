@@ -5,7 +5,7 @@
 .frame {
   position: relative;
   width: 100%;
-  height: 160px;
+  height: 240px;
   overflow: hidden;
   border-radius: var(--radius-element);
   /* Solid container — opaque surface, auto dark/light via tokens.
@@ -22,16 +22,13 @@
    --sb-y maps 0% = top edge, 100% = bottom edge of the frame.
    translateY scales proportionally so the subtitle block stays fully
    visible at both extremes instead of being half-clipped.
-   Width = 300cqw (3× frame) to emulate real overlay container width
-   (~1000px video), so cqw-based font-size in SubtitleBlock resolves
-   correctly instead of clamping to minimum. Scale 1/3 brings it back
-   to frame width. */
+   Width = 200cqw (2× frame), scale 1/2 back to frame width. */
 .overlayRoot {
   position: absolute;
   top: calc(var(--sb-y, 75) * 1%); /* runtime progress var, numeric fallback */
   left: 0;
-  width: 300cqw;
-  transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.3333);
+  width: 200cqw;
+  transform: translateY(calc(var(--sb-y, 75) * -1%)) scale(0.5);
   transform-origin: top left;
   display: flex;
   flex-direction: row;
