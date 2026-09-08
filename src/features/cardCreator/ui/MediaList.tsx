@@ -135,7 +135,9 @@ function EmptyDropzone({
   const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
   const modifier = kind === 'image' ? styles['cc-media__empty--image'] : styles['cc-media__empty--audio'];
   return (
-    <Button variant="ghost"
+    <Button
+      variant="secondary"
+      fullWidth
       className={`${styles['cc-media__empty']} ${modifier}`}
       onClick={onAdd}
       disabled={addDisabled}
