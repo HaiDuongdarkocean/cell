@@ -1,14 +1,17 @@
 /* === MediaList — media zone + image gallery + audio list (Card Creator) ===
    BEM block: .cc-media
-   ADR-026: uses design-system tokens (--space-*, --color-*, --radius-*) per
-   src/shared/styles/tokens.json.
-   Spec: docs/specs/spec-card-creator-ui-redesign.md §9.7-9.8
+   Visual target: match the popup dictionary's image/audio rows.
+   - Image: horizontal scrollable strip of 4:3 surface cards, add button below.
+   - Audio: vertical list of rows with circle play + name + remove, add below.
 */
 
 .cc-media {
-  padding: var(--space-2);
-  background: var(--color-surface);
-  border-radius: var(--radius-pill);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+  background: transparent;
+  border-radius: var(--radius-md);
   border: var(--border-width-hairline) solid transparent;
   transition: border-color var(--duration-fast) var(--ease-in-out);
 }
@@ -17,30 +20,47 @@
   border-color: var(--color-border-focus);
 }
 
-/* === Empty dropzone (image or audio) === */
+/* === Empty dropzone (image or audio) ===
+ * Image empty: 4:3 dashed card matching the image strip.
+ * Audio empty: a single row matching an audio row.
+ */
 .cc-media__empty {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  width: 100%; /* design-system: intentional — fill dropzone */
-  min-height: calc(var(--space-5) * 6);
-  padding: var(--space-4);
-  border: var(--border-width-hairline) dashed var(--color-border);
-  border-radius: var(--radius-pill);
+  gap: var(--space-1);
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: border-color var(--duration-fast) var(--ease-in-out),
-              color var(--duration-fast) var(--ease-in-out);
+              color var(--duration-fast) var(--ease-in-out),
+              background var(--duration-fast) var(--ease-in-out);
+}
+
+.cc-media__empty--image {
+  width: calc(var(--space-10) * 3);
+  min-width: calc(var(--space-10) * 3);
+  aspect-ratio: 4 / 3;
+  min-height: auto;
+}
+
+.cc-media__empty--audio {
+  width: 100%;
+  min-height: var(--input-height);
+  padding: var(--space-1) var(--space-2);
 }
 
 .cc-media__empty:hover {
   border-color: var(--color-border-focus);
-  color: var(--color-text-secondary);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
 }
 
 .cc-media__empty:disabled {
@@ -48,31 +68,62 @@
   cursor: not-allowed;
 }
 
+.cc-media__empty:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
 /* === Image gallery === */
 .cc-media__gallery {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cc-media__strip {
+  composes: hide from '@/shared/ui/Scrollable.module.css';
+  display: flex;
   flex-direction: row;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  padding: var(--space-0-5) 0;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
 }
 
 .cc-media__thumb {
   position: relative;
-  flex-shrink: 0;
-  height: calc(var(--space-5) * 6);
-  width: auto;
+  flex: 0 0 auto;
+  width: calc(var(--space-10) * 3);
+  min-width: calc(var(--space-10) * 3);
+  height: auto;
+  min-height: auto;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
   cursor: pointer;
-  transition: opacity var(--duration-fast) var(--ease-in-out);
+  transition: opacity var(--duration-fast) var(--ease-in-out),
+              transform var(--button-press-duration) var(--button-press-ease),
+              filter var(--button-press-duration) var(--button-press-ease);
+}
+
+.cc-media__thumb:hover {
+  filter: brightness(1.05);
+}
+
+.cc-media__thumb:active {
+  transform: scale(var(--button-press-scale));
+  filter: brightness(0.98);
 }
 
 .cc-media__thumb:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
+  outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
 }
 
@@ -85,27 +136,25 @@
 }
 
 .cc-media__img {
-  height: calc(var(--space-5) * 6);
-  width: auto;
-  max-width: calc(var(--space-5) * 10);
-  object-fit: contain;
-  border-radius: var(--radius-sm);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .cc-media__thumb-remove {
   position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
-  width: var(--space-7);
-  height: var(--space-7);
+  top: var(--space-0-5);
+  right: var(--space-0-5);
+  width: var(--space-5);
+  height: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
+  background: var(--color-surface);
   color: var(--color-text);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   line-height: var(--leading-none);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out),
@@ -116,11 +165,11 @@
 .cc-media__thumb-remove:hover {
   background: var(--color-error);
   color: var(--color-text-inverse);
-  transform: scale(1.05); /* design-system: intentional micro-scale */
+  transform: scale(1.05);
 }
 
 .cc-media__thumb-remove:active {
-  transform: scale(1); /* design-system: reset scale */
+  transform: scale(1);
 }
 
 .cc-media__thumb-remove:focus-visible {
@@ -129,24 +178,27 @@
 }
 
 .cc-media__gallery-add {
-  flex-shrink: 0;
-  width: calc(var(--space-5) * 4);
-  height: calc(var(--space-5) * 6);
-  display: flex;
+  align-self: flex-start;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: var(--border-width-hairline) dashed var(--color-border);
-  border-radius: var(--radius-sm);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-in-out),
-              color var(--duration-fast) var(--ease-in-out);
+              color var(--duration-fast) var(--ease-in-out),
+              background var(--duration-fast) var(--ease-in-out);
 }
 
 .cc-media__gallery-add:hover {
   border-color: var(--color-border-focus);
-  color: var(--color-primary);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
 }
 
 .cc-media__gallery-add:disabled {
@@ -232,11 +284,19 @@
 .cc-media__row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  transition: opacity var(--duration-fast) var(--ease-in-out);
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: var(--border-width-hairline) solid transparent;
+  transition: background var(--duration-fast) var(--ease-in-out),
+              border-color var(--duration-fast) var(--ease-in-out),
+              opacity var(--duration-fast) var(--ease-in-out);
+  cursor: default;
+}
+
+.cc-media__row:hover {
+  background: var(--color-surface-hover);
 }
 
 .cc-media__row--dragging {
@@ -244,28 +304,25 @@
 }
 
 .cc-media__row--drag-over {
-  box-shadow: var(--shadow-focus);
+  border-color: var(--color-border-focus);
 }
 
 .cc-media__play {
-  width: calc(var(--space-5) + var(--space-2));
-  height: calc(var(--space-5) + var(--space-2));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-secondary);
+  color: var(--color-text-inverse);
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
   border: none;
   cursor: pointer;
-  padding: var(--space-0);
   transition: background var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out);
 }
 
 .cc-media__play:hover {
-  color: var(--color-text);
+  background: var(--color-primary-hover);
 }
 
 .cc-media__play:focus-visible {
@@ -275,6 +332,7 @@
 
 .cc-media__name {
   flex: 1;
+  min-width: 0;
   font-size: var(--font-size-base);
   color: var(--color-text);
   overflow: hidden;
@@ -283,8 +341,8 @@
 }
 
 .cc-media__row-remove {
-  width: var(--space-7);
-  height: var(--space-7);
+  width: var(--space-5);
+  height: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,11 +362,11 @@
 .cc-media__row-remove:hover {
   background: var(--color-error-subtle);
   color: var(--color-error);
-  transform: scale(1.05); /* design-system: intentional micro-scale */
+  transform: scale(1.05);
 }
 
 .cc-media__row-remove:active {
-  transform: scale(1); /* design-system: reset scale */
+  transform: scale(1);
 }
 
 .cc-media__row-remove:focus-visible {
@@ -322,20 +380,22 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border: none;
-  border-radius: var(--radius-sm);
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-family: inherit;
   cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-in-out),
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out),
               background var(--duration-fast) var(--ease-in-out);
 }
 
 .cc-media__list-add:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
+  background: var(--color-surface-hover);
 }
 
 .cc-media__list-add:disabled {
@@ -347,7 +407,6 @@
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .cc-media { transition: none; animation: none; }

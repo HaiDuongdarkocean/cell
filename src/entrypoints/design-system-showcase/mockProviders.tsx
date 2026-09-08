@@ -186,6 +186,7 @@ function useMockCardCreatorState(): CardCreatorState {
       removeMedia: () => {},
       reorderMedia: () => {},
       translateSentenceField: async () => {},
+      generateAll: async () => {},
       submit: async () => {},
       dismissToast: () => {},
     };

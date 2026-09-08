@@ -110,6 +110,8 @@ export interface CardCreatorState {
   reorderMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => void;
   /** Translate the current sentence. */
   translateSentenceField: () => Promise<void>;
+  /** Generate all missing media from the current target word / prefill. */
+  generateAll: () => Promise<void>;
   /** Submit: Add (create new) or Update (existing note). */
   submit: (mode: 'add' | 'update') => Promise<void>;
   /** Dismiss a toast by id. */
@@ -239,8 +241,8 @@ export function useCardCreatorState(
           images: initialImages,
           sentenceAudios: initialAudios,
           wordAudios: [],
-          note: '',
-          moreExample: '',
+          note: prefill?.note ?? '',
+          moreExample: prefill?.moreExample ?? '',
         },
         fieldMapping: restoredDraft?.fieldMapping ?? {},
         tags: restoredDraft?.tags ?? defaultTags,
@@ -262,8 +264,8 @@ export function useCardCreatorState(
           images: initialImages,
           sentenceAudios: initialAudios,
           wordAudios: [],
-          note: '',
-          moreExample: '',
+          note: prefill?.note ?? '',
+          moreExample: prefill?.moreExample ?? '',
         },
         fieldMapping: restoredDraft?.fieldMapping ?? {},
         tags: restoredDraft?.tags ?? defaultTags,
@@ -668,6 +670,73 @@ export function useCardCreatorState(
     }
   }, [updateField]);
 
+  /** Re-fetch prefill media for any media list that is still empty.
+   *  Best-effort: failed URLs are skipped with a toast. */
+  const generateAll = useCallback(async () => {
+    const ctx = openContextRef.current;
+    if (!ctx) return;
+    const targetWord = useCardCreatorStore.getState().draft.fields.targetWord.trim();
+    if (!targetWord) {
+      useCardCreatorStore.getState().pushToast('warning', 'Enter a target word first.');
+      return;
+    }
+    const prefill = ctx.prefill;
+    const hasUrls = (prefill?.wordAudioUrls?.length ?? 0) > 0
+      || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
+      || (prefill?.imageUrls?.length ?? 0) > 0;
+    if (!hasUrls) {
+      useCardCreatorStore.getState().pushToast('warning', 'No media source available for this target.');
+      return;
+    }
+    useCardCreatorStore.getState().setCapturingMedia(true);
+    const fetchedWordAudios: MediaFile[] = [];
+    const fetchedSentenceAudios: MediaFile[] = [];
+    const fetchedImages: MediaFile[] = [];
+    const current = useCardCreatorStore.getState().draft.fields;
+    if (current.wordAudios.length === 0) {
+      for (const audioUrl of prefill?.wordAudioUrls ?? []) {
+        try {
+          fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
+        } catch {
+          useCardCreatorStore.getState().pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
+        }
+      }
+    }
+    if (current.sentenceAudios.length === 0) {
+      for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
+        try {
+          fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
+        } catch {
+          useCardCreatorStore.getState().pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
+        }
+      }
+    }
+    if (current.images.length === 0) {
+      for (const imageUrl of prefill?.imageUrls ?? []) {
+        try {
+          fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
+        } catch {
+          useCardCreatorStore.getState().pushToast('warning', `Could not fetch image: ${imageUrl}`);
+        }
+      }
+    }
+    if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
+      useCardCreatorStore.getState().setDraft((prev) => ({
+        ...prev,
+        fields: {
+          ...prev.fields,
+          wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
+          sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
+          images: [...prev.fields.images, ...fetchedImages],
+        },
+      }));
+      useCardCreatorStore.getState().pushToast('success', 'Generated missing media.');
+    } else {
+      useCardCreatorStore.getState().pushToast('warning', 'No missing media to generate.');
+    }
+    useCardCreatorStore.getState().setCapturingMedia(false);
+  }, []);
+
   /** Build the Anki note fields from the draft (apply mapping + media refs). */
   const buildAnkiFieldsCb = useCallback(
     async (): Promise<Record<string, string>> => {
@@ -839,6 +908,7 @@ export function useCardCreatorState(
     removeMedia,
     reorderMedia,
     translateSentenceField,
+    generateAll,
     submit,
     dismissToast,
   };

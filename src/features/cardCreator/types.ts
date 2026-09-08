@@ -14,6 +14,8 @@ export interface CardCreatorPrefill {
   readonly definitions?: string;
   readonly sentenceTranslation?: string;
   readonly sentence?: string;
+  readonly note?: string;
+  readonly moreExample?: string;
   /** Word audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
   readonly wordAudioUrls?: readonly string[];
   /** Sentence audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */

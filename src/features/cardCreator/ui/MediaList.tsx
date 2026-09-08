@@ -49,11 +49,6 @@ function ThumbIcon({ kind, size = 'sm' }: { kind: 'image' | 'audio'; size?: 'xs'
   );
 }
 
-/** Plus icon used in the dashed image add button. */
-function PlusIcon(): ReactElement {
-  return <Icon name="plus" size="md" />;
-}
-
 /** Determine whether a File is an image or an audio file.
  *  Prefer the MIME type; fall back to filename extension for files with an empty type. */
 function isAcceptedFile(file: File, kind: 'image' | 'audio'): boolean {
@@ -138,15 +133,16 @@ function EmptyDropzone({
   dataId?: string;
 }): ReactElement {
   const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
+  const modifier = kind === 'image' ? styles['cc-media__empty--image'] : styles['cc-media__empty--audio'];
   return (
-    <Button variant="secondary"
-      className={styles['cc-media__empty']}
+    <Button variant="ghost"
+      className={`${styles['cc-media__empty']} ${modifier}`}
       onClick={onAdd}
       disabled={addDisabled}
       aria-label={addLabel}
       data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
-      <ThumbIcon kind={kind} size="md" />
+      <ThumbIcon kind={kind} size="sm" />
       <span>{text}</span>
     </Button>
   );
@@ -317,38 +313,42 @@ function ImageGallery({
   };
 
   return (
-    <div
-      className={styles['cc-media__gallery']}
-      role="list"
-      aria-label={addLabel}
-      onKeyDown={handleKeyDown}
-      onDrop={handleGalleryDrop}
-    >
-      {files.map((file, index) => (
-        <ImageThumb
-          key={`${file.filename}-${index}`}
-          file={file}
-          index={index}
-          onRemove={onRemove}
-          onPreview={onPreview}
-          draggable={draggable}
-          onDragStart={handleDragStart(index)}
-          onDragOver={handleDragOver(index)}
-          onDrop={handleDrop(index)}
-          onDragEnd={handleDragEnd}
-          isDragging={draggingIndex === index}
-          isDragOver={dragOverIndex === index}
-          dataId={dataId}
-        />
-      ))}
-      <Button shape="circle" variant="ghost"
+    <div className={styles['cc-media__gallery']}>
+      <div
+        className={styles['cc-media__strip']}
+        role="list"
+        aria-label={addLabel}
+        onKeyDown={handleKeyDown}
+        onDrop={handleGalleryDrop}
+      >
+        {files.map((file, index) => (
+          <ImageThumb
+            key={`${file.filename}-${index}`}
+            file={file}
+            index={index}
+            onRemove={onRemove}
+            onPreview={onPreview}
+            draggable={draggable}
+            onDragStart={handleDragStart(index)}
+            onDragOver={handleDragOver(index)}
+            onDrop={handleDrop(index)}
+            onDragEnd={handleDragEnd}
+            isDragging={draggingIndex === index}
+            isDragOver={dragOverIndex === index}
+            dataId={dataId}
+          />
+        ))}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
         className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
-        aria-label={addLabel}
         data-cell-id={dataId ? `${dataId}-add` : undefined}
       >
-        <PlusIcon />
+        <Icon name="plus" size="sm" />
+        <span>{addLabel}</span>
       </Button>
     </div>
   );
@@ -477,34 +477,37 @@ function AudioList({
             onDragEnd={handleDragEnd}
             data-index={index}
           >
-            <Button shape="circle" variant="ghost"
+            <Button shape="circle" size="sm" variant="primary"
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
-              <ThumbIcon kind="audio" size="xs" />
+              <Icon name="audioWave" size="xs" />
             </Button>
             <span className={styles['cc-media__name']}>{file.filename}</span>
-            <Button variant="secondary"
+            <Button shape="circle" size="xs" variant="ghost"
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
               data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
-              ×
+              <Icon name="x" size="xs" />
             </Button>
           </div>
         );
       })}
       {files.length > 0 && (
-        <Button variant="secondary"
+        <Button
+          variant="ghost"
+          size="sm"
           className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}
           data-cell-id={dataId ? `${dataId}-add` : undefined}
         >
-          + {addLabel}
+          <Icon name="plus" size="sm" />
+          <span>{addLabel}</span>
         </Button>
       )}
     </div>
