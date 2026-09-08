@@ -102,7 +102,7 @@ export function Select({
 
   const validationState = state ?? (error ? 'error' : undefined);
 
-  const { placement, maxHeight } = useMenuPlacement({
+  const { placement, maxHeight, maxWidth } = useMenuPlacement({
     isOpen,
     menuAlign,
     menuMaxHeight,
@@ -333,9 +333,21 @@ export function Select({
 
   const menuClass = [styles.menu, menuAlignClass].filter(Boolean).join(' ');
 
-  // In-flow menu: position offsets don't apply (static). Only the height cap
-  // is still meaningful — it keeps the expanded region scrollable, not huge.
-  const menuStyle = { maxHeight } as React.CSSProperties;
+  // Overlay menu: position is computed by useMenuPlacement so the menu opens
+  // in the direction (top/bottom) and alignment (left/right) that fits the
+  // viewport best. Width is still capped to the trigger width unless the
+  // content is wider, in which case maxWidth prevents overflow.
+  const menuMaxWidth = maxWidth === Number.MAX_SAFE_INTEGER ? undefined : maxWidth;
+  const menuStyle: React.CSSProperties = {
+    maxHeight,
+    ...(placement.vpos === 'top'
+      ? { bottom: '100%', marginBottom: 'var(--space-1)' }
+      : { top: '100%', marginTop: 'var(--space-1)' }),
+    ...(placement.align === 'right'
+      ? { right: 0 }
+      : { left: 0 }),
+    ...(menuMaxWidth !== undefined ? { maxWidth: menuMaxWidth } : {}),
+  };
 
   return (
     <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>

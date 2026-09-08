@@ -372,7 +372,6 @@ export function CardCreatorDialogContent({
       {/* Footer */}
       <div className={styles['cc-dialog__footer']}>
         <div className={styles['cc-dialog__footer-mode']}>
-          <Label className={styles['cc-dialog__field-label']}>Update mode</Label>
           <Select
             value={draft.mediaUpdateMode}
             options={[
@@ -382,6 +381,7 @@ export function CardCreatorDialogContent({
             ]}
             onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
             aria-label="Update mode"
+            menuAlign="auto"
             className={styles['cc-dialog__select']}
             data-cell-id="cc-update-mode"
           />
