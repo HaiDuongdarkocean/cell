@@ -20,6 +20,8 @@ export interface DictionaryTabProps {
   readonly prefill?: DictionaryPanelPrefill | null;
   /** Called when the user presses "Quick Add" in the dictionary header. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called after a successful Add/Update in the integrated Card Creator. */
+  readonly onAfterSubmit?: () => void;
   /** Called from the empty-definitions state to open Settings → Resources. */
   readonly onOpenSettings?: () => void;
 }
@@ -32,6 +34,7 @@ export function DictionaryTab({
   isOpen,
   prefill: externalPrefill,
   onQuickAdd,
+  onAfterSubmit,
   onOpenSettings,
 }: DictionaryTabProps): React.JSX.Element {
   const [prefill, setPrefill] = useState<DictionaryPanelPrefill | null>(externalPrefill ?? null);
@@ -56,15 +59,26 @@ export function DictionaryTab({
           langCode={langCode}
           sourceLang={sourceLang}
           targetLang={targetLang}
-          initialTerm={initialTerm}
+          initialTerm={prefill?.term ?? initialTerm}
+          contextSentence={prefill?.contextSentence}
+          initialResult={prefill?.lookupResult ?? undefined}
+          selectionSnapshot={prefill ?? undefined}
           isOpen={isOpen}
           onSendToCard={handlePanelSendToCard}
           onQuickAdd={onQuickAdd ?? handlePanelQuickAdd}
           onOpenSettings={onOpenSettings}
         />
       </div>
-      <div className={styles.rightPane}>
-        <CardCreatorPanel sourceLang={sourceLang} targetLang={targetLang} context={prefill} />
+      <div
+        className={`${styles.rightPane} ${styles.dictionaryTab__sheet}`}
+        data-cell-id="dictionary-tab-sheet"
+      >
+        <CardCreatorPanel
+          sourceLang={sourceLang}
+          targetLang={targetLang}
+          context={prefill}
+          onAfterSubmit={onAfterSubmit}
+        />
       </div>
     </div>
   );

@@ -928,6 +928,53 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.destroy() });
   });
 
+  it('Send to Card forwards the popup selection snapshot to the integrated panel', async () => {
+    const panelController = makePanelController();
+    const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-send-selection', new DOMRect(0, 0, 0, 0), range) });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+
+    // Tick the only definition checkbox in the popup.
+    const defEl = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-definition"]') as HTMLElement | null;
+      if (!el) throw new Error('definition row not found');
+      return el;
+    });
+    act(() => { defEl.click() });
+
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    expect(prefill.selectedDefinitionIds).toEqual(['d1']);
+    expect(prefill.selectedAudioIds).toEqual([]);
+    expect(prefill.selectedImageIds).toEqual([]);
+    expect(prefill.translationSelected).toBe(false);
+    // The full popup state (lookup result + loaded media arrays) is cloned
+    // so the integrated Dictionary can re-render the same candidate and tabs.
+    expect(prefill.lookupResult).toEqual(expect.objectContaining({ term: 'take off' }));
+    expect(prefill.audioItems).toEqual([]);
+    expect(prefill.imageItems).toEqual([]);
+
+    act(() => { ctrl.destroy() });
+  });
+
   it('Send to Card from subtitle video includes captured screenshot and sentence audio', async () => {
     const panelController = makePanelController();
     const mockVideo = {

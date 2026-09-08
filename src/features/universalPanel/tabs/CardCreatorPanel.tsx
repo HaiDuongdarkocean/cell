@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Spinner } from '@/shared/ui/Spinner';
 import { EmptyState } from '@/shared/ui/EmptyState';
+import { MobileSheet } from '@/shared/ui/MobileSheet';
+import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { t } from '@/shared/i18n';
 import { CardCreatorDialogContent } from '@/features/cardCreator/ui/CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from '@/features/cardCreator/ui/useCardCreatorState';
@@ -20,6 +23,8 @@ export interface CardCreatorPanelProps {
   readonly targetLang: string;
   /** Card-creator context pushed from an external popup or subtitle cluster. */
   readonly context?: DictionaryPanelPrefill | null;
+  /** Called after a successful Add or Update, e.g. to close the panel. */
+  readonly onAfterSubmit?: () => void;
 }
 
 function buildOpenContext(
@@ -73,6 +78,10 @@ interface CardCreatorPanelCoreProps {
   readonly targetLang: string;
   /** Card-creator context. */
   readonly context?: DictionaryPanelPrefill | null;
+  /** Called after a successful Add or Update. */
+  readonly onAfterSubmit?: () => void;
+  /** Whether the panel is in mobile (sheet) layout. */
+  readonly isMobile?: boolean;
 }
 
 function CardCreatorPanelCore({
@@ -80,6 +89,8 @@ function CardCreatorPanelCore({
   sourceLang,
   targetLang,
   context,
+  onAfterSubmit,
+  isMobile = false,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
   const openContext = useMemo(
     () => buildOpenContext(sourceLang, targetLang, context),
@@ -87,7 +98,9 @@ function CardCreatorPanelCore({
   );
 
   const initialAction = context?.initialAction;
-  const state = useCardCreatorState(settings, openContext, initialAction);
+  const state = useCardCreatorState(settings, openContext, initialAction, {
+    onSubmitSuccess: onAfterSubmit,
+  });
   const { loadStatus, submitting, submit } = state;
 
   // Quick Add from the dictionary header: auto-submit the prefilled card as soon
@@ -101,15 +114,42 @@ function CardCreatorPanelCore({
     void submit('add');
   }, [initialAction, context, loadStatus, submitting, submit]);
 
+  const content = (
+    <CardCreatorDialogContent
+      state={state}
+      variant={isMobile ? 'mobile' : 'desktop'}
+      className={styles.panelBody}
+      layout="panel"
+    />
+  );
+
+  if (isMobile) {
+    const header = (
+      <span className={styles.sheetHeader}>
+        <span className={styles.sheetHeaderTitle}>{t('cardCreator.title')}</span>
+        {context?.term ? <span className={styles.sheetHeaderTerm}>— {context.term}</span> : null}
+      </span>
+    );
+    return (
+      <div className={`${styles.cardCreatorPanel} ${styles.cardCreatorPanelMobile}`} data-cell-id="card-creator-panel">
+        <MobileSheet
+          defaultSnap="collapsed"
+          header={header}
+          aria-label={t('cardCreator.title')}
+          contentClassName={styles.sheetContent}
+          className={styles.sheet}
+          data-cell-id="card-creator-mobile-sheet"
+        >
+          {content}
+        </MobileSheet>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
       <div className={styles.scrollArea}>
-        <CardCreatorDialogContent
-          state={state}
-          variant="desktop"
-          className={styles.panelBody}
-          layout="panel"
-        />
+        {content}
       </div>
     </div>
   );
@@ -126,7 +166,9 @@ export function CardCreatorPanel({
   sourceLang,
   targetLang,
   context,
+  onAfterSubmit,
 }: CardCreatorPanelProps): React.JSX.Element {
+  const isMobile = useIsMobile(BREAKPOINTS.expanded);
   const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
@@ -167,6 +209,8 @@ export function CardCreatorPanel({
       sourceLang={sourceLang}
       targetLang={targetLang}
       context={context}
+      onAfterSubmit={onAfterSubmit}
+      isMobile={isMobile}
     />
   );
 }

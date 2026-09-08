@@ -9,8 +9,12 @@ import {
   DraftAutosaver,
   createEmptyDraft,
   DRAFT_STORAGE_KEY,
+  mergePrefillIntoDraft,
+  mediaUrlsToFetch,
+  buildMergedMediaArray,
 } from './cardDraft';
 import type { CardDraft } from './cardDraft';
+import type { MediaFile } from '../media/mediaFile';
 
 // Mock chrome.storage.local
 const storage: Record<string, unknown> = {};
@@ -199,6 +203,187 @@ describe('cardDraft', () => {
       expect(draft.tags).toBe('');
       expect(draft.mediaUpdateMode).toBe('overwrite');
       expect(draft.fields.images).toEqual([]);
+    });
+  });
+
+  describe('mergePrefillIntoDraft', () => {
+    function media(url: string, kind: 'image' | 'audio' = 'image'): MediaFile {
+      return {
+        kind,
+        filename: url.split('/').pop() ?? 'file',
+        mimeType: kind === 'image' ? 'image/png' : 'audio/wav',
+        data: new ArrayBuffer(0),
+        sourceUrl: url,
+      };
+    }
+
+    function unmappedMedia(kind: 'image' | 'audio' = 'image'): MediaFile {
+      return {
+        kind,
+        filename: `user-${kind}.file`,
+        mimeType: kind === 'image' ? 'image/png' : 'audio/wav',
+        data: new ArrayBuffer(0),
+      };
+    }
+
+    function draftWithImages(images: MediaFile[], mode: CardDraft['mediaUpdateMode'] = 'overwrite'): CardDraft {
+      return {
+        ...makeDraft(),
+        mediaUpdateMode: mode,
+        fields: { ...makeDraft().fields, images },
+      };
+    }
+
+    it('overwrites image selection to exactly the new prefill', () => {
+      const draft = draftWithImages([media('1'), media('2')]);
+      const prefill = { targetWord: 'hello', imageUrls: ['2', '3', '4'] };
+      const { media: plan } = mergePrefillIntoDraft(draft, prefill);
+
+      expect(plan.images.orderedUrls).toEqual(['2', '3', '4']);
+      expect(Object.keys(plan.images.keptByUrl).sort()).toEqual(['2']);
+      expect(mediaUrlsToFetch(plan.images)).toEqual(['3', '4']);
+
+      const fetched: Record<string, MediaFile> = {
+        '3': media('3'),
+        '4': media('4'),
+      };
+      expect(buildMergedMediaArray(plan.images, fetched)).toEqual([
+        media('2'),
+        media('3'),
+        media('4'),
+      ]);
+    });
+
+    it('diff/merges image selection in append mode', () => {
+      const draft = draftWithImages([media('1'), media('2')], 'append');
+      const prefill = { targetWord: 'hello', imageUrls: ['2', '3', '4'] };
+      const { media: plan } = mergePrefillIntoDraft(draft, prefill);
+
+      expect(plan.images.orderedUrls).toEqual(['2', '3', '4']);
+      expect(Object.keys(plan.images.keptByUrl).sort()).toEqual(['2']);
+      expect(mediaUrlsToFetch(plan.images)).toEqual(['3', '4']);
+
+      const fetched: Record<string, MediaFile> = {
+        '3': media('3'),
+        '4': media('4'),
+      };
+      expect(buildMergedMediaArray(plan.images, fetched)).toEqual([
+        media('2'),
+        media('3'),
+        media('4'),
+      ]);
+    });
+
+    it('preserves unmapped media in append mode and removes them on overwrite', () => {
+      const screenshot = unmappedMedia('image');
+      const draftAppend = draftWithImages([media('1'), screenshot], 'append');
+      const draftOverwrite = draftWithImages([media('1'), screenshot], 'overwrite');
+      const prefill = { targetWord: 'hello', imageUrls: ['2'] };
+
+      const appendResult = mergePrefillIntoDraft(draftAppend, prefill);
+      expect(appendResult.media.images.unmapped).toEqual([screenshot]);
+
+      const overwriteResult = mergePrefillIntoDraft(draftOverwrite, prefill);
+      expect(overwriteResult.media.images.unmapped).toEqual([]);
+    });
+
+    it('keeps existing items that are still selected and removes deselected ones', () => {
+      const draft = draftWithImages([media('1'), media('2'), media('3')], 'append');
+      const prefill = { targetWord: 'hello', imageUrls: ['3', '1'] };
+      const { media: plan } = mergePrefillIntoDraft(draft, prefill);
+
+      expect(plan.images.orderedUrls).toEqual(['3', '1']);
+      expect(Object.keys(plan.images.keptByUrl).sort()).toEqual(['1', '3']);
+      expect(mediaUrlsToFetch(plan.images)).toEqual([]);
+      expect(buildMergedMediaArray(plan.images, {})).toEqual([media('3'), media('1')]);
+    });
+
+    it('diff/merges definitions in append mode', () => {
+      const draft: CardDraft = {
+        ...makeDraft(),
+        mediaUpdateMode: 'append',
+        fields: {
+          ...makeDraft().fields,
+          definitions: '• n. a written work\n\n• v. to reserve',
+        },
+      };
+      const prefill = {
+        targetWord: 'hello',
+        definitions: '• v. to reserve\n\n• n. a building',
+      };
+      const { draft: merged } = mergePrefillIntoDraft(draft, prefill);
+      expect(merged.fields.definitions).toBe('• v. to reserve\n\n• n. a building');
+    });
+
+    it('overwrites definitions', () => {
+      const draft: CardDraft = {
+        ...makeDraft(),
+        mediaUpdateMode: 'overwrite',
+        fields: {
+          ...makeDraft().fields,
+          definitions: '• old',
+        },
+      };
+      const prefill = { targetWord: 'hello', definitions: '• new' };
+      const { draft: merged } = mergePrefillIntoDraft(draft, prefill);
+      expect(merged.fields.definitions).toBe('• new');
+    });
+
+    it('only fills empty fields in skip mode', () => {
+      const draft: CardDraft = {
+        ...makeDraft(),
+        mediaUpdateMode: 'skip',
+        fields: {
+          ...makeDraft().fields,
+          sentence: 'existing sentence',
+          images: [media('1')],
+        },
+      };
+      const prefill = {
+        targetWord: 'hello',
+        sentence: 'new sentence',
+        imageUrls: ['2'],
+        wordAudioUrls: ['a.mp3'],
+      };
+      const { draft: merged, media: plan } = mergePrefillIntoDraft(draft, prefill);
+      expect(merged.fields.sentence).toBe('existing sentence');
+      expect(merged.fields.images).toEqual([media('1')]);
+      expect(plan.images.orderedUrls).toEqual(['1']);
+      expect(plan.wordAudios.orderedUrls).toEqual(['a.mp3']);
+    });
+
+    it('diff/merges audio URLs', () => {
+      const draft: CardDraft = {
+        ...makeDraft(),
+        mediaUpdateMode: 'append',
+        fields: {
+          ...makeDraft().fields,
+          wordAudios: [media('a.mp3', 'audio'), media('b.mp3', 'audio')],
+          sentenceAudios: [media('s1.mp3', 'audio')],
+        },
+      };
+      const prefill = {
+        targetWord: 'hello',
+        wordAudioUrls: ['b.mp3', 'c.mp3'],
+        sentenceAudioUrls: ['s2.mp3'],
+      };
+      const { media: plan } = mergePrefillIntoDraft(draft, prefill);
+      expect(plan.wordAudios.orderedUrls).toEqual(['b.mp3', 'c.mp3']);
+      expect(mediaUrlsToFetch(plan.wordAudios)).toEqual(['c.mp3']);
+      expect(plan.sentenceAudios.orderedUrls).toEqual(['s2.mp3']);
+      expect(mediaUrlsToFetch(plan.sentenceAudios)).toEqual(['s2.mp3']);
+    });
+
+    it('is idempotent for identical inputs', () => {
+      const draft = draftWithImages([media('1'), media('2')], 'append');
+      const prefill = { targetWord: 'hello', imageUrls: ['2', '3', '4'] };
+      const first = mergePrefillIntoDraft(draft, prefill);
+      const withFetched = buildMergedMediaArray(first.media.images, { '3': media('3'), '4': media('4') });
+      const secondDraft: CardDraft = { ...draft, fields: { ...draft.fields, images: withFetched } };
+      const second = mergePrefillIntoDraft(secondDraft, prefill);
+      expect(second.media.images.orderedUrls).toEqual(first.media.images.orderedUrls);
+      expect(Object.keys(second.media.images.keptByUrl).sort()).toEqual(['2', '3', '4']);
+      expect(mediaUrlsToFetch(second.media.images)).toEqual([]);
     });
   });
 });

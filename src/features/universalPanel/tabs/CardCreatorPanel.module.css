@@ -1,5 +1,6 @@
 /* === CardCreatorPanel — right pane of the Dictionary tab === */
 .cardCreatorPanel {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -7,6 +8,50 @@
   overflow: hidden;
   background: var(--color-surface);
   border-left: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+/* Mobile: the panel is an absolutely-positioned overlay that hosts the
+ * MobileSheet. It is anchored to the DictionaryTab container. */
+.cardCreatorPanelMobile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border-left: none;
+  pointer-events: none;
+}
+
+.cardCreatorPanelMobile .sheet {
+  pointer-events: auto;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sheetHeaderTitle {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.sheetHeaderTerm {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheetContent {
+  min-width: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  overflow-y: auto;
 }
 
 .scrollArea {

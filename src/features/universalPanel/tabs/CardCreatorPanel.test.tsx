@@ -51,6 +51,7 @@ describe('CardCreatorPanel', () => {
       expect.objectContaining({ ankiConnectUrl: DEFAULT_SETTINGS.cardCreator.ankiConnectUrl }),
       expect.objectContaining({ sourceLang: 'en', targetLang: 'vi' }),
       undefined,
+      expect.objectContaining({ onSubmitSuccess: undefined }),
     );
   });
 

@@ -73,6 +73,8 @@ describe('buildPrefill', () => {
     expect(prefill.translation).toBe(translation);
     expect(prefill.wordAudioUrls).toEqual(['https://example.com/word.mp3']);
     expect(prefill.imageUrls).toEqual(['https://example.com/pic.jpg']);
+    // Selection snapshot — defaults when the caller does not pass a flag.
+    expect(prefill.translationSelected).toBe(false);
   });
 
   it('falls back to result definitions when none are selected', () => {
@@ -171,5 +173,84 @@ describe('buildPrefill', () => {
     expect(prefill.wordAudioUrls).toEqual(['https://example.com/word-1.mp3']);
     // Selected sentence audio is used.
     expect(prefill.sentenceAudioUrls).toEqual(['https://example.com/sentence-1.mp3']);
+  });
+
+  it('includes the selection snapshot for the integrated Dictionary clone', () => {
+    const result = makeResult();
+    const audios = [
+      makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word-1.mp3' }),
+      makeAudio({ id: 'audio-word-2', kind: 'word', url: 'https://example.com/word-2.mp3' }),
+      makeAudio({ id: 'audio-sentence-1', kind: 'sentence', url: 'https://example.com/sentence-1.mp3' }),
+    ];
+    const images = [
+      makeImage({ id: 'image-1', src: 'https://example.com/pic-1.jpg' }),
+      makeImage({ id: 'image-2', src: 'https://example.com/pic-2.jpg' }),
+    ];
+
+    const prefill = buildPrefill(
+      result,
+      [result.definitions[1]!],
+      contextSentence,
+      translation,
+      audios,
+      new Map([['audio-word-2', true]]),
+      images,
+      new Map([['image-2', true]]),
+      true,
+    );
+
+    expect(prefill.selectedDefinitionIds).toEqual(['2']);
+    expect(prefill.selectedAudioIds).toEqual(['audio-word-2']);
+    expect(prefill.selectedImageIds).toEqual(['image-2']);
+    expect(prefill.translationSelected).toBe(true);
+  });
+
+  it('snapshots effective audio/image selection but only explicitly picked definitions', () => {
+    const result = makeResult();
+    const audios = [
+      makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3', defaultSelected: true }),
+    ];
+    const images = [
+      makeImage({ id: 'image-1', src: 'https://example.com/pic.jpg', defaultSelected: true }),
+    ];
+
+    const prefill = buildPrefill(
+      result,
+      [],
+      contextSentence,
+      '',
+      audios,
+      new Map(),
+      images,
+      new Map(),
+    );
+
+    // No explicit toggles → audio/image fall back to the item's defaultSelected
+    // hint; definitions stay empty because only explicit ticks are mirrored.
+    expect(prefill.selectedAudioIds).toEqual(['audio-word-1']);
+    expect(prefill.selectedImageIds).toEqual(['image-1']);
+    expect(prefill.selectedDefinitionIds).toEqual([]);
+    expect(prefill.translationSelected).toBe(false);
+  });
+
+  it('carries the original lookup result and loaded media arrays for the integrated Dictionary clone', () => {
+    const result = makeResult();
+    const audios = [makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3' })];
+    const images = [makeImage({ id: 'image-1', src: 'https://example.com/pic.jpg' })];
+
+    const prefill = buildPrefill(
+      result,
+      [],
+      contextSentence,
+      '',
+      audios,
+      new Map(),
+      images,
+      new Map(),
+    );
+
+    expect(prefill.lookupResult).toBe(result);
+    expect(prefill.audioItems).toEqual(audios);
+    expect(prefill.imageItems).toEqual(images);
   });
 });

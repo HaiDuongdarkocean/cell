@@ -130,13 +130,13 @@ describe('mountUniversalPanel', () => {
     expect(tab).toHaveAttribute('data-prefill-term', 'hello');
 
     // Close and reopen via the orbital badge: the search term should not be
-    // replayed, but the prefill persists while the panel is open.
+    // replayed, and the card-creator prefill should survive the close cycle.
     await act(async () => { await controller.close(); });
     await act(async () => { await controller.open('dictionary'); });
 
     const reopenedTab = getByTestId('dictionary-tab');
     expect(reopenedTab).toHaveAttribute('data-initial-term', '');
-    expect(reopenedTab).toHaveAttribute('data-prefill-term', '');
+    expect(reopenedTab).toHaveAttribute('data-prefill-term', 'hello');
   });
 
   it('prefill survives tab switches while the panel is open', async () => {

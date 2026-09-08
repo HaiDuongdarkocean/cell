@@ -24,18 +24,21 @@
 
 @media (max-width: 839px) {
   .dictionaryTab {
+    position: relative;
     flex-direction: column;
-    overflow-y: auto;
   }
 
-  .leftPane,
-  .rightPane {
+  .leftPane {
     flex: 1 1 auto;
     border-right: none;
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+    border-bottom: none;
   }
 
-  .rightPane {
+  .rightPane.dictionaryTab__sheet {
+    flex: 0 0 auto;
+    position: static;
+    height: var(--space-14);
+    overflow: visible;
     border-bottom: none;
   }
 }

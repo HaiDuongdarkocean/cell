@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '../services/wordStatusStore';
@@ -15,6 +15,7 @@ import type {
   ImageItem,
   ExternalDictLink,
   PopupCardCreatorPrefill,
+  PopupSelectionSnapshot,
 } from '../types';
 import type { DefinitionSelection } from '../logic/definitionSelection';
 
@@ -29,6 +30,12 @@ export interface UseCandidateOptions {
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Default media tab to open when this candidate first appears. */
   readonly defaultActiveTab?: PopupTab | null;
+  /** Optional popup selection snapshot used to clone checked state. */
+  readonly selectionSnapshot?: PopupSelectionSnapshot;
+  /** Pre-loaded audio items for this candidate (popup clone). */
+  readonly initialAudioItems?: readonly AudioItem[];
+  /** Pre-loaded image items for this candidate (popup clone). */
+  readonly initialImageItems?: readonly ImageItem[];
 }
 
 export interface UseCandidateReturn {
@@ -69,10 +76,67 @@ export interface UseCandidateReturn {
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
-  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onStatusChange, defaultActiveTab } = options;
+  const {
+    candidate,
+    contextSentence,
+    sourceLang,
+    targetLang,
+    onSendToCard,
+    onQuickAdd,
+    onStatusChange,
+    defaultActiveTab,
+    selectionSnapshot,
+    initialAudioItems,
+    initialImageItems,
+  } = options;
+
+  // The snapshot prop is typed as PopupSelectionSnapshot for callers, but the
+  // runtime value passed from the integrated panel is a full PopupCardCreatorPrefill
+  // (or DictionaryPanelPrefill). Cast so we can access audio/image items + translation.
+  const fullSnapshot = selectionSnapshot as (PopupSelectionSnapshot & Partial<PopupCardCreatorPrefill>) | undefined;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
-  const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(() => initDefinitionSelection(candidate));
+  const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(
+    () => initDefinitionSelection(candidate, fullSnapshot?.selectedDefinitionIds),
+  );
+
+  // Re-initialize definition selection when the candidate identity (term + lang)
+  // or the incoming selection snapshot changes. This keeps the integrated
+  // Dictionary in sync without wiping user toggles on a simple status cycle.
+  useEffect(() => {
+    setDefinitionSelection(initDefinitionSelection(candidate, fullSnapshot?.selectedDefinitionIds));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidate.term, candidate.langCode, fullSnapshot?.selectedDefinitionIds]);
+
+  const effectiveAudioItems = initialAudioItems ?? fullSnapshot?.audioItems;
+  const effectiveImageItems = initialImageItems ?? fullSnapshot?.imageItems;
+
+  const initialAudioSelection = useMemo(() => {
+    const items = effectiveAudioItems;
+    const selectedIds = fullSnapshot?.selectedAudioIds;
+    if (!items || items.length === 0) return null;
+    const selectedSet = selectedIds ? new Set(selectedIds) : null;
+    const map = new Map<string, boolean>();
+    for (const item of items) {
+      map.set(item.id, selectedSet ? selectedSet.has(item.id) : false);
+    }
+    return map;
+  }, [effectiveAudioItems, fullSnapshot?.selectedAudioIds]);
+
+  const initialImageSelection = useMemo(() => {
+    const items = effectiveImageItems;
+    const selectedIds = fullSnapshot?.selectedImageIds;
+    if (!items || items.length === 0) return null;
+    const selectedSet = selectedIds ? new Set(selectedIds) : null;
+    const map = new Map<string, boolean>();
+    for (const item of items) {
+      map.set(item.id, selectedSet ? selectedSet.has(item.id) : false);
+    }
+    return map;
+  }, [effectiveImageItems, fullSnapshot?.selectedImageIds]);
+
+  const initialTranslation = fullSnapshot?.translation;
+  const initialTranslationSelected = fullSnapshot?.translationSelected;
 
   const toolbar = useDictionaryToolbar({
     result: candidate,
@@ -80,6 +144,12 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     sourceLang,
     targetLang,
     defaultActiveTab,
+    initialAudioItems: effectiveAudioItems,
+    initialImageItems: effectiveImageItems,
+    initialAudioSelection,
+    initialImageSelection,
+    initialTranslation,
+    initialTranslationSelected,
   });
 
   const selectedDefinitions = useMemo(
@@ -138,6 +208,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       audioSelection,
       loadedImageItems,
       imageSelection,
+      toolbar.translationSelected,
     ));
   }, [onSendToCard, toolbar, candidate, selectedDefinitions, contextSentence]);
 
@@ -163,6 +234,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
       audioSelection,
       loadedImageItems,
       imageSelection,
+      toolbar.translationSelected,
     ));
   }, [onQuickAdd, toolbar, candidate, selectedDefinitions, contextSentence]);
 

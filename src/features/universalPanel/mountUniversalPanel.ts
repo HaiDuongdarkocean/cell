@@ -99,6 +99,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let currentTab: UniversalPanelTab = 'dictionary';
 
   // Card creator context pushed from popup or subtitle cluster via sendToCard().
+  // The whole DictionaryPanelPrefill — including the popup selection snapshot
+  // (selectedImageIds/selectedAudioIds/selectedDefinitionIds/translationSelected)
+  // — is stored and forwarded to DictionaryTab so the integrated Dictionary can
+  // initialize as a clone of the popup.
   // It persists while the panel is open so the right pane survives tab switches;
   // the one-shot search term is cleared after the first open.
   let pendingCardCreatorContext: DictionaryPanelPrefill | null = null;
@@ -117,8 +121,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       clearPendingOneShots();
     },
     onClose: () => {
-      pendingCardCreatorContext = null;
-      clearPendingOneShots();
+      // Close without clearing the card creator context so the unsaved draft
+      // survives a close → reopen cycle. The one-shot search term is cleared
+      // so a reopened panel does not replay the previous lookup.
+      pendingSearchTerm = null;
       options.onClose?.();
       render();
     },
@@ -169,6 +175,11 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       isOpen: open,
       prefill: pendingCardCreatorContext,
       onOpenSettings: () => { void openSettingsSection(mountController, 'resources'); },
+      onAfterSubmit: () => {
+        // Clear the sent context before closing so the next open starts clean.
+        pendingCardCreatorContext = null;
+        mountController.close();
+      },
     }) as ReactElement;
 
   const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;

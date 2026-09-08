@@ -43,6 +43,18 @@ export interface UseDictionaryToolbarOptions {
   readonly targetLang: string;
   /** Default media tab to open when the result first appears. */
   readonly defaultActiveTab?: PopupTab | null;
+  /** Pre-loaded audio items for this candidate (popup clone). */
+  readonly initialAudioItems?: readonly AudioItem[];
+  /** Pre-loaded image items for this candidate (popup clone). */
+  readonly initialImageItems?: readonly ImageItem[];
+  /** Pre-selected audio IDs for this candidate (popup clone). */
+  readonly initialAudioSelection?: Map<string, boolean> | null;
+  /** Pre-selected image IDs for this candidate (popup clone). */
+  readonly initialImageSelection?: Map<string, boolean> | null;
+  /** Pre-fetched translation text for this candidate (popup clone). */
+  readonly initialTranslation?: string;
+  /** Whether the translation checkbox was selected in the popup clone. */
+  readonly initialTranslationSelected?: boolean;
 }
 
 export interface UseDictionaryToolbarReturn {
@@ -97,21 +109,37 @@ function fillExternalDictLinks(
 }
 
 export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseDictionaryToolbarReturn {
-  const { result, contextSentence, sourceLang, targetLang, defaultActiveTab } = options;
+  const {
+    result,
+    contextSentence,
+    sourceLang,
+    targetLang,
+    defaultActiveTab,
+    initialAudioItems,
+    initialImageItems,
+    initialAudioSelection,
+    initialImageSelection,
+    initialTranslation,
+    initialTranslationSelected,
+  } = options;
 
   const [activeTab, setActiveTab] = useState<PopupTab | null>(defaultActiveTab ?? null);
-  const [audioItems, setAudioItems] = useState<readonly AudioItem[]>([]);
+  const [audioItems, setAudioItems] = useState<readonly AudioItem[]>(initialAudioItems ?? []);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [audioSelection, setAudioSelection] = useState<Map<string, boolean>>(new Map());
-  const [imageItems, setImageItems] = useState<readonly ImageItem[]>([]);
+  const [audioSelection, setAudioSelection] = useState<Map<string, boolean>>(
+    initialAudioSelection ? new Map(initialAudioSelection) : new Map(),
+  );
+  const [imageItems, setImageItems] = useState<readonly ImageItem[]>(initialImageItems ?? []);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [imageSelection, setImageSelection] = useState<Map<string, boolean>>(new Map());
-  const [translation, setTranslation] = useState('');
+  const [imageSelection, setImageSelection] = useState<Map<string, boolean>>(
+    initialImageSelection ? new Map(initialImageSelection) : new Map(),
+  );
+  const [translation, setTranslation] = useState(initialTranslation ?? '');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
-  const [translationSelected, setTranslationSelected] = useState(false);
+  const [translationSelected, setTranslationSelected] = useState(initialTranslationSelected ?? false);
 
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -119,24 +147,51 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Use a ref so the result-change effect can read the latest initial props
+  // without including the (potentially unstable) arrays in its dependency list.
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  });
+
   const resetMediaState = useCallback((): void => {
-    setAudioItems([]);
+    const {
+      initialAudioItems: nextAudioItems,
+      initialImageItems: nextImageItems,
+      initialAudioSelection: nextAudioSelection,
+      initialImageSelection: nextImageSelection,
+      initialTranslation: nextTranslation,
+      initialTranslationSelected: nextTranslationSelected,
+    } = optionsRef.current;
+
+    setAudioItems(nextAudioItems ?? []);
     setAudioLoading(false);
     setAudioError(null);
-    setAudioSelection(new Map());
-    setImageItems([]);
+    setAudioSelection(nextAudioSelection ? new Map(nextAudioSelection) : new Map());
+    setImageItems(nextImageItems ?? []);
     setImageLoading(false);
     setImageError(null);
-    setImageSelection(new Map());
-    setTranslation('');
+    setImageSelection(nextImageSelection ? new Map(nextImageSelection) : new Map());
+    setTranslation(nextTranslation ?? '');
     setTranslationError(null);
-    setTranslationSelected(false);
+    setTranslationSelected(nextTranslationSelected ?? false);
   }, []);
 
   useEffect(() => {
     setActiveTab(defaultActiveTab ?? null);
     resetMediaState();
-  }, [result?.term, result?.langCode, defaultActiveTab, resetMediaState]);
+  }, [
+    result?.term,
+    result?.langCode,
+    defaultActiveTab,
+    resetMediaState,
+    initialAudioItems,
+    initialImageItems,
+    initialAudioSelection,
+    initialImageSelection,
+    initialTranslation,
+    initialTranslationSelected,
+  ]);
 
   const fetchAudio = useCallback((): Promise<readonly AudioItem[]> => {
     if (!result) return Promise.resolve([]);

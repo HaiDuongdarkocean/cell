@@ -16,7 +16,10 @@ export interface UniversalPanelController {
 
 /** Prefill/context sent to the Dictionary tab's integrated Card Creator.
  *  Extends the popup prefill with optional subtitle capture context
- *  (video, cue, pre-captured media, queue, initial action). */
+ *  (video, cue, pre-captured media, queue, initial action).
+ *  Also inherits the popup selection snapshot (`selectedImageIds`,
+ *  `selectedAudioIds`, `selectedDefinitionIds`, `translationSelected`) so the
+ *  integrated Dictionary can initialize as an exact clone of the popup. */
 export interface DictionaryPanelPrefill extends Omit<PopupCardCreatorPrefill, 'term'> {
   /** Search term for the left dictionary pane. Optional — omitted when the
    *  context has no single target word (e.g. empty subtitle queue). */

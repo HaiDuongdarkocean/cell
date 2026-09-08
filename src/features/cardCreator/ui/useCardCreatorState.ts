@@ -27,7 +27,14 @@ import {
 import { buildAnkiFields } from '../service/buildAnkiFields';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
-import { DraftAutosaver, type CardDraft } from '../state/cardDraft';
+import {
+  DraftAutosaver,
+  type CardDraft,
+  mergePrefillIntoDraft,
+  mediaUrlsToFetch,
+  buildMergedMediaArray,
+  type MediaMergePlan,
+} from '../state/cardDraft';
 import { t, type MessageKey } from '@/shared/i18n';
 import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
@@ -75,6 +82,27 @@ const mediaFetchKeyMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'card
   sentenceAudios: 'cardCreator.toast.fetch.sentenceAudio',
   wordAudios: 'cardCreator.toast.fetch.wordAudio',
 };
+
+/** Fetch the URLs in a merge plan that are not already present as MediaFiles.
+ *  Returns a map of source URL → fetched MediaFile. */
+async function fetchMissingMedia(
+  plan: MediaMergePlan,
+  kind: 'images' | 'sentenceAudios' | 'wordAudios',
+): Promise<Record<string, MediaFile>> {
+  const urls = mediaUrlsToFetch(plan);
+  if (urls.length === 0) return {};
+  const result: Record<string, MediaFile> = {};
+  const mediaKind = mediaKindMap[kind];
+  const fetchKey = mediaFetchKeyMap[kind];
+  for (const url of urls) {
+    try {
+      result[url] = await fetchMediaFile(url, mediaKind);
+    } catch {
+      useCardCreatorStore.getState().pushToast('warning', t(fetchKey, [url]));
+    }
+  }
+  return result;
+}
 
 /** Re-export LoadStatus from the store (single source of truth). */
 export type { LoadStatus } from '@/stores/cardCreatorStore';
@@ -158,10 +186,17 @@ export interface CardCreatorState {
   clear: () => void;
 }
 
+export interface UseCardCreatorStateOptions {
+  /** Called when Add or Update completes successfully.
+   *  Useful for closing the containing panel. */
+  onSubmitSuccess?: () => void;
+}
+
 export function useCardCreatorState(
   settings: CardCreatorSettings,
   openContext: OpenContext | null,
   initialAction?: CardCreatorAction,
+  options?: UseCardCreatorStateOptions,
 ): CardCreatorState {
   const {
     ankiConnectUrl,
@@ -195,6 +230,8 @@ export function useCardCreatorState(
   const dismissToast = useCardCreatorStore((s) => s.dismissToast);
 
   const autosaverRef = useRef(new DraftAutosaver());
+  const onSubmitSuccessRef = useRef(options?.onSubmitSuccess);
+  useEffect(() => { onSubmitSuccessRef.current = options?.onSubmitSuccess; }, [options?.onSubmitSuccess]);
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
 
@@ -439,23 +476,85 @@ export function useCardCreatorState(
     }
   }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote]);
 
+  /** Merge a new prefill into the current draft (resend from dictionary).
+   *  Diff/merges collections + text fields according to `mediaUpdateMode` and
+   *  fetches any new media URLs without re-querying AnkiConnect. */
+  const mergePrefill = useCallback(async (ctx: OpenContext) => {
+    const prefill = ctx.prefill;
+    if (!prefill) return;
+
+    const store = useCardCreatorStore.getState();
+    const { draft: merged, media } = mergePrefillIntoDraft(store.draft, prefill);
+
+    // Update text fields first so the form reflects the new selection quickly.
+    store.setDraft((prev) => ({
+      ...prev,
+      fields: {
+        ...prev.fields,
+        targetWord: merged.fields.targetWord,
+        sentence: merged.fields.sentence,
+        sentenceTranslation: merged.fields.sentenceTranslation,
+        definitions: merged.fields.definitions,
+        note: merged.fields.note,
+        moreExample: merged.fields.moreExample,
+      },
+    }));
+
+    store.setCapturingMedia(true);
+    try {
+      const [fetchedImages, fetchedWordAudios, fetchedSentenceAudios] = await Promise.all([
+        fetchMissingMedia(media.images, 'images'),
+        fetchMissingMedia(media.wordAudios, 'wordAudios'),
+        fetchMissingMedia(media.sentenceAudios, 'sentenceAudios'),
+      ]);
+      store.setDraft((prev) => ({
+        ...prev,
+        fields: {
+          ...prev.fields,
+          images: buildMergedMediaArray(media.images, fetchedImages),
+          wordAudios: buildMergedMediaArray(media.wordAudios, fetchedWordAudios),
+          sentenceAudios: buildMergedMediaArray(media.sentenceAudios, fetchedSentenceAudios),
+        },
+      }));
+    } finally {
+      store.setCapturingMedia(false);
+    }
+  }, []);
+
   // Load data when dialog opens. Pass the restored draft to loadData so it can
   // preserve the user's note type/deck/field selections (ADR-026).
   // Guard with a ref: loadData may get a new reference when settings changes,
   // but we only want to load once per openContext (re-loading resets the draft
   // + would clear auto-captured media).
+  //
+  // When `sendToCard` is called again for the same term while the panel is
+  // already open, merge the new prefill into the existing draft instead of
+  // resetting (ADR-065 diff/merge for repeated sends).
   const loadedForRef = useRef<OpenContext | null>(null);
   useEffect(() => {
     if (!openContext) return;
     if (loadedForRef.current === openContext) return;
     loadedForRef.current = openContext;
+
+    const currentDraft = useCardCreatorStore.getState().draft;
+    const isResend =
+      loadStatus === 'ready' &&
+      !openContext.queue?.length &&
+      !!openContext.prefill?.targetWord &&
+      openContext.prefill.targetWord === currentDraft.fields.targetWord;
+
+    if (isResend) {
+      void mergePrefill(openContext);
+      return;
+    }
+
     const autosaver = autosaverRef.current;
     autosaver.load().then((restored) => {
       useCardCreatorStore.getState().reset();
       useCardCreatorStore.getState().setInitialAction(initialAction);
       void loadData(restored ?? null);
     });
-  }, [openContext, loadData, initialAction]);
+  }, [openContext, loadData, initialAction, loadStatus, draft.fields.targetWord, mergePrefill]);
 
   // Autosave on draft change (debounced). Save as soon as the user
   // makes any selection — not only when fully 'ready' — so config
@@ -963,6 +1062,7 @@ export function useCardCreatorState(
         const fields = await buildAnkiFieldsCb();
         const draft = store.draft;
         const tags = draft.tags.split(/\s+/).filter(Boolean);
+        let success = false;
 
         if (mode === 'add') {
           const r = await addNote(ankiConnectUrl, {
@@ -977,6 +1077,7 @@ export function useCardCreatorState(
           } else {
             store.pushToast('success', t('cardCreator.toast.add.success', [draft.deck, r.value]));
             await autosaverRef.current.clear();
+            success = true;
           }
           // Queue auto-next: advance to next item or signal queue exhausted.
           const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
@@ -1038,6 +1139,7 @@ export function useCardCreatorState(
           }
           store.pushToast('success', t('cardCreator.toast.update.success', [updateNoteId]));
           await autosaverRef.current.clear();
+          success = true;
           // Queue auto-next (same as Add path).
           const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
@@ -1054,6 +1156,9 @@ export function useCardCreatorState(
               store.setQueueActiveIndex(-1);
             }
           }
+        }
+        if (success) {
+          onSubmitSuccessRef.current?.();
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

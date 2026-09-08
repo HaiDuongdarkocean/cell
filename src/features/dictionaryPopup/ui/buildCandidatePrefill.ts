@@ -13,6 +13,7 @@ export function buildPrefill(
   audioSelection: Map<string, boolean>,
   imageItems: readonly ImageItem[],
   imageSelection: Map<string, boolean>,
+  translationSelected = false,
 ): PopupCardCreatorPrefill {
   const defs = selectedDefinitions.length > 0
     ? selectedDefinitions
@@ -45,5 +46,17 @@ export function buildPrefill(
     wordAudioUrls,
     sentenceAudioUrls,
     imageUrls,
+    // Full lookup result + media arrays for the integrated Dictionary clone:
+    // the left pane can re-render the exact candidate and its loaded tabs.
+    lookupResult: result,
+    audioItems,
+    imageItems,
+    // Selection snapshot for the integrated Dictionary clone (Task 4):
+    // definitions mirror the user's explicit ticks; audio/image mirror the
+    // effective selection (explicit toggle wins, else the item's default).
+    selectedDefinitionIds: selectedDefinitions.map((d) => d.id),
+    selectedAudioIds: selectedAudios.map((item) => item.id),
+    selectedImageIds: selectedImages.map((item) => item.id),
+    translationSelected,
   };
 }
