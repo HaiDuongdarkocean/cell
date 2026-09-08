@@ -21,7 +21,7 @@
  *  - .field-row (this component's wrapper)
  *  - .field-input (the auto-grow input — also exported standalone)
  */
-import { useRef, type ChangeEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
+import { useRef, useState, type ChangeEvent, type KeyboardEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Label } from '@/shared/ui/Label';
@@ -165,6 +165,100 @@ export function FieldAutoGrowInput({
           <Icon name="x"  />
         </Button>
       )}
+    </div>
+  );
+}
+
+interface TagInputProps {
+  /** Current tags as a whitespace-separated string. */
+  readonly value: string;
+  /** Called with the updated whitespace-separated string. */
+  readonly onChange: (value: string) => void;
+  /** Placeholder shown when no tags exist. */
+  readonly placeholder?: string;
+  /** Accessible label for the tag input. */
+  readonly ariaLabel?: string;
+  /** Optional data id — applied to the wrapper. */
+  readonly dataId?: string;
+}
+
+/** TagInput — chip-based tag entry with inline add/remove. */
+export function TagInput({
+  value,
+  onChange,
+  placeholder = 'Add tags…',
+  ariaLabel,
+  dataId,
+}: TagInputProps): ReactElement {
+  const [input, setInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const tags = value.split(/\s+/).filter(Boolean);
+
+  const commit = (raw: string): void => {
+    const parts = raw.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return;
+    const next = [...new Set([...tags, ...parts])];
+    onChange(next.join(' '));
+    setInput('');
+  };
+
+  const removeTag = (index: number): void => {
+    const next = [...tags];
+    next.splice(index, 1);
+    onChange(next.join(' '));
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
+      e.preventDefault();
+      commit(input);
+    } else if (e.key === 'Backspace' && input === '' && tags.length > 0) {
+      removeTag(tags.length - 1);
+    }
+  };
+
+  const handleBlur = (): void => {
+    if (input.trim()) {
+      commit(input);
+    }
+  };
+
+  return (
+    <div
+      className={styles.tagInput}
+      data-cell-id={dataId ? `${dataId}-input` : undefined}
+    >
+      {tags.map((tag, index) => (
+        <span
+          key={`${tag}-${index}`}
+          className={styles.tagInput__chip}
+          data-cell-id={dataId ? `${dataId}-chip-${index}` : undefined}
+        >
+          <span className={styles.tagInput__label}>{tag}</span>
+          <Button
+            shape="circle"
+            size="xs"
+            variant="ghost"
+            aria-label={`Remove ${tag}`}
+            onClick={() => removeTag(index)}
+            className={styles.tagInput__remove}
+            data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
+          >
+            <Icon name="x" size="xs" />
+          </Button>
+        </span>
+      ))}
+      <input
+        ref={inputRef}
+        type="text"
+        className={styles.tagInput__field}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={tags.length === 0 ? placeholder : ''}
+        aria-label={ariaLabel}
+      />
     </div>
   );
 }

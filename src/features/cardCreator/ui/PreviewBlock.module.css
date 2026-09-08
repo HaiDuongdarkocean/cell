@@ -6,12 +6,13 @@
 .cc-preview {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--space-1);
   padding: var(--space-3);
   background: var(--input-bg);
   border: var(--border-width-hairline) solid transparent;
   border-radius: var(--radius-md);
-  text-align: left;
+  text-align: center;
   line-height: var(--leading-normal);
 }
 

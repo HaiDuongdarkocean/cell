@@ -18,7 +18,7 @@ import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Label } from '@/shared/ui/Label';
 import { Select } from '@/shared/ui/Select';
-import { FieldRow, FieldAutoGrowInput } from './FieldRow';
+import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
@@ -354,10 +354,11 @@ export function CardCreatorDialogContent({
           label="Tags"
           dataId="cc-tags"
         >
-          <FieldAutoGrowInput
+          <TagInput
             value={draft.tags}
             onChange={(v) => updateDraft({ tags: v })}
-            aria-label="Tags"
+            placeholder="Type a tag and press Space/Enter"
+            ariaLabel="Tags"
             dataId="cc-tags"
           />
         </FieldRow>
