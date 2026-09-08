@@ -146,7 +146,6 @@ export function CardCreatorDialogContent({
           <Button
             variant="ghost"
             size="sm"
-            className={styles['cc-dialog__action']}
             onClick={() => void generateAll()}
             disabled={!draft.fields.targetWord.trim()}
             leadingIcon={<Icon name="zap" size="sm" />}
@@ -240,7 +239,6 @@ export function CardCreatorDialogContent({
           <Button
             variant="ghost"
             size="sm"
-            className={styles['cc-dialog__action']}
             onClick={translateSentenceField}
             leadingIcon={<Icon name="languages" size="sm" />}
             data-cell-id="cc-translate"
