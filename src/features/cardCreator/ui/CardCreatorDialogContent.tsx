@@ -22,6 +22,7 @@ import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
+import { t } from '@/shared/i18n';
 import type { useCardCreatorState } from './useCardCreatorState';
 import styles from './CardCreatorDialog.module.css';
 
@@ -96,8 +97,8 @@ export function CardCreatorDialogContent({
       variant="ghost"
       size="sm"
       disabled
-      aria-label="Card Creator settings coming soon"
-      title="Card Creator settings coming soon"
+      aria-label={t('cardCreator.settings.comingSoon')}
+      title={t('cardCreator.settings.comingSoon')}
       data-cell-id="cc-settings"
     >
       <Icon name="settings" />
@@ -110,8 +111,8 @@ export function CardCreatorDialogContent({
       size="sm"
       onClick={toggleQueueSidebar}
       disabled={!hasQueue}
-      aria-label={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
-      title={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
+      aria-label={hasQueue ? (queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')) : t('cardCreator.queue.empty')}
+      title={hasQueue ? (queueSidebarOpen ? t('cardCreator.queue.hide') : t('cardCreator.queue.show')) : t('cardCreator.queue.empty')}
       data-cell-id="cc-queue-toggle"
     >
       <Icon name="panelRight" />
@@ -124,7 +125,7 @@ export function CardCreatorDialogContent({
       {showNoRecentAlert && (
         <div className={styles['cc-dialog__alert']} role="status" data-cell-id="cc-alert-no-recent">
           <Icon name="info" className={styles['cc-dialog__alert-icon']} />
-          <span>No existing card found in this deck. Fill in the fields below to create a new card.</span>
+          <span>{t('cardCreator.alert.noRecent')}</span>
         </div>
       )}
       {/* Alert: load error */}
@@ -135,14 +136,14 @@ export function CardCreatorDialogContent({
           data-cell-id="cc-alert-error"
         >
           <Icon name="alertCircle" className={styles['cc-dialog__alert-icon']} />
-          <span>Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.</span>
+          <span>{t('cardCreator.alert.error', [loadError])}</span>
         </div>
       )}
 
       {/* Section: Card destination */}
       <div className={styles['cc-dialog__section']}>
         <div className={styles['cc-dialog__section-header']}>
-          <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Card destination</Heading>
+          <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>{t('cardCreator.section.destination')}</Heading>
           <Button
             variant="ghost"
             size="sm"
@@ -151,28 +152,28 @@ export function CardCreatorDialogContent({
             leadingIcon={<Icon name="zap" size="sm" />}
             data-cell-id="cc-generate-all"
           >
-            Generate all
+            {t('cardCreator.action.generateAll')}
           </Button>
         </div>
         <div className={styles['cc-dialog__pair-row']}>
           <div className={styles['cc-dialog__field']}>
-            <Label className={styles['cc-dialog__field-label']}>Note type</Label>
+            <Label className={styles['cc-dialog__field-label']}>{t('cardCreator.destination.noteType')}</Label>
             <Select
               value={draft.noteType}
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
-              aria-label="Note type"
+              aria-label={t('cardCreator.destination.noteType')}
               className={styles['cc-dialog__select']}
               data-cell-id="cc-note-type"
             />
           </div>
           <div className={styles['cc-dialog__field']}>
-            <Label className={styles['cc-dialog__field-label']}>Deck</Label>
+            <Label className={styles['cc-dialog__field-label']}>{t('cardCreator.destination.deck')}</Label>
             <Select
               value={draft.deck}
               options={decks.map((d) => ({ value: d, label: d }))}
               onChange={(d) => void changeDeck(d)}
-              aria-label="Deck"
+              aria-label={t('cardCreator.destination.deck')}
               className={styles['cc-dialog__select']}
               data-cell-id="cc-deck"
             />
@@ -190,10 +191,10 @@ export function CardCreatorDialogContent({
 
       {/* Section: Fields */}
       <div className={styles['cc-dialog__section']}>
-        <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Fields</Heading>
+        <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>{t('cardCreator.section.fields')}</Heading>
 
         <FieldRow
-          label="Target word"
+          label={t('cardCreator.field.targetWord')}
           mappedField={draft.fieldMapping.targetWord ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('targetWord', f)}
@@ -202,14 +203,14 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.targetWord}
             onChange={(v) => updateField('targetWord', v)}
-            placeholder="Enter the word or phrase to learn"
-            aria-label="Target word"
+            placeholder={t('cardCreator.placeholder.targetWord')}
+            aria-label={t('cardCreator.field.targetWord')}
             dataId="cc-target-word"
           />
         </FieldRow>
 
         <FieldRow
-          label="Sentence"
+          label={t('cardCreator.field.sentence')}
           mappedField={draft.fieldMapping.sentence ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentence', f)}
@@ -218,13 +219,13 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.sentence}
             onChange={(v) => updateField('sentence', v)}
-            aria-label="Sentence"
+            aria-label={t('cardCreator.field.sentence')}
             dataId="cc-sentence"
           />
         </FieldRow>
 
         <FieldRow
-          label="Sentence translation"
+          label={t('cardCreator.field.sentenceTranslation')}
           mappedField={draft.fieldMapping.sentenceTranslation ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentenceTranslation', f)}
@@ -233,7 +234,7 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.sentenceTranslation}
             onChange={(v) => updateField('sentenceTranslation', v)}
-            aria-label="Sentence translation"
+            aria-label={t('cardCreator.field.sentenceTranslation')}
             dataId="cc-sentence-translation"
           />
           <Button
@@ -243,12 +244,12 @@ export function CardCreatorDialogContent({
             leadingIcon={<Icon name="languages" size="sm" />}
             data-cell-id="cc-translate"
           >
-            Translate
+            {t('cardCreator.action.translate')}
           </Button>
         </FieldRow>
 
         <FieldRow
-          label="Definitions"
+          label={t('cardCreator.field.definitions')}
           mappedField={draft.fieldMapping.definitions ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('definitions', f)}
@@ -257,14 +258,14 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.definitions}
             onChange={(v) => updateField('definitions', v)}
-            placeholder="Definitions will be imported from your dictionary tool"
-            aria-label="Definitions"
+            placeholder={t('cardCreator.placeholder.definitions')}
+            aria-label={t('cardCreator.field.definitions')}
             dataId="cc-definitions"
           />
         </FieldRow>
 
         <FieldRow
-          label="Image"
+          label={t('cardCreator.field.image')}
           mappedField={draft.fieldMapping.images ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('images', f)}
@@ -273,7 +274,7 @@ export function CardCreatorDialogContent({
           <MediaList
             files={draft.fields.images}
             kind="image"
-            addLabel="Add image"
+            addLabel={t('cardCreator.add.image')}
             onAdd={() => void addFileFromDisk('images')}
             onRemove={(i) => removeMedia('images', i)}
             onFilesDrop={(files, invalidCount) => addFiles('images', files, invalidCount)}
@@ -284,7 +285,7 @@ export function CardCreatorDialogContent({
         </FieldRow>
 
         <FieldRow
-          label="Sentence audio"
+          label={t('cardCreator.field.sentenceAudio')}
           mappedField={draft.fieldMapping.sentenceAudios ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentenceAudios', f)}
@@ -293,7 +294,7 @@ export function CardCreatorDialogContent({
           <MediaList
             files={draft.fields.sentenceAudios}
             kind="audio"
-            addLabel="Add sentence audio"
+            addLabel={t('cardCreator.add.sentenceAudio')}
             onAdd={() => void addFileFromDisk('sentenceAudios')}
             onRemove={(i) => removeMedia('sentenceAudios', i)}
             onFilesDrop={(files, invalidCount) => addFiles('sentenceAudios', files, invalidCount)}
@@ -304,7 +305,7 @@ export function CardCreatorDialogContent({
         </FieldRow>
 
         <FieldRow
-          label="Word audio"
+          label={t('cardCreator.field.wordAudio')}
           mappedField={draft.fieldMapping.wordAudios ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('wordAudios', f)}
@@ -313,7 +314,7 @@ export function CardCreatorDialogContent({
           <MediaList
             files={draft.fields.wordAudios}
             kind="audio"
-            addLabel="Add word audio"
+            addLabel={t('cardCreator.add.wordAudio')}
             onAdd={() => void addFileFromDisk('wordAudios')}
             onRemove={(i) => removeMedia('wordAudios', i)}
             onFilesDrop={(files, invalidCount) => addFiles('wordAudios', files, invalidCount)}
@@ -324,7 +325,7 @@ export function CardCreatorDialogContent({
         </FieldRow>
 
         <FieldRow
-          label="Note"
+          label={t('cardCreator.field.note')}
           mappedField={draft.fieldMapping.note ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('note', f)}
@@ -333,14 +334,14 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.note}
             onChange={(v) => updateField('note', v)}
-            placeholder="Add a personal note or context for this card"
-            aria-label="Note"
+            placeholder={t('cardCreator.placeholder.note')}
+            aria-label={t('cardCreator.field.note')}
             dataId="cc-note"
           />
         </FieldRow>
 
         <FieldRow
-          label="More example"
+          label={t('cardCreator.field.moreExample')}
           mappedField={draft.fieldMapping.moreExample ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('moreExample', f)}
@@ -349,21 +350,21 @@ export function CardCreatorDialogContent({
           <FieldAutoGrowInput
             value={draft.fields.moreExample}
             onChange={(v) => updateField('moreExample', v)}
-            placeholder="Additional example sentences for context"
-            aria-label="More example"
+            placeholder={t('cardCreator.placeholder.moreExample')}
+            aria-label={t('cardCreator.field.moreExample')}
             dataId="cc-more-example"
           />
         </FieldRow>
 
         <FieldRow
-          label="Tags"
+          label={t('cardCreator.field.tags')}
           dataId="cc-tags"
         >
           <TagInput
             value={draft.tags}
             onChange={(v) => updateDraft({ tags: v })}
-            placeholder="Type a tag and press Space/Enter"
-            ariaLabel="Tags"
+            placeholder={t('cardCreator.placeholder.tags')}
+            ariaLabel={t('cardCreator.field.tags')}
             dataId="cc-tags"
           />
         </FieldRow>
@@ -375,12 +376,12 @@ export function CardCreatorDialogContent({
           <Select
             value={draft.mediaUpdateMode}
             options={[
-              { value: 'overwrite', label: 'Overwrite' },
-              { value: 'append', label: 'Append' },
-              { value: 'skip', label: 'Skip' },
+              { value: 'overwrite', label: t('cardCreator.updateMode.overwrite') },
+              { value: 'append', label: t('cardCreator.updateMode.append') },
+              { value: 'skip', label: t('cardCreator.updateMode.skip') },
             ]}
             onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
-            aria-label="Update mode"
+            aria-label={t('cardCreator.updateMode.label')}
             menuAlign="auto"
             className={styles['cc-dialog__select']}
             data-cell-id="cc-update-mode"
@@ -388,7 +389,7 @@ export function CardCreatorDialogContent({
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
-            Cancel
+            {t('cardCreator.action.cancel')}
           </Button>
           <Button
             variant="secondary"
@@ -397,7 +398,7 @@ export function CardCreatorDialogContent({
             disabled={submitting}
             data-cell-id="cc-add"
           >
-            Add
+            {t('cardCreator.action.add')}
           </Button>
           <Button
             variant="primary"
@@ -406,7 +407,7 @@ export function CardCreatorDialogContent({
             disabled={submitting || recentNoteId === null}
             data-cell-id="cc-update"
           >
-            Update
+            {t('cardCreator.action.update')}
           </Button>
         </div>
       </div>
@@ -418,7 +419,7 @@ export function CardCreatorDialogContent({
       <div className={styles['cc-dialog--panel']} data-cell-id="card-creator-content">
         <div className={styles['cc-dialog__panel-header']}>
           {headerSettings}
-          <span className={styles['cc-dialog__panel-title']}>CARD CREATOR</span>
+          <span className={styles['cc-dialog__panel-title']}>{t('cardCreator.title')}</span>
           {headerQueue}
         </div>
         <div className={styles['cc-dialog__panel-content']}>

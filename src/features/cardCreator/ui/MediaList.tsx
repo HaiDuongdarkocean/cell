@@ -16,6 +16,7 @@ import { Button } from '@/shared/ui/Button';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 
 import { Icon } from '@/shared/ui/Icon';
+import { t } from '@/shared/i18n';
 import type { MediaFile } from '../media/mediaFile';
 import styles from './MediaList.module.css';
 
@@ -103,7 +104,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Image preview"
+      aria-label={t('cardCreator.media.preview')}
       data-cell-id="media-image-preview"
     >
       <Button
@@ -112,7 +113,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
         variant="secondary"
         className={styles['cc-media__preview-close']}
         onClick={onClose}
-        aria-label="Close preview"
+        aria-label={t('cardCreator.media.closePreview')}
       >
         <Icon name="x" size="sm" />
       </Button>
@@ -135,7 +136,7 @@ function EmptyDropzone({
   addDisabled?: boolean;
   dataId?: string;
 }): ReactElement {
-  const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
+  const text = kind === 'image' ? t('cardCreator.empty.image') : t('cardCreator.empty.audio');
   const modifier = kind === 'image' ? styles['cc-media__empty--image'] : styles['cc-media__empty--audio'];
   return (
     <Button
@@ -201,7 +202,7 @@ function ImageThumb({
       role="button"
       tabIndex={0}
       draggable={draggable}
-      aria-label={`Preview ${file.filename}`}
+      aria-label={t('cardCreator.media.previewItem', [file.filename])}
       onClick={() => onPreview(file)}
       onKeyDown={handleKeyDown}
       onDragStart={onDragStart}
@@ -217,7 +218,7 @@ function ImageThumb({
         shape="circle"
         variant="ghost"
         className={styles['cc-media__thumb-remove']}
-        aria-label={`Remove ${file.filename}`}
+        aria-label={t('cardCreator.media.remove', [file.filename])}
         onClick={(e) => {
           e.stopPropagation();
           onRemove(index);
@@ -319,7 +320,7 @@ function ImageGallery({
       <div
         className={styles['cc-media__strip']}
         role="list"
-        aria-label="Image gallery"
+        aria-label={t('cardCreator.media.imageGallery')}
         onKeyDown={handleKeyDown}
         onDrop={handleGalleryDrop}
       >
@@ -433,7 +434,7 @@ function AudioList({
     <div
       className={styles['cc-media__list']}
       role="list"
-      aria-label="Audio list"
+      aria-label={t('cardCreator.media.audioList')}
       onKeyDown={handleKeyDown}
       onDrop={handleListDrop}
     >
@@ -456,7 +457,7 @@ function AudioList({
             <Button shape="circle" size="sm" variant="primary"
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
-              aria-label={`Play ${file.filename}`}
+              aria-label={t('cardCreator.media.play', [file.filename])}
               data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
               <Icon name="audioWave" size="xs" />
@@ -468,7 +469,7 @@ function AudioList({
               variant="ghost"
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
-              aria-label={`Remove ${file.filename}`}
+              aria-label={t('cardCreator.media.remove', [file.filename])}
               data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
               <Icon name="x" size="sm" />

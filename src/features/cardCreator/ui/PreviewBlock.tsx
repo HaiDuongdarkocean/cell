@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
+import { t } from '@/shared/i18n';
 import styles from './PreviewBlock.module.css';
 
 export interface PreviewBlockProps {
@@ -12,7 +13,7 @@ export function PreviewBlock({ targetWord, sentence, dataId }: PreviewBlockProps
   return (
     <div
       className={styles['cc-preview']}
-      aria-label="Preview"
+      aria-label={t('cardCreator.preview.aria')}
       role="region"
       data-cell-id={dataId}
       data-allow-tokenize

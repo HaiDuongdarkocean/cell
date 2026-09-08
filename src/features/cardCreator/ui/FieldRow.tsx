@@ -75,7 +75,7 @@ export function FieldRow({
               value={mappedField}
               options={options}
               onChange={onMapChange}
-              aria-label={`Map ${label} to Anki field`}
+              aria-label={t('cardCreator.fieldMap.aria', [label])}
               data-cell-id={dataId ? `${dataId}-map` : undefined}
               menuAlign="right"
             />
@@ -189,7 +189,7 @@ interface TagInputProps {
 export function TagInput({
   value,
   onChange,
-  placeholder = 'Add tags…',
+  placeholder = t('cardCreator.tagInput.placeholder'),
   ariaLabel,
   dataId,
 }: TagInputProps): ReactElement {
@@ -242,7 +242,7 @@ export function TagInput({
             size="sm"
             shape="circle"
             variant="ghost"
-            aria-label={`Remove ${tag}`}
+            aria-label={t('cardCreator.media.remove', [tag])}
             onClick={() => removeTag(index)}
             className={styles.tagInput__remove}
             data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
