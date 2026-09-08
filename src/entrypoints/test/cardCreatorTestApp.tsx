@@ -13,6 +13,7 @@ import '@/shared/styles/document.css';
 import { CardCreatorDialog } from '@/features/cardCreator/ui/CardCreatorDialog';
 import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBottomSheet';
 import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
+import { useCardCreatorStore } from '@/stores/cardCreatorStore';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import type { CardCreatorOpenContext, CardCreatorPrefill } from '@/features/cardCreator/types';
@@ -25,6 +26,46 @@ const DEFAULT_SETTINGS: CardCreatorSettings = {
   defaultTags: 'english vocabulary advanced long-sentence test overflow stress-test card-creator ui-audit',
   mediaUpdateMode: 'overwrite',
 };
+
+/** Mock 10 note types + 10 decks to stress-test the destination dropdowns. */
+const MOCK_NOTE_TYPES = [
+  'Cell Video Card',
+  'Basic',
+  'Cloze',
+  'Vocabulary Mining',
+  'Sentence Mining with Audio',
+  'Listening Comprehension Card Type',
+  'Reading + Listening',
+  'Minimal',
+  'Advanced Grammar Patterns',
+  'Example-Definition-Image-Audio',
+];
+
+const MOCK_DECKS = [
+  'Default',
+  'Vocabulary',
+  'Sentences',
+  'Listening Practice Deck',
+  'Reading Comprehension',
+  'Core 6000',
+  'Grammar Points',
+  'Review Queue',
+  'Immersion Mining 2026',
+  'Subtitled Content - TV Shows and Movies',
+];
+
+const MOCK_FIELDS = [
+  'Front',
+  'Back',
+  'Definitions',
+  'Image',
+  'SentenceAudio',
+  'WordAudio',
+  'Note',
+  'MoreExample',
+  'Tags',
+  'Extra',
+];
 
 const MOCK_CUE: BilingualCue = {
   index: 42,
@@ -136,6 +177,39 @@ function TestApp(): React.JSX.Element {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const videoRef = useRef<HTMLVideoElement>(null);
   const openContext = useMockOpenContext(videoRef);
+
+  // Override the real AnkiConnect load with 10 note types + 10 decks + 10 fields
+  // so the destination dropdowns and field mapping selects can be stress-tested.
+  // The real fetch may finish late (or hang) and overwrite the mock state, so
+  // this keep-alive override runs while the test app is mounted and only
+  // restores lists/status — it does not reset an already-chosen note type/deck.
+  useEffect(() => {
+    if (!openContext) return;
+    const store = useCardCreatorStore.getState();
+    store.setDecks(MOCK_DECKS);
+    store.setNoteTypes(MOCK_NOTE_TYPES);
+    store.setAvailableFields(MOCK_FIELDS);
+    store.setLoadStatus('ready');
+    store.setLoadError('');
+    store.setDraft((prev) => ({
+      ...prev,
+      noteType: MOCK_NOTE_TYPES[0] ?? prev.noteType,
+      deck: MOCK_DECKS[0] ?? prev.deck,
+    }));
+
+    const keepAlive = () => {
+      const s = useCardCreatorStore.getState();
+      if (s.noteTypes.length !== MOCK_NOTE_TYPES.length || s.decks.length !== MOCK_DECKS.length) {
+        s.setNoteTypes(MOCK_NOTE_TYPES);
+        s.setDecks(MOCK_DECKS);
+        s.setAvailableFields(MOCK_FIELDS);
+        s.setLoadStatus('ready');
+        s.setLoadError('');
+      }
+    };
+    const interval = setInterval(keepAlive, 500);
+    return () => { clearInterval(interval); };
+  }, [openContext]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';

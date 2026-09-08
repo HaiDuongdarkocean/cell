@@ -135,13 +135,14 @@ describe('OcrSettingsPanel language dropdowns (Task 8)', () => {
   });
 
   it('offers ≥100 language options (auto + full PaddleOCR catalog)', async () => {
-    const { container } = await renderEnabled();
-    // Open the target language menu and count rendered options.
+    await renderEnabled();
+    // Open the target language menu and count rendered options. The menu is
+    // rendered in a portal, so options are in the global document.
     fireEvent.click(screen.getByRole('button', { name: 'OCR target language' }));
     await waitFor(() => {
-      expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
+      expect(screen.queryAllByRole('option').length).toBeGreaterThan(0);
     });
-    expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThanOrEqual(100);
+    expect(screen.queryAllByRole('option').length).toBeGreaterThanOrEqual(100);
   });
 
   it("selecting 'vi' target persists targetLangOverride", async () => {
