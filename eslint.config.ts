@@ -11,6 +11,7 @@ export default tseslint.config(
       'dist/',
       'node_modules/',
       'coverage/',
+      'test-results/',
       'bin/',
       'tests/integration/.cache/',
       'project-reference/',
