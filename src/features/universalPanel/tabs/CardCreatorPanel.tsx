@@ -101,16 +101,12 @@ function CardCreatorPanelCore({
     void submit('add');
   }, [initialAction, context, loadStatus, submitting, submit]);
 
-  // The Cancel button is part of the shared CardCreatorDialogContent. In a
-  // right-side panel there is no dialog to close; pressing it intentionally
-  // does nothing rather than resetting the form.
   return (
     <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
       <div className={styles.scrollArea}>
         <CardCreatorDialogContent
           state={state}
           variant="desktop"
-          onCancel={() => {}}
           className={styles.panelBody}
           layout="panel"
         />

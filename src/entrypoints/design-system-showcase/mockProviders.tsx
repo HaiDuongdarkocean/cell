@@ -185,6 +185,7 @@ function useMockCardCreatorState(): CardCreatorState {
       addFiles: () => {},
       removeMedia: () => {},
       reorderMedia: () => {},
+      clear: () => {},
       translateSentenceField: async () => {},
       generateAll: async () => {},
       submit: async () => {},
@@ -251,6 +252,27 @@ function useMockCardCreatorState(): CardCreatorState {
     setState((s) => ({ ...s, toasts: [...s.toasts, { id: Date.now(), kind, message }] }));
   }, []);
 
+  const clear = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      draft: {
+        ...s.draft,
+        tags: '',
+        fields: {
+          targetWord: '',
+          sentence: '',
+          sentenceTranslation: '',
+          definitions: '',
+          images: [],
+          sentenceAudios: [],
+          wordAudios: [],
+          note: '',
+          moreExample: '',
+        },
+      },
+    }));
+  }, []);
+
   return useMemo(
     () => ({
       ...state,
@@ -265,6 +287,7 @@ function useMockCardCreatorState(): CardCreatorState {
       addFiles,
       removeMedia,
       reorderMedia: () => {},
+      clear,
       translateSentenceField: async () => { updateField('sentenceTranslation', 'sự tình cờ may mắn'); },
       submit: async (mode: 'add' | 'update') => {
         setState((s) => ({ ...s, submitting: true }));
@@ -289,7 +312,7 @@ function useMockCardCreatorState(): CardCreatorState {
       toggleQueueSidebar,
       dismissToast,
     }),
-    [state, updateDraft, updateField, updateMapping, addFiles, removeMedia, selectQueueItem, toggleQueueSidebar, pushToast, dismissToast],
+    [state, updateDraft, updateField, updateMapping, addFiles, removeMedia, clear, selectQueueItem, toggleQueueSidebar, pushToast, dismissToast],
   );
 }
 

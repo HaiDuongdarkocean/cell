@@ -12,12 +12,14 @@
  *
  * BEM block: .cc-dialog
  */
-import type { ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Heading } from '@/shared/ui/Heading';
 import { Label } from '@/shared/ui/Label';
 import { Select } from '@/shared/ui/Select';
+import { Dialog } from '@/shared/ui/Dialog';
 import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
@@ -29,7 +31,6 @@ import styles from './CardCreatorDialog.module.css';
 interface CardCreatorDialogContentProps {
   state: ReturnType<typeof useCardCreatorState>;
   variant: 'desktop' | 'mobile';
-  onCancel: () => void;
   className?: string;
   /** Render in the integrated universal panel instead of a standalone dialog. */
   layout?: 'dialog' | 'panel';
@@ -38,7 +39,6 @@ interface CardCreatorDialogContentProps {
 export function CardCreatorDialogContent({
   state,
   variant,
-  onCancel,
   className,
   layout = 'dialog',
 }: CardCreatorDialogContentProps): ReactElement {
@@ -73,7 +73,37 @@ export function CardCreatorDialogContent({
     translateSentenceField,
     generateAll,
     submit,
+    clear,
   } = state;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // Resolve the portal target so the confirmation dialog renders outside the
+  // Card Creator dialog (escaping overflow/focus) but inside the same
+  // document/shadow root so its CSS and event delegation remain intact.
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return;
+    const root = node.getRootNode();
+    let container: HTMLElement | null = null;
+    if (root instanceof ShadowRoot) {
+      let el: Node = node;
+      while (el.parentNode && el.parentNode !== root) {
+        el = el.parentNode;
+      }
+      container = el instanceof Element ? (el as HTMLElement) : null;
+    } else {
+      container = (root as Document).body ?? null;
+    }
+    setPortalContainer(container);
+  }, []);
+
+  const handleClear = (): void => {
+    setConfirmOpen(false);
+    clear();
+  };
 
   const hasQueue = queueItems.length >= 2;
 
@@ -388,8 +418,14 @@ export function CardCreatorDialogContent({
           />
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
-          <Button variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
-            {t('cardCreator.action.cancel')}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirmOpen(true)}
+            disabled={submitting}
+            data-cell-id="cc-clear"
+          >
+            {t('cardCreator.action.clear')}
           </Button>
           <Button
             variant="secondary"
@@ -414,29 +450,69 @@ export function CardCreatorDialogContent({
     </div>
   );
 
+  const confirmDialog = confirmOpen && portalContainer ?
+    createPortal(
+      <Dialog
+        open
+        onOpenChange={setConfirmOpen}
+        title={t('cardCreator.clearConfirm.title')}
+        description={t('cardCreator.clearConfirm.description')}
+        showCloseButton
+        data-cell-id="cc-clear-confirm-dialog"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setConfirmOpen(false)}
+              data-cell-id="cc-clear-confirm-cancel"
+            >
+              {t('cardCreator.clearConfirm.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClear}
+              data-cell-id="cc-clear-confirm-confirm"
+            >
+              {t('cardCreator.clearConfirm.confirm')}
+            </Button>
+          </>
+        }
+      />,
+      portalContainer,
+    ) : null;
+
   if (isPanel) {
     return (
-      <div className={styles['cc-dialog--panel']} data-cell-id="card-creator-content">
-        <div className={styles['cc-dialog__panel-header']}>
-          {headerSettings}
-          <span className={styles['cc-dialog__panel-title']}>{t('cardCreator.title')}</span>
-          {headerQueue}
+      <>
+        <div
+          ref={contentRef}
+          className={styles['cc-dialog--panel']}
+          data-cell-id="card-creator-content"
+        >
+          <div className={styles['cc-dialog__panel-header']}>
+            {headerSettings}
+            <span className={styles['cc-dialog__panel-title']}>{t('cardCreator.title')}</span>
+            {headerQueue}
+          </div>
+          <div className={styles['cc-dialog__panel-content']}>
+            {body}
+            {hasQueue && queueSidebarOpen && (
+              <QueueSidebar
+                queueItems={queueItems}
+                queueActiveIndex={queueActiveIndex}
+                onSelectQueueItem={selectQueueItem}
+                onDeleteQueueItem={deleteQueueItem}
+                onUndoDeleteQueueItem={undoDeleteQueueItem}
+                toasts={toasts}
+                onDismissToast={dismissToast}
+              />
+            )}
+          </div>
         </div>
-        <div className={styles['cc-dialog__panel-content']}>
-          {body}
-          {hasQueue && queueSidebarOpen && (
-            <QueueSidebar
-              queueItems={queueItems}
-              queueActiveIndex={queueActiveIndex}
-              onSelectQueueItem={selectQueueItem}
-              onDeleteQueueItem={deleteQueueItem}
-              onUndoDeleteQueueItem={undoDeleteQueueItem}
-              toasts={toasts}
-              onDismissToast={dismissToast}
-            />
-          )}
-        </div>
-      </div>
+        {confirmDialog}
+      </>
     );
   }
 
@@ -446,20 +522,27 @@ export function CardCreatorDialogContent({
   ].filter(Boolean).join(' ');
 
   return (
-    <div className={hasQueue ? withQueueClass : undefined} data-cell-id="card-creator-content">
-      {body}
-      {hasQueue && queueSidebarOpen && (
-        <QueueSidebar
-          mobile={variant === 'mobile'}
-          queueItems={queueItems}
-          queueActiveIndex={queueActiveIndex}
-          onSelectQueueItem={selectQueueItem}
-          onDeleteQueueItem={deleteQueueItem}
-          onUndoDeleteQueueItem={undoDeleteQueueItem}
-          toasts={toasts}
-          onDismissToast={dismissToast}
-        />
-      )}
-    </div>
+    <>
+      <div
+        ref={contentRef}
+        className={hasQueue ? withQueueClass : undefined}
+        data-cell-id="card-creator-content"
+      >
+        {body}
+        {hasQueue && queueSidebarOpen && (
+          <QueueSidebar
+            mobile={variant === 'mobile'}
+            queueItems={queueItems}
+            queueActiveIndex={queueActiveIndex}
+            onSelectQueueItem={selectQueueItem}
+            onDeleteQueueItem={deleteQueueItem}
+            onUndoDeleteQueueItem={undoDeleteQueueItem}
+            toasts={toasts}
+            onDismissToast={dismissToast}
+          />
+        )}
+      </div>
+      {confirmDialog}
+    </>
   );
 }

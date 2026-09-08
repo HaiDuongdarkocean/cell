@@ -73,11 +73,7 @@ export function CardCreatorBottomSheet({
       centerTitle
       data-cell-id="card-creator-bottom-sheet"
     >
-      <CardCreatorDialogContent
-        state={state}
-        variant="mobile"
-        onCancel={() => handleOpenChange(false)}
-      />
+      <CardCreatorDialogContent state={state} variant="mobile" />
     </BottomSheet>
   );
 }

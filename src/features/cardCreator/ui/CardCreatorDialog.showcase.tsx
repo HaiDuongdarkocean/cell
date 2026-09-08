@@ -17,7 +17,7 @@ export function Showcase(): ReactElement {
         background: 'var(--color-surface-card)',
       }}
     >
-      <CardCreatorDialogContent state={state} variant="desktop" onCancel={() => {}} layout="panel" />
+      <CardCreatorDialogContent state={state} variant="desktop" layout="panel" />
     </div>
   );
 }
