@@ -39,7 +39,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testMatch: '**/extension*.spec.ts',
+      testMatch: ['**/extension*.spec.ts', '**/stage2/*.spec.ts'],
       use: { ...devices['Desktop Chrome'], baseURL: 'chrome://extensions' },
     },
   ],
