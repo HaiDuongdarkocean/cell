@@ -310,10 +310,15 @@ export class NetworkInterceptor {
    * network-interception path. Deduplicates by URL within the same tab and
    * notifies listeners when at least one new subtitle is added.
    *
+   * If a later discovery resolves an existing `language: 'unknown'` subtitle,
+   * the stored record is updated in-place (same id) so the popup and
+   * auto-loader see the real language without creating a duplicate URL.
+   *
    * Returns the number of newly-added subtitles (0 = all duplicates).
    */
   addDetectedSubtitles(subtitles: readonly DetectedSubtitle[]): number {
     let added = 0;
+    let updated = 0;
     for (const subtitle of subtitles) {
       const existing = this.getSubtitles(subtitle.tabId).find(
         (s) => s.url === subtitle.url,
@@ -321,9 +326,20 @@ export class NetworkInterceptor {
       if (existing === undefined) {
         this.subtitles.set(subtitle.id, subtitle);
         added++;
+      } else if (
+        existing.language === 'unknown' &&
+        subtitle.language !== undefined &&
+        subtitle.language !== 'unknown'
+      ) {
+        this.subtitles.set(existing.id, {
+          ...existing,
+          language: subtitle.language,
+          displayName: subtitle.displayName ?? existing.displayName,
+        });
+        updated++;
       }
     }
-    if (added > 0) {
+    if (added > 0 || updated > 0) {
       this.notifyListeners(subtitles[0]?.tabId ?? 0);
     }
     return added;

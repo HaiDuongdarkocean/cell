@@ -21,6 +21,10 @@ export interface OverrideResult {
 
 import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
+import {
+  isPhimwarSubtitleUrl,
+  decryptPhimwarSrtFromUrl,
+} from '@/shared/lib/parsers/phimwarDecryption';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitleFormat, ParseResult } from '@/entities/subtitle';
@@ -174,6 +178,21 @@ export async function fetchAndParseSubtitle(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+    }
+  }
+
+  // PhimWar serves AES-GCM-encrypted base64 payloads instead of plaintext.
+  if (isPhimwarSubtitleUrl(url)) {
+    try {
+      content = await decryptPhimwarSrtFromUrl(url, content);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return {
+        success: false,
+        cues: [],
+        format,
+        error: `PhimWar decryption failed: ${msg}`,
+      };
     }
   }
 

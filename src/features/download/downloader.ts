@@ -3,6 +3,10 @@ import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { convertTtmlToSrt } from '@/shared/lib/parsers/ttmlToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
+import {
+  isPhimwarSubtitleUrl,
+  decryptPhimwarSrtFromUrl,
+} from '@/shared/lib/parsers/phimwarDecryption';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   ByteRange,
@@ -326,7 +330,20 @@ export class Downloader {
     if (!response.ok) {
       throw new Error(`Failed to fetch subtitle: ${response.status}`);
     }
-    const content = await response.text();
+    let content = await response.text();
+
+    // PhimWar serves AES-GCM-encrypted base64 payloads instead of plaintext.
+    if (isPhimwarSubtitleUrl(subtitle.url)) {
+      try {
+        content = await decryptPhimwarSrtFromUrl(subtitle.url, content);
+      } catch (err) {
+        throw new Error(
+          `PhimWar subtitle decryption failed: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
+    }
 
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'converting', 50);
