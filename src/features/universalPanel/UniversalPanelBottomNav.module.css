@@ -22,6 +22,7 @@
   flex: 1;
   min-width: 0;
   height: var(--universal-panel-bottom-nav-item-height);
+  border-radius: 0;
 }
 
 .bottomNav .navItem {
