@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
@@ -110,15 +110,19 @@ export function CandidateView({
   const selectedWordAudioUrl = useAudioItemUrl(selectedWordAudio);
 
   const [frequencyThresholds, setFrequencyThresholds] = useState<FrequencyBandThresholds>(DEFAULT_BAND_THRESHOLDS);
+  const isMountedRef = useRef(false);
+  const didLoadRef = useRef(false);
   useEffect(() => {
-    let cancelled = false;
+    isMountedRef.current = true;
     withTimeout(loadSettings(), 5_000)
       .then((s) => {
+        if (!isMountedRef.current || didLoadRef.current) return;
         const next = s.frequencyBands ?? DEFAULT_BAND_THRESHOLDS;
-        if (!cancelled && next !== frequencyThresholds) setFrequencyThresholds(next);
+        didLoadRef.current = true;
+        setFrequencyThresholds(next);
       })
       .catch(() => { /* keep defaults */ });
-    return () => { cancelled = true; };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank, frequencyThresholds) : 'none';
