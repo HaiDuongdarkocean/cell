@@ -98,6 +98,7 @@ function initialState(): CardCreatorState {
     removeMedia: () => {},
     reorderMedia: () => {},
     translateSentenceField: async () => {},
+    generateAll: async () => {},
     submit: async () => {},
     dismissToast: () => {},
   };

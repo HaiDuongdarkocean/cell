@@ -70,6 +70,7 @@ export function CardCreatorDialogContent({
     removeMedia,
     reorderMedia,
     translateSentenceField,
+    generateAll,
     submit,
   } = state;
 
@@ -140,7 +141,19 @@ export function CardCreatorDialogContent({
 
       {/* Section: Card destination */}
       <div className={styles['cc-dialog__section']}>
-        <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Card destination</Heading>
+        <div className={styles['cc-dialog__section-header']}>
+          <Heading level={3} size={4} className={styles["cc-dialog__section-title"]}>Card destination</Heading>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void generateAll()}
+            disabled={!draft.fields.targetWord.trim()}
+            data-cell-id="cc-generate-all"
+          >
+            <Icon name="zap" size="sm" />
+            <span>Generate all</span>
+          </Button>
+        </div>
         <div className={styles['cc-dialog__pair-row']}>
           <div className={styles['cc-dialog__field']}>
             <Label className={styles['cc-dialog__field-label']}>Note type</Label>
@@ -149,6 +162,7 @@ export function CardCreatorDialogContent({
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
               aria-label="Note type"
+              className={styles['cc-dialog__select']}
               data-cell-id="cc-note-type"
             />
           </div>
@@ -159,6 +173,7 @@ export function CardCreatorDialogContent({
               options={decks.map((d) => ({ value: d, label: d }))}
               onChange={(d) => void changeDeck(d)}
               aria-label="Deck"
+              className={styles['cc-dialog__select']}
               data-cell-id="cc-deck"
             />
           </div>
@@ -222,7 +237,8 @@ export function CardCreatorDialogContent({
             dataId="cc-sentence-translation"
           />
           <Button variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
-            Translate
+            <Icon name="languages" size="sm" />
+            <span>Translate</span>
           </Button>
         </FieldRow>
 
@@ -360,6 +376,7 @@ export function CardCreatorDialogContent({
             ]}
             onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
             aria-label="Update mode"
+            className={styles['cc-dialog__select']}
             data-cell-id="cc-update-mode"
           />
         </div>
