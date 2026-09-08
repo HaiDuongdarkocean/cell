@@ -105,7 +105,7 @@ export async function sampleDictionaryEntries(langCode: string, resourceId: numb
     request.onsuccess = () => {
       const cursor = request.result;
       if (cursor && results.length < limit) {
-        const { backwardTerm, ...entry } = cursor.value as StoredDictionaryEntry;
+        const { backwardTerm: _backwardTerm, ...entry } = cursor.value as StoredDictionaryEntry;
         results.push(entry as DictionaryEntry);
         cursor.continue();
       } else {
@@ -131,7 +131,7 @@ export async function findDictionaryEntry(langCode: string, resourceId: number, 
       }
       const value = cursor.value as StoredDictionaryEntry;
       if (value.resourceId === resourceId) {
-        const { backwardTerm, ...entry } = value;
+        const { backwardTerm: _backwardTerm, ...entry } = value;
         resolve(entry as DictionaryEntry);
         return;
       }

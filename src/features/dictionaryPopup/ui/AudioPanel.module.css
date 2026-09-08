@@ -6,58 +6,8 @@
   padding: 0 var(--space-2);
 }
 
-.cellAudioSubtabs {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-0-5) 0 var(--space-1);
-  position: relative;
-}
-
-/* Liquid ink bar — single underline that flows between subtabs. Resting
-   geometry comes from --ink-x/--ink-w (left/width, not transform — the
-   WAAPI flow animation drives those two properties directly).
-   bottom: space-1 lifts it close under the text (container padding). */
-.cellAudioSubtabs::after {
-  content: "";
-  position: absolute;
-  left: var(--ink-x, 0px);
-  bottom: var(--space-1);
-  width: var(--ink-w, 0px);
-  height: var(--space-0-5);
-  border-radius: var(--radius-full);
-  background: var(--color-primary);
-}
-
-/* (0,2,0) beats shared Button's .button/.transparent chrome — the module
-   class owns padding/min-height/height so the subtab stays text-sized. */
-.cellAudioSubtabs .cellAudioSubtab {
-  background: none;
-  border: none;
-  padding: 0;
-  min-height: 0;
-  height: auto;
-  font: inherit;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  border-bottom: var(--space-0-5) solid transparent;
-  padding-bottom: var(--space-0-5);
-  transition: color var(--duration-fast) var(--ease-in-out),
-    border-color var(--duration-fast) var(--ease-in-out);
-}
-
-.cellAudioSubtabs .cellAudioSubtab:hover {
-  color: var(--color-text);
-}
-
-/* Active tab only changes text color — the underline is the container's
-   ::after ink bar so it slides instead of fading per-tab. */
-.cellAudioSubtabs .cellAudioSubtab--active {
-  color: var(--color-text);
-}
+/* Subtab bar (word/sentence) — shared InkTabs component
+   (src/shared/ui/InkTabs), liquid ink-bar animation included. */
 
 /* Item list — gap drives row spacing; no margins on items. */
 .cellAudioItems {

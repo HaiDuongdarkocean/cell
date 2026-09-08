@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import { Card, Heading, Icon, Select, SettingsRow, Text, Toggle, VStack } from '@/shared/ui';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import type { AudioEngineKind } from '@/entities/settings/types';
 import {
   AudioTester,

@@ -1,3 +1,4 @@
+/* global document, getComputedStyle, innerHeight */
 /* Batch journey sweep: every showcase page x data state x viewport.
  * Captures screenshots into loop/universal-panel-ui-audit/image/sweep/.
  * Usage: node scripts/journey-sweep.cjs [baseUrl]

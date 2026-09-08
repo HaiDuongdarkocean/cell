@@ -44,6 +44,7 @@ export { HintIcon } from './HintIcon';
 export { useFocusTrap } from './useFocusTrap';
 export { pushEscapeLayer } from './escapeLayerStack';
 export { Tabs } from './Tabs';
+export { InkTabs, type InkTabItem } from './InkTabs';
 export { ShortcutInput } from './ShortcutInput';
 
 // === New atoms (Phase 2: Generic Core + Layout + Display + Utility + Extension) ===

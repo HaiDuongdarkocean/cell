@@ -9,7 +9,7 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react';
-import { Button, Tabs, Input, Label } from '@/shared/ui';
+import { Button, InkTabs, Input, Label } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
 import { formatBytes } from './subtitlePanelModel';
@@ -400,6 +400,7 @@ export function SubtitleManagerPanel({
   const viewRef = useRef(view);
   viewRef.current = view;
   const [activeTab, setActiveTab] = useState<'target' | 'native'>('target');
+  const [appearanceTab, setAppearanceTab] = useState<'block' | 'target' | 'native' | 'buttons'>('block');
   const customizeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Auto-hide header/footer on scroll (mobile only, tracks view)
@@ -602,46 +603,46 @@ export function SubtitleManagerPanel({
       {view === 'tracks' && (
         <div key="tracks" className={styles.viewContent}>
           <div className={styles.tracksBody} ref={tracksBodyRef}>
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'target' | 'native')}>
-              <div className={styles.sectionBar} data-cell-id="manager-section-header">
-                <Tabs.List className={styles.tabsList}>
-                  <Tabs.Trigger value="target" className={styles.tabTrigger}>
-                    {targetLabel}
-                    <span className={styles.tabCount}>{targetItems.length}</span>
-                  </Tabs.Trigger>
-                  <Tabs.Trigger value="native" className={styles.tabTrigger}>
-                    {nativeLabel}
-                    <span className={styles.tabCount}>{nativeItems.length}</span>
-                  </Tabs.Trigger>
-                </Tabs.List>
-                <div className={styles.sectionActions}>
-                  {onImport && (
-                    <Button shape="circle"
-                      size="md"
-                      variant="ghost"
-                      aria-label={`Import ${activeLabel} subtitle`}
-                      data-cell-id={`manager-import-${activeTab}`}
-                      onClick={() => onImport(activeTab)}
-                    >
-                      <Plus aria-hidden="true" />
-                    </Button>
-                  )}
-                  {onHideSection && (
-                    <Button shape="circle"
-                      size="md"
-                      variant="ghost"
-                      active={activeHidden}
-                      aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
-                      data-cell-id={`manager-hide-section-${activeTab}`}
-                      onClick={() => onHideSection(activeTab)}
-                    >
-                      <EyeOff aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
+            <div className={styles.sectionBar} data-cell-id="manager-section-header">
+              <InkTabs
+                className={styles.inkTabs}
+                aria-label="Subtitle sections"
+                items={[
+                  { value: 'target', label: targetLabel, badge: targetItems.length },
+                  { value: 'native', label: nativeLabel, badge: nativeItems.length },
+                ]}
+                value={activeTab}
+                onValueChange={(v) => setActiveTab(v as 'target' | 'native')}
+              />
+              <div className={styles.sectionActions}>
+                {onImport && (
+                  <Button shape="circle"
+                    size="md"
+                    variant="ghost"
+                    aria-label={`Import ${activeLabel} subtitle`}
+                    data-cell-id={`manager-import-${activeTab}`}
+                    onClick={() => onImport(activeTab)}
+                  >
+                    <Plus aria-hidden="true" />
+                  </Button>
+                )}
+                {onHideSection && (
+                  <Button shape="circle"
+                    size="md"
+                    variant="ghost"
+                    active={activeHidden}
+                    aria-label={activeHidden ? `Show ${activeLabel} subtitle in overlay` : `Hide ${activeLabel} subtitle from overlay`}
+                    data-cell-id={`manager-hide-section-${activeTab}`}
+                    onClick={() => onHideSection(activeTab)}
+                  >
+                    <EyeOff aria-hidden="true" />
+                  </Button>
+                )}
               </div>
+            </div>
 
-              <Tabs.Content value="target" className={styles.tabContent} data-role="target">
+            {activeTab === 'target' && (
+              <div className={styles.tabContent} data-role="target" role="tabpanel">
                 <TrackList
                   role="target"
                   items={targetItems}
@@ -656,9 +657,11 @@ export function SubtitleManagerPanel({
                   setState={setTargetState}
                   onOffsetChange={onOffsetChange}
                 />
-              </Tabs.Content>
+              </div>
+            )}
 
-              <Tabs.Content value="native" className={styles.tabContent} data-role="native">
+            {activeTab === 'native' && (
+              <div className={styles.tabContent} data-role="native" role="tabpanel">
                 <TrackList
                   role="native"
                   items={nativeItems}
@@ -673,8 +676,8 @@ export function SubtitleManagerPanel({
                   setState={setNativeState}
                   onOffsetChange={onOffsetChange}
                 />
-              </Tabs.Content>
-            </Tabs>
+              </div>
+            )}
           </div>
 
           <SubtitleManagerFooter
@@ -729,22 +732,30 @@ export function SubtitleManagerPanel({
             </div>
 
             <div className={styles.tabsRoot}>
-              <Tabs defaultValue="block">
-                <Tabs.List className={styles.tabsList}>
-                  <Tabs.Trigger value="block" className={styles.tabTrigger}>Block</Tabs.Trigger>
-                  <Tabs.Trigger value="target" className={styles.tabTrigger}>Target</Tabs.Trigger>
-                  <Tabs.Trigger value="native" className={styles.tabTrigger}>Native</Tabs.Trigger>
-                  <Tabs.Trigger value="buttons" className={styles.tabTrigger}>Buttons</Tabs.Trigger>
-                </Tabs.List>
+              <InkTabs
+                className={styles.appearanceTabs}
+                aria-label="Appearance sections"
+                items={[
+                  { value: 'block', label: 'Block' },
+                  { value: 'target', label: 'Target' },
+                  { value: 'native', label: 'Native' },
+                  { value: 'buttons', label: 'Buttons' },
+                ]}
+                value={appearanceTab}
+                onValueChange={(v) => setAppearanceTab(v as 'block' | 'target' | 'native' | 'buttons')}
+              />
 
-                <Tabs.Content value="block" className={styles.tabContent}>
+              {appearanceTab === 'block' && (
+                <div className={styles.tabContent} role="tabpanel">
                   <SubtitleBlockSettingsPanel
                     settings={appearance.blockSettings}
                     onChange={appearance.onBlockSettingsChange}
                   />
-                </Tabs.Content>
+                </div>
+              )}
 
-                <Tabs.Content value="target" className={styles.tabContent}>
+              {appearanceTab === 'target' && (
+                <div className={styles.tabContent} role="tabpanel">
                   <SubtitleStylePanel
                     role="target"
                     style={appearance.targetStyle}
@@ -752,9 +763,11 @@ export function SubtitleManagerPanel({
                     onReset={() => appearance.onResetStyle('target')}
                     defaultStyle={appearance.defaultTargetStyle}
                   />
-                </Tabs.Content>
+                </div>
+              )}
 
-                <Tabs.Content value="native" className={styles.tabContent}>
+              {appearanceTab === 'native' && (
+                <div className={styles.tabContent} role="tabpanel">
                   <SubtitleStylePanel
                     role="native"
                     style={appearance.nativeStyle}
@@ -762,15 +775,17 @@ export function SubtitleManagerPanel({
                     onReset={() => appearance.onResetStyle('native')}
                     defaultStyle={appearance.defaultNativeStyle}
                   />
-                </Tabs.Content>
+                </div>
+              )}
 
-                <Tabs.Content value="buttons" className={styles.tabContent}>
+              {appearanceTab === 'buttons' && (
+                <div className={styles.tabContent} role="tabpanel">
                   <NavClusterSettingsPanel
                     settings={appearance.clusterSettings}
                     onChange={appearance.onClusterSettingsChange}
                   />
-                </Tabs.Content>
-              </Tabs>
+                </div>
+              )}
             </div>
           </div>
         </div>

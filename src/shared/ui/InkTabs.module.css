@@ -1,0 +1,91 @@
+/* InkTabs — text tab row with a single liquid ink-bar underline that flows
+   between tabs (extracted from the dictionary AudioPanel subtabs). */
+
+.list {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
+  position: relative;
+}
+
+/* Liquid ink bar — single underline that flows between tabs. Resting
+   geometry comes from --ink-x/--ink-w (left/width, not transform — the
+   WAAPI flow animation drives those two properties directly).
+   bottom: space-1 lifts it close under the text (container padding). */
+.list::after {
+  content: "";
+  position: absolute;
+  left: var(--ink-x, 0px);
+  bottom: var(--space-1);
+  width: var(--ink-w, 0px);
+  height: var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+}
+
+/* (0,2,0) beats shared Button's .button/.transparent chrome — the module
+   class owns padding/min-height/height so the tab stays text-sized. */
+.list .tab {
+  background: none;
+  border: none;
+  padding: 0;
+  min-height: 0;
+  height: auto;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-bottom: var(--space-0-5) solid transparent;
+  padding-bottom: var(--space-0-5);
+  transition: color var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.list .tab:hover {
+  color: var(--color-text);
+}
+
+.list .tab:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-border-focus);
+  border-radius: var(--radius-sm);
+}
+
+/* Active tab only changes text color — the underline is the container's
+   ::after ink bar so it slides instead of fading per-tab. */
+.list .tabActive {
+  color: var(--color-text);
+}
+
+/* Count badge — dictionary-toolbar badge recipe (fg chip + primary number +
+   35% primary ring), rendered inline next to the tab label. The tab's
+   uppercase/tracking styles are reset inside the badge. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-4);
+  height: var(--space-4);
+  margin-left: var(--space-1);
+  padding: 0 var(--space-0-5);
+  border-radius: var(--radius-full);
+  background: var(--button-fg);
+  color: var(--color-primary);
+  border: var(--border-width-medium) solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: normal;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list .tab {
+    transition: none;
+  }
+}
