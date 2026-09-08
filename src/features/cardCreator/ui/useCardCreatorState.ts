@@ -117,6 +117,9 @@ export interface CardCreatorState {
   submit: (mode: 'add' | 'update') => Promise<void>;
   /** Dismiss a toast by id. */
   dismissToast: (id: number) => void;
+  /** Clear all card field data (text, media, tags) while keeping note type,
+   *  deck, and field mapping selections. */
+  clear: () => void;
 }
 
 export function useCardCreatorState(
@@ -648,6 +651,26 @@ export function useCardCreatorState(
     [],
   );
 
+  /** Clear all user-entered card data while preserving note type, deck,
+   *  and field mapping choices. */
+  const clear = useCallback(() => {
+    useCardCreatorStore.getState().setDraft((prev) => ({
+      ...prev,
+      tags: '',
+      fields: {
+        targetWord: '',
+        sentence: '',
+        sentenceTranslation: '',
+        definitions: '',
+        images: [],
+        sentenceAudios: [],
+        wordAudios: [],
+        note: '',
+        moreExample: '',
+      },
+    }));
+  }, []);
+
   /** Translate the current sentence via Google Translate. */
   const translateSentenceField = useCallback(async () => {
     const ctx = openContextRef.current;
@@ -915,6 +938,7 @@ export function useCardCreatorState(
     addFiles,
     removeMedia,
     reorderMedia,
+    clear,
     translateSentenceField,
     generateAll,
     submit,

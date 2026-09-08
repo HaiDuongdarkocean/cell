@@ -93,11 +93,7 @@ export function CardCreatorDialog({
       headerExtra={headerExtra}
       data-cell-id="card-creator-dialog"
     >
-      <CardCreatorDialogContent
-        state={state}
-        variant="desktop"
-        onCancel={() => handleOpenChange(false)}
-      />
+      <CardCreatorDialogContent state={state} variant="desktop" />
     </Dialog>
   );
 }

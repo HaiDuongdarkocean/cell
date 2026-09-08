@@ -97,6 +97,7 @@ function initialState(): CardCreatorState {
     addFiles: () => {},
     removeMedia: () => {},
     reorderMedia: () => {},
+    clear: () => {},
     translateSentenceField: async () => {},
     generateAll: async () => {},
     submit: async () => {},
@@ -219,6 +220,27 @@ function useMockCardCreatorState(): CardCreatorState {
     }));
   }, []);
 
+  const clear = useCallback(() => {
+    setState((s) => ({
+      ...s,
+      draft: {
+        ...s.draft,
+        tags: '',
+        fields: {
+          targetWord: '',
+          sentence: '',
+          sentenceTranslation: '',
+          definitions: '',
+          images: [],
+          sentenceAudios: [],
+          wordAudios: [],
+          note: '',
+          moreExample: '',
+        },
+      },
+    }));
+  }, []);
+
   return {
     ...state,
     updateDraft,
@@ -234,6 +256,7 @@ function useMockCardCreatorState(): CardCreatorState {
     reorderMedia,
     translateSentenceField,
     submit,
+    clear,
     selectQueueItem,
     deleteQueueItem,
     undoDeleteQueueItem,
@@ -247,7 +270,7 @@ export function CardCreatorPreview(): ReactElement {
 
   return (
     <div className={styles.cardCreatorPreview}>
-      <CardCreatorDialogContent state={state} variant="desktop" onCancel={() => {}} layout="panel" />
+      <CardCreatorDialogContent state={state} variant="desktop" layout="panel" />
     </div>
   );
 }
