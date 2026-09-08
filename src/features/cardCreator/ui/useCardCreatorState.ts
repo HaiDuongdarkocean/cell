@@ -28,7 +28,7 @@ import { buildAnkiFields } from '../service/buildAnkiFields';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
 import { DraftAutosaver, type CardDraft } from '../state/cardDraft';
-import { t } from '@/shared/i18n';
+import { t, type MessageKey } from '@/shared/i18n';
 import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
@@ -41,6 +41,40 @@ import type {
 } from '../types';
 
 export type OpenContext = CardCreatorOpenContext;
+
+/** Field keys that can be generated individually. */
+type GenerateFieldKey = keyof CardDraft['fields'];
+
+/** i18n key for each field's human-readable label. */
+const fieldLabelMap = {
+  targetWord: 'cardCreator.field.targetWord',
+  sentence: 'cardCreator.field.sentence',
+  sentenceTranslation: 'cardCreator.field.sentenceTranslation',
+  definitions: 'cardCreator.field.definitions',
+  images: 'cardCreator.field.image',
+  sentenceAudios: 'cardCreator.field.sentenceAudio',
+  wordAudios: 'cardCreator.field.wordAudio',
+  note: 'cardCreator.field.note',
+  moreExample: 'cardCreator.field.moreExample',
+} as const satisfies Record<GenerateFieldKey, MessageKey>;
+
+const mediaUrlMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'imageUrls' | 'sentenceAudioUrls' | 'wordAudioUrls'> = {
+  images: 'imageUrls',
+  sentenceAudios: 'sentenceAudioUrls',
+  wordAudios: 'wordAudioUrls',
+};
+
+const mediaKindMap: Record<'images' | 'sentenceAudios' | 'wordAudios', MediaKind> = {
+  images: 'image',
+  sentenceAudios: 'audio',
+  wordAudios: 'audio',
+};
+
+const mediaFetchKeyMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'cardCreator.toast.fetch.image' | 'cardCreator.toast.fetch.sentenceAudio' | 'cardCreator.toast.fetch.wordAudio'> = {
+  images: 'cardCreator.toast.fetch.image',
+  sentenceAudios: 'cardCreator.toast.fetch.sentenceAudio',
+  wordAudios: 'cardCreator.toast.fetch.wordAudio',
+};
 
 /** Re-export LoadStatus from the store (single source of truth). */
 export type { LoadStatus } from '@/stores/cardCreatorStore';
@@ -111,6 +145,8 @@ export interface CardCreatorState {
   reorderMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => void;
   /** Translate the current sentence. */
   translateSentenceField: () => Promise<void>;
+  /** Generate resources for a single field (prefill text, cue text, or media URLs). */
+  generateField: (key: keyof CardDraft['fields']) => Promise<void>;
   /** Generate all missing media from the current target word / prefill. */
   generateAll: () => Promise<void>;
   /** Submit: Add (create new) or Update (existing note). */
@@ -698,6 +734,132 @@ export function useCardCreatorState(
     }
   }, [updateField]);
 
+  /** Generate resources for a single field from prefill/cue data.
+   *  Skips if the field is already filled (so user edits are not overwritten).
+   *  Best-effort: failed media URLs are skipped with a toast. */
+  const generateField = useCallback(async (key: GenerateFieldKey) => {
+    const ctx = openContextRef.current;
+    if (!ctx) return;
+
+    const store = () => useCardCreatorStore.getState();
+    const fieldLabel = t(fieldLabelMap[key]);
+
+    const trySetTextField = (
+      k: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample',
+      value: string,
+    ): void => {
+      const currentValue = (store().draft.fields[k] as string).trim();
+      if (currentValue) {
+        store().pushToast('warning', t('cardCreator.toast.generateField.alreadyFilled', [t(fieldLabelMap[k])]));
+        return;
+      }
+      if (value) {
+        updateField(k, value);
+        store().pushToast('success', t('cardCreator.toast.generateField.success', [t(fieldLabelMap[k])]));
+      } else {
+        store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [t(fieldLabelMap[k])]));
+      }
+    };
+
+    const ensureTargetWord = (): boolean => {
+      const currentTarget = store().draft.fields.targetWord.trim();
+      if (currentTarget) return true;
+      const prefillTarget = ctx.prefill?.targetWord?.trim();
+      if (prefillTarget) {
+        updateField('targetWord', prefillTarget);
+        return true;
+      }
+      store().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
+      return false;
+    };
+
+    if (key === 'targetWord') {
+      trySetTextField('targetWord', ctx.prefill?.targetWord?.trim() ?? '');
+      return;
+    }
+
+    if (!ensureTargetWord()) return;
+
+    const current = store().draft.fields;
+    const prefill = ctx.prefill;
+
+    switch (key) {
+      case 'sentence': {
+        trySetTextField('sentence', prefill?.sentence?.trim() ?? ctx.cue?.targetText?.trim() ?? '');
+        break;
+      }
+      case 'sentenceTranslation': {
+        const prefillValue = prefill?.sentenceTranslation?.trim() ?? ctx.cue?.nativeText?.trim() ?? '';
+        if (prefillValue) {
+          trySetTextField('sentenceTranslation', prefillValue);
+          break;
+        }
+        const sentence = current.sentence.trim() || ctx.cue?.targetText?.trim() || prefill?.sentence?.trim() || '';
+        if (!sentence) {
+          store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [fieldLabel]));
+          break;
+        }
+        const before = store().draft.fields.sentenceTranslation;
+        await translateSentenceField();
+        const after = store().draft.fields.sentenceTranslation;
+        if (after.trim() && after !== before) {
+          store().pushToast('success', t('cardCreator.toast.generateField.success', [fieldLabel]));
+        }
+        break;
+      }
+      case 'definitions':
+        trySetTextField('definitions', prefill?.definitions?.trim() ?? '');
+        break;
+      case 'note':
+        trySetTextField('note', prefill?.note?.trim() ?? '');
+        break;
+      case 'moreExample':
+        trySetTextField('moreExample', prefill?.moreExample?.trim() ?? '');
+        break;
+      case 'images':
+      case 'sentenceAudios':
+      case 'wordAudios': {
+        if (current[key].length > 0) {
+          store().pushToast('warning', t('cardCreator.toast.generateField.alreadyFilled', [fieldLabel]));
+          break;
+        }
+        const urlKey = mediaUrlMap[key];
+        const urls = prefill?.[urlKey] ?? [];
+        if (urls.length === 0) {
+          store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [fieldLabel]));
+          break;
+        }
+        store().setCapturingMedia(true);
+        const kind = mediaKindMap[key];
+        const fetchKey = mediaFetchKeyMap[key];
+        const fetched: MediaFile[] = [];
+        for (const url of urls) {
+          try {
+            fetched.push(await fetchMediaFile(url, kind));
+          } catch {
+            store().pushToast('warning', t(fetchKey, [url]));
+          }
+        }
+        if (fetched.length > 0) {
+          store().setDraft((prev) => ({
+            ...prev,
+            fields: {
+              ...prev.fields,
+              [key]: [...prev.fields[key], ...fetched],
+            },
+          }));
+          store().pushToast('success', t('cardCreator.toast.generateField.success', [fieldLabel]));
+        } else {
+          store().pushToast('warning', t('cardCreator.toast.generateField.failed', [fieldLabel]));
+        }
+        store().setCapturingMedia(false);
+        break;
+      }
+      default:
+        break;
+    }
+  }, [translateSentenceField, updateField]);
+
   /** Re-fetch prefill media for any media list that is still empty.
    *  Best-effort: failed URLs are skipped with a toast. */
   const generateAll = useCallback(async () => {
@@ -940,6 +1102,7 @@ export function useCardCreatorState(
     reorderMedia,
     clear,
     translateSentenceField,
+    generateField,
     generateAll,
     submit,
     dismissToast,

@@ -25,6 +25,7 @@ import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
 import { t } from '@/shared/i18n';
+import type { CardDraft } from '../state/cardDraft';
 import type { useCardCreatorState } from './useCardCreatorState';
 import styles from './CardCreatorDialog.module.css';
 
@@ -70,7 +71,7 @@ export function CardCreatorDialogContent({
     addFiles,
     removeMedia,
     reorderMedia,
-    translateSentenceField,
+    generateField,
     generateAll,
     submit,
     clear,
@@ -108,6 +109,27 @@ export function CardCreatorDialogContent({
   const hasQueue = queueItems.length >= 2;
 
   const isPanel = layout === 'panel';
+
+  const fieldGenerateButton = (
+    key: keyof CardDraft['fields'],
+    dataId: string,
+    label: string,
+  ): ReactElement => (
+    <Button
+      key={`generate-${key}`}
+      variant="ghost"
+      size="sm"
+      shape="circle"
+      onClick={() => void generateField(key)}
+      disabled={capturingMedia || submitting}
+      aria-label={t('cardCreator.action.generateFor', [label])}
+      title={t('cardCreator.action.generateFor', [label])}
+      data-cell-id={`${dataId}-generate`}
+    >
+      <Icon name="zap" size="sm" />
+    </Button>
+  );
+
   const containerClass = [
     isPanel ? styles['cc-dialog__body--panel'] : styles['cc-dialog__body'],
     !isPanel && variant === 'mobile' && styles['cc-dialog--mobile'],
@@ -228,6 +250,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.targetWord ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('targetWord', f)}
+          trailing={fieldGenerateButton('targetWord', 'cc-target-word', t('cardCreator.field.targetWord'))}
           dataId="cc-target-word"
         >
           <FieldAutoGrowInput
@@ -244,6 +267,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.sentence ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentence', f)}
+          trailing={fieldGenerateButton('sentence', 'cc-sentence', t('cardCreator.field.sentence'))}
           dataId="cc-sentence"
         >
           <FieldAutoGrowInput
@@ -259,6 +283,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.sentenceTranslation ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentenceTranslation', f)}
+          trailing={fieldGenerateButton('sentenceTranslation', 'cc-sentence-translation', t('cardCreator.field.sentenceTranslation'))}
           dataId="cc-sentence-translation"
         >
           <FieldAutoGrowInput
@@ -267,15 +292,6 @@ export function CardCreatorDialogContent({
             aria-label={t('cardCreator.field.sentenceTranslation')}
             dataId="cc-sentence-translation"
           />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={translateSentenceField}
-            leadingIcon={<Icon name="languages" size="sm" />}
-            data-cell-id="cc-translate"
-          >
-            {t('cardCreator.action.translate')}
-          </Button>
         </FieldRow>
 
         <FieldRow
@@ -283,6 +299,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.definitions ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('definitions', f)}
+          trailing={fieldGenerateButton('definitions', 'cc-definitions', t('cardCreator.field.definitions'))}
           dataId="cc-definitions"
         >
           <FieldAutoGrowInput
@@ -299,6 +316,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.images ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('images', f)}
+          trailing={fieldGenerateButton('images', 'cc-images', t('cardCreator.field.image'))}
           dataId="cc-images"
         >
           <MediaList
@@ -319,6 +337,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.sentenceAudios ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('sentenceAudios', f)}
+          trailing={fieldGenerateButton('sentenceAudios', 'cc-sentence-audios', t('cardCreator.field.sentenceAudio'))}
           dataId="cc-sentence-audios"
         >
           <MediaList
@@ -339,6 +358,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.wordAudios ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('wordAudios', f)}
+          trailing={fieldGenerateButton('wordAudios', 'cc-word-audios', t('cardCreator.field.wordAudio'))}
           dataId="cc-word-audios"
         >
           <MediaList
@@ -359,6 +379,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.note ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('note', f)}
+          trailing={fieldGenerateButton('note', 'cc-note', t('cardCreator.field.note'))}
           dataId="cc-note"
         >
           <FieldAutoGrowInput
@@ -375,6 +396,7 @@ export function CardCreatorDialogContent({
           mappedField={draft.fieldMapping.moreExample ?? ''}
           availableFields={availableFields}
           onMapChange={(f) => updateMapping('moreExample', f)}
+          trailing={fieldGenerateButton('moreExample', 'cc-more-example', t('cardCreator.field.moreExample'))}
           dataId="cc-more-example"
         >
           <FieldAutoGrowInput

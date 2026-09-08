@@ -12,6 +12,19 @@ describe('FieldRow', () => {
     expect(screen.getByTestId('target-row')).toBeInTheDocument();
   });
 
+  it('renders a trailing action in the header', () => {
+    render(
+      <FieldRow
+        label="Target word"
+        dataId="target"
+        trailing={<button type="button" aria-label="Generate" data-cell-id="generate-target">Generate</button>}
+      >
+        <FieldAutoGrowInput value="" onChange={jest.fn()} />
+      </FieldRow>,
+    );
+    expect(screen.getByTestId('generate-target')).toBeInTheDocument();
+  });
+
   it('does not render map select when mappedField is omitted', () => {
     render(
       <FieldRow label="Tags" dataId="tags">
