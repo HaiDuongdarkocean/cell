@@ -4,15 +4,19 @@ import styles from './MobileSheet.module.css';
 
 /**
  * Snap point of a `MobileSheet`:
- * - `collapsed` — 56px peek (pill handle + header row).
+ * - `collapsed` — peek height (pill handle, plus an optional 24px header row).
  * - `half` — 50% of the container height.
  * - `full` — 100% of the container height.
  */
 export type MobileSheetSnap = 'collapsed' | 'half' | 'full';
 
 const SNAP_ORDER: readonly MobileSheetSnap[] = ['collapsed', 'half', 'full'];
-/** Collapsed peek height in px — keep in sync with `.snapCollapsed` in the CSS module. */
-const PEEK_HEIGHT_PX = 56;
+/** Pill drag handle height in px — keep in sync with `.handle` height in the CSS module. */
+const PILL_HEIGHT_PX = 32;
+/** Extra header row height in px. */
+const HEADER_ROW_HEIGHT_PX = 24;
+/** Collapsed peek height with a header row. */
+const PEEK_HEIGHT_PX = PILL_HEIGHT_PX + HEADER_ROW_HEIGHT_PX;
 /** Pointer travel (px) below which a press on the pill counts as a tap. */
 const TAP_THRESHOLD_PX = 4;
 
@@ -45,19 +49,19 @@ function getContainerHeightPx(sheetEl: HTMLElement): number {
   return sheetEl.ownerDocument.documentElement.clientHeight;
 }
 
-function snapHeightPx(snap: MobileSheetSnap, containerHeight: number): number {
+function snapHeightPx(snap: MobileSheetSnap, containerHeight: number, peekHeight: number): number {
   switch (snap) {
-    case 'collapsed': return Math.min(PEEK_HEIGHT_PX, containerHeight);
+    case 'collapsed': return Math.min(peekHeight, containerHeight);
     case 'half': return containerHeight * 0.5;
     case 'full': return containerHeight;
   }
 }
 
-function nearestSnap(heightPx: number, containerHeight: number): MobileSheetSnap {
+function nearestSnap(heightPx: number, containerHeight: number, peekHeight: number): MobileSheetSnap {
   let best: MobileSheetSnap = 'collapsed';
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const snap of SNAP_ORDER) {
-    const distance = Math.abs(snapHeightPx(snap, containerHeight) - heightPx);
+    const distance = Math.abs(snapHeightPx(snap, containerHeight, peekHeight) - heightPx);
     if (distance < bestDistance) {
       best = snap;
       bestDistance = distance;
@@ -74,8 +78,9 @@ export interface MobileSheetProps {
   readonly defaultSnap?: MobileSheetSnap;
   /** Called when the user changes the snap point (pill tap, drag, keyboard). */
   readonly onSnapChange?: (snap: MobileSheetSnap) => void;
-  /** Optional header row rendered under the pill — stays visible in the
-   *  collapsed 56px peek (e.g. "Create card — {term}"). */
+  /** Optional header row rendered under the pill — when provided it is shown
+   *  in the collapsed peek, increasing the peek height by one row (e.g.
+   *  "Create card — {term}"). When omitted, only the drag pill is visible. */
   readonly header?: ReactNode;
   /** Scrollable sheet body. */
   readonly children?: ReactNode;
@@ -101,8 +106,8 @@ export interface MobileSheetProps {
  * `position: relative`) and a definite height.
  *
  * Behavior:
- * - Three snap points: `collapsed` (56px), `half` (50%), `full` (100%) of the
- *   container height.
+ * - Three snap points: `collapsed` (handle only, or handle + header when a
+ *   header is provided), `half` (50%), `full` (100%) of the container height.
  * - Tap the pill to toggle collapsed ↔ last expanded snap point.
  * - Drag the pill to resize 1:1; release snaps to the nearest point.
  * - Keyboard: Enter/Space toggles, ArrowUp/ArrowDown step, Home/End = max/min.
@@ -133,6 +138,9 @@ export function MobileSheet({
   const lastExpandedRef = useRef<MobileSheetSnap>(snap !== 'collapsed' ? snap : 'half');
   const onSnapChangeRef = useRef(onSnapChange);
   const isControlledRef = useRef(isControlled);
+
+  const hasHeader = header !== undefined && header !== null;
+  const peekHeight = hasHeader ? PEEK_HEIGHT_PX : PILL_HEIGHT_PX;
 
   useEffect(() => { onSnapChangeRef.current = onSnapChange; }, [onSnapChange]);
   useEffect(() => { isControlledRef.current = isControlled; }, [isControlled]);
@@ -174,8 +182,8 @@ export function MobileSheet({
     if (!session.moved && Math.abs(dy) <= TAP_THRESHOLD_PX) return;
     session.moved = true;
     // Sheet is anchored at the bottom, so dragging up grows the height 1:1.
-    const min = snapHeightPx('collapsed', session.containerHeight);
-    const max = snapHeightPx('full', session.containerHeight);
+    const min = snapHeightPx('collapsed', session.containerHeight, peekHeight);
+    const max = snapHeightPx('full', session.containerHeight, peekHeight);
     const next = Math.max(min, Math.min(session.startHeight - dy, max));
     dragHeightRef.current = next;
     setDragHeight(next);
@@ -195,7 +203,7 @@ export function MobileSheet({
       applySnap(snapRef.current === 'collapsed' ? lastExpandedRef.current : 'collapsed');
       return;
     }
-    applySnap(nearestSnap(height, session.containerHeight));
+    applySnap(nearestSnap(height, session.containerHeight, peekHeight));
   };
 
   const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>): void => finishDrag(e, false);
@@ -226,9 +234,10 @@ export function MobileSheet({
   const sheetClass = [styles.sheet, snapClass, dragHeight !== null ? styles.dragging : '', className ?? '']
     .filter(Boolean)
     .join(' ');
-  const sheetStyle: CSSProperties | undefined = dragHeight !== null
-    ? ({ '--mobile-sheet-drag-height': `${dragHeight}px` } as CSSProperties)
-    : undefined;
+  const sheetStyle: CSSProperties = {
+    '--mobile-sheet-peek-height': `${peekHeight}px`,
+    ...(dragHeight !== null ? { '--mobile-sheet-drag-height': `${dragHeight}px` } : {}),
+  } as CSSProperties;
   const contentClass = contentClassName ? `${styles.content} ${contentClassName}` : styles.content;
 
   return (

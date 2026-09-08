@@ -124,17 +124,10 @@ function CardCreatorPanelCore({
   );
 
   if (isMobile) {
-    const header = (
-      <span className={styles.sheetHeader}>
-        <span className={styles.sheetHeaderTitle}>{t('cardCreator.title')}</span>
-        {context?.term ? <span className={styles.sheetHeaderTerm}>— {context.term}</span> : null}
-      </span>
-    );
     return (
       <div className={`${styles.cardCreatorPanel} ${styles.cardCreatorPanelMobile}`} data-cell-id="card-creator-panel">
         <MobileSheet
           defaultSnap="collapsed"
-          header={header}
           aria-label={t('cardCreator.title')}
           contentClassName={styles.sheetContent}
           className={styles.sheet}
