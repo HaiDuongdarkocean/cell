@@ -39,6 +39,9 @@ export const SUBTITLE_URL_PATTERNS: readonly RegExp[] = [
   /[?&](format|type|subtype)=(vtt|srt|ass)(?:&|$)/i,
   // Match common subtitle path patterns
   /\/(subtitles|subs|caption|cc)\//i,
+  // vidsrc/vsembed/noxx converts OpenSubtitles SRTs to a cached VTT file
+  /cache[-_]?vtt\.php(?:\?|$)/i,
+  /\/cache\.php\?.*\baction=get\b/i,
 ];
 
 // === File Extensions ===

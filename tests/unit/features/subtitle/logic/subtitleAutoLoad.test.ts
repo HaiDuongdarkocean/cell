@@ -7,6 +7,7 @@ import {
   clearAutoLoadCache,
 } from '@/features/subtitle/logic/subtitleAutoLoad';
 import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
+import { gzipSync, zipSync } from 'fflate';
 import type { SubtitleForOverlayResult } from '@/types/message';
 
 // Mock parseSubtitle: default to real implementation, override per-test for
@@ -161,6 +162,36 @@ describe('subtitleAutoLoad', () => {
       const result2 = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
       expect(result2.success).toBe(true);
       expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('fetches + parses a gzip (.gz) SRT archive', async () => {
+      const encoded = new TextEncoder().encode(SAMPLE_SRT);
+      const compressed = gzipSync(encoded);
+      const ab = new Uint8Array(compressed).buffer;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(ab),
+      } as Response);
+
+      const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt.gz', 'srt');
+      expect(result.success).toBe(true);
+      expect(result.cues).toHaveLength(1);
+      expect(result.cues[0]?.text).toBe('Hello');
+    });
+
+    it('fetches + parses a zip (.zip) archive and picks the SRT entry', async () => {
+      const encoded = new TextEncoder().encode(SAMPLE_SRT);
+      const compressed = zipSync({ 'movie.subtitle.en.srt': encoded });
+      const ab = new Uint8Array(compressed).buffer;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(ab),
+      } as Response);
+
+      const result = await fetchAndParseSubtitle('https://example.com/sub.en.zip', 'srt');
+      expect(result.success).toBe(true);
+      expect(result.cues).toHaveLength(1);
+      expect(result.cues[0]?.text).toBe('Hello');
     });
 
     it('returns error when content-script 403 + background also fails', async () => {

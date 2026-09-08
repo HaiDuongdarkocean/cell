@@ -277,7 +277,37 @@ window.addEventListener('message', (event) => {
     } catch { /* best effort */ }
     return;
   }
-  if (event.source !== window) return;
+  // === Subtitle discovery relay from cross-origin player iframe ===
+  // MAIN-world scripts inside player iframes (playembed.vip, vidnest, etc.)
+  // post discovery signals to window.parent. The parent frame cannot read
+  // the iframe DOM, but it can relay the observed signal to the background
+  // discovery pipeline. The signal carries its own origin/initiator so the
+  // adapter can match it to the correct player profile.
+  if (dataEarly?.type === '__CELL_SUBTITLE_DISCOVERY' && event.source !== window) {
+    try {
+      const signal = (event.data as { signal: SubtitleSignal }).signal;
+      if (signal) {
+        if (signal.kind === 'network-response' && signal.body) {
+          cacheSubtitleBody(signal.url, signal.body);
+        }
+        const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log');
+        const arr: unknown[] = raw ? JSON.parse(raw) : [];
+        arr.push({ t: Date.now(), kind: signal.kind, origin: (signal as { origin?: string }).origin });
+        if (arr.length > 200) arr.splice(0, arr.length - 200);
+        document.documentElement.setAttribute('data-cell-iframe-discovery-log', JSON.stringify(arr));
+        void sendMessage({
+          type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+          payload: { origin: location.origin, signal },
+        }).catch((e) => console.warn('[content-script] cross-origin discovery relay error', e));
+      }
+    } catch { /* best effort */ }
+    return;
+  }
+  // Accept same-origin MAIN-world posts even if event.source !== window
+  // (isolated-world WindowProxy can differ from page WindowProxy in some
+  // environments). Cross-origin iframe posts are still filtered out because
+  // their origin does not match the content script's origin.
+  if (event.source !== window && event.origin !== location.origin) return;
   const data = event.data as { type?: string; url?: string; postTime?: number } | null;
   if (data?.type === '__DETECTED_SUBTITLE_FETCH' && data.url) {
     void sendMessage({
@@ -408,7 +438,7 @@ function runPageScan(): void {
   // entire subtitle list. Background deduplicates by URL, so overlapping scans
   // across frames are safe. Iframes without a video are skipped to avoid
   // observing ad/empty frames.
-  if (window.self !== window.top && !document.querySelector('video')) return;
+  if (window.self !== window.top && !findLargestPlayableVideo()) return;
   const urls = scanner.scan();
   // ponytail: guard is intentionally removed. Players like vidnest/videasy
   // mount the <video> before the <track> src attributes are set, so the first
@@ -511,9 +541,11 @@ function runSubtitleDiscoveryScan(): void {
     });
   }
 
-  // 2. HTML player variable fallback (MyAsianTV/kisscloud).
+  // 2. HTML player variable fallback (MyAsianTV/kisscloud, vidrift).
   const html = document.documentElement.outerHTML;
-  if (html.includes('playerjsSubtitle')) {
+  const hasPlayerjsSubtitle = html.includes('playerjsSubtitle');
+  const hasSubtitleTracks = html.includes('subtitleTracks');
+  if (hasPlayerjsSubtitle || hasSubtitleTracks) {
     const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -532,6 +564,14 @@ function runSubtitleDiscoveryScan(): void {
         },
       },
     });
+    document.documentElement.setAttribute(
+      'data-cell-subtitle-discovery-scan',
+      JSON.stringify({
+        kinds: ['document-html'],
+        variable: hasPlayerjsSubtitle ? 'playerjsSubtitle' : hasSubtitleTracks ? 'subtitleTracks' : null,
+        url: location.href,
+      }),
+    );
   }
 }
 
@@ -552,6 +592,11 @@ function runSubtitleDiscoveryScan(): void {
 // iframes like moviepire → vidnest.
 // SSOT helper moved to src/shared/lib/dom/videoReady.ts (shared with ocrContentScript).
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
+import {
+  findLargestPlayableVideo,
+  getFirstVideo,
+  hasVideo,
+} from '@/shared/lib/dom/videoFinder';
 
 // Track current overlay cleanup so we can tear down before re-init on SPA
 // episode switch. Angular replaces <video> on episode switch → old overlay UI
@@ -567,6 +612,9 @@ let currentVideo: HTMLVideoElement | null = null;
 // so we wait for loadedmetadata or a readyState poll before init.
 let currentPendingVideo: HTMLVideoElement | null = null;
 let videoReadyPoll: ReturnType<typeof setInterval> | null = null;
+// Lightweight periodic re-scan for players that create the <video> well after
+// DOMContentLoaded without any user click (Next.js/Playembed lazy players).
+let videoFindPoll: ReturnType<typeof setInterval> | null = null;
 
 function stopVideoReadyPoll(): void {
   if (videoReadyPoll) {
@@ -575,8 +623,16 @@ function stopVideoReadyPoll(): void {
   }
 }
 
+function stopVideoFindPoll(): void {
+  if (videoFindPoll) {
+    clearInterval(videoFindPoll);
+    videoFindPoll = null;
+  }
+}
+
 function finishVideoInit(video: HTMLVideoElement): void {
   stopVideoReadyPoll();
+  stopVideoFindPoll();
   if (video === currentVideo) return;
   currentPendingVideo = null;
   currentOverlayCleanup?.();
@@ -596,7 +652,7 @@ function tryInitVideoWhenReady(video: HTMLVideoElement): void {
   // Wait for the player to assign a real source / load metadata.
   // The 'loadedmetadata' event fires when readyState reaches HAVE_METADATA (>=2).
   const onReady = (): void => {
-    if (document.querySelector('video') === video) {
+    if (hasVideo(video)) {
       finishVideoInit(video);
     } else {
       stopVideoReadyPoll();
@@ -606,7 +662,7 @@ function tryInitVideoWhenReady(video: HTMLVideoElement): void {
   // Fallback poll for players that set currentSrc without firing loadedmetadata.
   // ponytail: naive 100ms poll, stop when the 10s findVideoObserver timeout fires.
   videoReadyPoll = setInterval(() => {
-    if (document.querySelector('video') !== video) {
+    if (!hasVideo(video)) {
       stopVideoReadyPoll();
       return;
     }
@@ -800,11 +856,10 @@ async function initTokenize(): Promise<void> {
 function findAndInitOverlay(): void {
   // ADR: allow injection in iframes that host the actual <video> element
   // (animekai.be / shuttletv.su embed via cross-origin iframe). The top frame
-  // has no <video>; the iframe does. The `document.querySelector('video')` +
-  // `isVideoReady` checks below already gate on a real video, and the
-  // MutationObserver auto-disconnects after 10s when no video appears, so
-  // iframes without a video pay only a short observer cost.
-  const video = document.querySelector('video');
+  // has no <video>; the iframe does. Use a shadow-DOM-aware, visible-video
+  // finder; iframes without a visible video are skipped to avoid observing
+  // ad/empty frames.
+  const video = findLargestPlayableVideo();
   if (video) {
     tryInitVideoWhenReady(video);
     return;
@@ -819,8 +874,9 @@ function findAndInitOverlay(): void {
   // AC4.4 early-exit: if no video after 10s, disconnect observer (no video on page).
   findVideoObserver?.disconnect();
   stopVideoReadyPoll();
+  stopVideoFindPoll();
   findVideoObserver = new MutationObserver(() => {
-    const v = document.querySelector('video');
+    const v = findLargestPlayableVideo();
     if (v && v !== currentVideo) {
       findVideoObserver?.disconnect();
       findVideoObserver = null;
@@ -845,6 +901,11 @@ function findAndInitOverlay(): void {
   // window. When the observer times out without finding a video, install a
   // one-shot click listener so the next user interaction re-triggers the
   // search. The listener removes itself once the overlay initializes.
+  //
+  // Playembed/Next.js players auto-play after lazy-loading the player and may
+  // create the <video> after the 10s MutationObserver window without a user
+  // gesture. Keep a lightweight 500ms poll running for up to 60s so the overlay
+  // still initializes once the video mounts.
   const disconnectTimer = setTimeout(() => {
     findVideoObserver?.disconnect();
     findVideoObserver = null;
@@ -854,13 +915,32 @@ function findAndInitOverlay(): void {
         document.removeEventListener('click', onClickRetry, true);
         return;
       }
-      const v = document.querySelector('video');
+      const v = findLargestPlayableVideo();
       if (v && v !== currentVideo) {
         document.removeEventListener('click', onClickRetry, true);
+        stopVideoFindPoll();
         tryInitVideoWhenReady(v);
       }
     };
     document.addEventListener('click', onClickRetry, true);
+
+    // ponytail: 500ms poll is a naive fallback for auto-play lazy players.
+    // Ceiling: closed Shadow DOM or players that never create a <video> element.
+    stopVideoFindPoll();
+    let findAttempts = 0;
+    const MAX_FIND_ATTEMPTS = 100; // 50s of additional polling
+    videoFindPoll = setInterval(() => {
+      findAttempts++;
+      if (currentVideo || currentPendingVideo || findAttempts > MAX_FIND_ATTEMPTS) {
+        stopVideoFindPoll();
+        return;
+      }
+      const v = findLargestPlayableVideo();
+      if (v && v !== currentVideo) {
+        stopVideoFindPoll();
+        tryInitVideoWhenReady(v);
+      }
+    }, 500);
   }, 10000);
 }
 
@@ -993,7 +1073,7 @@ function reportEpisodeChangedIfReplacement(video: HTMLVideoElement): void {
 function initVideoSrcWatcher(): void {
   if (videoSrcWatcherInterval) return;
   videoSrcWatcherInterval = setInterval(() => {
-    const video = document.querySelector('video');
+    const video = getFirstVideo();
     if (!video) return;
     const currentSrc = video.src || video.currentSrc || null;
     if (!currentSrc) return;
@@ -1072,7 +1152,7 @@ function initEpisodeChangeWatcher(): void {
   const isTop = window.self === window.top;
   // Baseline the first <video> or player iframe at inject time — these are not
   // considered an episode switch.
-  const existing = document.querySelector('video');
+  const existing = getFirstVideo();
   if (existing) {
     hasSeenFirstVideo = true;
     lastSeenVideo = existing;
@@ -1128,6 +1208,7 @@ function cleanupContentScript(): void {
     findVideoObserver?.disconnect();
     findVideoObserver = null;
     stopVideoReadyPoll();
+    stopVideoFindPoll();
     episodeChangeObserver?.disconnect();
     episodeChangeObserver = null;
     if (episodeChangeDebounce) {
@@ -1165,6 +1246,7 @@ window.addEventListener('pagehide', () => {
     findVideoObserver?.disconnect();
     findVideoObserver = null;
     stopVideoReadyPoll();
+    stopVideoFindPoll();
     episodeChangeObserver?.disconnect();
     episodeChangeObserver = null;
     if (episodeChangeDebounce) {
@@ -1198,6 +1280,53 @@ if (document.readyState === 'loading') {
 // page to get stuck at "Infinite loading". Tokenize/dictionary features only
 // make sense in the top-level frame anyway.
 const isTopFrame = window.self === window.top;
+
+let mediaLogAttempts = 0;
+const MAX_MEDIA_LOG_ATTEMPTS = 12;
+
+/** Poll background inventory and mirror it to a debug attribute so E4 checks
+ * do not require an extension page or DevTools. Runs in the top frame only. */
+async function logDetectedMedia(): Promise<void> {
+  if (!isTopFrame) return;
+  try {
+    const res: { success?: boolean; data?: { subtitles?: unknown[]; videos?: unknown[] }; error?: string } | undefined =
+      await sendMessage({
+        type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
+        payload: {},
+      });
+    const value = {
+      t: Date.now(),
+      subtitles: res?.success ? (res.data?.subtitles?.length ?? 0) : undefined,
+      videos: res?.success ? (res.data?.videos?.length ?? 0) : undefined,
+      subtitleList: res?.success
+        ? res.data?.subtitles?.slice(0, 10).map((s: unknown) => {
+            const sub = s as { url?: string; language?: string; label?: string };
+            return {
+              url: sub.url?.slice(0, 120),
+              language: sub.language,
+              label: sub.label,
+            };
+          })
+        : undefined,
+      error: res?.success ? undefined : (res?.error ?? 'no response'),
+    };
+    document.documentElement.setAttribute('data-cell-debug-media', JSON.stringify(value));
+  } catch (err) {
+    document.documentElement.setAttribute(
+      'data-cell-debug-media',
+      JSON.stringify({ t: Date.now(), error: String(err).slice(0, 200) }),
+    );
+  }
+}
+
+function scheduleMediaLog(): void {
+  if (!isTopFrame) return;
+  setTimeout(() => {
+    mediaLogAttempts++;
+    void logDetectedMedia();
+    if (mediaLogAttempts < MAX_MEDIA_LOG_ATTEMPTS) scheduleMediaLog();
+  }, 5000);
+}
 
 // Run heavy DOM setup (tokenize + dictionary) at DOMContentLoaded, before
 // Angular/Vue hydration rewires the DOM. These features only observe when
@@ -1263,4 +1392,5 @@ if (isTopFrame) {
   } else {
     void initHeavyFeatures();
   }
+  scheduleMediaLog();
 }

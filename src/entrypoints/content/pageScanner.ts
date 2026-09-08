@@ -7,6 +7,7 @@ import {
   labelToIsoCode,
   toIso6391,
 } from '@/shared/config/languageRegistry';
+import { queryAllShadow } from '@/shared/lib/dom/videoFinder';
 
 export interface ScannedTrack {
   url: string;
@@ -120,13 +121,15 @@ export class PageScanner {
     const trackSubtitles: ScannedTrack[] = [];
 
     // <video> elements: collect the element's own src plus child <source> srcs.
-    const videos = Array.from(doc.querySelectorAll('video'));
+    // Use a shadow-DOM-aware query so players that put <video> inside open
+    // shadow roots (vidstack, custom React players) are still discoverable.
+    const videos = queryAllShadow<HTMLVideoElement>('video', doc);
     for (const video of videos) {
       const src = video.getAttribute('src');
       if (src) {
         videoUrls.push(src);
       }
-      const sources = Array.from(video.querySelectorAll('source'));
+      const sources = queryAllShadow<HTMLSourceElement>('source', video);
       for (const source of sources) {
         const sourceSrc = source.getAttribute('src');
         if (sourceSrc) {
@@ -136,7 +139,7 @@ export class PageScanner {
     }
 
     // All <source> elements (including those not nested in <video>).
-    const allSources = Array.from(doc.querySelectorAll('source'));
+    const allSources = queryAllShadow<HTMLSourceElement>('source', doc);
     for (const source of allSources) {
       const src = source.getAttribute('src');
       if (src) {
@@ -148,7 +151,7 @@ export class PageScanner {
     // Keep track metadata (label, srclang, default) so background can assign
     // the correct language and display name instead of falling back to
     // URL-based detection, which fails for blob: URLs created by players.
-    const tracks = Array.from(doc.querySelectorAll('track'));
+    const tracks = queryAllShadow<HTMLTrackElement>('track', doc);
     for (const track of tracks) {
       const src = track.getAttribute('src');
       if (!src) continue;
@@ -166,7 +169,7 @@ export class PageScanner {
     }
 
     // <a> elements: classify hrefs against video/subtitle patterns.
-    const anchors = Array.from(doc.querySelectorAll('a[href]'));
+    const anchors = queryAllShadow<HTMLAnchorElement>('a[href]', doc);
     for (const anchor of anchors) {
       const href = anchor.getAttribute('href');
       if (!href) {

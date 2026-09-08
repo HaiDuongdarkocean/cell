@@ -15,6 +15,7 @@
 // Allow-listed keys:
 //   - `the_subtitles`       → noxx deep player state
 //   - `playerjsSubtitle`    → MyAsianTV/kisscloud HTML variable
+//   - `subtitleTracks`      → vidrift/OnlyFlix player state
 
 (() => {
   // Avoid instrumenting hidden Cloudflare challenge iframes.
@@ -29,6 +30,7 @@
   const PLAYER_KEYS: ReadonlyArray<{ key: string; type: 'player-state' | 'document-html' }> = [
     { key: 'the_subtitles', type: 'player-state' },
     { key: 'playerjsSubtitle', type: 'player-state' },
+    { key: 'subtitleTracks', type: 'player-state' },
   ] as const;
 
   const posted = new Set<string>();
@@ -68,6 +70,19 @@
       };
     }
 
+    if (key === 'subtitleTracks') {
+      if (!Array.isArray(value)) return null;
+      return {
+        kind: 'player-state',
+        origin,
+        payload: value,
+        tabId: 0,
+        frameId: 0,
+        initiator: origin,
+        playerKey: 'subtitleTracks',
+      };
+    }
+
     return null;
   }
 
@@ -77,6 +92,17 @@
         { type: '__CELL_SUBTITLE_DISCOVERY', signal },
         '*',
       );
+      // Also notify the parent frame when running inside a cross-origin
+      // player iframe. The parent's isolated content script may be the only
+      // Cell context with a live runtime connection (some player iframes
+      // load too quickly for their own content script to register before the
+      // player state is set, or anti-bot frames block child-frame injection).
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          { type: '__CELL_SUBTITLE_DISCOVERY', signal },
+          '*',
+        );
+      }
     } catch {
       // never break page
     }
@@ -184,10 +210,12 @@
   }
 
   // Initial poll on document_idle; then a few retries in case the player
-  // populates the globals after a short delay.
+  // populates the globals after a short delay. On players that lazy-load
+  // state (playembed.vip embedded iframes), the subtitle list can appear
+  // several seconds after the iframe loads, so keep polling for 30s.
   pollOnce();
   const intervalId = window.setInterval(pollOnce, 500);
-  window.setTimeout(() => window.clearInterval(intervalId), 5000);
+  window.setTimeout(() => window.clearInterval(intervalId), 30_000);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', observeTracks);

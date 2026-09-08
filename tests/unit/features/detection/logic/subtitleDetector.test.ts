@@ -76,6 +76,16 @@ describe('detectSubtitle', () => {
     expect(detectSubtitle(makeRequest('https://example.com/stream/preview.vtt'))).toBeNull();
   });
 
+  // Regression: playembed serves `.../thumb.vtt?...` as a seek-preview
+  // storyboard (cues are image URLs). It was detected as English and selected
+  // over the real dialogue VTT by `findSubtitlesForOverlay`.
+  it('returns null for thumb.vtt seek preview', () => {
+    const request = makeRequest(
+      'https://gota.edgecontent.site/c9fcdd78abef0bc1e236fff5a2e2f713/thumb.vtt?x=1',
+    );
+    expect(detectSubtitle(request)).toBeNull();
+  });
+
   it('still detects a real subtitle.vtt that contains "subtitle" in the path', () => {
     // "subtitle" contains "subtitle" not "thumbnail/storyboard/chapter/preview/cues"
     // — guard must not over-match. Real subtitle URLs with /subtitles/ path
@@ -233,6 +243,18 @@ describe('detectSubtitle', () => {
     expect(result).not.toBeNull();
     expect(result?.format).toBe('srt');
     expect(result?.language).toBe('unknown');
+  });
+
+  it('detects converted VTT from cache.php?action=get (VidSrc-style player)', () => {
+    const request = makeRequest(
+      'https://cloudorchestranova.com/embed/iframe_player/cache.php?action=get&file_id=1962534192&vs=token',
+    );
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.format).toBe('vtt');
+    expect(result?.language).toBe('unknown');
+    expect(result?.url).toBe(request.url);
   });
 
   it('rejects folder-name path segment "vid" as language (3-letter non-language)', () => {

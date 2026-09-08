@@ -6,6 +6,7 @@
 import { resolveLanguage, languageFromLabel, languageFromPath } from '../candidate';
 import type { CandidateInit } from '../candidate';
 import type { JsonListingProfile } from './jsonListing';
+import type { SubtitleFormat } from '@/entities/subtitle';
 
 function isString(value: unknown): value is string {
   return typeof value === 'string';
@@ -184,6 +185,59 @@ export const peachifyProfile: JsonListingProfile = {
 // `unresolved` so they do not become `DetectedSubtitle` candidates with an
 // unplayable API URL. The page scanner will later detect the decrypted blob
 // tracks and add the real, fetchable subtitle URLs to the inventory.
+// OpenSubtitles v1 REST API (rest.opensubtitles.org/search/). Returns a bare
+// JSON array of subtitle entries with download links that are gzip/zip
+// archives. The player's `subtitles.js` fetches this and then downloads the
+// chosen file; we capture the listing directly and surface the candidates.
+export const opensubtitlesProfile: JsonListingProfile = {
+  id: 'opensubtitles-listing',
+  priority: 10,
+  urlPattern: /rest\.opensubtitles\.org\/search\//i,
+  responseType: 'array',
+  extractList: (parsed) => (Array.isArray(parsed) ? parsed : []),
+  mapEntry: (entry, _ctx, index) => {
+    if (!isRecord(entry)) return null;
+    const url = (entry.SubDownloadLink as string) || (entry.SubZipDownloadLink as string) || (entry.ZipDownloadLink as string);
+    if (!isString(url)) return null;
+
+    const rawLang = (entry.ISO639 as string) || (entry.SubLanguageID as string) || '';
+    const label = (entry.LanguageName as string) || (entry.SubFileName as string) || `Subtitle ${index + 1}`;
+    const displayName = (entry.SubFileName as string) || label;
+    const fileNameLang = (entry.SubFileName as string)?.match(/\.([a-zA-Z]{2,3})\.[^.]+$/);
+    let language = rawLang.length === 2 ? resolveLanguage(rawLang) : 'unknown';
+    if (language === 'unknown' && fileNameLang?.[1]) {
+      language = resolveLanguage(fileNameLang[1]);
+    }
+    if (language === 'unknown') {
+      language = languageFromLabel(label);
+    }
+
+    const subFormat = (entry.SubFormat as string)?.toLowerCase();
+    const format: SubtitleFormat =
+      subFormat === 'srt' || subFormat === 'vtt' || subFormat === 'ass' || subFormat === 'ssa'
+        ? subFormat
+        : 'srt';
+
+    const subHi = entry.SubHearingImpaired;
+    const subForced = entry.SubForeignPartsOnly;
+    const isSdh = subHi === true || subHi === '1' || subHi === 1;
+    const isForced = subForced === true || subForced === '1' || subForced === 1;
+
+    return {
+      label,
+      displayName,
+      language,
+      url,
+      format,
+      source: 'direct' as const,
+      provider: 'opensubtitles',
+      sdh: isSdh,
+      forced: isForced,
+      default: entry.SubFromTrusted === true || entry.SubFromTrusted === '1' || entry.SubFromTrusted === 1,
+    };
+  },
+};
+
 export const onzloadProfile: JsonListingProfile = {
   id: 'onzload-listing',
   priority: 10,
