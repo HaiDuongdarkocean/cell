@@ -29,8 +29,13 @@
 /* Collapsed peek: pill handle (32px) plus optional 24px header row.
    The exact value is set by --mobile-sheet-peek-height on the sheet element.
    The default matches the header + handle; when no header is provided, the
-   JS component sets it to the pill handle height only. */
+   JS component sets it to the pill handle height only.
+   Content is hidden in collapsed to keep the peek minimal — only the pill
+   (and optional header) are visible until the user drags or taps to expand. */
 .snapCollapsed { height: var(--mobile-sheet-peek-height, calc(var(--space-8) + var(--space-6))); }
+.snapCollapsed .content { display: none; }
+/* While dragging, content must be visible so it can be seen as the sheet grows. */
+.dragging .content { display: block; }
 
 .snapHalf { height: 50%; }
 

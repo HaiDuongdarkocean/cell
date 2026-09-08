@@ -45,7 +45,7 @@ describe('MobileSheet', () => {
 
   it('renders header and scrollable content', () => {
     render(
-      <MobileSheet data-cell-id="mobile-sheet" header={<span>Create card — neko</span>}>
+      <MobileSheet data-cell-id="mobile-sheet" defaultSnap="half" header={<span>Create card — neko</span>}>
         <p>Form body</p>
       </MobileSheet>,
     );
