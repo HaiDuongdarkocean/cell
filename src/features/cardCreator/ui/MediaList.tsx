@@ -225,24 +225,18 @@ function ImageThumb({
   );
 }
 
-/** Horizontal image gallery + add button. */
+/** Horizontal image gallery (reorderable thumbnails). */
 function ImageGallery({
   files,
-  onAdd,
   onRemove,
   onPreview,
   onReorder,
-  addDisabled,
-  addLabel,
   dataId,
 }: {
   files: readonly MediaFile[];
-  onAdd: () => void;
   onRemove: (index: number) => void;
   onPreview: (file: MediaFile) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
-  addDisabled?: boolean;
-  addLabel: string;
   dataId?: string;
 }): ReactElement {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -320,7 +314,7 @@ function ImageGallery({
       <div
         className={styles['cc-media__strip']}
         role="list"
-        aria-label={addLabel}
+        aria-label="Image gallery"
         onKeyDown={handleKeyDown}
         onDrop={handleGalleryDrop}
       >
@@ -342,17 +336,6 @@ function ImageGallery({
           />
         ))}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={styles['cc-media__gallery-add']}
-        onClick={onAdd}
-        disabled={addDisabled}
-        leadingIcon={<Icon name="plus" size="sm" />}
-        data-cell-id={dataId ? `${dataId}-add` : undefined}
-      >
-        {addLabel}
-      </Button>
     </div>
   );
 }
@@ -360,21 +343,15 @@ function ImageGallery({
 /** Vertical audio list. */
 function AudioList({
   files,
-  onAdd,
   onRemove,
   onPlay,
   onReorder,
-  addDisabled,
-  addLabel,
   dataId,
 }: {
   files: readonly MediaFile[];
-  onAdd: () => void;
   onRemove: (index: number) => void;
   onPlay: (file: MediaFile) => void;
   onReorder?: (fromIndex: number, toIndex: number) => void;
-  addDisabled?: boolean;
-  addLabel: string;
   dataId?: string;
 }): ReactElement {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -451,19 +428,10 @@ function AudioList({
     <div
       className={styles['cc-media__list']}
       role="list"
-      aria-label={addLabel}
+      aria-label="Audio list"
       onKeyDown={handleKeyDown}
       onDrop={handleListDrop}
     >
-      {files.length === 0 && (
-        <EmptyDropzone
-          kind="audio"
-          addLabel={addLabel}
-          onAdd={onAdd}
-          addDisabled={addDisabled}
-          dataId={dataId}
-        />
-      )}
       {files.map((file, index) => {
         const rowClass = [styles['cc-media__row']]
           .concat(draggingIndex === index ? [styles['cc-media__row--dragging']] : [])
@@ -500,19 +468,6 @@ function AudioList({
           </div>
         );
       })}
-      {files.length > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={styles['cc-media__list-add']}
-          onClick={onAdd}
-          disabled={addDisabled}
-          leadingIcon={<Icon name="plus" size="sm" />}
-          data-cell-id={dataId ? `${dataId}-add` : undefined}
-        >
-          {addLabel}
-        </Button>
-      )}
     </div>
   );
 }
@@ -604,52 +559,70 @@ export function MediaList({
     void processDrop(e.dataTransfer);
   };
 
-  const zoneClass = isDragOver
-    ? `${styles['cc-media']} ${styles['cc-media--drag-over']}`
-    : styles['cc-media'];
+  const isEmpty = files.length === 0;
+  const dropzoneBase = styles['cc-media__dropzone'];
+  const dropzoneModifier = [
+    isDragOver ? styles['cc-media__dropzone--over'] : '',
+    isEmpty ? styles['cc-media__dropzone--empty'] : '',
+  ].filter(Boolean).join(' ');
+  const dropzoneClass = dropzoneModifier
+    ? `${dropzoneBase} ${dropzoneModifier}`
+    : dropzoneBase;
+  const addButtonClass = kind === 'image'
+    ? styles['cc-media__gallery-add']
+    : styles['cc-media__list-add'];
 
   return (
     <div
-      className={zoneClass}
-      data-cell-id={dataId}
+      className={styles['cc-media']}
       data-kind={kind}
-      onDragEnter={onFilesDrop ? handleDragEnter : undefined}
-      onDragLeave={onFilesDrop ? handleDragLeave : undefined}
-      onDragOver={onFilesDrop ? handleDragOver : undefined}
-      onDrop={onFilesDrop ? handleDrop : undefined}
     >
-      {kind === 'image' ? (
-        files.length === 0 ? (
+      <div
+        className={dropzoneClass}
+        data-cell-id={dataId}
+        onDragEnter={onFilesDrop ? handleDragEnter : undefined}
+        onDragLeave={onFilesDrop ? handleDragLeave : undefined}
+        onDragOver={onFilesDrop ? handleDragOver : undefined}
+        onDrop={onFilesDrop ? handleDrop : undefined}
+      >
+        {isEmpty ? (
           <EmptyDropzone
-            kind="image"
+            kind={kind}
             addLabel={addLabel}
             onAdd={onAdd}
             addDisabled={addDisabled}
             dataId={dataId}
           />
-        ) : (
+        ) : kind === 'image' ? (
           <ImageGallery
             files={files}
-            onAdd={onAdd}
             onRemove={onRemove}
             onPreview={setPreviewFile}
             onReorder={onReorder}
-            addDisabled={addDisabled}
-            addLabel={addLabel}
             dataId={dataId}
           />
-        )
-      ) : (
-        <AudioList
-          files={files}
-          onAdd={onAdd}
-          onRemove={onRemove}
-          onPlay={playAudio}
-          onReorder={onReorder}
-          addDisabled={addDisabled}
-          addLabel={addLabel}
-          dataId={dataId}
-        />
+        ) : (
+          <AudioList
+            files={files}
+            onRemove={onRemove}
+            onPlay={playAudio}
+            onReorder={onReorder}
+            dataId={dataId}
+          />
+        )}
+      </div>
+      {!isEmpty && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={addButtonClass}
+          onClick={onAdd}
+          disabled={addDisabled}
+          leadingIcon={<Icon name="plus" size="sm" />}
+          data-cell-id={dataId ? `${dataId}-add` : undefined}
+        >
+          {addLabel}
+        </Button>
       )}
       {/* Hidden audio element for playback */}
       <audio ref={audioRef} />
