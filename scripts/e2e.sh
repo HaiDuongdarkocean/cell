@@ -2,14 +2,17 @@
 set -e
 
 # Usage:
-#   bash scripts/e2e.sh                         # build + run all stage-2
+#   bash scripts/e2e.sh                         # build + run all stage-2 (headless)
+#   bash scripts/e2e.sh --headed                # build + run all (headed)
 #   bash scripts/e2e.sh stream-universal        # build + run one stage-2 file
 #   bash scripts/e2e.sh "e2e/stage2/**/*.ts"    # build + run Playwright pattern
-#   bash scripts/e2e.sh --stage2 [name|pattern] # run only (skip build)
+#   bash scripts/e2e.sh --stage2 [name|pattern] # run only, skip build
+#   bash scripts/e2e.sh --stage2 --headed       # run all, headed, skip build
 #   bash scripts/e2e.sh --build                 # build only
 
 do_build=true
 run_tests=true
+headed=false
 spec=""
 
 while [ $# -gt 0 ]; do
@@ -22,6 +25,10 @@ while [ $# -gt 0 ]; do
     --stage2)
       do_build=false
       run_tests=true
+      shift
+      ;;
+    --headed)
+      headed=true
       shift
       ;;
     *)
@@ -45,5 +52,11 @@ if [ "$do_build" = true ]; then
 fi
 
 if [ "$run_tests" = true ]; then
-  npx playwright test --config=playwright.stream.config.ts "$spec" --project=chromium
+  if [ "$headed" = true ]; then
+    export EXTENSION_HEADLESS=false
+    npx playwright test --config=playwright.stream.config.ts "$spec" --project=chromium --headed
+  else
+    export EXTENSION_HEADLESS=true
+    npx playwright test --config=playwright.stream.config.ts "$spec" --project=chromium
+  fi
 fi
