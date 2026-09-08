@@ -553,6 +553,7 @@
 .label {
   display: inline-flex;
   align-items: center;
+  gap: var(--button-gap);
   min-width: 0;
 }
 

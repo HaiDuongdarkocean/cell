@@ -180,9 +180,9 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
         onDismissToast(lastToast.id);
       }}
       aria-label="Undo last deletion"
+      leadingIcon={<Icon name="rotateCcw" />}
       data-cell-id="cc-queue-undo"
     >
-      <Icon name="rotateCcw" className={styles['cc-queue__undo-icon']} />
       Undo
     </Button>
   );
