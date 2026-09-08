@@ -68,15 +68,19 @@
 .triggerGhost {
   border-color: transparent;
   background: transparent;
+  color: var(--color-text-secondary);
 }
 
 .triggerGhost:hover {
   background: var(--color-surface-hover);
 }
 
+.trigger.triggerOpen {
+  color: var(--color-primary);
+}
+
 .triggerGhost.triggerOpen {
   background: var(--color-surface-pressed);
-  color: var(--color-text);
 }
 
 /* Validation states */
@@ -145,12 +149,12 @@
 /* Anchor icon — rendered via Button's trailingIcon prop (a direct flex child
    of the trigger, so it lands at the outer right edge with no positioning). */
 .chevron {
-  color: var(--color-text-secondary);
+  color: currentColor;
   transition: transform var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
 }
 
 .chevronOpen {
-  color: var(--color-primary);
+  color: currentColor;
   transform: rotate(180deg);
 }
 
