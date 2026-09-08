@@ -146,14 +146,14 @@
 }
 
 /* Clear button — flex item (not absolute) so it centers vertically as the
-   input grows. Sized 28×28 (DS IconButton xs) with 16px icon. Bounce
+   input grows. Standard 32×32 icon button (DS IconButton sm). Bounce
    effect on hover via scale transform. Hidden when empty (component). */
 .fieldInput__clear {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-7);
-  height: var(--space-7);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   margin-right: var(--space-1);
   padding: var(--space-0);
   border: none;
@@ -180,11 +180,6 @@
 .fieldInput__clear:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
-}
-
-.fieldInput__clear svg {
-  width: var(--space-4);
-  height: var(--space-4);
 }
 
 /* === TagInput — chip-based tag entry === */
@@ -237,8 +232,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   padding: var(--space-0);
   border: none;
   border-radius: var(--radius-full);
@@ -258,11 +253,6 @@
 .tagInput__remove:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
-}
-
-.tagInput__remove svg {
-  width: var(--space-3);
-  height: var(--space-3);
 }
 
 .tagInput__field {

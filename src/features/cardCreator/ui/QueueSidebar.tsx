@@ -149,13 +149,16 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
           {item.status}
         </span>
       </Button>
-      <Button shape="circle" variant="ghost"
+      <Button
+        size="sm"
+        shape="circle"
+        variant="ghost"
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={`Remove ${item.term} from queue`}
         data-cell-id={`cc-queue-delete-${index}`}
       >
-        <Icon name="x" className={styles['cc-queue__item-delete-icon']} />
+        <Icon name="x" size="sm" />
       </Button>
     </li>
   );

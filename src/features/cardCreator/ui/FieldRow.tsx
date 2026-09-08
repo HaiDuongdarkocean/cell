@@ -157,12 +157,15 @@ export function FieldAutoGrowInput({
         {...rest}
       />
       {clearable && value.length > 0 && (
-        <Button shape="circle" variant="ghost"
+        <Button
+          size="sm"
+          shape="circle"
+          variant="ghost"
           className={styles.fieldInput__clear}
           aria-label={clearLabel}
           onClick={handleClear}
         >
-          <Icon name="x"  />
+          <Icon name="x" size="sm" />
         </Button>
       )}
     </div>
@@ -236,15 +239,15 @@ export function TagInput({
         >
           <span className={styles.tagInput__label}>{tag}</span>
           <Button
+            size="sm"
             shape="circle"
-            size="xs"
             variant="ghost"
             aria-label={`Remove ${tag}`}
             onClick={() => removeTag(index)}
             className={styles.tagInput__remove}
             data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
           >
-            <Icon name="x" size="xs" />
+            <Icon name="x" size="sm" />
           </Button>
         </span>
       ))}

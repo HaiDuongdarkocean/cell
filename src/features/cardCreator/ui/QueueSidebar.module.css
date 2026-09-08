@@ -120,8 +120,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-5);
-  height: var(--space-5);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   background: none;
   border: none;
   cursor: pointer;
@@ -138,11 +138,6 @@
 .cc-queue__item-delete:hover {
   color: var(--color-error);
   background: var(--color-error-subtle);
-}
-
-.cc-queue__item-delete-icon {
-  width: var(--space-3);
-  height: var(--space-3);
 }
 
 .cc-queue__undo {

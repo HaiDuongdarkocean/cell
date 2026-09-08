@@ -12,20 +12,6 @@
   flex-shrink: 0;
 }
 
-.sm {
-  width: var(--iconbutton-size-sm);
-  height: var(--iconbutton-size-sm);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-}
-
-.md {
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-}
-
 /* === Variants === */
 
 /* Ghost (default) — transparent, surface-hover background on hover */

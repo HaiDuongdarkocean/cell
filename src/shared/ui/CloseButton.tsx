@@ -23,10 +23,10 @@ export function CloseButton({
   'aria-label': ariaLabel = 'Close',
   ...rest
 }: CloseButtonProps): React.JSX.Element {
-  const cls = [styles.closeBtn, styles[size], styles[variant], className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.closeBtn, styles[variant], className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <Button shape="circle" variant={variant === 'solid' ? 'primary' : 'ghost'} className={cls} aria-label={ariaLabel} {...rest}>
+    <Button shape="circle" variant={variant === 'solid' ? 'primary' : 'ghost'} size={size} className={cls} aria-label={ariaLabel} {...rest}>
       <Icon name="x"  />
     </Button>
   );
