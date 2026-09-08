@@ -19,12 +19,12 @@ Save new tests in `e2e/stage2/<name>.spec.ts`.
 ## Commands
 
 ```bash
-bash scripts/e2e.sh                       # build + run all stage-2
-bash scripts/e2e.sh stream-universal      # build + run one file
-bash scripts/e2e.sh "e2e/stage2/**/*.ts"  # build + Playwright pattern
-bash scripts/e2e.sh --stage2              # run all, skip build
-bash scripts/e2e.sh --stage2 stream-uni   # run one, skip build
-bash scripts/e2e.sh --build               # build only
+bash scripts/e2e.sh                           # build + all stage-2 (headless)
+bash scripts/e2e.sh --headed                  # build + all (hiện browser)
+bash scripts/e2e.sh stream-universal          # build + 1 file
+bash scripts/e2e.sh --stage2 stream-universal # chạy 1 file, không build
+bash scripts/e2e.sh --stage2 --headed         # chạy tất cả, hiện browser
+bash scripts/e2e.sh --build                   # chỉ build
 ```
 
-Build order: `npm run build` (extension) trước, sau đó `npm run build:mock` (mock pages). Dùng `--headed` trong `npx playwright` nếu muốn xem màn hình.
+Tên ngắn → `e2e/stage2/<tên>.spec.ts`. Pattern có `e2e/`, `.spec.ts`, `/`, hoặc `*` thì dùng nguyên văn.

@@ -48,7 +48,7 @@ function prepareUblockClean(workerIndex: number): string {
 }
 
 const launchContext = async (
-  headless: boolean,
+  headless: boolean | 'shell',
   uBlockClean: string,
   profileDir: string,
 ): Promise<BrowserContext> =>
@@ -70,7 +70,8 @@ export const test = base.extend<CellEnvironmentFixtures>({
           testResultsDir,
           `.extension-profile-${workerInfo.workerIndex}-${Date.now()}`,
         );
-        const headless = process.env.EXTENSION_HEADLESS === 'true';
+        const headless: boolean | 'shell' =
+          process.env.EXTENSION_HEADLESS === 'true' ? 'shell' : false;
         persistentContext = await launchContext(headless, uBlockClean, profileDir);
         isContextClosed = false;
         persistentContext.on('close', () => {
