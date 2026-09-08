@@ -12,16 +12,67 @@
   padding: 0;
   background: transparent;
   border-radius: var(--radius-md);
-  border: var(--border-width-hairline) solid transparent;
-  transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
-.cc-media--drag-over {
+/* === Dropzone ===
+ * Wraps the actual media content. Drag-over highlight stays inside this
+ * wrapper so it never surrounds the standalone "Add" button.
+ */
+.cc-media__dropzone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-0-5);
+  border: var(--border-width-hairline) dashed transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              background var(--duration-fast) var(--ease-in-out);
+}
+
+.cc-media__dropzone--empty {
+  padding: 0;
+  border-color: transparent;
+}
+
+.cc-media__dropzone--over {
   border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
+  animation: cc-media-drop-pulse 1.2s ease-in-out infinite;
+}
+
+/* Empty state: the EmptyDropzone itself becomes the visual target. */
+.cc-media__dropzone--empty.cc-media__dropzone--over {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty,
+.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty--image,
+.cc-media__dropzone--empty.cc-media__dropzone--over .cc-media__empty--audio {
+  border-color: var(--color-border-focus);
+  background: var(--color-surface-hover);
+}
+
+@keyframes cc-media-drop-pulse {
+  0%, 100% {
+    background-color: var(--color-surface-hover);
+  }
+  50% {
+    background-color: var(--color-surface);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-media__dropzone--over {
+    animation: none;
+  }
 }
 
 /* === Empty dropzone (image or audio) ===
- * Image empty: 4:3 dashed card matching the image strip.
+ * Image empty: full-width dashed card matching the image strip.
  * Audio empty: a single row matching an audio row.
  */
 .cc-media__empty {
@@ -127,7 +178,9 @@
 }
 
 .cc-media__thumb--dragging {
-  opacity: var(--opacity-40);
+  opacity: var(--opacity-60);
+  transform: scale(0.96) rotate(1deg);
+  box-shadow: var(--shadow-md);
 }
 
 .cc-media__thumb--drag-over {
@@ -291,7 +344,9 @@
   border: var(--border-width-hairline) solid transparent;
   transition: background var(--duration-fast) var(--ease-in-out),
               border-color var(--duration-fast) var(--ease-in-out),
-              opacity var(--duration-fast) var(--ease-in-out);
+              opacity var(--duration-fast) var(--ease-in-out),
+              transform var(--duration-fast) var(--ease-in-out),
+              box-shadow var(--duration-fast) var(--ease-in-out);
   cursor: default;
 }
 
@@ -300,7 +355,9 @@
 }
 
 .cc-media__row--dragging {
-  opacity: var(--opacity-40);
+  opacity: var(--opacity-60);
+  transform: scale(0.98);
+  box-shadow: var(--shadow-sm);
 }
 
 .cc-media__row--drag-over {
