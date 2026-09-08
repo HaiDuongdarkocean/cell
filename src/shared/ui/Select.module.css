@@ -254,7 +254,7 @@
 }
 
 .optionSelected {
-  background: var(--color-primary-subtle);
+  background: var(--color-surface-pressed);
   color: var(--color-primary);
 }
 
