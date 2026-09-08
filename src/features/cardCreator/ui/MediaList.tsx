@@ -613,7 +613,7 @@ export function MediaList({
       </div>
       {!isEmpty && (
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           fullWidth
           onClick={onAdd}
