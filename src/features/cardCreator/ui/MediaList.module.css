@@ -31,7 +31,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-0-5);
-  border: var(--border-width-hairline) dashed transparent;
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: transparent;
   transition: border-color var(--duration-fast) var(--ease-in-out),
@@ -84,7 +84,7 @@
   min-width: 100%;
   min-height: calc(var(--input-height) + 2 * var(--border-width-hairline));
   padding: var(--input-padding-y) var(--input-padding-x);
-  border: var(--border-width-hairline) solid var(--input-border);
+  border: var(--border-width-hairline) dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--input-bg);
   color: var(--input-placeholder);
