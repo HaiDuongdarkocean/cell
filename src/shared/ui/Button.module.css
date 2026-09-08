@@ -243,11 +243,12 @@
 
 .ghost {
   border: none;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .ghost:hover {
+    color: var(--color-primary);
     background: transparent;
     filter: brightness(0.92);
   }

@@ -201,7 +201,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => void generateAll()}
             disabled={!draft.fields.targetWord.trim()}
-            leadingIcon={<Icon name="zap" size="sm" />}
+            trailingIcon={<Icon name="zap" size="sm" />}
             data-cell-id="cc-generate-all"
           >
             {t('cardCreator.action.generateAll')}
