@@ -52,6 +52,7 @@
   height: auto;
   width: auto;
   padding: var(--space-0-5) var(--space-1);
+  border-radius: var(--radius-sm);
   box-shadow: none;
   font-size: var(--font-size-xs);
 }
