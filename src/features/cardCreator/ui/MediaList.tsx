@@ -125,13 +125,11 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
 /** Empty dropzone with icon + label. */
 function EmptyDropzone({
   kind,
-  addLabel,
   onAdd,
   addDisabled,
   dataId,
 }: {
   kind: 'image' | 'audio';
-  addLabel: string;
   onAdd: () => void;
   addDisabled?: boolean;
   dataId?: string;
@@ -139,18 +137,16 @@ function EmptyDropzone({
   const text = kind === 'image' ? t('cardCreator.empty.image') : t('cardCreator.empty.audio');
   const modifier = kind === 'image' ? styles['cc-media__empty--image'] : styles['cc-media__empty--audio'];
   return (
-    <Button
-      variant="ghost"
-      fullWidth
+    <button
+      type="button"
       className={`${styles['cc-media__empty']} ${modifier}`}
       onClick={onAdd}
       disabled={addDisabled}
-      aria-label={addLabel}
-      leadingIcon={<ThumbIcon kind={kind} size="sm" />}
       data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
-      {text}
-    </Button>
+      <ThumbIcon kind={kind} size="sm" />
+      <span>{text}</span>
+    </button>
   );
 }
 
@@ -593,7 +589,6 @@ export function MediaList({
         {isEmpty ? (
           <EmptyDropzone
             kind={kind}
-            addLabel={addLabel}
             onAdd={onAdd}
             addDisabled={addDisabled}
             dataId={dataId}
