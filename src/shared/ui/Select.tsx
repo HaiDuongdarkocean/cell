@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode, type KeyboardEvent, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/shared/ui/Button';
 import { Icon } from '@/shared/icons/Icon';
 import { useMenuPlacement } from './useMenuPlacement';
@@ -102,7 +103,7 @@ export function Select({
 
   const validationState = state ?? (error ? 'error' : undefined);
 
-  const { placement, maxHeight, maxWidth } = useMenuPlacement({
+  const { placement, style: menuStyle } = useMenuPlacement({
     isOpen,
     menuAlign,
     menuMaxHeight,
@@ -151,18 +152,30 @@ export function Select({
   // `e.target` is retargeted to the shadow host, so `menuRef.contains(e.target)`
   // returns false even when clicking an option inside the menu, causing the
   // menu to close before the option's onClick fires. `composedPath()` crosses
-  // shadow boundaries and includes the real clicked element.
+  // shadow boundaries and includes the real clicked element. The menu is
+  // rendered in a portal, so we also check the menu element itself.
   useEffect(() => {
     if (!isOpen) return;
+    const doc = rootRef.current?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
     const handleClickOutside = (e: Event): void => {
-      if (!rootRef.current || !triggerRef.current) return;
+      if (!rootRef.current || !triggerRef.current || !menuRef.current) return;
       const path = e.composedPath();
-      if (!path.includes(rootRef.current) && !path.includes(triggerRef.current)) {
+      if (
+        !path.includes(rootRef.current) &&
+        !path.includes(triggerRef.current) &&
+        !path.includes(menuRef.current)
+      ) {
         closeMenu();
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const handleScroll = (): void => closeMenu();
+    doc.addEventListener('mousedown', handleClickOutside);
+    win.addEventListener('scroll', handleScroll, true);
+    return () => {
+      doc.removeEventListener('mousedown', handleClickOutside);
+      win.removeEventListener('scroll', handleScroll, true);
+    };
   }, [isOpen, closeMenu]);
 
   // Close on Esc and focus stays inside. Registered on the shared Escape
@@ -170,11 +183,12 @@ export function Select({
   // before ancestor surfaces (e.g. UniversalPanel) can react to it.
   useEffect(() => {
     if (!isOpen) return;
+    const doc = rootRef.current?.ownerDocument ?? document;
     return pushEscapeLayer((e) => {
       e.preventDefault();
       closeMenu();
       triggerRef.current?.focus();
-    });
+    }, doc);
   }, [isOpen, closeMenu]);
 
   // Move focus to the listbox (or search input) when the menu opens.
@@ -333,21 +347,72 @@ export function Select({
 
   const menuClass = [styles.menu, menuAlignClass].filter(Boolean).join(' ');
 
-  // Overlay menu: position is computed by useMenuPlacement so the menu opens
-  // in the direction (top/bottom) and alignment (left/right) that fits the
-  // viewport best. Width is still capped to the trigger width unless the
-  // content is wider, in which case maxWidth prevents overflow.
-  const menuMaxWidth = maxWidth === Number.MAX_SAFE_INTEGER ? undefined : maxWidth;
-  const menuStyle: React.CSSProperties = {
-    maxHeight,
-    ...(placement.vpos === 'top'
-      ? { bottom: '100%', marginBottom: 'var(--space-1)' }
-      : { top: '100%', marginTop: 'var(--space-1)' }),
-    ...(placement.align === 'right'
-      ? { right: 0 }
-      : { left: 0 }),
-    ...(menuMaxWidth !== undefined ? { maxWidth: menuMaxWidth } : {}),
-  };
+  // Render the menu in a portal so it escapes clipping ancestors (overflow:auto
+  // dialogs, bottom sheets, scroll containers). The position is fixed and
+  // computed from the trigger's viewport rect by useMenuPlacement.
+  const menu = isOpen ? (
+    <div
+      ref={menuRef}
+      className={menuClass}
+      style={menuStyle}
+    >
+      {searchable && (
+        <div className={styles.searchWrap}>
+          <Icon name="search" className={styles.searchIcon} />
+          <input
+            ref={searchRef}
+            type="search"
+            className={styles.searchInput}
+            placeholder={searchPlaceholder}
+            aria-label="Search options"
+            value={query}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
+          />
+        </div>
+      )}
+      <div
+        ref={listboxRef}
+        tabIndex={-1}
+        className={[styles.options, menuAlignClass].filter(Boolean).join(' ')}
+        role="listbox"
+        aria-activedescendant={highlightedIndex >= 0 ? `select-option-${visibleOptions[highlightedIndex]?.value}` : undefined}
+        onKeyDown={!searchable ? handleListboxKeyDown : undefined}
+      >
+        {visibleOptions.length > 0 ? (
+          visibleOptions.map((opt, index) => (
+            <div
+              key={opt.value}
+              id={`select-option-${opt.value}`}
+              className={[
+                styles.option,
+                opt.value === value ? styles.optionSelected : '',
+                index === highlightedIndex ? styles.optionHighlighted : '',
+                opt.disabled ? styles.optionDisabled : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              role="option"
+              aria-selected={opt.value === value}
+              onClick={(e) => handleOptionClick(e, opt.value, opt.disabled)}
+              onMouseEnter={() => handleMouseEnter(index)}
+            >
+              <span className={styles.optionLabel}>{opt.label}</span>
+              {opt.value === value && (
+                <Icon name="check" className={styles.checkMark} />
+              )}
+            </div>
+          ))
+        ) : (
+          <div className={styles.emptyState} role="presentation">
+            No matching options
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  const portalContainer = rootRef.current?.ownerDocument?.body ?? document.body;
 
   return (
     <div className={rootClass} ref={rootRef} data-cell-id={dataTestId}>
@@ -373,67 +438,7 @@ export function Select({
         <span className={styles.value}>{triggerLabel}</span>
       </Button>
 
-      {isOpen && (
-        <div
-          ref={menuRef}
-          className={menuClass}
-          style={menuStyle}
-        >
-          {searchable && (
-            <div className={styles.searchWrap}>
-              <Icon name="search" className={styles.searchIcon} />
-              <input
-                ref={searchRef}
-                type="search"
-                className={styles.searchInput}
-                placeholder={searchPlaceholder}
-                aria-label="Search options"
-                value={query}
-                onChange={handleSearchChange}
-                onKeyDown={handleSearchKeyDown}
-              />
-            </div>
-          )}
-          <div
-            ref={listboxRef}
-            tabIndex={-1}
-            className={[styles.options, menuAlignClass].filter(Boolean).join(' ')}
-            role="listbox"
-            aria-activedescendant={highlightedIndex >= 0 ? `select-option-${visibleOptions[highlightedIndex]?.value}` : undefined}
-            onKeyDown={!searchable ? handleListboxKeyDown : undefined}
-          >
-            {visibleOptions.length > 0 ? (
-              visibleOptions.map((opt, index) => (
-                <div
-                  key={opt.value}
-                  id={`select-option-${opt.value}`}
-                  className={[
-                    styles.option,
-                    opt.value === value ? styles.optionSelected : '',
-                    index === highlightedIndex ? styles.optionHighlighted : '',
-                    opt.disabled ? styles.optionDisabled : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  role="option"
-                  aria-selected={opt.value === value}
-                  onClick={(e) => handleOptionClick(e, opt.value, opt.disabled)}
-                  onMouseEnter={() => handleMouseEnter(index)}
-                >
-                  <span className={styles.optionLabel}>{opt.label}</span>
-                  {opt.value === value && (
-                    <Icon name="check" className={styles.checkMark} />
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className={styles.emptyState} role="presentation">
-                No matching options
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {menu && createPortal(menu, portalContainer)}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState, type RefObject } from 'react';
+import { useCallback, useLayoutEffect, useState, type RefObject, type CSSProperties } from 'react';
 
 export type MenuAlign = 'left' | 'right' | 'auto';
 
@@ -28,14 +28,16 @@ export interface UseMenuPlacementResult {
   readonly maxWidth: number;
   /** Pixel cap for the menu height on the chosen side. */
   readonly maxHeight: number;
+  /** Positioning styles for a fixed-positioned, portal-rendered menu. */
+  readonly style: React.CSSProperties;
 }
 
 const GAP_FALLBACK = 4; // var(--space-1)
 const SPACE_5_FALLBACK = 20; // var(--space-5)
 const SPACE_8_FALLBACK = 32; // var(--space-8)
 
-function getViewportSize(): { width: number; height: number } {
-  const el = document.documentElement;
+function getViewportSize(win: Window): { width: number; height: number } {
+  const el = win.document.documentElement;
   return { width: el.clientWidth, height: el.clientHeight };
 }
 
@@ -63,13 +65,11 @@ function hasLayout(rect: DOMRect): boolean {
 export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlacementResult {
   const { isOpen, menuAlign, menuMaxHeight, triggerRef, menuRef } = options;
 
-  const [placement, setPlacement] = useState<MenuPlacement>({
-    align: menuAlign === 'right' ? 'right' : 'left',
-    vpos: 'bottom',
-  });
-  const [size, setSize] = useState({
+  const [result, setResult] = useState<UseMenuPlacementResult>({
+    placement: { align: menuAlign === 'right' ? 'right' : 'left', vpos: 'bottom' },
     maxWidth: Number.MAX_SAFE_INTEGER,
     maxHeight: Number.MAX_SAFE_INTEGER,
+    style: {},
   });
 
   const compute = useCallback(() => {
@@ -80,14 +80,21 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     const triggerRect = trigger.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
 
-    // jsdom / hidden elements have zero rects; keep the requested alignment.
+    // jsdom / hidden elements have zero rects; keep the requested alignment
+    // and a huge but truthy max-height so in-flow tests can read the inline
+    // style. Real DOM always has layout, so this path is test-only.
     if (!hasLayout(triggerRect) && !hasLayout(menuRect)) {
-      setPlacement({ align: menuAlign === 'right' ? 'right' : 'left', vpos: 'bottom' });
-      setSize({ maxWidth: Number.MAX_SAFE_INTEGER, maxHeight: Number.MAX_SAFE_INTEGER });
+      setResult({
+        placement: { align: menuAlign === 'right' ? 'right' : 'left', vpos: 'bottom' },
+        maxWidth: Number.MAX_SAFE_INTEGER,
+        maxHeight: Number.MAX_SAFE_INTEGER,
+        style: { maxHeight: Number.MAX_SAFE_INTEGER },
+      });
       return;
     }
 
-    const { width: vw, height: vh } = getViewportSize();
+    const win = trigger.ownerDocument?.defaultView ?? window;
+    const { width: vw, height: vh } = getViewportSize(win);
     const gap = readTokenLengthPx(menu, '--space-1', GAP_FALLBACK);
     const space5 = readTokenLengthPx(menu, '--space-5', SPACE_5_FALLBACK);
     const viewportMargin = readTokenLengthPx(menu, '--space-8', SPACE_8_FALLBACK);
@@ -124,21 +131,46 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
 
     const horizontalSpace = align === 'left' ? leftAvailable : rightAvailable;
 
-    // Match the CSS fallbacks: menu max is 16×space-5 wide and 11×space-5 tall,
-    // and should never exceed half the viewport height.
+    // Menu max size: keep within available viewport space, and allow tall menus
+    // (e.g. 10+ options) while still capping at a reasonable fraction of the
+    // viewport so the user can see the surrounding context.
     const defaultMaxWidth = space5 * 16;
-    const defaultMaxHeight = space5 * 11;
-    const halfViewport = Math.floor(vh / 2);
+    const defaultMaxHeight = space5 * 22;
+    const maxViewportFraction = Math.floor(vh * 0.7);
 
-    let maxHeight = Math.min(verticalSpace, halfViewport, defaultMaxHeight);
+    let maxHeight = Math.min(verticalSpace, maxViewportFraction, defaultMaxHeight);
     if (menuMaxHeight !== undefined) {
       maxHeight = Math.min(maxHeight, menuMaxHeight);
     }
 
-    setPlacement({ align, vpos });
-    setSize({
-      maxWidth: Math.max(Math.min(horizontalSpace, defaultMaxWidth), 0),
+    const maxWidth = Math.max(Math.min(horizontalSpace, defaultMaxWidth), 0);
+
+    // Build a fixed-position style so the menu is placed relative to the
+    // viewport and can escape clipping/overflow ancestors (dialogs, bottom
+    // sheets, scroll containers). The menu is rendered via a portal.
+    const style: CSSProperties = {
+      minWidth: Math.round(triggerRect.width),
+      maxWidth: maxWidth === Number.MAX_SAFE_INTEGER ? undefined : Math.round(maxWidth),
+      maxHeight: Math.round(Math.max(maxHeight, 0)),
+    };
+
+    if (vpos === 'bottom') {
+      style.top = Math.round(triggerRect.bottom + gap);
+    } else {
+      style.bottom = Math.round(vh - triggerRect.top + gap);
+    }
+
+    if (align === 'left') {
+      style.left = Math.round(triggerRect.left);
+    } else {
+      style.right = Math.round(vw - triggerRect.right);
+    }
+
+    setResult({
+      placement: { align, vpos },
+      maxWidth,
       maxHeight: Math.max(maxHeight, 0),
+      style,
     });
   }, [menuAlign, menuMaxHeight, triggerRef, menuRef]);
 
@@ -146,10 +178,12 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     if (!isOpen) return;
     compute();
 
+    const trigger = triggerRef.current;
+    const win = trigger?.ownerDocument?.defaultView ?? window;
     const handleResize = (): void => compute();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isOpen, compute]);
+    win.addEventListener('resize', handleResize);
+    return () => win.removeEventListener('resize', handleResize);
+  }, [isOpen, compute, triggerRef]);
 
-  return { placement, ...size };
+  return result;
 }

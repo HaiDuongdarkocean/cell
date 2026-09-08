@@ -160,12 +160,12 @@
    In the default in-flow fallback (jsdom/no layout), the menu stays below the
    trigger and takes the full root width. */
 .menu {
-  position: absolute;
-  z-index: var(--z-dropdown);
+  position: fixed;
+  z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
-  width: 100%;
-  max-height: min(calc(var(--space-5) * 11), 50vh);
+  width: auto;
+  max-height: min(calc(var(--space-5) * 22), 70vh);
   background: var(--color-surface-elevated);
   border: none;
   border-radius: var(--dialog-radius);
