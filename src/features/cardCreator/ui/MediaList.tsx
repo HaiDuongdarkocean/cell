@@ -568,10 +568,6 @@ export function MediaList({
   const dropzoneClass = dropzoneModifier
     ? `${dropzoneBase} ${dropzoneModifier}`
     : dropzoneBase;
-  const addButtonClass = kind === 'image'
-    ? styles['cc-media__gallery-add']
-    : styles['cc-media__list-add'];
-
   return (
     <div
       className={styles['cc-media']}
@@ -613,9 +609,9 @@ export function MediaList({
       </div>
       {!isEmpty && (
         <Button
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          className={addButtonClass}
+          fullWidth
           onClick={onAdd}
           disabled={addDisabled}
           leadingIcon={<Icon name="plus" size="sm" />}
