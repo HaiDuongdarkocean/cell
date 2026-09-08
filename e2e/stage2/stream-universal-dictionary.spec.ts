@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/universalPanel.fixture';
+import { test, expect } from '../fixtures/actors/universalPanel.fixture';
 
 test.describe('Stage 2: Universal Panel > Dictionary on StreamFlix', () => {
   test('opens Dictionary via the orbital badge', async ({ universalPanel, streamFlixPage }) => {
