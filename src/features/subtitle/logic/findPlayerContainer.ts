@@ -89,33 +89,19 @@ export function findFarthestSameSizeContainer(
   return farthest;
 }
 
+import { findLargestPlayableVideo as findLargestPlayableVideoFromDom } from '@/shared/lib/dom/videoFinder';
+
 /** Find the largest <video> with a non-zero bounding rect.
  *
  * Does NOT require readyState ≥ 1 — CDN-slow pages (e.g. themoviebox) can
  * have readyState=0 for seconds while the video element is already visually
  * present. Filtering by readyState would make findPlayerContainer return
- * null, breaking Player Mode entry until metadata loads. */
+ * null, breaking Player Mode entry until metadata loads.
+ *
+ * Delegates to videoFinder so Player Mode and the overlay use the same
+ * shadow-DOM-aware discovery. */
 export function findLargestPlayableVideo(): HTMLVideoElement | null {
-  const videos = Array.from(document.querySelectorAll('video')).filter((v) => {
-    const rect = v.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0;
-  });
-
-  if (videos.length === 0) return null;
-
-  videos.sort((a, b) => {
-    // Prefer videos with loaded metadata (videoWidth > 0) — they're the real
-    // playable target. Fall back to bounding-rect area when no video has
-    // loaded yet (CDN still fetching) so we pick the visually largest one.
-    const aMeta = a.videoWidth * a.videoHeight;
-    const bMeta = b.videoWidth * b.videoHeight;
-    if (aMeta > 0 || bMeta > 0) return bMeta - aMeta;
-    const aRect = a.getBoundingClientRect();
-    const bRect = b.getBoundingClientRect();
-    return (bRect.width * bRect.height) - (aRect.width * aRect.height);
-  });
-
-  return videos[0] ?? null;
+  return findLargestPlayableVideoFromDom();
 }
 
 /**
@@ -136,10 +122,20 @@ export function findLargestPlayableVideo(): HTMLVideoElement | null {
 export function findVideoContainer(video: HTMLVideoElement): HTMLElement {
   const videoHeight = video.getBoundingClientRect().height;
   let el: HTMLElement | null = video.parentElement;
+  // Shadow DOM: the video may be a direct child of a shadow root with no
+  // parentElement in the light DOM. Start from the shadow host so the overlay
+  // can attach to a real element instead of falling back to document.body.
+  const shadowHost =
+    video.getRootNode() instanceof ShadowRoot
+      ? ((video.getRootNode() as ShadowRoot).host as HTMLElement | null)
+      : null;
+  if (!el) {
+    el = shadowHost;
+  }
   while (el && el !== document.body) {
     const h = el.getBoundingClientRect().height;
     if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
     el = el.parentElement;
   }
-  return video.parentElement ?? document.body;
+  return video.parentElement ?? shadowHost ?? document.body;
 }

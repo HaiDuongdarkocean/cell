@@ -19,6 +19,7 @@ import {
   broodingmoviesProfile,
   peachifyProfile,
   onzloadProfile,
+  opensubtitlesProfile,
 } from './profiles';
 import type { SubtitleDiscoveryAdapter } from '../types';
 
@@ -40,12 +41,37 @@ export const myasiantvProfile = {
   provider: 'kisscloud',
 } as const;
 
+export const vidriftHtmlProfile = {
+  id: 'vidrift-html-variable',
+  priority: 10,
+  urlPattern: /vidrift\.in/i,
+  originPattern: /vidrift\.in/i,
+  variableName: 'subtitleTracks',
+  provider: 'vidrift',
+} as const;
+
 export const noxxProfile = {
   id: 'noxx-player-state',
   priority: 10,
   originPattern: /cloudorchestranova\.com/i,
   playerKey: 'the_subtitles',
   provider: 'noxx',
+} as const;
+
+export const vidriftProfile = {
+  id: 'vidrift-player-state',
+  priority: 10,
+  originPattern: /vidrift\.in/i,
+  playerKey: 'subtitleTracks',
+  provider: 'vidrift',
+} as const;
+
+export const onflixPlayembedProfile = {
+  id: 'onflix-playembed-player-state',
+  priority: 10,
+  originPattern: /playembed\.vip/i,
+  playerKey: 'subtitleTracks',
+  provider: 'onflix',
 } as const;
 
 export const onflixProfile = {
@@ -135,10 +161,14 @@ export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
     createJsonListingAdapter(broodingmoviesProfile),
     createJsonListingAdapter(peachifyProfile),
     createJsonListingAdapter(onzloadProfile),
+    createJsonListingAdapter(opensubtitlesProfile),
     createIframeHashAdapter(lunastreamProfile),
     createIframeHashAdapter(mockIframeHashProfile),
     createHtmlVariableAdapter(myasiantvProfile),
+    createHtmlVariableAdapter(vidriftHtmlProfile),
     createPlayerStateAdapter(noxxProfile),
+    createPlayerStateAdapter(vidriftProfile),
+    createPlayerStateAdapter(onflixPlayembedProfile),
     createHlsAdapter(onflixProfile),
     createEncryptedAdapter(videasyProfile),
     createEncryptedAdapter(peachifyEncryptedProfile),

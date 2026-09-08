@@ -146,7 +146,7 @@ function extractLanguage(url: string): string {
  * and reject when every cue line is a URL, or when there is only 1 cue
  * spanning the full video duration (chapter marker, not caption).
  */
-const NON_SUBTITLE_KEYWORDS = /thumbnail|storyboard|chapter|preview|cues/i;
+const NON_SUBTITLE_KEYWORDS = /thumb\.vtt|thumbnail|storyboard|chapter|preview|cues/i;
 
 /**
  * Stremio addon subtitle listing API pattern. Stremio addons serve a JSON

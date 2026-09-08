@@ -25,6 +25,7 @@ import {
   isPhimwarSubtitleUrl,
   decryptPhimwarSrtFromUrl,
 } from '@/shared/lib/parsers/phimwarDecryption';
+import { gunzipSync, unzipSync, strFromU8 } from 'fflate';
 import { getCachedSubtitleBody, waitForCachedSubtitleBody } from './subtitleResponseCache';
 import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -87,6 +88,49 @@ const subtitleCache = new Map<string, { cues: SrtCue[]; format: string }>();
 /** Clear the auto-load cache (called on content-script re-inject / tab navigate). */
 export function clearAutoLoadCache(): void {
   subtitleCache.clear();
+}
+
+const GZIP_MAGIC = new Uint8Array([0x1f, 0x8b]);
+const ZIP_MAGIC = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+
+function isCompressedSubtitleUrl(url: string): boolean {
+  return /\.(gz|zip)([?#]|$)/i.test(url);
+}
+
+function startsWithMagic(data: Uint8Array, magic: Uint8Array): boolean {
+  if (data.length < magic.length) return false;
+  for (let i = 0; i < magic.length; i++) {
+    if (data[i] !== magic[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Decode/decompress a subtitle response body. Handles plain UTF-8, gzip (.gz),
+ * and zip (.zip) archives (picks the first .srt/.vtt/.ass file, falling back to
+ * the first entry). Used for content-script fetches and the background fallback.
+ */
+export function decompressSubtitleBytes(bytes: Uint8Array, _url?: string): string {
+  if (startsWithMagic(bytes, GZIP_MAGIC)) {
+    return strFromU8(gunzipSync(bytes));
+  }
+  if (startsWithMagic(bytes, ZIP_MAGIC)) {
+    const files = unzipSync(bytes);
+    const names = Object.keys(files);
+    const preferred =
+      names.find((n) => /\.(srt|vtt|ass|ssa)$/i.test(n)) ??
+      names.find((n) => !n.endsWith('/') && files[n] && files[n]!.length > 0) ??
+      names[0];
+    if (!preferred) {
+      throw new Error('Zip archive is empty.');
+    }
+    const file = files[preferred];
+    if (!file) {
+      throw new Error(`Zip entry "${preferred}" is empty or missing.`);
+    }
+    return strFromU8(file);
+  }
+  return strFromU8(bytes);
 }
 
 /**
@@ -180,6 +224,9 @@ export async function fetchAndParseSubtitle(
       if (!response.ok) {
         // Non-ok (403/404) → try background fallback before giving up.
         content = await fetchViaBackground(url, tabUrl, initiator);
+      } else if (isCompressedSubtitleUrl(url)) {
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        content = decompressSubtitleBytes(bytes, url);
       } else {
         content = await response.text();
       }

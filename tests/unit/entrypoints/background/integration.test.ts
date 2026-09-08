@@ -2100,12 +2100,14 @@ https://cdn.example.com/low.m3u8`;
     mockChrome.runtime.sendMessage.mockClear();
     mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
       if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        // Background now fetches subtitles as arraybuffer and expects base64.
+        const text = '1\n00:00:00,000 --> 00:00:01,000\nHello\n';
         return Promise.resolve({
           success: true,
           data: {
             ok: true,
             status: 200,
-            content: '1\n00:00:00,000 --> 00:00:01,000\nHello\n',
+            content: Buffer.from(text, 'utf-8').toString('base64'),
             finalUrl: 'https://example.com/sub.en.srt',
           },
         });
@@ -2136,7 +2138,7 @@ https://cdn.example.com/low.m3u8`;
           data: {
             ok: true,
             status: 200,
-            content: 'content',
+            content: Buffer.from('content', 'utf-8').toString('base64'),
             finalUrl: url,
           },
         });

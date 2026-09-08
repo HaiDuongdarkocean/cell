@@ -33,8 +33,14 @@
   }
 
   const SUBTITLE_PATTERN = /\.srt(\?|$)|\.vtt(\?|$)|\.ass(\?|$)|\/(subtitles?|subs|caption|cc)\//i;
+  const CACHE_SUBTITLE_PATTERN = /cache[-_]?vtt\.php(?:\?|$)|\/cache\.php\?.*\baction=get\b/i;
+  const SUBTITLE_PATTERN_COMBINED = new RegExp(
+    `(?:${SUBTITLE_PATTERN.source})|(?:${CACHE_SUBTITLE_PATTERN.source})`,
+    'i',
+  );
 
   const LISTING_PATTERNS = [
+    /rest\.opensubtitles\.org\/search\//i,
     /\/search\?id=/i,
     /\/api\/sub\/\d+/i,
     /\/api\/v1\/security\/episode-access/i,
@@ -122,7 +128,7 @@
       // ignore
     }
 
-    const isSubtitle = SUBTITLE_PATTERN.test(url);
+    const isSubtitle = SUBTITLE_PATTERN_COMBINED.test(url);
     const isListing = isListingUrl(url);
 
     return originalFetch.call(this, input, init).then((response) => {

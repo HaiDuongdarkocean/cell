@@ -14,6 +14,8 @@ import {
   pushAutoLoadSubtitles,
 } from '../helpers';
 import { offscreenFetch } from '../offscreenFetch';
+import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
+import { decompressSubtitleBytes } from '@/features/subtitle/logic/subtitleAutoLoad';
 import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/declarativeNetRequest';
 import type {
   DetectedVideo,
@@ -134,11 +136,15 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
 
     try {
       // M15: fetch via offscreen so SW idle eviction doesn't abort the subtitle fetch.
-      const result = await offscreenFetch(ctx.offscreenManager, finalUrl);
+      // Fetch as arraybuffer so gzip/zip subtitle downloads (OpenSubtitles) can be
+      // decompressed in the background before returning text.
+      const result = await offscreenFetch(ctx.offscreenManager, finalUrl, { responseType: 'arraybuffer' });
       if (!result.ok) {
         return { success: false, error: `HTTP ${result.status}` };
       }
-      return { success: true, data: { content: result.content, finalUrl: result.finalUrl } };
+      const bytes = new Uint8Array(decodeBase64ToArrayBuffer(result.content));
+      const content = decompressSubtitleBytes(bytes, finalUrl);
+      return { success: true, data: { content, finalUrl: result.finalUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Background fetch failed: ${msg}` };

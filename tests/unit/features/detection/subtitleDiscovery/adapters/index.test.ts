@@ -102,6 +102,39 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates.every((c) => c.format === 'vtt')).toBe(true);
   });
 
+  it('vidrift html-variable adapter parses object-array candidates from HTML', async () => {
+    const adapter = adapters.find((a) => a.id === 'vidrift-html-variable')!;
+    const html = fixture('vidrift-html.html');
+    const signal: SubtitleSignal = {
+      kind: 'document-html',
+      url: 'https://embed.vidrift.in/embed/movie/1108427',
+      html,
+      tabId: 1,
+      frameId: 2,
+    };
+    const candidates = await adapter.discover(
+      signal,
+      makeContext({ origin: 'https://embed.vidrift.in', frameUrl: 'https://embed.vidrift.in/embed/movie/1108427' }),
+      makeEnv(),
+    );
+    expect(candidates).toHaveLength(10);
+    expect(candidates[0].label).toBe('English');
+    expect(candidates[0].language).toBe('en');
+    expect(candidates[0].format).toBe('vtt');
+    expect(candidates[0].url).toContain('/api/subtitles/movie/1108427/English');
+    expect(candidates[1].language).toBe('es');
+    expect(candidates[2].language).toBe('fr');
+    expect(candidates[3].language).toBe('de');
+    expect(candidates[4].language).toBe('it');
+    expect(candidates[5].language).toBe('pt');
+    expect(candidates[6].language).toBe('cs');
+    expect(candidates[7].language).toBe('sk');
+    expect(candidates[8].language).toBe('pl');
+    expect(candidates[9].language).toBe('tr');
+    expect(candidates.every((c) => c.format === 'vtt')).toBe(true);
+    expect(candidates.every((c) => c.provider === 'vidrift')).toBe(true);
+  });
+
   it('noxx player-state adapter parses 4 candidates', async () => {
     const adapter = adapters.find((a) => a.id === 'noxx-player-state')!;
     const payload = JSON.parse(fixture('noxx-player-state.json'));
@@ -117,6 +150,56 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates).toHaveLength(4);
     expect(candidates[0].url).toContain('en.vtt');
     expect(candidates[1].label).toBe('English - SDH');
+  });
+
+  it('vidrift player-state adapter parses object-array candidates', async () => {
+    const adapter = adapters.find((a) => a.id === 'vidrift-player-state')!;
+    const payload = JSON.parse(fixture('vidrift-player-state.json'));
+    const signal: SubtitleSignal = {
+      kind: 'player-state',
+      origin: 'https://embed.vidrift.in',
+      payload,
+      playerKey: 'subtitleTracks',
+      tabId: 1,
+      frameId: 2,
+    };
+    const candidates = await adapter.discover(
+      signal,
+      makeContext({ origin: 'https://embed.vidrift.in', frameUrl: 'https://embed.vidrift.in/embed/movie/1108427' }),
+      makeEnv(),
+    );
+    expect(candidates).toHaveLength(3);
+    expect(candidates[0].label).toBe('English');
+    expect(candidates[0].language).toBe('en');
+    expect(candidates[0].format).toBe('vtt');
+    expect(candidates[0].url).toContain('/api/subtitles/movie/1108427/English');
+    expect(candidates[1].language).toBe('es');
+    expect(candidates[2].language).toBe('fr');
+  });
+
+  it('onflix playembed player-state adapter parses 2 candidates', async () => {
+    const adapter = adapters.find((a) => a.id === 'onflix-playembed-player-state')!;
+    const payload = JSON.parse(fixture('playembed-player-state.json'));
+    const signal: SubtitleSignal = {
+      kind: 'player-state',
+      origin: 'https://playembed.vip',
+      payload,
+      playerKey: 'subtitleTracks',
+      tabId: 1,
+      frameId: 2,
+    };
+    const candidates = await adapter.discover(
+      signal,
+      makeContext({ origin: 'https://playembed.vip', frameUrl: 'https://playembed.vip/player?ep_id=abc123&src=sn' }),
+      makeEnv(),
+    );
+    expect(candidates).toHaveLength(2);
+    expect(candidates[0].label).toBe('Tiếng Việt');
+    expect(candidates[0].language).toBe('vi');
+    expect(candidates[0].format).toBe('vtt');
+    expect(candidates[0].url).toBe('https://m-center.onflixcdn.com/content/26062026/c8c22898-f969-4a6b-8ee5-a27d631bf4c4.vtt');
+    expect(candidates[1].label).toBe('English');
+    expect(candidates[1].language).toBe('en');
   });
 
   it('onflix hls adapter parses 2 subtitle tracks', async () => {
@@ -192,6 +275,51 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates[1].language).toBe('en');
     expect(candidates[2].language).toBe('zh');
     expect(candidates[3].language).toBe('zh');
+  });
+
+  it('opensubtitles JSON-array adapter parses ready candidates with download URLs', async () => {
+    const adapter = adapters.find((a) => a.id === 'opensubtitles-listing')!;
+    const body = JSON.stringify([
+      {
+        SubFileName: 'Her.Private.Hell.2026.1080p.WEB-DL.DDP5.1.H.264-English.srt',
+        SubDownloadLink: 'https://dl.opensubtitles.org/en/download/vrf-c21ed2a1/filead/1962534192.gz',
+        SubFormat: 'srt',
+        SubLanguageID: 'eng',
+        ISO639: 'en',
+        LanguageName: 'English',
+        SubHearingImpaired: '0',
+        SubForeignPartsOnly: '0',
+        SubFromTrusted: '1',
+        SubSize: '22561',
+      },
+      {
+        SubFileName: 'Her.Private.Hell.2026.Vietnamese.srt',
+        SubDownloadLink: 'https://dl.opensubtitles.org/en/download/vrf-11223344/filead/1962534200.gz',
+        SubFormat: 'srt',
+        SubLanguageID: 'vie',
+        ISO639: 'vi',
+        LanguageName: 'Vietnamese',
+        SubHearingImpaired: '0',
+        SubForeignPartsOnly: '0',
+        SubFromTrusted: '0',
+        SubSize: '18432',
+      },
+    ]);
+    const signal: SubtitleSignal = {
+      kind: 'network-response',
+      url: 'https://rest.opensubtitles.org/search/imdb-tt36629665/sublanguageid-eng,vie',
+      body,
+      tabId: 1,
+      frameId: 0,
+    };
+    const candidates = await adapter.discover(signal, makeContext({ origin: 'https://rest.opensubtitles.org' }), makeEnv());
+    expect(candidates).toHaveLength(2);
+    expect(candidates[0].language).toBe('en');
+    expect(candidates[0].format).toBe('srt');
+    expect(candidates[0].provider).toBe('opensubtitles');
+    expect(candidates[0].url).toContain('filead/1962534192.gz');
+    expect(candidates[1].language).toBe('vi');
+    expect(candidates[1].label).toBe('Vietnamese');
   });
 
   it('videasy encrypted adapter falls back to unresolved on bad seed', async () => {
