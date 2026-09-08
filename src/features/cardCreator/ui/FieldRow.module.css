@@ -187,8 +187,106 @@
   height: var(--space-4);
 }
 
+/* === TagInput — chip-based tag entry === */
+.tagInput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--input-height);
+  padding: var(--input-padding-y) var(--input-padding-x);
+  background: var(--input-bg);
+  border: var(--border-width-hairline) solid var(--input-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast) var(--ease-in-out);
+  cursor: text;
+}
+
+.tagInput:hover {
+  border-color: var(--color-border-focus);
+}
+
+.tagInput:focus-within {
+  border-color: transparent;
+  outline: none;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--color-primary);
+}
+
+.tagInput__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-0-5) var(--space-1-5);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border: var(--border-width-hairline) solid var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+  max-width: 100%;
+}
+
+.tagInput__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagInput__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-4);
+  height: var(--space-4);
+  padding: var(--space-0);
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.tagInput__remove:hover {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.tagInput__remove:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.tagInput__remove svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.tagInput__field {
+  flex: 1 1 auto;
+  min-width: 80px;
+  min-height: var(--input-height);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--input-fg);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-normal);
+  outline: none;
+}
+
+.tagInput__field::placeholder {
+  color: var(--input-placeholder);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .fieldInput {
+  .fieldInput,
+  .tagInput,
+  .tagInput__remove {
     transition: none;
   }
 }

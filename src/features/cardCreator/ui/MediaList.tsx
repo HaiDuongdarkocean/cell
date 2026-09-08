@@ -111,7 +111,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
         onClick={onClose}
         aria-label="Close preview"
       >
-        ×
+        <Icon name="x" size="md" />
       </Button>
       {url && <img className={styles['cc-media__preview-img']} src={url} alt={file.filename} />}
     </div>
@@ -207,7 +207,10 @@ function ImageThumb({
       data-cell-id={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
-      <Button variant="secondary"
+      <Button
+        shape="circle"
+        size="xs"
+        variant="ghost"
         className={styles['cc-media__thumb-remove']}
         aria-label={`Remove ${file.filename}`}
         onClick={(e) => {
@@ -216,7 +219,7 @@ function ImageThumb({
         }}
         data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
-        ×
+        <Icon name="x" size="xs" />
       </Button>
     </div>
   );
