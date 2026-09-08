@@ -14,6 +14,7 @@
   overflow-y: auto;
   composes: hide from '@/shared/ui/Scrollable.module.css';
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   color: var(--color-text);
@@ -264,7 +265,6 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
 }
 
 .cellDef {
-  composes: hide from '@/shared/ui/Scrollable.module.css';
   padding: 0;
   flex: 1;
   min-height: 0;
@@ -272,8 +272,8 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   flex-direction: column;
   /* Vertical spacing between def rows — items carry no top/bottom padding. */
   gap: var(--space-1);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow-y: visible;
+  overscroll-behavior: auto;
 }
 
 .dictionaryEmpty {
@@ -335,6 +335,7 @@ li.searchHistoryItem .searchHistoryRemove.searchHistoryRemove svg {
   flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
   gap: 0;
   padding: 0;
