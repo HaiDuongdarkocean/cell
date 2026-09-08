@@ -6,6 +6,8 @@ import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import type { UniversalPanelTab } from '@/features/universalPanel/types';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { PresetName } from '@/entities/theme';
+import { ViewportFrame, type ViewportWidth } from '../ViewportFrame';
+import { SHOWCASE_VIEWPORT, getViewportHeight } from '../showcaseParams';
 import { installMockDictionarySendMessage } from '../mockDictionary';
 import { getMockUniversalPanelProfiles } from '../showcaseFixtures';
 import styles from './UniversalPanelPage.module.css';
@@ -25,7 +27,7 @@ const LANGUAGE_PROFILES = getMockUniversalPanelProfiles();
 const VALID_TABS: UniversalPanelTab[] = ['dictionary', 'studyModes', 'settings'];
 const VALID_PRESETS: PresetName[] = ['dawn', 'forest', 'ocean', 'warmth'];
 
-function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab; mode: 'light' | 'dark'; preset: PresetName } {
+function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab; mode: 'light' | 'dark'; preset: PresetName; viewport: ViewportWidth; viewportHeight: number | undefined } {
   const params = new URLSearchParams(window.location.search);
   const openParam = params.get('open');
   const tabParam = params.get('tab');
@@ -36,6 +38,8 @@ function readShowcaseParams(): { isOpen: boolean; tab: UniversalPanelTab; mode: 
     tab: VALID_TABS.includes(tabParam as UniversalPanelTab) ? (tabParam as UniversalPanelTab) : 'dictionary',
     mode: modeParam === 'dark' ? 'dark' : 'light',
     preset: presetParam && VALID_PRESETS.includes(presetParam) ? presetParam : 'dawn',
+    viewport: SHOWCASE_VIEWPORT,
+    viewportHeight: getViewportHeight(SHOWCASE_VIEWPORT),
   };
 }
 
@@ -76,39 +80,45 @@ export function Showcase(): ReactElement {
           {hasMedia ? 'Simulate no video' : 'Simulate video present'}
         </button>
       </div>
-      <div className={styles.pageFrame}>
-        <div className={styles.pagePlaceholder}>
-          <span>Web Page Content (behind panel)</span>
+      <ViewportFrame
+        width={initial.viewport}
+        height={initial.viewportHeight}
+        theme={initial.mode}
+      >
+        <div className={styles.pageFrame}>
+          <div className={styles.pagePlaceholder}>
+            <span>Web Page Content (behind panel)</span>
+          </div>
+          {/* Theme boundary — mirrors the shadow-root container that
+              ShadowThemeProvider themes in the real extension. `?mode=`/`?preset=`
+              scope the panel subtree without touching document.documentElement. */}
+          <div className={styles.themeBoundary} data-theme={initial.mode} data-preset={initial.preset}>
+            <UniversalPanel
+              isOpen={isOpen}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onClose={() => setIsOpen(false)}
+              tokenizeState={tokenizeState}
+              onToggleTokenize={handleToggleTokenize}
+              hasMedia={hasMedia}
+              languageProfiles={LANGUAGE_PROFILES}
+              activeProfileId={activeProfileId}
+              onProfileChange={setActiveProfileId}
+              dictionaryPanel={
+                <DictionaryTab
+                  langCode="en"
+                  sourceLang="en"
+                  targetLang="vi"
+                  isOpen={isOpen}
+                  initialTerm="serendipity"
+                />
+              }
+              studyModesPanel={<StudyModesTab />}
+              settingsPanel={<SettingsTab />}
+            />
+          </div>
         </div>
-        {/* Theme boundary — mirrors the shadow-root container that
-            ShadowThemeProvider themes in the real extension. `?mode=`/`?preset=`
-            scope the panel subtree without touching document.documentElement. */}
-        <div className={styles.themeBoundary} data-theme={initial.mode} data-preset={initial.preset}>
-          <UniversalPanel
-            isOpen={isOpen}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onClose={() => setIsOpen(false)}
-            tokenizeState={tokenizeState}
-            onToggleTokenize={handleToggleTokenize}
-            hasMedia={hasMedia}
-            languageProfiles={LANGUAGE_PROFILES}
-            activeProfileId={activeProfileId}
-            onProfileChange={setActiveProfileId}
-            dictionaryPanel={
-              <DictionaryTab
-                langCode="en"
-                sourceLang="en"
-                targetLang="vi"
-                isOpen={isOpen}
-                initialTerm="serendipity"
-              />
-            }
-            studyModesPanel={<StudyModesTab />}
-            settingsPanel={<SettingsTab />}
-          />
-        </div>
-      </div>
+      </ViewportFrame>
     </div>
   );
 }
