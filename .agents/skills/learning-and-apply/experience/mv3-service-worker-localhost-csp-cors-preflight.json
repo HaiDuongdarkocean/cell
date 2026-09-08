@@ -1,0 +1,26 @@
+{
+  "id": "mv3-service-worker-localhost-csp-cors-preflight",
+  "title": "MV3 service worker fetch đến localhost API bị CSP connect-src và CORS preflight",
+  "category": ["messaging", "build"],
+  "tags": ["mv3", "service-worker", "fetch", "localhost", "anki-connect", "cors", "preflight", "csp", "connect-src", "content-security-policy", "text-plain", "simple-request", "chrome-extension"],
+  "trigger": "Chrome MV3 extension service worker fetch tới HTTP API local (AnkiConnect http://localhost:8765) bị lỗi CORS/CSP, DevTools console báo 'Refused to connect' hoặc preflight không pass.",
+  "principle": "MV3 service worker chạy trong origin chrome-extension://. Để fetch cross-origin đến API local: (1) manifest `content_security_policy.extension_pages.connect-src` phải cho phép scheme `http:`/`https:` hoặc host cụ thể; mặc định `connect-src 'self'` hoặc chỉ https sẽ block http://localhost:8765. (2) Tránh `Content-Type: application/json` vì nó trigger CORS preflight OPTIONS; server AnkiConnect không trả `Access-Control-Allow-Methods` nên preflight dễ fail. Dùng `Content-Type: text/plain` để request là 'simple CORS request', tránh preflight; server vẫn parse body JSON bình thường.",
+  "cases": [
+    {
+      "context": "ankiConnectClient.ts gửi POST tới http://localhost:8765 từ service worker — request bị block trước khi rời extension",
+      "bad": "// public/manifest.json: connect-src chỉ cho phép https → http://localhost:8765 bị CSP block\n\"content_security_policy\": {\n  \"extension_pages\": \"... connect-src 'self' https://example.com/\"\n}\n\n// DevTools: Refused to connect to 'http://localhost:8765/' because it violates the following Content Security Policy directive: \"connect-src 'self' https://example.com/\"",
+      "good": "// public/manifest.json: cho phép cả http: và https: để localhost/LAN IP tùy config user hoạt động\n\"content_security_policy\": {\n  \"extension_pages\": \"... connect-src 'self' http: https:\"\n}"
+    },
+    {
+      "context": "ankiConnectClient.ts gửi JSON với Content-Type: application/json, browser trigger CORS OPTIONS preflight",
+      "bad": "// AnkiConnect OPTIONS trả Access-Control-Allow-Origin đúng nhưng không có Access-Control-Allow-Methods\nawait fetch(baseUrl, {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify(body)\n});\n// → CORS preflight failed hoặc 403 vì preflight không pass",
+      "good": "// Dùng text/plain để thành 'simple CORS request', tránh preflight; server vẫn parse body JSON\nawait fetch(baseUrl, {\n  method: 'POST',\n  headers: { 'Content-Type': 'text/plain' },\n  body: JSON.stringify(body)\n});"
+    }
+  ],
+  "applyFor": [
+    "Chrome MV3 extension service worker cần fetch tới HTTP API local (AnkiConnect, local dev server, LAN IP)",
+    "Request tới localhost/API trả lỗi CSP 'Refused to connect' trong DevTools",
+    "CORS preflight OPTIONS fail khi POST với Content-Type: application/json tới server tự viết không trả Access-Control-Allow-Methods",
+    "Tránh preflight cho cross-origin POST bằng cách dùng Content-Type: text/plain khi server không cần header cụ thể"
+  ]
+}
