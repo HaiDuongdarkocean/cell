@@ -4,6 +4,7 @@
    Dialog and SearchableSelect). */
 
 .root {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -154,12 +155,13 @@
 }
 
 /* --- Menu ---
-   In-flow expansion (not an overlay): the menu takes layout space so the
-   containing card grows to fit it — no overflow:hidden clipping, no z-index
-   fights, and nothing covers the content below. */
+   Overlay positioned by the useMenuPlacement hook. It can open above/below
+   and align to the left or right edge of the trigger based on viewport space.
+   In the default in-flow fallback (jsdom/no layout), the menu stays below the
+   trigger and takes the full root width. */
 .menu {
-  position: static;
-  margin-top: var(--space-1);
+  position: absolute;
+  z-index: var(--z-dropdown);
   display: flex;
   flex-direction: column;
   width: 100%;
