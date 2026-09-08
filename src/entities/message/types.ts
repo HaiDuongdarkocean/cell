@@ -322,12 +322,20 @@ export interface RevokeOpfsBlobUrlPayload {
   readonly url: string;
 }
 
+export interface ScannedTrackPayload {
+  readonly url: string;
+  readonly label: string;
+  readonly language: string;
+  readonly isDefault: boolean;
+}
+
 export interface PageScanResultPayload {
   readonly tabId: number;
   /** frameId of the sender, injected by the background from chrome.runtime sender. */
   readonly frameId?: number;
   readonly videoUrls: string[];
   readonly subtitleUrls: string[];
+  readonly trackSubtitles?: ScannedTrackPayload[];
   /**
    * The URL of the frame the content-script is running in
    * (`window.location.href`). Used as the request `initiator` for scanned media

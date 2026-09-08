@@ -176,8 +176,26 @@ export function isStremioSubtitleListing(url: string): boolean {
 
 export function detectSubtitle(
   request: NetworkRequest,
-  opts?: { trustAsSubtitle?: boolean },
+  opts?: {
+    trustAsSubtitle?: boolean;
+    /** Known language from the source element (e.g. `<track srclang>`). */
+    language?: string;
+    /** Display label from the source element (e.g. `<track label>`). */
+    displayName?: string;
+  },
 ): DetectedSubtitle | null {
+  // `data:` URLs cannot be re-fetched. `blob:` URLs can be re-fetched in the
+  // same origin (they are local object URLs), but only when the caller has
+  // already classified them as a subtitle (e.g. from a `<track>` element).
+  // Generic network-pattern matching for blob: URLs is unsafe because the URL
+  // carries no path/ extension signal.
+  if (/^data:/i.test(request.url)) {
+    return null;
+  }
+  if (!opts?.trustAsSubtitle && /^(blob|data):/i.test(request.url)) {
+    return null;
+  }
+
   // Reject Stremio addon listing URLs — they return JSON, not a subtitle file.
   // The real subtitle URLs are extracted from the JSON by
   // `resolveStremioSubtitleListing` and re-injected via `handleRequest`.
@@ -202,7 +220,11 @@ export function detectSubtitle(
   }
 
   // Reject thumbnail/storyboard/chapter VTT previews — not subtitles.
-  if (NON_SUBTITLE_KEYWORDS.test(request.url)) {
+  const checkLabel = opts?.displayName ?? '';
+  if (
+    NON_SUBTITLE_KEYWORDS.test(request.url) ||
+    NON_SUBTITLE_KEYWORDS.test(checkLabel)
+  ) {
     return null;
   }
 
@@ -211,7 +233,9 @@ export function detectSubtitle(
     return null;
   }
 
-  const language = extractLanguage(request.url);
+  const language = opts?.language && opts.language !== 'unknown'
+    ? opts.language
+    : extractLanguage(request.url);
 
   return {
     id: generateId(),
@@ -221,5 +245,6 @@ export function detectSubtitle(
     tabId: request.tabId,
     detectedAt: request.timeStamp,
     initiator: request.initiator,
+    displayName: opts?.displayName,
   };
 }

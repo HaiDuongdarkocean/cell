@@ -2,7 +2,13 @@ declare const __CELL_FAST_BUILD__: boolean;
 
 import { sendMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
-import { clearAutoLoadCache, initContentScriptController } from '@/features/subtitle';
+import {
+  clearAutoLoadCache,
+  initContentScriptController,
+  cacheSubtitleBody,
+  waitForCachedSubtitleBody,
+  clearSubtitleBodyCache,
+} from '@/features/subtitle';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -34,6 +40,13 @@ import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/
 // Top-frame coordinator for Player Mode when the actual video is inside a
 // cross-origin iframe. Child frames request the host container via postMessage.
 installIframePlayerModeBridge();
+
+// Clear per-page caches immediately. The MAIN-world fetch interceptor may
+// re-post captured bodies as soon as the listener below announces readiness,
+// so the cache must be empty before registration to avoid replaying stale
+// bodies from a previous navigation.
+clearAutoLoadCache();
+clearSubtitleBodyCache();
 
 // Host-side manager sheet bridge — renders bottom sheet on host page
 // when a cross-origin child iframe requests it (mobile scenario where the
@@ -198,6 +211,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   // (cross-origin, no cookie jar). The background asks the content script,
   // which runs in the page origin, to fetch the raw subtitle text. Any site
   // with a same-origin subtitle URL can use this path.
+  //
+  // Ephemeral token endpoints (e.g. onzload) cannot be re-fetched once the
+  // player consumes the token, so the response is cached at interception time.
+  // Wait briefly for the cache before trying a replay.
   if (msg?.type === MESSAGE_TYPES.FETCH_SUBTITLE_PAGE_CONTEXT) {
     const payload = (msg as { payload?: { url?: string } }).payload;
     const url = payload?.url;
@@ -207,6 +224,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
     void (async () => {
       try {
+        const cached = await waitForCachedSubtitleBody(url, 5000);
+        if (cached) {
+          sendResponse({ success: true, content: cached });
+          return;
+        }
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15_000);
         const response = await fetch(url, {
@@ -299,6 +321,9 @@ window.addEventListener('message', (event) => {
   // === Generic subtitle-list discovery bridge (MAIN-world → background) ===
   if (data?.type === '__CELL_SUBTITLE_DISCOVERY' && (data as { signal?: unknown }).signal) {
     const signal = (data as { signal: SubtitleSignal }).signal;
+    if (signal.kind === 'network-response' && signal.body) {
+      cacheSubtitleBody(signal.url, signal.body);
+    }
     const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -361,11 +386,14 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// Announce readiness to the MAIN-world IIFE interceptors. They may have
+// posted signals before this isolated listener was registered (bundler async
+// loader delays content script registration past document_start).
+// See learning-and-apply: messaging-receiver-announces-readiness-handshake.
+window.postMessage({ type: '__CELL_CS_READY' }, '*');
+
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
-// Clear auto-load cache on every (re)inject — tab navigate re-injects the
-// content-script, so the per-URL cache must not survive across navigations.
-clearAutoLoadCache();
 const scanner = new PageScanner();
 
 // Scan on page load — defer to DOMContentLoaded because content-script now
@@ -409,18 +437,24 @@ function runPageScan(): void {
     pageUrl: window.location.href,
     videoUrls: urls.videoUrls,
     subtitleUrls: urls.subtitleUrls,
+    trackSubtitles: urls.trackSubtitles,
   }, '*');
   document.documentElement.setAttribute(
     'data-cell-runscan',
-    JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length }),
+    JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length, tracks: urls.trackSubtitles.length }),
   );
-  if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
+  if (
+    urls.videoUrls.length > 0 ||
+    urls.subtitleUrls.length > 0 ||
+    urls.trackSubtitles.length > 0
+  ) {
     void sendMessage({
       type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
       payload: {
         tabId: undefined,
         videoUrls: urls.videoUrls,
         subtitleUrls: urls.subtitleUrls,
+        trackSubtitles: urls.trackSubtitles,
         pageUrl: window.location.href,
       },
     });
@@ -429,11 +463,12 @@ function runPageScan(): void {
   // Start observing for dynamically loaded content
   scanner.startObserving((newUrls) => {
     void sendMessage({
-      type: 'PAGE_SCAN_RESULT',
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
       payload: {
         tabId: undefined,
         videoUrls: newUrls.videoUrls,
         subtitleUrls: newUrls.subtitleUrls,
+        trackSubtitles: newUrls.trackSubtitles,
         pageUrl: window.location.href,
       },
     });
@@ -910,13 +945,18 @@ function reportEpisodeChanged(
     payload,
   }).then(() => {
     const urls = scanner.scan();
-    if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
+    if (
+      urls.videoUrls.length > 0 ||
+      urls.subtitleUrls.length > 0 ||
+      urls.trackSubtitles.length > 0
+    ) {
       void sendMessage({
         type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
         payload: {
           tabId: undefined,
           videoUrls: urls.videoUrls,
           subtitleUrls: urls.subtitleUrls,
+          trackSubtitles: urls.trackSubtitles,
           pageUrl: window.location.href,
         },
       });

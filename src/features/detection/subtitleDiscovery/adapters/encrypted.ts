@@ -11,6 +11,7 @@
 
 import { createCandidate } from '../candidate';
 import { formatFromUrl, resolveLanguage } from '../candidate';
+import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
 import type { SubtitleFormat } from '@/entities/subtitle/types';
 import { decryptVideasyResponse } from './videasyDecoder';
 import { decryptPeachifyResponse } from './peachifyDecoder';
@@ -27,7 +28,12 @@ export interface EncryptedProfile {
   readonly priority: number;
   readonly urlPattern: RegExp;
   readonly provider: string;
-  readonly decryptor?: 'videasy' | 'peachify';
+  readonly decryptor?: 'videasy' | 'peachify' | 'hubphim';
+  readonly resolveMetadata?: (
+    url: string,
+    context: SubtitleDiscoveryContext,
+    env: SubtitleDiscoveryEnvironment,
+  ) => Promise<{ label: string; language: string } | null>;
 }
 
 function getTmdbIdFromUrl(url: string): number | undefined {
@@ -81,20 +87,18 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
     id: profile.id,
     priority: profile.priority,
     match(signal: SubtitleSignal): boolean {
-      // Only process captured network-response bodies. Empty bodies come from
-      // webRequest-only paths where we cannot decrypt without the response text,
-      // and re-fetching usually fails under Cloudflare.
-      return (
-        signal.kind === 'network-response' &&
-        profile.urlPattern.test(signal.url) &&
-        signal.body.length > 0
-      );
+      // Match the URL shape so the network interceptor can treat this as a
+      // listing instead of a plain subtitle. Bodies are captured by the
+      // main-world fetch interceptor; re-fetching from the service worker
+      // usually fails under cookie/Cloudflare checks, so discover() returns []
+      // when the body is empty.
+      return signal.kind === 'network-response' && profile.urlPattern.test(signal.url);
     },
 
     async discover(
       signal: SubtitleSignal,
       context: SubtitleDiscoveryContext,
-      _env: SubtitleDiscoveryEnvironment,
+      env: SubtitleDiscoveryEnvironment,
     ): Promise<readonly SubtitleCandidate[]> {
       if (signal.kind !== 'network-response') return [];
 
@@ -105,6 +109,10 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
 
       if (decryptor === 'peachify') {
         return decryptPeachify(signal, context, profile, body);
+      }
+
+      if (decryptor === 'hubphim') {
+        return decryptHubphim(signal, context, env, profile, body);
       }
 
       return decryptVideasy(signal, context, profile, body);
@@ -267,4 +275,90 @@ async function decryptVideasy(
   }
 
   return candidates;
+}
+
+function getHubphimFallbackLabel(url: string): string {
+  try {
+    const id = new URLSearchParams(url.split('?')[1] ?? '').get('id');
+    return id ? `Subtitle #${id}` : 'Subtitle';
+  } catch {
+    return 'Subtitle';
+  }
+}
+
+function createUnresolvedHubphimCandidate(
+  url: string,
+  profile: EncryptedProfile,
+  context: SubtitleDiscoveryContext,
+): SubtitleCandidate {
+  return createCandidate(
+    {
+      label: getHubphimFallbackLabel(url),
+      language: 'unknown',
+      source: 'metadata',
+      provider: profile.provider,
+      status: 'unresolved',
+      metadata: {
+        provider: profile.provider,
+        providerId: `enc:${url}`,
+        language: 'unknown',
+        label: 'Encrypted subtitle',
+        extra: { url },
+      },
+    },
+    context,
+  );
+}
+
+async function decryptHubphim(
+  signal: SubtitleSignal,
+  context: SubtitleDiscoveryContext,
+  env: SubtitleDiscoveryEnvironment,
+  profile: EncryptedProfile,
+  body: string,
+): Promise<readonly SubtitleCandidate[]> {
+  if (signal.kind !== 'network-response') return [];
+
+  let format: SubtitleFormat | null;
+  try {
+    ({ format } = decryptAndDetectFormat(body));
+  } catch {
+    return [createUnresolvedHubphimCandidate(signal.url, profile, context)];
+  }
+
+  if (!format) {
+    return [createUnresolvedHubphimCandidate(signal.url, profile, context)];
+  }
+
+  let label: string | undefined;
+  let language: string | undefined;
+
+  if (profile.resolveMetadata) {
+    try {
+      const meta = await profile.resolveMetadata(signal.url, context, env);
+      if (meta) {
+        label = meta.label;
+        language = meta.language;
+      }
+    } catch {
+      // fall through to fallback
+    }
+  }
+
+  label ??= getHubphimFallbackLabel(signal.url);
+  language ??= 'unknown';
+
+  return [
+    createCandidate(
+      {
+        label,
+        language,
+        format,
+        source: 'direct',
+        url: signal.url,
+        provider: profile.provider,
+      },
+      context,
+    ),
+  ];
 }

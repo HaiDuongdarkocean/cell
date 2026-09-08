@@ -167,6 +167,33 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates[0].url).toContain('.vtt');
   });
 
+  it('onzload JSON-object adapter parses 4 unresolved metadata candidates', async () => {
+    const adapter = adapters.find((a) => a.id === 'onzload-listing')!;
+    const body = fixture('onzload-listing.json');
+    const signal: SubtitleSignal = {
+      kind: 'network-response',
+      url: 'https://onzload.com/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitles',
+      body,
+      tabId: 1,
+      frameId: 0,
+    };
+    const candidates = await adapter.discover(
+      signal,
+      makeContext({ origin: 'https://onzload.com/embed/535e4c58-15f5-40ce-a66c-6748e13990af?autoplay=1' }),
+      makeEnv(),
+    );
+    expect(candidates).toHaveLength(4);
+    expect(candidates[0].label).toBe('Tiếng Việt');
+    expect(candidates[0].language).toBe('vi');
+    expect(candidates[0].format).toBe('vtt');
+    expect(candidates[0].default).toBe(true);
+    expect(candidates[0].status).toBe('unresolved');
+    expect(candidates[0].url).toContain('/api/embed/535e4c58-15f5-40ce-a66c-6748e13990af/subtitle/c3389127-c0fc-44f2-ba20-4f624407fb76?v=mtjvldjn');
+    expect(candidates[1].language).toBe('en');
+    expect(candidates[2].language).toBe('zh');
+    expect(candidates[3].language).toBe('zh');
+  });
+
   it('videasy encrypted adapter falls back to unresolved on bad seed', async () => {
     const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
     const body = fixture('videasy-m4uhd-encrypted.bin');

@@ -74,6 +74,16 @@ export const PageScanResultPayloadSchema = z.object({
   frameId: z.number().int().optional(),
   videoUrls: z.array(z.string()),
   subtitleUrls: z.array(z.string()),
+  trackSubtitles: z
+    .array(
+      z.object({
+        url: z.string().min(1),
+        label: z.string(),
+        language: z.string(),
+        isDefault: z.boolean(),
+      }),
+    )
+    .optional(),
   pageUrl: z.string().min(1),
 });
 

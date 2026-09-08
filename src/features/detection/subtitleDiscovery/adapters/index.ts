@@ -9,6 +9,8 @@ import { createHtmlVariableAdapter } from './htmlVariable';
 import { createPlayerStateAdapter } from './playerState';
 import { createHlsAdapter } from './hls';
 import { createEncryptedAdapter } from './encrypted';
+import type { EncryptedProfile } from './encrypted';
+import { buildReplayContext, resolveLanguage } from '../candidate';
 import { createSvelteKitSubtitlesAdapter } from './svelteKitSubtitles';
 import {
   cinesrcProfile,
@@ -16,6 +18,7 @@ import {
   lookmovieProfile,
   broodingmoviesProfile,
   peachifyProfile,
+  onzloadProfile,
 } from './profiles';
 import type { SubtitleDiscoveryAdapter } from '../types';
 
@@ -67,6 +70,54 @@ export const peachifyEncryptedProfile = {
   decryptor: 'peachify',
 } as const;
 
+async function resolveTophimMetadata(
+  url: string,
+  context: import('../types').SubtitleDiscoveryContext,
+  env: import('../types').SubtitleDiscoveryEnvironment,
+): Promise<{ label: string; language: string } | null> {
+  const idMatch = /[?&]id=(\d+)/.exec(url);
+  if (!idMatch) return null;
+  const id = idMatch[1];
+
+  const pageUrl = context.initiator ?? context.tabUrl ?? context.origin;
+  if (!pageUrl) return null;
+
+  const result = await env.fetchText(pageUrl, buildReplayContext(context));
+  if (!result.ok || !result.content) return null;
+
+  // Next.js flight payloads escape " as \" inside <script> strings.
+  const html = result.content.replace(/\\"/g, '"');
+  const re = new RegExp(
+    String.raw`\{[^{}]*"id"\s*:\s*${id}\b[^{}]*"label"\s*:\s*"([^"]*)"[^{}]*"language"\s*:\s*"([^"]*)"[^{}]*\}`,
+    's',
+  );
+
+  const match = re.exec(html);
+  if (!match) return null;
+
+  try {
+    const parsed = JSON.parse(match[0]) as { label: string; language: string };
+    return {
+      label: parsed.label,
+      language: resolveLanguage(parsed.language),
+    };
+  } catch {
+    return {
+      label: match[1],
+      language: resolveLanguage(match[2]),
+    };
+  }
+}
+
+export const tophimEncryptedProfile: EncryptedProfile = {
+  id: 'tophim-encrypted',
+  priority: 10,
+  urlPattern: /\/api\/subtitles\/play\?id=/i,
+  provider: 'tophim',
+  decryptor: 'hubphim',
+  resolveMetadata: resolveTophimMetadata,
+};
+
 export const mockIframeHashProfile = {
   id: 'mock-iframe-hash',
   priority: 10,
@@ -83,6 +134,7 @@ export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
     createJsonListingAdapter(lookmovieProfile),
     createJsonListingAdapter(broodingmoviesProfile),
     createJsonListingAdapter(peachifyProfile),
+    createJsonListingAdapter(onzloadProfile),
     createIframeHashAdapter(lunastreamProfile),
     createIframeHashAdapter(mockIframeHashProfile),
     createHtmlVariableAdapter(myasiantvProfile),
@@ -90,6 +142,7 @@ export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
     createHlsAdapter(onflixProfile),
     createEncryptedAdapter(videasyProfile),
     createEncryptedAdapter(peachifyEncryptedProfile),
+    createEncryptedAdapter(tophimEncryptedProfile),
     createSvelteKitSubtitlesAdapter(),
   ];
 }

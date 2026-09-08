@@ -1,4 +1,5 @@
 import { createCandidate, resolveLanguage } from '../candidate';
+import { ISO_LANGUAGE_MAP } from '@/shared/config/languageRegistry';
 import type {
   SubtitleCandidate,
   SubtitleDiscoveryAdapter,
@@ -152,9 +153,7 @@ function buildSvelteKitSubtitleUrl(
 }
 
 function svelteKitDisplayName(code: string): string {
-  if (code === 'vi') return 'Vietnamese';
-  if (code === 'en') return 'English';
-  return code;
+  return ISO_LANGUAGE_MAP.get(code.toLowerCase()) ?? code;
 }
 
 export function createSvelteKitSubtitlesAdapter(): SubtitleDiscoveryAdapter {

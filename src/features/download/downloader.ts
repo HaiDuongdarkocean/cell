@@ -7,6 +7,7 @@ import {
   isPhimwarSubtitleUrl,
   decryptPhimwarSrtFromUrl,
 } from '@/shared/lib/parsers/phimwarDecryption';
+import { decryptAndDetectFormat } from '@/shared/lib/parsers/encryptedFile';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import { sendTabMessage } from '@/shared/lib/chrome-apis/tabs';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -370,7 +371,7 @@ export class Downloader {
       content = await response.text();
     }
 
-    // PhimWar and similar sites serve AES-GCM-encrypted base64 payloads.
+    // PhimWar and HUBPHIM-style sites serve encrypted payloads.
     if (isPhimwar) {
       try {
         content = await decryptPhimwarSrtFromUrl(subtitle.url, content);
@@ -383,22 +384,36 @@ export class Downloader {
       }
     }
 
+    if (content === undefined) {
+      throw new Error('Subtitle content unavailable');
+    }
+
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'converting', 50);
 
+    // Decrypt HUBPHIM-style payloads and sniff the real format. Trust content
+    // over the detected format, because API endpoints like tophim's
+    // /api/subtitles/play have no extension to reveal the format.
+    const { content: decryptedContent, format: detectedFormat } = decryptAndDetectFormat(content);
+    const format = detectedFormat ?? subtitle.format;
+    content = decryptedContent;
+    if (!format || format === 'unknown') {
+      throw new Error('Cannot determine subtitle format');
+    }
+
     let srtContent: string;
-    if (subtitle.format === 'ass') {
+    if (format === 'ass') {
       srtContent = convertAssToSrt(content);
-    } else if (subtitle.format === 'vtt') {
+    } else if (format === 'vtt') {
       srtContent = convertVttToSrt(content);
-    } else if (subtitle.format === 'ttml') {
+    } else if (format === 'ttml') {
       // ADR-029: Netflix serves IMSC1.1 TTML. convertTtmlToSrt is regex-based
       // (no DOMParser) so it works in the service worker where this runs.
       srtContent = convertTtmlToSrt(content);
-    } else if (subtitle.format === 'srt') {
+    } else if (format === 'srt') {
       srtContent = content;
     } else {
-      throw new Error(`Unsupported subtitle format: ${subtitle.format}`);
+      throw new Error(`Unsupported subtitle format: ${format}`);
     }
 
     // Always normalize the final output to clean, standard-compliant SRT —

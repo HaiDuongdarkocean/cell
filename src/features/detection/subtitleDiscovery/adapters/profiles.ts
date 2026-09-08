@@ -176,3 +176,52 @@ export const peachifyProfile: JsonListingProfile = {
     };
   },
 };
+
+// OnzLoad (and similar embed providers) expose a JSON /subtitles listing with
+// a `tracks` array. Each track has a relative `src` (signed with an ephemeral
+// query token). The returned file is encrypted; the player decrypts it and
+// creates a `<track src="blob:...">` in the DOM. We mark the listing entries as
+// `unresolved` so they do not become `DetectedSubtitle` candidates with an
+// unplayable API URL. The page scanner will later detect the decrypted blob
+// tracks and add the real, fetchable subtitle URLs to the inventory.
+export const onzloadProfile: JsonListingProfile = {
+  id: 'onzload-listing',
+  priority: 10,
+  urlPattern: /\/api\/embed\/[^/]+\/subtitles(?:\?|$)/i,
+  responseType: 'object-key',
+  objectKey: 'tracks',
+  extractList: (parsed) => {
+    if (!isRecord(parsed) || !Array.isArray(parsed.tracks)) return [];
+    return parsed.tracks;
+  },
+  mapEntry: (entry, ctx, index) => {
+    if (!isRecord(entry)) return null;
+    const src = entry.src as string;
+    if (!isString(src)) return null;
+    const label = isString(entry.label) ? entry.label : `Subtitle ${index + 1}`;
+    const lang = isString(entry.language) ? entry.language : '';
+    const resolved = lang ? resolveLanguage(lang) : 'unknown';
+    // OnzLoad uses 'cn' for Chinese in the JSON field; map it to standard 'zh'.
+    const language =
+      resolved !== 'unknown'
+        ? resolved
+        : lang.toLowerCase() === 'cn'
+          ? 'zh'
+          : languageFromLabel(label);
+    return {
+      label,
+      language,
+      url: src,
+      source: 'relative',
+      baseUrl: ctx.origin,
+      provider: 'onzload',
+      format: 'vtt',
+      default: entry.isDefault === true,
+      // The API URL serves an encrypted payload; the decrypted WebVTT only
+      // exists as a blob: <track>. Do not create a playable candidate from
+      // the listing itself.
+      status: 'unresolved',
+    };
+  },
+  replayReferer: (ctx) => ctx.initiator,
+};
