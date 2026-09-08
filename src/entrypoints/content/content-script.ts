@@ -190,6 +190,44 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     });
     return false;
   }
+
+  // Generic page-context subtitle fetch.
+  //
+  // Some subtitle endpoints require the page's authenticated session cookies or
+  // are blocked when fetched from the service worker / offscreen document
+  // (cross-origin, no cookie jar). The background asks the content script,
+  // which runs in the page origin, to fetch the raw subtitle text. Any site
+  // with a same-origin subtitle URL can use this path.
+  if (msg?.type === MESSAGE_TYPES.FETCH_SUBTITLE_PAGE_CONTEXT) {
+    const payload = (msg as { payload?: { url?: string } }).payload;
+    const url = payload?.url;
+    if (!url) {
+      sendResponse({ success: false, error: 'missing url' });
+      return false;
+    }
+    void (async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15_000);
+        const response = await fetch(url, {
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          sendResponse({ success: false, error: `HTTP ${response.status}` });
+          return;
+        }
+        const content = await response.text();
+        sendResponse({ success: true, content });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        sendResponse({ success: false, error: message });
+      }
+    })();
+    return true;
+  }
+
   return false;
 });
 

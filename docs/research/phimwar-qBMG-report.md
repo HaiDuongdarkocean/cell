@@ -183,13 +183,19 @@ At multiple checkpoints:
 
 ### 7.3 Evidence level for extension delivery
 
-**E4 was not directly observed** because the background service-worker inventory could not be queried from the available tooling. However, E2/E3 evidence plus the overlay state strongly indicate that the subtitle URLs are in the `NetworkInterceptor` but are unusable:
+**E4 confirmed** — after implementing a SvelteKit subtitle-listing adapter and a page-context subtitle fetch, the extension successfully:
 
-- `fetch` is patched (`fetchPatched: true`) and `webRequest` captures the `.srt` requests.
-- The overlay has never received an auto-load payload.
-- Root cause: Cell never obtains the `language` metadata from the `getSubtitles` listing, and it never decrypts the `.srt` body.
+- Detected both `vi` and `en` subtitles via `GET_DETECTED_MEDIA`:
+  - `https://phimwar.com/api/subtitle/-19074/v07.srt` (`language: 'vi'`, `displayName: 'Vietnamese'`)
+  - `https://phimwar.com/api/subtitle/-19074/e07.srt` (`language: 'en'`, `displayName: 'English'`)
+- Triggered a real subtitle download through `DOWNLOAD_SUBTITLE`.
+- The resulting file `Cobra_Kai_-_Võ_đường_Cobra_Kai_-_S02E07.vi.srt` is plaintext SRT with valid Vietnamese cues.
 
-**Conclusion**: player-side verified (E3); extension replay pending (E4 not reached).
+The implementation was generalized beyond PhimWar:
+- The listing adapter is now `svelteKitSubtitles.ts` and matches any `/_app/remote/<hash>/getSubtitles?payload=` endpoint.
+- The page-context fetch is now `FETCH_SUBTITLE_PAGE_CONTEXT` and can be used by any same-origin encrypted/auth subtitle endpoint.
+
+**Conclusion**: E1–E4 reached; PhimWar subtitles are now both discoverable and downloadable through Cell.
 
 ---
 
@@ -276,13 +282,13 @@ The existing `fetchInterceptor.iife.ts` already runs in the MAIN world. It can:
 
 ---
 
-## 10. Unresolved Blockers
+## 10. Resolved / Remaining Notes
 
-1. **Episode slug preservation**: The supplied `qBMG` URL was repeatedly rewritten by the player to other slugs (`f8k4`, `KELS`). The `getSubtitles` call still used `qBMG` while the page URL changed, so the relationship between slug, video, and subtitle list is not 1:1 stable. Any adapter must not rely on the address-bar slug alone.
-2. **Background E4 not confirmed**: The `NetworkInterceptor` inventory could not be queried directly. The overlay and `data-cell-*` markers provide strong indirect evidence, but a final `GET_DETECTED_MEDIA` or side-panel check is still pending.
-3. **Auth context for downloads**: Download/replay through the offscreen document may fail because it cannot send `phimwar` cookies. A solution needs to fetch from the page/content-script context or accept that these URLs are replayable only inside the same origin.
-4. **SvelteKit-deferred parser**: The `getSubtitles` response uses shared-reference indices (`{ _ : 1, q: 13 }` style). A reusable parser or a small normalizer must be written, or the adapter must call the page's own deserialization logic.
-5. **Potential spurious `getSubtitles` detection**: The listing URL matches the generic `subtitles` path regex and could be added as a `vtt`/`unknown` entry; the adapter should avoid this or exclude `getSubtitles` from URL-pattern detection.
+1. **Episode slug preservation**: The supplied `qBMG` URL was repeatedly rewritten by the player to other slugs (`f8k4`, `KELS`). The `getSubtitles` call still used `qBMG` while the page URL changed, so the relationship between slug, video, and subtitle list is not 1:1 stable. The SvelteKit adapter uses the listing endpoint URL (not the address-bar slug) for origin resolution.
+2. **Background E4 confirmed**: `GET_DETECTED_MEDIA` returned both Vietnamese and English entries with correct language metadata, and a real download produced a plaintext SRT file.
+3. **Auth context for downloads**: Solved by adding a generic `FETCH_SUBTITLE_PAGE_CONTEXT` message that asks the content script (same origin as the page) to fetch the subtitle raw text; this works for any same-origin auth-protected subtitle endpoint.
+4. **SvelteKit-deferred parser**: Implemented in `svelteKitSubtitles.ts` as a generic shared-reference resolver.
+5. **Spurious `getSubtitles` detection**: The listing URL matches the generic `subtitles` path regex, but the SvelteKit adapter now produces full `https://.../api/subtitle/...` URLs and the background deduplicates them against file-level network detections.
 
 ---
 
@@ -298,7 +304,8 @@ The existing `fetchInterceptor.iife.ts` already runs in the MAIN world. It can:
 | Both files decrypt to valid SRT | E3 | Reproduced in the page context with the player's own key derivation |
 | Extension overlay has 0 cues | E1/E2 | DOM inspection of `#cell-subtitle-root` shadow DOM |
 | No `AUTO_LOAD_SUBTITLES` handled | E1 | `data-cell-autoload-handled` is `null` |
-| Background inventory contains the entries | **Not E4** | Inferred from detection logic and network capture, but not directly queried |
+| Background inventory contains the entries | **E4** | `GET_DETECTED_MEDIA` returned `vi` and `en` entries with full URLs and correct `displayName` |
+| Download produces plaintext SRT | **E4** | `DOWNLOAD_SUBTITLE` completed and saved a valid `*.vi.srt` file to the Downloads folder |
 | Root cause is language loss + encryption | E2/E3 | Traced from `getSubtitles` → `.srt` → `subtitleDetector.ts` behavior |
 
 ---

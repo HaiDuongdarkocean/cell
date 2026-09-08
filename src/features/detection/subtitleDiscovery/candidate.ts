@@ -8,6 +8,7 @@ import {
   isValidIsoCode,
   labelToIsoCode,
 } from '@/shared/config/languageRegistry';
+import { formatFromContent } from '@/shared/lib/parsers/subtitleFormat';
 import type { SubtitleFormat } from '@/entities/media';
 import type {
   SubtitleCandidate,
@@ -63,13 +64,7 @@ export function formatFromUrl(url: string): SubtitleFormat | null {
   return null;
 }
 
-export function formatFromContent(content: string): SubtitleFormat | null {
-  const trimmed = content.trim().slice(0, 20).toUpperCase();
-  if (trimmed.startsWith('WEBVTT')) return 'vtt';
-  if (trimmed.startsWith('[SCRIPT INFO]') || trimmed.startsWith('Dialogue:')) return 'ass';
-  if (/^\d+\s*\n\d{1,2}:\d{2}:/.test(content.trim().slice(0, 40))) return 'srt';
-  return null;
-}
+export { formatFromContent };
 
 export function languageFromPath(path: string): string {
   const base = path.split('?')[0]?.split('#')[0] ?? path;

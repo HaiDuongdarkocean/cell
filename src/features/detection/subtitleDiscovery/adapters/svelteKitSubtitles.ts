@@ -7,9 +7,14 @@ import type {
   SubtitleSignal,
 } from '../types';
 
-export const PHIMWAR_LISTING_PATTERN = /phimwar\.com\/_app\/remote\/[^/]+\/getSubtitles\?payload=/i;
+/**
+ * SvelteKit remote module endpoint used by PhimWar and similar sites for
+ * per-episode subtitle listings. The payload is a base64-encoded array,
+ * and the response is a JSON wrapper around a SvelteKit-deferred string.
+ */
+export const SVELTEKIT_GETSUBTITLES_PATTERN = /\/_app\/remote\/[^/]+\/getSubtitles\?payload=/i;
 
-export interface PhimwarSubtitleEntry {
+export interface SvelteKitSubtitleEntry {
   readonly id: number;
   readonly subsceneId: number;
   readonly language: string;
@@ -66,15 +71,15 @@ function resolveDescriptor(
 }
 
 /**
- * Parse a PhimWar `getSubtitles` SvelteKit-deferred response.
+ * Parse a SvelteKit-deferred `getSubtitles` response.
  *
  * The outer JSON has `{ type: 'result', data: '<stringified-array>' }`.
  * The inner array uses numeric back-references: objects hold numeric indices
  * that point at the real values in the same array.
  */
-export function parsePhimwarGetSubtitles(
+export function parseSvelteKitSubtitles(
   body: string,
-): PhimwarSubtitleEntry[] | null {
+): SvelteKitSubtitleEntry[] | null {
   try {
     const outer = JSON.parse(body) as { type?: unknown; data?: unknown };
     if (outer.type === 'redirect') {
@@ -89,7 +94,7 @@ export function parsePhimwarGetSubtitles(
       return null;
     }
 
-    const entries: PhimwarSubtitleEntry[] = [];
+    const entries: SvelteKitSubtitleEntry[] = [];
     for (const item of arr) {
       if (!isDescriptor(item)) continue;
       if (
@@ -120,38 +125,47 @@ export function parsePhimwarGetSubtitles(
   }
 }
 
-function buildPhimwarSubtitleUrl(
+function buildSvelteKitSubtitleUrl(
   signalUrl: string,
-  entry: PhimwarSubtitleEntry,
+  context: SubtitleDiscoveryContext,
+  entry: SvelteKitSubtitleEntry,
 ): string {
-  const base = (() => {
+  const baseOrigin = (() => {
     try {
-      return new URL(signalUrl).origin;
+      return new URL(signalUrl, context.origin).origin;
     } catch {
-      return 'https://phimwar.com';
+      try {
+        return new URL(context.origin).origin;
+      } catch {
+        return '';
+      }
     }
   })();
+  if (!baseOrigin) {
+    // Without a base we cannot build a usable URL.
+    return signalUrl;
+  }
   const subsceneId = `${entry.subsceneId}${
     entry.rand ? `~${entry.rand}` : ''
   }`;
-  return `${base}/api/subtitle/${subsceneId}/${entry.fileName}`;
+  return `${baseOrigin}/api/subtitle/${subsceneId}/${entry.fileName}`;
 }
 
-function phimwarDisplayName(code: string): string {
+function svelteKitDisplayName(code: string): string {
   if (code === 'vi') return 'Vietnamese';
   if (code === 'en') return 'English';
   return code;
 }
 
-export function createPhimwarAdapter(): SubtitleDiscoveryAdapter {
+export function createSvelteKitSubtitlesAdapter(): SubtitleDiscoveryAdapter {
   return {
-    id: 'phimwar-listing',
+    id: 'sveltekit-getsubtitles',
     priority: 10,
 
     match(signal: SubtitleSignal): boolean {
       if (signal.kind !== 'network-response') return false;
       if (signal.body.length === 0) return false;
-      return PHIMWAR_LISTING_PATTERN.test(signal.url);
+      return SVELTEKIT_GETSUBTITLES_PATTERN.test(signal.url);
     },
 
     async discover(
@@ -161,7 +175,7 @@ export function createPhimwarAdapter(): SubtitleDiscoveryAdapter {
     ): Promise<readonly SubtitleCandidate[]> {
       if (signal.kind !== 'network-response') return [];
 
-      const entries = parsePhimwarGetSubtitles(signal.body);
+      const entries = parseSvelteKitSubtitles(signal.body);
       if (!entries || entries.length === 0) return [];
 
       const candidates: SubtitleCandidate[] = [];
@@ -170,12 +184,12 @@ export function createPhimwarAdapter(): SubtitleDiscoveryAdapter {
         candidates.push(
           createCandidate(
             {
-              label: phimwarDisplayName(entry.language),
+              label: svelteKitDisplayName(entry.language),
               language,
               format: 'srt',
-              url: buildPhimwarSubtitleUrl(signal.url, entry),
+              url: buildSvelteKitSubtitleUrl(signal.url, context, entry),
               source: 'direct',
-              provider: 'phimwar',
+              provider: 'sveltekit-getsubtitles',
               default: entry.isDefault,
               forced: false,
             },
