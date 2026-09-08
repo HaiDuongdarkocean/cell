@@ -32,7 +32,12 @@ export class SubtitleStudyModeController {
     targetCues: readonly SrtCue[],
     offsetMs: number,
   ): void {
-    this.playback = new StudyModePlaybackController(activeMode, advanced, targetCues, offsetMs);
+    // 'normal' is pass-through — creating the state machine for it would emit
+    // { subtitle: 'both', speed: 1 } on every cue boundary, stomping manual
+    // hide/show and the user's playbackRate.
+    this.playback = activeMode.id === 'normal'
+      ? null
+      : new StudyModePlaybackController(activeMode, advanced, targetCues, offsetMs);
     this.lastTargetIndex = -1;
   }
 

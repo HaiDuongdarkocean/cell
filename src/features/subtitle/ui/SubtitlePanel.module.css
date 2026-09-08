@@ -7,7 +7,11 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
+  /* Translucent panel — same spec as the subtitle manager sheet
+     (85% surface + blur) so video/page content shows through. */
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
   overflow: hidden;
   /* Slide animation: panel enters from right, exits to right.
      Apple §7 spatial consistency — symmetric path along the same axis.

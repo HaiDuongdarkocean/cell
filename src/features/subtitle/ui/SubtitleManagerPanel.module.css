@@ -108,18 +108,8 @@
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
-.header :global(button) {
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
-  border-radius: var(--radius-full);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .header :global(button):hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    filter: none;
-  }
-}
+/* Header buttons stay ghost/icon-only — no border chrome (shared Button
+   ghost variant already handles hover/focus-visible). */
 
 /* Stack — relative container for sliding header content, clips overflow.
    Stretch to fill header height — no hardcoded min-height. */
@@ -276,6 +266,11 @@
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  /* Sticky over scrolling content — translucent tint + blur keeps the
+     tab row readable while staying inside the translucent panel spec. */
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
 }
 
 @media (min-width: 600px) {
@@ -284,37 +279,16 @@
   }
 }
 
-/* Tab list — override shared Tabs.List */
-.tabsList {
+/* InkTabs (shared) — stretches so action buttons pin to the right edge.
+   Tabs get a taller hit area than the dictionary subtab default. */
+.inkTabs {
   flex: 1 1 auto;
-  padding: 0;
-  border-bottom: 0;
+  min-width: 0;
 }
 
-/* Tab trigger — override shared Tabs.Trigger */
-.tabTrigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
+.inkTabs :global([role='tab']) {
+  padding-top: var(--space-1-5);
   min-height: var(--space-9);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-}
-
-.tabCount {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-pill);
-  padding: 0 var(--space-1);
-}
-
-@media (min-width: 600px) {
-  .tabTrigger {
-    min-height: var(--space-10);
-  }
 }
 
 /* Section actions — import + hide */
@@ -360,7 +334,7 @@
 }
 
 .track:hover {
-  background: var(--color-surface-hover);
+  background: color-mix(in srgb, var(--color-surface-hover) 70%, transparent);
 }
 
 .trackActive {
@@ -374,27 +348,30 @@
   .trackActive {
     box-shadow: none;
   }
-  .header {
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-  .sectionBar {
-    border-bottom: 0;
-  }
-  .tabsList {
-    border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  }
-  .tabTrigger {
-    border-bottom: var(--border-width-thick) solid transparent;
-  }
-  .tabTrigger[aria-selected='true'] {
-    border-bottom-color: var(--color-primary);
+}
+
+/* Off row — compact, left-aligned, blends with track rows.
+   Doubled class beats shared Button's `.button` chrome (solid surface +
+   floating shadow + center justify) regardless of stylesheet injection
+   order inside shadow DOM. `variant="secondary"` has no `.secondary` class
+   — it falls back to base `.button`, so the row chrome is owned here. */
+.offRow.offRow {
+  justify-content: flex-start;
+  text-align: left;
+  min-height: var(--space-9);
+  color: var(--color-text-secondary);
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .offRow.offRow:hover {
+    background: color-mix(in srgb, var(--color-surface-hover) 70%, transparent);
   }
 }
 
-/* Off row — compact */
-.offRow {
-  min-height: var(--space-9);
-  color: var(--color-text-secondary);
+.offRow.offRow:active {
+  background: color-mix(in srgb, var(--color-surface-pressed) 70%, transparent);
 }
 
 .offLabel {
@@ -551,7 +528,7 @@
   align-items: stretch;
   border-left: var(--border-width-hairline) solid var(--color-border-subtle);
   border-right: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-surface);
+  background: transparent;
 }
 
 .valueField .valueInput {
@@ -580,10 +557,28 @@
   margin: 0;
 }
 
-/* ─── Reset button — 40px ghost ─── */
-.resetBtn {
+/* ─── Reset button — primary-outlined circle; hover lightens the ring and
+   tints the fill with primary-subtle. Doubled class beats `.outline`'s
+   border/background regardless of stylesheet injection order. ─── */
+.resetBtn.resetBtn {
   flex: 0 0 auto;
   align-self: center;
+  background: transparent;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .resetBtn.resetBtn:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
+}
+
+.resetBtn.resetBtn:active {
+  background: color-mix(in srgb, var(--color-primary-subtle), var(--color-primary) 12%);
 }
 
 /* ─── Appearance view ─── */
@@ -604,7 +599,11 @@
   top: 0;
   z-index: var(--z-dropdown);
   padding: var(--space-1-5) var(--space-2);
-  background: var(--color-surface-popover);
+  /* Sticky over scrolling settings — translucent tint + blur, consistent
+     with the panel's translucent surface spec. */
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
 }
 
 .tabsRoot {
@@ -614,18 +613,11 @@
   min-height: 0;
 }
 
-/* Appearance view tabs — compact, override shared Tabs defaults + tracks view flex */
-.tabsRoot .tabsList {
+/* Appearance view tabs — shared InkTabs row under the sticky preview. */
+.appearanceTabs {
   flex: 0 0 auto;
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  padding: 0 var(--space-2);
-}
-
-.tabsRoot .tabTrigger {
-  min-height: var(--universal-panel-profile-flag-size);
   padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
 }
 
 .tabsRoot .tabContent {
@@ -708,20 +700,18 @@
   .tabContent {
     padding-top: var(--space-1);
   }
-  /* Solid fills for track rows + latency pill on the sidebar panel. */
+  /* Translucent fills for track rows + latency pill — every surface inside
+     the translucent sidebar panel keeps the video showing through. */
   .track {
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   }
   .track:hover {
-    background: var(--color-surface-hover);
+    background: color-mix(in srgb, var(--color-surface-hover) 70%, transparent);
   }
   .trackActive {
-    background: var(--color-surface-hover);
-  }
-  .offRow {
-    background: var(--color-surface);
+    background: var(--color-primary-subtle);
   }
   .pillGroup {
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   }
 }

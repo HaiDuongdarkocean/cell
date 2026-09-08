@@ -13,7 +13,7 @@
 .card,
 .configCard {
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
   border: var(--border-width-hairline) solid var(--color-border-subtle);
   overflow: hidden;
 }

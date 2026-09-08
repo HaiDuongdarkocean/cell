@@ -10,7 +10,7 @@
  * ArrayBuffer do not survive). The last chunk of a job triggers importFile;
  * progress is pushed back via RESOURCE_IMPORT_PROGRESS.
  */
-import { z } from 'zod';
+import type { z } from 'zod';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage, sendTabMessage } from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';

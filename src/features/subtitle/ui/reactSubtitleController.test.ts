@@ -360,6 +360,45 @@ describe('ReactSubtitleController', () => {
     expect(video.playbackRate).toBe(1.5);
   });
 
+  it('applyStudyMode with normal mode is pass-through — no visibility or speed overrides on cue transitions', () => {
+    const twoCues: SrtCue[] = [
+      { index: 1, start: 0, end: 5000, text: 'One' },
+      { index: 2, start: 5000, end: 10000, text: 'Two' },
+    ];
+    controller.loadCues(twoCues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: -1, native: -1 });
+
+    const normalMode: StudyMode = {
+      id: 'normal',
+      type: 'preset',
+      icon: 'play',
+      title: 'Normal',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: true };
+
+    fakeMount.setStyles.mockClear();
+    fakeEngine.updateSettings.mockClear();
+    video.playbackRate = 1.25;
+
+    controller.applyStudyMode(normalMode, advanced);
+
+    // Cross a cue boundary — normal mode must not re-enter a step, so no
+    // setSubtitle/setSpeed actions reach the mount, engine, or video element.
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    video.currentTime = 0.5;
+    video.dispatchEvent(new Event('timeupdate'));
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 1, native: -1 });
+    video.currentTime = 6;
+    video.dispatchEvent(new Event('timeupdate'));
+
+    expect(fakeMount.setStyles).not.toHaveBeenCalled();
+    expect(fakeEngine.updateSettings).not.toHaveBeenCalled();
+    expect(video.playbackRate).toBe(1.25);
+    expect(video.paused).toBe(true);
+  });
+
   it('destroy removes play/pause/timeupdate listeners and unmounts', () => {
     controller.destroy();
 

@@ -1,7 +1,7 @@
 // frequencyRepository — CRUD + bulkInsert cho langFrequencyEntry (ADR-023 D1).
 //
 // Methods: add, bulkInsert, findByResource, findByTerm, findByPrefix,
-// findBySuffix (via backwardTerm), countByResource, deleteByResource.
+// findBySuffix (via _backwardTerm), countByResource, deleteByResource.
 
 import { getDB, getStore, STORES, INDEXES, reverseString } from './baseRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
@@ -159,7 +159,7 @@ export async function sampleFrequencyEntries(langCode: string, resourceId: numbe
     request.onsuccess = () => {
       const cursor = request.result;
       if (cursor && results.length < limit) {
-        const { backwardTerm, ...entry } = cursor.value as StoredFrequencyEntry;
+        const { backwardTerm: _backwardTerm, ...entry } = cursor.value as StoredFrequencyEntry;
         results.push(entry as FrequencyEntry);
         cursor.continue();
       } else {
@@ -185,7 +185,7 @@ export async function findFrequencyEntry(langCode: string, resourceId: number, t
       }
       const value = cursor.value as StoredFrequencyEntry;
       if (value.resourceId === resourceId) {
-        const { backwardTerm, ...entry } = value;
+        const { backwardTerm: _backwardTerm, ...entry } = value;
         resolve(entry as FrequencyEntry);
         return;
       }
