@@ -64,9 +64,9 @@ const HANDLE_LABELS: Record<string, string> = {
 };
 
 const FONT = STATIC_TOKENS['--font-family'] ?? 'sans-serif';
-const ACCENT = STATIC_TOKENS['--overlay-ocr-region-accent'] ?? '#0066ff';
-const FILL = STATIC_TOKENS['--overlay-ocr-region-fill'] ?? 'rgba(0, 102, 255, 0.05)';
-const FILL_ACTIVE = STATIC_TOKENS['--overlay-ocr-region-fill-active'] ?? 'rgba(0, 102, 255, 0.12)';
+const ACCENT = 'var(--color-primary, #0066ff)';
+const FILL = 'color-mix(in srgb, var(--color-primary, #0066ff) 5%, transparent)';
+const FILL_ACTIVE = 'color-mix(in srgb, var(--color-primary, #0066ff) 12%, transparent)';
 const RADIUS_PILL = STATIC_TOKENS['--radius-pill'] ?? '9999px';
 // On-media overlay neutrals — always white/black regardless of theme.
 const OVL_TEXT = STATIC_TOKENS['--overlay-text'] ?? '#fff';
