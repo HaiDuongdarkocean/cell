@@ -36,23 +36,21 @@ Loop state lives in `loop/<name>/state/NN-stage.md`; evidence in `loop/<name>/im
 
 Use Playwright for live evidence.
 
-Default: `mcp-playwright` (`browser_navigate`, `browser_evaluate`, `browser_find`, `browser_take_screenshot`, `browser_console_messages`).
+**Default: `testing-with-playwright`** — the reusable `cellEnvironment` fixture loads Cell + uBOLite, opens StreamFlix, and exposes `streamFlixPage` plus feature actors (`universalPanel`, etc.). This gives reproducible screenshots, DOM measures, console logs, and journey runs for every audit cycle.
 
-**The browser must have the Cell extension loaded.** If the `mcp-playwright` server is not configured with the unpacked `dist/` extension, launch a local Playwright browser instead:
+```bash
+bash scripts/e2e.sh --stage2 <audit-spec>
+```
+
+**Fallback 1: `mcp-playwright`** (`browser_navigate`, `browser_evaluate`, `browser_find`, `browser_take_screenshot`, `browser_console_messages`) when a lightweight manual probe is enough and the local Playwright environment is not built.
+
+**Fallback 2: local launch script:**
 
 ```text
 node .devin/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs
 ```
 
-This opens the default same-origin mock and prints a JSON result with `root`, `video`, `screenshot`, and console `logs`.
-
-To configure an MCP server manually, use these Chrome flags:
-
-```text
---load-extension=<repo>/dist --disable-extensions-except=<repo>/dist --disable-infobars
-```
-
-If neither MCP nor local launch can load the extension, fall back to `testing-extension-browser` and record it as a limitation.
+**Fallback 3: `testing-extension-browser`** if neither of the above can load the extension, recorded as a limitation.
 
 ### Test URLs
 

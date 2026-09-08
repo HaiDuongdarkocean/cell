@@ -120,6 +120,29 @@ npm run test:e2e:build
 3. Import `test` từ actor fixture tương ứng.
 4. Chạy: `bash scripts/e2e.sh --stage2 <tên file>`.
 
+## Continuous UX audit
+
+`testing-with-playwright` cũng là **test harness** cho `/continuous-ux-audit-cycle`:
+
+```ts
+import { test } from '../fixtures/actors/universalPanel.fixture';
+
+test('UX audit: dictionary panel', async ({ universalPanel, streamFlixPage }) => {
+  await universalPanel.open();
+  await streamFlixPage.screenshot({ path: 'loop/ux-dict/image/01-open.png' });
+  await universalPanel.openTab('dictionary');
+  await streamFlixPage.screenshot({ path: 'loop/ux-dict/image/02-dictionary.png' });
+});
+```
+
+Chạy:
+
+```bash
+bash scripts/e2e.sh --stage2 <audit-name>
+```
+
+Lưu evidence vào `loop/<audit>/image/` và state vào `loop/<audit>/state/NN-stage.md`.
+
 ## Notes
 
 - Default **headed** vì Playwright 1.61 không load Chrome extensions ở headless.
