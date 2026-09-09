@@ -386,4 +386,13 @@ Sửa `scripts/ship.config.json`:
 - `githubRepo`: `owner/repo` dùng để tạo URL `update_url` và `codebase`.
 - `publishToGitHub`: đặt `true` để tự động `gh release create` (cần `gh` CLI đã xác thực).
 
+Flow để bản `.crx` tự update khi có release mới:
+
+1. Sửa `scripts/ship.config.json`, điền đúng `githubRepo`.
+2. Chạy `npm run build && npm run ship:dist`.
+3. Script sẽ copy `updates.xml` ra thư mục gốc của repo (theo `updateXmlPath`), ví dụ `./updates.xml`.
+4. Commit + push file `updates.xml` lên `releaseBranch`.
+5. Cài thủ công bản `.crx` từ `G:\My Drive\Language\Tool\cell\release\cell.crx` (lần đầu).
+6. Khi có release mới: build, ship, commit `updates.xml` mới, tạo GitHub release chứa `.crx` mới. Chrome sẽ tự tải và update khi check.
+
 Khi `.crx` đã có `update_url` trỏ đến `updates.xml`, Chrome sẽ check update theo appid mỗi lần bấm **Update** trên `chrome://extensions` hoặc tự động vài giờ một lần.

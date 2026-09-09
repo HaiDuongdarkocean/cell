@@ -124,6 +124,18 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "crx3 pack failed with exit code $LASTEXITCODE" }
   Write-Host "  [OK] Packed $crxAssetName and $updateXmlPath"
 
+  # 4b. Also write updates.xml into the repo at the path used by update_url,
+  # so it can be committed to the configured branch (e.g. GitHub raw).
+  if ($githubRepo) {
+    $repoXmlOutput = Join-Path $SourceRoot $updateXmlPath
+    $repoXmlDir = Split-Path $repoXmlOutput -Parent
+    if ($repoXmlDir -and -not (Test-Path $repoXmlDir)) {
+      New-Item -ItemType Directory -Force -Path $repoXmlDir | Out-Null
+    }
+    Copy-Item $xmlOutput $repoXmlOutput -Force
+    Write-Host "  [OK] Copied $updateXmlPath to repo root for committing"
+  }
+
   # 5. Copy dist folder into release.
   $destDist = Join-Path $release 'dist'
   Copy-Item $sourceDist $destDist -Recurse -Force
