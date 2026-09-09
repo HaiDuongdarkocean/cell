@@ -179,7 +179,7 @@ The content script's `WebTriggerController` attaches `document` level `mouseup`/
 
 ---
 
-*Generated with Devin. Screenshots and snapshots are in `docs/audits/screenshots/`.*
+*Audit report generated with agent tooling. Screenshots and snapshots are in `docs/audits/screenshots/`.*
 
 ---
 

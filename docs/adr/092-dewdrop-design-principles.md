@@ -4,7 +4,7 @@
 
 **Status:** Accepted  
 **Date:** 2025  
-**Author:** Devin  
+**Author:** Cell team  
 **Context:** Defining the non-negotiable visual principles for the "Dewdrop" (Sương Mai) liquid-glass button treatment so that it remains as pure as a morning dewdrop on a leaf.
 
 ---

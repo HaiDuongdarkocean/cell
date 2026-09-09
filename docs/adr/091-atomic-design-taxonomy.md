@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2025  
-**Author:** Devin  
+**Author:** Cell team  
 **Context:** Restructuring `src/entrypoints/design-system-showcase` sidebar taxonomy.
 
 ---

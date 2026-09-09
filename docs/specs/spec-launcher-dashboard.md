@@ -316,5 +316,3 @@ All must be true to ship the prototype:
 - `vite.config.ts` — entrypoint registration pattern.
 
 ---
-
-*Generated with [Devin](https://devin.ai) using `spec-driven-development` skill.*

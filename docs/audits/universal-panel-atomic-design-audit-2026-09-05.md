@@ -377,4 +377,4 @@ Key SSOT violations:
 
 ---
 
-*Generated with Devin. Read-only audit; no source files were modified.*
+*Audit report generated with agent tooling. Read-only audit; no source files were modified.*
