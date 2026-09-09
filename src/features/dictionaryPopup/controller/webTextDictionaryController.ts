@@ -53,6 +53,8 @@ import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreat
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
+import { getModelFields } from '@/features/cardCreator/service/ankiSchemaCache';
+import { autoMapFields } from '@/features/cardCreator/service/fieldMapping';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
@@ -1438,7 +1440,16 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const restored = await autosaver.load();
     const deck = restored?.deck ?? freshCcSettings.defaultDeck;
     const noteType = restored?.noteType ?? freshCcSettings.defaultNoteType;
-    const fieldMapping = restored?.fieldMapping ?? {};
+    // Prefer saved per-note-type mapping; fall back to restored draft mapping
+    // only when it matches the current note type, then auto-map from fields.
+    const savedMapping = freshCcSettings.fieldMappings?.[noteType];
+    const restoredMapping =
+      restored?.noteType === noteType ? restored?.fieldMapping : undefined;
+    const noteTypeFields = await getModelFields(url, noteType);
+    const fieldMapping =
+      savedMapping ??
+      restoredMapping ??
+      (noteTypeFields ? autoMapFields(noteTypeFields) : {});
     const tags = restored?.tags ?? freshCcSettings.defaultTags;
 
     if (!deck || !noteType) {
