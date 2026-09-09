@@ -1,9 +1,10 @@
 // DictionaryPopupSettingsPanel — spec §M1 Settings → Dictionary Popup.
 //
-// Reduced to the three core behavioral decisions:
+// Reduced to the two core behavioral decisions:
 // 1. How do I open a word?  (trigger mode)
 // 2. What do I see first?   (default active tab)
-// 3. Where do saved words go? (SRS destination)
+//
+// SRS destination has moved to Card Creator settings.
 //
 // Visual model: connected timeline + pill groups (one-tap selection).
 
@@ -36,12 +37,6 @@ const TAB_LABELS: Record<string, string> = {
   translate: t('settings.dictionaryPopup.showFirst.translate'),
   links: t('settings.dictionaryPopup.showFirst.links'),
   pronunciation: t('settings.dictionaryPopup.showFirst.pronunciation'),
-};
-
-const SRS_OPTIONS = ['anki', 'ocean-srs'] as const;
-const SRS_LABELS: Record<string, string> = {
-  anki: t('settings.dictionaryPopup.saveTo.anki'),
-  'ocean-srs': t('settings.dictionaryPopup.saveTo.oceanSrs'),
 };
 
 interface PillGroupProps {
@@ -84,13 +79,6 @@ const STEPS = [
     ariaLabel: t('settings.dictionaryPopup.showFirst'),
     valueKey: 'defaultActiveTab' as const,
     options: TAB_OPTIONS.map((tab) => ({ value: tab, label: TAB_LABELS[tab] })),
-  },
-  {
-    num: 3,
-    label: t('settings.dictionaryPopup.saveWordsTo'),
-    ariaLabel: t('settings.dictionaryPopup.saveWordsTo'),
-    valueKey: 'srsDestination' as const,
-    options: SRS_OPTIONS.map((dest) => ({ value: dest, label: SRS_LABELS[dest] })),
   },
 ];
 

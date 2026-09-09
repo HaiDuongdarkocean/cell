@@ -65,7 +65,8 @@ function hasCardCreatorSettingsChanged(change: chrome.storage.StorageChange): bo
     oldSlice.defaultNoteType !== newSlice.defaultNoteType ||
     oldSlice.defaultTags !== newSlice.defaultTags ||
     oldSlice.mediaUpdateMode !== newSlice.mediaUpdateMode ||
-    JSON.stringify(oldSlice.autoCompleteToggles) !== JSON.stringify(newSlice.autoCompleteToggles)
+    JSON.stringify(oldSlice.autoCompleteToggles) !== JSON.stringify(newSlice.autoCompleteToggles) ||
+    JSON.stringify(oldSlice.fieldMappings) !== JSON.stringify(newSlice.fieldMappings)
   );
 }
 

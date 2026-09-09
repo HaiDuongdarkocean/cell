@@ -548,7 +548,14 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
               <VStack gap="0" className={styles.cardBody}>
                 <CardCreatorSettingsPanel
                   settings={settings.cardCreator}
+                  srsDestination={settings.dictionaryPopup?.srsDestination ?? 'anki'}
                   onChange={updateCardCreator}
+                  onDestinationChange={(srsDestination) =>
+                    onChange({
+                      ...settings,
+                      dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), srsDestination },
+                    })
+                  }
                 />
               </VStack>
             </Card>
