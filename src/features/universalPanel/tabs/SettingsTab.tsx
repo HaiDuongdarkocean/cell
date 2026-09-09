@@ -59,10 +59,10 @@ export function SettingsTab(): React.JSX.Element | null {
     }
   }, [settings]);
 
-  const handleChange = useCallback((next: Settings) => {
+  const handleChange = useCallback(async (next: Settings) => {
     const synced = syncFlatFieldsToActiveProfile(next);
     setSettings(synced);
-    void saveSettings(synced);
+    await saveSettings(synced);
   }, []);
 
   if (!settings) {

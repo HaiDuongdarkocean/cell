@@ -119,18 +119,11 @@ async function waitForSelectValue(
   expected: string,
   timeout = 10_000,
 ): Promise<void> {
-  await universalPanel.page.waitForFunction(
-    ({ selectDataId, expected }) => {
-      const host = document.getElementById('cell-universal-panel-host');
-      const root = host?.shadowRoot;
-      const section = root?.querySelector('[data-section="cardCreator"]') as HTMLElement | null;
-      const selectRoot = section?.querySelector(`[data-cell-id="${selectDataId}"]`) as HTMLElement | null;
-      const value = selectRoot?.querySelector('button[aria-haspopup="listbox"]');
-      return value?.textContent?.trim() === expected;
-    },
-    { selectDataId, expected },
-    { timeout },
-  );
+  const host = universalPanel.page.locator('#cell-universal-panel-host');
+  const section = host.locator('[data-section="cardCreator"]');
+  const selectRoot = section.locator(`[data-cell-id="${selectDataId}"]`);
+  const trigger = selectRoot.locator('button[aria-haspopup="listbox"]');
+  await expect(trigger).toHaveText(expected, { timeout });
 }
 
 /**
@@ -141,47 +134,14 @@ async function selectInCardCreatorSettings(
   selectDataId: string,
   optionLabel: string,
 ): Promise<void> {
-  const ok = await universalPanel.page.evaluate(
-    ({ selectDataId, optionLabel, maxWait }) =>
-      new Promise<boolean>((resolve, reject) => {
-        const host = document.getElementById('cell-universal-panel-host');
-        const root = host?.shadowRoot;
-        const section = root?.querySelector('[data-section="cardCreator"]') as HTMLElement | null;
-        if (!section) return reject(new Error('Card Creator section not found'));
+  const host = universalPanel.page.locator('#cell-universal-panel-host');
+  const section = host.locator('[data-section="cardCreator"]');
+  const selectRoot = section.locator(`[data-cell-id="${selectDataId}"]`);
+  const trigger = selectRoot.locator('button[aria-haspopup="listbox"]');
+  await trigger.click();
 
-        const selectRoot = section.querySelector(`[data-cell-id="${selectDataId}"]`) as HTMLElement | null;
-        if (!selectRoot) return reject(new Error(`Select ${selectDataId} not found`));
-
-        const trigger = selectRoot.querySelector('button[aria-haspopup="listbox"]') as HTMLElement | null;
-        if (!trigger) return reject(new Error(`Trigger for ${selectDataId} not found`));
-
-        trigger.click();
-
-        const start = Date.now();
-        const tick = (): void => {
-          // Options are portaled to the nearest shadow-root child, so search the whole shadow root.
-          const options = root.querySelectorAll('[role="option"]');
-          if (options.length > 0) {
-            const target = Array.from(options).find((o) => o.textContent?.trim() === optionLabel);
-            if (target) {
-              (target as HTMLElement).click();
-              resolve(true);
-              return;
-            }
-          }
-          if (Date.now() - start > maxWait) {
-            const visibleOptions = Array.from(options).map((o) => o.textContent);
-            reject(new Error(`Option "${optionLabel}" not found in ${selectDataId}. Visible: ${visibleOptions.join(', ')}`));
-            return;
-          }
-          setTimeout(tick, 100);
-        };
-        tick();
-      }),
-    { selectDataId, optionLabel, maxWait: 10_000 },
-  );
-
-  expect(ok, `Could not select "${optionLabel}" in ${selectDataId}`).toBe(true);
+  const option = universalPanel.page.locator('[role="option"]').filter({ hasText: optionLabel });
+  await option.click();
 }
 
 test.describe('Stage 2: Card Creator > Anki config in settings', () => {
@@ -255,7 +215,7 @@ test.describe('Stage 2: Card Creator > Anki config in settings', () => {
 
   test('settings field mapping editor writes per-note-type mappings', async ({ cellContext, universalPanel }) => {
     const ankiSchemaCache = {
-      url: 'http://localhost:8765',
+      url: 'http://offline.invalid',
       fetchedAt: Date.now(),
       decks: ['Default'],
       models: ['Basic'],
@@ -264,7 +224,7 @@ test.describe('Stage 2: Card Creator > Anki config in settings', () => {
 
     const settings = makeSettings({
       cardCreator: {
-        ankiConnectUrl: 'http://localhost:8765',
+        ankiConnectUrl: 'http://offline.invalid',
         defaultNoteType: 'Basic',
         defaultDeck: 'Default',
         defaultTags: '',
