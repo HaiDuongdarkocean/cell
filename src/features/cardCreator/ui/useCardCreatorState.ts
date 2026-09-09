@@ -17,7 +17,6 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { CardCreatorSettings } from '@/entities/settings';
 import { useCardCreatorStore, type LoadStatus } from '@/stores/cardCreatorStore';
 import {
-  listModelFields,
   findRecentNote,
   getNoteInfo,
   addNote,
@@ -25,8 +24,10 @@ import {
   addNoteTags,
 } from '../service/cardCreatorService';
 import { buildAnkiFields } from '../service/buildAnkiFields';
-import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
-import { autoMapFields } from '../service/fieldMapping';
+import { prefetchAnkiConnectData, onAnkiSchemaRefreshed } from '../service/cardCreatorPrefetch';
+import { getModelFields, refreshAnkiSchemaCache } from '../service/ankiSchemaCache';
+import { autoMapFields, type FieldMapping } from '../service/fieldMapping';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import {
   DraftAutosaver,
   type CardDraft,
@@ -82,6 +83,16 @@ const mediaFetchKeyMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'card
   sentenceAudios: 'cardCreator.toast.fetch.sentenceAudio',
   wordAudios: 'cardCreator.toast.fetch.wordAudio',
 };
+
+/** Serializes cardCreator.fieldMappings writes — loadSettings→saveSettings is
+ *  a read-modify-write across two awaits; without a queue, concurrent calls
+ *  (e.g. updateMapping + auto-map persist) can clobber each other. */
+let fieldMappingWriteQueue: Promise<void> = Promise.resolve();
+
+function isMissingSchemaError(error: string): boolean {
+  const lower = error.toLowerCase();
+  return lower.includes('deck') || lower.includes('model') || lower.includes('note type') || lower.includes('not found') || lower.includes('does not exist');
+}
 
 /** Fetch the URLs in a merge plan that are not already present as MediaFiles.
  *  Returns a map of source URL → fetched MediaFile. */
@@ -234,6 +245,27 @@ export function useCardCreatorState(
   useEffect(() => { onSubmitSuccessRef.current = options?.onSubmitSuccess; }, [options?.onSubmitSuccess]);
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
+
+  // Latest saved per-note-type field mappings (schema v29). Ref because the
+  // async callbacks below must read the current value, not a stale closure.
+  const fieldMappingsRef = useRef(settings.fieldMappings);
+  fieldMappingsRef.current = settings.fieldMappings;
+
+  /** Persist a note type's field mapping into settings (cardCreator slice).
+   *  Writes are serialized through a module-level queue — read-modify-write
+   *  across two awaits would otherwise lose concurrent updates. */
+  const persistFieldMapping = useCallback((noteType: string, mapping: FieldMapping) => {
+    if (!noteType) return;
+    fieldMappingWriteQueue = fieldMappingWriteQueue.then(async () => {
+      const s = await loadSettings();
+      await saveSettings({
+        cardCreator: {
+          ...s.cardCreator,
+          fieldMappings: { ...(s.cardCreator.fieldMappings ?? {}), [noteType]: mapping },
+        },
+      });
+    }).catch(() => { /* best-effort persist */ });
+  }, []);
 
   // Sync the prop-level initialAction into the store.
   useEffect(() => {
@@ -400,14 +432,14 @@ export function useCardCreatorState(
     try {
       // Reuse the prefetched decks + models (started on Card Creator button
       // click so the AnkiConnect round-trip overlaps with media capture).
-      // Falls back to a fresh prefetch if none in-flight (e.g. dialog opened
-      // programmatically without a click). ensureDefaultModel runs inside
-      // the prefetch.
+      // Falls back to a fresh prefetch if none in-flight. Cache-first — if a
+      // persisted schema cache exists, the form renders without waiting for
+      // AnkiConnect; revalidation runs in the background.
       const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(ankiConnectUrl);
       store.setDecks(fetchedDecks);
       store.setNoteTypes(fetchedModels);
 
-      // Pick note type: restored draft's (if still valid in Anki), else default,
+      // Pick note type: restored draft's (if still valid in cache), else default,
       // else first available. ADR-026: remember user's note type selection.
       const restoredNoteType = restoredDraft?.noteType ?? '';
       const chosenNoteType =
@@ -425,7 +457,7 @@ export function useCardCreatorState(
             ? defaultDeck
             : fetchedDecks[0] ?? '';
 
-      // Update draft with AnkiConnect-resolved note type/deck + mark
+      // Update draft with schema-resolved note type/deck + mark
       // destination-ready so Note type/Deck dropdowns enable immediately.
       // Field content (sentence, media) already set above is preserved.
       store.setDraft((prev) => ({
@@ -438,29 +470,33 @@ export function useCardCreatorState(
       // Phase 2: fetch fields + recent note (depend on chosen note type/deck).
       // These run AFTER dropdowns are enabled so the user can interact while
       // these load. Field rows + alerts wait for `ready`.
-      let fields: readonly string[] = [];
-      if (chosenNoteType) {
-        const fieldsR = await listModelFields(ankiConnectUrl, chosenNoteType);
-        if (fieldsR.ok) fields = fieldsR.value;
-      }
+      // getModelFields is cache-first — no AnkiConnect call for a cached note type.
+      const fields = chosenNoteType
+        ? (await getModelFields(ankiConnectUrl, chosenNoteType)) ?? []
+        : [];
       store.setAvailableFields(fields);
 
-      // Field mapping: reuse restored mapping if note type unchanged (it was
-      // mapped for this note type); otherwise auto-map fresh.
+      // Field mapping: prefer saved per-note-type mapping, then restored draft,
+      // then auto-map. Persist auto-mapped or restored mappings for later use.
+      const savedMapping = fieldMappingsRef.current?.[chosenNoteType];
       const useRestoredMapping =
-        restoredDraft !== null && restoredDraft.noteType === chosenNoteType;
-      const mapping = useRestoredMapping
-        ? restoredDraft.fieldMapping
-        : autoMapFields(fields);
+        !savedMapping &&
+        restoredDraft !== null &&
+        restoredDraft.noteType === chosenNoteType;
+      const mapping =
+        savedMapping ??
+        (useRestoredMapping ? restoredDraft!.fieldMapping : autoMapFields(fields));
+
+      if (!savedMapping) {
+        persistFieldMapping(chosenNoteType, mapping);
+      }
 
       // Find recent note (delegated to refreshRecentNote so the same logic
       // runs on initial load + on note type change).
       await refreshRecentNote(chosenDeck, chosenNoteType);
 
       // Update field mapping now that fields are known — but only if the user
-      // hasn't changed note type while we were fetching fields (race guard:
-      // changeNoteType sets its own mapping for the new note type; if we
-      // override here with the old note type's mapping, fields mismatch).
+      // hasn't changed note type while we were fetching fields (race guard).
       if (useCardCreatorStore.getState().draft.noteType === chosenNoteType) {
         store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
       }
@@ -474,7 +510,7 @@ export function useCardCreatorState(
       store.setLoadStatus('error');
       useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
     }
-  }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote]);
+  }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote, persistFieldMapping]);
 
   /** Merge a new prefill into the current draft (resend from dictionary).
    *  Diff/merges collections + text fields according to `mediaUpdateMode` and
@@ -576,6 +612,18 @@ export function useCardCreatorState(
     };
   }, []);
 
+  // When the saved schema refresh (or a settings edit) yields new decks/note
+  // types while the dialog is open, push them into the store so the dropdowns
+  // reflect the fresh data without blocking the user.
+  useEffect(() => {
+    if (!openContext) return;
+    return onAnkiSchemaRefreshed(({ decks, models }) => {
+      const store = useCardCreatorStore.getState();
+      store.setDecks(decks);
+      store.setNoteTypes(models);
+    });
+  }, [openContext]);
+
   /** Update draft (triggers autosave via effect). */
   const updateDraft = useCallback((partial: Partial<CardDraft>) => {
     useCardCreatorStore.getState().setDraft((prev) => ({ ...prev, ...partial }));
@@ -592,37 +640,46 @@ export function useCardCreatorState(
     [],
   );
 
-  /** Update field mapping. */
+  /** Update field mapping for the current note type and persist to settings. */
   const updateMapping = useCallback(
     (sourceKey: keyof CardDraft['fieldMapping'], ankiField: string) => {
-      useCardCreatorStore.getState().setDraft((prev) => ({
+      const store = useCardCreatorStore.getState();
+      const noteType = store.draft.noteType;
+      store.setDraft((prev) => ({
         ...prev,
         fieldMapping: { ...prev.fieldMapping, [sourceKey]: ankiField },
       }));
+      const updated = { ...store.draft.fieldMapping, [sourceKey]: ankiField };
+      persistFieldMapping(noteType, updated);
     },
-    [],
+    [persistFieldMapping],
   );
 
-  /** Change note type → re-fetch fields + re-map + re-check recent note. */
+  /** Change note type → cache-first field lookup, saved mapping fallback,
+   *  auto-map when missing, and persist. `findRecentNote` stays live. */
   const changeNoteType = useCallback(
     async (noteType: string) => {
       const store = useCardCreatorStore.getState();
       store.setDraft((prev) => ({ ...prev, noteType }));
-      const fieldsR = await listModelFields(ankiConnectUrl, noteType);
-      if (fieldsR.ok) {
-        store.setAvailableFields(fieldsR.value);
-        const mapping = autoMapFields(fieldsR.value);
+
+      const fields = await getModelFields(ankiConnectUrl, noteType);
+      if (fields) {
+        store.setAvailableFields(fields);
+        const savedMapping = fieldMappingsRef.current?.[noteType];
+        const mapping = savedMapping ?? autoMapFields(fields);
         store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
+        if (!savedMapping) {
+          persistFieldMapping(noteType, mapping);
+        }
       }
-      // ADR-026: re-check recent note for the new note type — the recent note
-      // is scoped to the note type, so switching types must re-query.
+
       const deck = useCardCreatorStore.getState().draft.deck;
       await refreshRecentNote(deck, noteType);
       // Mark ready so alerts + autosave are active (loadData phase 2 may have
       // been interrupted by this change — ensure we end in a ready state).
       store.setLoadStatus('ready');
     },
-    [ankiConnectUrl, refreshRecentNote],
+    [ankiConnectUrl, refreshRecentNote, persistFieldMapping],
   );
 
   /** Change deck → re-check recent note (recent note is scoped to deck). */
@@ -1026,6 +1083,30 @@ export function useCardCreatorState(
     useCardCreatorStore.getState().setCapturingMedia(false);
   }, []);
 
+  /** Retry the caller once after a schema refresh if the error looks like a
+   *  missing deck or note type. */
+  const runWithSchemaRetry = useCallback(
+    async <T>(fn: () => Promise<T>): Promise<T> => {
+      try {
+        return await fn();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!isMissingSchemaError(msg)) throw err;
+      }
+
+      const refresh = await refreshAnkiSchemaCache(ankiConnectUrl);
+      if (refresh.ok) {
+        const s = useCardCreatorStore.getState();
+        s.setDecks(refresh.value.decks);
+        s.setNoteTypes(refresh.value.models);
+      }
+
+      // Try once more; if it still fails, the original/pre-existing error bubbles.
+      return await fn();
+    },
+    [ankiConnectUrl],
+  );
+
   /** Build the Anki note fields from the draft (apply mapping + media refs). */
   const buildAnkiFieldsCb = useCallback(
     async (): Promise<Record<string, string>> => {
@@ -1065,13 +1146,16 @@ export function useCardCreatorState(
         let success = false;
 
         if (mode === 'add') {
-          const r = await addNote(ankiConnectUrl, {
-            deckName: draft.deck,
-            modelName: draft.noteType,
-            fields,
-            tags,
+          const r = await runWithSchemaRetry(async () => {
+            const result = await addNote(ankiConnectUrl, {
+              deckName: draft.deck,
+              modelName: draft.noteType,
+              fields,
+              tags,
+            });
+            if (!result.ok) throw new Error(result.error);
+            return result;
           });
-          if (!r.ok) throw new Error(r.error);
           if (r.value === null) {
             store.pushToast('warning', t('cardCreator.toast.add.duplicate'));
           } else {
@@ -1128,8 +1212,11 @@ export function useCardCreatorState(
             store.pushToast('warning', t('cardCreator.toast.update.skip'));
             return;
           }
-          const r = await updateNote(ankiConnectUrl, updateNoteId, updateFields, 'overwrite', existing);
-          if (!r.ok) throw new Error(r.error);
+          await runWithSchemaRetry(async () => {
+            const result = await updateNote(ankiConnectUrl, updateNoteId, updateFields, 'overwrite', existing);
+            if (!result.ok) throw new Error(result.error);
+            return result;
+          });
           // Sync tags (desktop only; Android shows warning).
           if (tags.length > 0) {
             const tagsR = await addNoteTags(ankiConnectUrl, updateNoteId, tags);
@@ -1171,7 +1258,7 @@ export function useCardCreatorState(
         useCardCreatorStore.getState().setSubmitting(false);
       }
     },
-    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote],
+    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote, runWithSchemaRetry],
   );
 
   return {
