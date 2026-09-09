@@ -13,6 +13,7 @@
     "prebuild:mock": "node scripts/generate-tokens.js",
     "build:mock": "vite build --mode mock",
     "postbuild": "node scripts/patch-ocr-csp.mjs",
+    "ship:dist": "powershell -ExecutionPolicy Bypass -File scripts/ship-dist.ps1",
     "design-system": "npx http-server dist/design-system-showcase -p 8123 -c-1 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
     "design-system:open:universal-panel": "start \"Cell\" chrome \"http://localhost:5180/src/entrypoints/design-system-showcase/index.html?showcase=Universal+Panel+Page&mode=light&viewport=full\"",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@crxjs/vite-plugin": "^2.7.0",
+    "crx3": "2.0.0",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.61.0",
     "@testing-library/dom": "^10.4.1",
