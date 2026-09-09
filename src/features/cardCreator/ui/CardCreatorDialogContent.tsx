@@ -47,7 +47,6 @@ export function CardCreatorDialogContent({
     draft,
     decks,
     noteTypes,
-    availableFields,
     recentNoteId,
     loadStatus,
     loadError,
@@ -63,7 +62,6 @@ export function CardCreatorDialogContent({
     toasts,
     dismissToast,
     updateField,
-    updateMapping,
     changeNoteType,
     changeDeck,
     updateDraft,
@@ -247,9 +245,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.targetWord')}
-          mappedField={draft.fieldMapping.targetWord ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('targetWord', f)}
           trailing={fieldGenerateButton('targetWord', 'cc-target-word', t('cardCreator.field.targetWord'))}
           dataId="cc-target-word"
         >
@@ -264,9 +259,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.sentence')}
-          mappedField={draft.fieldMapping.sentence ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('sentence', f)}
           trailing={fieldGenerateButton('sentence', 'cc-sentence', t('cardCreator.field.sentence'))}
           dataId="cc-sentence"
         >
@@ -280,9 +272,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.sentenceTranslation')}
-          mappedField={draft.fieldMapping.sentenceTranslation ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('sentenceTranslation', f)}
           trailing={fieldGenerateButton('sentenceTranslation', 'cc-sentence-translation', t('cardCreator.field.sentenceTranslation'))}
           dataId="cc-sentence-translation"
         >
@@ -296,9 +285,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.definitions')}
-          mappedField={draft.fieldMapping.definitions ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('definitions', f)}
           trailing={fieldGenerateButton('definitions', 'cc-definitions', t('cardCreator.field.definitions'))}
           dataId="cc-definitions"
         >
@@ -313,9 +299,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.image')}
-          mappedField={draft.fieldMapping.images ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('images', f)}
           trailing={fieldGenerateButton('images', 'cc-images', t('cardCreator.field.image'))}
           dataId="cc-images"
         >
@@ -334,9 +317,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.sentenceAudio')}
-          mappedField={draft.fieldMapping.sentenceAudios ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('sentenceAudios', f)}
           trailing={fieldGenerateButton('sentenceAudios', 'cc-sentence-audios', t('cardCreator.field.sentenceAudio'))}
           dataId="cc-sentence-audios"
         >
@@ -355,9 +335,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.wordAudio')}
-          mappedField={draft.fieldMapping.wordAudios ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('wordAudios', f)}
           trailing={fieldGenerateButton('wordAudios', 'cc-word-audios', t('cardCreator.field.wordAudio'))}
           dataId="cc-word-audios"
         >
@@ -376,9 +353,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.note')}
-          mappedField={draft.fieldMapping.note ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('note', f)}
           trailing={fieldGenerateButton('note', 'cc-note', t('cardCreator.field.note'))}
           dataId="cc-note"
         >
@@ -393,9 +367,6 @@ export function CardCreatorDialogContent({
 
         <FieldRow
           label={t('cardCreator.field.moreExample')}
-          mappedField={draft.fieldMapping.moreExample ?? ''}
-          availableFields={availableFields}
-          onMapChange={(f) => updateMapping('moreExample', f)}
           trailing={fieldGenerateButton('moreExample', 'cc-more-example', t('cardCreator.field.moreExample'))}
           dataId="cc-more-example"
         >
