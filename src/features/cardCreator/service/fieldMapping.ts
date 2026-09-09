@@ -12,21 +12,11 @@
  * priority tier) to avoid two source fields mapping to the same Anki field.
  */
 
-/** Source field keys (Cell side). Tags are NOT a mapped field — they're sent
- *  via the note's `tags` array, not mapped to an Anki note field. */
-export type SourceFieldKey =
-  | 'targetWord'
-  | 'sentence'
-  | 'sentenceTranslation'
-  | 'definitions'
-  | 'images'
-  | 'sentenceAudios'
-  | 'wordAudios'
-  | 'note'
-  | 'moreExample';
-
-/** Mapping from source key → Anki field name (or "" if unmapped). */
-export type FieldMapping = Partial<Record<SourceFieldKey, string>>;
+// SourceFieldKey / FieldMapping live in entities (they are part of the
+// persisted CardCreatorSettings.fieldMappings shape, schema v29). Re-exported
+// here so existing feature imports stay unchanged.
+import type { FieldMapping, SourceFieldKey } from '@/entities/settings';
+export type { FieldMapping, SourceFieldKey };
 
 /** Canonical preferred Anki field names per source key, in priority order. */
 const CANONICAL_NAMES: Record<SourceFieldKey, readonly string[]> = {

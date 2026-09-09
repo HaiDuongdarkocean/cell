@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 28;
+export const CURRENT_SCHEMA_VERSION = 29;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -465,6 +465,12 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (!merged.frequencyBands || typeof merged.frequencyBands !== 'object') {
       merged.frequencyBands = { ...DEFAULT_FREQUENCY_BANDS };
     }
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v28 → v29: add cardCreator.fieldMappings (per-note-type field mapping).
+  // Existing users get an empty map; nested merge fills the new field.
+  28: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 29 } as Record<string, unknown>;
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

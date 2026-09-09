@@ -239,6 +239,8 @@
   "cardCreator.toast.generate.noMedia": "No media source available for this target.",
   "cardCreator.toast.generate.success": "Generated missing media.",
   "cardCreator.toast.generate.empty": "No missing media to generate.",
+  "cardCreator.dependency.missingSentence": "Enter a sentence to generate $1.",
+  "cardCreator.dependency.missingField": "$1 needs $2 to be filled first.",
   "cardCreator.toast.generateField.success": "Generated $1.",
   "cardCreator.toast.generateField.alreadyFilled": "$1 is already filled.",
   "cardCreator.toast.generateField.noSource": "No source found for $1.",
