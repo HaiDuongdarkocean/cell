@@ -1,26 +1,19 @@
-/* StepEditor — one custom-mode step card with labeled chip groups. */
+/* StepEditor — one custom-mode step row (index + option chip groups). */
 
 .stepRow {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
 }
 
 .stepIndex {
   min-width: var(--space-5);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-md);
-  background: var(--color-field);
-  color: var(--color-text-secondary);
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-tight);
 }
 
 .stepOptions {
@@ -38,8 +31,6 @@
 .stepOptionLabel {
   min-width: var(--space-16);
   flex-shrink: 0;
-  text-align: right;
-  color: var(--color-text-secondary);
 }
 
 .stepChipGroup {
@@ -47,21 +38,9 @@
 }
 
 @media (max-width: 639px) {
-  .stepRow {
-    flex-direction: column;
-  }
-
-  .stepIndex {
-    align-self: flex-start;
-  }
-
   .stepOption {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .stepOptionLabel {
-    text-align: left;
   }
 
   .stepChipGroup {

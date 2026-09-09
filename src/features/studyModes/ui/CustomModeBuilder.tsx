@@ -162,7 +162,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
           </HStack>
         }
       >
-        <VStack gap="5">
+        <VStack gap="4">
           <FormGroup label="Mode name" htmlFor={titleId}>
             <Input
               id={titleId}
@@ -170,7 +170,6 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Shadowing"
               maxLength={50}
-              size="sm"
               data-cell-id="builder-title-input"
             />
           </FormGroup>
@@ -180,7 +179,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
             </p>
           )}
 
-          <VStack gap="3">
+          <div>
             <Text color="secondary" as="p" data-cell-id="builder-preview">
               {preview}
             </Text>
@@ -204,7 +203,7 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
                 onRemove={steps.length > 1 ? () => removeStep(selectedStepIndex) : undefined}
               />
             )}
-          </VStack>
+          </div>
         </VStack>
       </BottomSheet>
 
