@@ -1,3 +1,6 @@
+/* StudyModesTab — Play mode and Custom sections grouped by proximity.
+   Design tokens only, mobile-first, single primary accent. */
+
 .tab {
   padding: var(--space-6);
   color: var(--color-text-primary);
@@ -7,7 +10,7 @@
 }
 
 .tabHeader {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .tabHeaderInner {
@@ -19,41 +22,55 @@
   margin: 0;
 }
 
-.advancedToggle {
-  align-items: center;
-}
-
-.eyebrow {
-  display: block;
-  margin-bottom: var(--space-1);
-  text-transform: uppercase;
-}
-
 .section {
-  margin-bottom: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+  background: var(--color-surface-elevated);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
 }
 
 .sectionHeader {
-  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.eyebrow {
+  text-transform: uppercase;
 }
 
 .sectionHeading {
   margin: 0;
 }
 
+.advancedToggle {
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(min(100%, calc(var(--space-20) * 2 + var(--space-2))), 1fr)
-  );
-  gap: var(--space-4);
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
 }
 
 .modeCardWrapper {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .modeCard {
@@ -63,7 +80,7 @@
   flex: 1;
   text-align: center;
   gap: var(--space-2);
-  padding: var(--space-5);
+  padding: var(--space-4);
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-in-out),
@@ -79,7 +96,7 @@
 
 .modeIcon {
   color: currentColor;
-  opacity: 0.8;
+  opacity: 0.75;
   transition: color var(--duration-fast) var(--ease-in-out);
 }
 
@@ -94,17 +111,15 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   line-height: var(--leading-snug);
-  color: currentColor;
-  opacity: 0.85;
+  color: var(--color-text-secondary);
 }
 
 .modeActions {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  z-index: var(--z-base);
-  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .advancedCard {
@@ -120,8 +135,23 @@
   flex-wrap: wrap;
 }
 
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 639px) {
   .tab {
     padding: var(--space-4);
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2-5);
+  }
+
+  .modeCard {
+    padding: var(--space-3);
   }
 }
