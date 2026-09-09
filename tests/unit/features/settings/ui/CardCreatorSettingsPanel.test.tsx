@@ -3,8 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import type { CardCreatorSettings } from '@/entities/settings';
-import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
-import {
+import type { testConnection } from '@/features/cardCreator/service/cardCreatorService';
+import type {
   loadAnkiSchemaCache,
   refreshAnkiSchemaCache,
   getModelFields,
