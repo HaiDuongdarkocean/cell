@@ -12,12 +12,10 @@ Chrome checks the extension against the `updates.xml` hosted in this repository 
 
 ## Build from source
 
-> **Note:** this repository uses **Git LFS** for large data/runtime assets. Make sure Git LFS is installed before cloning.
+> **Note:** this repository contains large data/runtime assets (dictionaries, OCR models, ffmpeg WASM, etc.). A full clone with all history is roughly **~300 MB**. If you only need the latest source, use a shallow clone:
 
 ```bash
-# Clone with all binary assets
-git lfs install
-git clone https://github.com/HaiDuongdarkocean/cell.git
+git clone --depth=1 https://github.com/HaiDuongdarkocean/cell.git
 cd cell
 
 # Install dependencies
