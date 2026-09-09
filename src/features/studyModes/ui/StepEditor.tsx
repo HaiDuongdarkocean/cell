@@ -49,7 +49,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
       <Text as="span" variant="label" className={styles.stepIndex}>
         {index + 1}
       </Text>
-      <VStack gap="3" className={styles.stepOptions}>
+      <VStack gap="2" className={styles.stepOptions}>
         {OptionGroup('Subtitle', SUBTITLE_OPTIONS, step.subtitle, 'subtitle')}
         {OptionGroup('Pause', PAUSE_OPTIONS, step.pause, 'pause')}
         {OptionGroup('Repeat', REPEAT_OPTIONS, step.repeat, 'repeat')}
@@ -58,7 +58,7 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
       </VStack>
       {onRemove && (
         <Button
-          size="sm"
+          size="xs"
           variant="ghost"
           onClick={onRemove}
           aria-label={`Remove step ${index + 1}`}
