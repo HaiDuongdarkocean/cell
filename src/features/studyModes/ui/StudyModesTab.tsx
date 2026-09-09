@@ -23,8 +23,6 @@ export function StudyModesTab(): ReactElement {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Derived active mode and custom list are enough; selections map directly.
-
   const handleSelect = (mode: StudyMode): void => {
     useStudyModeStore.getState().setActiveModeId(mode.id);
   };
@@ -70,10 +68,21 @@ export function StudyModesTab(): ReactElement {
     <div className={styles.tab} data-cell-id="study-modes-tab">
       <VStack gap="5">
         <header className={styles.tabHeader}>
-          <HStack justify="between" align="center" className={styles.tabHeaderInner}>
-            <Heading level={2} size={2} className={styles.tabTitle}>
-              Study Modes
-            </Heading>
+          <Heading level={2} size={2} className={styles.tabTitle}>
+            Study Modes
+          </Heading>
+        </header>
+
+        <section className={styles.section}>
+          <HStack justify="between" align="center" className={styles.sectionHeader}>
+            <div className={styles.sectionTitle}>
+              <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
+                Playback settings
+              </Text>
+              <Heading level={3} size={3} className={styles.sectionHeading}>
+                Play mode
+              </Heading>
+            </div>
             <HStack gap="2" align="center" className={styles.advancedToggle}>
               <Text variant="label" color="secondary" as="span">
                 Advanced
@@ -86,15 +95,6 @@ export function StudyModesTab(): ReactElement {
               />
             </HStack>
           </HStack>
-        </header>
-
-        <section className={styles.section}>
-          <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
-            Playback settings
-          </Text>
-          <Heading level={3} size={3} className={styles.sectionHeading}>
-            Play mode
-          </Heading>
           <div className={styles.grid} role="radiogroup" aria-label="Preset study modes">
             {PRESETS.map((mode) => (
               <ModeCard
@@ -105,11 +105,17 @@ export function StudyModesTab(): ReactElement {
               />
             ))}
           </div>
+          {advancedOpen && (
+            <AdvancedSection
+              advanced={store.advanced}
+              onChange={handleAdvancedChange}
+            />
+          )}
         </section>
 
         <section className={styles.section}>
           <HStack justify="between" align="center" className={styles.sectionHeader}>
-            <div>
+            <div className={styles.sectionTitle}>
               <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
                 Your combinations
               </Text>
@@ -121,7 +127,7 @@ export function StudyModesTab(): ReactElement {
               New mode
             </Button>
           </HStack>
-          <div className={styles.grid} role="group" aria-label="Custom study modes">
+          <div className={styles.grid} role="radiogroup" aria-label="Custom study modes">
             {store.customModes.map((mode) => (
               <ModeCard
                 key={mode.id}
@@ -134,13 +140,6 @@ export function StudyModesTab(): ReactElement {
             ))}
           </div>
         </section>
-
-        {advancedOpen && (
-          <AdvancedSection
-            advanced={store.advanced}
-            onChange={handleAdvancedChange}
-          />
-        )}
       </VStack>
 
       <CustomModeBuilder
@@ -194,7 +193,29 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
         onSelect={() => onSelect(mode)}
         data-cell-id={`mode-card-${mode.id}`}
       >
-        <Icon name={mode.icon} size="lg" className={styles.modeIcon} />
+        {isCustom && (
+          <HStack gap="2" className={styles.modeActions}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => { e.stopPropagation(); onEdit?.(mode); }}
+              data-cell-id={`edit-mode-${mode.id}`}
+              leadingIcon={<Icon name="pencil" size="xs" />}
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => { e.stopPropagation(); onDelete?.(mode); }}
+              data-cell-id={`delete-mode-${mode.id}`}
+              leadingIcon={<Icon name="trash" size="xs" />}
+            >
+              Delete
+            </Button>
+          </HStack>
+        )}
+        <Icon name={mode.icon} size={isCustom ? 'md' : 'lg'} className={styles.modeIcon} />
         <Text variant="heading-3" as="p" className={styles.modeTitle}>
           {mode.title}
         </Text>
@@ -202,28 +223,6 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
           {description}
         </Text>
       </SelectableCard>
-      {isCustom && (
-        <HStack gap="2" className={styles.modeActions}>
-          <Button
-            size="xs"
-            variant="ghost"
-            onClick={() => onEdit?.(mode)}
-            data-cell-id={`edit-mode-${mode.id}`}
-            leadingIcon={<Icon name="pencil" size="xs" />}
-          >
-            Edit
-          </Button>
-          <Button
-            size="xs"
-            variant="ghost"
-            onClick={() => onDelete?.(mode)}
-            data-cell-id={`delete-mode-${mode.id}`}
-            leadingIcon={<Icon name="trash" size="xs" />}
-          >
-            Delete
-          </Button>
-        </HStack>
-      )}
     </div>
   );
 }

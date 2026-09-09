@@ -15,7 +15,7 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-2) var(--space-3);
-  border: none;
+  border: var(--border-width-hairline) solid transparent;
   border-radius: var(--radius-pill);
   background: var(--color-surface-elevated);
   color: var(--color-text-primary);
@@ -45,7 +45,7 @@
 }
 
 .cueAdd {
-  border-style: dashed;
+  border: var(--border-width-hairline) dashed var(--color-text-secondary);
   color: var(--color-text-secondary);
 }
 
