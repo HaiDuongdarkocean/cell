@@ -1,0 +1,7 @@
+{
+  "githubRepo": "",
+  "releaseBranch": "main",
+  "updateXmlPath": "updates.xml",
+  "crxAssetName": "cell.crx",
+  "publishToGitHub": false
+}

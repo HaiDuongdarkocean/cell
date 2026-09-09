@@ -351,3 +351,39 @@ Video
 
 Video (anti-automation — MUST dùng stealth-chrome-devtools)
 - https://streamduck.site/ (phát hiện DevTools/automation → reload nếu dùng chrome-devtools)
+
+### Ship / phát hành
+
+Sau khi build xong, ship bản release ra Google Drive:
+
+```bash
+npm run build
+npm run ship:dist
+```
+
+Script `scripts/ship-dist.ps1` sẽ:
+
+1. Pack `dist/` thành `cell.crx` bằng private key `cell-key.pem`.
+2. Sinh `updates.xml` chứa appid, version và codebase URL.
+3. Copy `dist/`, `dist.zip`, `cell.crx`, `updates.xml` vào `G:\My Drive\Language\Tool\cell\release`.
+4. Quản lý version xoay vòng: release hiện tại -> `archive`; archive cũ -> xóa.
+5. Nếu bật `publishToGitHub` trong config, tạo GitHub release và upload `cell.crx` + `updates.xml`.
+
+#### Cấu hình update tự động qua GitHub
+
+Sửa `scripts/ship.config.json`:
+
+```json
+{
+  "githubRepo": "The0cean/cell",
+  "releaseBranch": "main",
+  "updateXmlPath": "updates.xml",
+  "crxAssetName": "cell.crx",
+  "publishToGitHub": false
+}
+```
+
+- `githubRepo`: `owner/repo` dùng để tạo URL `update_url` và `codebase`.
+- `publishToGitHub`: đặt `true` để tự động `gh release create` (cần `gh` CLI đã xác thực).
+
+Khi `.crx` đã có `update_url` trỏ đến `updates.xml`, Chrome sẽ check update theo appid mỗi lần bấm **Update** trên `chrome://extensions` hoặc tự động vài giờ một lần.
