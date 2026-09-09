@@ -40,7 +40,7 @@
 | Cấp độ | Mô hình | Con người | Ví dụ |
 |---|---|---|---|
 | **AI-assisted** | Autocomplete, chat suggestion | Viết từng dòng, AI gợi ý | GitHub Copilot autocomplete |
-| **Agentic** | Agent nhận task → plan → execute → iterate → submit | Review ở critical gate | Devin, Copilot coding agent |
+| **Agentic** | Agent nhận task → plan → execute → iterate → submit | Review ở critical gate | Agent coding tools (e.g., Copilot coding agent) |
 | **Fully autonomous** | Agent tự quyết + tự làm | Không cần | Chưa tồn tại ở production |
 
 > Sonar: "This is different from AI-assisted development, where a software developer uses autocomplete or chat-based suggestions as a productivity aid."

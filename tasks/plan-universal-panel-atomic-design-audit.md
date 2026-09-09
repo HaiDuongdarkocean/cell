@@ -267,4 +267,4 @@ Token fixes (Task 1)
 
 ---
 
-*Generated with Devin. This plan is based on `docs/audits/universal-panel-atomic-design-audit-2026-09-05.md` and `docs/audits/universal-panel-visual-findings-2026-09-05.md`.*
+*Plan generated with agent tooling. This plan is based on `docs/audits/universal-panel-atomic-design-audit-2026-09-05.md` and `docs/audits/universal-panel-visual-findings-2026-09-05.md`.*

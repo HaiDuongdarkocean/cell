@@ -74,20 +74,19 @@ docs/           # Tài liệu dự án
 ├── reviews/                           # Adversarial review outputs
 │   ├── reader-adversarial-1.md        # Architecture/MV3/performance review
 │   └── reader-adversarial-2.md        # UX/security/accessibility/scope review
-└── shortcut-for-tw/                   # Cheatsheet phím tắt Devin Terminal workflow
-    └── cheatsheet.md                  # Win+Shift+Q launcher + WT pane nav/swap/swap/resize + workflow giao việc
+└── shortcut-for-tw/                   # (deprecated — removed from public tree)
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 e2e/            # Playwright E2E specs (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
   skills/         # 25 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship) — interview-me đã gộp elicitation mode
-                 # browser-testing-with-devtools/SKILL.md: có "Reliable install workflow on Devin CLI"
+                 # browser-testing-with-devtools/SKILL.md: có "Reliable install workflow on agent CLI"
                  #   (copy dist/ → %TEMP%\cell-ext-dist trước khi install_extension,
-                 #    vì Devin MCP client negotiate roots nhưng không gửi workspace D:\...\cell)
+                 #    vì agent MCP client negotiate roots nhưng không gửi workspace D:\...\cell)
                  # testing-extension-browser/: SSOT profile + CDP Extensions.loadUnpacked + script/test-cell-browser.py
                  #   (Chrome 137+ blocks --load-extension; dùng nodriver + CDP loadUnpacked mỗi session; anti-bot bypass)
-.devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
+.devin/        # Agent config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 tasks/          # Active plan & task checklist (current sprint)
 ├── plan.md                          # Existing Orca OCR implementation plan
@@ -228,7 +227,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 | File | Bản chất | Khi nào load |
 |---|---|---|
-| AGENTS.md | Cross-tool rules + skill hierarchy (baseline + ponytail consolidated) | Mỗi session (Windsurf + Devin) |
+| AGENTS.md | Cross-tool rules + skill hierarchy (baseline + ponytail consolidated) | Mỗi session (Windsurf + các agent) |
 | 0-wiki.md | Mục lục tổng quan | Đầu session |
 | 1-share-language.md | Glossary human ↔ system | Đầu session |
 | 2-architechture-system.md | Architecture chi tiết | Trước khi sửa code |

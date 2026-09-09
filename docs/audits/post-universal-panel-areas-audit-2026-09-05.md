@@ -78,7 +78,7 @@ prioritized summary + remediation queue.**
 3. **P2 tokenization + dead CSS** — bulk, can be done per-directory
 4. P3 — document intentional, fix trivial ones opportunistically
 
-*Generated with Devin — 4 parallel read-only subagent audits.*
+*Audit report generated with agent tooling — 4 parallel read-only subagent audits.*
 
 ---
 
