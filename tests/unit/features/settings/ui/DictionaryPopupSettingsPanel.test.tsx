@@ -55,12 +55,10 @@ describe('DictionaryPopupSettingsPanel', () => {
     );
   });
 
-  it('calls onChange with selected SRS destination', () => {
+  it('does not render the SRS destination picker (moved to Card Creator settings)', () => {
     const props = makeProps({ srsDestination: 'anki' });
     render(<DictionaryPopupSettingsPanel {...props} />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Ocean SRS' }));
-    expect(props.onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ srsDestination: 'ocean-srs' }),
-    );
+    expect(screen.queryByRole('radio', { name: 'Ocean SRS' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Anki' })).not.toBeInTheDocument();
   });
 });
