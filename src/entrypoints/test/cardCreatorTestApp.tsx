@@ -174,6 +174,7 @@ function TestApp(): React.JSX.Element {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<CardCreatorSettings>(DEFAULT_SETTINGS);
+  const [srsDestination, setSrsDestination] = useState<'anki' | 'ocean-srs'>('anki');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const videoRef = useRef<HTMLVideoElement>(null);
   const openContext = useMockOpenContext(videoRef);
@@ -243,7 +244,9 @@ function TestApp(): React.JSX.Element {
         <div style={{ maxWidth: 'calc(var(--space-5) * 24)', margin: '0 auto', padding: 'var(--space-4)' }}>
           <CardCreatorSettingsPanel
             settings={settings}
+            srsDestination={srsDestination}
             onChange={(partial) => setSettings({ ...settings, ...partial })}
+            onDestinationChange={setSrsDestination}
           />
         </div>
       )}
