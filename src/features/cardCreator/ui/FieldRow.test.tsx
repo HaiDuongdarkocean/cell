@@ -25,66 +25,14 @@ describe('FieldRow', () => {
     expect(screen.getByTestId('generate-target')).toBeInTheDocument();
   });
 
-  it('does not render map select when mappedField is omitted', () => {
+  it('does not render a field-map select', () => {
     render(
-      <FieldRow label="Tags" dataId="tags">
+      <FieldRow label="Target word" dataId="target">
         <FieldAutoGrowInput value="" onChange={jest.fn()} />
       </FieldRow>
     );
-    expect(screen.queryByRole('button', { name: 'None' })).not.toBeInTheDocument();
-  });
-
-  it('renders map select with selected field and options including None', () => {
-    render(
-      <FieldRow
-        label="Target word"
-        mappedField="TargetWord"
-        availableFields={['TargetWord', 'Sentence']}
-        onMapChange={jest.fn()}
-        dataId="target"
-      >
-        <FieldAutoGrowInput value="" onChange={jest.fn()} />
-      </FieldRow>
-    );
-    expect(screen.getByRole('button', { name: 'Map Target word to Anki field' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Map Target word to Anki field' }));
-    expect(screen.getByRole('option', { name: 'None' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'TargetWord' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Sentence' })).toBeInTheDocument();
-  });
-
-  it('calls onMapChange with the selected field', () => {
-    const onMapChange = jest.fn();
-    render(
-      <FieldRow
-        label="Target word"
-        mappedField="TargetWord"
-        availableFields={['TargetWord', 'Sentence']}
-        onMapChange={onMapChange}
-      >
-        <FieldAutoGrowInput value="" onChange={jest.fn()} />
-      </FieldRow>
-    );
-    fireEvent.click(screen.getByRole('button'));
-    fireEvent.click(screen.getByRole('option', { name: 'Sentence' }));
-    expect(onMapChange).toHaveBeenCalledWith('Sentence');
-  });
-
-  it('calls onMapChange with empty string when None is selected', () => {
-    const onMapChange = jest.fn();
-    render(
-      <FieldRow
-        label="Target word"
-        mappedField="TargetWord"
-        availableFields={['TargetWord', 'Sentence']}
-        onMapChange={onMapChange}
-      >
-        <FieldAutoGrowInput value="" onChange={jest.fn()} />
-      </FieldRow>
-    );
-    fireEvent.click(screen.getByRole('button'));
-    fireEvent.click(screen.getByRole('option', { name: 'None' }));
-    expect(onMapChange).toHaveBeenCalledWith('');
+    expect(screen.getByText('Target word')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Map/ })).not.toBeInTheDocument();
   });
 });
 

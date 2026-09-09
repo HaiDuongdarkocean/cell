@@ -23,7 +23,6 @@
  */
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Button } from '@/shared/ui/Button';
-import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Label } from '@/shared/ui/Label';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
@@ -32,19 +31,9 @@ import styles from './FieldRow.module.css';
 interface FieldRowProps {
   /** Human-readable label (e.g. "Target word"). */
   readonly label: string;
-  /** Anki field name this row is currently mapped to. When omitted, no
-   *  field-map select is rendered (e.g. Tags row — tags aren't mapped to an
-   *  Anki field, they're sent via the note's `tags` array). */
-  readonly mappedField?: string;
-  /** Available Anki field names (from modelFieldNames) for the map select.
-   *  Required when mappedField is provided. */
-  readonly availableFields?: readonly string[];
-  /** Called when the user changes the field mapping. Required when mappedField
-   *  is provided. */
-  readonly onMapChange?: (field: string) => void;
   /** The value input/textarea element. */
   readonly children: ReactNode;
-  /** Optional trailing action(s) rendered in the header next to the map select. */
+  /** Optional trailing action(s) rendered in the header next to the label. */
   readonly trailing?: ReactNode;
   /** Optional data id — applied to the wrapper div as `<id>-row`. */
   readonly dataId?: string;
@@ -52,42 +41,16 @@ interface FieldRowProps {
 
 export function FieldRow({
   label,
-  mappedField,
-  availableFields,
-  onMapChange,
   children,
   trailing,
   dataId,
 }: FieldRowProps): ReactElement {
-  // ADR-026: prepend a "None" option (value '') so the user can opt out of
-  // mapping a source field to any Anki field (e.g. don't send the screenshot
-  // for this card). When mappedField is '' the select shows "None".
-  const showMap = mappedField !== undefined && availableFields !== undefined && onMapChange !== undefined;
-  const noneLabel = t('cardCreator.fieldMap.none');
-  const options: SelectOption[] = showMap
-    ? [{ value: '', label: noneLabel }, ...availableFields!.map((f) => ({ value: f, label: f }))]
-    : [];
   return (
     <div className={styles.fieldRow} data-cell-id={dataId ? `${dataId}-row` : undefined}>
       <div className={styles.fieldRow__header}>
         <Label className={styles.fieldRow__label}>{label}</Label>
-        {(trailing || showMap) && (
+        {trailing && (
           <div className={styles.fieldRow__actions}>
-            {showMap && (
-              <span className={styles.fieldRow__map}>
-                <Select
-                  className={styles.fieldRow__mapSelect}
-                  value={mappedField}
-                  options={options}
-                  onChange={onMapChange}
-                  aria-label={t('cardCreator.fieldMap.aria', [label])}
-                  data-cell-id={dataId ? `${dataId}-map` : undefined}
-                  menuAlign="right"
-                  variant="ghost"
-                  size="sm"
-                />
-              </span>
-            )}
             {trailing}
           </div>
         )}
