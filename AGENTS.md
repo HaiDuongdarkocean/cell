@@ -1,6 +1,6 @@
 # Cell — Tiện ích Chrome tải video + phụ đề
 
-> Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
+> Nguồn sự thật chung cho các agent/trợ lý lập trình. Đọc đầu mỗi phiên.
 > Workflow (LOOP, ponytail, quality gates): các skill trong `.agents/skills/`.
 
 ## Quy tắc tự chủ (user mandate)
