@@ -9,6 +9,7 @@ jest.mock('../service/cardCreatorPrefetch', () => ({
   prefetchAnkiConnectData: jest.fn(async () => ({ decks: ['Default'], models: ['Basic'] })),
   getPrefetchedAnkiConnectData: jest.fn(() => null),
   clearAnkiConnectPrefetch: jest.fn(),
+  onAnkiSchemaRefreshed: jest.fn(() => () => {}),
 }));
 
 jest.mock('../service/cardCreatorService', () => ({
