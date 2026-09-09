@@ -69,6 +69,7 @@ bin/
 
 # Temp commit message
 .git-commit-msg.txt
+.commit-msg.txt
 .commit-msg-*.txt
 
 # Integration test segment cache (downloaded by globalSetup)
