@@ -92,7 +92,9 @@ try {
   if ($updateUrl) {
     $manifest | Add-Member -Name 'update_url' -Value $updateUrl -MemberType NoteProperty -Force
   }
-  $manifest | ConvertTo-Json -Depth 100 | Set-Content $manifestPath
+  $manifestJson = $manifest | ConvertTo-Json -Depth 100
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($manifestPath, $manifestJson, $utf8NoBom)
   Write-Host '  [OK] Injected update_url into dist/manifest.json for packing'
 
   # 1. Delete oldest archive.
