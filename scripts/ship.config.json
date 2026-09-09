@@ -1,7 +1,7 @@
 {
-  "githubRepo": "",
+  "githubRepo": "HaiDuongdarkocean/cell",
   "releaseBranch": "main",
   "updateXmlPath": "updates.xml",
   "crxAssetName": "cell.crx",
-  "publishToGitHub": false
+  "publishToGitHub": true
 }
