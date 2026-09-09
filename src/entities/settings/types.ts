@@ -56,6 +56,22 @@ export interface SubtitleBlockSettings {
 /** How media fields are merged when updating an existing note. */
 export type MediaUpdateMode = 'overwrite' | 'append' | 'skip';
 
+/** Source field keys (Cell side). Tags are NOT a mapped field — they're sent
+ *  via the note's `tags` array, not mapped to an Anki note field. */
+export type SourceFieldKey =
+  | 'targetWord'
+  | 'sentence'
+  | 'sentenceTranslation'
+  | 'definitions'
+  | 'images'
+  | 'sentenceAudios'
+  | 'wordAudios'
+  | 'note'
+  | 'moreExample';
+
+/** Mapping from source key → Anki field name (or "" if unmapped). */
+export type FieldMapping = Partial<Record<SourceFieldKey, string>>;
+
 /** Settings slice for Card Creator (AnkiConnect integration). */
 export interface CardCreatorSettings {
   /** AnkiConnect base URL. Default `http://localhost:8765`. Mobile may use LAN IP. */
@@ -72,6 +88,10 @@ export interface CardCreatorSettings {
   readonly autoCompleteToggles?: Record<AutoCompletableField, boolean>;
   /** Audio fallback when community = 0/fail (spec §9.3.1). Default 'community-then-tts'. */
   readonly audioFallback?: AudioFallbackStrategy;
+  /** Saved field mappings keyed by note type name (schema v29 — spec
+   *  anki-config-in-settings). Edited in Settings → Card Creator; the Card
+   *  Creator form reads these instead of showing per-field map selects. */
+  readonly fieldMappings?: Record<string, FieldMapping>;
 }
 
 /** Field có thể auto-complete trong Quick Add (spec §9.3.1 — trục content, khác field-map routing). */

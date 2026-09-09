@@ -199,6 +199,8 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
     sentenceTranslation: true,
     sentence: true,
   },
+  // schema v29: per-note-type field mappings (edited in Settings → Card Creator).
+  fieldMappings: {},
   audioFallback: 'community-then-tts',
 };
 
@@ -371,6 +373,8 @@ export const STORAGE_KEYS = {
   OCR_SETTINGS: 'ocrSettings',
   /** Study Modes state (spec media-study-modes.md). */
   STUDY_MODES: 'studyModes',
+  /** Cached Anki schema (decks/models/fields-by-model) — spec anki-config-in-settings. */
+  ANKI_SCHEMA_CACHE: 'ankiSchemaCache',
 } as const;
 
 // === Popup Dimensions ===

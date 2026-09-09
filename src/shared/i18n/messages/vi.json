@@ -239,6 +239,8 @@
   "cardCreator.toast.generate.noMedia": "Không có nguồn media cho từ này.",
   "cardCreator.toast.generate.success": "Đã tạo các media còn thiếu.",
   "cardCreator.toast.generate.empty": "Không có media nào cần tạo.",
+  "cardCreator.dependency.missingSentence": "Nhập câu gốc để tạo $1.",
+  "cardCreator.dependency.missingField": "$1 cần $2 được điền trước.",
   "cardCreator.toast.generateField.success": "Đã tạo $1.",
   "cardCreator.toast.generateField.alreadyFilled": "$1 đã được điền.",
   "cardCreator.toast.generateField.noSource": "Không tìm thấy nguồn cho $1.",
