@@ -1,0 +1,11 @@
+- [ ] Data model: types, config, settingsStore
+- [ ] ankiSchemaCache service + unit tests
+- [ ] cardCreatorPrefetch cache-first + unit tests
+- [ ] useCardCreatorState cache-first + mapping persistence
+- [ ] CardCreatorSettingsPanel wizard + DictionaryPopupSettingsPanel cleanup
+- [ ] Remove map select from FieldRow / CardCreatorDialogContent
+- [ ] Update CardCreatorPanel / webTextDictionaryController
+- [ ] i18n en + vi
+- [ ] Unit tests: settings panel, useCardCreatorState, prefetch, ankiSchemaCache, FieldRow
+- [ ] E2E spec card-creator-anki-config
+- [ ] Pre-commit gate
