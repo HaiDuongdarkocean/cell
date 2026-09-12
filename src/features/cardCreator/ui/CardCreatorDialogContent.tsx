@@ -80,6 +80,7 @@ export function CardCreatorDialogContent({
     generateField,
     generateAll,
     submit,
+    reload,
     clear,
   } = state;
 
@@ -485,10 +486,15 @@ export function CardCreatorDialogContent({
       portalContainer,
     ) : null;
 
+  const handleSettingsClose = (): void => {
+    setSettingsOpen(false);
+    reload();
+  };
+
   const settingsPanel = isPanel && appSettings ? (
     <CardCreatorSettingsSidePanel
       open={settingsOpen}
-      onClose={() => setSettingsOpen(false)}
+      onClose={handleSettingsClose}
       settings={appSettings}
       onChange={onSettingsChange ?? (() => {})}
     />

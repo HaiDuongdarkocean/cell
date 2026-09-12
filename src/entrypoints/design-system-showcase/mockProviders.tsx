@@ -190,6 +190,7 @@ function useMockCardCreatorState(): CardCreatorState {
       generateField: async () => {},
       generateAll: async () => {},
       submit: async () => {},
+      reload: () => {},
       dismissToast: () => {},
     };
   });

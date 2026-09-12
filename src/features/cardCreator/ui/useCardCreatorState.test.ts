@@ -2,6 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useCardCreatorStore } from '@/stores/cardCreatorStore';
 import { useCardCreatorState } from './useCardCreatorState';
+import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { CardCreatorOpenContext } from '../types';
 
@@ -185,5 +186,96 @@ describe('useCardCreatorState resend merge', () => {
     await waitFor(() => expect(useCardCreatorStore.getState().draft.fields.images).toHaveLength(2));
     expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.images)).toEqual(['1', '2']);
     expect(useCardCreatorStore.getState().draft.fields.wordAudios).toHaveLength(1);
+  });
+});
+
+describe('useCardCreatorState settings reload', () => {
+  const prefetchMock = jest.mocked(prefetchAnkiConnectData);
+
+  beforeEach(() => {
+    useCardCreatorStore.getState().reset();
+    prefetchMock.mockReset();
+  });
+
+  it('recovers from a failed initial load when settings change while open', async () => {
+    prefetchMock.mockRejectedValueOnce(new Error('AnkiConnect unreachable'));
+    const { result, rerender } = renderHook(
+      ({ s }) => useCardCreatorState(s, openContext),
+      { initialProps: { s: settings } },
+    );
+    await waitFor(() => expect(result.current.loadStatus).toBe('error'));
+
+    prefetchMock.mockResolvedValue({ decks: ['JP'], models: ['Basic'] });
+    rerender({ s: { ...settings, ankiConnectUrl: 'http://192.168.1.10:8765' } });
+
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    expect(prefetchMock).toHaveBeenLastCalledWith('http://192.168.1.10:8765');
+    expect(useCardCreatorStore.getState().decks).toEqual(['JP']);
+    expect(useCardCreatorStore.getState().draft.fields.targetWord).toBe('book');
+  });
+
+  it('re-resolves deck while preserving user-edited field content', async () => {
+    prefetchMock.mockResolvedValue({ decks: ['Default'], models: ['Basic'] });
+    const { result, rerender } = renderHook(
+      ({ s }) => useCardCreatorState(s, openContext),
+      { initialProps: { s: settings } },
+    );
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    act(() => {
+      result.current.updateField('note', 'user typed');
+    });
+
+    prefetchMock.mockResolvedValue({ decks: ['JP Deck'], models: ['Basic'] });
+    rerender({ s: { ...settings, defaultDeck: 'JP Deck' } });
+
+    await waitFor(() => expect(useCardCreatorStore.getState().draft.deck).toBe('JP Deck'));
+    expect(useCardCreatorStore.getState().draft.fields.note).toBe('user typed');
+  });
+
+  it('does not reload when settings content is unchanged', async () => {
+    prefetchMock.mockResolvedValue({ decks: ['Default'], models: ['Basic'] });
+    const { result, rerender } = renderHook(
+      ({ s }) => useCardCreatorState(s, openContext),
+      { initialProps: { s: settings } },
+    );
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    const callsBefore = prefetchMock.mock.calls.length;
+
+    rerender({ s: { ...settings } });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 500));
+    });
+
+    expect(prefetchMock.mock.calls.length).toBe(callsBefore);
+  });
+
+  it('reload() retries a failed load even when settings are unchanged', async () => {
+    prefetchMock.mockRejectedValueOnce(new Error('AnkiConnect unreachable'));
+    const { result } = renderHook(() => useCardCreatorState(settings, openContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('error'));
+
+    prefetchMock.mockResolvedValue({ decks: ['Default'], models: ['Basic'] });
+    act(() => {
+      result.current.reload();
+    });
+
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    expect(useCardCreatorStore.getState().decks).toEqual(['Default']);
+  });
+
+  it('reload() is a no-op after a successful unchanged load', async () => {
+    prefetchMock.mockResolvedValue({ decks: ['Default'], models: ['Basic'] });
+    const { result } = renderHook(() => useCardCreatorState(settings, openContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    const callsBefore = prefetchMock.mock.calls.length;
+
+    act(() => {
+      result.current.reload();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(prefetchMock.mock.calls.length).toBe(callsBefore);
   });
 });
