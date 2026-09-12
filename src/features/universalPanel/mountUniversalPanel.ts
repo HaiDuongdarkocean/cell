@@ -20,6 +20,7 @@ import { openSettingsSection } from './deepLink';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { resolveProfile, type Settings } from '@/entities/settings';
 import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
@@ -155,9 +156,11 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let dictionaryTargetLang = 'vi';
   let languageProfiles: { readonly id: string; readonly name: string; readonly target: string }[] = [];
   let activeProfileId: string | null = null;
+  let loadedSettings: Settings | null = null;
 
   void loadSettings().then((settings) => {
     if (isUnmounted) return;
+    loadedSettings = settings;
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = dictionarySourceLang;
@@ -223,6 +226,17 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           activeProfileId,
           onProfileChange: (id: string) => {
             activeProfileId = id;
+            // Re-point dictionary/card-creator languages at the new profile
+            // immediately — saveSettings only fixes the flattened fields for
+            // the NEXT load; the mounted panel would otherwise keep looking
+            // up the previous profile's language until remount.
+            const next = loadedSettings?.languageProfiles.find((p) => p.id === id);
+            if (next && loadedSettings) {
+              const resolved = resolveProfile(next, loadedSettings.universalNativeLanguage);
+              dictionarySourceLang = resolved.target;
+              dictionaryTargetLang = resolved.native;
+              dictionaryLangCode = resolved.resourceLangCode;
+            }
             if (!isUnmounted) render();
             void saveSettings({ activeProfileId: id });
           },
