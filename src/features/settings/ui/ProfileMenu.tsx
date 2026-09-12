@@ -18,10 +18,13 @@ export interface ProfileMenuItem {
 /**
  * ProfileMenu — ⋮ trigger + popover action list for one profile card.
  *
- * The popover is portaled to the trigger's ownerDocument.body: section cards
- * clip their children (overflow:hidden for the radius), so an in-tree menu
- * would be cut. ownerDocument (not the global document) keeps it working when
- * the panel is itself portaled into an iframe, as in the design showcase.
+ * The popover is portaled out of its card (section cards clip children with
+ * overflow:hidden), but it must stay inside the same root the trigger lives
+ * in: portaling to `ownerDocument.body` from inside a shadow root (Universal
+ * Panel settings tab) would land the menu in the page's light DOM — unstyled
+ * (module CSS is shadow-scoped) and buried under the panel's z-index.
+ * `getPortalContainer` mirrors `Select`: shadow root → topmost child of that
+ * root; light DOM / portaled iframe → that document's body.
  * Fixed positioning from the trigger rect + flip-up near the viewport bottom
  * keeps every item reachable. Closes on outside click / Escape / scroll.
  */
@@ -35,12 +38,19 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
   useEffect(() => {
     if (!open) return;
     // IMPORTANT: this component may render inside a portaled iframe (showcase)
-    // — always resolve document/window from the trigger's ownerDocument,
-    // never the module-level globals.
-    const doc = triggerRef.current?.ownerDocument ?? document;
+    // or a shadow root (universal panel) — always resolve document/window and
+    // the event scope from the trigger, never the module-level globals.
+    const trigger = triggerRef.current;
+    const doc = trigger?.ownerDocument ?? document;
     const win = doc.defaultView ?? window;
+    const rootNode = trigger?.getRootNode();
+    // Inside a shadow root, a document-level listener only sees the retargeted
+    // host as e.target, so contains() would fail and the menu would close
+    // before any item click lands. Listening on the root scope preserves
+    // real targets in both worlds.
+    const scope: Document | ShadowRoot = rootNode instanceof ShadowRoot ? rootNode : doc;
 
-    const onDocClick = (e: MouseEvent) => {
+    const onDocClick = (e: Event) => {
       const target = e.target as Node;
       if (!wrapRef.current?.contains(target) && !menuRef.current?.contains(target)) {
         setOpen(false);
@@ -54,17 +64,18 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
     };
     // Close on scroll — a fixed popover would detach from its trigger.
     const onScroll = () => setOpen(false);
-    doc.addEventListener('mousedown', onDocClick);
+    scope.addEventListener('mousedown', onDocClick);
     // Shared Escape stack (capture phase): the menu consumes the key before
     // ancestor surfaces (e.g. UniversalPanel) — one Escape, one layer.
     const popEscapeLayer = pushEscapeLayer(onKey, doc);
     win.addEventListener('scroll', onScroll, true);
+    // Scroll events don't cross the shadow boundary — listen on the scope too.
+    if (scope !== doc) scope.addEventListener('scroll', onScroll, true);
     win.addEventListener('resize', onScroll);
 
     // Measure once mounted: right-align to the trigger, flip up when the
     // menu would overflow the viewport bottom.
     const menu = menuRef.current;
-    const trigger = triggerRef.current;
     if (menu && trigger) {
       const tr = trigger.getBoundingClientRect();
       const mr = menu.getBoundingClientRect();
@@ -80,12 +91,30 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
     const first = menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)');
     first?.focus();
     return () => {
-      doc.removeEventListener('mousedown', onDocClick);
+      scope.removeEventListener('mousedown', onDocClick);
       popEscapeLayer();
       win.removeEventListener('scroll', onScroll, true);
+      if (scope !== doc) scope.removeEventListener('scroll', onScroll, true);
       win.removeEventListener('resize', onScroll);
     };
   }, [open]);
+
+  /** Portal target stays inside the trigger's root: shadow root → its topmost
+   *  element (keeps module CSS + z-index context); light DOM → that
+   *  document's body. Same pattern as `Select.getPortalContainer`. */
+  const getPortalContainer = (): Element | DocumentFragment => {
+    const node = wrapRef.current;
+    if (!node) return document.body;
+    const root = node.getRootNode();
+    if (root instanceof ShadowRoot) {
+      let el: Node = node;
+      while (el.parentNode && el.parentNode !== root) {
+        el = el.parentNode;
+      }
+      return el instanceof Element ? el : root;
+    }
+    return (root as Document).body ?? document.body;
+  };
 
   const onMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
@@ -93,7 +122,8 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
     const menuItems = Array.from(
       menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? [],
     );
-    const idx = menuItems.indexOf(document.activeElement as HTMLButtonElement);
+    const activeEl = (menuRef.current?.getRootNode() as Document | ShadowRoot | undefined)?.activeElement;
+    const idx = menuItems.indexOf(activeEl as HTMLButtonElement);
     const next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
     menuItems[(next + menuItems.length) % menuItems.length]?.focus();
   };
@@ -139,7 +169,7 @@ export function ProfileMenu({ label, items }: { label: string; items: ProfileMen
               </button>
             ))}
           </div>,
-          wrapRef.current?.ownerDocument.body ?? document.body,
+          getPortalContainer(),
         )}
     </div>
   );
