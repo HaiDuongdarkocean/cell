@@ -36,6 +36,14 @@ jest.mock('../media/translation', () => ({
   translateSentence: jest.fn(async () => 'translated'),
 }));
 
+jest.mock('../service/dictionaryGenerate', () => ({
+  lookupDictionaryResources: jest.fn(async () => null),
+}));
+
+import { lookupDictionaryResources } from '../service/dictionaryGenerate';
+
+const lookupMock = jest.mocked(lookupDictionaryResources);
+
 const settings: CardCreatorSettings = {
   ankiConnectUrl: 'http://localhost:8765',
   defaultDeck: 'Default',
@@ -127,6 +135,132 @@ describe('useCardCreatorState generateField', () => {
     });
 
     expect(useCardCreatorStore.getState().draft.fields.moreExample).toBe('Example 1.\nExample 2.');
+  });
+});
+
+describe('useCardCreatorState dictionary generate', () => {
+  const noPrefillContext: CardCreatorOpenContext = {
+    sourceLang: 'en',
+    targetLang: 'vi',
+  };
+
+  const lookupSource = {
+    targetWord: 'hello',
+    definitions: '• int. a greeting',
+    wordAudioUrls: ['w.mp3'],
+    sentenceAudioUrls: [],
+    imageUrls: ['i.png'],
+  };
+
+  beforeEach(() => {
+    useCardCreatorStore.getState().reset();
+    lookupMock.mockReset();
+    lookupMock.mockResolvedValue(null);
+  });
+
+  it('generateAll looks up the typed target word and fills definitions + media', async () => {
+    lookupMock.mockResolvedValue(lookupSource);
+    const { result } = renderHook(() => useCardCreatorState(settings, noPrefillContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.updateField('targetWord', 'hello');
+    });
+    await act(async () => {
+      await result.current.generateAll();
+    });
+
+    expect(lookupMock).toHaveBeenCalledWith('hello', 'en', '');
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.definitions).toBe('• int. a greeting');
+    expect(mediaSourceUrls(fields.wordAudios)).toEqual(['w.mp3']);
+    expect(mediaSourceUrls(fields.images)).toEqual(['i.png']);
+    expect(fields.sentenceAudios).toHaveLength(0);
+  });
+
+  it('generateField fills definitions from a live lookup when no prefill exists', async () => {
+    lookupMock.mockResolvedValue(lookupSource);
+    const { result } = renderHook(() => useCardCreatorState(settings, noPrefillContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.updateField('targetWord', 'hello');
+    });
+    await act(async () => {
+      await result.current.generateField('definitions');
+    });
+
+    expect(lookupMock).toHaveBeenCalledWith('hello', 'en', '');
+    expect(useCardCreatorStore.getState().draft.fields.definitions).toBe('• int. a greeting');
+  });
+
+  it('ignores a stale prefill when the target word was changed', async () => {
+    lookupMock.mockResolvedValue(lookupSource);
+    const { result } = renderHook(() => useCardCreatorState(settings, openContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    // Prefill belongs to 'book'; user retypes 'hello' → must not reuse 'book' media.
+    act(() => {
+      result.current.updateField('targetWord', 'hello');
+    });
+    await act(async () => {
+      await result.current.generateField('wordAudios');
+    });
+
+    expect(lookupMock).toHaveBeenCalledWith('hello', 'en', 'This is a sentence.');
+    expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['w.mp3']);
+  });
+
+  it('caches the lookup per term across generate calls', async () => {
+    lookupMock.mockResolvedValue(lookupSource);
+    const { result } = renderHook(() => useCardCreatorState(settings, noPrefillContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.updateField('targetWord', 'hello');
+    });
+    await act(async () => {
+      await result.current.generateField('definitions');
+      await result.current.generateField('wordAudios');
+    });
+
+    expect(lookupMock).toHaveBeenCalledTimes(1);
+    expect(useCardCreatorStore.getState().draft.fields.definitions).toBe('• int. a greeting');
+    expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['w.mp3']);
+  });
+
+  it('warns and fills nothing when the dictionary has no entry', async () => {
+    const { result } = renderHook(() => useCardCreatorState(settings, noPrefillContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.updateField('targetWord', 'zzzzz');
+    });
+    await act(async () => {
+      await result.current.generateAll();
+    });
+
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.definitions).toBe('');
+    expect(fields.wordAudios).toHaveLength(0);
+    const toasts = useCardCreatorStore.getState().toasts;
+    expect(toasts.some((toast) => toast.kind === 'warning' && toast.message.includes('zzzzz'))).toBe(true);
+  });
+
+  it('does not overwrite already-filled fields on generateAll', async () => {
+    lookupMock.mockResolvedValue(lookupSource);
+    const { result } = renderHook(() => useCardCreatorState(settings, noPrefillContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.updateField('targetWord', 'hello');
+      result.current.updateField('definitions', 'user edited');
+    });
+    await act(async () => {
+      await result.current.generateAll();
+    });
+
+    expect(useCardCreatorStore.getState().draft.fields.definitions).toBe('user edited');
   });
 });
 

@@ -209,7 +209,7 @@ export function CardCreatorDialogContent({
             variant="ghost"
             size="sm"
             onClick={() => void generateAll()}
-            disabled={!draft.fields.targetWord.trim()}
+            disabled={!draft.fields.targetWord.trim() || capturingMedia || submitting}
             trailingIcon={<Icon name="zap" size="sm" />}
             data-cell-id="cc-generate-all"
           >
@@ -451,6 +451,29 @@ export function CardCreatorDialogContent({
           </Button>
         </div>
       </div>
+
+      {/* Transient action feedback. Undoable toasts are queue-domain — their
+          undo button lives inside the queue panel, so they are filtered out
+          here to avoid a dead-end duplicate message. */}
+      {toasts.some((toast) => !toast.undoable) && (
+        <div className={styles['cc-toast-stack']} role="status" data-cell-id="cc-toast-stack">
+          {toasts.filter((toast) => !toast.undoable).map((toast) => (
+            <div
+              key={toast.id}
+              className={`${styles['cc-toast']} ${styles[`cc-toast--${toast.kind}`]}`}
+              data-cell-id={`cc-toast-${toast.id}`}
+              data-toast-kind={toast.kind}
+            >
+              <Icon
+                name={toast.kind === 'success' ? 'check' : toast.kind === 'error' ? 'alertCircle' : 'info'}
+                size="sm"
+                className={styles['cc-toast-icon']}
+              />
+              <span>{toast.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 

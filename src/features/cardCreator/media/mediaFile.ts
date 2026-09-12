@@ -82,6 +82,27 @@ const MIME_TO_EXT: Record<string, string> = {
   'audio/mp4': 'm4a',
 };
 
+/** Per-file fetch timeout — a dead URL must not stall the caller forever
+ *  (generate-all disables its button until every fetch settles). */
+const FETCH_TIMEOUT_MS = 15_000;
+
+function timeoutSignal(): AbortSignal | undefined {
+  return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    : undefined;
+}
+
+function withTimeout<T>(p: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`Media fetch timed out after ${FETCH_TIMEOUT_MS}ms`)),
+      FETCH_TIMEOUT_MS,
+    );
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+}
+
 /** Fetch a URL and convert it to a MediaFile.
  *  Used by the popup dictionary bridge to turn selected audio/image URLs
  *  (Forvo, Google Images) into MediaFile entries for the Card Creator draft.
@@ -92,7 +113,7 @@ export async function fetchUrlAsMediaFile(
   kind: MediaKind,
   fetchFn: (input: string, init?: RequestInit) => Promise<Response> = fetch,
 ): Promise<MediaFile> {
-  const response = await fetchFn(url);
+  const response = await fetchFn(url, { signal: timeoutSignal() });
   if (!response.ok) {
     throw new Error(`Media fetch failed: ${response.status} ${url}`);
   }
@@ -127,10 +148,12 @@ function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
 async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<MediaFile> {
   const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
   const { MESSAGE_TYPES } = await import('@/shared/config/messages');
-  const res = await sendMessage<{ success: boolean; data?: { url: string }; error?: string }>({
-    type: MESSAGE_TYPES.FETCH_MEDIA_URL,
-    payload: { tabId: 0, url, kind },
-  });
+  const res = await withTimeout(
+    sendMessage<{ success: boolean; data?: { url: string }; error?: string }>({
+      type: MESSAGE_TYPES.FETCH_MEDIA_URL,
+      payload: { tabId: 0, url, kind },
+    }),
+  );
   if (!res?.success || !res.data?.url) {
     throw new Error(res?.error ?? `Background fetch failed for ${url}`);
   }

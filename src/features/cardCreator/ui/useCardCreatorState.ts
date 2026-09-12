@@ -28,6 +28,7 @@ import { prefetchAnkiConnectData, onAnkiSchemaRefreshed } from '../service/cardC
 import { getModelFields, refreshAnkiSchemaCache } from '../service/ankiSchemaCache';
 import { autoMapFields, type FieldMapping } from '../service/fieldMapping';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { lookupDictionaryResources } from '../service/dictionaryGenerate';
 import {
   DraftAutosaver,
   type CardDraft,
@@ -44,6 +45,7 @@ import { translateSentence } from '../media/translation';
 import type {
   CardCreatorAction,
   CardCreatorOpenContext,
+  CardCreatorPrefill,
   CardCreatorQueueItem,
   Toast,
 } from '../types';
@@ -188,7 +190,8 @@ export interface CardCreatorState {
   translateSentenceField: () => Promise<void>;
   /** Generate resources for a single field (prefill text, cue text, or media URLs). */
   generateField: (key: keyof CardDraft['fields']) => Promise<void>;
-  /** Generate all missing media from the current target word / prefill. */
+  /** Fill all empty generatable fields (definitions + media) for the current
+   *  target word — prefill when it matches, else a live dictionary lookup. */
   generateAll: () => Promise<void>;
   /** Submit: Add (create new) or Update (existing note). */
   submit: (mode: 'add' | 'update') => Promise<void>;
@@ -903,6 +906,37 @@ export function useCardCreatorState(
     }
   }, [updateField]);
 
+  /** Dictionary resources resolved for the current target word, cached per
+   *  `${lang}:${term}` so generateField + generateAll share one lookup. */
+  const dictionarySourceRef = useRef<{ key: string; source: CardCreatorPrefill } | null>(null);
+
+  /** Resolve the data source for generate actions: the open-context prefill
+   *  when it belongs to the current target word, else a live dictionary
+   *  lookup for the typed word (cached per term). */
+  const resolveGenerateSource = useCallback(async (): Promise<CardCreatorPrefill | undefined> => {
+    const ctx = openContextRef.current;
+    if (!ctx) return undefined;
+    const state = useCardCreatorStore.getState();
+    const targetWord = state.draft.fields.targetWord.trim();
+    const prefill = ctx.prefill;
+    // The context prefill only applies to the term it was built for — when the
+    // draft's target word differs (typed manually, another queue item), its
+    // definitions/media would be stale, so the word is looked up instead.
+    const prefillTerm = prefill?.targetWord?.trim();
+    const prefillUsable = !!prefill && (
+      !targetWord
+      || (!!prefillTerm && prefillTerm.toLowerCase() === targetWord.toLowerCase())
+    );
+    if (prefillUsable) return prefill;
+    if (!targetWord) return undefined;
+    const key = `${ctx.sourceLang}:${targetWord.toLowerCase()}`;
+    if (dictionarySourceRef.current?.key === key) return dictionarySourceRef.current.source;
+    const sentence = state.draft.fields.sentence.trim() || ctx.cue?.targetText?.trim() || '';
+    const source = await lookupDictionaryResources(targetWord, ctx.sourceLang, sentence);
+    if (source) dictionarySourceRef.current = { key, source };
+    return source ?? undefined;
+  }, []);
+
   /** Generate resources for a single field from prefill/cue data.
    *  Skips if the field is already filled (so user edits are not overwritten).
    *  Best-effort: failed media URLs are skipped with a toast. */
@@ -977,14 +1011,12 @@ export function useCardCreatorState(
         break;
       }
       case 'definitions':
-        trySetTextField('definitions', prefill?.definitions?.trim() ?? '');
-        break;
       case 'note':
-        trySetTextField('note', prefill?.note?.trim() ?? '');
+      case 'moreExample': {
+        const source = await resolveGenerateSource();
+        trySetTextField(key, source?.[key]?.trim() ?? '');
         break;
-      case 'moreExample':
-        trySetTextField('moreExample', prefill?.moreExample?.trim() ?? '');
-        break;
+      }
       case 'images':
       case 'sentenceAudios':
       case 'wordAudios': {
@@ -992,8 +1024,9 @@ export function useCardCreatorState(
           store().pushToast('warning', t('cardCreator.toast.generateField.alreadyFilled', [fieldLabel]));
           break;
         }
+        const source = await resolveGenerateSource();
         const urlKey = mediaUrlMap[key];
-        const urls = prefill?.[urlKey] ?? [];
+        const urls = source?.[urlKey] ?? [];
         if (urls.length === 0) {
           store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [fieldLabel]));
           break;
@@ -1027,74 +1060,94 @@ export function useCardCreatorState(
       default:
         break;
     }
-  }, [translateSentenceField, updateField]);
+  }, [resolveGenerateSource, translateSentenceField, updateField]);
 
-  /** Re-fetch prefill media for any media list that is still empty.
-   *  Best-effort: failed URLs are skipped with a toast. */
+  /** Fill every empty generatable field (definitions + media) for the current
+   *  target word — from the open-context prefill when it matches the word,
+   *  else from a live dictionary lookup. Best-effort: failed URLs are
+   *  skipped with a toast; already-filled fields are never overwritten. */
   const generateAll = useCallback(async () => {
     const ctx = openContextRef.current;
     if (!ctx) return;
-    const targetWord = useCardCreatorStore.getState().draft.fields.targetWord.trim();
+    const store = () => useCardCreatorStore.getState();
+    const targetWord = store().draft.fields.targetWord.trim();
     if (!targetWord) {
-      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
+      store().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
       return;
     }
-    const prefill = ctx.prefill;
-    const hasUrls = (prefill?.wordAudioUrls?.length ?? 0) > 0
-      || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
-      || (prefill?.imageUrls?.length ?? 0) > 0;
-    if (!hasUrls) {
-      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.noMedia'));
-      return;
-    }
-    useCardCreatorStore.getState().setCapturingMedia(true);
-    const fetchedWordAudios: MediaFile[] = [];
-    const fetchedSentenceAudios: MediaFile[] = [];
-    const fetchedImages: MediaFile[] = [];
-    const current = useCardCreatorStore.getState().draft.fields;
-    if (current.wordAudios.length === 0) {
-      for (const audioUrl of prefill?.wordAudioUrls ?? []) {
-        try {
-          fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-        } catch {
-          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
+    store().setCapturingMedia(true);
+    try {
+      const source = await resolveGenerateSource();
+      // A source that resolves but carries no data at all (empty/fallback
+      // entry, no media URLs) means the dictionary effectively has nothing
+      // for this term — report it like a missing entry rather than
+      // "nothing missing".
+      const hasSourceData = !!source && (
+        !!source.definitions?.trim() ||
+        (source.wordAudioUrls?.length ?? 0) > 0 ||
+        (source.sentenceAudioUrls?.length ?? 0) > 0 ||
+        (source.imageUrls?.length ?? 0) > 0
+      );
+      if (!source || !hasSourceData) {
+        store().pushToast('warning', t('cardCreator.toast.generate.notFound', [targetWord]));
+        return;
+      }
+      let filled = false;
+      const current = store().draft.fields;
+      if (!current.definitions.trim() && source.definitions?.trim()) {
+        updateField('definitions', source.definitions);
+        filled = true;
+      }
+      const fetchedWordAudios: MediaFile[] = [];
+      const fetchedSentenceAudios: MediaFile[] = [];
+      const fetchedImages: MediaFile[] = [];
+      if (current.wordAudios.length === 0) {
+        for (const audioUrl of source.wordAudioUrls ?? []) {
+          try {
+            fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
+          } catch {
+            store().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
+          }
         }
       }
-    }
-    if (current.sentenceAudios.length === 0) {
-      for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
-        try {
-          fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-        } catch {
-          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
+      if (current.sentenceAudios.length === 0) {
+        for (const audioUrl of source.sentenceAudioUrls ?? []) {
+          try {
+            fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
+          } catch {
+            store().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
+          }
         }
       }
-    }
-    if (current.images.length === 0) {
-      for (const imageUrl of prefill?.imageUrls ?? []) {
-        try {
-          fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
-        } catch {
-          useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
+      if (current.images.length === 0) {
+        for (const imageUrl of source.imageUrls ?? []) {
+          try {
+            fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
+          } catch {
+            store().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
+          }
         }
       }
+      if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
+        store().setDraft((prev) => ({
+          ...prev,
+          fields: {
+            ...prev.fields,
+            wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
+            sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
+            images: [...prev.fields.images, ...fetchedImages],
+          },
+        }));
+        filled = true;
+      }
+      store().pushToast(
+        filled ? 'success' : 'warning',
+        t(filled ? 'cardCreator.toast.generate.success' : 'cardCreator.toast.generate.empty'),
+      );
+    } finally {
+      store().setCapturingMedia(false);
     }
-    if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
-      useCardCreatorStore.getState().setDraft((prev) => ({
-        ...prev,
-        fields: {
-          ...prev.fields,
-          wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
-          sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
-          images: [...prev.fields.images, ...fetchedImages],
-        },
-      }));
-      useCardCreatorStore.getState().pushToast('success', t('cardCreator.toast.generate.success'));
-    } else {
-      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.generate.empty'));
-    }
-    useCardCreatorStore.getState().setCapturingMedia(false);
-  }, []);
+  }, [resolveGenerateSource, updateField]);
 
   /** Retry the caller once after a schema refresh if the error looks like a
    *  missing deck or note type. */
