@@ -320,7 +320,7 @@ export class OcrSession {
       if (result.status === 'drm_detected') {
         // Stop OCR — DRM-protected content.
         document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
-        this.stop();
+        void this.stop();
         return;
       }
 

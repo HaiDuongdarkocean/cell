@@ -264,7 +264,7 @@ export function CardCreatorSettingsPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleTest}
+              onClick={() => { void handleTest(); }}
               disabled={status === 'testing'}
               aria-label={t('cardCreator.settings.test.againAria')}
               data-cell-id="cc-test-again-button"
@@ -280,7 +280,7 @@ export function CardCreatorSettingsPanel({
             <Select
               id="cc-note-type"
               value={noteType}
-              onChange={handleNoteTypeChange}
+              onChange={(v) => { void handleNoteTypeChange(v); }}
               options={models.map((m) => ({ value: m, label: m }))}
               placeholder={t('cardCreator.settings.noteTypePlaceholder')}
               disabled={models.length === 0}

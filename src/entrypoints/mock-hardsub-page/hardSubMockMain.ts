@@ -134,7 +134,7 @@ function main(): void {
   }
 
   playBtn.addEventListener('click', () => {
-    video.play();
+    void video.play();
     if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
       video.requestVideoFrameCallback(renderFrame);
     }

@@ -151,7 +151,7 @@ export function CandidateView({
               className={styles.cellHeaderSend}
               aria-label={t('dict.action.sendToCard')}
               title={t('dict.action.sendToCard')}
-              onClick={panel.sendToCard}
+              onClick={() => { void panel.sendToCard(); }}
               data-cell-id="dictionary-send-to-card"
             >
               <Icon name="pencil"  />
@@ -164,7 +164,7 @@ export function CandidateView({
                 className={styles.cellHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}
                 title={t('dict.action.quickAdd')}
-                onClick={panel.quickAdd}
+                onClick={() => { void panel.quickAdd(); }}
                 data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
@@ -274,7 +274,7 @@ export function CandidateView({
             loading={panel.isTranslating}
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
-            onTranslate={panel.translate}
+            onTranslate={() => { void panel.translate(); }}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

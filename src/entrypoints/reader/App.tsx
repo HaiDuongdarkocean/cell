@@ -296,7 +296,7 @@ export function ReaderApp(): React.JSX.Element {
               type="file"
               accept=".txt,text/plain"
               hidden
-              onChange={handleFileChange}
+              onChange={(e) => { void handleFileChange(e); }}
             />
             <Button onClick={() => fileInputRef.current?.click()}>Import TXT</Button>
           </>
@@ -315,7 +315,7 @@ export function ReaderApp(): React.JSX.Element {
                 <li
                   key={book.id}
                   className={styles.bookItem}
-                  onClick={() => handleOpen(book)}
+                  onClick={() => { void handleOpen(book); }}
                 >
                   <span className={styles.bookTitle}>{book.title}</span>
                   <span className={styles.bookMeta}>

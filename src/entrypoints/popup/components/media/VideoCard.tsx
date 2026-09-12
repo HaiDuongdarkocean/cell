@@ -192,7 +192,7 @@ export function VideoCard({
             size="xs"
             className={styles.copyBtn}
             leadingIcon={<Icon name="copy"  />}
-            onClick={handleUrlClick}
+            onClick={(e) => { void handleUrlClick(e); }}
             data-cell-id="video-url"
             title="Click to copy URL"
             aria-label="Copy URL"

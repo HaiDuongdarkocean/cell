@@ -136,7 +136,7 @@ export class DraftAutosaver {
   schedule(draft: CardDraft): void {
     this.pending = draft;
     if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.flush(), AUTOSAVE_DEBOUNCE_MS);
+    this.timer = setTimeout(() => { void this.flush(); }, AUTOSAVE_DEBOUNCE_MS);
   }
 
   /** Save immediately (cancel any pending debounce). */

@@ -125,7 +125,7 @@ export function PronunciationPanel({
               size="sm"
               active={activeIndex === idx}
               className={`${styles.phoneme} ${isStress ? styles.phonemeStress : ''}`}
-              onClick={() => handleClick(phoneme, idx)}
+              onClick={() => { void handleClick(phoneme, idx); }}
               aria-label={`Phoneme ${phoneme.ipa}`}
               data-cell-id="pronunciation-phoneme"
             >

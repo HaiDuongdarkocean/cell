@@ -43,20 +43,17 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.OCR_INIT, async (request): Promise<MessageResponse<OcrInitResult>> => {
     try {
       console.log('[OCR_BG] OCR_INIT received, ensuring offscreen...');
-      try { chrome.storage.local.set({ __ocrBgStep: '1-ensuring-offscreen@' + Date.now() }); } catch {}
       await Promise.race([
         ctx.offscreenManager.ensureOffscreenReady(),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('ensureOffscreenReady timeout (10s)')), 10000)),
       ]);
       console.log('[OCR_BG] offscreen ready, sending OCR_INIT');
-      try { chrome.storage.local.set({ __ocrBgStep: '2-offscreen-ready@' + Date.now() }); } catch {}
       const payload = request.payload as OcrInitPayload;
       console.log('[OCR_BG] sending OCR_INIT to offscreen', payload);
       // Use _OFFSCREEN_OCR_INIT type to avoid loopback — background handler only
       // listens for OCR_INIT, not _OFFSCREEN_OCR_INIT. The offscreen listener
       // (ffmpegRunner.ts) handles both types.
       // Add 180s timeout — model download from Baidu CDN can be slow on first run.
-      try { chrome.storage.local.set({ __ocrBgStep: '3-sending-offscreen-init@' + Date.now() }); } catch {}
       const response = await Promise.race([
         sendMessage<{ status: string; backend: OcrBackend; error?: string }>({
           type: '_OFFSCREEN_OCR_INIT' as unknown as typeof MESSAGE_TYPES.OCR_INIT,
@@ -65,17 +62,12 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_INIT timeout (30s) — offscreen did not respond, possible CSP/WASM init failure')), 30000)),
       ]);
       console.log('[OCR_BG] offscreen response:', JSON.stringify(response));
-      // Store debug info in chrome.storage.local for content script to read.
-      try {
-        chrome.storage.local.set({ __ocrBgDebug: { response, timestamp: Date.now() } });
-      } catch {}
       if (response?.status === 'ready') {
         return { success: true, data: { status: 'ready', backend: response.backend } };
       }
       return { success: false, error: response?.error ?? 'OCR init failed' };
     } catch (e) {
       console.error('[OCR_BG] OCR_INIT error:', e);
-      try { chrome.storage.local.set({ __ocrBgDebug: { error: String(e), timestamp: Date.now() } }); } catch {}
       return { success: false, error: `OCR_INIT failed: ${String(e)}` };
     }
   });

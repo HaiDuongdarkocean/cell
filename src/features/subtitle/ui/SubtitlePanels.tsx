@@ -334,7 +334,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
       let cancelled = false;
       const serialized = serializeManagerState(manager, offset, !generateNativeEnabled);
-      requestManagerOpenOnHost(serialized).then((ok) => {
+      void requestManagerOpenOnHost(serialized).then((ok) => {
         if (cancelled) return;
         if (ok) setManagerOpenOnHost(true);
         // If !ok, fallback: don't set managerOpenOnHost, render in-iframe as normal
@@ -1362,7 +1362,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onForward={onForward}
             onPlayPause={onPlayPause}
             onToggleCollapsed={handleToggleCollapsed}
-            onExit={handleTogglePlayerMode}
+            onExit={() => { void handleTogglePlayerMode(); }}
             cues={cues as BilingualCue[]}
             currentTimeMs={currentTimeMs}
             offsetMs={offsetMs}
@@ -1420,7 +1420,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             sidePanelLabel={splitViewOpen ? 'Close subtitle list' : 'Open subtitle list'}
             toolsExpanded={toolsExpanded}
             onToggleTools={() => setToolsExpanded((v) => !v)}
-            onTogglePlayerMode={handleTogglePlayerMode}
+            onTogglePlayerMode={() => { void handleTogglePlayerMode(); }}
             playerMode={playerMode}
           />
         )}

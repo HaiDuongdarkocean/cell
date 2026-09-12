@@ -45,7 +45,7 @@ export default function PronunciationShowcase() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <button type="button" onClick={playWord}>
+      <button type="button" onClick={() => { void playWord(); }}>
         Play eSpeak word
       </button>
       {error && <div style={{ color: 'red' }}>{error}</div>}

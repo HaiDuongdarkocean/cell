@@ -114,7 +114,7 @@ export function LocalPronunciationSettingsPanel({
 
       <SettingsRow dense>
         <span className={styles.rowLabel}>Lingvo DSL index</span>
-        <Button onClick={pickDsl}>
+        <Button onClick={() => { void pickDsl(); }}>
           {local.dslFileHandleId ? 'Change .dsl file' : 'Choose .dsl file'}
         </Button>
       </SettingsRow>
@@ -122,7 +122,7 @@ export function LocalPronunciationSettingsPanel({
       {local.packageType === 'single' ? (
         <SettingsRow dense>
           <span className={styles.rowLabel}>Audio archive</span>
-          <Button onClick={pickArchive}>
+          <Button onClick={() => { void pickArchive(); }}>
             {local.audioArchiveHandleId ? 'Change .zip' : 'Choose .dsl.files.zip'}
           </Button>
         </SettingsRow>
@@ -130,7 +130,7 @@ export function LocalPronunciationSettingsPanel({
         <>
           <SettingsRow dense>
             <span className={styles.rowLabel}>Split zip directory</span>
-            <Button onClick={pickSplitDirectory}>
+            <Button onClick={() => { void pickSplitDirectory(); }}>
               {local.splitArchiveDirectoryHandleId ? 'Change directory' : 'Choose split zip directory'}
             </Button>
           </SettingsRow>
@@ -148,7 +148,7 @@ export function LocalPronunciationSettingsPanel({
 
       <SettingsRow dense>
         <span className={styles.rowLabel}>Index build</span>
-        <Button onClick={buildIndex} disabled={!local.dslFileHandleId}>
+        <Button onClick={() => { void buildIndex(); }} disabled={!local.dslFileHandleId}>
           Build index
         </Button>
       </SettingsRow>

@@ -27,6 +27,7 @@ export function onMessage(
   ) => boolean | Promise<unknown> | void,
 ): void {
   if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- adapter contract intentionally tolerates Promise returns; Chrome ignores them
   chrome.runtime.onMessage.addListener(callback);
 }
 

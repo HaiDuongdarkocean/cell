@@ -214,7 +214,7 @@ export function OcrSettingsPanel({
           />
           <Toggle
             checked={enabled}
-            onChange={handleToggle}
+            onChange={(enabled) => { void handleToggle(enabled); }}
             ariaLabel="Toggle OCR for this site"
             dataTestId="ocr-toggle"
             size="sm"

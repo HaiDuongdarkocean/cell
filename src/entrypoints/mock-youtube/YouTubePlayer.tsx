@@ -106,7 +106,7 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
   const togglePlay = useCallback(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play(); else v.pause();
+    if (v.paused) void v.play(); else v.pause();
   }, []);
 
   const toggleMute = useCallback(() => {
@@ -130,8 +130,8 @@ export function YouTubePlayer({ mp4, cues, title }: YouTubePlayerProps): ReactEl
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen();
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void el.requestFullscreen();
   }, []);
 
   const toggleCc = useCallback(() => {

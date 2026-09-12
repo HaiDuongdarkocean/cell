@@ -74,7 +74,7 @@ function TestHarness() {
   const { ready, session, finished, start } = useSrsStudy();
 
   useEffect(() => {
-    start();
+    void start();
   }, [start]);
 
   if (!ready) return <div data-cell-id="loading">loading</div>;
@@ -160,13 +160,13 @@ describe('SrsStudyProvider', () => {
       const { ready, session, finished, error, start, submit } = useSrsStudy();
 
       useEffect(() => {
-        start();
+        void start();
       }, [start]);
 
       if (error) return <div data-cell-id="error">{error}</div>;
       if (!ready || !session) return <div data-cell-id={finished ? 'finished' : 'loading'}>{finished ? 'finished' : 'loading'}</div>;
       return (
-        <button data-cell-id="session" onClick={() => submit('remember')}>
+        <button data-cell-id="session" onClick={() => { void submit('remember'); }}>
           {session.componentType}
         </button>
       );

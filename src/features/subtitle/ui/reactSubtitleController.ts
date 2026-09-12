@@ -213,7 +213,7 @@ export class ReactSubtitleController {
 
   private loadPersistedOffset(): void {
     try {
-      loadSettings().then((settings) => {
+      void loadSettings().then((settings) => {
         if (this.destroyed) return;
         const persisted = settings.subtitleOffset?.[this.offsetKey];
         if (typeof persisted === 'number' && !Number.isNaN(persisted)) {

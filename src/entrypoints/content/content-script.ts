@@ -710,7 +710,7 @@ function ensureUniversalPanelMount(): UniversalPanelMountController {
           else if (key === 'subtitleEnabled') void toggleSubtitleTokenize();
         },
         onOpenDictionary: () => {
-          universalPanelMount?.open('dictionary');
+          void universalPanelMount?.open('dictionary');
         },
         subscribe: (cb) => {
           panelNotify = cb;

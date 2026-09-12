@@ -44,6 +44,21 @@ export default tseslint.config(
 
   // TypeScript recommended (type-checked)
   ...tseslint.configs.recommended,
+  // Type-aware promise rules on src/ + tests/ only — MV3 async code paths
+  // (SW lifecycle, messaging, offscreen) are the audit's highest-risk area.
+  // Scoped so non-project files (e2e, scripts, *.cjs) aren't parsed for types.
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'tests/**/*.ts', 'tests/**/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
 
   // React
   {

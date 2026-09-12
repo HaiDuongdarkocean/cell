@@ -143,7 +143,7 @@ export function App() {
     const unsubTabUpdated = addOnTabUpdatedListener(onUpdated);
 
     // Initial sync: resolve active content tab + fetch its cached cues.
-    (async () => {
+    void (async () => {
       const tabId = await getActiveContentTabId();
       if (cancelled) return;
       void syncActiveTab(tabId);

@@ -330,7 +330,7 @@ describe('Background integration', () => {
 
   it('starts the networkInterceptor and messageBus on init when active', () => {
     expect(mockChrome.webRequest.onBeforeRequest.addListener).toHaveBeenCalledTimes(1);
-    expect(mockChrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(2);
+    expect(mockChrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(1);
   });
 
   it('loads settings from storage and applies maxConcurrent to the queue', () => {

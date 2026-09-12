@@ -392,7 +392,7 @@ describe('contentScriptController', () => {
     expect(onMessageCallbacks.length).toBeGreaterThanOrEqual(1);
 
     const onRuntimeMessage = onMessageCallbacks[0];
-    onRuntimeMessage(
+    void onRuntimeMessage(
       {
         type: MESSAGE_TYPES.APPLY_STUDY_MODE,
         payload: { activeMode: fakeStudyMode, advanced: fakeAdvanced },
@@ -472,7 +472,7 @@ describe('contentScriptController', () => {
     await flushPromises();
 
     const onRuntimeMessage2 = onMessageCallbacks[1];
-    onRuntimeMessage2(
+    void onRuntimeMessage2(
       {
         type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
         payload: { tabId: 1, target: null, native: null },
@@ -507,7 +507,7 @@ describe('contentScriptController', () => {
     blockController.loadBilingualCues.mockClear();
 
     const onRuntimeMessage2 = onMessageCallbacks[1];
-    onRuntimeMessage2(
+    void onRuntimeMessage2(
       {
         type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
         payload: { tabId: 1, target: { url: 'https://example.com/target.srt', language: 'en', format: 'srt' }, native: null },
@@ -693,7 +693,7 @@ describe('contentScriptController', () => {
     await flushPromises();
 
     const onRuntimeMessage = onMessageCallbacks[0];
-    onRuntimeMessage(
+    void onRuntimeMessage(
       {
         type: MESSAGE_TYPES.SEEK_TO,
         payload: { timeMs: 12345 },

@@ -1125,13 +1125,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       dragHint.classList.remove('subtitle-drag-hint--visible');
     }
   });
-  container.addEventListener('drop', async (e) => {
+  container.addEventListener('drop', (e) => {
     e.preventDefault();
     dragCounter = 0;
     dragHint.classList.remove('subtitle-drag-hint--visible');
     const files = Array.from(e.dataTransfer?.files ?? []);
     if (files.length === 0) return;
-    await processImportedFiles(files, container);
+    void processImportedFiles(files, container);
   });
 
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===

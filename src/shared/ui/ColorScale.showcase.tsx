@@ -47,7 +47,7 @@ function SwatchCircle({ s }: { s: Swatch }): ReactElement {
       ref={ref}
       type="button"
       className={styles.swatch}
-      onClick={handleClick}
+      onClick={() => { void handleClick(); }}
       aria-label={`Copy ${hex || s.token}`}
       title={s.token}
     >
