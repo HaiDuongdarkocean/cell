@@ -21,7 +21,15 @@ import {
 } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
-import { handleShortcutKey, toggleOverlayState, seekVideo, handleAutoLoadSubtitles } from '@/features/subtitle';
+import {
+  handleShortcutKey,
+  toggleOverlayState,
+  seekVideo,
+  handleAutoLoadSubtitles,
+  isActivatableTarget,
+  isInsideCellUi,
+  isEditableEvent,
+} from '@/features/subtitle';
 import type { AutoLoadSubtitlesPayload } from '@/entities/message';
 import type { AutoLoadDeps } from '@/features/subtitle/logic/subtitleAutoLoad';
 
@@ -95,6 +103,7 @@ jest.mock('@/features/subtitle', () => ({
   isEditableTarget: jest.fn().mockReturnValue(false),
   isEditableEvent: jest.fn().mockReturnValue(false),
   isInsideCellUi: jest.fn().mockReturnValue(false),
+  isActivatableTarget: jest.fn().mockReturnValue(false),
   formatSubtitleName: jest.fn().mockReturnValue('Subtitle'),
   seekVideo: jest.fn(),
   playVideo: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
@@ -171,6 +180,9 @@ const mockLoadSettings = jest.mocked(loadSettings);
 const mockLoadTokenizeSettings = jest.mocked(loadTokenizeSettings);
 const mockIsSubtitleTokenizeEnabledForUrl = jest.mocked(isSubtitleTokenizeEnabledForUrl);
 const mockHandleShortcutKey = jest.mocked(handleShortcutKey);
+const mockIsActivatableTarget = jest.mocked(isActivatableTarget);
+const mockIsInsideCellUi = jest.mocked(isInsideCellUi);
+const mockIsEditableEvent = jest.mocked(isEditableEvent);
 const mockHandleAutoLoadSubtitles = jest.mocked(handleAutoLoadSubtitles);
 
 type OnMessageCallback = (
@@ -255,6 +267,11 @@ describe('contentScriptController', () => {
   beforeEach(() => {
     jest.useRealTimers();
     jest.clearAllMocks();
+
+    mockIsInsideCellUi.mockReturnValue(false);
+    mockIsEditableEvent.mockReturnValue(false);
+    mockIsActivatableTarget.mockReturnValue(false);
+    mockHandleShortcutKey.mockReturnValue(null);
 
     onMessageCallbacks = [];
     onStorageChangedCallback = undefined;
@@ -538,6 +555,137 @@ describe('contentScriptController', () => {
 
     cleanup!();
     cleanupCalled = true;
+  });
+
+  describe('keyboard event routing inside Cell UI', () => {
+    beforeEach(() => {
+      mockIsInsideCellUi.mockReturnValue(true);
+      mockIsEditableEvent.mockReturnValue(false);
+      mockIsActivatableTarget.mockReturnValue(false);
+      mockHandleShortcutKey.mockReturnValue(null);
+    });
+
+    afterEach(() => {
+      mockIsInsideCellUi.mockReturnValue(false);
+      mockIsEditableEvent.mockReturnValue(false);
+      mockIsActivatableTarget.mockReturnValue(false);
+    });
+
+    it('non-input inside Cell UI still triggers a configured shortcut and stops host', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockHandleShortcutKey.mockReturnValue('toggle-overlay' as ReturnType<typeof handleShortcutKey>);
+      blockController.updateSettings.mockClear();
+      blockController.syncHiddenState.mockClear();
+
+      const event = new KeyboardEvent('keydown', { key: 'w', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).toHaveBeenCalled();
+      expect(toggleOverlayState).toHaveBeenCalled();
+      expect(stopSpy).toHaveBeenCalled();
+      expect(preventSpy).toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('typing in an input inside Cell UI does not trigger shortcuts or stop the event', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockIsEditableEvent.mockReturnValue(true);
+      mockHandleShortcutKey.mockReturnValue('toggle-overlay' as ReturnType<typeof handleShortcutKey>);
+
+      const event = new KeyboardEvent('keydown', { key: 'c', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).not.toHaveBeenCalled();
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('unhandled key inside Cell UI stops host without preventDefault', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      const event = new KeyboardEvent('keydown', { key: 'x', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(stopSpy).toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('Enter on a focused activatable control remains available', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockIsActivatableTarget.mockReturnValue(true);
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).not.toHaveBeenCalled();
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('keyup inside Cell UI editable does not trigger shortcuts', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockIsEditableEvent.mockReturnValue(true);
+
+      const event = new KeyboardEvent('keyup', { key: 'c', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).not.toHaveBeenCalled();
+      expect(stopSpy).not.toHaveBeenCalled();
+      expect(preventSpy).not.toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
+
+    it('keyup configured shortcut inside Cell UI stops without re-executing', async () => {
+      cleanup = init(video);
+      await flushPromises();
+
+      mockHandleShortcutKey.mockReturnValue('toggle-overlay' as ReturnType<typeof handleShortcutKey>);
+
+      const event = new KeyboardEvent('keyup', { key: 'w', bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(event, 'stopImmediatePropagation');
+      const preventSpy = jest.spyOn(event, 'preventDefault');
+      document.body.dispatchEvent(event);
+
+      expect(mockHandleShortcutKey).toHaveBeenCalled();
+      expect(toggleOverlayState).not.toHaveBeenCalled();
+      expect(stopSpy).toHaveBeenCalled();
+      expect(preventSpy).toHaveBeenCalled();
+
+      cleanup!();
+      cleanupCalled = true;
+    });
   });
 
   it('onMessage SEEK_TO seeks the video with offset', async () => {
