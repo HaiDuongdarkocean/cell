@@ -23,7 +23,11 @@ import { Toggle } from '@/shared/ui/Toggle';
 import { Label } from '@/shared/ui/Label';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
 import { isShortcutConflict } from '@/entities/settings/lib/shortcutConflicts';
+import { getActiveProfileSettings } from '@/entities/settings';
 import { LanguageProfilePanel } from './LanguageProfilePanel';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { Icon } from '@/shared/ui/Icon';
+import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { HintIcon } from '@/shared/ui/HintIcon';
 import { Card } from '@/shared/ui/Card';
@@ -120,6 +124,7 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
 
   const navOrientation = containerWidth < BREAKPOINTS.medium ? 'horizontal' : 'vertical';
   const sidebarExpanded = containerWidth >= BREAKPOINTS.expanded;
+  const activeProfile = getActiveProfileSettings(settings);
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     onChange({ ...settings, [key]: value });
@@ -689,11 +694,34 @@ export function SettingsDialogContent({ settings, onChange, className, showSideb
                 <Text as="p" color="secondary" className={styles.cardDesc}>Import and manage dictionaries and frequency lists.</Text>
               </div>
               <VStack gap="0" className={styles.cardBody}>
-                <ResourcesPanel
-                  langCode={settings.subtitleOverlayTargetLanguage || 'en'}
-                  frequencyBands={settings.frequencyBands}
-                  onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
-                />
+                {settings.languageProfiles.length === 0 ? (
+                  <EmptyState
+                    size="compact"
+                    icon={<Icon name="languages" size="lg" />}
+                    title={t('settings.resources.noProfile.title')}
+                    description={t('settings.resources.noProfile.desc')}
+                    action={
+                      <Button
+                        type="button"
+                        size="sm"
+                        data-cell-id="resources-goto-profiles"
+                        onClick={() => {
+                          setActiveSection('languageProfile');
+                          sectionRefs.current.languageProfile?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                      >
+                        {t('settings.resources.noProfile.cta')}
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <ResourcesPanel
+                    langCode={activeProfile?.resourceLangCode ?? settings.subtitleOverlayTargetLanguage ?? 'en'}
+                    activeProfileId={activeProfile?.id ?? null}
+                    frequencyBands={settings.frequencyBands}
+                    onFrequencyBandsChange={(bands) => update('frequencyBands', bands)}
+                  />
+                )}
               </VStack>
             </Card>
 

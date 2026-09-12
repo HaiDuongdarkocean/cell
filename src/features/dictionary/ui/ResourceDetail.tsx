@@ -2,7 +2,7 @@
 //
 // Lazy-loads on mount (the card only renders this when expanded):
 //   - ~10 sample entries (term + reading | term + rank)
-//   - language profiles for the "Hồ sơ áp dụng" multi-select (≥2 profiles)
+//   - language profiles for the "Hồ sơ áp dụng" multi-select (≥1 profile)
 // Inline "Thử tra từ" lookup runs find*Entry against this resource only.
 
 import { useEffect, useState, type ReactElement } from 'react';
@@ -106,7 +106,9 @@ export function ResourceDetail({ resource, onChanged }: ResourceDetailProps): Re
     }
   };
 
-  const showProfiles = profiles != null && profiles.length >= 2;
+  // Show the picker whenever profiles exist — a single-profile user still
+  // needs to see (and can widen) the resource's profile binding.
+  const showProfiles = profiles != null && profiles.length >= 1;
 
   return (
     <div className={styles.detail} data-cell-id={`resource-detail-${resourceId}`}>

@@ -98,10 +98,24 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
     const remaining = settings.languageProfiles.filter((p) => p.id !== id);
     const nextActive =
       settings.activeProfileId === id ? (remaining[0]?.id ?? null) : settings.activeProfileId;
+    // The SRS slice keeps its own profile pointer — clear the active SRS
+    // ids when they reference the deleted profile so first-run doesn't
+    // resolve to a collection whose profile no longer exists.
+    const srs = settings.srs?.activeLanguageProfileId === id
+      ? {
+          ...settings.srs,
+          activeLanguageProfileId: nextActive,
+          activeCollectionId: null,
+          activeDeckId: null,
+          activeNotetypeId: null,
+          defaultStudyConfigId: null,
+        }
+      : settings.srs;
     onChange({
       ...settings,
       languageProfiles: recomputeOrder(remaining),
       activeProfileId: nextActive,
+      srs,
     });
     if (form?.mode === 'edit' && form.id === id) setForm(null);
   };
@@ -141,7 +155,6 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
       subtitleOverlayAutoTranslate:
         base?.subtitleOverlayAutoTranslate ?? DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
       dictionaryPopup: base?.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
-      resourceIds: base?.resourceIds ?? [],
     };
     onChange({
       ...settings,

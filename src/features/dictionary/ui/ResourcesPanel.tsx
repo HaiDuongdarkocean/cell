@@ -22,6 +22,7 @@ import {
   importResourceFile as importFile,
   deleteResource as deleteResourceCascade,
   reorderResources,
+  setResourceProfiles,
 } from '@/features/dictionary/services/resourceClient';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
 import type { ReadableFile } from '@/features/dictionary/logic/fileDetector';
@@ -38,8 +39,10 @@ const SUCCESS_DISMISS_MS = 4000;
 
 interface ResourcesPanelProps {
   readonly langCode: string;
-  /** Optional allow-list of resource IDs to display for the active language profile. */
-  readonly resourceIds?: readonly number[];
+  /** Active language profile id. When set, the list is filtered to resources
+   *  usable by that profile (`profileIds` empty = all profiles) and imports
+   *  are auto-scoped to it. Omit to show/manage everything. */
+  readonly activeProfileId?: string | null;
   /** Settings.frequencyBands — wired through SettingsDialogContent. */
   readonly frequencyBands?: FrequencyBandThresholds;
   readonly onFrequencyBandsChange?: (bands: FrequencyBandThresholds) => void;
@@ -242,7 +245,7 @@ function ResourceSection({
   );
 }
 
-export function ResourcesPanel({ langCode, resourceIds, frequencyBands, onFrequencyBandsChange }: ResourcesPanelProps): ReactElement {
+export function ResourcesPanel({ langCode, activeProfileId, frequencyBands, onFrequencyBandsChange }: ResourcesPanelProps): ReactElement {
   const [resources, setResources] = useState<ResourceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [importStates, setImportStates] = useState<Record<ResourceType, ImportState>>({
@@ -257,8 +260,8 @@ export function ResourcesPanel({ langCode, resourceIds, frequencyBands, onFreque
     setLoading(true);
     try {
       const list = await listResources(langCode);
-      const filtered = resourceIds && resourceIds.length > 0
-        ? list.filter((r) => r.id != null && resourceIds.includes(r.id))
+      const filtered = activeProfileId
+        ? list.filter((r) => !r.profileIds?.length || r.profileIds.includes(activeProfileId))
         : list;
       setResources(filtered);
     } catch (e) {
@@ -269,7 +272,7 @@ export function ResourcesPanel({ langCode, resourceIds, frequencyBands, onFreque
     } finally {
       setLoading(false);
     }
-  }, [langCode, resourceIds]);
+  }, [langCode, activeProfileId]);
 
   useEffect(() => {
     void refresh();
@@ -330,8 +333,13 @@ export function ResourcesPanel({ langCode, resourceIds, frequencyBands, onFreque
       }
       return;
     }
+    // Resources follow the profile: scope the freshly imported resource to
+    // the active profile so other profiles don't see it by default.
+    if (activeProfileId && result.resourceId) {
+      await setResourceProfiles(langCode, result.resourceId, [activeProfileId]).catch(() => {});
+    }
     showSuccess(resourceType, `Đã thêm "${file.name}" — ${result.wordCount} từ.`);
-  }, [langCode, patchState, showSuccess]);
+  }, [langCode, activeProfileId, patchState, showSuccess]);
 
   /** Returns false when the import errored (so multi-file loops can stop). */
   const runImport = useCallback(async (file: ReadableFile, resourceType: ResourceType, forceReplace = false): Promise<boolean> => {

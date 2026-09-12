@@ -20,7 +20,13 @@ jest.mock('@/features/theme/ui/ThemePanel', () => ({
   ThemePanel: () => <div data-cell-id="theme-panel" />,
 }));
 jest.mock('@/features/dictionary/ui/ResourcesPanel', () => ({
-  ResourcesPanel: () => <div data-cell-id="resources-panel" />,
+  ResourcesPanel: (props: { langCode: string; activeProfileId?: string | null }) => (
+    <div
+      data-cell-id="resources-panel"
+      data-lang-code={props.langCode}
+      data-active-profile={props.activeProfileId ?? ''}
+    />
+  ),
 }));
 jest.mock('@/features/tts/ui/TtsLanguagePanel', () => ({
   TtsLanguagePanel: () => <div data-cell-id="tts-language-panel" />,
@@ -50,6 +56,47 @@ function renderContent(
   );
   return { onChange, ...utils };
 }
+
+describe('SettingsDialogContent — resources ↔ profile binding', () => {
+  const profile = {
+    id: 'p-en',
+    target: 'en',
+    native: '',
+    name: 'English',
+    order: 1,
+    subtitleOverlayTargetStyle: DEFAULT_SETTINGS.subtitleOverlayTargetStyle!,
+    subtitleOverlayNativeStyle: DEFAULT_SETTINGS.subtitleOverlayNativeStyle!,
+    subtitleOverlayAutoLoad: true,
+    subtitleOverlayAutoLoadAsr: false,
+    subtitleOverlayAutoTranslate: false,
+    dictionaryPopup: DEFAULT_SETTINGS.dictionaryPopup!,
+  };
+
+  it('gates the Resources card behind having at least one profile', () => {
+    const { container } = renderContent({
+      ...DEFAULT_SETTINGS,
+      languageProfiles: [],
+      activeProfileId: null,
+    } as Settings);
+
+    const resourcesCard = container.querySelector('[data-section="resources"]');
+    expect(resourcesCard?.querySelector('[data-cell-id="resources-panel"]')).not.toBeInTheDocument();
+    expect(screen.getByTestId('resources-goto-profiles')).toBeInTheDocument();
+  });
+
+  it('renders ResourcesPanel scoped to the active profile when one exists', () => {
+    const { container } = renderContent({
+      ...DEFAULT_SETTINGS,
+      languageProfiles: [profile],
+      activeProfileId: 'p-en',
+    } as Settings);
+
+    const panel = container.querySelector('[data-cell-id="resources-panel"]');
+    expect(panel).toBeInTheDocument();
+    expect(panel).toHaveAttribute('data-lang-code', 'en');
+    expect(panel).toHaveAttribute('data-active-profile', 'p-en');
+  });
+});
 
 describe('SettingsDialogContent — merged Audio card', () => {
   it('renders a single Audio card and no legacy audio cards', () => {

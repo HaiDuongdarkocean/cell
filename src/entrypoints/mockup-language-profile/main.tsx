@@ -58,7 +58,6 @@ function toRealProfile(m: MockProfile, order: number): LanguageProfile {
     subtitleOverlayAutoLoadAsr: m.subtitleOverlay.asr,
     subtitleOverlayAutoTranslate: m.subtitleOverlay.autoTranslate,
     dictionaryPopup: { ...DEFAULT_DICTIONARY_POPUP_SETTINGS, enabled: m.dictPopup.enabled },
-    resourceIds: [],
   };
 }
 

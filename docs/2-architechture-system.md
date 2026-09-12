@@ -1394,7 +1394,7 @@ Tính năng cho phép người dùng tạo nhiều cặp target/native language,
 | File | Vai trò | Dependencies |
 |------|---------|--------------|
 | `src/features/settings/ui/LanguageProfilePanel.tsx` | Quản lý profiles (add/edit/delete/reorder, universal native, duplicate from active) | `SettingsRow`, `SearchableSelect`, `Dialog`, `Toggle`, `Alert`, `Button`, `IconButton`, `HStack`, `VStack`, `Icon` |
-| `src/features/settings/ui/SettingsDialogContent.tsx` | Nhúng `LanguageProfilePanel` section + truyền `resourceIds` active profile cho `ResourcesPanel` | `getActiveProfileSettings` |
+| `src/features/settings/ui/SettingsDialogContent.tsx` | Nhúng `LanguageProfilePanel` section + gate Resources card theo profile + truyền `activeProfileId`/`resourceLangCode` cho `ResourcesPanel` | `getActiveProfileSettings` |
 | `src/features/settings/ui/SettingsDialog.module.css` | `.profileList`, `.profileItem`, `.profileDialogBody`, `.rowLabel`, … | — |
 
 ### Universal panel quick switch
@@ -1407,5 +1407,6 @@ Tính năng cho phép người dùng tạo nhiều cặp target/native language,
 
 ### Dictionary resource filter
 
-- `src/features/dictionary/ui/ResourcesPanel.tsx` nhận `resourceIds?: readonly number[]`; chỉ hiển thị resource có `id` trong allow-list.
-- `SettingsDialogContent` truyền `getActiveProfileSettings(settings)?.resourceIds`.
+- `src/features/dictionary/ui/ResourcesPanel.tsx` nhận `activeProfileId`; chỉ hiển thị resource có `profileIds` rỗng (all profiles) hoặc chứa active profile; import mới auto-scope vào active profile.
+- `SettingsDialogContent` truyền `getActiveProfileSettings(settings)?.id` + `resourceLangCode`; 0 profiles → EmptyState CTA tới Language Profile.
+- `ResourceInfo.profileIds` là SSOT binding (resource → profiles); `LanguageProfile.resourceIds` đã bỏ (dead field).

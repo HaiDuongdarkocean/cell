@@ -424,7 +424,6 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
         DEFAULT_SETTINGS.subtitleOverlayAutoTranslate) as boolean,
       dictionaryPopup: (merged.dictionaryPopup ??
         DEFAULT_DICTIONARY_POPUP_SETTINGS) as LanguageProfile['dictionaryPopup'],
-      resourceIds: [],
     };
 
     merged.universalNativeLanguage = universalNative;

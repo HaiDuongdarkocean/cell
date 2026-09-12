@@ -209,6 +209,35 @@ describe('ResourcesPanel', () => {
     await waitFor(() => expect(deleteResourceCascade).toHaveBeenCalledWith('en', 1));
   });
 
+  it('filters the list to resources usable by the active profile', async () => {
+    listResources.mockResolvedValue([
+      makeResource({ id: 1, name: 'global.txt' }),
+      makeResource({ id: 2, name: 'mine.txt', profileIds: ['p1'] }),
+      makeResource({ id: 3, name: 'other.txt', profileIds: ['p2'] }),
+    ]);
+    render(<ResourcesPanel langCode="en" activeProfileId="p1" />);
+    await waitFor(() => expect(screen.getByText('mine.txt')).toBeInTheDocument());
+    expect(screen.getByText('global.txt')).toBeInTheDocument();
+    expect(screen.queryByText('other.txt')).not.toBeInTheDocument();
+  });
+
+  it('scopes a freshly imported resource to the active profile', async () => {
+    const setProfiles = client.setResourceProfiles as jest.MockedFunction<typeof client.setResourceProfiles>;
+    render(<ResourcesPanel langCode="en" activeProfileId="p1" />);
+    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    pickFile(1, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(setProfiles).toHaveBeenCalledWith('en', 1, ['p1']));
+  });
+
+  it('does not scope imports when no active profile is given', async () => {
+    const setProfiles = client.setResourceProfiles as jest.MockedFunction<typeof client.setResourceProfiles>;
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Độ phổ biến')).toBeInTheDocument());
+    pickFile(1, new File(['hello\n'], 'test.txt', { type: 'text/plain' }));
+    await waitFor(() => expect(screen.getByTestId('import-success-frequency')).toBeInTheDocument());
+    expect(setProfiles).not.toHaveBeenCalled();
+  });
+
   it('delete-all cascades every resource of that section only', async () => {
     listResources.mockResolvedValue([
       makeResource({ id: 1, name: 'a.txt' }),

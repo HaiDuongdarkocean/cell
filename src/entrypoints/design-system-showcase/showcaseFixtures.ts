@@ -33,7 +33,6 @@ function makeLanguageProfile(
     subtitleOverlayAutoLoadAsr: DEFAULT_SETTINGS.subtitleOverlayAutoLoadAsr,
     subtitleOverlayAutoTranslate: DEFAULT_SETTINGS.subtitleOverlayAutoTranslate,
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
-    resourceIds: [],
   };
 }
 

@@ -273,8 +273,6 @@ export interface LanguageProfile {
   readonly subtitleOverlayAutoLoadAsr: boolean;
   readonly subtitleOverlayAutoTranslate: boolean;
   readonly dictionaryPopup: DictionaryPopupSettings;
-  /** Active dictionary/frequency resource ids for this profile's target language. */
-  readonly resourceIds: number[];
 }
 
 /** Active profile with inheritance resolved. */

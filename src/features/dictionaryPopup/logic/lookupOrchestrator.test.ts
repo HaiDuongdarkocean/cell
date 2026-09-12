@@ -122,7 +122,6 @@ function makeProfile(id: string, target: string): LanguageProfile {
     subtitleOverlayAutoLoadAsr: false,
     subtitleOverlayAutoTranslate: false,
     dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
-    resourceIds: [],
   };
 }
 

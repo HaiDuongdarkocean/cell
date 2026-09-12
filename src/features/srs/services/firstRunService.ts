@@ -20,7 +20,9 @@ export interface FirstRunResult {
 export async function ensureFirstRun(): Promise<FirstRunResult> {
   const settings = await loadSettings();
 
-  const languageProfileId = settings.srs.activeLanguageProfileId ?? settings.activeProfileId;
+  // The profile switcher is the single source of truth — the SRS slice only
+  // fills in when no profile is active yet (first-run seeding).
+  const languageProfileId = settings.activeProfileId ?? settings.srs.activeLanguageProfileId;
   const profile = settings.languageProfiles.find((p) => p.id === languageProfileId);
   if (!profile) {
     // No active profile — caller should prompt user to create/select a language profile.

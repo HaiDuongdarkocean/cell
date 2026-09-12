@@ -104,7 +104,7 @@ function seedSettings() {
     schemaVersion: 27,
     activeProfileId: 'lp1',
     languageProfiles: [
-      { id: 'lp1', target: 'en', native: '', name: 'English', order: 1, resourceIds: [] },
+      { id: 'lp1', target: 'en', native: '', name: 'English', order: 1 },
     ],
     srs: {
       activeLanguageProfileId: 'lp1',

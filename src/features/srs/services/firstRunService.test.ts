@@ -57,7 +57,6 @@ async function seedSettings(languageProfileId: string) {
         native: '',
         name: 'English',
         order: 1,
-        resourceIds: [],
       },
     ],
   };
@@ -102,5 +101,25 @@ describe('firstRunService', () => {
     expect(second.created).toBe(false);
     expect(second.collectionId).toBe(first.collectionId);
     expect(await getCollectionByLanguageProfileId('lp-en')).toBeDefined();
+  });
+
+  it('prefers settings.activeProfileId over the stale srs slice pointer', async () => {
+    const settings = await loadSettings();
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...settings,
+      schemaVersion: 27,
+      activeProfileId: 'lp-b',
+      languageProfiles: [
+        { id: 'lp-a', target: 'en', native: '', name: 'English', order: 1 },
+        { id: 'lp-b', target: 'ja', native: '', name: 'Japanese', order: 2 },
+      ],
+      srs: { ...settings.srs, activeLanguageProfileId: 'lp-a' },
+    };
+
+    const result = await ensureFirstRun();
+
+    const collection = await getCollection(result.collectionId);
+    expect(collection.languageProfileId).toBe('lp-b');
+    expect(collection.targetLanguage).toBe('ja');
   });
 });

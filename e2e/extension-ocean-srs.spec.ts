@@ -18,7 +18,6 @@ async function seedSrsProfile(page: Page, extensionId: string, profileId = 'lp-e
         native: 'vi',
         name: 'English',
         order: 1,
-        resourceIds: [] as number[],
       };
       chrome.runtime.sendMessage(
         {
