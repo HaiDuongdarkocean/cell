@@ -437,9 +437,9 @@ function PlayerModeOverlayInner({
           style={{ '--content-pct': `${contentPct}%` } as React.CSSProperties}
           data-cell-id="player-mode-content"
         >
-          {cueListOpen && cues && cues.length > 0 && onSeek && (
+          {cueListOpen && onSeek && (
             <SubtitlePanel
-              cues={cues}
+              cues={cues ?? []}
               currentTimeMs={currentTimeMs ?? 0}
               offsetMs={offsetMs}
               onSeek={onSeek}

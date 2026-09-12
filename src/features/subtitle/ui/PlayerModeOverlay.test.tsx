@@ -149,6 +149,13 @@ describe('PlayerModeOverlay', () => {
     expect(screen.queryByTestId('cue-list')).not.toBeInTheDocument();
   });
 
+  it('shows an empty state instead of a blank panel when cues are empty', () => {
+    renderPlayerModeWithCues([]);
+
+    expect(screen.queryByTestId('cue-list')).not.toBeInTheDocument();
+    expect(screen.getByText('No subtitles loaded')).toBeInTheDocument();
+  });
+
   it('toggles CueList with the T key', () => {
     renderPlayerModeWithCues(sampleCues);
 
