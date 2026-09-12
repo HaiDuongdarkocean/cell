@@ -102,6 +102,7 @@ function initialState(): CardCreatorState {
     generateField: async () => {},
     generateAll: async () => {},
     submit: async () => {},
+    reload: () => {},
     dismissToast: () => {},
   };
 }

@@ -1,0 +1,21 @@
+{
+  "id": "state-settings-change-schema-reload-preserve-draft",
+  "title": "Once-per-open load guard → split content init from re-runnable schema refresh",
+  "category": ["state", "async"],
+  "tags": ["react", "zustand", "settings", "stale-closure", "debounce", "generation-guard", "storage-listener"],
+  "trigger": "Form/dialog load remote schema (decks, fields, config) once per open context via a ref guard; user fixes config in an embedded settings panel but the form stays stale until remount",
+  "principle": "Split the load into 'content init' (once per open — prefill, draft) and 'schema refresh' (re-runnable, preserves user edits). Watch a settings signature → debounced schema refresh; record the settings generation each load actually used; generation counter invalidates in-flight stale writes.",
+  "cases": [
+    {
+      "context": "Card creator loadData guarded by loadedForRef → Anki settings edited in side panel never re-fetch → error alert + empty dropdowns persist until panel remount",
+      "bad": "useEffect(() => { if (loadedForRef.current === ctx) return; loadedForRef.current = ctx; void loadData(); }, [ctx, loadData]); // settings change → new loadData identity → guard blocks → stale",
+      "good": "// loadData = draft init + loadAnkiData(restored)\n// schema phase re-runnable:\nuseEffect(() => {\n  if (loadedSettingsKey === JSON.stringify(settings)) return;\n  const t = setTimeout(() => loadAnkiDataRef.current(currentDraftSelections), 300);\n  return () => clearTimeout(t);\n}, [settings, ctx]); // + generation counter guards each await"
+    }
+  ],
+  "applyFor": [
+    "React form hydrated once from remote config",
+    "Embedded settings panel editing connection config used by the parent form",
+    "Any once-per-mount loader whose inputs can change while mounted",
+    "Debounced reaction to per-keystroke settings writes"
+  ]
+}

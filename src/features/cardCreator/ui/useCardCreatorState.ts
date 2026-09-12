@@ -89,6 +89,8 @@ const mediaFetchKeyMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'card
  *  (e.g. updateMapping + auto-map persist) can clobber each other. */
 let fieldMappingWriteQueue: Promise<void> = Promise.resolve();
 
+const SETTINGS_RELOAD_DEBOUNCE_MS = 300;
+
 function isMissingSchemaError(error: string): boolean {
   const lower = error.toLowerCase();
   return lower.includes('deck') || lower.includes('model') || lower.includes('note type') || lower.includes('not found') || lower.includes('does not exist');
@@ -190,6 +192,7 @@ export interface CardCreatorState {
   generateAll: () => Promise<void>;
   /** Submit: Add (create new) or Update (existing note). */
   submit: (mode: 'add' | 'update') => Promise<void>;
+  reload: () => void;
   /** Dismiss a toast by id. */
   dismissToast: (id: number) => void;
   /** Clear all card field data (text, media, tags) while keeping note type,
@@ -251,6 +254,11 @@ export function useCardCreatorState(
   const fieldMappingsRef = useRef(settings.fieldMappings);
   fieldMappingsRef.current = settings.fieldMappings;
 
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const loadedSettingsKeyRef = useRef<string | null>(null);
+  const loadGenerationRef = useRef(0);
+
   /** Persist a note type's field mapping into settings (cardCreator slice).
    *  Writes are serialized through a module-level queue — read-modify-write
    *  across two awaits would otherwise lose concurrent updates. */
@@ -300,28 +308,87 @@ export function useCardCreatorState(
     [ankiConnectUrl],
   );
 
-  /** Load AnkiConnect data (decks, models, fields, recent note).
-   *  @param restoredDraft - Draft restored from autosave (if any). When present,
-   *    its noteType/deck/mapping/tags are preserved (ADR-026: remember user's
-   *    selections across dialog open/close + browser restarts).
-   *
-   *  UX: the draft is populated with cue data + defaults IMMEDIATELY (before
-   *  the AnkiConnect awaits) so the form renders right away — no loading
-   *  screen blocking the dialog. Dropdowns (Note type, Deck) populate when
-   *  AnkiConnect data arrives; they are disabled while `loadStatus === 'loading'`.
-   *
-   *  Two-phase load: `destination-ready` (decks + models + chosen note type/
-   *  deck resolved → Note type/Deck dropdowns enable) → `ready` (fields +
-   *  recent note resolved → field rows + alerts + autosave enable). This
-   *  lets the user pick note type/deck while `listModelFields` +
-   *  `refreshRecentNote` are still loading.
-   */
+  const loadAnkiData = useCallback(
+    async (
+      restored: Pick<CardDraft, 'noteType' | 'deck' | 'fieldMapping'> | null,
+    ): Promise<void> => {
+      const store = useCardCreatorStore.getState();
+      loadedSettingsKeyRef.current = JSON.stringify(settings);
+      const generation = ++loadGenerationRef.current;
+      store.setLoadStatus('loading');
+      store.setLoadError('');
+
+      try {
+        const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(ankiConnectUrl);
+        if (generation !== loadGenerationRef.current) return;
+        store.setDecks(fetchedDecks);
+        store.setNoteTypes(fetchedModels);
+
+        const restoredNoteType = restored?.noteType ?? '';
+        const chosenNoteType =
+          fetchedModels.includes(restoredNoteType)
+            ? restoredNoteType
+            : fetchedModels.includes(defaultNoteType)
+              ? defaultNoteType
+              : fetchedModels[0] ?? '';
+        const restoredDeck = restored?.deck ?? '';
+        const chosenDeck =
+          fetchedDecks.includes(restoredDeck)
+            ? restoredDeck
+            : fetchedDecks.includes(defaultDeck)
+              ? defaultDeck
+              : fetchedDecks[0] ?? '';
+
+        store.setDraft((prev) => ({
+          ...prev,
+          noteType: chosenNoteType,
+          deck: chosenDeck,
+        }));
+        store.setLoadStatus('destination-ready');
+
+        const fields = chosenNoteType
+          ? (await getModelFields(ankiConnectUrl, chosenNoteType)) ?? []
+          : [];
+        if (generation !== loadGenerationRef.current) return;
+        store.setAvailableFields(fields);
+
+        const savedMapping = fieldMappingsRef.current?.[chosenNoteType];
+        const useRestoredMapping =
+          !savedMapping &&
+          restored !== null &&
+          restored.noteType === chosenNoteType;
+        const mapping =
+          savedMapping ??
+          (useRestoredMapping ? restored!.fieldMapping : autoMapFields(fields));
+
+        if (!savedMapping) {
+          persistFieldMapping(chosenNoteType, mapping);
+        }
+
+        await refreshRecentNote(chosenDeck, chosenNoteType);
+        if (generation !== loadGenerationRef.current) return;
+
+        if (useCardCreatorStore.getState().draft.noteType === chosenNoteType) {
+          store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
+        }
+        store.setLoadStatus('ready');
+      } catch (err) {
+        if (generation !== loadGenerationRef.current) return;
+        const msg = err instanceof Error ? err.message : String(err);
+        store.setLoadError(msg);
+        store.setLoadStatus('error');
+        useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
+      }
+    },
+    [ankiConnectUrl, defaultNoteType, defaultDeck, settings, refreshRecentNote, persistFieldMapping],
+  );
+  const loadAnkiDataRef = useRef(loadAnkiData);
+  loadAnkiDataRef.current = loadAnkiData;
+
   const loadData = useCallback(async (restoredDraft: CardDraft | null) => {
     const ctx = openContextRef.current;
     if (!ctx) return;
     const store = useCardCreatorStore.getState();
-    store.setLoadStatus('loading');
-    store.setLoadError('');
 
     // Immediately set draft with cue/prefill data + restored config + defaults
     // so the form renders right away (sentence text, media, tags visible while
@@ -429,88 +496,8 @@ export function useCardCreatorState(
       })();
     }
 
-    try {
-      // Reuse the prefetched decks + models (started on Card Creator button
-      // click so the AnkiConnect round-trip overlaps with media capture).
-      // Falls back to a fresh prefetch if none in-flight. Cache-first — if a
-      // persisted schema cache exists, the form renders without waiting for
-      // AnkiConnect; revalidation runs in the background.
-      const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(ankiConnectUrl);
-      store.setDecks(fetchedDecks);
-      store.setNoteTypes(fetchedModels);
-
-      // Pick note type: restored draft's (if still valid in cache), else default,
-      // else first available. ADR-026: remember user's note type selection.
-      const restoredNoteType = restoredDraft?.noteType ?? '';
-      const chosenNoteType =
-        fetchedModels.includes(restoredNoteType)
-          ? restoredNoteType
-          : fetchedModels.includes(defaultNoteType)
-            ? defaultNoteType
-            : fetchedModels[0] ?? '';
-      // Pick deck: same precedence — restored → default → first.
-      const restoredDeck = restoredDraft?.deck ?? '';
-      const chosenDeck =
-        fetchedDecks.includes(restoredDeck)
-          ? restoredDeck
-          : fetchedDecks.includes(defaultDeck)
-            ? defaultDeck
-            : fetchedDecks[0] ?? '';
-
-      // Update draft with schema-resolved note type/deck + mark
-      // destination-ready so Note type/Deck dropdowns enable immediately.
-      // Field content (sentence, media) already set above is preserved.
-      store.setDraft((prev) => ({
-        ...prev,
-        noteType: chosenNoteType,
-        deck: chosenDeck,
-      }));
-      store.setLoadStatus('destination-ready');
-
-      // Phase 2: fetch fields + recent note (depend on chosen note type/deck).
-      // These run AFTER dropdowns are enabled so the user can interact while
-      // these load. Field rows + alerts wait for `ready`.
-      // getModelFields is cache-first — no AnkiConnect call for a cached note type.
-      const fields = chosenNoteType
-        ? (await getModelFields(ankiConnectUrl, chosenNoteType)) ?? []
-        : [];
-      store.setAvailableFields(fields);
-
-      // Field mapping: prefer saved per-note-type mapping, then restored draft,
-      // then auto-map. Persist auto-mapped or restored mappings for later use.
-      const savedMapping = fieldMappingsRef.current?.[chosenNoteType];
-      const useRestoredMapping =
-        !savedMapping &&
-        restoredDraft !== null &&
-        restoredDraft.noteType === chosenNoteType;
-      const mapping =
-        savedMapping ??
-        (useRestoredMapping ? restoredDraft!.fieldMapping : autoMapFields(fields));
-
-      if (!savedMapping) {
-        persistFieldMapping(chosenNoteType, mapping);
-      }
-
-      // Find recent note (delegated to refreshRecentNote so the same logic
-      // runs on initial load + on note type change).
-      await refreshRecentNote(chosenDeck, chosenNoteType);
-
-      // Update field mapping now that fields are known — but only if the user
-      // hasn't changed note type while we were fetching fields (race guard).
-      if (useCardCreatorStore.getState().draft.noteType === chosenNoteType) {
-        store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
-      }
-      // Mark ready (enables alerts + autosave). If the user already changed
-      // note type/deck, changeNoteType/changeDeck will have set ready too —
-      // this is a no-op in that case.
-      store.setLoadStatus('ready');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      store.setLoadError(msg);
-      store.setLoadStatus('error');
-      useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
-    }
-  }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote, persistFieldMapping]);
+    await loadAnkiData(restoredDraft);
+  }, [defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, loadAnkiData]);
 
   /** Merge a new prefill into the current draft (resend from dictionary).
    *  Diff/merges collections + text fields according to `mediaUpdateMode` and
@@ -588,9 +575,35 @@ export function useCardCreatorState(
     autosaver.load().then((restored) => {
       useCardCreatorStore.getState().reset();
       useCardCreatorStore.getState().setInitialAction(initialAction);
+      loadedSettingsKeyRef.current = null;
       void loadData(restored ?? null);
     });
   }, [openContext, loadData, initialAction, loadStatus, draft.fields.targetWord, mergePrefill]);
+
+  useEffect(() => {
+    if (!openContext || loadedForRef.current !== openContext) return;
+    if (loadedSettingsKeyRef.current === null) return;
+    if (loadedSettingsKeyRef.current === JSON.stringify(settings)) return;
+    const timer = setTimeout(() => {
+      const { noteType, deck, fieldMapping } = useCardCreatorStore.getState().draft;
+      void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
+    }, SETTINGS_RELOAD_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [settings, openContext]);
+
+  const reload = useCallback(() => {
+    const ctx = openContextRef.current;
+    if (!ctx || loadedForRef.current !== ctx) return;
+    const store = useCardCreatorStore.getState();
+    if (
+      store.loadStatus !== 'error' &&
+      JSON.stringify(settingsRef.current) === loadedSettingsKeyRef.current
+    ) {
+      return;
+    }
+    const { noteType, deck, fieldMapping } = store.draft;
+    void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
+  }, []);
 
   // Autosave on draft change (debounced). Save as soon as the user
   // makes any selection — not only when fully 'ready' — so config
@@ -1297,6 +1310,7 @@ export function useCardCreatorState(
     generateField,
     generateAll,
     submit,
+    reload,
     dismissToast,
   };
 }

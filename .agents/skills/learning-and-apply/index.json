@@ -18,32 +18,84 @@
       "type": "experience",
       "id": "refactor-selector-contract-cross-module-sync",
       "title": "Selector là contract creator-consumer → rename phải sync cross-module",
-      "category": ["css", "testing"],
-      "tags": ["bem", "js-hook", "data-attribute", "selector", "cross-module", "rename-refactor"],
+      "category": [
+        "css",
+        "testing"
+      ],
+      "tags": [
+        "bem",
+        "js-hook",
+        "data-attribute",
+        "selector",
+        "cross-module",
+        "rename-refactor"
+      ],
       "trigger": "Khi rename attribute/class/selector được query bởi module khác (click-outside, closest, querySelector)"
     },
     {
       "type": "experience",
       "id": "async-debounce-starvation-max-delay-cap",
       "title": "Trailing-only debounce bị starve trên continuous event stream — thêm max-delay cap",
-      "category": ["async", "rendering", "state"],
-      "tags": ["debounce", "mutationobserver", "spa", "facebook", "react", "angular", "intersectionobserver", "starvation", "max-delay", "trailing", "activation-gate", "recovery"],
+      "category": [
+        "async",
+        "rendering",
+        "state"
+      ],
+      "tags": [
+        "debounce",
+        "mutationobserver",
+        "spa",
+        "facebook",
+        "react",
+        "angular",
+        "intersectionobserver",
+        "starvation",
+        "max-delay",
+        "trailing",
+        "activation-gate",
+        "recovery"
+      ],
       "trigger": "Feature intermittent trên SPA nặng (FB/Twitter): có lúc work có lúc không; count decline sau re-render không recover; activation gate 0 token nhiều giây"
     },
     {
       "type": "experience",
       "id": "raf-mutation-fast-path-incremental-tokenize",
       "title": "MutationObserver fast path qua requestAnimationFrame cho incremental tokenize trên SPA nặng",
-      "category": ["async", "rendering", "state"],
-      "tags": ["mutationobserver", "requestanimationframe", "spa", "facebook", "tokenize", "incremental", "eager-bind", "memory", "domMap"],
+      "category": [
+        "async",
+        "rendering",
+        "state"
+      ],
+      "tags": [
+        "mutationobserver",
+        "requestanimationframe",
+        "spa",
+        "facebook",
+        "tokenize",
+        "incremental",
+        "eager-bind",
+        "memory",
+        "domMap"
+      ],
       "trigger": "Khi scroll/lazy-load trên SPA nặng, content mới xuất hiện nhưng phải chờ debounce mới được tokenize; memory tăng khi blocks array/domMap không được dọn"
     },
     {
       "type": "experience",
       "id": "frequency-band-very-low-coverage",
       "title": "Frequency band fallback 'very-low' để 100% token có dữ liệu được hiển thị",
-      "category": ["ux", "data"],
-      "tags": ["tokenize", "frequency", "rank", "fallback", "css", "band", "coverage"],
+      "category": [
+        "ux",
+        "data"
+      ],
+      "tags": [
+        "tokenize",
+        "frequency",
+        "rank",
+        "fallback",
+        "css",
+        "band",
+        "coverage"
+      ],
       "trigger": "Token được tokenize nhưng hầu hết không có frequency color; chỉ rare words hoặc common words được hiển thị, còn lại plain text"
     },
     {
@@ -1004,345 +1056,857 @@
       "type": "experience",
       "id": "ux-touch-action-none-for-pointer-drag",
       "title": "Pointer-event drag trên touch screen cần touch-action:none — không thì browser chiếm gesture",
-      "category": ["ux", "css"],
-      "tags": ["touch-action", "pointer-events", "drag", "touch-screen", "pointercancel", "mobile", "tablet", "scroll-hijack"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "touch-action",
+        "pointer-events",
+        "drag",
+        "touch-screen",
+        "pointercancel",
+        "mobile",
+        "tablet",
+        "scroll-hijack"
+      ],
       "trigger": "Khi element dùng pointerdown/pointermove/pointerup để drag và phải mượt trên touch screen (mobile/tablet)"
     },
     {
       "type": "experience",
       "id": "css-shadow-dom-scrollbar-scope",
       "title": "Shadow DOM utility CSS must be scoped — global * leaks to host page",
-      "category": ["css", "rendering"],
-      "tags": ["shadow-dom", "scrollbar", "global-selector", "css-scope", "content-script"],
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "shadow-dom",
+        "scrollbar",
+        "global-selector",
+        "css-scope",
+        "content-script"
+      ],
       "trigger": "Khi viết utility CSS trong Shadow DOM component dùng selector toàn cục (* hoặc ::-webkit-scrollbar)"
     },
     {
       "type": "experience",
       "id": "css-nested-scroll-overscroll-contain-blocks-chaining",
       "title": "Nested scroll container + overscroll-behavior:contain swallows wheel/drag when content fits exactly",
-      "category": ["css", "ux"],
-      "tags": ["overscroll-behavior", "scroll-chaining", "nested-scroll", "wheel-event", "overflow", "popup", "shadow-dom"],
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "overscroll-behavior",
+        "scroll-chaining",
+        "nested-scroll",
+        "wheel-event",
+        "overflow",
+        "popup",
+        "shadow-dom"
+      ],
       "trigger": "Khi có nested scroll containers (parent + child đều overflow-y:auto) và child có overscroll-behavior:contain — wheel/drag scroll không reach parent"
     },
     {
       "type": "experience",
       "id": "message-payload-zod-validation",
       "title": "MV3 message handlers → validate payload with Zod before `as` cast",
-      "category": ["messaging"],
-      "tags": ["chrome-extension", "mv3", "message-bus", "zod", "trust-boundary"],
+      "category": [
+        "messaging"
+      ],
+      "tags": [
+        "chrome-extension",
+        "mv3",
+        "message-bus",
+        "zod",
+        "trust-boundary"
+      ],
       "trigger": "Viết handler nhận message từ content-script/popup/offscreen trong Chrome extension"
     },
     {
       "type": "experience",
       "id": "fetch-with-timeout-abortcontroller",
       "title": "External fetch trong SW/offscreen phải có timeout",
-      "category": ["async"],
-      "tags": ["fetch", "abortcontroller", "service-worker", "offscreen", "timeout"],
+      "category": [
+        "async"
+      ],
+      "tags": [
+        "fetch",
+        "abortcontroller",
+        "service-worker",
+        "offscreen",
+        "timeout"
+      ],
       "trigger": "Gọi `fetch()` từ service worker, offscreen document, hoặc context có thể bị treo"
     },
     {
       "type": "experience",
       "id": "react-timeout-cleanup",
       "title": "React component dùng setTimeout phải cleanup trên unmount",
-      "category": ["ux"],
-      "tags": ["react", "settimeout", "memory-leak", "useeffect", "useref"],
+      "category": [
+        "ux"
+      ],
+      "tags": [
+        "react",
+        "settimeout",
+        "memory-leak",
+        "useeffect",
+        "useref"
+      ],
       "trigger": "Component React set state sau một khoảng trễ (copy feedback, toast, debounce)"
     },
     {
       "type": "experience",
       "id": "popup-mutate-in-place-rerender-from-live",
       "title": "Mutate state in place + rerender from live state to avoid stale closures in vanilla-DOM popups",
-      "category": ["state", "rendering", "ux"],
-      "tags": ["closure", "mutable-state", "rerender", "stale-closure", "vanilla-dom", "async-callback", "active-candidate", "snapshot", "context-aware"],
+      "category": [
+        "state",
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "closure",
+        "mutable-state",
+        "rerender",
+        "stale-closure",
+        "vanilla-dom",
+        "async-callback",
+        "active-candidate",
+        "snapshot",
+        "context-aware"
+      ],
       "trigger": "Vanilla-DOM popup with async tab callbacks that mutate state and rerender — returning new immutable state objects causes closures to capture stale refs"
     },
     {
       "type": "experience",
       "id": "popup-audio-currently-playing-state",
       "title": "Track currently-playing media in UI state and render from it",
-      "category": ["state", "ux"],
-      "tags": ["audio", "play-pause", "currently-playing-id", "media-state", "re-render", "icon-swap", "ui-feedback"],
+      "category": [
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "audio",
+        "play-pause",
+        "currently-playing-id",
+        "media-state",
+        "re-render",
+        "icon-swap",
+        "ui-feedback"
+      ],
       "trigger": "A list of playable media items where the play button should swap to pause and the row should highlight while playing"
     },
     {
       "type": "experience",
       "id": "popup-state-closure-rerender",
       "title": "Capture updated state in closures and rerender without destroying sibling UI state",
-      "category": ["state", "rendering", "ux"],
-      "tags": ["closure", "mutable-state", "rerender", "candidate-list", "state-capture", "dom-preservation", "vanilla-dom"],
+      "category": [
+        "state",
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "closure",
+        "mutable-state",
+        "rerender",
+        "candidate-list",
+        "state-capture",
+        "dom-preservation",
+        "vanilla-dom"
+      ],
       "trigger": "A vanilla-DOM popup/component uses helper functions that return a new immutable state object, and callbacks close over a mutable `state` variable; rerendering the active component must not destroy appended siblings"
     },
     {
       "type": "experience",
       "id": "bridge-field-drop-cross-module-prefill",
       "title": "Cross-module bridge: map every prefill field at the boundary or data is silently dropped",
-      "category": ["state", "data"],
-      "tags": ["bridge", "prefill", "cross-module", "silent-data-loss", "type-mismatch", "interface-coverage"],
+      "category": [
+        "state",
+        "data"
+      ],
+      "tags": [
+        "bridge",
+        "prefill",
+        "cross-module",
+        "silent-data-loss",
+        "type-mismatch",
+        "interface-coverage"
+      ],
       "trigger": "Một module A thu thập dữ liệu vào interface rồi truyền qua bridge (callback/message) cho module B, nhưng interface ở B hẹp hơn A — field thừa bị drop silently vì TypeScript không bắt được khi field là optional."
     },
     {
       "type": "experience",
       "id": "css-hardcoded-px-to-token",
       "title": "Hardcoded px trong CSS module → thay bằng design-system token (calc nếu cần)",
-      "category": ["css"],
-      "tags": ["hardcoded-px", "design-token", "css-module", "convention", "maintainability"],
+      "category": [
+        "css"
+      ],
+      "tags": [
+        "hardcoded-px",
+        "design-token",
+        "css-module",
+        "convention",
+        "maintainability"
+      ],
       "trigger": "CSS file có giá trị px hardcoded thay vì dùng var(--space-*)/var(--font-size-*) từ design system"
     },
     {
       "type": "experience",
       "id": "css-canonical-type-scale",
       "title": "Canonical type scale 14/12px — SSOT qua tokens.json, icon sizing dùng --space-*",
-      "category": ["css", "ux"],
-      "tags": ["type-scale", "font-size", "design-token", "ssot", "tokens.json", "icon-sizing", "space-token", "css-module"],
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "type-scale",
+        "font-size",
+        "design-token",
+        "ssot",
+        "tokens.json",
+        "icon-sizing",
+        "space-token",
+        "css-module"
+      ],
       "trigger": "Project yêu cầu chỉ dùng 14px/12px cho text và muốn loại bỏ 13px/15px/16px/18px/20px trong UI; hoặc icon/emoji được size bằng font-size-* thay vì --space-*"
     },
     {
       "type": "experience",
       "id": "button-states-ssot-use-ds-modifiers",
       "title": "Không viết lại hover/active states cho button — dùng .btn + .btn--* modifiers từ design system",
-      "category": ["css"],
-      "tags": ["button", "ssot", "design-system", "hover", "active", "state", "maintainability"],
+      "category": [
+        "css"
+      ],
+      "tags": [
+        "button",
+        "ssot",
+        "design-system",
+        "hover",
+        "active",
+        "state",
+        "maintainability"
+      ],
       "trigger": "Tạo/sửa component có trạng thái hover/active mà tự định nghĩa lại background/color thay vì dùng .btn--primary, .btn--outline, .btn--ghost có sẵn"
     },
     {
       "type": "experience",
       "id": "debounce-timer-cancel-on-exit-zone",
       "title": "Debounce timer phải cancel khi cursor rời zone trigger — không để popup flicker",
-      "category": ["async", "ux"],
-      "tags": ["debounce", "setTimeout", "cancel", "hover", "mousemove", "caretRangeFromPoint", "stale-timer", "popup-flicker"],
+      "category": [
+        "async",
+        "ux"
+      ],
+      "tags": [
+        "debounce",
+        "setTimeout",
+        "cancel",
+        "hover",
+        "mousemove",
+        "caretRangeFromPoint",
+        "stale-timer",
+        "popup-flicker"
+      ],
       "trigger": "Khi dùng setTimeout debounce cho hover/mousemove event và callback dùng Range/object từ event cũ — nếu cursor rời zone trigger (non-text, image, null), timer cũ vẫn fire và gây popup flicker hoặc stale anchor"
     },
     {
       "type": "experience",
       "id": "content-script-dom-mutation-hydration-quiescence",
       "title": "Content-script DOM mutation → wait for load + quiescence, guard subframes",
-      "category": ["async", "rendering"],
-      "tags": ["content-script", "hydration", "angular", "rocket-loader", "cloudflare", "all-frames", "mutation-observer", "dom-quiescence", "tokenize"],
+      "category": [
+        "async",
+        "rendering"
+      ],
+      "tags": [
+        "content-script",
+        "hydration",
+        "angular",
+        "rocket-loader",
+        "cloudflare",
+        "all-frames",
+        "mutation-observer",
+        "dom-quiescence",
+        "tokenize"
+      ],
       "trigger": "Content script/extension phải scan/mutate text DOM trên SPA hydration chậm (Angular + Cloudflare Rocket Loader) và content script còn chạy trong challenge iframe do manifest all_frames: true"
     },
     {
       "type": "experience",
       "id": "tokenize-language-surface-filter",
       "title": "Language-aware token surface filter prevents wrong-language popup lookups",
-      "category": ["data", "detection"],
-      "tags": ["tokenize", "language-filter", "i18n", "ascii", "vietnamese", "popup", "lookup"],
+      "category": [
+        "data",
+        "detection"
+      ],
+      "tags": [
+        "tokenize",
+        "language-filter",
+        "i18n",
+        "ascii",
+        "vietnamese",
+        "popup",
+        "lookup"
+      ],
       "trigger": "Tokenizer emits words from multiple languages on a mixed-language page; users can click and look up Vietnamese/French/etc. words while the extension is set to English."
     },
     {
       "type": "experience",
       "id": "nested-partial-update-clear-stale-overrides",
       "title": "Nested partial update must merge with defaults and clear stale derived fields",
-      "category": ["data", "state"],
-      "tags": ["settings", "nested-partial", "default-merge", "stale-override", "per-lang", "derived-field"],
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "settings",
+        "nested-partial",
+        "default-merge",
+        "stale-override",
+        "per-lang",
+        "derived-field"
+      ],
       "trigger": "A UI panel emits a nested Partial<T> object that is saved into a parent object; sibling fields in the nested object can be reset to defaults or stale overrides can persist silently."
     },
     {
       "type": "experience",
       "id": "fixed-element-viewport-scrollbar-guard",
       "title": "Fixed UI element at window.innerWidth may be hidden behind the vertical scrollbar",
-      "category": ["css", "ux"],
-      "tags": ["fixed", "viewport", "scrollbar", "clientWidth", "innerWidth", "content-edge", "position-fixed", "badge"],
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "fixed",
+        "viewport",
+        "scrollbar",
+        "clientWidth",
+        "innerWidth",
+        "content-edge",
+        "position-fixed",
+        "badge"
+      ],
       "trigger": "Phần tử position:fixed đặt ở mép phải dùng window.innerWidth thì bị thanh cuộn dọc che mất một nửa hoặc toàn bộ (đặc biệt khi width/2 < scrollbar width)."
     },
     {
       "type": "experience",
       "id": "ux-drag-transform-willchange-raf",
       "title": "Smooth pointer drag: transform + will-change + rAF throttle — never left/top on the hot path",
-      "category": ["ux", "rendering", "css"],
-      "tags": ["drag", "transform", "translate3d", "will-change", "requestanimationframe", "pointer-events", "layout-thrashing", "compositor", "left-top", "transition", "jitter", "performance"],
+      "category": [
+        "ux",
+        "rendering",
+        "css"
+      ],
+      "tags": [
+        "drag",
+        "transform",
+        "translate3d",
+        "will-change",
+        "requestanimationframe",
+        "pointer-events",
+        "layout-thrashing",
+        "compositor",
+        "left-top",
+        "transition",
+        "jitter",
+        "performance"
+      ],
       "trigger": "Khi element draggable bằng Pointer Events và drag bị giật/jitter, đặc biệt trên thiết bị low-RAM/mobile/tablet"
     },
     {
       "type": "experience",
       "id": "caret-point-hit-testing-hybrid-fallback",
       "title": "caretRangeFromPoint hit-testing — hybrid caret + char-scan + geometry fallback for 100% resolution",
-      "category": ["ux", "detection"],
-      "tags": ["caretRangeFromPoint", "hit-testing", "word-lookup", "whitespace-click", "geometry-fallback", "elementsFromPoint", "proximity-gate", "line-height"],
+      "category": [
+        "ux",
+        "detection"
+      ],
+      "tags": [
+        "caretRangeFromPoint",
+        "hit-testing",
+        "word-lookup",
+        "whitespace-click",
+        "geometry-fallback",
+        "elementsFromPoint",
+        "proximity-gate",
+        "line-height"
+      ],
       "trigger": "Click/hover word lookup using caretRangeFromPoint where clicks on whitespace/punctuation between words intermittently fail, or a 1px geometry gate rejects valid words"
     },
     {
       "type": "experience",
       "id": "shadow-dom-retargeting-pointer-events-click-through",
       "title": "Shadow DOM retargeting + pointer-events:auto → e.target lies; use composedPath()[0] + disable pointer-events for caretRangeFromPoint",
-      "category": ["detection", "ux"],
-      "tags": ["shadow-dom", "pointer-events", "caretrangefrompoint", "retargeting", "composedPath"],
+      "category": [
+        "detection",
+        "ux"
+      ],
+      "tags": [
+        "shadow-dom",
+        "pointer-events",
+        "caretrangefrompoint",
+        "retargeting",
+        "composedPath"
+      ],
       "trigger": "Floating Shadow DOM popup with pointer-events:auto intercepts clicks on page text behind it"
     },
     {
       "type": "experience",
       "id": "api-arity-mismatch-runtime-silent-fail",
       "title": "API arity mismatch → silent runtime failure even when typecheck flags it",
-      "category": ["data", "state"],
-      "tags": ["storage", "api", "arity", "setStorage", "typescript", "runtime", "chrome-storage"],
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "storage",
+        "api",
+        "arity",
+        "setStorage",
+        "typescript",
+        "runtime",
+        "chrome-storage"
+      ],
       "trigger": "Refactor storage/API helper từ `(key, value)` sang single `Record` argument hoặc ngược lại"
     },
     {
       "type": "experience",
       "id": "synchronous-throw-before-promise-catch",
       "title": "Synchronous factory throw trước khi promise tạo → .catch() không bắt được",
-      "category": ["async"],
-      "tags": ["promise", "try-catch", "synchronous", "factory", "error-handling", "useEffect", "tts"],
+      "category": [
+        "async"
+      ],
+      "tags": [
+        "promise",
+        "try-catch",
+        "synchronous",
+        "factory",
+        "error-handling",
+        "useEffect",
+        "tts"
+      ],
       "trigger": "Gọi factory/constructor trả về promise, nhưng factory throw đồng bộ; `.catch()` chỉ gắn sau promise đã tồn tại"
     },
     {
       "type": "experience",
       "id": "schema-version-bump-sync-test-assertions",
       "title": "Schema version bump → đồng bộ tất cả test assertions và comments",
-      "category": ["testing", "state"],
-      "tags": ["schema", "migration", "version", "tests", "constants", "settings", "storage"],
+      "category": [
+        "testing",
+        "state"
+      ],
+      "tags": [
+        "schema",
+        "migration",
+        "version",
+        "tests",
+        "constants",
+        "settings",
+        "storage"
+      ],
       "trigger": "Thay đổi `CURRENT_SCHEMA_VERSION` hoặc thêm migration mới"
     },
     {
       "type": "experience",
       "id": "detection-false-negative-state-preservation",
       "title": "False-negative detection → preserve state, don't reset",
-      "category": ["ux", "state"],
-      "tags": ["hover", "debounce", "caretRangeFromPoint", "false-negative", "re-lookup-loop", "geometry-gate"],
+      "category": [
+        "ux",
+        "state"
+      ],
+      "tags": [
+        "hover",
+        "debounce",
+        "caretRangeFromPoint",
+        "false-negative",
+        "re-lookup-loop",
+        "geometry-gate"
+      ],
       "trigger": "Detection system has false negatives (overlay covers target, nearest-match snapping) and resetting state on those false negatives causes re-trigger loops"
     },
     {
       "type": "experience",
       "id": "css-specificity-important-on-every-property",
       "title": "Inject CSS override host rule → !important on EVERY property, not just some",
-      "category": ["css", "rendering"],
-      "tags": ["specificity", "important", "object-fit", "host-css", "cascade", "youtube", "split-view", "video-player", "cover-vs-contain"],
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "specificity",
+        "important",
+        "object-fit",
+        "host-css",
+        "cascade",
+        "youtube",
+        "split-view",
+        "video-player",
+        "cover-vs-contain"
+      ],
       "trigger": "Content-script injects <style> để override host page CSS trên element host owns (video, player shell) — host CSS có specificity cao hơn hoặc bằng selector mình inject"
     },
     {
       "type": "experience",
       "id": "css-percentage-height-follows-parent-on-resize",
       "title": "Hardcoded px height with !important freezes on resize — use percentage that follows parent",
-      "category": ["css", "rendering"],
-      "tags": ["height", "percentage", "resize", "hardcoded-px", "flex-layout", "split-view", "video-player"],
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "height",
+        "percentage",
+        "resize",
+        "hardcoded-px",
+        "flex-layout",
+        "split-view",
+        "video-player"
+      ],
       "trigger": "Container height set via inline px + !important — element doesn't update when browser window resizes"
     },
     {
       "type": "experience",
       "id": "css-zero-value-use-token",
       "title": "Giá trị 0 trong CSS phải dùng token (--space-0, --radius-none) thay vì hardcode 0",
-      "category": ["css", "ux"],
-      "tags": ["hardcoded-zero", "design-token", "css-module", "convention", "ssot", "zero", "gap", "padding", "border-radius"],
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "hardcoded-zero",
+        "design-token",
+        "css-module",
+        "convention",
+        "ssot",
+        "zero",
+        "gap",
+        "padding",
+        "border-radius"
+      ],
       "trigger": "CSS file dùng giá trị 0 trực tiếp (gap: 0, padding: 0, border-radius: 0) thay vì token khi codebase có design-system tokens cho zero"
     },
     {
       "type": "experience",
       "id": "ux-footer-no-padding-height-equals-content",
       "title": "Footer navigation height = content height — bỏ padding container, để button tự quyết định",
-      "category": ["ux", "css"],
-      "tags": ["footer", "navigation-bar", "padding", "mobile-first", "zalo-pay", "tab-bar", "compact", "content-height"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "footer",
+        "navigation-bar",
+        "padding",
+        "mobile-first",
+        "zalo-pay",
+        "tab-bar",
+        "compact",
+        "content-height"
+      ],
       "trigger": "Footer navigation bar có padding container thừa làm footer cao hơn cần thiết trên mobile"
     },
     {
       "type": "experience",
       "id": "ux-footer-button-no-border-radius-flat",
       "title": "Footer navigation button không bo góc — flat (radius-none) ở mọi breakpoint",
-      "category": ["ux", "css"],
-      "tags": ["footer", "button", "border-radius", "flat", "zalo-pay", "navigation-bar", "edge-to-edge", "no-rounded"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "footer",
+        "button",
+        "border-radius",
+        "flat",
+        "zalo-pay",
+        "navigation-bar",
+        "edge-to-edge",
+        "no-rounded"
+      ],
       "trigger": "Footer navigation button có border-radius (pill/card) tạo cảm giác 'nút nổi' thay vì 'navigation slot'"
     },
     {
       "type": "experience",
       "id": "ux-footer-label-always-visible-no-hide",
       "title": "Footer navigation label luôn hiển thị — không ẩn label ở màn hình nhỏ",
-      "category": ["ux", "css"],
-      "tags": ["footer", "label", "mobile-first", "accessibility", "navigation-bar", "always-visible", "no-hide", "media-query"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "footer",
+        "label",
+        "mobile-first",
+        "accessibility",
+        "navigation-bar",
+        "always-visible",
+        "no-hide",
+        "media-query"
+      ],
       "trigger": "Footer navigation button ẩn label ở màn hình nhỏ (max-width media query display:none) để 'tiết kiệm space'"
     },
     {
       "type": "experience",
       "id": "css-shadow-separator-soft-over-border-hard",
       "title": "Separator giữa regions: shadow nhẹ thay border cứng — cảm giác mềm mại",
-      "category": ["css", "ux"],
-      "tags": ["shadow", "border", "separator", "soft", "divider", "footer", "region", "elevation", "visual-hierarchy"],
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "shadow",
+        "border",
+        "separator",
+        "soft",
+        "divider",
+        "footer",
+        "region",
+        "elevation",
+        "visual-hierarchy"
+      ],
       "trigger": "Separator giữa 2 region (footer/body, header/body) dùng border cứng — muốn cảm giác mềm mại hơn"
     },
     {
       "type": "experience",
       "id": "ux-button-label-regular-weight-default",
       "title": "Button label dùng font-weight regular (400) mặc định — không in đậm trừ primary action",
-      "category": ["ux", "css"],
-      "tags": ["button", "label", "font-weight", "regular", "navigation", "footer", "typography", "hierarchy"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "button",
+        "label",
+        "font-weight",
+        "regular",
+        "navigation",
+        "footer",
+        "typography",
+        "hierarchy"
+      ],
       "trigger": "Button label (navigation, footer, secondary) dùng font-weight medium/bold mặc định — tạo visual noise"
     },
     {
       "type": "experience",
       "id": "ux-mobile-padding-compact-hig-material3",
       "title": "Mobile-first padding: áp dụng iOS HIG + Material 3 compact specs — không padding thừa",
-      "category": ["ux", "css"],
-      "tags": ["padding", "mobile-first", "ios-hig", "material-3", "compact", "navigation-bar", "tab-bar", "list-item", "touch-target", "responsive"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "padding",
+        "mobile-first",
+        "ios-hig",
+        "material-3",
+        "compact",
+        "navigation-bar",
+        "tab-bar",
+        "list-item",
+        "touch-target",
+        "responsive"
+      ],
       "trigger": "Mobile UI panel có padding/dimension quá dày — không tuân theo iOS HIG hoặc Material 3 compact specs"
     },
     {
       "type": "experience",
       "id": "ux-button-variant-ghost-for-navigation-footer",
       "title": "Navigation/footer button dùng ghost variant (transparent, no border) — không outline",
-      "category": ["ux", "css"],
-      "tags": ["button", "ghost", "outline", "navigation", "footer", "zalo-pay", "transparent", "no-border", "variant"],
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "button",
+        "ghost",
+        "outline",
+        "navigation",
+        "footer",
+        "zalo-pay",
+        "transparent",
+        "no-border",
+        "variant"
+      ],
       "trigger": "Navigation/footer button dùng outline variant (border) tạo cảm giác 'nút action' thay vì 'navigation slot'"
     },
     {
       "type": "experience",
       "id": "vite-preload-helper-blocks-offscreen",
       "title": "Vite preload helper creates <link> elements that hang in restricted contexts",
-      "category": ["build", "async"],
-      "tags": ["vite", "preload", "modulepreload", "offscreen", "dynamic-import", "vite-ignore", "chrome-extension"],
+      "category": [
+        "build",
+        "async"
+      ],
+      "tags": [
+        "vite",
+        "preload",
+        "modulepreload",
+        "offscreen",
+        "dynamic-import",
+        "vite-ignore",
+        "chrome-extension"
+      ],
       "trigger": "Dynamic import() in Chrome extension offscreen document (or sandboxed/restricted context) hangs indefinitely"
     },
     {
       "type": "experience",
       "id": "offscreen-message-relay-for-content-script",
       "title": "Offscreen documents can't message content scripts directly → relay through background",
-      "category": ["messaging"],
-      "tags": ["offscreen", "content-script", "chrome-runtime", "sendmessage", "relay", "background", "chrome-tabs"],
+      "category": [
+        "messaging"
+      ],
+      "tags": [
+        "offscreen",
+        "content-script",
+        "chrome-runtime",
+        "sendmessage",
+        "relay",
+        "background",
+        "chrome-tabs"
+      ],
       "trigger": "Offscreen document needs to send debug logs or data to content script (or vice versa)"
     },
     {
       "type": "experience",
       "id": "chrome-storage-silent-failure-offscreen",
       "title": "chrome.storage.local.set silently fails in offscreen documents",
-      "category": ["state", "messaging"],
-      "tags": ["chrome-storage", "offscreen", "silent-failure", "debug", "chrome-runtime", "sendmessage"],
+      "category": [
+        "state",
+        "messaging"
+      ],
+      "tags": [
+        "chrome-storage",
+        "offscreen",
+        "silent-failure",
+        "debug",
+        "chrome-runtime",
+        "sendmessage"
+      ],
       "trigger": "Debug logging or state persistence via chrome.storage.local in offscreen document — data never appears"
     },
     {
       "type": "experience",
       "id": "runtime-dynamic-import-files-not-emitted-by-bundler",
       "title": "Runtime dynamic import() needs files the bundler doesn't emit → copy in post-build",
-      "category": ["build"],
-      "tags": ["vite", "dynamic-import", "wasm", "ort", "onnxruntime", "post-build", "node-modules", "copy-file"],
+      "category": [
+        "build"
+      ],
+      "tags": [
+        "vite",
+        "dynamic-import",
+        "wasm",
+        "ort",
+        "onnxruntime",
+        "post-build",
+        "node-modules",
+        "copy-file"
+      ],
       "trigger": "Library does internal dynamic import() of a file (e.g. .mjs, .wasm) at runtime, but bundler doesn't emit it to dist/"
     },
     {
       "type": "experience",
       "id": "mv3-csp-unsafe-eval-patch-closures",
       "title": "MV3 CSP blocks new Function() → patch with safe closures in post-build",
-      "category": ["build", "data"],
-      "tags": ["csp", "unsafe-eval", "mv3", "emscripten", "opencv", "function-constructor", "post-build", "patch"],
+      "category": [
+        "build",
+        "data"
+      ],
+      "tags": [
+        "csp",
+        "unsafe-eval",
+        "mv3",
+        "emscripten",
+        "opencv",
+        "function-constructor",
+        "post-build",
+        "patch"
+      ],
       "trigger": "Emscripten/WASM library uses new Function() or Function() constructor — blocked by MV3 CSP script-src 'self' 'wasm-unsafe-eval'"
     },
     {
       "type": "experience",
       "id": "portal-ownerdocument-iframe-tree",
       "title": "createPortal + listeners phải dùng ownerDocument, không dùng global document/window",
-      "category": ["rendering", "ux"],
-      "tags": ["react", "createPortal", "iframe", "popover", "overflow-hidden", "clipping", "ownerdocument", "menu", "flip"],
+      "category": [
+        "rendering",
+        "ux"
+      ],
+      "tags": [
+        "react",
+        "createPortal",
+        "iframe",
+        "popover",
+        "overflow-hidden",
+        "clipping",
+        "ownerdocument",
+        "menu",
+        "flip"
+      ],
       "trigger": "Khi render popover/menu/tooltip cần thoát clipping ancestor (overflow:hidden, scroll container), hoặc component có thể nằm trong iframe (showcase ViewportFrame, sandbox preview)"
     },
     {
       "type": "experience",
       "id": "async-observer-unlock-on-scrollend-not-animation-end",
       "title": "IntersectionObserver unlock phải align với slowest async op (scrollend), không phải fastest (rAF)",
-      "category": ["async", "state", "ux"],
-      "tags": ["intersectionobserver", "scrollintoview", "requestanimationframe", "race-condition", "scrollend", "active-indicator", "sidebar", "unlock-timing"],
+      "category": [
+        "async",
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "intersectionobserver",
+        "scrollintoview",
+        "requestanimationframe",
+        "race-condition",
+        "scrollend",
+        "active-indicator",
+        "sidebar",
+        "unlock-timing"
+      ],
       "trigger": "Khi suppress IntersectionObserver trong click-driven scroll + rAF animation chạy song song scrollIntoView smooth"
     },
     {
       "type": "experience",
       "id": "mv3-service-worker-localhost-csp-cors-preflight",
       "title": "MV3 service worker fetch đến localhost API bị CSP connect-src và CORS preflight",
-      "category": ["messaging", "build"],
-      "tags": ["mv3", "service-worker", "fetch", "localhost", "anki-connect", "cors", "preflight", "csp", "connect-src", "content-security-policy", "text-plain", "simple-request", "chrome-extension"],
+      "category": [
+        "messaging",
+        "build"
+      ],
+      "tags": [
+        "mv3",
+        "service-worker",
+        "fetch",
+        "localhost",
+        "anki-connect",
+        "cors",
+        "preflight",
+        "csp",
+        "connect-src",
+        "content-security-policy",
+        "text-plain",
+        "simple-request",
+        "chrome-extension"
+      ],
       "trigger": "Chrome MV3 extension service worker fetch tới HTTP API local (AnkiConnect http://localhost:8765) bị lỗi CORS/CSP, DevTools console báo 'Refused to connect' hoặc preflight không pass."
+    },
+    {
+      "type": "experience",
+      "id": "state-settings-change-schema-reload-preserve-draft",
+      "title": "Once-per-open load guard → split content init from re-runnable schema refresh",
+      "category": [
+        "state",
+        "async"
+      ],
+      "tags": [
+        "react",
+        "zustand",
+        "settings",
+        "stale-closure",
+        "debounce",
+        "generation-guard",
+        "storage-listener"
+      ],
+      "trigger": "Form/dialog load remote schema once per open context via a ref guard; user fixes config in an embedded settings panel but the form stays stale until remount"
     }
   ]
 }
