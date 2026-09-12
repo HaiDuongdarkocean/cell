@@ -32,6 +32,7 @@ import {
   maybeAutoDownload,
   pushAutoLoadSubtitles,
   resolveUnknownSubtitleLanguages,
+  findMediaForDownloadItem,
 } from './helpers';
 // SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
@@ -276,7 +277,8 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
 
   // 7. Queue executor: dispatch each item to the downloader
   ctx.downloadQueue.setExecutor(async (item: DownloadItem) => {
-    const media = ctx.mediaMap.get(item.id);
+    const media =
+      ctx.mediaMap.get(item.id) ?? findMediaForDownloadItem(ctx, item);
     if (!media) {
       throw new Error(`No media found for download ${item.id}`);
     }
