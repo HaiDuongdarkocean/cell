@@ -3,7 +3,7 @@
 > Spec: `docs/specs/reader.md`  
 > Intent: `docs/intent/reader.md`  
 > Research: `docs/research/reader-technical.md`  
-> Mockup: `docs/mockup/reader.html` + `docs/mockup/reader-README.md`
+> Mockup: `docs/mockups/reader.html` + `docs/mockups/reader-README.md`
 
 ## Overview
 

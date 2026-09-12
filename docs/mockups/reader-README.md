@@ -93,7 +93,7 @@ Hoặc phục vụ qua http local (từ thư mục `cell`):
 ```bash
 cd "<repo-root>"
 python -m http.server 4000
-# rồi mở http://localhost:4000/docs/mockup/reader.html
+# rồi mở http://localhost:4000/docs/mockups/reader.html
 ```
 
 ## Hạn chế
