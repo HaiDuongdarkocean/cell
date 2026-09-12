@@ -14,6 +14,7 @@ import {
   getOffscreenReasons,
   sendMessage,
 } from '@/shared/lib/chrome-apis';
+import type { MessageRequest } from '@/entities/message';
 
 /** URL of the offscreen document relative to the extension root. */
 const OFFSCREEN_DOCUMENT_URL = 'src/entrypoints/offscreen/ffmpeg.html';
@@ -27,6 +28,9 @@ const PING_MAX_RETRIES = 20;
 
 /** Delay between ping retries (ms). */
 const PING_RETRY_DELAY_MS = 100;
+
+/** Idle delay after the last offscreen send before the document is closed (ms). */
+const IDLE_CLOSE_DELAY_MS = 5 * 60 * 1000;
 
 /**
  * Wraps `chrome.offscreen` to create and close the offscreen document that
@@ -47,6 +51,8 @@ export class OffscreenManager {
   private readyPromise: Promise<void> | null = null;
   // Cache the successful ping handshake result so repeated calls are no-ops.
   private isReady = false;
+  private activeSends = 0;
+  private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Ensure the offscreen document exists, creating it if necessary.
@@ -161,11 +167,37 @@ export class OffscreenManager {
   }
 
   /**
+   * Send a message to the offscreen document. Ensures the document and its
+   * listener are ready first. A rejected send marks the cached readiness
+   * state stale so the next call re-verifies the document instead of
+   * assuming it is still alive. When no send has been in-flight for
+   * `IDLE_CLOSE_DELAY_MS`, the document is closed to reclaim resources.
+   */
+  async sendToOffscreen<T>(request: MessageRequest): Promise<T> {
+    this.cancelIdleClose();
+    this.activeSends += 1;
+    try {
+      await this.ensureOffscreenReady();
+      return await sendMessage<T>(request);
+    } catch (err) {
+      this.isReady = false;
+      this.documentExists = false;
+      throw err;
+    } finally {
+      this.activeSends -= 1;
+      if (this.activeSends === 0) {
+        this.scheduleIdleClose();
+      }
+    }
+  }
+
+  /**
    * Close the offscreen document if it currently exists.
    *
    * Safe to call even when no document has been created.
    */
   async closeOffscreenDocument(): Promise<void> {
+    this.cancelIdleClose();
     if (!this.documentExists) {
       return;
     }
@@ -180,6 +212,23 @@ export class OffscreenManager {
    */
   hasDocument(): boolean {
     return this.documentExists;
+  }
+
+  private scheduleIdleClose(): void {
+    this.cancelIdleClose();
+    this.idleCloseTimer = setTimeout(() => {
+      this.idleCloseTimer = null;
+      void this.closeOffscreenDocument().catch((err: unknown) => {
+        console.warn('[background] Idle offscreen close failed:', err);
+      });
+    }, IDLE_CLOSE_DELAY_MS);
+  }
+
+  private cancelIdleClose(): void {
+    if (this.idleCloseTimer !== null) {
+      clearTimeout(this.idleCloseTimer);
+      this.idleCloseTimer = null;
+    }
   }
 }
 
