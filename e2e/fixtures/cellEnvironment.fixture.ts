@@ -8,20 +8,24 @@ import {
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 
 const projectRoot = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
-const extensionPath = resolve(projectRoot, 'dist');
+const sourceExtensionPath = resolve(projectRoot, 'dist');
 const uBlockSource = resolve(projectRoot, 'data', 'extension', 'uBOLite');
-const testResultsDir = resolve(projectRoot, 'test-results');
-const STREAMFLIX_URL = 'http://127.0.0.1:4321/index.html';
+
+const outputSuffix = process.env.PW_OUTPUT_DIR || '';
+const testResultsDir = resolve(
+  projectRoot,
+  outputSuffix ? `test-results-${outputSuffix}` : 'test-results',
+);
+const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
+const STREAMFLIX_URL = `http://127.0.0.1:${4321 + portOffset}/index.html`;
 
 type CellEnvironmentFixtures = {
   cellContext: BrowserContext;
   streamFlixPage: Page;
 };
-
-let persistentContext: BrowserContext | null = null;
-let isContextClosed = true;
 
 /**
  * uBOLite ships with a `_metadata` directory that Chrome refuses when loading
@@ -30,7 +34,7 @@ let isContextClosed = true;
  * avoids ENOTEMPTY if a previous Chrome process still holds the directory.
  */
 function prepareUblockClean(workerIndex: number): string {
-  const unique = `${workerIndex}-${Date.now()}`;
+  const unique = `${workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const cleanPath = resolve(testResultsDir, `.ublock-clean-${unique}`);
 
   mkdirSync(testResultsDir, { recursive: true });
@@ -51,12 +55,13 @@ const launchContext = async (
   headless: boolean,
   uBlockClean: string,
   profileDir: string,
+  extensionDir: string,
 ): Promise<BrowserContext> =>
   chromium.launchPersistentContext(profileDir, {
     headless,
     args: [
-      `--disable-extensions-except=${extensionPath},${uBlockClean}`,
-      `--load-extension=${extensionPath},${uBlockClean}`,
+      `--disable-extensions-except=${extensionDir},${uBlockClean}`,
+      `--load-extension=${extensionDir},${uBlockClean}`,
       '--disable-blink-features=AutomationControlled',
     ],
   });
@@ -64,38 +69,40 @@ const launchContext = async (
 export const test = base.extend<CellEnvironmentFixtures>({
   cellContext: [
     async ({}, use, workerInfo) => {
-      if (!persistentContext || isContextClosed) {
-        const uBlockClean = prepareUblockClean(workerInfo.workerIndex);
-        const profileDir = resolve(
-          testResultsDir,
-          `.extension-profile-${workerInfo.workerIndex}-${Date.now()}`,
+      const uBlockClean = prepareUblockClean(workerInfo.workerIndex);
+      const profileDir = resolve(
+        testResultsDir,
+        `.cell-profile-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
+      );
+      const extensionDir = resolve(
+        testResultsDir,
+        `.extension-build-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
+      );
+
+      if (!existsSync(sourceExtensionPath)) {
+        throw new Error(
+          `Extension build not found at ${sourceExtensionPath}. Run "npm run build" before extension E2E tests.`,
         );
-        // Note: headless Chrome cannot load extensions in this Playwright
-        // version, so default is headed (visible). Set EXTENSION_HEADLESS=true
-        // only if you are running under a virtual display.
-        const headless = process.env.EXTENSION_HEADLESS === 'true';
-        persistentContext = await launchContext(headless, uBlockClean, profileDir);
-        isContextClosed = false;
-        persistentContext.on('close', () => {
-          isContextClosed = true;
-        });
       }
-      await use(persistentContext);
+      cpSync(sourceExtensionPath, extensionDir, { recursive: true });
+
+      // Note: headless Chrome cannot load extensions in this Playwright
+      // version, so default is headed (visible). Set EXTENSION_HEADLESS=true
+      // only if you are running under a virtual display.
+      const headless = process.env.EXTENSION_HEADLESS === 'true';
+      const context = await launchContext(headless, uBlockClean, profileDir, extensionDir);
+      await use(context);
       // Worker-scoped teardown: close the persistent browser context after
       // all tests in this worker finish so a long pipeline does not keep
       // Chrome / temp profiles open.
-      if (persistentContext) {
-        await persistentContext.close();
-        isContextClosed = true;
-        persistentContext = null;
-      }
+      await context.close();
     },
     { scope: 'worker' },
   ],
 
   streamFlixPage: async ({ cellContext }, use) => {
     const page = await cellContext.newPage();
-    await page.goto(STREAMFLIX_URL, { waitUntil: 'domcontentloaded' });
+    await page.goto(STREAMFLIX_URL, { waitUntil: 'networkidle' });
 
     // Wait for the mock video and the Cell content-script overlay to mount.
     const video = page.locator('#player-wrapper video').first();

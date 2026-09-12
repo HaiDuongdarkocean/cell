@@ -223,7 +223,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
             <FlagIcon lang={settings.universalNativeLanguage} size={22} title={langLabel(settings.universalNativeLanguage)} />
             <div className={styles.bannerText}>
               <div className={styles.bannerLabel}>{t('settings.profiles.banner.label')}</div>
-              <div className={styles.bannerValue}>{langShort(settings.universalNativeLanguage)}</div>
+              <div className={styles.bannerValue} data-testid="universal-native-banner-value">{langShort(settings.universalNativeLanguage)}</div>
             </div>
             <Button
               type="button"
@@ -314,6 +314,7 @@ export function LanguageProfilePanel({ settings, onChange }: LanguageProfilePane
                   selected={isActive}
                   onSelect={() => setActive(profile.id)}
                   className={styles.card}
+                  data-testid={`language-profile-card-${profile.id}`}
                 >
                   <span className={styles.radio} aria-hidden="true" />
                   <span className={styles.flags}>

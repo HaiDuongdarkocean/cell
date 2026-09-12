@@ -2,9 +2,6 @@ import { expect } from '@playwright/test';
 import { test } from './extension.fixture';
 
 test.describe('Cell MV3 extension', () => {
-  test.afterAll(async ({ context }) => {
-    await context.close();
-  });
   test('service worker is running and exposes a valid extension id', async ({
     worker,
     extensionId,
@@ -58,7 +55,7 @@ test.describe('Cell MV3 extension', () => {
       videos: number;
       subtitles: number;
     };
-    expect(scanResult.pageUrl).toContain('127.0.0.1:4322');
+    expect(scanResult.pageUrl).toMatch(/127\.0\.0\.1:\d+/);
     expect(scanResult.videos).toBeGreaterThanOrEqual(1);
   });
 });

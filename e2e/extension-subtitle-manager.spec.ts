@@ -1,13 +1,10 @@
 import { expect } from '@playwright/test';
 import { test } from './extension.fixture';
 
-const STREAM_MOCK_URL = 'http://127.0.0.1:4321/index.html';
+const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
+const STREAM_MOCK_URL = `http://127.0.0.1:${4321 + portOffset}/index.html`;
 
 test.describe('Cell subtitle manager panel', () => {
-  test.afterAll(async ({ context }) => {
-    await context.close();
-  });
-
   test('manager toggle button opens the subtitle manager panel', async ({
     context,
   }, testInfo) => {

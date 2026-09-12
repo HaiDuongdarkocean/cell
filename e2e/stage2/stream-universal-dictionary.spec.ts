@@ -1,16 +1,16 @@
 import { test, expect } from '../fixtures/actors/universalPanel.fixture';
 
 test.describe('Stage 2: Universal Panel > Dictionary on StreamFlix', () => {
-  test('opens Dictionary via the orbital badge', async ({ universalPanel, streamFlixPage }) => {
+  test('opens Dictionary via the orbital badge', async ({ universalPanel, streamFlixPage }, testInfo) => {
     await universalPanel.open();
     await universalPanel.openTab('dictionary');
     await universalPanel.search('exclamation');
     await streamFlixPage.waitForTimeout(1500);
 
-    await streamFlixPage.screenshot({ path: 'test-results/stream-universal-desktop-dictionary.png' });
+    await streamFlixPage.screenshot({ path: testInfo.outputPath('stream-universal-desktop-dictionary.png') });
   });
 
-  test('mobile panel shows collapsed Card Creator sheet with only the pill', async ({ universalPanel, streamFlixPage }) => {
+  test('mobile panel shows collapsed Card Creator sheet with only the pill', async ({ universalPanel, streamFlixPage }, testInfo) => {
     await streamFlixPage.setViewportSize({ width: 390, height: 844 });
 
     await universalPanel.open();
@@ -21,6 +21,6 @@ test.describe('Stage 2: Universal Panel > Dictionary on StreamFlix', () => {
       expect(sheetBounds.height).toBeLessThanOrEqual(40);
     }
 
-    await streamFlixPage.screenshot({ path: 'test-results/stream-universal-mobile-sheet.png' });
+    await streamFlixPage.screenshot({ path: testInfo.outputPath('stream-universal-mobile-sheet.png') });
   });
 });

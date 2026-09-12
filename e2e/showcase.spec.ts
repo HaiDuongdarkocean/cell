@@ -39,9 +39,9 @@ test.describe('Design System Showcase', () => {
     await expect(presets.getByText('Listen', { exact: true })).toBeVisible();
     await expect(presets.getByText('Read', { exact: true })).toBeVisible();
 
-    // Custom section visible and the "New mode" card is offered.
+    // Custom section visible and the "New mode" button is offered.
     await expect(showcasePage.getByRole('heading', { name: 'Custom' })).toBeVisible();
-    await expect(showcasePage.locator('[data-cell-id="new-mode-card"]')).toBeVisible();
+    await expect(showcasePage.locator('[data-cell-id="new-mode-button"]')).toBeVisible();
 
     // Advanced section is collapsed by default; toggle it on.
     const advancedToggle = showcasePage.locator('[data-cell-id="advanced-toggle"]');
@@ -63,7 +63,7 @@ test.describe('Design System Showcase', () => {
 
     await expect(showcasePage.getByRole('heading', { name: 'Study Modes Panel', level: 1 })).toBeVisible();
 
-    await showcasePage.locator('[data-cell-id="new-mode-card"]').click();
+    await showcasePage.locator('[data-cell-id="new-mode-button"]').click();
 
     await expect(showcasePage.getByRole('dialog')).toBeVisible();
 
@@ -77,6 +77,8 @@ test.describe('Design System Showcase', () => {
     await expect(showcasePage.getByRole('dialog')).not.toBeVisible();
 
     await expect(showcasePage.getByLabel('Custom study modes')).toContainText('Shadowing');
-    await expect(showcasePage.locator('[data-cell-id^="mode-card-custom-"]')).toHaveCount(1);
+    await expect(
+      showcasePage.locator('[data-cell-id^="mode-card-custom-"]', { hasText: 'Shadowing' }),
+    ).toHaveCount(1);
   });
 });

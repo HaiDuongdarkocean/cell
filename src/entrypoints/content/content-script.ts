@@ -1,4 +1,5 @@
 declare const __CELL_FAST_BUILD__: boolean;
+declare const __CELL_DEBUG__: string;
 
 import { sendMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
@@ -167,12 +168,14 @@ if (window.self === window.top) {
     }
     // PAGE_SCAN debug markers: only record those coming from a player iframe.
     // The top frame's own runPageScan postMessage should not overwrite data.
-    const isOwnFrame = e.source === window || e.origin === window.location.origin;
-    if (e.data?.type === '__CELL_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
-      document.documentElement.setAttribute(
-        'data-cell-iframe-scan',
-        JSON.stringify({ pageUrl: e.data.pageUrl, videos: e.data.videoUrls?.length ?? 0, subtitles: e.data.subtitleUrls?.length ?? 0 }),
-      );
+    if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+      const isOwnFrame = e.source === window || e.origin === window.location.origin;
+      if (e.data?.type === '__CELL_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
+        document.documentElement.setAttribute(
+          'data-cell-iframe-scan',
+          JSON.stringify({ pageUrl: e.data.pageUrl, videos: e.data.videoUrls?.length ?? 0, subtitles: e.data.subtitleUrls?.length ?? 0 }),
+        );
+      }
     }
   });
 }
@@ -440,6 +443,24 @@ function runPageScan(): void {
   // observing ad/empty frames.
   if (window.self !== window.top && !findLargestPlayableVideo()) return;
   const urls = scanner.scan();
+
+  // Debug: surface scan results so browser tests can verify the content script
+  // is finding media. Only enabled for E2E builds via CELL_E2E=1.
+  if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+    const debugTarget = window.self === window.top ? window : window.parent;
+    debugTarget.postMessage({
+      type: '__CELL_DEBUG_PAGE_SCAN',
+      pageUrl: window.location.href,
+      videoUrls: urls.videoUrls,
+      subtitleUrls: urls.subtitleUrls,
+      trackSubtitles: urls.trackSubtitles,
+    }, '*');
+    document.documentElement.setAttribute(
+      'data-cell-runscan',
+      JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length, tracks: urls.trackSubtitles.length }),
+    );
+  }
+
   // ponytail: guard is intentionally removed. Players like vidnest/videasy
   // mount the <video> before the <track> src attributes are set, so the first
   // DOMContentLoaded scan is often empty. finishVideoInit must be able to
@@ -458,21 +479,6 @@ function runPageScan(): void {
     }
   }
   pageScanObserverStarted = true;
-  // Debug: surface scan results to the top frame so browser tests can verify
-  // the content script is finding media without reading cross-origin iframes.
-  // Iframes use window.parent; top frames use window (self).
-  const debugTarget = window.self === window.top ? window : window.parent;
-  debugTarget.postMessage({
-    type: '__CELL_DEBUG_PAGE_SCAN',
-    pageUrl: window.location.href,
-    videoUrls: urls.videoUrls,
-    subtitleUrls: urls.subtitleUrls,
-    trackSubtitles: urls.trackSubtitles,
-  }, '*');
-  document.documentElement.setAttribute(
-    'data-cell-runscan',
-    JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length, tracks: urls.trackSubtitles.length }),
-  );
   if (
     urls.videoUrls.length > 0 ||
     urls.subtitleUrls.length > 0 ||

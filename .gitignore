@@ -140,9 +140,11 @@ cookies*.txt
 src/entrypoints/design-system-showcase/assets/*.mp4
 
 # Playwright run artifacts from agent-driven e2e sessions.
-test-results-agent*/
-playwright-report-agent*/
+test-results-*/
+playwright-report-*/
 dist-mock-pages/
+dist-pages/
+.test-pages/
 
 # Python bytecode cache.
 __pycache__/

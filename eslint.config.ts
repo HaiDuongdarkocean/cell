@@ -9,10 +9,15 @@ export default tseslint.config(
   {
     ignores: [
       'dist/',
+      'dist-*/',
       'node_modules/',
       'coverage/',
       'test-results/',
+      'test-results-*/',
       'playwright-report/',
+      'playwright-report-*/',
+      '.test-pages/',
+      '.ublock-clean-*/',
       'bin/',
       'tests/integration/.cache/',
       'project-reference/',

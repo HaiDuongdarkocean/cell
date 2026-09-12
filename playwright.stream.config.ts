@@ -1,11 +1,24 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
+const outputSuffix = process.env.PW_OUTPUT_DIR || '';
+const workersEnv = process.env.PW_WORKERS
+  ? parseInt(process.env.PW_WORKERS, 10)
+  : undefined;
+
+const outputDir = outputSuffix ? `test-results-${outputSuffix}` : 'test-results';
+const reportDir = outputSuffix
+  ? `playwright-report-${outputSuffix}`
+  : 'playwright-report';
+
+const streamPort = 4321 + portOffset;
+const youtubePort = 4322 + portOffset;
+
 /**
- * Minimal Playwright config for the StreamFlix + Universal Panel E2E test.
- * Only starts the mock YouTube and StreamFlix servers (both from
- * `scripts/serve-mock-pages.mjs`) so the test can open a real Chromium
- * browser quickly without waiting for the full design-system / launcher
- * webServer fleet.
+ * Stream-specific Playwright config for the StreamFlix + Universal Panel E2E
+ * suite. It only starts the mock YouTube and StreamFlix servers and runs the
+ * extension + stage2 specs. Port, output and worker counts are isolated per
+ * agent via PW_PORT_OFFSET, PW_OUTPUT_DIR and PW_WORKERS.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -13,11 +26,11 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: 'html',
+  workers: workersEnv ?? 1,
+  reporter: [['html', { outputFolder: reportDir }]],
   timeout: 120_000,
   expect: { timeout: 30_000 },
-  outputDir: 'test-results/',
+  outputDir,
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -25,20 +38,20 @@ export default defineConfig({
   webServer: [
     {
       command: 'node scripts/serve-mock-pages.mjs --youtube --no-build',
-      url: 'http://127.0.0.1:4322/index.html',
+      url: `http://127.0.0.1:${youtubePort}/index.html`,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
     {
       command: 'node scripts/serve-mock-pages.mjs --stream --no-build',
-      url: 'http://127.0.0.1:4321/index.html',
+      url: `http://127.0.0.1:${streamPort}/index.html`,
       timeout: 120_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
   projects: [
     {
-      name: 'chromium',
+      name: 'stage2',
       testMatch: ['**/extension*.spec.ts', '**/stage2/*.spec.ts'],
       use: { ...devices['Desktop Chrome'], baseURL: 'chrome://extensions' },
     },
