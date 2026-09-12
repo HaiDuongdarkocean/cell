@@ -142,13 +142,30 @@
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.cc-queue__item:hover .cc-queue__item-delete {
+.cc-queue__item:hover .cc-queue__item-delete,
+.cc-queue__item:focus-within .cc-queue__item-delete,
+.cc-queue__item-delete:focus-visible {
   opacity: 1;
+}
+
+/* Touch devices have no hover affordance — keep the delete button visible. */
+@media (hover: none) {
+  .cc-queue__item-delete {
+    opacity: 1;
+  }
 }
 
 .cc-queue__item-delete:hover {
   color: var(--color-error);
   background: var(--color-error-subtle);
+}
+
+.cc-queue__empty {
+  margin: var(--space-2) 0;
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .cc-queue__undo {

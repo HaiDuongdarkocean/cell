@@ -91,6 +91,58 @@ test.describe('Showcase — Card Creator queue slide-over', () => {
     await expect(panel.getByRole('button', { name: 'Select ephemeral' })).toBeVisible();
   });
 
+  test('delete button is visible when reached by keyboard focus', async ({
+    showcasePage,
+  }) => {
+    const panel = showcasePage.locator(QUEUE_PANEL);
+    await expect(panel).toBeVisible();
+
+    const deleteBtn = panel.locator('[data-cell-id="cc-queue-delete-0"]');
+    // Pointer devices hide it until hover/focus.
+    await expect(deleteBtn).toHaveCSS('opacity', '0');
+
+    await deleteBtn.focus();
+    await expect(deleteBtn).toHaveCSS('opacity', '1');
+  });
+
+  test('panel stays open (with undo) when the queue drains below 2 items', async ({
+    showcasePage,
+  }) => {
+    const panel = showcasePage.locator(QUEUE_PANEL);
+    await expect(panel).toBeVisible();
+
+    // 3 items → delete 2 → 1 item left: panel must not unmount abruptly.
+    for (const i of [0, 0]) {
+      const item = panel.locator(`[data-cell-id="cc-queue-item-${i}"]`);
+      await item.hover();
+      await panel.locator(`[data-cell-id="cc-queue-delete-${i}"]`).click();
+    }
+    await expect(panel.locator('h2')).toHaveText('Queue (1/1)');
+    await expect(panel).toBeVisible();
+    await expect(showcasePage.locator(QUEUE_UNDO)).toBeVisible();
+
+    // Delete the last item → empty state keeps the panel + undo reachable.
+    await panel.locator('[data-cell-id="cc-queue-item-0"]').hover();
+    await panel.locator('[data-cell-id="cc-queue-delete-0"]').click();
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('h2')).toHaveText('Queue is empty');
+    await expect(panel.locator('[data-cell-id="cc-queue-empty"]')).toBeVisible();
+    await expect(showcasePage.locator(QUEUE_UNDO)).toBeVisible();
+  });
+
+  test('End key focuses the last item, not its delete button', async ({
+    showcasePage,
+  }) => {
+    const panel = showcasePage.locator(QUEUE_PANEL);
+    await expect(panel).toBeVisible();
+
+    await panel.getByRole('button', { name: 'Select serendipity' }).focus();
+    await showcasePage.keyboard.press('End');
+    await expect(
+      panel.getByRole('button', { name: 'Select luminous' }),
+    ).toBeFocused();
+  });
+
   test('overflow queue stays scrollable inside the overlay', async ({ showcasePage }) => {
     await showcasePage.goto('?showcase=Card Creator&data=overflow');
     const panel = showcasePage.locator(QUEUE_PANEL);

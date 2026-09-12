@@ -11,7 +11,7 @@
 import type { ReactElement } from 'react';
 import { Button } from '@/shared/ui/Button';
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { t } from '@/shared/i18n';
 import type { CardCreatorQueueItem, Toast } from '../types';
@@ -71,12 +71,14 @@ export function QueueSidebar({
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         focusAt(focusable, currentIndex - 1);
-      } else if (e.key === 'Home') {
+      } else if (e.key === 'Home' || e.key === 'End') {
+        // Home/End target queue item buttons only — the trailing focusable is
+        // the last row's delete button, which is not a meaningful landing.
         e.preventDefault();
-        focusAt(focusable, 0);
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        focusAt(focusable, focusable.length - 1);
+        const itemButtons = Array.from(
+          asideRef.current.querySelectorAll('li[data-index] > button:first-of-type'),
+        );
+        focusAt(itemButtons, e.key === 'Home' ? 0 : itemButtons.length - 1);
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         const listItem = active?.closest('li');
         const rawIndex = listItem?.getAttribute('data-index');
@@ -92,20 +94,47 @@ export function QueueSidebar({
     [focusAt, onDeleteQueueItem],
   );
 
-  if (queueItems.length === 0) return <></>;
+  // Keep the active row visible — a deep queue (hundreds of items) opens
+  // scrolled to the top otherwise, and arrow-key navigation past the viewport
+  // leaves the highlight off-screen.
+  useEffect(() => {
+    const active = asideRef.current?.querySelector(
+      `[data-cell-id="cc-queue-item-${queueActiveIndex}"]`,
+    );
+    (active as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
+  }, [queueActiveIndex]);
+
+  const sharedAsideProps = {
+    className: [
+      styles['cc-queue'],
+      mobile && styles['cc-queue--mobile'],
+      overlay && styles['cc-queue--overlay'],
+    ].filter(Boolean).join(' '),
+    'aria-label': t('cardCreator.queue.aria'),
+    onKeyDown: handleKeyDown,
+    'data-cell-id': 'cc-queue-sidebar',
+  } as const;
+
+  // Empty queue: keep the aside alive in overlay mode so the undo affordance
+  // for the just-removed last item stays reachable inside the slide-over.
+  if (queueItems.length === 0) {
+    if (!overlay) return <></>;
+    return (
+      <aside ref={asideRef} {...sharedAsideProps}>
+        <p className={styles['cc-queue__empty']} data-cell-id="cc-queue-empty">
+          {t('cardCreator.queue.empty')}
+        </p>
+        <UndoButton
+          onUndo={onUndoDeleteQueueItem}
+          toasts={toasts}
+          onDismissToast={onDismissToast}
+        />
+      </aside>
+    );
+  }
 
   return (
-    <aside
-      ref={asideRef}
-      className={[
-        styles['cc-queue'],
-        mobile && styles['cc-queue--mobile'],
-        overlay && styles['cc-queue--overlay'],
-      ].filter(Boolean).join(' ')}
-      aria-label={t('cardCreator.queue.aria')}
-      onKeyDown={handleKeyDown}
-      data-cell-id="cc-queue-sidebar"
-    >
+    <aside ref={asideRef} {...sharedAsideProps}>
       {!overlay && (
         <div className={styles['cc-queue__header']}>
           <span className={styles['cc-queue__title']}>
@@ -114,16 +143,18 @@ export function QueueSidebar({
         </div>
       )}
       <ul className={styles['cc-queue__list']} aria-label={t('cardCreator.queue.itemsAria')}>
-        {queueItems.map((item, i) => (
-          <QueueItemRow
-            key={`${item.term}-${i}`}
-            item={item}
-            index={i}
-            isActive={i === queueActiveIndex}
-            onSelect={() => onSelectQueueItem(i)}
-            onDelete={() => onDeleteQueueItem(i)}
-          />
-        ))}
+        {queueItems.map((item, i) =>
+          item.term.trim() === '' ? null : (
+            <QueueItemRow
+              key={`${item.term}-${i}`}
+              item={item}
+              index={i}
+              isActive={i === queueActiveIndex}
+              onSelect={() => onSelectQueueItem(i)}
+              onDelete={() => onDeleteQueueItem(i)}
+            />
+          ),
+        )}
       </ul>
       {/* Undo button — shown when there's a pending undo (3s window).
           Uses the last warning toast as a proxy for "just deleted". */}

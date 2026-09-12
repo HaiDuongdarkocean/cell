@@ -541,7 +541,10 @@ export function CardCreatorDialogContent({
             {body}
           </div>
           {settingsPanel}
-          {hasQueue && (
+          {/* Keep the panel mounted while open even when the queue drains
+              below 2 items — unmounting it would also delete the undo
+              affordance for the last removal. */}
+          {(queueItems.length > 0 || queueSidebarOpen) && (
             <QueueSidePanel
               open={queueSidebarOpen}
               onClose={toggleQueueSidebar}
@@ -573,7 +576,7 @@ export function CardCreatorDialogContent({
         data-cell-id="card-creator-content"
       >
         {body}
-        {hasQueue && queueSidebarOpen && (
+        {queueItems.length > 0 && queueSidebarOpen && (
           <QueueSidebar
             mobile={variant === 'mobile'}
             queueItems={queueItems}
