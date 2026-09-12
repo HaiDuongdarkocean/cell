@@ -423,6 +423,19 @@ If stuck in a loop for more than 15 minutes, escalate:
 
 Do not spin. A stuck loop means the contract or setup is incomplete.
 
+## Test sites
+
+Text
+- https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/
+
+Video
+- https://themoviebox.xyz/movies/oh-boy-was-i-wrong-about-her-KZp0CGxDxI2?id=2281575019673174328&type=/movie/detail&detailSe=&detailEp=&lang=en
+- https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100
+- https://moviepire.ru/watch/125988?s=1&e=2&me=10
+
+Video (anti-automation — MUST use stealth-chrome-devtools)
+- https://streamduck.site/ (detects DevTools/automation → reloads if driven by chrome-devtools)
+
 ## Final Note
 
 A tester who defines the contract first beats a tester who clicks fast. The loop is the discipline. The clone is disposable. If you cannot write the contract, you cannot verify the feature. If you cannot verify it, you cannot ship it.
