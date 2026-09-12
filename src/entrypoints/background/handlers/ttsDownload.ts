@@ -5,13 +5,9 @@
  * runner streams progress via TTS_DOWNLOAD_PROGRESS and responds when done.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis';
-import { OffscreenManager } from '../offscreenManager';
 import { TtsDownloadVoicePayloadSchema } from '@/features/dictionaryPopup/schema';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-
-const offscreen = new OffscreenManager();
 
 export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_VOICE, async (request): Promise<MessageResponse<boolean>> => {
@@ -21,8 +17,7 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
     }
 
     try {
-      await offscreen.ensureOffscreenDocument();
-      const response = await sendMessage<MessageResponse<boolean>>({
+      const response = await ctx.offscreenManager.sendToOffscreen<MessageResponse<boolean>>({
         type: MESSAGE_TYPES.TTS_DOWNLOAD_VOICE,
         payload: parsed.data,
       });
