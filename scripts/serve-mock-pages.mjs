@@ -14,14 +14,28 @@
 
 import { execSync } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const DIST = resolve(ROOT, 'dist/mock-pages');
+const DIST = resolve(ROOT, 'dist-mock-pages');
 const TMP = resolve(ROOT, '.mock-servers');
+
+const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
+const agentSuffix = process.env.PW_OUTPUT_DIR
+  ? `-${process.env.PW_OUTPUT_DIR}`
+  : '';
+const runId = `${Date.now()}-${randomUUID().slice(0, 8)}`;
 
 const PAGES = [
   {
@@ -29,42 +43,42 @@ const PAGES = [
     id: 'mock-streaming-page',
     port: 4321,
     distHtml: resolve(DIST, 'src/entrypoints/mock-streaming-page/index.html'),
-    outDir: resolve(TMP, 'mock-streaming'),
+    outDir: resolve(TMP, `mock-streaming-${runId}${agentSuffix}`),
   },
   {
     name: 'StreamFlixIframe',
     id: 'mock-streaming-iframe-page',
     port: 4323,
     distHtml: resolve(DIST, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
-    outDir: resolve(TMP, 'mock-streaming-iframe'),
+    outDir: resolve(TMP, `mock-streaming-iframe-${runId}${agentSuffix}`),
   },
   {
     name: 'IframePlayer',
     id: 'mock-iframe-player',
     port: 4324,
     distHtml: resolve(DIST, 'src/entrypoints/mock-iframe-player/index.html'),
-    outDir: resolve(TMP, 'mock-iframe-player'),
+    outDir: resolve(TMP, `mock-iframe-player-${runId}${agentSuffix}`),
   },
   {
     name: 'YouTube',
     id: 'mock-youtube',
     port: 4322,
     distHtml: resolve(DIST, 'src/entrypoints/mock-youtube/index.html'),
-    outDir: resolve(TMP, 'mock-youtube'),
+    outDir: resolve(TMP, `mock-youtube-${runId}${agentSuffix}`),
   },
   {
     name: 'HardSub',
     id: 'mock-hardsub-page',
     port: 4325,
     distHtml: resolve(DIST, 'src/entrypoints/mock-hardsub-page/index.html'),
-    outDir: resolve(TMP, 'mock-hardsub'),
+    outDir: resolve(TMP, `mock-hardsub-${runId}${agentSuffix}`),
   },
   {
     name: 'YouTubeHardsub',
     id: 'mock-youtube-hardsub',
     port: 4326,
     distHtml: resolve(DIST, 'src/entrypoints/mock-youtube-hardsub/index.html'),
-    outDir: resolve(TMP, 'mock-youtube-hardsub'),
+    outDir: resolve(TMP, `mock-youtube-hardsub-${runId}${agentSuffix}`),
     // The 82MB test video + SRT live outside the bundle (would bloat every build).
     // Copy them straight from the data folder into the mock output assets dir.
     extraAssets: [
@@ -100,7 +114,9 @@ function preparePage(page) {
   }
 
   // Clean + recreate output dir
-  rmSync(page.outDir, { recursive: true, force: true });
+  if (existsSync(page.outDir)) {
+    rmSync(page.outDir, { recursive: true, force: true });
+  }
   mkdirSync(resolve(page.outDir, 'assets'), { recursive: true });
 
   // Copy index.html
@@ -132,11 +148,12 @@ function preparePage(page) {
 }
 
 function servePage(page) {
-  console.log(`\n▶ Serving ${page.name} at http://127.0.0.1:${page.port}/index.html`);
+  const port = page.port + portOffset;
+  console.log(`\n▶ Serving ${page.name} at http://127.0.0.1:${port}/index.html`);
   // Use shell:true with cwd to serve "." from the output directory.
   // Shell is required on Windows for .cmd binaries like npx.cmd.
   const child = spawn(
-    `npx --yes http-server . -p ${page.port} -a 127.0.0.1 --cors`,
+    `npx --yes http-server . -p ${port} -a 127.0.0.1 --cors`,
     {
       stdio: 'inherit',
       cwd: page.outDir,
@@ -176,7 +193,7 @@ for (const page of selected) {
 
 console.log('\n=== Servers running ===');
 for (const page of selected) {
-  console.log(`  ${page.name}:  http://127.0.0.1:${page.port}/index.html`);
+  console.log(`  ${page.name}:  http://127.0.0.1:${page.port + portOffset}/index.html`);
 }
 console.log('\n  Press Ctrl+C to stop all servers.\n');
 

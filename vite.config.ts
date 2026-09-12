@@ -163,13 +163,19 @@ export default defineConfig(({ mode }) => {
   const isFast = mode === 'fast';
   const isMock = mode === 'mock';
   const isExtension = !isMock;
-  const outDir = isMock ? 'dist/mock-pages' : 'dist';
+  const outDir = isMock ? 'dist-mock-pages' : 'dist';
   const buildInput = isMock ? MOCK_INPUT : (isFast ? FAST_INPUT : FULL_INPUT);
   return {
     define: {
       // Compile-time flag so the content script can skip heavy optional
       // features (OCR, study mode) during `build:fast`.
       __CELL_FAST_BUILD__: isFast ? 'true' : 'false',
+      // Compile-time flag for test-only debug markers (data-cell-runscan,
+      // __CELL_DEBUG_PAGE_SCAN). Only enabled when `CELL_E2E=1` is set,
+      // so production builds do not expose page scan metadata to the host.
+      // The surrounding quotes are required: esbuild `define` treats the value
+      // as raw JS code, so "true" (with quotes) becomes the string literal.
+      __CELL_DEBUG__: process.env.CELL_E2E === '1' ? '"true"' : '"false"',
     },
     plugins: [
       ...(isExtension ? [crx({ manifest })] : []),
