@@ -75,7 +75,7 @@ Change ready
 
 **Actions:**
 ```bash
-cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell"
+cd "<repo-root>"
 git status --short
 ```
 

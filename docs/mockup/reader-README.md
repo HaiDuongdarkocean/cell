@@ -85,13 +85,13 @@ Breakpont theo `tokens.css`:
 Mở file trực tiếp trong trình duyệt:
 
 ```
-C:\Users\The0cean\Programming\The0cean ecosystem\cell\docs\mockup\reader.html
+<repo-root>\docs\mockup\reader.html
 ```
 
 Hoặc phục vụ qua http local (từ thư mục `cell`):
 
 ```bash
-cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell"
+cd "<repo-root>"
 python -m http.server 4000
 # rồi mở http://localhost:4000/docs/mockup/reader.html
 ```

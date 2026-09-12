@@ -46,7 +46,7 @@ Thành công khi:
 
 ```bash
 # Dev
-cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell" && npm run dev
+cd "<repo-root>" && npm run dev
 
 # Typecheck
 npm run typecheck

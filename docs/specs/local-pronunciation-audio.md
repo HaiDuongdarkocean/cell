@@ -7,7 +7,7 @@
 3. **Package format (MVP):** Lingvo DSL single-language package with 2 layout options:
    - `'single'`: one `.dsl` index file + one `.dsl.files.zip` archive (D:\...\Forvo English, 3.4 GB).
    - `'split'`: one `.dsl` index file + nhiều `.zip` nhỏ (e.g. `ForvoEnglish_a.zip` ... `ForvoEnglish_z.zip`), mỗi file chứa audio của từ bắt đầu bằng 1 chữ cái. Dùng cho mobile / Quetta.
-4. **Future formats:** The provider interface is designed to also support the `C:\Users\The0cean\Downloads\Forvo_pronunciations` export layout (`metadata.jsonl` + `export/{mp3,opus}/{lang}.zip`) once those archives are complete.
+4. **Future formats:** The provider interface is designed to also support the `<user-home>\Downloads\Forvo_pronunciations` export layout (`metadata.jsonl` + `export/{mp3,opus}/{lang}.zip`) once those archives are complete.
 5. **Audio codec:** MP3 inside the zip. DSL references point to `*.mp3` paths. OPUS support is an accepted risk for the second format.
 6. **Phoneme engine:** Reuse existing Ocean Pronunciation Engine (`espeak-phonemes`). Local audio is fed as a `PronunciationAudio` via `decodeAudioUrl`.
 7. **Fallback chain:** `localFile` becomes a first-class `AudioEngineKind`. The user can reorder it in `PronunciationSettings.fallbackEngines`.

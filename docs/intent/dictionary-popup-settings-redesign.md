@@ -9,7 +9,7 @@
 - **Real panel hiện tại:** `src/features/settings/ui/DictionaryPopupSettingsPanel.tsx`
 - **Settings shape:** `src/entities/settings/types.ts:200-224` (`DictionaryPopupSettings`)
 - **Vị trí trong Settings dialog:** `SettingsDialogContent.tsx:538-554` (Card 7)
-- **Visual reference:** `C:\Users\The0cean\Documents\ShareX\Screenshots\2026-09\lEnnDiWPBY.png` — ghi chú: ảnh này là **Theme panel** (Light/Dark/System + Preset Dawn/Forest/Ocean/Warmth). Được dùng như tham chiếu cho ngôn ngữ hình học: card tròn, segmented button lớn, select mở rộng rõ ràng, bố cục đơn nhã.
+- **Visual reference:** `<user-home>\Documents\ShareX\Screenshots\2026-09\lEnnDiWPBY.png` — ghi chú: ảnh này là **Theme panel** (Light/Dark/System + Preset Dawn/Forest/Ocean/Warmth). Được dùng như tham chiếu cho ngôn ngữ hình học: card tròn, segmented button lớn, select mở rộng rõ ràng, bố cục đơn nhã.
 
 ---
 

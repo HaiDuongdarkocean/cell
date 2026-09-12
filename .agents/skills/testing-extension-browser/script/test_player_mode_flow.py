@@ -87,7 +87,7 @@ def log(msg: str) -> None:
 
 async def build() -> None:
     log("Building extension (dev mode)...")
-    ret = os.system(r'cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell" && npx vite build --mode development')
+    ret = os.system(f'cd "{Path(__file__).resolve().parents[4]}" && npx vite build --mode development')
     if ret != 0:
         raise RuntimeError("Build failed")
 

@@ -7,7 +7,7 @@ Subagent c36f687f completed successfully:
 # Technical Review Report: Local Video Player Specification
 
 **Reviewer**: Independent Senior Browser-Media/Chrome-Extension Technical Lead  
-**Spec**: `C:\Users\The0cean\Programming\The0cean ecosystem\cell\docs\specs\local-video-player.md`  
+**Spec**: `<repo-root>\docs\specs\local-video-player.md`  
 **Date**: 2026-08-20
 
 ---

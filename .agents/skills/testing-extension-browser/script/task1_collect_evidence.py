@@ -8,7 +8,7 @@ CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 SESSION_ROOT = Path(r"C:\stealth-mcp-browser-sessions")
 MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
-CELL_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist"
+CELL_EXT = str(Path(__file__).resolve().parents[4] / "dist")
 ANIMEKAI_URL = "https://animekai.be/watch/i-made-friends-with-the-second-prettiest-girl-in-my-class/ep-1"
 
 KEEP_PATTERNS = {"Default": {"Cookies","Cookies-journal","Login Data","Login Data-journal","Web Data","Web Data-journal","Preferences","Secure Preferences","Local Storage","Session Storage","Extension State"}}
