@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type ReactNode, type Ref } from 'react';
+import { forwardRef, useCallback, type HTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react';
 import styles from './Surface.module.css';
 
 type SurfaceVariant = 'panel' | 'dialog' | 'popover' | 'card';
@@ -55,10 +55,27 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(function Surface
     padding,
     children,
     className,
+    onKeyDown,
+    onKeyUp,
     ...rest
   }: SurfaceProps,
   ref: Ref<HTMLDivElement>,
 ): React.JSX.Element {
+  // Cell UI surfaces should never leak non-Escape keyboard events to the host
+  // page — that breaks host shortcuts while the user is focused inside a panel,
+  // dialog, or popover. Escape is left to the consumer / escape-layer stack.
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    onKeyDown?.(e);
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, [onKeyDown]);
+
+  const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    onKeyUp?.(e);
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, [onKeyUp]);
+
   const cls = [
     styles.surface,
     variantClass[variant],
@@ -69,7 +86,7 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(function Surface
     .join(' ');
 
   return (
-    <Tag ref={ref} className={cls} {...rest}>
+    <Tag ref={ref} className={cls} {...rest} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp}>
       {children}
     </Tag>
   );

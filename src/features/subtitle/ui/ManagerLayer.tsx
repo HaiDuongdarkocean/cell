@@ -9,7 +9,7 @@
  * Spec: docs/specs/subtitle-panels-atom-decomposition.md (Decision D1, Task 4)
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
 import { Sheet } from '@/shared/ui/Sheet';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
@@ -86,6 +86,18 @@ export function ManagerLayer({
     [manager, onClose, generateNativeEnabled],
   );
 
+  // Stop non-Escape keyboard events from leaking to the host page while the
+  // desktop manager layer is open.
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, []);
+
+  const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, []);
+
   if (isMobile) {
     return (
       <Sheet
@@ -119,6 +131,8 @@ export function ManagerLayer({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
     >
       <SubtitleManagerPanel {...managerProps} exiting={exiting} />
     </div>

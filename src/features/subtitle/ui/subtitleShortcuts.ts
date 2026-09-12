@@ -47,6 +47,23 @@ export function isEditableEvent(e: KeyboardEvent): boolean {
 }
 
 /**
+ * Check if the target is an activatable control (button, link, or
+ * `role="button"`) where Enter/Space should trigger the control, not a
+ * subtitle shortcut. Shortcuts like 'c' may still fire on these controls,
+ * but activation keys (Enter/Space) are reserved for the control.
+ */
+export function isActivatableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName.toLowerCase();
+  if (tag === 'button' || tag === 'a') {
+    return true;
+  }
+  return target.getAttribute('role') === 'button';
+}
+
+/**
  * Map a pressed key to a shortcut action, guarding against editable targets.
  *
  * ADR-021 D7: supports combo matching (ctrl/shift/alt modifiers). Shortcuts

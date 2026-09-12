@@ -20,9 +20,9 @@ import {
   resolveFormat,
   mergeCuesForPanel,
   handleShortcutKey,
-  isEditableTarget,
   isEditableEvent,
   isInsideCellUi,
+  isActivatableTarget,
   formatSubtitleName,
   seekVideo,
   playVideo,
@@ -697,6 +697,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Cell's own shortcuts are processed below before this guard returns.
     // Escape is always allowed through so panels can close.
     const insideCellUi = isInsideCellUi(e);
+    const realTarget = e.composedPath()[0] ?? e.target;
+    const key = e.key.toLowerCase();
 
     // Chrome hides the side panel when a tab enters fullscreen (Chromium
     // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
@@ -706,7 +708,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // fullscreen completes, but the re-open keeps it visible.
     // ponytail ceiling: only covers 'f' key, not UI fullscreen button click.
     // Upgrade: if Chrome exposes a "keep visible in fullscreen" flag, drop this.
-    if (!isEditableTarget(e.target) && e.key.toLowerCase() === 'f' && sidePanelOpen) {
+    if (!isEditableEvent(e) && key === 'f' && sidePanelOpen) {
       void sendMessage({
         type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
         payload: { tabId: undefined },
@@ -716,8 +718,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // ShortcutAction union — avoid config UI bloat, like NavCluster fixed shortcuts).
     // Guard: skip when focus in editable (input/textarea/contenteditable) — avoid YouTube search conflict.
     // Guard: skip when focus inside Cell UI — user is interacting with panel, not video.
-    if (!isEditableTarget(e.target) && !insideCellUi) {
-      const key = e.key.toLowerCase();
+    if (!isEditableEvent(e) && !insideCellUi) {
       if (key === '[' || key === ']' || key === '{' || key === '}' || key === '\\') {
         if (offsetController) {
           e.preventDefault();
@@ -742,13 +743,23 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
     }
 
-    // Skip configured shortcuts when focus is inside Cell UI — user is
-    // interacting with a panel (manager, settings, etc.), not the video.
-    const action = insideCellUi ? null : handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
-      ctrl: e.ctrlKey,
-      shift: e.shiftKey,
-      alt: e.altKey,
-    });
+    // In Player Mode the video/overlay is the focus, so allow configured
+    // shortcuts even if the event path passes through a Cell UI host. In normal
+    // mode, allow shortcuts inside Cell UI too — if a panel shortcut conflicts
+    // with the host the panel must win while it has focus. Skip when focus is in
+    // an editable element, and skip Enter/Space on buttons/links so those
+    // controls still activate with the keyboard.
+    const isActivationKey = key === ' ' || key === 'enter';
+    const shouldSkipShortcut =
+      isEditableEvent(e) ||
+      (isActivatableTarget(realTarget) && isActivationKey && !blockController.isPlayerModeActive);
+    const action = shouldSkipShortcut
+      ? null
+      : handleShortcutKey(key, shortcuts, realTarget, {
+          ctrl: e.ctrlKey,
+          shift: e.shiftKey,
+          alt: e.altKey,
+        });
     if (!action) {
       // Player Mode: block ALL host keyboard shortcuts (host page is covered by
       // backdrop, no host interaction should work). Let Escape through so the
@@ -758,15 +769,12 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         e.stopImmediatePropagation();
         return;
       }
-      // Cell UI: block ALL host shortcuts when focus is inside Cell UI panels
-      // (manager, settings, card creator, etc.). Let Escape through so panels
-      // can close via their own React keydown handlers.
-      // Exception: when focus is in an editable element (input/textarea/select/
-      // contenteditable) inside the shadow DOM, don't preventDefault — that
-      // blocks character insertion. `e.target` is retargeted to the shadow host,
-      // so use `isEditableEvent` which checks `composedPath()[0]`.
-      if (insideCellUi && e.key !== 'Escape' && !isEditableEvent(e)) {
-        e.preventDefault();
+      // Cell UI: block host shortcuts when focus is inside Cell UI panels. Let
+      // Escape through so panels can close. Don't stop when focus is in an
+      // editable or activatable control — those own Enter/Space and typing;
+      // the Cell UI root (Surface/Sheet) will stop the event from reaching the
+      // host after the focused control handles it.
+      if (insideCellUi && e.key !== 'Escape' && !shouldSkipShortcut) {
         e.stopImmediatePropagation();
       }
       return;
@@ -893,22 +901,37 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // through, YouTube's keyup handler plays the video again (double-toggle).
   // Same guard as keydown: skip editable targets, only block configured keys.
   const onKeyup = (e: KeyboardEvent) => {
-    if (isEditableTarget(e.target)) return;
-    // Block host keyup when focus is inside Cell UI (mirrors keydown guard).
-    // Skip editable elements inside shadow DOM (composedPath check) so typing
-    // in inputs/textareas isn't blocked.
-    if (isInsideCellUi(e) && !isEditableEvent(e)) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
+    if (isEditableEvent(e)) return;
+
+    const realTarget = e.composedPath()[0] ?? e.target;
+    const key = e.key.toLowerCase();
+    const isActivationKey = key === ' ' || key === 'enter';
+
+    // In Player Mode the overlay owns the keyboard; otherwise, let buttons and
+    // links handle Enter/Space themselves. The Cell UI root stops the event
+    // from leaking to the host after the focused control consumes it.
+    if (isActivatableTarget(realTarget) && isActivationKey && !blockController.isPlayerModeActive) {
       return;
     }
-    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+
+    const action = handleShortcutKey(key, shortcuts, realTarget, {
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
       alt: e.altKey,
     });
+
     if (action) {
+      // The keydown handler already performed the action. Stop keyup too so
+      // host keyup listeners (e.g. YouTube's space toggle) don't undo it.
       e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+
+    // Block host keyup when focus is inside Cell UI and the key wasn't handled
+    // by a focused control. Escape is allowed through so panels/escape layers
+    // can close; don't preventDefault here so activatable controls still work.
+    if (isInsideCellUi(e) && e.key !== 'Escape') {
       e.stopImmediatePropagation();
     }
   };

@@ -1,4 +1,9 @@
-import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
+import {
+  handleShortcutKey,
+  isEditableTarget,
+  isActivatableTarget,
+  isEditableEvent,
+} from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type { KeyboardShortcut } from '@/entities/media';
 
@@ -98,6 +103,57 @@ describe('handleShortcutKey', () => {
   it('returns null when shortcuts array is empty', () => {
     const action = handleShortcutKey('a', [], createDivTarget());
     expect(action).toBeNull();
+  });
+});
+
+describe('isActivatableTarget', () => {
+  it('returns true for button element', () => {
+    expect(isActivatableTarget(document.createElement('button'))).toBe(true);
+  });
+
+  it('returns true for anchor element', () => {
+    expect(isActivatableTarget(document.createElement('a'))).toBe(true);
+  });
+
+  it('returns true for role="button" element', () => {
+    const div = document.createElement('div');
+    div.setAttribute('role', 'button');
+    expect(isActivatableTarget(div)).toBe(true);
+  });
+
+  it('returns false for div element', () => {
+    expect(isActivatableTarget(createDivTarget())).toBe(false);
+  });
+
+  it('returns false for null target', () => {
+    expect(isActivatableTarget(null)).toBe(false);
+  });
+});
+
+describe('isEditableEvent', () => {
+  it('returns true when real target is an input (simulated shadow retargeting)', () => {
+    const input = document.createElement('input');
+    const event = new KeyboardEvent('keydown', { key: 'c', bubbles: true, cancelable: true });
+    // jsdom does not populate composedPath() for synthetic keyboard events, so
+    // we simulate retargeting: e.target would be the shadow host, but the real
+    // focused element is the first entry in composedPath().
+    Object.defineProperty(event, 'composedPath', {
+      value: () => [input, document.body],
+      configurable: true,
+    });
+
+    expect(isEditableEvent(event)).toBe(true);
+  });
+
+  it('returns false when real target is a non-editable surface element', () => {
+    const panel = document.createElement('div');
+    const event = new KeyboardEvent('keydown', { key: 'c', bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'composedPath', {
+      value: () => [panel, document.body],
+      configurable: true,
+    });
+
+    expect(isEditableEvent(event)).toBe(false);
   });
 });
 

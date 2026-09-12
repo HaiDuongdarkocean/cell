@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, type ReactNode, type KeyboardEvent } from 'react';
 import { useSheet } from './useSheet';
 import { useFocusTrap } from './useFocusTrap';
 import { pushEscapeLayer } from './escapeLayerStack';
@@ -55,6 +55,19 @@ export function Sheet({
   } = useSheet({ initialHeight, maxHeight, onClose, onHeightChange });
   useFocusTrap(sheetRef, open);
 
+  // Stop non-Escape keyboard events from leaking to the host page while the
+  // sheet is open. The drag handle and content may need arrow/Enter/Space;
+  // those fire on children before the event reaches this handler.
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, []);
+
+  const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  }, []);
+
   // ESC to close — fullscreen-aware (let browser exit fullscreen first).
   // Registered on the shared Escape stack so the sheet consumes the key
   // without letting it bubble to ancestor surfaces (e.g. UniversalPanel).
@@ -77,6 +90,8 @@ export function Sheet({
       aria-label={ariaLabel}
       data-cell-id={dataTestId}
       style={style}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
     >
       <div
         className={styles.handle}

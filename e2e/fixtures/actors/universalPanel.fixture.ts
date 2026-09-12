@@ -127,6 +127,55 @@ export class UniversalPanelActor {
   }
 
   /**
+   * Focus the dictionary search input inside the panel shadow root.
+   */
+  async focusDictionarySearch(timeout = 10_000): Promise<void> {
+    const ok = await this.page.evaluate(
+      (maxWait) =>
+        new Promise<boolean>((resolve) => {
+          const startTime = Date.now();
+          const tick = (): void => {
+            const host = document.getElementById('cell-universal-panel-host');
+            const root = host?.shadowRoot;
+            const input = root?.querySelector(
+              'input[data-cell-id="dictionary-search-input"]',
+            ) as HTMLInputElement | null;
+            if (input) {
+              input.focus();
+              resolve(true);
+              return;
+            }
+            if (Date.now() - startTime > maxWait) {
+              resolve(false);
+              return;
+            }
+            setTimeout(tick, 100);
+          };
+          tick();
+        }),
+      timeout,
+    );
+
+    if (!ok) {
+      throw new Error('Dictionary search input did not mount in time');
+    }
+  }
+
+  /**
+   * Get the current value of the dictionary search input.
+   */
+  async getDictionarySearchValue(): Promise<string | null> {
+    return this.page.evaluate(() => {
+      const host = document.getElementById('cell-universal-panel-host');
+      const root = host?.shadowRoot;
+      const input = root?.querySelector(
+        'input[data-cell-id="dictionary-search-input"]',
+      ) as HTMLInputElement | null;
+      return input?.value ?? null;
+    });
+  }
+
+  /**
    * Get the bounding rectangle of the mobile Card Creator sheet inside the
    * panel shadow root. Returns null if the sheet is not present.
    */
