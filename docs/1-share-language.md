@@ -89,7 +89,7 @@
 | `src/offscreen/` | "offscreen", "offscreen document" |
 | `mux.js` (TS → fMP4) | "transmuxing", "convert TS" |
 | `docs/2-architechture-system.md` | "architecture map", "file structure doc" |
-| `docs/knowledge/principles.md` | "principle index", "nguyên lý đúc rút" |
+| `.agents/skills/learning-and-apply/` (đã migrate từ docs/knowledge/) | "principle index", "nguyên lý đúc rút" |
 | `docs/adr/NNN-*.md` | "ADR", "architecture decision" |
 | Subtitle navigation control cluster | "nav cluster", "control cluster", "cluster 6 nút" |
 | Collapse mode (half-circle edge-stuck) | "thu gọn", "dính mép", "collapse" |

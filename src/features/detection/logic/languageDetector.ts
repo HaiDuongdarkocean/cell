@@ -134,7 +134,7 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
   },
 
   // === Latin-script languages — unique signature words (threshold 4) ===
-  // Source: docs/knowledge/language-unique-signature-words.md
+  // Source: .agents/skills/learning-and-apply/experience/ (đã migrate từ docs/knowledge/)
   // Each word is unique to its language (no overlap with other Latin profiles).
   // Threshold lowered from 6 to 4 because unique words don't cross-match.
   // Norwegian/Danish use threshold 3 (heavily overlapping pair, fewer unique words).

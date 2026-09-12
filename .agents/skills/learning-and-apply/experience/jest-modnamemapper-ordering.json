@@ -8,8 +8,8 @@
   "cases": [
     {
       "context": "Thêm ?raw imports vào source file, Jest test fail ENOENT",
-      "bad": "const moduleNameMapper = { '^@/(.*)$': '<rootDir>/src/$1', '\\\\?raw$': '<rootDir>/tests/rawMock.ts' }; // generic match trước → ?raw never reached → ENOENT",
-      "good": "const moduleNameMapper = { '\\\\?raw$': '<rootDir>/tests/rawMock.ts', '^@/(.*)$': '<rootDir>/src/$1' }; // specific trước → ?raw match → rawMock.ts"
+      "bad": "const moduleNameMapper = { '^@/(.*)$': '<rootDir>/src/$1', '\\\\?raw$': '<rootDir>/tests/mocks/rawMock.ts' }; // generic match trước → ?raw never reached → ENOENT",
+      "good": "const moduleNameMapper = { '\\\\?raw$': '<rootDir>/tests/mocks/rawMock.ts', '^@/(.*)$': '<rootDir>/src/$1' }; // specific trước → ?raw match → rawMock.ts"
     }
   ],
   "applyFor": [

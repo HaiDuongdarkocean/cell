@@ -132,7 +132,7 @@ Audit toàn bộ codebase `cell` (src/, tests/, build, dependencies, process) đ
 | 5 | `features/settings/ui/mountSettingsDialog.ts`, `mountSettingsDialogLegacy.ts` | Testing | 0% coverage; UI settings untested. | 4 | 3 | 3 | 3 | **3.30** |
 | 6 | `package.json` dependencies | Dependency | 11 packages outdated. | 3 | 3 | 4 | 3 | **3.20** |
 | 7 | `features/reader/logic`, `features/reader/services`, `entrypoints/popup/components` | Testing | 0% coverage; reader/popup untested. | 4 | 3 | 2 | 3 | **3.10** |
-| 8 | `plans/00{1..10}*` + hardcoded motion tokens | Process / Architectural | 10 plans TODO; design-system token debt chưa giải quyết. | 3 | 2 | 4 | 2 | **3.00** |
+| 8 | `animation-plans/00{1..10}*` + hardcoded motion tokens | Process / Architectural | 10 plans TODO; design-system token debt chưa giải quyết. | 3 | 2 | 4 | 2 | **3.00** |
 | 9 | Working tree (133 files, generated assets, temp files) | Process | Untracked/generated files lẫn source; khó review và merge. | 3 | 3 | 3 | 4 | **2.85** |
 | 10 | `phraseMatchBenchmark.test.ts` threshold nới 200ms → 300ms | Testing / Code quality | Giấu vấn đề perf bằng cách nới threshold thay vì optimize; `console.log` còn sót. | 2 | 3 | 3 | 5 | **2.40** |
 | 11 | Build warnings (Vite `__dirname`, PostCSS `from`, `options.html` type) | Infrastructure | Warnings build có thể thành lỗi sau nâng cấp. | 2 | 2 | 3 | 4 | **2.20** |

@@ -76,7 +76,7 @@ src/features/settings/ui/
   SettingsDialogContent.tsx              # - Target/Native/Block appearance + Cluster + orphaned code
   # SubtitleStylePanel/Preview/BlockSettings/NavCluster moved to subtitle/ui/appearance/
 
-docs/mockup/
+docs/mockups/
   subtitle-manager-redesign.html         # + appearance view mockup (360px + 420px + desktop)
 docs/specs/
   subtitle-appearance-in-manager.md      # this spec

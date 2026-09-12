@@ -6,7 +6,7 @@ import { createDefaultAdapters } from '@/features/detection/subtitleDiscovery';
 import type { SubtitleDiscoveryContext, SubtitleDiscoveryEnvironment, SubtitleSignal } from '@/features/detection/subtitleDiscovery';
 
 function fixture(name: string): string {
-  return fs.readFileSync(path.resolve(process.cwd(), 'tests/fixtures/subtitleDiscovery', name), 'utf-8').trim();
+  return fs.readFileSync(path.resolve(process.cwd(), 'tests/data-test/subtitleDiscovery', name), 'utf-8').trim();
 }
 
 function makeContext(overrides?: Partial<SubtitleDiscoveryContext>): SubtitleDiscoveryContext {

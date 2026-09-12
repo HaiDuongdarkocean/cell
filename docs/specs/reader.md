@@ -176,7 +176,7 @@ export async function importBook(file: File): Promise<BookRecord> {
 
 ## 9. UI/UX
 
-Theo mockup `docs/mockup/reader.html` và `docs/mockup/reader-README.md`:
+Theo mockup `docs/mockups/reader.html` và `docs/mockups/reader-README.md`:
 - **Universal Panel**: thẻ Reader dùng icon `book-open` mở trang reader mới.
 - **Reader Home**: import area (drag/drop hoặc chọn file), danh sách sách dạng card hiển thị % hoàn thành + thời gian đọc.
 - **Reading View**: nội dung tokenize (`span.token` theo tần suất/trạng thái), header tên sách + thời gian + nút Lưu Anki, thanh TTS sticky ở dưới.

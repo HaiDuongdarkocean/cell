@@ -21,7 +21,7 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 
 ### UX-2 — TTS progress bar / timer trong mockup dựa trên dữ liệu không tồn tại
 **Severity: major**
-- `docs/mockup/reader.html` dòng 170-193 vẽ thanh progress TTS và `0:18 / 1:45`.
+- `docs/mockups/reader.html` dòng 170-193 vẽ thanh progress TTS và `0:18 / 1:45`.
 - `docs/research/reader-technical.md` dòng 170-173 đề xuất dùng `createTtsEngine().speak(sentence, { langCode })` hoặc `createTtsAudioQueue` với `AudioBuffer` đã tổng hợp.
 - **Lý do:** `chrome.tts` và `speechSynthesis` không trả về thời lượng câu theo thời gian thực. Chỉ khi pre-synthesize toàn bộ sách mới có duration, điều này không nằm trong Day-1 scope. UI sẽ bị "fake" hoặc không hoạt động.
 
@@ -39,7 +39,7 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 ### UX-5 — Dictionary popup/sheet trên mobile chưa được định nghĩa
 **Severity: minor**
 - `docs/research/reader-technical.md` dòng 149 (`ReaderDictionarySheet`) và dòng 175-176 đề cập `DictionaryPanelView`.
-- `docs/mockup/reader.html` không có bất kỳ UI dictionary nào.
+- `docs/mockups/reader.html` không có bất kỳ UI dictionary nào.
 - **Lý do:** Trên mobile, popup có thể che phủ toàn bộ câu. Thiếu quyết định dùng bottom sheet, side panel, hay inline; thiếu cách đóng bằng swipe/back.
 
 ### UX-6 — Không có trạng thái "TTS không có voice / TTS lỗi"
@@ -49,7 +49,7 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 
 ### UX-7 — Chọn từ để tra từ điển xung đột với việc select/copy văn bản
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 152-160: `.token` là `display: inline-block` với `cursor: pointer`.
+- `docs/mockups/reader.html` dòng 152-160: `.token` là `display: inline-block` với `cursor: pointer`.
 - **Lý do:** Toàn bộ văn bản bị bọc trong `span.token`. Người dùng không thể select/copy đoạn văn để dịch bên ngoài hoặc tra Google. Không có chế độ "chế độ đọc / chế độ tương tác".
 
 ### UX-8 — Không có empty/error state cho Library
@@ -100,18 +100,18 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 
 ### A11Y-1 — Token từ không thể truy cập bằng bàn phím
 **Severity: blocker**
-- `docs/mockup/reader.html` dòng 152-160: `.token` là `<span>` với `cursor: pointer`.
+- `docs/mockups/reader.html` dòng 152-160: `.token` là `<span>` với `cursor: pointer`.
 - `docs/specs/reader-requirements.md` dòng 81-82 (FR-6.1, FR-6.3): click token để mở dictionary.
 - **Lý do:** `span` không có `tabindex`, `role="button"`, không xử lý `Enter`/`Space`. Người dùng chỉ dùng bàn phím hoàn toàn không thể tra từ. Vi phạm WCAG 2.1.1 / 2.1.2.
 
 ### A11Y-2 — Không có focus-visible cho token và các nút điều khiển
 **Severity: major**
-- `docs/mockup/reader.html` dòng 160: `.token:hover { outline: ... }` nhưng không có `:focus-visible`.
+- `docs/mockups/reader.html` dòng 160: `.token:hover { outline: ... }` nhưng không có `:focus-visible`.
 - **Lý do:** Người dùng bàn phím không biết đang focus vào đâu. Cần `outline`/`box-shadow` rõ ràng khi focus.
 
 ### A11Y-3 — `lang="vi"` cứng trên toàn bộ trang dù nội dung sách có thể là tiếng Anh / khác
 **Severity: major**
-- `docs/mockup/reader.html` dòng 2: `<html lang="vi" data-theme="light">`.
+- `docs/mockups/reader.html` dòng 2: `<html lang="vi" data-theme="light">`.
 - **Lý do:** Screen reader sẽ phát âm tiếng Anh theo giọng tiếng Việt. Cần đặt `lang` động theo `languageCode` của sách (`BookRecord.languageCode`).
 
 ### A11Y-4 — Thiếu ARIA live region cho TTS, progress, dictionary
@@ -121,17 +121,17 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 
 ### A11Y-5 — Token từng từ bị tách thành nhiều `<span>` gây đọc rời rạc
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 329-380: mỗi từ là một `span.token`.
+- `docs/mockups/reader.html` dòng 329-380: mỗi từ là một `span.token`.
 - **Lý do:** Screen reader có thể ngắt câu thành từng từ riêng lẻ, làm mất ngữ điệu. Cần `aria-label` hoặc `role` trên đoạn văn để đọc trôi chảy.
 
 ### A11Y-6 — `aria-label` tiếng Việt cứng trên các nút điều khiển
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 215, 251, 320, 326, 384-386: `aria-label` bằng tiếng Việt.
+- `docs/mockups/reader.html` dòng 215, 251, 320, 326, 384-386: `aria-label` bằng tiếng Việt.
 - **Lý do:** Ứng dụng cross-language; nếu UI language khác, label không đúng. Cần i18n.
 
 ### A11Y-7 — Thiếu heading hierarchy và skip link
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 319-327: `read-header` dùng `h1`, không có `h2`-`h6`.
+- `docs/mockups/reader.html` dòng 319-327: `read-header` dùng `h1`, không có `h2`-`h6`.
 - **Lý do:** Không có skip-to-content, không có landmarks rõ ràng (aside cho TOC, main cho nội dung). Khó điều hướng bằng screen reader.
 
 ---
@@ -244,12 +244,12 @@ Phát hiện nhiều điểm trọng yếu: scope/timeline **không realistic** 
 
 ### MOCK-1 — Mockup dùng `innerHTML` để chèn SVG theme icon
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 410-415: `themeBtn.innerHTML = sunIcon`.
+- `docs/mockups/reader.html` dòng 410-415: `themeBtn.innerHTML = sunIcon`.
 - **Lý do:** Nếu mô hình này được copy vào React, cần dùng `ICON_CATALOG` và render an toàn. `innerHTML` với nội dung tĩnh vẫn là pattern không khuyến khích.
 
 ### MOCK-2 — `aria-label` của theme button ban đầu rỗng
 **Severity: minor**
-- `docs/mockup/reader.html` dòng 215: `<button id="themeToggle" ... aria-label="Đổi theme"></button>`.
+- `docs/mockups/reader.html` dòng 215: `<button id="themeToggle" ... aria-label="Đổi theme"></button>`.
 - **Lý do:** Giá trị ban đầu ổn, nhưng sau `setTheme` nó đổi. Vấn đề là label không theo ngôn ngữ UI thực. Không nghiêm trọng vì là mockup.
 
 ---

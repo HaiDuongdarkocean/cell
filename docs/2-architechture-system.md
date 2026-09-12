@@ -350,44 +350,19 @@ src/
 ```
 tests/
 ├── setup.ts                          # Jest setup: polyfills, matchers
-├── styleMock.ts                      # Mock CSS imports
-├── workerMock.ts                     # Mock Web Workers
-├── types.d.ts                        # Shared test type declarations
-├── browser/                          # Browser test assets
-│   ├── test-subtitle-overlay.html    # Standalone HTML page for overlay testing
-│   ├── test-subtitle.srt             # Sample subtitle file
-│   ├── Scary_Movie.en.srt            # Full sample subtitle
-│   └── test-video.mp4                # Sample video file
-├── data-test/                        # Data-driven test files
-│   ├── English.eng (1).srt
-│   └── English.eng (1).vtt
-├── fixtures/                         # Shared unit-test fixtures
-│   ├── sample.ass
-│   ├── sample.m3u8
-│   ├── sample.srt
-│   └── sample.vtt
-├── components/                       # React component tests
-│   └── hooks.test.tsx
-├── utils/                            # Cross-cutting utility tests
-│   └── format.test.ts
-├── unit/                             # Unit + integration tests (Jest, no network)
-│   ├── background/                   # Background service worker tests
-│   ├── content/                      # Content script tests
-│   ├── converters/                   # Converter tests
-│   ├── detectors/                    # Language/script/video/subtitle detector tests
-│   ├── lib/                          # Library tests
-│   ├── offscreen/                    # Offscreen document tests
-│   ├── parsers/                      # Subtitle/M3U8 parser tests
-│   ├── popup/                        # Popup component tests
-│   ├── selectors/                    # Media selector tests
-│   ├── sidepanel/                    # Side Panel store + CueList tests (ADR-008)
-│   ├── subtitleOverlay/              # Subtitle overlay + panel tests
-│   └── utils/                        # Utility tests
+├── types.d.ts / jest-dom.d.ts        # Shared test type declarations
+├── __mocks__/                        # Jest auto-mocks
+├── mocks/                            # moduleNameMapper mocks (css?raw, ?inline, ?worker, .module.css)
+├── data-test/                        # Data-driven test files + shared fixtures
+│   ├── ocr/                          # OCR fixtures + synthetic frames + regen scripts
+│   ├── local-player/                 # Library metadata + filename/subtitle samples
+│   ├── subtitleDiscovery/            # Listing/player-state fixtures per site
+│   └── resource/                     # Dictionary packs (en/zh)
+├── unit/                             # Unit tests (Jest, no network)
+│   ├── entities/ entrypoints/ features/ shared/ scripts/ fixtures/
+│   └── manifest.test.ts
 └── integration/                      # Integration tests (network, real m3u8 download, dictionary import smoke ADR-023)
-    ├── setup/                        # globalSetup + fixtures
-    ├── compare.integration.test.ts
-    ├── parallel.integration.test.ts
-    └── sequential.integration.test.ts
+    └── setup/                        # globalSetup + fixtures
 
 e2e/                                  # Playwright E2E specs (browser, layout, interaction)
 ├── extension.fixture.ts              # Fixture `context`/`worker`/`extensionId`/`popupPage`/`mockPage`: persistent Chromium + MV3
@@ -825,7 +800,7 @@ Subtitle detected (networkInterceptor)
       - Not found → add to needFetch list
     → Phase 2: Content fallback (chỉ cho unknown/unmapped)
       - Fetch subtitle content → detectLanguage(content, format)
-      - Frequency-based: LANGUAGE_PROFILES unique signature words + scoring (highest match count wins, not first-match) — see docs/knowledge/language-unique-signature-words.md
+      - Frequency-based: LANGUAGE_PROFILES unique signature words + scoring (highest match count wins, not first-match) — see .agents/skills/learning-and-apply/experience/ (đã migrate từ docs/knowledge/)
       - labelToIsoCode(label) → ISO 639-1 code
       - setSubtitles() update popup store
       - send UPDATE_SUBTITLE_LANGUAGE { subtitleId, language } → background

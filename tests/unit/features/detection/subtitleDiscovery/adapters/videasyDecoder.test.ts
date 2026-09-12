@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { decryptVideasyResponse, base64UrlToBytes } from '@/features/detection/subtitleDiscovery/adapters/videasyDecoder';
 
 function fixture(name: string): string {
-  return fs.readFileSync(path.resolve(process.cwd(), 'tests/fixtures/subtitleDiscovery', name), 'utf-8').trim();
+  return fs.readFileSync(path.resolve(process.cwd(), 'tests/data-test/subtitleDiscovery', name), 'utf-8').trim();
 }
 
 describe('videasyDecoder', () => {

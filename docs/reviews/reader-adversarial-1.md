@@ -1,6 +1,6 @@
 # Cell Reader — Adversarial Review (#1)
 
-> Phạm vi: `docs/specs/reader.md`, `docs/intent/reader.md`, `docs/specs/reader-requirements.md`, `docs/research/reader-technical.md`, `docs/mockup/reader-README.md`.
+> Phạm vi: `docs/specs/reader.md`, `docs/intent/reader.md`, `docs/specs/reader-requirements.md`, `docs/research/reader-technical.md`, `docs/mockups/reader-README.md`.
 > Nhiệm vụ: tìm lỗi/giả định nguy hiểm. Không validate, không tóm tắt điểm mạnh, không sửa mã nguồn.
 
 ---
