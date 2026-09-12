@@ -50,7 +50,6 @@ export { ShortcutInput } from './ShortcutInput';
 // === New atoms (Phase 2: Generic Core + Layout + Display + Utility + Extension) ===
 export { AspectRatio } from './AspectRatio';
 export { Avatar } from './Avatar';
-export { BackButton } from './BackButton';
 export { Blockquote } from './Blockquote';
 export { Breadcrumb } from './Breadcrumb';
 export { Box } from './Box';

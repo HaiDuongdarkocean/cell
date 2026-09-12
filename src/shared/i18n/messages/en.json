@@ -221,6 +221,8 @@
   "cardCreator.queue.hide": "Hide queue",
   "cardCreator.queue.empty": "Queue is empty",
   "cardCreator.settings.comingSoon": "Card Creator settings coming soon",
+  "settings.title": "Settings",
+  "ui.back": "Back",
   "cardCreator.preview.aria": "Preview",
   "cardCreator.fieldMap.aria": "Map $1 to Anki field",
   "cardCreator.toast.fetch.wordAudio": "Could not fetch word audio: $1",

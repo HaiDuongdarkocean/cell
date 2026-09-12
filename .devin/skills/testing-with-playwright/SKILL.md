@@ -97,21 +97,25 @@ bash scripts/e2e.sh --stage2 universal-panel-dictionary subtitle-manager
 ## Commands
 
 ```bash
-bash scripts/e2e.sh                           # build + all stage-2
-bash scripts/e2e.sh --headed                  # build + all (browser visible)
+bash scripts/e2e.sh                            # build + all stage-2 (headless)
+bash scripts/e2e.sh --headed                   # build + all (browser visible)
 bash scripts/e2e.sh universal-panel-dictionary # build + 1 file
 bash scripts/e2e.sh brick1 brick2 brick3       # build + nhiều file
 bash scripts/e2e.sh --stage2 brick1 brick2     # run only, skip build
+bash scripts/e2e.sh --stage2 --headed          # run only, browser visible
 bash scripts/e2e.sh --build                    # build only
 ```
 
 Trên Windows dùng npm:
 
 ```bash
-npm run test:e2e:full
-npm run test:e2e:stage2 -- brick1 brick2
-npm run test:e2e:build
+npm run test:e2e:full                          # build + all stage-2
+npm run test:e2e:stage2 -- brick1 brick2       # run only (headless)
+npm run test:e2e:headed                        # run only (browser visible)
+npm run test:e2e:build                         # build only
 ```
+
+**Headless by default.** Stage-2 runs headless unless `--headed` is passed or `npm run test:e2e:headed` is used. Headless is faster, reproducible on CI, and sufficient for most DOM/flow assertions. Use `--headed` only when you need to visually debug, the test involves extension loading quirks that require a visible browser, or the failure only reproduces with a real GPU/compositor.
 
 ## How to add a new stage-2 test
 
@@ -145,6 +149,7 @@ Lưu evidence vào `loop/<audit>/image/` và state vào `loop/<audit>/state/NN-s
 
 ## Notes
 
-- Default **headed** vì Playwright 1.61 không load Chrome extensions ở headless.
+- Default **headless** for speed and CI reproducibility. Use `--headed` or `npm run test:e2e:headed` when visual debugging or when the specific test requires a visible browser (some extension loading paths still require headed mode).
+- Playwright 1.61 may not load Chrome extensions in headless; if a test fails because the extension context is missing, re-run with `--headed` before debugging the code.
 - Worker teardown: `cellEnvironment.fixture.ts` tự `close()` context sau khi worker chạy xong.
 - `scripts/e2e.sh` thu thập nhiều positional args vào array, chạy 1 lần Playwright.

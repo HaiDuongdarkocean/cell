@@ -69,7 +69,7 @@ Giữ nguyên: `button.outline-border`, `badge.outline-border`, `input.error/suc
 | `Input.module.css` | `.input` border-color → transparent (giữ width — không reflow); hover → `background: var(--color-field-hover)` thay vì border-emphasized; focus giữ ring + `border-color: var(--input-border-focus)` (state); bỏ `inset inner-highlight` khỏi filled/focus (artefact của kỷ nguyên stroke) |
 | `Select.module.css` | `triggerFilled` → `background: var(--color-field)`, `border-color: transparent`; hover → `field-hover`; `.menu` bỏ border (popover = shadow); **default variant** đổi `outline` → `filled` trong `Select.tsx` |
 | `SearchableSelect.module.css`, `MultiSelect.module.css`, `Textarea.module.css`, `SearchField.module.css`, `ShortcutInput.module.css`, `ColorInput.module.css` | Cùng công thức: trigger/field = `color-field` + border transparent; menu = shadow-only; state borders giữ |
-| `Chip.module.css`, `Kbd.module.css`, `Badge.module.css` (non-outline), `Tabs.module.css`, `Accordion.module.css`, `NavItem.module.css`, `Tree.module.css`, `Avatar.module.css`, `Slider.module.css`, `CopyButton`, `CloseButton`, `PinButton`, `BackButton`, `CollapseButton`, `MaximizeButton`, `MinimizeButton`, `InfoButton`, `HintIcon` | Bỏ default outline; giữ variant outline/state/focus |
+| `Chip.module.css`, `Kbd.module.css`, `Badge.module.css` (non-outline), `Tabs.module.css`, `Accordion.module.css`, `NavItem.module.css`, `Tree.module.css`, `Avatar.module.css`, `Slider.module.css`, `CopyButton`, `CloseButton`, `PinButton`, `CollapseButton`, `MaximizeButton`, `MinimizeButton`, `InfoButton`, `HintIcon` | Bỏ default outline; giữ variant outline/state/focus |
 | `DragHandle.module.css` | **Giữ** — ngoại lệ affordance |
 | `Separator.module.css` | Giữ — bản chất là separator |
 

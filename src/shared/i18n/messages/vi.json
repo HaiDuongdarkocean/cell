@@ -221,6 +221,8 @@
   "cardCreator.queue.hide": "Ẩn danh sách",
   "cardCreator.queue.empty": "Danh sách trống",
   "cardCreator.settings.comingSoon": "Cài đặt Card Creator sắp có",
+  "settings.title": "Cài đặt",
+  "ui.back": "Quay lại",
   "cardCreator.preview.aria": "Xem trước",
   "cardCreator.fieldMap.aria": "Ghép $1 vào trường Anki",
   "cardCreator.toast.fetch.wordAudio": "Không lấy được âm thanh từ: $1",
