@@ -21,7 +21,7 @@ const showcaseOutputMover = (): Plugin => ({
   name: 'showcase-output-mover',
   apply: 'build',
   closeBundle() {
-    const outDir = resolve(import.meta.dirname, 'dist/design-system-showcase');
+    const outDir = resolve(import.meta.dirname, 'dist-design-system-showcase');
     const deep = resolve(outDir, 'src/entrypoints/design-system-showcase/index.html');
     const flat = resolve(outDir, 'design-system-showcase.html');
     try {
@@ -57,11 +57,6 @@ const showcaseSpaRewrite = (): Plugin => ({
   },
 });
 
-/**
- * Vite config riêng cho Design System Showcase dev server và build.
- * Không load CRXJS → không interfere với extension.
- * Build outputs `dist/design-system-showcase/design-system-showcase.html`.
- */
 export default defineConfig({
   resolve: {
     alias: {
@@ -78,7 +73,7 @@ export default defineConfig({
     open: '/src/entrypoints/design-system-showcase/index.html',
   },
   build: {
-    outDir: 'dist/design-system-showcase',
+    outDir: 'dist-design-system-showcase',
     emptyOutDir: true,
     rollupOptions: {
       input: {

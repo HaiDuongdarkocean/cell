@@ -3,15 +3,16 @@ node_modules/
 
 # Build output
 dist/
-.mock-servers/
+dist-design-system-showcase/
+dist-mock-pages/
+dist-pages/
 
 # Test coverage
 coverage/
 
-# Playwright
-playwright-report/
-test-results/
+# Playwright runtime artifacts and reports
 .playwright-mcp/
+e2e-results/
 
 # Environment
 .env
@@ -139,12 +140,7 @@ cookies*.txt
 # Showcase sample videos (licensed clips — keep local copies only).
 src/entrypoints/design-system-showcase/assets/*.mp4
 
-# Playwright run artifacts from agent-driven e2e sessions.
-test-results-*/
-playwright-report-*/
-dist-mock-pages/
-dist-pages/
-.test-pages/
+
 
 # Python bytecode cache.
 __pycache__/

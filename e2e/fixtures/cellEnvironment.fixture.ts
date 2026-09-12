@@ -5,20 +5,14 @@ import {
   type BrowserContext,
   type Page,
 } from '@playwright/test';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { getE2EAgentPaths } from '../lib/agent-paths';
 
-const projectRoot = resolve(fileURLToPath(import.meta.url), '..', '..', '..');
+const { staging, projectRoot } = getE2EAgentPaths();
 const sourceExtensionPath = resolve(projectRoot, 'dist');
-const uBlockSource = resolve(projectRoot, 'data', 'extension', 'uBOLite');
 
-const outputSuffix = process.env.PW_OUTPUT_DIR || '';
-const testResultsDir = resolve(
-  projectRoot,
-  outputSuffix ? `test-results-${outputSuffix}` : 'test-results',
-);
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const STREAMFLIX_URL = `http://127.0.0.1:${4321 + portOffset}/index.html`;
 
@@ -27,41 +21,16 @@ type CellEnvironmentFixtures = {
   streamFlixPage: Page;
 };
 
-/**
- * uBOLite ships with a `_metadata` directory that Chrome refuses when loading
- * unpacked via --load-extension. Copy the whole extension to a unique staging
- * path per worker and strip `_metadata` before launch. Using a unique path
- * avoids ENOTEMPTY if a previous Chrome process still holds the directory.
- */
-function prepareUblockClean(workerIndex: number): string {
-  const unique = `${workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const cleanPath = resolve(testResultsDir, `.ublock-clean-${unique}`);
-
-  mkdirSync(testResultsDir, { recursive: true });
-  if (existsSync(cleanPath)) {
-    rmSync(cleanPath, { recursive: true, force: true });
-  }
-  cpSync(uBlockSource, cleanPath, { recursive: true });
-
-  const metadataDir = resolve(cleanPath, '_metadata');
-  if (existsSync(metadataDir)) {
-    rmSync(metadataDir, { recursive: true, force: true });
-  }
-
-  return cleanPath;
-}
-
 const launchContext = async (
   headless: boolean,
-  uBlockClean: string,
-  profileDir: string,
   extensionDir: string,
+  profileDir: string,
 ): Promise<BrowserContext> =>
   chromium.launchPersistentContext(profileDir, {
     headless,
     args: [
-      `--disable-extensions-except=${extensionDir},${uBlockClean}`,
-      `--load-extension=${extensionDir},${uBlockClean}`,
+      `--disable-extensions-except=${extensionDir}`,
+      `--load-extension=${extensionDir}`,
       '--disable-blink-features=AutomationControlled',
     ],
   });
@@ -69,13 +38,12 @@ const launchContext = async (
 export const test = base.extend<CellEnvironmentFixtures>({
   cellContext: [
     async ({}, use, workerInfo) => {
-      const uBlockClean = prepareUblockClean(workerInfo.workerIndex);
       const profileDir = resolve(
-        testResultsDir,
+        staging,
         `.cell-profile-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
       );
       const extensionDir = resolve(
-        testResultsDir,
+        staging,
         `.extension-build-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
       );
 
@@ -90,7 +58,7 @@ export const test = base.extend<CellEnvironmentFixtures>({
       // version, so default is headed (visible). Set EXTENSION_HEADLESS=true
       // only if you are running under a virtual display.
       const headless = process.env.EXTENSION_HEADLESS === 'true';
-      const context = await launchContext(headless, uBlockClean, profileDir, extensionDir);
+      const context = await launchContext(headless, extensionDir, profileDir);
       await use(context);
       // Worker-scoped teardown: close the persistent browser context after
       // all tests in this worker finish so a long pipeline does not keep

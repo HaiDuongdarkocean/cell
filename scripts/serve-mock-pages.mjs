@@ -3,7 +3,8 @@
  * Serve mock streaming pages for extension testing.
  *
  * Builds the mock pages (`npm run build:mock`), copies mock page HTML + assets
- * to a standalone folder, fixes asset paths to relative, and serves via http-server.
+ * to a standalone folder, fixes asset paths to relative, and serves via http-server
+ * in-process so Playwright can stop the whole process tree cleanly.
  *
  * Usage:
  *   node scripts/serve-mock-pages.mjs              # serve both (default ports 4321/4322)
@@ -13,15 +14,16 @@
  */
 
 import { execSync } from 'node:child_process';
-import { spawn } from 'node:child_process';
 import {
   cpSync,
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   writeFileSync,
   rmSync,
 } from 'node:fs';
+import { createServer } from 'http-server';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -29,13 +31,11 @@ import { randomUUID } from 'node:crypto';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const DIST = resolve(ROOT, 'dist-mock-pages');
-const TMP = resolve(ROOT, '.mock-servers');
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
-const agentSuffix = process.env.PW_OUTPUT_DIR
-  ? `-${process.env.PW_OUTPUT_DIR}`
-  : '';
+const agentName = (process.env.PW_OUTPUT_DIR || '').trim() || 'default';
 const runId = `${Date.now()}-${randomUUID().slice(0, 8)}`;
+const STAGING_ROOT = resolve(ROOT, 'e2e-results', agentName, 'staging');
 
 const PAGES = [
   {
@@ -43,42 +43,42 @@ const PAGES = [
     id: 'mock-streaming-page',
     port: 4321,
     distHtml: resolve(DIST, 'src/entrypoints/mock-streaming-page/index.html'),
-    outDir: resolve(TMP, `mock-streaming-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-streaming-${runId}`),
   },
   {
     name: 'StreamFlixIframe',
     id: 'mock-streaming-iframe-page',
     port: 4323,
     distHtml: resolve(DIST, 'src/entrypoints/mock-streaming-iframe-page/index.html'),
-    outDir: resolve(TMP, `mock-streaming-iframe-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-streaming-iframe-${runId}`),
   },
   {
     name: 'IframePlayer',
     id: 'mock-iframe-player',
     port: 4324,
     distHtml: resolve(DIST, 'src/entrypoints/mock-iframe-player/index.html'),
-    outDir: resolve(TMP, `mock-iframe-player-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-iframe-player-${runId}`),
   },
   {
     name: 'YouTube',
     id: 'mock-youtube',
     port: 4322,
     distHtml: resolve(DIST, 'src/entrypoints/mock-youtube/index.html'),
-    outDir: resolve(TMP, `mock-youtube-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-youtube-${runId}`),
   },
   {
     name: 'HardSub',
     id: 'mock-hardsub-page',
     port: 4325,
     distHtml: resolve(DIST, 'src/entrypoints/mock-hardsub-page/index.html'),
-    outDir: resolve(TMP, `mock-hardsub-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-hardsub-${runId}`),
   },
   {
     name: 'YouTubeHardsub',
     id: 'mock-youtube-hardsub',
     port: 4326,
     distHtml: resolve(DIST, 'src/entrypoints/mock-youtube-hardsub/index.html'),
-    outDir: resolve(TMP, `mock-youtube-hardsub-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'mock-servers', `mock-youtube-hardsub-${runId}`),
     // The 82MB test video + SRT live outside the bundle (would bloat every build).
     // Copy them straight from the data folder into the mock output assets dir.
     extraAssets: [
@@ -145,25 +145,34 @@ function preparePage(page) {
   }
 
   console.log(`✓ ${page.name}: prepared at ${page.outDir}`);
+  console.log(`  index written: ${existsSync(resolve(page.outDir, 'index.html'))}`);
+  console.log(`  assets dir: ${existsSync(resolve(page.outDir, 'assets'))}`);
+  console.log(`  asset count: ${readdirSync(page.outDir).length}`);
+
+
 }
 
 function servePage(page) {
   const port = page.port + portOffset;
   console.log(`\n▶ Serving ${page.name} at http://127.0.0.1:${port}/index.html`);
-  // Use shell:true with cwd to serve "." from the output directory.
-  // Shell is required on Windows for .cmd binaries like npx.cmd.
-  const child = spawn(
-    `npx --yes http-server . -p ${port} -a 127.0.0.1 --cors`,
-    {
-      stdio: 'inherit',
-      cwd: page.outDir,
-      shell: true,
+  const server = createServer({
+    root: page.outDir,
+    cors: true,
+    cache: -1,
+    showDir: false,
+    autoIndex: true,
+    logFn: (req, res) => {
+      if (res.statusCode >= 400) {
+        console.error(`[${page.name}] ${res.statusCode} ${req.url}`);
+      }
     },
-  );
-  child.on('error', (err) => {
-    console.error(`✗ ${page.name}: failed to start server: ${err.message}`);
   });
-  return child;
+  server.server.on('error', (err) => {
+    console.error(`✗ ${page.name}: server error: ${err.message}`);
+    process.exit(1);
+  });
+  server.listen(port, '127.0.0.1');
+  return server;
 }
 
 // === Main ===
@@ -197,11 +206,11 @@ for (const page of selected) {
 }
 console.log('\n  Press Ctrl+C to stop all servers.\n');
 
-// Keep process alive, kill all on exit
+// Keep process alive, close all servers on exit
 process.on('SIGINT', () => {
   console.log('\nStopping servers...');
   for (const s of servers) {
-    try { s.kill('SIGTERM'); } catch {}
+    try { s.close(); } catch {}
   }
   process.exit(0);
 });

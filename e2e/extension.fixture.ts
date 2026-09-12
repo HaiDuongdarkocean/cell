@@ -8,17 +8,12 @@ import {
 } from '@playwright/test';
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { getE2EAgentPaths } from './lib/agent-paths';
 
-const projectRoot = resolve(fileURLToPath(import.meta.url), '..', '..');
+const { staging, projectRoot } = getE2EAgentPaths();
 const sourceExtensionPath = resolve(projectRoot, 'dist');
 
-const outputSuffix = process.env.PW_OUTPUT_DIR || '';
-const testResultsDir = resolve(
-  projectRoot,
-  outputSuffix ? `test-results-${outputSuffix}` : 'test-results',
-);
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 
 const POPUP_PATH = 'src/entrypoints/popup/index.html';
@@ -75,13 +70,13 @@ export const test = base.extend<ExtensionFixtures>({
   // multiple agents / workers do not collide.
   extensionContext: [
     async ({}, use, workerInfo) => {
-      mkdirSync(testResultsDir, { recursive: true });
+      mkdirSync(staging, { recursive: true });
       const profileDir = resolve(
-        testResultsDir,
+        staging,
         `.extension-profile-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
       );
       const extensionDir = resolve(
-        testResultsDir,
+        staging,
         `.extension-build-${workerInfo.workerIndex}-${Date.now()}-${randomUUID().slice(0, 8)}`,
       );
 

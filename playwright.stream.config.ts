@@ -1,25 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
+import { getE2EAgentPaths } from './e2e/lib/agent-paths';
+
+const { testResults, playwrightReport } = getE2EAgentPaths();
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
-const outputSuffix = process.env.PW_OUTPUT_DIR || '';
 const workersEnv = process.env.PW_WORKERS
   ? parseInt(process.env.PW_WORKERS, 10)
   : undefined;
 
-const outputDir = outputSuffix ? `test-results-${outputSuffix}` : 'test-results';
-const reportDir = outputSuffix
-  ? `playwright-report-${outputSuffix}`
-  : 'playwright-report';
-
 const streamPort = 4321 + portOffset;
 const youtubePort = 4322 + portOffset;
 
-/**
- * Stream-specific Playwright config for the StreamFlix + Universal Panel E2E
- * suite. It only starts the mock YouTube and StreamFlix servers and runs the
- * extension + stage2 specs. Port, output and worker counts are isolated per
- * agent via PW_PORT_OFFSET, PW_OUTPUT_DIR and PW_WORKERS.
- */
 export default defineConfig({
   testDir: './e2e',
   snapshotPathTemplate: 'e2e/__snapshots__/{projectName}/{testFilePath}/{arg}{ext}',
@@ -27,10 +18,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: workersEnv ?? 1,
-  reporter: [['html', { outputFolder: reportDir }]],
+  reporter: [['html', { outputFolder: playwrightReport }]],
+  outputDir: testResults,
+  globalSetup: './e2e/globalSetup.ts',
+  globalTeardown: './e2e/globalTeardown.ts',
   timeout: 120_000,
   expect: { timeout: 30_000 },
-  outputDir,
   use: {
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

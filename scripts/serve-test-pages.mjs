@@ -8,7 +8,6 @@
  * to escape the server root.
  */
 
-import { spawn } from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -17,6 +16,7 @@ import {
   writeFileSync,
   rmSync,
 } from 'node:fs';
+import { createServer } from 'http-server';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -24,13 +24,11 @@ import { randomUUID } from 'node:crypto';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 const DIST = resolve(ROOT, 'dist-pages');
-const TMP = resolve(ROOT, '.test-pages');
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
-const agentSuffix = process.env.PW_OUTPUT_DIR
-  ? `-${process.env.PW_OUTPUT_DIR}`
-  : '';
+const agentName = (process.env.PW_OUTPUT_DIR || '').trim() || 'default';
 const runId = `${Date.now()}-${randomUUID().slice(0, 8)}`;
+const STAGING_ROOT = resolve(ROOT, 'e2e-results', agentName, 'staging');
 
 const PAGES = [
   {
@@ -38,14 +36,14 @@ const PAGES = [
     id: 'launcher-dashboard',
     port: 8124,
     distHtml: resolve(DIST, 'src/entrypoints/launcher-dashboard/index.html'),
-    outDir: resolve(TMP, `launcher-dashboard-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'test-pages', `launcher-dashboard-${runId}`),
   },
   {
     name: 'MockupLanguageProfile',
     id: 'mockup-language-profile',
     port: 5173,
     distHtml: resolve(DIST, 'src/entrypoints/mockup-language-profile/index.html'),
-    outDir: resolve(TMP, `mockup-language-profile-${runId}${agentSuffix}`),
+    outDir: resolve(STAGING_ROOT, 'test-pages', `mockup-language-profile-${runId}`),
   },
 ];
 
@@ -86,18 +84,24 @@ function preparePage(page) {
 function servePage(page) {
   const port = page.port + portOffset;
   console.log(`\n▶ Serving ${page.name} at http://127.0.0.1:${port}/`);
-  const child = spawn(
-    `npx --yes http-server . -p ${port} -a 127.0.0.1 --cors`,
-    {
-      stdio: 'inherit',
-      cwd: page.outDir,
-      shell: true,
+  const server = createServer({
+    root: page.outDir,
+    cors: true,
+    cache: -1,
+    showDir: false,
+    autoIndex: true,
+    logFn: (req, res) => {
+      if (res.statusCode >= 400) {
+        console.error(`[${page.name}] ${res.statusCode} ${req.url}`);
+      }
     },
-  );
-  child.on('error', (err) => {
-    console.error(`✗ ${page.name}: failed to start server: ${err.message}`);
   });
-  return child;
+  server.server.on('error', (err) => {
+    console.error(`✗ ${page.name}: server error: ${err.message}`);
+    process.exit(1);
+  });
+  server.listen(port, '127.0.0.1');
+  return server;
 }
 
 console.log('=== Test Pages Server ===\n');
@@ -120,7 +124,7 @@ console.log('\n  Press Ctrl+C to stop all servers.\n');
 process.on('SIGINT', () => {
   console.log('\nStopping servers...');
   for (const s of servers) {
-    try { s.kill('SIGTERM'); } catch {}
+    try { s.close(); } catch {}
   }
   process.exit(0);
 });
