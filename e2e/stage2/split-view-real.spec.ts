@@ -2,9 +2,6 @@ import { expect } from '@playwright/test';
 import { test } from '../fixtures/cellEnvironment.fixture';
 
 const WRAPPER = '[data-cell-split-view="wrapper"]';
-const PANEL = '[data-cell-split-view="panel"]';
-const HANDLE = '[data-cell-split-view="handle"]';
-const ANY_CUE = '[data-cell-split-view="panel"] [data-cell-id="cue-item"]';
 
 const KISSKH_URL =
   'https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100';
