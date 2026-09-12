@@ -86,13 +86,16 @@ const WORD_CONFIG: HighlightConfig = {
   },
 };
 
-/** Inject the highlight <style> into document.head (idempotent). */
-function injectStyle(config: HighlightConfig): void {
-  if (document.getElementById(config.styleId)) return;
+/** Inject the highlight <style> into a document or shadow root (idempotent).
+ *  Shadow roots need their own copy — document styles do not cross the shadow
+ *  boundary (subtitle cue text lives inside #cell-subtitle-root). */
+function injectStyle(config: HighlightConfig, root: Document | ShadowRoot = document): void {
+  if (root.getElementById(config.styleId)) return;
   const style = document.createElement('style');
   style.id = config.styleId;
   style.textContent = config.buildCss();
-  (document.head ?? document.documentElement).appendChild(style);
+  const parent = root instanceof ShadowRoot ? root : (root.head ?? root.documentElement);
+  parent.appendChild(style);
 }
 
 /** Remove the highlight <style> from document.head (idempotent). */
@@ -173,12 +176,12 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
 
     // Range mode: try DOM wrap first, fallback to overlay.
     const range = target as Range;
+    const rangeRoot = range.startContainer.getRootNode();
+    if (rangeRoot instanceof ShadowRoot) injectStyle(config, rangeRoot);
     try {
       const wrapper = document.createElement('span');
       wrapper.className = config.highlightClass;
-      console.log('before surround', range.startContainer.textContent, range.startOffset, range.endOffset);
       range.surroundContents(wrapper);
-      console.log('after surround', wrapper.outerHTML, wrapper.textContent);
       // Guard against empty wrappers caused by collapsed ranges or host DOM
       // mutation: if surroundContents produced an empty node, remove it and
       // fall back to overlay so the user still sees a highlight.

@@ -1088,5 +1088,116 @@ describe('WebTriggerController', () => {
       document.body.removeChild(p);
       document.body.removeChild(host);
     });
+
+    it('click inside data-allow-lookup region of a shadow-mounted UI host dispatches lookup', () => {
+      // #cell-subtitle-root hosts cue text inside an open shadow root. Events
+      // retarget e.target to the host, so only composedPath() can see the
+      // allow-lookup marker — dispatch a real composed event to mirror Chrome.
+      const host = document.createElement('div');
+      host.id = 'cell-subtitle-root';
+      const shadow = host.attachShadow({ mode: 'open' });
+      const textDiv = document.createElement('div');
+      textDiv.setAttribute('data-allow-lookup', '');
+      textDiv.textContent = 'The quick brown fox';
+      shadow.appendChild(textDiv);
+      document.body.appendChild(host);
+
+      const textNode = textDiv.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 4);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mouseup', { bubbles: true, composed: true, clientX: 50, clientY: 10 });
+      textDiv.dispatchEvent(event);
+      expect(lookupCount).toBe(1);
+
+      ctrl.detach();
+      document.body.removeChild(host);
+    });
+
+    it('click inside shadow-mounted UI host without data-allow-lookup stays blocked', () => {
+      const host = document.createElement('div');
+      host.id = 'cell-subtitle-root';
+      const shadow = host.attachShadow({ mode: 'open' });
+      const textDiv = document.createElement('div');
+      textDiv.textContent = 'The quick brown fox';
+      shadow.appendChild(textDiv);
+      document.body.appendChild(host);
+
+      const textNode = textDiv.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 4);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mouseup', { bubbles: true, composed: true, clientX: 50, clientY: 10 });
+      textDiv.dispatchEvent(event);
+      expect(lookupCount).toBe(0);
+
+      ctrl.detach();
+      document.body.removeChild(host);
+    });
+
+    it('keeps a UI host hit-testable when the pointer is over a shadow data-allow-lookup region', () => {
+      // Without this exemption, withUiHostsPointerEventsDisabled strips
+      // pointer-events from #cell-subtitle-root and its whole shadow tree, so
+      // elementFromPoint/caretRangeFromPoint can never reach cue text.
+      const host = document.createElement('div');
+      host.id = 'cell-subtitle-root';
+      const shadow = host.attachShadow({ mode: 'open' });
+      const textDiv = document.createElement('div');
+      textDiv.setAttribute('data-allow-lookup', '');
+      textDiv.textContent = 'The quick brown fox';
+      shadow.appendChild(textDiv);
+      document.body.appendChild(host);
+      Object.defineProperty(shadow, 'elementFromPoint', {
+        value: () => textDiv,
+        configurable: true,
+      });
+
+      const textNode = textDiv.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 4);
+      let hostPointerEventsDuringResolve: string | null = null;
+      document.caretRangeFromPoint = jest.fn(() => {
+        hostPointerEventsDuringResolve = host.style.getPropertyValue('pointer-events');
+        return mockRange;
+      }) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mouseup', { bubbles: true, composed: true, clientX: 50, clientY: 10 });
+      textDiv.dispatchEvent(event);
+
+      expect(lookupCount).toBe(1);
+      expect(hostPointerEventsDuringResolve).not.toBe('none');
+
+      ctrl.detach();
+      document.body.removeChild(host);
+    });
   });
 });

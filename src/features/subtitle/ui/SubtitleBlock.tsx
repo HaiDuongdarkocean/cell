@@ -201,6 +201,7 @@ function SubtitleBlockInner({
         <span
           className={targetStatusText ? styles.statusText : styles.text}
           data-cell-id={editable ? 'overlay-preview-target-line' : undefined}
+          data-allow-lookup={editable ? undefined : true}
           contentEditable={editable}
           suppressContentEditableWarning={editable}
           onBlur={editable ? (event) => handleTextBlur('target', event) : undefined}
@@ -222,6 +223,7 @@ function SubtitleBlockInner({
           <span
             className={nativeStatusText ? styles.statusText : styles.text}
             data-cell-id={editable ? 'overlay-preview-native-line' : undefined}
+            data-allow-lookup={editable ? undefined : true}
             contentEditable={editable}
             suppressContentEditableWarning={editable}
             onBlur={editable ? (event) => handleTextBlur('native', event) : undefined}

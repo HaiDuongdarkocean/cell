@@ -94,7 +94,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
                   cue.start; SEEK_TO handler subtracts offset. */}
               {formatTimestamp(cue.start - offsetMs, hasHours)}
             </button>
-            <div className={styles.text}>
+            <div className={styles.text} data-allow-lookup>
               <div data-cell-id="cue-target-text" className={styles.targetText}>
                 {cue.targetText}
               </div>

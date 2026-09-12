@@ -47,7 +47,11 @@ const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
  *  to the shadow host, so target.closest() can't see attributes inside the
  *  shadow root (e.g. CueList timestamp's data-no-lookup inside PlayerModeOverlay). */
 function pathMatchesSelector(e: MouseEvent, selector: string): boolean {
-  return e.composedPath().some((el) => el instanceof Element && el.matches(selector));
+  if (e.composedPath().some((el) => el instanceof Element && el.matches(selector))) return true;
+  // Fallback for events whose target is not part of the composed path
+  // (synthetic dispatches, retargeted paths that omit the real target).
+  const target = e.target;
+  return target instanceof Element && target.closest(selector) !== null;
 }
 
 function isInsideBlockedHostForLookup(element: Element | null): boolean {
@@ -57,9 +61,27 @@ function isInsideBlockedHostForLookup(element: Element | null): boolean {
   return !element.closest(ALLOW_LOOKUP_SELECTOR);
 }
 
+/** Event-level variant for shadow-hosted UI: e.target is retargeted to the
+ *  shadow host, so target.closest() can never see data-allow-lookup regions
+ *  inside the shadow tree (e.g. cue text inside #cell-subtitle-root). Walk the
+ *  composed path instead — an allow-lookup element closer to the real target
+ *  than the UI host unblocks the event. */
+function eventBlockedForLookup(e: MouseEvent): boolean {
+  for (const el of e.composedPath()) {
+    if (!(el instanceof Element)) continue;
+    if (el.matches(ALLOW_LOOKUP_SELECTOR)) return false;
+    if (el.matches(UI_HOST_SELECTORS)) return true;
+  }
+  // Fallback for events whose target is not part of the composed path.
+  const target = e.target;
+  return target instanceof Element && isInsideBlockedHostForLookup(target);
+}
+
 /** Temporarily disable pointer-events on our own floating UI (host + its shadow children)
- *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer. */
-function withUiHostsPointerEventsDisabled<T>(fn: () => T): T {
+ *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer.
+ *  When (x, y) is over a data-allow-lookup region inside a host's shadow tree, that host
+ *  is kept hit-testable — disabling it would hide the text from elementFromPoint. */
+function withUiHostsPointerEventsDisabled<T>(fn: () => T, x?: number, y?: number): T {
   const hosts = Array.from(document.querySelectorAll(POINTER_EVENT_HOST_SELECTORS)) as HTMLElement[];
   interface NodePointerStyle { element: HTMLElement; original: string; }
   const nodes: NodePointerStyle[] = [];
@@ -72,7 +94,13 @@ function withUiHostsPointerEventsDisabled<T>(fn: () => T): T {
       });
     }
   }
-  hosts.forEach((host) => collect(host));
+  for (const host of hosts) {
+    const innerHit = x !== undefined && y !== undefined
+      ? (host.shadowRoot?.elementFromPoint?.(x, y) ?? null)
+      : null;
+    if (innerHit instanceof Element && innerHit.closest(ALLOW_LOOKUP_SELECTOR)) continue;
+    collect(host);
+  }
 
   nodes.forEach(({ element }) => element.style.setProperty('pointer-events', 'none', 'important'));
   try {
@@ -262,8 +290,7 @@ export class WebTriggerController {
       return;
     }
 
-    const target = e.target instanceof Element ? e.target : null;
-    if (isInsideBlockedHostForLookup(target)) {
+    if (eventBlockedForLookup(e)) {
       // Click inside blocked extension UI (popup, badge, settings, card creator,
       // or universal panel areas outside allowed lookup zones).
       // All clicks inside these hosts are consumed by the UI itself —
@@ -275,7 +302,8 @@ export class WebTriggerController {
     // token with no selection falls through to caretRangeFromPoint → resetHover
     // → dismissLookup, which kills the popup the token handler just opened
     // (inverted dp.enabled behavior: checked=no popup, unchecked=popup).
-    if (target?.closest('.js-cell-token')) {
+    // Uses composedPath: tokens inside shadow UI retarget e.target to the host.
+    if (pathMatchesSelector(e, '.js-cell-token')) {
       return;
     }
     // Skip elements explicitly marked as non-lookup (e.g. CueList timestamps —
@@ -311,7 +339,7 @@ export class WebTriggerController {
       return;
     }
     const resolved = resolveWordAtPoint(e.clientX, e.clientY, {
-      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
+      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy), cx, cy),
     });
     if (!resolved || rangeBlockedForLookup(resolved.range)) {
       this.resetHover();
@@ -353,13 +381,15 @@ export class WebTriggerController {
     const target = e.target instanceof Element ? e.target : null;
     if (!target) return;
     // Skip blocked extension UI zones; allowed lookup zones (dictionary
-    // definitions, card creator preview) keep hover processing active.
-    if (isInsideBlockedHostForLookup(target)) {
+    // definitions, card creator preview, subtitle cue text) keep hover
+    // processing active. composedPath is required — e.target is retargeted to
+    // the shadow host and cannot see data-allow-lookup inside shadow roots.
+    if (eventBlockedForLookup(e)) {
       this.cancelPendingHover();
       return;
     }
     // Skip subtitle tokens (handled by SubtitleTriggerController via shared controller).
-    if (target.closest('.js-cell-token')) {
+    if (pathMatchesSelector(e, '.js-cell-token')) {
       this.cancelPendingHover();
       return;
     }
@@ -445,7 +475,7 @@ export class WebTriggerController {
     lenient = false,
   ): void {
     const resolved = resolveWordAtPoint(x, y, {
-      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
+      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy), cx, cy),
     });
     if (!resolved || rangeBlockedForLookup(resolved.range)) {
       // Pointer left text entirely (or entered a blocked UI zone). If we still
