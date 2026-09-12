@@ -1,6 +1,7 @@
 import { useCardCreatorStore } from './cardCreatorStore';
 import { createEmptyDraft } from '@/features/cardCreator/state/cardDraft';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/types';
+import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 
 const makeQueueItem = (
   term: string,
@@ -135,6 +136,103 @@ describe('useCardCreatorStore', () => {
       expect(state.queueItems.map((i) => i.term)).toEqual(['apple', 'car']);
       expect(state.queueActiveIndex).toBe(0);
       expect(state.draft.fields.targetWord).toBe('apple');
+    });
+
+    const makeAudio = (name = 'a.mp3'): MediaFile => ({
+      kind: 'audio',
+      filename: name,
+      mimeType: 'audio/mpeg',
+      data: new ArrayBuffer(1),
+    });
+    const makeImage = (): MediaFile => ({
+      kind: 'image',
+      filename: 'i.png',
+      mimeType: 'image/png',
+      data: new ArrayBuffer(1),
+    });
+
+    it('clears term-bound word audio when selecting a different term', () => {
+      const items = [
+        makeQueueItem('apple', 'a fruit'),
+        makeQueueItem('car', 'a vehicle'),
+      ];
+      const store = () => useCardCreatorStore.getState();
+      store().setQueueItems(items);
+      store().selectQueueItem(0);
+      const audio = makeAudio();
+      const image = makeImage();
+      store().setDraft((prev) => ({
+        ...prev,
+        fields: { ...prev.fields, wordAudios: [audio], sentenceAudios: [audio], images: [image] },
+      }));
+
+      store().selectQueueItem(1);
+
+      const state = store();
+      expect(state.draft.fields.targetWord).toBe('car');
+      expect(state.draft.fields.wordAudios).toEqual([]);
+      // Shared cue media is preserved across item switches.
+      expect(state.draft.fields.sentenceAudios).toHaveLength(1);
+      expect(state.draft.fields.images).toHaveLength(1);
+    });
+
+    it('keeps word audio when re-selecting the same term', () => {
+      const items = [makeQueueItem('apple', 'a fruit'), makeQueueItem('car', 'a vehicle')];
+      const store = () => useCardCreatorStore.getState();
+      store().setQueueItems(items);
+      store().selectQueueItem(0);
+      const audio = makeAudio();
+      store().setDraft((prev) => ({
+        ...prev,
+        fields: { ...prev.fields, wordAudios: [audio] },
+      }));
+
+      store().selectQueueItem(0);
+
+      expect(store().draft.fields.wordAudios).toHaveLength(1);
+    });
+
+    it('keeps word audio when deleting a non-active item (active term unchanged)', () => {
+      const items = [
+        makeQueueItem('apple', 'a fruit'),
+        makeQueueItem('car', 'a vehicle'),
+        makeQueueItem('book', 'reading material'),
+      ];
+      const store = () => useCardCreatorStore.getState();
+      store().setQueueItems(items);
+      store().setQueueActiveIndex(0);
+      store().selectQueueItem(0);
+      const audio = makeAudio();
+      store().setDraft((prev) => ({
+        ...prev,
+        fields: { ...prev.fields, wordAudios: [audio] },
+      }));
+
+      store().deleteQueueItem(2);
+
+      expect(store().draft.fields.targetWord).toBe('apple');
+      expect(store().draft.fields.wordAudios).toHaveLength(1);
+    });
+
+    it('clears word audio when deleting the active item moves to a different term', () => {
+      const items = [
+        makeQueueItem('apple', 'a fruit'),
+        makeQueueItem('car', 'a vehicle'),
+      ];
+      const store = () => useCardCreatorStore.getState();
+      store().setQueueItems(items);
+      store().setQueueActiveIndex(0);
+      store().selectQueueItem(0);
+      const audio = makeAudio();
+      store().setDraft((prev) => ({
+        ...prev,
+        fields: { ...prev.fields, wordAudios: [audio] },
+      }));
+
+      store().deleteQueueItem(0);
+
+      expect(store().draft.fields.targetWord).toBe('car');
+      expect(store().draft.fields.wordAudios).toEqual([]);
     });
 
     it('toggles the queue sidebar', () => {

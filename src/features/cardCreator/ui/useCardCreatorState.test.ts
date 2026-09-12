@@ -264,6 +264,123 @@ describe('useCardCreatorState dictionary generate', () => {
   });
 });
 
+describe('useCardCreatorState queue select generate', () => {
+  const queueContext: CardCreatorOpenContext = {
+    sourceLang: 'en',
+    targetLang: 'vi',
+    queue: [
+      { term: 'apple', definitions: 'def apple', status: 'unknown' },
+      { term: 'car', definitions: '', status: 'tracking' },
+    ],
+  };
+
+  const sourceFor = (term: string) => ({
+    targetWord: term,
+    definitions: `defs:${term}`,
+    wordAudioUrls: [`${term}.mp3`],
+    sentenceAudioUrls: [],
+    imageUrls: [`${term}.png`],
+  });
+
+  beforeEach(() => {
+    useCardCreatorStore.getState().reset();
+    lookupMock.mockReset();
+    lookupMock.mockResolvedValue(null);
+  });
+
+  it('selecting a queue item looks up its term and fills media + missing definitions', async () => {
+    lookupMock.mockImplementation(async (term: string) => sourceFor(term));
+    const { result } = renderHook(() => useCardCreatorState(settings, queueContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+    expect(useCardCreatorStore.getState().draft.fields.targetWord).toBe('apple');
+
+    act(() => {
+      result.current.selectQueueItem(1);
+    });
+    await waitFor(() =>
+      expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['car.mp3']),
+    );
+
+    expect(lookupMock).toHaveBeenCalledWith('car', 'en', '');
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.targetWord).toBe('car');
+    // The item carried no definitions → filled from the live lookup.
+    expect(fields.definitions).toBe('defs:car');
+    expect(mediaSourceUrls(fields.images)).toEqual(['car.png']);
+  });
+
+  it('keeps the queue item definitions and shared cue media on select', async () => {
+    const captured: CardCreatorOpenContext = {
+      ...queueContext,
+      initialMedia: [
+        { kind: 'audio', filename: 'sentence.mp3', mimeType: 'audio/mpeg', data: new ArrayBuffer(1) },
+        { kind: 'image', filename: 'shot.png', mimeType: 'image/png', data: new ArrayBuffer(1) },
+      ],
+    };
+    lookupMock.mockImplementation(async (term: string) => sourceFor(term));
+    const { result } = renderHook(() => useCardCreatorState(settings, captured));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.selectQueueItem(0);
+    });
+    await waitFor(() =>
+      expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['apple.mp3']),
+    );
+
+    const fields = useCardCreatorStore.getState().draft.fields;
+    // Item-provided definitions win — the lookup never overwrites them.
+    expect(fields.definitions).toBe('def apple');
+    // Captured sentence audio + screenshot are shared cue media — preserved.
+    expect(fields.sentenceAudios).toHaveLength(1);
+    expect(fields.images).toHaveLength(1);
+  });
+
+  it('a superseded select cannot overwrite the newer queue item', async () => {
+    const deferred: Record<string, (v: ReturnType<typeof sourceFor>) => void> = {};
+    lookupMock.mockImplementation(
+      (term: string) => new Promise((res) => { deferred[term] = res; }),
+    );
+    const { result } = renderHook(() => useCardCreatorState(settings, queueContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    act(() => {
+      result.current.selectQueueItem(1); // 'car' lookup starts
+      result.current.selectQueueItem(0); // 'apple' supersedes it
+    });
+    await act(async () => {
+      deferred['car']?.(sourceFor('car')); // stale resolve — must be dropped
+      deferred['apple']?.(sourceFor('apple'));
+    });
+    await waitFor(() =>
+      expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['apple.mp3']),
+    );
+
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.targetWord).toBe('apple');
+    expect(fields.definitions).toBe('def apple');
+    expect(mediaSourceUrls(fields.images)).toEqual(['apple.png']);
+  });
+
+  it('submit auto-advance looks up the next queue item', async () => {
+    lookupMock.mockImplementation(async (term: string) => sourceFor(term));
+    const { result } = renderHook(() => useCardCreatorState(settings, queueContext));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    await act(async () => {
+      await result.current.submit('add');
+    });
+    await waitFor(() =>
+      expect(mediaSourceUrls(useCardCreatorStore.getState().draft.fields.wordAudios)).toEqual(['car.mp3']),
+    );
+
+    expect(lookupMock).toHaveBeenCalledWith('car', 'en', '');
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.targetWord).toBe('car');
+    expect(fields.definitions).toBe('defs:car');
+  });
+});
+
 describe('useCardCreatorState resend merge', () => {
   beforeEach(() => {
     useCardCreatorStore.getState().reset();

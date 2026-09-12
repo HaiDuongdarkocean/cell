@@ -240,7 +240,7 @@ export function useCardCreatorState(
   const storeInitialAction = useCardCreatorStore((s) => s.initialAction);
 
   // Queue actions are owned by the store; pass them through unchanged.
-  const selectQueueItem = useCardCreatorStore((s) => s.selectQueueItem);
+  const selectQueueItemStore = useCardCreatorStore((s) => s.selectQueueItem);
   const deleteQueueItem = useCardCreatorStore((s) => s.deleteQueueItem);
   const undoDeleteQueueItem = useCardCreatorStore((s) => s.undoDeleteQueueItem);
   const toggleQueueSidebar = useCardCreatorStore((s) => s.toggleQueueSidebar);
@@ -1062,6 +1062,11 @@ export function useCardCreatorState(
     }
   }, [resolveGenerateSource, translateSentenceField, updateField]);
 
+  /** Sequence guard for generateAll — a new generate call (queue item click,
+   *  auto-advance, manual retype) supersedes an in-flight one so a slow lookup
+   *  for term A can never overwrite term B's card. */
+  const generateSeqRef = useRef(0);
+
   /** Fill every empty generatable field (definitions + media) for the current
    *  target word — from the open-context prefill when it matches the word,
    *  else from a live dictionary lookup. Best-effort: failed URLs are
@@ -1070,14 +1075,20 @@ export function useCardCreatorState(
     const ctx = openContextRef.current;
     if (!ctx) return;
     const store = () => useCardCreatorStore.getState();
-    const targetWord = store().draft.fields.targetWord.trim();
-    if (!targetWord) {
+    const requestedTerm = store().draft.fields.targetWord.trim();
+    if (!requestedTerm) {
       store().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
       return;
     }
+    const seq = ++generateSeqRef.current;
+    const stillCurrent = () =>
+      seq === generateSeqRef.current &&
+      store().draft.fields.targetWord.trim().toLowerCase() === requestedTerm.toLowerCase();
     store().setCapturingMedia(true);
     try {
       const source = await resolveGenerateSource();
+      // The draft moved on while the lookup was in flight — drop the result.
+      if (!stillCurrent()) return;
       // A source that resolves but carries no data at all (empty/fallback
       // entry, no media URLs) means the dictionary effectively has nothing
       // for this term — report it like a missing entry rather than
@@ -1089,7 +1100,7 @@ export function useCardCreatorState(
         (source.imageUrls?.length ?? 0) > 0
       );
       if (!source || !hasSourceData) {
-        store().pushToast('warning', t('cardCreator.toast.generate.notFound', [targetWord]));
+        store().pushToast('warning', t('cardCreator.toast.generate.notFound', [requestedTerm]));
         return;
       }
       let filled = false;
@@ -1128,6 +1139,9 @@ export function useCardCreatorState(
           }
         }
       }
+      // Media downloads take seconds — re-check the draft still belongs to
+      // the requested term before attaching them.
+      if (!stillCurrent()) return;
       if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
         store().setDraft((prev) => ({
           ...prev,
@@ -1145,9 +1159,20 @@ export function useCardCreatorState(
         t(filled ? 'cardCreator.toast.generate.success' : 'cardCreator.toast.generate.empty'),
       );
     } finally {
-      store().setCapturingMedia(false);
+      // Only the latest generation owns the flag — a superseded call must not
+      // re-enable the button while the newer one is still running.
+      if (seq === generateSeqRef.current) store().setCapturingMedia(false);
     }
   }, [resolveGenerateSource, updateField]);
+
+  /** Queue item click: switch the draft to the item, then run the same
+   *  generate mechanism so the card gets the term's dictionary data +
+   *  media. Shared cue media (screenshot, recorded sentence audio) and
+   *  user-entered fields are never overwritten. */
+  const selectQueueItem = useCallback((index: number) => {
+    selectQueueItemStore(index);
+    void generateAll();
+  }, [selectQueueItemStore, generateAll]);
 
   /** Retry the caller once after a schema refresh if the error looks like a
    *  missing deck or note type. */
@@ -1230,16 +1255,14 @@ export function useCardCreatorState(
             success = true;
           }
           // Queue auto-next: advance to next item or signal queue exhausted.
+          // Goes through the same select+generate mechanism as a queue click —
+          // the next card gets its own dictionary data + term-bound media.
           const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
             const nextIndex = queueActiveIndex + 1;
             if (nextIndex < queueItems.length) {
-              const nextItem = queueItems[nextIndex]!;
-              store.setQueueActiveIndex(nextIndex);
-              store.setDraft((prev) => ({
-                ...prev,
-                fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
-              }));
+              store.selectQueueItem(nextIndex);
+              void generateAll();
             } else {
               store.setQueueItems([]);
               store.setQueueActiveIndex(-1);
@@ -1298,12 +1321,8 @@ export function useCardCreatorState(
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
             const nextIndex = queueActiveIndex + 1;
             if (nextIndex < queueItems.length) {
-              const nextItem = queueItems[nextIndex]!;
-              store.setQueueActiveIndex(nextIndex);
-              store.setDraft((prev) => ({
-                ...prev,
-                fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
-              }));
+              store.selectQueueItem(nextIndex);
+              void generateAll();
             } else {
               store.setQueueItems([]);
               store.setQueueActiveIndex(-1);
@@ -1324,7 +1343,7 @@ export function useCardCreatorState(
         useCardCreatorStore.getState().setSubmitting(false);
       }
     },
-    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote, runWithSchemaRetry],
+    [ankiConnectUrl, buildAnkiFieldsCb, generateAll, refreshRecentNote, runWithSchemaRetry],
   );
 
   return {

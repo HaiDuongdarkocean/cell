@@ -175,6 +175,10 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
     const { queueItems, draft } = get();
     if (index < 0 || index >= queueItems.length) return;
     const item = queueItems[index]!;
+    // Word audio is bound to the term — switching to a different term must not
+    // carry the previous word's audio over. Images + sentence audios are shared
+    // cue media (screenshot + recorded audio) and stay untouched.
+    const termChanged = item.term.trim().toLowerCase() !== draft.fields.targetWord.trim().toLowerCase();
     set({
       queueActiveIndex: index,
       draft: {
@@ -183,6 +187,7 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
           ...draft.fields,
           targetWord: item.term,
           definitions: item.definitions,
+          wordAudios: termChanged ? [] : draft.fields.wordAudios,
         },
       },
     });
@@ -211,12 +216,16 @@ export const useCardCreatorStore = create<CardCreatorStore>((set, get) => ({
     let nextDraft = state.draft;
     if (next.length > 0) {
       const activeItem = next[newActive]!;
+      // Same term-bound rule as selectQueueItem: only drop word audio when the
+      // active term actually changed (deleting a non-active item keeps it).
+      const termChanged = activeItem.term.trim().toLowerCase() !== state.draft.fields.targetWord.trim().toLowerCase();
       nextDraft = {
         ...state.draft,
         fields: {
           ...state.draft.fields,
           targetWord: activeItem.term,
           definitions: activeItem.definitions,
+          wordAudios: termChanged ? [] : state.draft.fields.wordAudios,
         },
       };
     }
