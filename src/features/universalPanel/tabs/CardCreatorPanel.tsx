@@ -7,9 +7,8 @@ import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { t } from '@/shared/i18n';
 import { CardCreatorDialogContent } from '@/features/cardCreator/ui/CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from '@/features/cardCreator/ui/useCardCreatorState';
-import type { CardCreatorSettings } from '@/entities/settings';
 import type { Settings } from '@/entities/media';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
@@ -71,8 +70,8 @@ function hasCardCreatorSettingsChanged(change: chrome.storage.StorageChange): bo
 }
 
 interface CardCreatorPanelCoreProps {
-  /** Card Creator settings slice. */
-  readonly settings: CardCreatorSettings;
+  /** Full app settings. */
+  readonly settings: Settings;
   /** Source language. */
   readonly sourceLang: string;
   /** Target language. */
@@ -83,6 +82,8 @@ interface CardCreatorPanelCoreProps {
   readonly onAfterSubmit?: () => void;
   /** Whether the panel is in mobile (sheet) layout. */
   readonly isMobile?: boolean;
+  /** Called when settings change. */
+  readonly onSettingsChange?: (settings: Settings) => void;
 }
 
 function CardCreatorPanelCore({
@@ -92,6 +93,7 @@ function CardCreatorPanelCore({
   context,
   onAfterSubmit,
   isMobile = false,
+  onSettingsChange,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
   const openContext = useMemo(
     () => buildOpenContext(sourceLang, targetLang, context),
@@ -99,7 +101,8 @@ function CardCreatorPanelCore({
   );
 
   const initialAction = context?.initialAction;
-  const state = useCardCreatorState(settings, openContext, initialAction, {
+  const cardCreatorSettings = settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator;
+  const state = useCardCreatorState(cardCreatorSettings, openContext, initialAction, {
     onSubmitSuccess: onAfterSubmit,
   });
   const { loadStatus, submitting, submit } = state;
@@ -121,6 +124,8 @@ function CardCreatorPanelCore({
       variant={isMobile ? 'mobile' : 'desktop'}
       className={styles.panelBody}
       layout="panel"
+      appSettings={settings}
+      onSettingsChange={onSettingsChange}
     />
   );
 
@@ -163,12 +168,12 @@ export function CardCreatorPanel({
   onAfterSubmit,
 }: CardCreatorPanelProps): React.JSX.Element {
   const isMobile = useIsMobile(BREAKPOINTS.expanded);
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [appSettings, setAppSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void loadSettings().then((s) => {
-      if (!cancelled) setSettings(s);
+      if (!cancelled) setAppSettings(s);
     });
     return () => { cancelled = true; };
   }, []);
@@ -178,14 +183,19 @@ export function CardCreatorPanel({
       if (area !== 'local') return;
       const settingsChange = changes[STORAGE_KEYS.SETTINGS];
       if (settingsChange && hasCardCreatorSettingsChanged(settingsChange)) {
-        void loadSettings().then((s) => { setSettings(s); });
+        void loadSettings().then((s) => { setAppSettings(s); });
       }
     };
     onStorageChanged(handleStorageChange);
     return () => { removeOnStorageChangedListener(handleStorageChange); };
   }, []);
 
-  if (!settings) {
+  const handleSettingsChange = (updated: Settings): void => {
+    setAppSettings(updated);
+    void saveSettings(updated);
+  };
+
+  if (!appSettings) {
     return (
       <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
         <EmptyState
@@ -199,12 +209,13 @@ export function CardCreatorPanel({
 
   return (
     <CardCreatorPanelCore
-      settings={settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator}
+      settings={appSettings}
       sourceLang={sourceLang}
       targetLang={targetLang}
       context={context}
       onAfterSubmit={onAfterSubmit}
       isMobile={isMobile}
+      onSettingsChange={handleSettingsChange}
     />
   );
 }

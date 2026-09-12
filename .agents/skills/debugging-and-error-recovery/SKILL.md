@@ -195,6 +195,7 @@ Then: <exact visible or measurable outcome>
 - Build.
 - Build output inspection: grep the bundle for the fix.
 - Visual / rendered state for UI: `getComputedStyle`, `getBoundingClientRect`, screenshot, interval log over time.
+- For UI/SPA bugs, add or update a Playwright E2E via `/testing-with-playwright` (headless by default; use `--headed` when visual debugging is required).
 - Repeat the reproduction 2-3 times before declaring pass.
 
 **Variant matrix:**
@@ -242,7 +243,7 @@ Then: <exact visible or measurable outcome>
 | Test failure | Full output, order dependence, isolation, recent changes |
 | Build error | Exact error line, config diff, lockfile, Node version |
 | Runtime crash | Stack trace, input data, state at crash, last action |
-| UI/SPA bug | DOM snapshot, `innerText`, computed style, bounding rect, visibility, `readyState`, network, console, iframes |
+| UI/SPA bug | DOM snapshot, `innerText`, computed style, bounding rect, visibility, `readyState`, network, console, iframes; add/update a Playwright E2E via `/testing-with-playwright` for regression |
 | Extension bug | `manifest.json`, injection logs, top/subframe state, storage |
 | Performance | Flame graph, memory snapshot, network waterfall, metrics |
 
@@ -378,6 +379,7 @@ After any fix:
 - [ ] Fix is present in the build output, not just the source file.
 - [ ] Original scenario verified end-to-end under the REAL flow.
 - [ ] UI is visually verified (rendered rect, opacity, display), not just queried from DOM.
+- [ ] For UI/SPA bugs, a Playwright E2E via `/testing-with-playwright` covers the regression (headless by default).
 - [ ] State logged over time (interval polling) for continuous-change bugs — not a single snapshot.
 - [ ] Boundary guards in place (frame, lifecycle, state).
 - [ ] Temporary instrumentation removed unless permanent.

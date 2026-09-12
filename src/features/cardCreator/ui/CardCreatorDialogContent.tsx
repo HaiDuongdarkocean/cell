@@ -24,9 +24,11 @@ import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
+import { CardCreatorSettingsSidePanel } from './CardCreatorSettingsSidePanel';
 import { t } from '@/shared/i18n';
 import type { CardDraft } from '../state/cardDraft';
 import type { useCardCreatorState } from './useCardCreatorState';
+import type { Settings } from '@/entities/media';
 import styles from './CardCreatorDialog.module.css';
 
 interface CardCreatorDialogContentProps {
@@ -35,6 +37,10 @@ interface CardCreatorDialogContentProps {
   className?: string;
   /** Render in the integrated universal panel instead of a standalone dialog. */
   layout?: 'dialog' | 'panel';
+  /** App settings for the integrated settings panel. */
+  appSettings?: Settings;
+  /** Called when settings change in the integrated settings panel. */
+  onSettingsChange?: (settings: Settings) => void;
 }
 
 export function CardCreatorDialogContent({
@@ -42,6 +48,8 @@ export function CardCreatorDialogContent({
   variant,
   className,
   layout = 'dialog',
+  appSettings,
+  onSettingsChange,
 }: CardCreatorDialogContentProps): ReactElement {
   const {
     draft,
@@ -76,6 +84,7 @@ export function CardCreatorDialogContent({
   } = state;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -146,9 +155,9 @@ export function CardCreatorDialogContent({
     <Button
       variant="ghost"
       size="sm"
-      disabled
-      aria-label={t('cardCreator.settings.comingSoon')}
-      title={t('cardCreator.settings.comingSoon')}
+      onClick={() => setSettingsOpen(true)}
+      aria-label={t('settings.title')}
+      title={t('settings.title')}
       data-cell-id="cc-settings"
     >
       <Icon name="settings" />
@@ -476,6 +485,15 @@ export function CardCreatorDialogContent({
       portalContainer,
     ) : null;
 
+  const settingsPanel = isPanel && appSettings ? (
+    <CardCreatorSettingsSidePanel
+      open={settingsOpen}
+      onClose={() => setSettingsOpen(false)}
+      settings={appSettings}
+      onChange={onSettingsChange ?? (() => {})}
+    />
+  ) : null;
+
   if (isPanel) {
     return (
       <>
@@ -503,6 +521,7 @@ export function CardCreatorDialogContent({
               />
             )}
           </div>
+          {settingsPanel}
         </div>
         {confirmDialog}
       </>
