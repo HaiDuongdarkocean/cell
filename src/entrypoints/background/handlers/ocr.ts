@@ -6,7 +6,6 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { OcrBackend, OcrLanguageMode, OcrResult } from '@/features/ocr/engine/types';
-import { sendMessage } from '@/shared/lib/chrome-apis';
 
 /** OCR init result from offscreen. */
 export interface OcrInitResult {
@@ -55,7 +54,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
       // (ffmpegRunner.ts) handles both types.
       // Add 180s timeout — model download from Baidu CDN can be slow on first run.
       const response = await Promise.race([
-        sendMessage<{ status: string; backend: OcrBackend; error?: string }>({
+        ctx.offscreenManager.sendToOffscreen<{ status: string; backend: OcrBackend; error?: string }>({
           type: '_OFFSCREEN_OCR_INIT' as unknown as typeof MESSAGE_TYPES.OCR_INIT,
           payload,
         }),
@@ -76,8 +75,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   // Payload forwarded verbatim: engineKey disposes one engine, missing disposes all.
   ctx.on(MESSAGE_TYPES.OCR_DISPOSE, async (request): Promise<MessageResponse<{ ok: true }>> => {
     try {
-      await ctx.offscreenManager.ensureOffscreenReady();
-      await sendMessage({
+      await ctx.offscreenManager.sendToOffscreen({
         type: '_OFFSCREEN_OCR_DISPOSE' as unknown as typeof MESSAGE_TYPES.OCR_DISPOSE,
         payload: request.payload as OcrDisposePayload | undefined,
       });
@@ -92,9 +90,8 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     MESSAGE_TYPES.OCR_RECOGNIZE,
     async (request): Promise<MessageResponse<OcrRecognizeResult>> => {
       try {
-        await ctx.offscreenManager.ensureOffscreenReady();
         const payload = request.payload as { image: { data: Uint8ClampedArray | number[] | string; width: number; height: number }; minScore?: number; engineKey?: string };
-        const response = await sendMessage<{ results: OcrResult[]; error?: string }>({
+        const response = await ctx.offscreenManager.sendToOffscreen<{ results: OcrResult[]; error?: string }>({
           type: '_OFFSCREEN_OCR_RECOGNIZE' as unknown as typeof MESSAGE_TYPES.OCR_RECOGNIZE,
           payload,
         });
