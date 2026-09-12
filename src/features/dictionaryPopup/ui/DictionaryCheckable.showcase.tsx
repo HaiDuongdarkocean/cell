@@ -90,20 +90,28 @@ function AudioRow({ state }: { state: BoxState }): ReactElement {
   const disabled = state === 'disabled';
   const indeterminate = state === 'indeterminate' && !selected;
   return (
-    <div className={`${checkStyles.cellAudioItem} ${disabled ? checkStyles['cellAudioItem--disabled'] : ''}`}>
-      <Button shape="circle" size="sm" variant="outline" aria-label="Play word pronunciation">
+    <div
+      className={`${checkStyles.cellAudioItem} ${disabled ? checkStyles['cellAudioItem--disabled'] : ''}`}
+      role="checkbox"
+      aria-checked={indeterminate ? 'mixed' : selected}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
+      onClick={disabled ? undefined : (): void => setSelected(!selected)}
+      onKeyDown={disabled ? undefined : (e): void => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          setSelected(!selected);
+        }
+      }}
+    >
+      <Button shape="circle" size="sm" variant="outline" aria-label="Play word pronunciation" onClick={(e): void => e.stopPropagation()}>
         <Icon name="audioWave" />
       </Button>
-      <button
-        type="button"
-        className={audioStyles.cellAudioLabel}
-        aria-pressed={selected}
-        disabled={disabled}
-        onClick={(): void => setSelected(!selected)}
-      >
+      <span className={audioStyles.cellAudioLabel}>
         <span className={audioStyles.cellAudioLabelName}>serendipity</span>
         <span className={audioStyles.cellAudioLabelMeta}>Cambridge · US</span>
-      </button>
+      </span>
       <span className={boxClass(state, selected ? checkStyles['cellAudioCheck--checked'] : undefined)} aria-hidden="true">
         {boxIcon(state, indeterminate)}
       </span>

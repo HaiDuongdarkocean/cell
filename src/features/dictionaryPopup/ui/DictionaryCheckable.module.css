@@ -261,6 +261,7 @@
   transform: scale(1.04);
 }
 
+.cellAudioItem:focus-visible,
 .cellTranslateBlock:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
@@ -335,6 +336,7 @@
   border-radius: var(--radius-card);
   background: transparent;
   border: var(--border-width-hairline) solid transparent;
+  cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
   animation: cellCheckableIn var(--duration-normal) var(--ease-out) both;
 }

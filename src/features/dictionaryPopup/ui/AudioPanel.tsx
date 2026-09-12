@@ -78,14 +78,29 @@ export function AudioPanel({
             const itemUrl = getUrl(item);
             const isTts = !itemUrl;
             return (
-              <div key={item.id} className={checkStyles.cellAudioItem}>
+              <div
+                key={item.id}
+                className={checkStyles.cellAudioItem}
+                role="checkbox"
+                aria-checked={selected}
+                tabIndex={0}
+                onClick={(): void => onToggle(item.id, !selected)}
+                onKeyDown={(e): void => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    onToggle(item.id, !selected);
+                  }
+                }}
+              >
                 <Button
                   shape="circle"
                   size="sm"
                   variant="primary"
                   className={styles.cellAudioPlay}
                   aria-label={t('dict.audio.play', [item.label])}
-                  onClick={(): void => {
+                  onClick={(e): void => {
+                    e.stopPropagation();
                     if (isTts || !itemUrl) {
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();
@@ -104,18 +119,12 @@ export function AudioPanel({
                 >
                   <Icon name="audioWave"  />
                 </Button>
-                <Button
-                  variant="transparent"
-                  ripple={false}
-                  className={styles.cellAudioLabel}
-                  aria-pressed={selected}
-                  onClick={(): void => onToggle(item.id, !selected)}
-                >
+                <span className={styles.cellAudioLabel}>
                   <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
                   {parts.length > 1 && (
                     <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                   )}
-                </Button>
+                </span>
                 <span className={`${checkStyles.cellDefCheckBox} ${selected ? checkStyles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                   <Icon name="check" size="md" />
                 </span>

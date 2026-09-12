@@ -107,6 +107,79 @@ describe('AudioPanel', () => {
     expect(onToggle).toHaveBeenCalledWith('a1', true);
   });
 
+  it('renders the label as plain text — the row itself is the checkbox host', () => {
+    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[item]}
+        selection={selection([['a1', true]])}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    expect(within(panel).getByText('Test').closest('button')).toBeNull();
+
+    const row = within(panel).getByRole('checkbox');
+    expect(row).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('toggles selection when clicking the row outside the label', () => {
+    const onToggle = jest.fn();
+    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[item]}
+        selection={selection([['a1', false]])}
+        onToggle={onToggle}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    fireEvent.click(within(panel).getByRole('checkbox'));
+    expect(onToggle).toHaveBeenCalledWith('a1', true);
+  });
+
+  it('does not toggle selection when clicking the play button', () => {
+    const onToggle = jest.fn();
+    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[item]}
+        selection={selection([['a1', false]])}
+        onToggle={onToggle}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    fireEvent.click(within(panel).getByRole('button', { name: /Play Test · forvo/i }));
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('toggles on Space/Enter from the row but not from the play button', () => {
+    const onToggle = jest.fn();
+    const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[item]}
+        selection={selection([['a1', false]])}
+        onToggle={onToggle}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    const row = within(panel).getByRole('checkbox');
+    fireEvent.keyDown(row, { key: ' ' });
+    expect(onToggle).toHaveBeenCalledWith('a1', true);
+
+    onToggle.mockClear();
+    fireEvent.keyDown(within(panel).getByRole('button', { name: /Play/i }), { key: ' ' });
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
   it('switches to sentence audio group and renders sentence items', () => {
     const word = makeAudio('w1', 'word', 'Word', 'https://audio/w1');
     const sentence = makeAudio('s1', 'sentence', 'Sentence', 'https://audio/s1');
