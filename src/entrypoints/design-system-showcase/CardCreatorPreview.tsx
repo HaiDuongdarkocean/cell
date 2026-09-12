@@ -111,8 +111,8 @@ function useMockCardCreatorState(): CardCreatorState {
   const [state, setState] = useState<CardCreatorState>(initialState);
   const deletedRef = useRef<{ item: CardCreatorQueueItem; index: number } | null>(null);
 
-  const pushToast = useCallback((kind: Toast['kind'], message: string): void => {
-    setState((s) => ({ ...s, toasts: [...s.toasts, { id: Date.now(), kind, message }] }));
+  const pushToast = useCallback((kind: Toast['kind'], message: string, undoable = false): void => {
+    setState((s) => ({ ...s, toasts: [...s.toasts, { id: Date.now(), kind, message, undoable }] }));
   }, []);
 
   const updateDraft = useCallback((partial: Parameters<CardCreatorState['updateDraft']>[0]) => {
@@ -172,14 +172,15 @@ function useMockCardCreatorState(): CardCreatorState {
   }, []);
 
   const deleteQueueItem = useCallback((index: number) => {
+    const item = state.queueItems[index];
+    if (!item) return;
+    deletedRef.current = { item, index };
+    pushToast('warning', `Removed ${item.term} from queue`, true);
     setState((s) => {
-      const item = s.queueItems[index];
       const next = s.queueItems.filter((_, i) => i !== index);
-      deletedRef.current = { item, index };
-      pushToast('warning', `Removed ${item.term} from queue`);
       return { ...s, queueItems: next, queueActiveIndex: Math.min(s.queueActiveIndex, Math.max(0, next.length - 1)) };
     });
-  }, [pushToast]);
+  }, [pushToast, state.queueItems]);
 
   const undoDeleteQueueItem = useCallback(() => {
     if (!deletedRef.current) return;

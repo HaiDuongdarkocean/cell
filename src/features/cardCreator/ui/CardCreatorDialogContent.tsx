@@ -24,6 +24,7 @@ import { FieldRow, FieldAutoGrowInput, TagInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
 import { QueueSidebar } from './QueueSidebar';
+import { QueueSidePanel } from './QueueSidePanel';
 import { CardCreatorSettingsSidePanel } from './CardCreatorSettingsSidePanel';
 import { t } from '@/shared/i18n';
 import type { CardDraft } from '../state/cardDraft';
@@ -515,19 +516,21 @@ export function CardCreatorDialogContent({
           </div>
           <div className={styles['cc-dialog__panel-content']}>
             {body}
-            {hasQueue && queueSidebarOpen && (
-              <QueueSidebar
-                queueItems={queueItems}
-                queueActiveIndex={queueActiveIndex}
-                onSelectQueueItem={selectQueueItem}
-                onDeleteQueueItem={deleteQueueItem}
-                onUndoDeleteQueueItem={undoDeleteQueueItem}
-                toasts={toasts}
-                onDismissToast={dismissToast}
-              />
-            )}
           </div>
           {settingsPanel}
+          {hasQueue && (
+            <QueueSidePanel
+              open={queueSidebarOpen}
+              onClose={toggleQueueSidebar}
+              queueItems={queueItems}
+              queueActiveIndex={queueActiveIndex}
+              onSelectQueueItem={selectQueueItem}
+              onDeleteQueueItem={deleteQueueItem}
+              onUndoDeleteQueueItem={undoDeleteQueueItem}
+              toasts={toasts}
+              onDismissToast={dismissToast}
+            />
+          )}
         </div>
         {confirmDialog}
       </>

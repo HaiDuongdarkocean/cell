@@ -1,0 +1,100 @@
+/* === CardCreatorSidePanel — scoped slide-in overlay layer for the integrated panel === */
+
+.panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  z-index: var(--z-popover);
+}
+
+.panel--left {
+  transform: translateX(-100%);
+}
+
+.panel--right {
+  transform: translateX(100%);
+}
+
+@keyframes ccSidePanelSlideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes ccSidePanelSlideOutLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+
+@keyframes ccSidePanelSlideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes ccSidePanelSlideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.enterFromLeft {
+  animation: ccSidePanelSlideInLeft var(--duration-normal) ease-out forwards;
+}
+
+.exitToLeft {
+  animation: ccSidePanelSlideOutLeft var(--duration-normal) ease-in forwards;
+}
+
+.enterFromRight {
+  animation: ccSidePanelSlideInRight var(--duration-normal) ease-out forwards;
+}
+
+.exitToRight {
+  animation: ccSidePanelSlideOutRight var(--duration-normal) ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+
+  .enterFromLeft,
+  .exitToLeft,
+  .enterFromRight,
+  .exitToRight {
+    animation: none;
+    transform: translateX(0);
+  }
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.title {
+  text-align: center;
+  justify-self: center;
+}
+
+.spacer {
+  width: 1px;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* Flush variant — the child (e.g. queue list) owns its own padding + scroll. */
+.content--flush {
+  padding: var(--space-0);
+  overflow-y: hidden;
+}

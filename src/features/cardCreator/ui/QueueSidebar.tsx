@@ -34,6 +34,9 @@ interface QueueSidebarProps {
   onDismissToast: (id: number) => void;
   /** Mobile layout: render as a capped top strip instead of a right rail. */
   mobile?: boolean;
+  /** Overlay layout: render inside a CardCreatorSidePanel layer — no own
+   *  header (the shell provides it), fills the overlay height. */
+  overlay?: boolean;
 }
 
 export function QueueSidebar({
@@ -45,6 +48,7 @@ export function QueueSidebar({
   toasts,
   onDismissToast,
   mobile = false,
+  overlay = false,
 }: QueueSidebarProps): ReactElement {
   const asideRef = useRef<HTMLElement>(null);
 
@@ -93,16 +97,22 @@ export function QueueSidebar({
   return (
     <aside
       ref={asideRef}
-      className={`${styles['cc-queue']}${mobile ? ` ${styles['cc-queue--mobile']}` : ''}`}
+      className={[
+        styles['cc-queue'],
+        mobile && styles['cc-queue--mobile'],
+        overlay && styles['cc-queue--overlay'],
+      ].filter(Boolean).join(' ')}
       aria-label={t('cardCreator.queue.aria')}
       onKeyDown={handleKeyDown}
       data-cell-id="cc-queue-sidebar"
     >
-      <div className={styles['cc-queue__header']}>
-        <span className={styles['cc-queue__title']}>
-          {t('cardCreator.queue.title', [queueActiveIndex + 1, queueItems.length])}
-        </span>
-      </div>
+      {!overlay && (
+        <div className={styles['cc-queue__header']}>
+          <span className={styles['cc-queue__title']}>
+            {t('cardCreator.queue.title', [queueActiveIndex + 1, queueItems.length])}
+          </span>
+        </div>
+      )}
       <ul className={styles['cc-queue__list']} aria-label={t('cardCreator.queue.itemsAria')}>
         {queueItems.map((item, i) => (
           <QueueItemRow

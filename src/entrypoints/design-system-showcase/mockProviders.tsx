@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useRef,
   useState,
   useCallback,
   useMemo,
@@ -12,7 +13,7 @@ import { getMockCardCreatorQueue } from './showcaseFixtures';
 import { SHOWCASE_DATA, type DataVariant } from './showcaseParams';
 import { createEmptyDraft } from '@/features/cardCreator/state/cardDraft';
 import type { CardCreatorState, LoadStatus } from '@/features/cardCreator/ui/useCardCreatorState';
-import type { Toast } from '@/features/cardCreator/types';
+import type { CardCreatorQueueItem, Toast } from '@/features/cardCreator/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrtCue } from '@/entities/media/types';
 import type { LookupResult } from '@/features/dictionaryPopup/types';
@@ -125,6 +126,7 @@ function getMockImages(variant: DataVariant): MediaFile[] {
 }
 
 function useMockCardCreatorState(): CardCreatorState {
+  const deletedRef = useRef<{ item: CardCreatorQueueItem; index: number } | null>(null);
   const [state, setState] = useState<CardCreatorState>(() => {
     const queue = getMockCardCreatorQueue(SHOWCASE_DATA);
     const firstItem = queue[0];
@@ -250,8 +252,8 @@ function useMockCardCreatorState(): CardCreatorState {
     setState((s) => ({ ...s, toasts: s.toasts.filter((t) => t.id !== id) }));
   }, []);
 
-  const pushToast = useCallback((kind: Toast['kind'], message: string): void => {
-    setState((s) => ({ ...s, toasts: [...s.toasts, { id: Date.now(), kind, message }] }));
+  const pushToast = useCallback((kind: Toast['kind'], message: string, undoable = false): void => {
+    setState((s) => ({ ...s, toasts: [...s.toasts, { id: Date.now(), kind, message, undoable }] }));
   }, []);
 
   const clear = useCallback(() => {
@@ -302,15 +304,25 @@ function useMockCardCreatorState(): CardCreatorState {
       },
       selectQueueItem,
       deleteQueueItem: (index: number) => {
+        const item = state.queueItems[index];
+        if (!item) return;
+        deletedRef.current = { item, index };
+        pushToast('warning', `Removed ${item.term} from queue`, true);
         setState((s) => {
-          const item = s.queueItems[index];
-          if (!item) return s;
           const next = s.queueItems.filter((_, i) => i !== index);
-          pushToast('warning', `Removed ${item.term} from queue`);
           return { ...s, queueItems: next, queueActiveIndex: Math.min(s.queueActiveIndex, Math.max(0, next.length - 1)) };
         });
       },
-      undoDeleteQueueItem: () => {},
+      undoDeleteQueueItem: () => {
+        if (!deletedRef.current) return;
+        const { item, index } = deletedRef.current;
+        deletedRef.current = null;
+        setState((s) => {
+          const next = [...s.queueItems];
+          next.splice(index, 0, item);
+          return { ...s, queueItems: next, queueActiveIndex: index };
+        });
+      },
       toggleQueueSidebar,
       dismissToast,
     }),

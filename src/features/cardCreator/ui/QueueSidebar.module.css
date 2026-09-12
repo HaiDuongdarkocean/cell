@@ -27,6 +27,17 @@
   flex-shrink: 0;
 }
 
+/* Overlay: fills the slide-in side panel (shell supplies header + chrome);
+   blends into the panel surface instead of looking like a sidebar rail. */
+.cc-queue--overlay {
+  height: 100%;
+  min-width: 0;
+  max-width: none;
+  border-left: 0;
+  background: transparent;
+  padding: var(--space-2) var(--space-4);
+}
+
 .cc-queue__header {
   display: flex;
   align-items: center;
