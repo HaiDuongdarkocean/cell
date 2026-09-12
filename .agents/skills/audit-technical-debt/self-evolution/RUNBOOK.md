@@ -118,7 +118,7 @@ Audit toàn bộ codebase `cell` (src/, tests/, build, dependencies, process) đ
 - **Dependency freshness:** 11 package outdated (TS, ESLint, Jest, jest-environment-jsdom, lucide-react, zod, unzipit, @eslint/js, @testing-library/jest-dom, @testing-library/react, eslint-plugin-react-hooks).
 - **File churn 30 ngày:** `SubtitlePanels.tsx` (72), `SubtitleManagerPanel.tsx` (49), `contentScriptController.ts` (24), `reactSubtitleController.ts` (20), `mountSubtitle.tsx` (19), `regionSelector.ts` (17), `ocrContentScript.ts` (17).
 - **File lớn nhất (non-test):** `contentScriptController.ts` 1971 dòng, `webTextDictionaryController.ts` 1633, `SubtitlePanels.tsx` 1410, `content-script.ts` 1179, `downloader.ts` 1153, `local-player/main.tsx` 1136, `reactSubtitleController.ts` 889.
-- **Working tree:** 133 file thay đổi/untracked, bao gồm 10 plans `TODO`, generated assets, temp files (`_tmp_ocr_debug.ts`, `UsersThe0ceanAppDataLocalTempstudy-modes-prototype.png`), `.agents/skills/design-from-idea/`, `pnpm-workspace.yaml`, `scripts/audit-tokens.mjs`.
+- **Working tree:** 133 file thay đổi/untracked, bao gồm 10 plans `TODO`, generated assets, temp files (`_tmp_ocr_debug.ts`, `Users<user>AppDataLocalTempstudy-modes-prototype.png`), `.agents/skills/design-from-idea/`, `pnpm-workspace.yaml`, `scripts/audit-tokens.mjs`.
 - **Human signal (inferred):** User vừa thêm StudyMode và removeBracketed, làm `reactSubtitleController.ts` phình từ 806 → 889 dòng. Benchmark threshold nới ra thay vì optimize. 10 plans design-system chưa thực hiện.
 
 ### Inventory (top 11)

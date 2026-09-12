@@ -323,7 +323,7 @@ ALWAYS commit: chỉ commit khi build pass và verify pass dùng skill `git-work
 
 ### khi test bằng mcp
 
-Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, navigator.webdriver=false), chrome-devtools (fallback — cần performance trace/a11y), hoặc edge-devtools. Cài thêm: [uBOLite extension](data/extension/uBOLite) để chặn quảng cáo.
+Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, navigator.webdriver=false), chrome-devtools (fallback — cần performance trace/a11y), hoặc edge-devtools. Cài thêm: uBOLite extension (đặt ở `data/extension/uBOLite`, local-only — không commit) để chặn quảng cáo.
 
 **Mock site (YouTube clone)**: khởi động bằng `npm run mock` (KHÔNG `npm run mock -- --youtube`) để phục vụ TẤT CẢ mock site cùng lúc. Nếu chỉ `--youtube` thì các mock site khác (streaming, iframe) bị kill, gây ảnh hưởng tiến trình khác. URL YouTube: `http://127.0.0.1:4322/index.html`.
 
@@ -375,7 +375,7 @@ Sửa `scripts/ship.config.json`:
 
 ```json
 {
-  "githubRepo": "The0cean/cell",
+  "githubRepo": "HaiDuongdarkocean/cell",
   "releaseBranch": "main",
   "updateXmlPath": "updates.xml",
   "crxAssetName": "cell.crx",

@@ -6,9 +6,9 @@ Chạy file này CHỈ khi guard trong SKILL.md FAIL. Không chạy nếu đã s
 
 ```
 uv --version
-Test-Path "C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist\manifest.json"
+Test-Path "<repo-root>\dist\manifest.json"
 Test-Path "C:\stealth-mcp-browser-sessions\master\Local State"
-Test-Path "C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite\manifest.json"
+Test-Path "<repo-root>\data\extension\uBOLite\manifest.json"
 uv run --python 3.11 --with nodriver python -c "import nodriver; print('OK')"
 ```
 
@@ -23,7 +23,7 @@ winget install astral-sh.uv
 ## Bước 2: Build extension Cell (nếu `dist\manifest.json` FAIL)
 
 ```
-cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell"
+cd "<repo-root>"
 npm run build
 ```
 

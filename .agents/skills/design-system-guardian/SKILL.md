@@ -43,7 +43,7 @@ Kiểm tra bất kỳ UI change nào trước khi merge. Đảm bảo agent tuâ
 **Commands (run từ repo root):**
 
 ```bash
-cd "C:\Users\The0cean\Programming\The0cean ecosystem\cell"
+cd "<repo-root>"
 
 echo "=== 1. M3 tokens ==="
 grep -rn 'md-sys-color' src/ --include="*.css" --include="*.module.css" --include="*.tsx" --include="*.ts" || true

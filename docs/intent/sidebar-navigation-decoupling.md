@@ -22,7 +22,7 @@ Developer trong dự án Cell và người dùng cuối tương tác với UI tr
 
 ## 5. Evidence
 
-[Sidebar.tsx](file:///c:/Users/The0cean/Programming/The0cean%20ecosystem/cell/src/shared/ui/Sidebar.tsx) chứa >260 dòng kết hợp cả aside layout, collapse toggle, rAF water-flow animation, click-scrolling lock và scroll-spy observer; các component như [SettingsDialogContent.tsx](file:///c:/Users/The0cean/Programming/The0cean%20ecosystem/cell/src/features/settings/ui/SettingsDialogContent.tsx) và showcases đang bị ràng buộc trực tiếp.
+[Sidebar.tsx](src/shared/ui/Sidebar.tsx) chứa >260 dòng kết hợp cả aside layout, collapse toggle, rAF water-flow animation, click-scrolling lock và scroll-spy observer; các component như [SettingsDialogContent.tsx](src/features/settings/ui/SettingsDialogContent.tsx) và showcases đang bị ràng buộc trực tiếp.
 
 ## 6. Desired outcome
 

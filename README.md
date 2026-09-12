@@ -12,7 +12,7 @@ Chrome checks the extension against the `updates.xml` hosted in this repository 
 
 ## Build from source
 
-> **Note:** this repository contains large data/runtime assets (dictionaries, OCR models, ffmpeg WASM, etc.). A full clone with all history is roughly **~300 MB**. If you only need the latest source, use a shallow clone:
+> **Note:** dictionary/language packs under `data/` and showcase sample videos are **not committed** (licensed third-party content, see `.gitignore`). They are only needed for dev-mode seeding and the design-system showcase — `npm run build` works without them.
 
 ```bash
 git clone --depth=1 https://github.com/HaiDuongdarkocean/cell.git
@@ -30,7 +30,7 @@ Build output goes into `dist/`. To pack it as a `.crx` with the auto-update mani
 
 - `src/` — TypeScript/React source.
 - `public/` — Runtime assets (ffmpeg, OCR models, sqlite WASM).
-- `data/` — Dictionary and language-learning data.
+- `data/` — Dictionary and language-learning data (local only, gitignored — not shipped in the repo).
 - `scripts/ship-dist.ps1` — Release pipeline: packs `dist/` into `.crx`, generates `updates.xml`, rotates Google Drive releases, and publishes a GitHub release when `scripts/ship.config.json` has `publishToGitHub: true`.
 - `updates.xml` — Chrome extension update manifest (auto-committed at root).
 

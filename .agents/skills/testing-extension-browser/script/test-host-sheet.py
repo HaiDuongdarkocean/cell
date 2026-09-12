@@ -20,8 +20,8 @@ CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 SESSION_ROOT = Path(r"C:\stealth-mcp-browser-sessions")
 MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
-CELL_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist"
-UBLOCK_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite"
+CELL_EXT = str(Path(__file__).resolve().parents[4] / "dist")
+UBLOCK_EXT = str(Path(__file__).resolve().parents[4] / "data" / "extension" / "uBOLite")
 
 TEST_URL = "https://animekai.be/watch/i-made-friends-with-the-second-prettiest-girl-in-my-class/ep-2"
 

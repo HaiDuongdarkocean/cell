@@ -125,6 +125,25 @@ dist.zip
 # Windows reserved-name junk file.
 /nul
 
+# Browser cookie exports — NEVER commit (session/tracking identifiers).
+*cookies*.txt
+cookies*.txt
+
+# Local data packs (dictionary DBs, test extensions like uBOLite) — large and/or
+# third-party copyrighted content. Keep locally for dev seeds; never commit.
+/data/
+
+# Per-tool AI config that should stay local.
+/.continue/
+
+# Showcase sample videos (licensed clips — keep local copies only).
+src/entrypoints/design-system-showcase/assets/*.mp4
+
+# Playwright run artifacts from agent-driven e2e sessions.
+test-results-agent*/
+playwright-report-agent*/
+dist-mock-pages/
+
 # Python bytecode cache.
 __pycache__/
 

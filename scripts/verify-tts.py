@@ -7,7 +7,7 @@ from pathlib import Path
 
 import nodriver as uc
 
-CELL_EXT = Path(r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist")
+CELL_EXT = Path(__file__).resolve().parents[1] / "dist"
 CHROME = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 
 

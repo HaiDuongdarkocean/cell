@@ -337,11 +337,11 @@ If the last answer is no, the test is not complete.
 
 | Key | Value |
 |---|---|
-| Cell ext (unpacked) | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist` (run build first) |
-| Cell .crx (packed) | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\cell.crx` (run `setup-cell-profile.py --rebuild` after build) |
-| Cell key | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\cell-key.pem` (auto-generated on first run) |
-| uBlock ext | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite` |
-| uBlock .crx | `C:\Users\The0cean\Programming\The0cean ecosystem\cell\ublock.crx` |
+| Cell ext (unpacked) | `<repo-root>\dist` (run build first) |
+| Cell .crx (packed) | `<repo-root>\cell.crx` (run `setup-cell-profile.py --rebuild` after build) |
+| Cell key | `<repo-root>\cell-key.pem` (auto-generated on first run) |
+| uBlock ext | `<repo-root>\data\extension\uBOLite` |
+| uBlock .crx | `<repo-root>\ublock.crx` |
 | Master profile | `C:\stealth-mcp-browser-sessions\master` (clone source) |
 | Clones | `C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>` |
 | Python | 3.11 via `uv run` (3.14 has nodriver encoding bug) |
@@ -349,7 +349,7 @@ If the last answer is no, the test is not complete.
 ## Setup Check
 
 ```
-Test-Path "C:\stealth-mcp-browser-sessions\master\Local State","C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist\manifest.json","C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite\manifest.json"
+Test-Path "C:\stealth-mcp-browser-sessions\master\Local State","<repo-root>\dist\manifest.json","<repo-root>\data\extension\uBOLite\manifest.json"
 ```
 
 - **True, True, True** → setup done, go to Step 1.
