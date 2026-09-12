@@ -209,7 +209,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
     useEffect(() => { setCurrentTimeMs(initialCurrentTimeMs ?? 0); }, [initialCurrentTimeMs]);
     const [splitViewOpen, setSplitViewOpen] = useState(false);
-    const [splitViewPct, setSplitViewPct] = useState(30);
+    // Ref not state: pct is only consumed inside the split-view effect. State
+    // would re-run the effect on every pointermove tick → full DOM rebuild,
+    // lost pointer capture, and a stack of deferred restore timers.
+    const splitViewPctRef = useRef(30);
     const cleanupRef = useRef<(() => void) | null>(null);
     const savedScrollRef = useRef<number | null>(null);
     const [splitViewPortalTarget, setSplitViewPortalTarget] = useState<HTMLElement | null>(null);
@@ -218,6 +221,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // to fullscreen (the wrapper can't be removed while playerShell — now the
     // fullscreen element — is inside it; we remove it on the next normal run).
     const splitViewWrapperRef = useRef<HTMLDivElement | null>(null);
+    // Deferred cleanup restore (slide-out animation window). A new effect run
+    // drains it synchronously so the restore can't fire mid-session and strip
+    // the fresh overrides / move cellRoot out of the live stageCell.
+    const splitViewPendingRestoreRef = useRef<(() => void) | null>(null);
 
     // Toggle split view off on fullscreenchange, wait for player dims to
     // stabilize via rAF polling, then re-enable. Generic — no per-host adapter.
@@ -483,6 +490,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (playerMode) { svLog('toggle BLOCKED by playerMode'); return; }
       const childFrame = isChildFrame();
       svLog('toggle', { from: splitViewOpen, to: !splitViewOpen, playerMode, isFullscreen, childFrame, url: location.href });
+      // A pending fullscreen-settle re-enable must not resurrect the panel
+      // after the user explicitly toggled.
+      cleanupRef.current?.();
+      cleanupRef.current = null;
       const next = !splitViewOpen;
       setSplitViewOpen(next);
       onSplitViewChange?.(next);
@@ -513,7 +524,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setRemoveBracketed,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
         toggleSplitView: () => { handleToggleSplitView(); },
-        setSplitViewOpen: (open: boolean) => { setSplitViewOpen(open); },
+        setSplitViewOpen: (open: boolean) => {
+          cleanupRef.current?.();
+          cleanupRef.current = null;
+          setSplitViewOpen(open);
+        },
         setOcrEnabled: (enabled: boolean) => { setOcrEnabledState(enabled); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView],
@@ -653,8 +668,18 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         svLog('effect SKIP', { splitViewOpen, playerMode });
         return;
       }
+      // Drain a restore still pending from the previous session's slide-out
+      // window: run its teardown NOW (synchronously, before we snapshot and
+      // rewrap) instead of letting its timer fire mid-session. Otherwise the
+      // stale timer would strip this run's fresh !important overrides, move
+      // cellRoot out of the live stageCell, and null the live wrapper ref.
+      const pendingRestore = splitViewPendingRestoreRef.current;
+      if (pendingRestore) {
+        splitViewPendingRestoreRef.current = null;
+        pendingRestore();
+      }
       const childFrame = isChildFrame();
-      svLog('effect ENTER', { splitViewOpen, playerMode, isFullscreen, childFrame, splitViewPct, url: location.href });
+      svLog('effect ENTER', { splitViewOpen, playerMode, isFullscreen, childFrame, splitViewPct: splitViewPctRef.current, url: location.href });
       let playerShell = findPlayerContainer();
       if (!playerShell && fallbackPlayerContainerRef?.current) {
         playerShell = fallbackPlayerContainerRef.current;
@@ -771,7 +796,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       // Apple §7: enter from right, exit to right — symmetric path.
       // §4: critically damped spring feel (no overshoot).
       // flex-basis animates so the video expands smoothly as the panel slides out.
-      panel.style.cssText = `flex:0 0 ${splitViewPct}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:var(--opacity-30);`;
+      panel.style.cssText = `flex:0 0 ${splitViewPctRef.current}%;min-width:200px;max-width:60%;height:100%;overflow:hidden;position:relative;transition:transform var(--duration-normal) var(--ease-standard),opacity var(--duration-normal) var(--ease-standard),flex-basis var(--duration-normal) var(--ease-standard);transform:translateX(100%);opacity:var(--opacity-30);`;
 
       // Attach a shadow root to the panel so the design-system tokens
       // (--color-surface, --color-border-subtle, etc.) + CueList/SubtitlePanel
@@ -858,8 +883,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // Two cases:
         // 1. Tight shell (playerShell ≈ video width, e.g. kisskh.co):
         //    The shell is just the video + controls. Fill the parent's
-        //    height — the video stretches via height:100% and the panel
-        //    matches. This avoids empty space below the Split View area
+        //    height — only valid when the insert parent is a flex row,
+        //    whose height is sibling-stretch-driven. Column/block parents
+        //    contain unrelated content (whole page column), so their
+        //    height would tower; use playerShell's own height instead.
+        //    The video stretches via height:100% and the panel matches.
+        //    This avoids empty space below the Split View area
         //    when the parent is taller than the video (hidden siblings).
         //
         // 2. Broad shell (playerShell >> video width, e.g. themoviebox):
@@ -903,6 +932,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         // originalParent (which may be an old stageCell inside the old
         // wrapper — not a flex row, causing hasFlexSiblings=false after
         // fullscreen exit).
+        // The % basis only applies to flex-row parents: on a column parent
+        // the basis lands on the HEIGHT axis and overrides height:px,
+        // collapsing the wrapper — non-row parents get '0 0 auto' so the
+        // height property governs (for non-flex parents flex is inert).
         // Ponytail ceiling: fixed px width won't resize on browser resize;
         // upgrade path = parse computed flex-basis percentage (e.g. 58.3333%)
         // for responsive sizing. On re-open the width recalculates.
@@ -917,9 +950,11 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               && !(c as HTMLElement).hasAttribute?.('data-cell-split-view')
               && c.getBoundingClientRect().width > 0)
             .length > 0;
-        const wrapperFlex = hasFlexSiblings
-          ? `0 0 ${Math.round(originalParentInOldWrapper ? oldWrapper!.getBoundingClientRect().width : playerRect.width)}px`
-          : '1 1 100%';
+        const wrapperFlex = !insertParentIsFlexRow
+          ? '0 0 auto'
+          : hasFlexSiblings
+            ? `0 0 ${Math.round(originalParentInOldWrapper ? oldWrapper!.getBoundingClientRect().width : playerRect.width)}px`
+            : '1 1 100%';
         // YouTube: use height:100% so the wrapper follows #container's
         // computed height automatically on window resize — no hardcoded px,
         // no resize listener needed. #container's height is set by YouTube's
@@ -932,7 +967,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             ? '100%'
           : isBroadShell
             ? `${Math.round(videoRect!.height)}px`
-            : `${Math.round(parentPixelHeight)}px`;
+            : insertParentIsFlexRow
+              ? `${Math.round(parentPixelHeight)}px`
+              : `${Math.round(playerRect.height)}px`;
         svLog('NORMAL wrapper height', {
           viewportBound,
           isYoutube: isYoutubePage(),
@@ -1036,7 +1073,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       let dragStart: { x: number; startPct: number; wrapperW: number } | null = null;
       const onPointerDown = (e: PointerEvent): void => {
         e.preventDefault();
-        dragStart = { x: e.clientX, startPct: splitViewPct, wrapperW: flexContainer.getBoundingClientRect().width };
+        dragStart = { x: e.clientX, startPct: splitViewPctRef.current, wrapperW: flexContainer.getBoundingClientRect().width };
         handle.setPointerCapture(e.pointerId);
       };
       const onPointerMove = (e: PointerEvent): void => {
@@ -1044,24 +1081,33 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         const deltaPct = -((e.clientX - dragStart.x) / dragStart.wrapperW) * 100;
         const next = Math.min(Math.max(dragStart.startPct + deltaPct, 20), 60);
         panel.style.flexBasis = `${next}%`;
-        setSplitViewPct(next);
+        splitViewPctRef.current = next;
         // CSS handles video sizing (height:100%!important, object-fit:contain).
         // No setSize needed — the video fills the stage via CSS automatically.
       };
       const onPointerUp = (e: PointerEvent): void => {
         dragStart = null;
         try { handle.releasePointerCapture(e.pointerId); } catch { /* noop */ }
-        setSplitViewPct((pct) => {
-          setStorage({ [STORAGE_KEYS.SPLIT_VIEW_PCT]: pct }).catch(() => undefined);
-          return pct;
-        });
+        setStorage({ [STORAGE_KEYS.SPLIT_VIEW_PCT]: splitViewPctRef.current }).catch(() => undefined);
       };
       handle.addEventListener('pointerdown', onPointerDown);
       handle.addEventListener('pointermove', onPointerMove);
       handle.addEventListener('pointerup', onPointerUp);
       handle.addEventListener('pointercancel', onPointerUp);
 
+      // Host teardown guard: if the site removes/replaces the player subtree
+      // (React re-render, SPA nav, episode switch) while Split View owns it,
+      // self-close instead of leaving a ghost wrapper around a detached shell.
+      const detachObserver = new MutationObserver(() => {
+        if (!playerShell.isConnected) {
+          svLog('playerShell detached — closing split view');
+          setSplitViewOpen(false);
+        }
+      });
+      detachObserver.observe(document.body, { childList: true, subtree: true });
+
       return () => {
+        detachObserver.disconnect();
         svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
         handle.removeEventListener('pointerdown', onPointerDown);
         handle.removeEventListener('pointermove', onPointerMove);
@@ -1077,7 +1123,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         panel.style.flexBasis = '0%';
         panel.style.minWidth = '0';
         const ANIM_MS = 410;
-        setTimeout(() => {
+        let restoreDone = false;
+        const restoreNow = (): void => {
+        if (restoreDone) return;
+        restoreDone = true;
         if (isPlayerFullscreen) {
           // Move children back from stageCell to playerShell (preserving order).
           const childrenToRestore = Array.from(stageCell.children);
@@ -1128,7 +1177,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               }
             }
             wrapper?.remove();
-            splitViewWrapperRef.current = null;
+            if (splitViewWrapperRef.current === wrapper) {
+              splitViewWrapperRef.current = null;
+            }
             svLog('cleanup NORMAL done', { playerShellRect: rectLog(playerShell), originalParentTag: originalParent?.tagName });
           }
         }
@@ -1171,9 +1222,19 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         window.dispatchEvent(new Event('resize'));
         svLog('cleanup END', { splitViewOpen, playerShellRect: rectLog(playerShell) });
         setSplitViewPortalTarget(null);
+        };
+        // Expose the deferred restore so a NEW effect run can drain it
+        // synchronously (rapid close→open, fullscreen settle). The timer then
+        // becomes a no-op via restoreDone.
+        splitViewPendingRestoreRef.current = restoreNow;
+        setTimeout(() => {
+          if (splitViewPendingRestoreRef.current === restoreNow) {
+            splitViewPendingRestoreRef.current = null;
+          }
+          restoreNow();
         }, ANIM_MS);
       };
-    }, [splitViewOpen, playerMode, isFullscreen, fallbackPlayerContainerRef, splitViewPct]);
+    }, [splitViewOpen, playerMode, isFullscreen, fallbackPlayerContainerRef]);
 
     useEffect(() => {
       let cancelled = false;
@@ -1181,7 +1242,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         .then((data) => {
           const stored = data[STORAGE_KEYS.SPLIT_VIEW_PCT];
           if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
-          setSplitViewPct(Math.min(Math.max(stored, 20), 60));
+          splitViewPctRef.current = Math.min(Math.max(stored, 20), 60);
         })
         .catch(() => undefined);
       return () => { cancelled = true; };

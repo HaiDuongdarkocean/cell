@@ -1,0 +1,25 @@
+{
+  "id": "async-deferred-cleanup-stale-timer-race",
+  "title": "Deferred cleanup (setTimeout in effect cleanup) outlives its session — expose it via a ref and drain synchronously at the next effect run",
+  "category": ["async", "state"],
+  "tags": ["react", "useeffect", "cleanup", "settimeout", "race", "stale-closure", "animation-teardown", "split-view", "dom-restore", "pending-drain"],
+  "trigger": "An effect cleanup defers DOM/style teardown behind a setTimeout (e.g. exit animation window). If a new effect run starts before the timer fires, the stale restore executes mid-session: it strips the new run's overrides, re-parents shared nodes out of the new tree, and nulls refs the new run just set — plus the new run's 'original state' snapshot captures the old session's overrides.",
+  "principle": "A cleanup's setTimeout is NOT cancelled by React when the effect re-runs — it fires in whatever world exists at fire time. Fix: store the restore closure in a ref at cleanup time; at the START of the next effect run, drain it synchronously (old session fully torn down → new run snapshots pristine state and builds on a clean tree); guard the restore with a done-flag so the pending timer becomes a no-op. Never let two sessions' restore windows overlap.",
+  "cases": [
+    {
+      "context": "Split View close schedules a 410ms setTimeout that restores playerShell inline styles + moves #cell-subtitle-root back + nulls splitViewWrapperRef + clears portal target. Reopen <410ms: the old timer fires mid-new-session → removeProperty strips the fresh width/height:100%!important (playerShell collapses inside the new stageCell), cellRoot leaves the new stage, portal target nulled → CueList unmounts; the new run's savedStyles snapshot had captured the still-active overrides → on final close the overrides persist permanently. Rapid ×10 toggles crashed the page entirely.",
+      "bad": "return () => {\n  panel.style.transform = 'translateX(100%)';\n  setTimeout(() => { restoreDomAndStyles(); }, 410);\n  // timer fires even if a new session already started\n};",
+      "good": "return () => {\n  let restoreDone = false;\n  const restoreNow = () => { if (restoreDone) return; restoreDone = true; restoreDomAndStyles(); };\n  pendingRestoreRef.current = restoreNow;      // visible to next run\n  setTimeout(() => { pendingRestoreRef.current = null; restoreNow(); }, 410);\n};\n// next effect run, FIRST statement:\nconst pending = pendingRestoreRef.current;\nif (pending) { pendingRestoreRef.current = null; pending(); }"
+    },
+    {
+      "context": "A pending fullscreen-settle callback (waitForPlayerSettle → setState(true)) reopens the panel after the user explicitly closed it inside the settle window.",
+      "bad": "// settle cleanup only cancelled on unmount\nmanualToggle = () => setSplitViewOpen(!open);",
+      "good": "manualToggle = () => {\n  settleCancelRef.current?.();   // kill pending auto-reopen\n  settleCancelRef.current = null;\n  setSplitViewOpen(!open);\n};"
+    }
+  ],
+  "applyFor": [
+    "Effect cleanups that defer teardown behind animation/transition windows (slide-out, fade-out) while re-entry is possible",
+    "Any setTimeout/rAF scheduled inside a cleanup that mutates shared DOM, refs, or portal targets",
+    "Async settle/poll callbacks that setState — always provide a manual-cancel path so user intent wins over pending automation"
+  ]
+}

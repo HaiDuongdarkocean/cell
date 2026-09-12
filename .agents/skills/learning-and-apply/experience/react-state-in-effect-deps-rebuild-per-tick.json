@@ -1,0 +1,25 @@
+{
+  "id": "react-state-in-effect-deps-rebuild-per-tick",
+  "title": "State consumed only inside an effect must be a ref — state in the dep array rebuilds the effect's DOM per update tick",
+  "category": ["async", "state"],
+  "tags": ["react", "useeffect", "useref", "deps-array", "drag", "pointer-capture", "rebuild", "split-view", "pointermove", "imperative-dom"],
+  "trigger": "A value is updated at high frequency (pointermove, scroll, resize) via setState AND read inside a useEffect that builds imperative DOM — the state sits in the dep array, so every update tears down and rebuilds the whole effect",
+  "principle": "useEffect deps are for VALUES THE EFFECT MUST REACT TO, not values it merely reads. When an effect creates imperative DOM (wrappers, portals, drag handles), any state in its dep array causes a full cleanup+rebuild on every update — pointer capture is lost mid-gesture, elements flicker, and each cleanup schedules deferred side effects that pile up. If a value is only read inside the effect (initial size, drag start), keep it in a ref and update the DOM directly; remove it from deps.",
+  "cases": [
+    {
+      "context": "Split View drag handle: onPointerMove → setSplitViewPct(next) → splitViewPct was in the effect's dep array → each drag tick ran cleanup (panel slide-out + 410ms restore timer) and rebuilt wrapper/stage/handle. The new handle is a different element → pointer capture lost → drag died after ~19px; dozens of stale restore timers then fired and thrashed playerShell styles.",
+      "bad": "const [splitViewPct, setSplitViewPct] = useState(30);\n// effect deps: [splitViewOpen, ..., splitViewPct]\nonPointerMove = (e) => {\n  panel.style.flexBasis = `${next}%`;\n  setSplitViewPct(next); // → cleanup + full DOM rebuild per tick\n};",
+      "good": "const splitViewPctRef = useRef(30);\n// effect deps: [splitViewOpen, ...] — pct NOT a dep\nonPointerMove = (e) => {\n  panel.style.flexBasis = `${next}%`;\n  splitViewPctRef.current = next; // DOM-only update, zero re-render\n};\n// persist once on pointerup: setStorage({pct: splitViewPctRef.current})"
+    },
+    {
+      "context": "Storage-hydrated value read once at mount then used as the effect's initial panel width. setState for the hydration ALSO re-ran the effect on first load → double build.",
+      "bad": "getStorage(KEY).then(d => setSplitViewPct(clamped)); // state → effect re-run",
+      "good": "getStorage(KEY).then(d => { splitViewPctRef.current = clamped; });"
+    }
+  ],
+  "applyFor": [
+    "Effects that build imperative DOM and read a value that changes at input-event frequency (drag %, scroll offset, pointer position)",
+    "Any state that appears in a useEffect dep array but is never rendered in JSX — that is the smell: rendered-nowhere state belongs in a ref",
+    "Pointer-event drag implementations where the drag target is created inside the same effect"
+  ]
+}

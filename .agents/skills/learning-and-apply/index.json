@@ -545,6 +545,70 @@
     },
     {
       "type": "experience",
+      "id": "css-flex-basis-parent-main-axis",
+      "title": "flex-basis applies to the PARENT's main axis — % basis on a column parent overrides height, not width",
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "flexbox",
+        "flex-basis",
+        "flex-direction-column",
+        "height-collapse",
+        "split-view",
+        "wrapper",
+        "video-player",
+        "dom-move"
+      ],
+      "trigger": "Setting flex:<grow> <shrink> <basis> on an element whose parent may be flex-direction:column — the basis then applies to HEIGHT and silently overrides the height property"
+    },
+    {
+      "type": "experience",
+      "id": "react-state-in-effect-deps-rebuild-per-tick",
+      "title": "State consumed only inside an effect must be a ref — state in the dep array rebuilds the effect's DOM per update tick",
+      "category": [
+        "async",
+        "state"
+      ],
+      "tags": [
+        "react",
+        "useeffect",
+        "useref",
+        "deps-array",
+        "drag",
+        "pointer-capture",
+        "rebuild",
+        "split-view",
+        "pointermove",
+        "imperative-dom"
+      ],
+      "trigger": "A value is updated at high frequency (pointermove, scroll, resize) via setState AND read inside a useEffect that builds imperative DOM — the state sits in the dep array, so every update tears down and rebuilds the whole effect"
+    },
+    {
+      "type": "experience",
+      "id": "async-deferred-cleanup-stale-timer-race",
+      "title": "Deferred cleanup (setTimeout in effect cleanup) outlives its session — expose it via a ref and drain synchronously at the next effect run",
+      "category": [
+        "async",
+        "state"
+      ],
+      "tags": [
+        "react",
+        "useeffect",
+        "cleanup",
+        "settimeout",
+        "race",
+        "stale-closure",
+        "animation-teardown",
+        "split-view",
+        "dom-restore",
+        "pending-drain"
+      ],
+      "trigger": "An effect cleanup defers DOM/style teardown behind a setTimeout (e.g. exit animation window). If a new effect run starts before the timer fires, the stale restore executes mid-session and corrupts the new session"
+    },
+    {
+      "type": "experience",
       "id": "detection-hybrid-fast-then-disambiguate",
       "title": "Hybrid detection: fast single-candidate first, disambiguation second",
       "category": [
