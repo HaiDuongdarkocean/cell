@@ -16,6 +16,8 @@ export interface DictionaryPopupProps extends Omit<DictionaryPanelProps, 'isOpen
   readonly anchor: PopupAnchor;
   readonly pointer?: PopupPointerHint;
   readonly lineRect?: PopupLineRect | null;
+  /** Bumped by the mount controller on setAnchor to force re-positioning. */
+  readonly anchorVersion?: number;
   readonly initialSize?: Partial<PopupSize>;
   readonly initialSheetHeight?: number;
   readonly onClose: () => void;
@@ -34,6 +36,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
     anchor,
     pointer,
     lineRect,
+    anchorVersion,
     initialSize,
     initialSheetHeight,
     onClose,
@@ -51,6 +54,7 @@ function DictionaryPopup(props: DictionaryPopupProps): React.JSX.Element {
     anchor,
     pointer,
     lineRect,
+    anchorVersion,
     initialSize,
     initialSheetHeight,
     onSizeChange,

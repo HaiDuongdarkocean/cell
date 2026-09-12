@@ -27,6 +27,8 @@ export interface UsePopupPositionOptions {
   readonly anchor: PopupAnchor;
   readonly pointer?: PopupPointerHint;
   readonly lineRect?: PopupLineRect | null;
+  /** Bumped to force a recompute of position from the current anchor. */
+  readonly anchorVersion?: number;
   readonly initialSize?: Partial<PopupSize>;
   readonly initialSheetHeight?: number;
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
@@ -114,6 +116,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     anchor,
     pointer,
     lineRect,
+    anchorVersion,
     initialSize,
     initialSheetHeight,
     onSizeChange,
@@ -237,6 +240,19 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     },
     [],
   );
+
+  const anchorVersionRef = useRef(anchorVersion ?? 0);
+  useEffect(() => {
+    const next = anchorVersion ?? 0;
+    if (next === anchorVersionRef.current) return;
+    anchorVersionRef.current = next;
+    // Same-level re-lookup: drop any drag offset and snap the popup back to
+    // the new anchor position.
+    dragOffsetRef.current = { left: 0, top: 0 };
+    setPosition(
+      computeAndClampPosition(sizeRef.current, { left: 0, top: 0 }, getVw(), getVh()),
+    );
+  }, [anchorVersion, computeAndClampPosition, getVw, getVh]);
 
   const endSession = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;

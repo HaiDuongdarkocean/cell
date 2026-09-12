@@ -39,7 +39,7 @@ import {
   WORD_CHAR_RE,
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
+import { createWordHighlight, type HighlightTarget, type WordHighlight } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 
@@ -231,9 +231,26 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
 
-  let popupMount: PopupDictionaryMountController | null = null;
   let popupDictWasPlaying = false;
-  const wordHighlight = createWordHighlight();
+
+  const MAX_POPUP_DEPTH = 6;
+
+  interface PopupLevel {
+    mount: PopupDictionaryMountController | null;
+    requestId: string | null;
+    highlightTarget: HighlightTarget | null;
+    originalHighlightTarget: HighlightTarget | null;
+    highlightAnchor: { parent: Element; wordStart: number } | null;
+    popupTokenId: { term: string; start: string; blockId: string } | null;
+    highlight: WordHighlight;
+  }
+
+  // popupStack[0] is the level-1 popup anchored to page/subtitle text. A lookup
+  // triggered from inside level N lands on level N+1, keeping ancestors open.
+  const popupStack: PopupLevel[] = [];
+  // Backing highlight for the public showHighlight/clearHighlight API when no
+  // popup level exists yet.
+  const apiHighlight = createWordHighlight();
 
   // Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`.
   // Capacity scales with device memory (low-end: 50, high-end: 250) to avoid
@@ -331,25 +348,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   // visible badge across normal + fullscreen modes.
   let orbitalFullscreenListener: (() => void) | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
-  let currentHighlightTarget: HighlightTarget | null = null;
-  /** Original highlight target from the trigger (single word). Stored so we
-   *  can restore it when switching from a phrase candidate back to a single
-   *  word candidate. */
-  let originalHighlightTarget: HighlightTarget | null = null;
-  /** Web-text phrase anchor: parent element + word offset before the highlight
-   *  DOM wrap splits the text node. Used to re-expand the full phrase after the
-   *  single-word highlight is rendered. */
-  let highlightAnchor: { parent: Element; wordStart: number } | null = null;
-  let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
-  let currentRequestId: string | null = null;
   let popupDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   function showHighlight(target: HighlightTarget): void {
-    wordHighlight.show(target);
+    (popupStack[popupStack.length - 1]?.highlight ?? apiHighlight).show(target);
   }
 
   function clearHighlight(): void {
-    wordHighlight.clear();
+    apiHighlight.clear();
+    for (const level of popupStack) level.highlight.clear();
   }
 
   /** Expand or restore the word highlight to match the given term.
@@ -360,41 +367,41 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
    *    from the original word's position. For subtitle tokens, find adjacent
    *    .js-cell-token spans that together form the phrase.
    *  Called after renderLookupResult (winner) and on candidate switch. */
-  function expandHighlightForTerm(term: string): void {
-    if (!originalHighlightTarget) return;
+  function expandHighlightForTerm(level: PopupLevel, term: string): void {
+    if (!level.originalHighlightTarget) return;
 
     // Always clear the current highlight before computing the new range.
     // The original range is mutated by wordHighlight.show's surroundContents
     // (the text node gets split and wrapped), so ranges must be recreated from
     // the highlight anchor after the DOM is restored.
-    wordHighlight.clear();
+    level.highlight.clear();
 
     const isPhrase = term.includes(' ');
     if (!isPhrase) {
-      currentHighlightTarget = (highlightAnchor && createPhraseRangeFromAnchor(highlightAnchor, term))
-        || originalHighlightTarget;
-      wordHighlight.show(currentHighlightTarget);
+      level.highlightTarget = (level.highlightAnchor && createPhraseRangeFromAnchor(level.highlightAnchor, term))
+        || level.originalHighlightTarget;
+      level.highlight.show(level.highlightTarget);
       return;
     }
 
     // Phrase — try to create a Range covering the full phrase.
-    const phraseRange = createPhraseRange(originalHighlightTarget, term);
+    const phraseRange = createPhraseRange(level, level.originalHighlightTarget, term);
     if (phraseRange) {
-      currentHighlightTarget = phraseRange;
-      wordHighlight.show(phraseRange);
+      level.highlightTarget = phraseRange;
+      level.highlight.show(phraseRange);
     } else {
       // Fallback: keep original single-word highlight.
-      currentHighlightTarget = originalHighlightTarget;
-      wordHighlight.show(originalHighlightTarget);
+      level.highlightTarget = level.originalHighlightTarget;
+      level.highlight.show(level.originalHighlightTarget);
     }
   }
 
   /** Create a DOM Range covering the given phrase term, starting from the
    *  original highlight target (single word). Returns null if the phrase
    *  cannot be found in the DOM near the original word. */
-  function createPhraseRange(original: HighlightTarget, phrase: string): Range | null {
-    if (highlightAnchor) {
-      return createPhraseRangeFromAnchor(highlightAnchor, phrase);
+  function createPhraseRange(level: PopupLevel, original: HighlightTarget, phrase: string): Range | null {
+    if (level.highlightAnchor) {
+      return createPhraseRangeFromAnchor(level.highlightAnchor, phrase);
     }
     if (original instanceof Range) {
       return createPhraseRangeFromTextRange(original, phrase);
@@ -574,11 +581,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return null;
   }
 
-  /** Check if the current lookup target is inside a subtitle-line element.
+  /** Check if the level's lookup target is inside a subtitle-line element.
    *  Media recording (screenshot + sentence audio) is only allowed when the
    *  user looked up a word inside the subtitle overlay, not from web text. */
-  function isLookupFromSubtitle(): boolean {
-    const target = currentHighlightTarget;
+  function isLookupFromSubtitle(level: PopupLevel): boolean {
+    const target = level.highlightTarget;
     if (!target) return false;
     const token = getTokenElement(target);
     if (!token) return false;
@@ -591,8 +598,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     );
   }
 
-  function setPopupTokenId(token: HTMLElement): void {
-    currentPopupTokenId = {
+  function setPopupTokenId(level: PopupLevel, token: HTMLElement): void {
+    level.popupTokenId = {
       term: token.getAttribute('data-cell-term') ?? '',
       start: token.getAttribute('data-cell-start') ?? '',
       blockId: token.getAttribute('data-cell-block-id') ?? '',
@@ -600,10 +607,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     token.classList.add(POPUP_OPEN_CLASS);
   }
 
-  function clearPopupTokenId(): void {
-    if (currentPopupTokenId) {
-      getTokenById(currentPopupTokenId)?.classList.remove(POPUP_OPEN_CLASS);
-      currentPopupTokenId = null;
+  function clearPopupTokenId(level: PopupLevel): void {
+    if (level.popupTokenId) {
+      getTokenById(level.popupTokenId)?.classList.remove(POPUP_OPEN_CLASS);
+      level.popupTokenId = null;
     }
   }
 
@@ -649,31 +656,72 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return window.innerWidth < POPUP_SHEET_BREAKPOINT_PX;
   }
 
-  function onPopupDismiss(): void {
-    // mountPopupDictionary has already unmounted the React tree by the time
-    // this callback runs, so we only clear local references.
-    cancelPendingDismiss();
-    cancelInFlightLookup();
-    popupMount = null;
-    clearPopupTokenId();
-    currentHighlightTarget = null;
-    originalHighlightTarget = null;
-    highlightAnchor = null;
-    wordHighlight.clear();
-    resumeVideoIfNeeded();
-    popupDictWasPlaying = false;
+  /** Index of the popup level whose shadow host contains the lookup target,
+   *  or -1 when the target is page/subtitle text. */
+  function levelIndexForTarget(target: HighlightTarget): number {
+    const node = target instanceof Range ? target.startContainer : target;
+    const root = node.getRootNode();
+    if (!(root instanceof ShadowRoot)) return -1;
+    const host = root.host;
+    if (!(host instanceof HTMLElement) || !host.classList.contains('js-cell-popup-host')) return -1;
+    return popupStack.findIndex((level) => level.mount?.host === host);
+  }
+
+  /** Outside-click guard for each mount: a pointerdown inside ANY stack host
+   *  must not dismiss a sibling level. */
+  function isInsideStackHostEvent(e: PointerEvent): boolean {
+    return e.composedPath().some(
+      (el) => el instanceof HTMLElement && el.classList.contains('js-cell-popup-host'),
+    );
+  }
+
+  function destroyLevel(level: PopupLevel): void {
+    if (level.requestId) {
+      cancelLookup(level.requestId);
+      level.requestId = null;
+    }
+    clearPopupTokenId(level);
+    level.highlight.clear();
+    level.mount?.destroy();
+    level.mount = null;
+  }
+
+  /** Close level `index` and every deeper level. Resumes the video only once
+   *  the whole stack is gone. */
+  function closeFromLevel(index: number): void {
+    if (index < 0 || index >= popupStack.length) return;
+    while (popupStack.length > index) {
+      destroyLevel(popupStack.pop()!);
+    }
+    if (popupStack.length === 0) {
+      resumeVideoIfNeeded();
+      popupDictWasPlaying = false;
+    }
   }
 
   function closePopup(): void {
-    popupMount?.destroy();
-    popupMount = null;
-    clearPopupTokenId();
-    currentHighlightTarget = null;
-    originalHighlightTarget = null;
-    highlightAnchor = null;
-    wordHighlight.clear();
-    resumeVideoIfNeeded();
-    popupDictWasPlaying = false;
+    cancelPendingDismiss();
+    closeFromLevel(0);
+  }
+
+  /** Mount a popup for `level`, wiring every popup callback back to that
+   *  level so nested lookups / status changes / card actions stay scoped. */
+  function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
+    level.mount = mountPopupDictionary({
+      ...options,
+      onClose: () => closeFromLevel(popupStack.indexOf(level)),
+      onSizeChange: handlePopupSizeChange,
+      onSendToCard: (prefill) => handlePopupCardCreatorAction(level, 'edit-card', prefill),
+      onQuickAdd: (prefill) => { void handlePopupQuickAdd(level, prefill); },
+      onStatusChange: (term, langCode, status) => handlePopupStatusChange(level, term, langCode, status),
+      onCandidateChange: (term) => expandHighlightForTerm(level, term),
+      onOpenSettings: deps.panelController
+        ? () => { closePopup(); void openSettingsSection(deps.panelController!, 'resources'); }
+        : undefined,
+      dismissOnOutsideClick: !isSheetMode(),
+      isInsideOtherHost: isInsideStackHostEvent,
+      onOutsidePointerDown: closePopup,
+    });
   }
 
   function handlePopupSizeChange(size: PopupSize, sheetHeight: number): void {
@@ -694,14 +742,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     });
   }
 
-  function handlePopupStatusChange(term: string, langCode: string, status: WordStatus): void {
+  function handlePopupStatusChange(level: PopupLevel, term: string, langCode: string, status: WordStatus): void {
     deps.onStatusChange?.(term, langCode, status);
-    const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
+    const token = level.popupTokenId ? getTokenById(level.popupTokenId) : null;
     if (token) {
       applyTokenStatus(token, status);
       token.classList.add(POPUP_OPEN_CLASS);
-    } else if (currentHighlightTarget) {
-      applyTokenStatus(currentHighlightTarget, status);
+    } else if (level.highlightTarget) {
+      applyTokenStatus(level.highlightTarget, status);
     }
     const key = cacheKeyFor(term, langCode);
     const cached = lookupCache.get(key);
@@ -711,6 +759,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function renderLookupResult(
+    level: PopupLevel,
     result: LookupResult,
     additional: readonly LookupResult[],
     anchorRect: DOMRect,
@@ -721,10 +770,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     pauseVideoIfNeeded();
     // A new lookup is taking over — cancel any pending delayed dismiss.
     cancelPendingDismiss();
-    // Compute line rect from the current highlight target for line-aware
+    // Compute line rect from the level's highlight target for line-aware
     // popup positioning ("không che chữ cùng hàng").
-    const lineRect: PopupLineRect | null = currentHighlightTarget
-      ? computeLineRect(currentHighlightTarget)
+    const lineRect: PopupLineRect | null = level.highlightTarget
+      ? computeLineRect(level.highlightTarget)
       : null;
     const anchor: PopupAnchor = {
       top: anchorRect.top,
@@ -741,35 +790,27 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         }
       : undefined;
 
-    if (popupMount && !isResponseUpdate) {
-      if (isSheetMode()) {
-        // Sheet mode: keep the sheet mounted and feed the new result in — no
-        // flicker, the user can chain lookups without the sheet vanishing.
-        // The shared `if (popupMount)` block below handles setResult/setOptions.
-      } else {
-        // Desktop: a fresh lookup re-anchors at the new target. The React
-        // mount is positioned on initial mount, so destroy + recreate.
-        popupMount.destroy();
-        popupMount = null;
-      }
-    }
-
     const perLang = dpSettings.defaultActiveTabPerLang?.[result.langCode];
     const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
 
-    if (popupMount) {
-      // Either a cache-miss response for the same loading popup, or the sheet
-      // reuse path above — feed the result in without re-mounting.
-      popupMount.setResult(result, additional);
-      popupMount.setOptions({
+    if (level.mount) {
+      // Reused level (same-level re-lookup, sheet chain, or the async
+      // response for a loading shell): feed the result in without
+      // re-mounting and move the popup to the new anchor.
+      level.mount.setResult(result, additional);
+      level.mount.setOptions({
         sourceLang: result.langCode,
         targetLang: nativeLang || 'vi',
         initialTerm: request.term,
         contextSentence: request.contextSentence,
         cursorOffset: request.cursorOffset,
+        defaultActiveTab: defaultTab,
       });
+      if (!isResponseUpdate) {
+        level.mount.setAnchor(anchor, pointerHint, lineRect);
+      }
     } else {
-      const options: MountPopupDictionaryOptions = {
+      mountPopupLevel(level, {
         anchor,
         pointer: pointerHint,
         lineRect,
@@ -786,24 +827,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         defaultActiveTab: defaultTab,
         initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
         initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
-        onClose: onPopupDismiss,
-        onSizeChange: handlePopupSizeChange,
-        onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
-        onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
-        onStatusChange: handlePopupStatusChange,
-        onCandidateChange: expandHighlightForTerm,
-        onOpenSettings: deps.panelController
-          ? () => { closePopup(); void openSettingsSection(deps.panelController, 'resources'); }
-          : undefined,
-        dismissOnOutsideClick: !isSheetMode(),
-      };
-      popupMount = mountPopupDictionary(options);
+      });
     }
 
     // Apply token status + popup-open pin to the looked-up token.
-    const token = currentHighlightTarget ? getTokenElement(currentHighlightTarget) : null;
+    const token = level.highlightTarget ? getTokenElement(level.highlightTarget) : null;
     if (token) {
-      setPopupTokenId(token);
+      setPopupTokenId(level, token);
       applyTokenStatus(token, result.status);
     }
 
@@ -814,7 +844,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // fall back to the dictionary term (which may be a multi-word headword).
     const surface = result.detectedPhrase?.surface;
     const phraseTerm = surface && surface.includes(' ') ? surface : result.term;
-    expandHighlightForTerm(phraseTerm);
+    expandHighlightForTerm(level, phraseTerm);
     prefetchAdjacentTerms(request);
   }
 
@@ -832,52 +862,63 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     highlightTarget: HighlightTarget,
     pointer?: WebTriggerPointer,
   ): void {
-    // A new lookup is starting — cancel any pending delayed dismiss and any
-    // in-flight lookup so the popup doesn't vanish and the background doesn't
-    // waste work on a stale request.
+    // A new lookup is starting — cancel any pending delayed dismiss so the
+    // popup doesn't vanish mid-interaction.
     cancelPendingDismiss();
-    cancelInFlightLookup();
-    currentRequestId = requestId;
-    currentHighlightTarget = highlightTarget;
-    originalHighlightTarget = highlightTarget;
+
+    // Route the lookup to its level: page/subtitle text → level 1 (index 0),
+    // content inside popup level N → level N+1. Deeper levels are pruned; the
+    // target level is reused when it exists.
+    const sourceIdx = levelIndexForTarget(highlightTarget);
+    const targetIdx = isSheetMode() ? 0 : Math.min(sourceIdx + 1, MAX_POPUP_DEPTH - 1);
+    if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
+
+    let level = popupStack[targetIdx];
+    if (level) {
+      if (level.requestId) {
+        cancelLookup(level.requestId);
+        level.requestId = null;
+      }
+      clearPopupTokenId(level);
+      level.highlight.clear();
+    } else {
+      level = {
+        mount: null,
+        requestId: null,
+        highlightTarget: null,
+        originalHighlightTarget: null,
+        highlightAnchor: null,
+        popupTokenId: null,
+        highlight: createWordHighlight(),
+      };
+      popupStack.push(level);
+    }
+
+    level.highlightTarget = highlightTarget;
+    level.originalHighlightTarget = highlightTarget;
     if (highlightTarget instanceof Range && highlightTarget.startContainer instanceof Text) {
       const parent = highlightTarget.startContainer.parentElement;
-      if (parent) {
-        highlightAnchor = {
-          parent,
-          wordStart: computeTextOffset(parent, highlightTarget.startContainer, highlightTarget.startOffset),
-        };
-      } else {
-        highlightAnchor = null;
-      }
+      level.highlightAnchor = parent
+        ? {
+            parent,
+            wordStart: computeTextOffset(parent, highlightTarget.startContainer, highlightTarget.startOffset),
+          }
+        : null;
     } else {
-      highlightAnchor = null;
+      level.highlightAnchor = null;
     }
-    wordHighlight.show(highlightTarget);
+    level.highlight.show(highlightTarget);
 
     const token = getTokenElement(highlightTarget);
     if (token) {
-      setPopupTokenId(token);
+      setPopupTokenId(level, token);
+      const localStatus = deps.getTokenStatus?.(request.term);
+      if (localStatus && localStatus !== 'unknown') {
+        applyTokenStatus(token, localStatus);
+      }
     }
 
-    // Fast path: if we already looked this term up, show the popup immediately
-    // without paying for a background round-trip. Cache stores the full
-    // LookupResult[] so candidates survive repeat lookups (ADR-xxx).
-    const cached = getCachedResult(request.term, request.langCode);
-    if (cached) {
-      const finalWinner = applyLocalStatusFallback(cached[0]!, request.term);
-      const finalCached = finalWinner === cached[0] ? cached : [finalWinner, ...cached.slice(1)];
-      if (finalCached !== cached) setCachedResult(request.term, request.langCode, finalCached);
-      renderLookupResult(finalCached[0]!, finalCached.slice(1), anchorRect, request, pointer);
-      return;
-    }
-
-    // Mount a React loading shell immediately with the term + context so the
-    // user gets instant feedback on click/hover. When data arrives,
-    // renderLookupResult calls setResult on the same mount.
-    const lineRect: PopupLineRect | null = currentHighlightTarget
-      ? computeLineRect(currentHighlightTarget)
-      : null;
+    const lineRect = computeLineRect(highlightTarget);
     const anchor: PopupAnchor = {
       top: anchorRect.top,
       left: anchorRect.left,
@@ -893,30 +934,38 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         }
       : undefined;
 
-    let reusedSheet = false;
-    if (popupMount) {
-      if (isSheetMode()) {
-        // Sheet mode: reuse the mounted sheet — just flip to loading and feed
-        // the new term/context so the user sees the lookup start in-place.
-        popupMount.setLoading(true);
-        popupMount.setOptions({
-          sourceLang: request.langCode,
-          targetLang: nativeLang || 'vi',
-          initialTerm: request.term,
-          contextSentence: request.contextSentence,
-          cursorOffset: request.cursorOffset,
-        });
-        reusedSheet = true;
-      } else {
-        popupMount.destroy();
-        popupMount = null;
-      }
+    // Fast path: if we already looked this term up, show the popup immediately
+    // without paying for a background round-trip. Cache stores the full
+    // LookupResult[] so candidates survive repeat lookups (ADR-xxx).
+    const cached = getCachedResult(request.term, request.langCode);
+    if (cached) {
+      const finalWinner = applyLocalStatusFallback(cached[0]!, request.term);
+      const finalCached = finalWinner === cached[0] ? cached : [finalWinner, ...cached.slice(1)];
+      if (finalCached !== cached) setCachedResult(request.term, request.langCode, finalCached);
+      renderLookupResult(level, finalCached[0]!, finalCached.slice(1), anchorRect, request, pointer);
+      return;
     }
 
-    if (!reusedSheet) {
+    // Mount a React loading shell immediately with the term + context so the
+    // user gets instant feedback on click/hover. When data arrives,
+    // renderLookupResult calls setResult on the same mount.
+    if (level.mount) {
       const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
       const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
-      const options: MountPopupDictionaryOptions = {
+      level.mount.setLoading(true);
+      level.mount.setOptions({
+        sourceLang: request.langCode,
+        targetLang: nativeLang || 'vi',
+        initialTerm: request.term,
+        contextSentence: request.contextSentence,
+        cursorOffset: request.cursorOffset,
+        defaultActiveTab: defaultTab,
+      });
+      level.mount.setAnchor(anchor, pointerHint, lineRect);
+    } else {
+      const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
+      const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
+      mountPopupLevel(level, {
         anchor,
         pointer: pointerHint,
         lineRect,
@@ -931,43 +980,28 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         defaultActiveTab: defaultTab,
         initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
         initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
-        onClose: onPopupDismiss,
-        onSizeChange: handlePopupSizeChange,
-        onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
-        onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
-        onStatusChange: handlePopupStatusChange,
-        onCandidateChange: expandHighlightForTerm,
-        onOpenSettings: deps.panelController
-          ? () => { closePopup(); void openSettingsSection(deps.panelController, 'resources'); }
-          : undefined,
-        dismissOnOutsideClick: !isSheetMode(),
-      };
-      popupMount = mountPopupDictionary(options);
+      });
     }
 
-    const lookupToken = getTokenElement(highlightTarget);
-    if (lookupToken) {
-      setPopupTokenId(lookupToken);
-      const localStatus = deps.getTokenStatus?.(request.term);
-      if (localStatus && localStatus !== 'unknown') {
-        applyTokenStatus(lookupToken, localStatus);
-      }
-    }
+    level.requestId = requestId;
 
     void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
       payload: { requestId, request },
     }))
       .then((response: unknown) => {
-        // If the user already moved away and dismissed the popup, ignore stale result.
-        if (currentRequestId !== requestId) return;
+        // Stale guard: the level was pruned or already re-used for a newer
+        // lookup → drop this response entirely.
+        const owner = popupStack.find((l) => l.requestId === requestId);
+        if (!owner) return;
+        owner.requestId = null;
         const { success, data, error } = response as { success: boolean; data?: LookupResult[]; error?: string };
         if (success && data && data.length > 0) {
           const [winner, ...rest] = data;
           const finalWinner = applyLocalStatusFallback(winner!, request.term);
           const finalData = finalWinner === winner ? data : [finalWinner, ...rest];
           setCachedResult(request.term, request.langCode, finalData);
-          renderLookupResult(finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer, true);
+          renderLookupResult(owner, finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer, true);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }
@@ -985,9 +1019,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function cancelInFlightLookup(): void {
-    if (!currentRequestId) return;
-    cancelLookup(currentRequestId);
-    currentRequestId = null;
+    for (const level of popupStack) {
+      if (level.requestId) {
+        cancelLookup(level.requestId);
+        level.requestId = null;
+      }
+    }
   }
 
   function updateCardCreatorSettings(settings: CardCreatorSettings): void {
@@ -1354,12 +1391,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function handlePopupCardCreatorAction(
+    level: PopupLevel,
     action: PopupCardCreatorAction,
     prefill: PopupCardCreatorPrefill,
   ): OnCardCreatorActionResult {
-    // Capture subtitle context BEFORE returning — onPopupDismiss clears
-    // currentHighlightTarget synchronously after this function returns.
-    const fromSubtitle = isLookupFromSubtitle();
+    // Capture subtitle context BEFORE returning — closePopup clears the
+    // level's highlightTarget synchronously after this function returns.
+    const fromSubtitle = isLookupFromSubtitle(level);
 
     if (deps.panelController) {
       // ADR-065: route to the integrated universal panel and keep the popup open.
@@ -1419,17 +1457,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return { stayOpen: false };
   }
 
-  async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
+  async function handlePopupQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): Promise<void> {
     const destination = deps.dictionaryPopupSettings.srsDestination ?? 'anki';
     if (destination === 'ocean-srs') {
       return handlePopupAddToSrs(prefill);
     }
-    return handlePopupAnkiQuickAdd(prefill);
+    return handlePopupAnkiQuickAdd(level, prefill);
   }
 
-  async function handlePopupAnkiQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
+  async function handlePopupAnkiQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): Promise<void> {
     // Capture subtitle context BEFORE any await / close.
-    const fromSubtitle = isLookupFromSubtitle();
+    const fromSubtitle = isLookupFromSubtitle(level);
     closePopup();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
@@ -1572,6 +1610,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function destroy(): void {
     detach();
     cancelPendingDismiss();
+    for (const level of popupStack) level.highlight.destroy();
     closePopup();
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
@@ -1580,7 +1619,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       document.removeEventListener('webkitfullscreenchange', orbitalFullscreenListener);
       orbitalFullscreenListener = null;
     }
-    wordHighlight.destroy();
+    apiHighlight.destroy();
     lookupCache.clear();
   }
 
@@ -1670,8 +1709,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     ccSettings = settings.cardCreator;
     nativeLang = settings.subtitleOverlayNativeLanguage ?? nativeLang;
     cardCreatorMount?.updateSettings(ccSettings);
-    if (popupMount) {
-      popupMount.setOptions({
+    for (const level of popupStack) {
+      level.mount?.setOptions({
         targetLang: nativeLang,
         initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
         initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
@@ -1686,7 +1725,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function syncStatus(term: string, status: WordStatus): void {
-    popupMount?.setStatus(term, status);
+    for (const level of popupStack) {
+      level.mount?.setStatus(term, status);
+    }
   }
 
   return {

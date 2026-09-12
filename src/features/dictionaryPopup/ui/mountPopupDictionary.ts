@@ -66,9 +66,22 @@ export interface MountPopupDictionaryOptions {
    * sheet open and just feeds in the new result). Defaults to true.
    */
   readonly dismissOnOutsideClick?: boolean;
+  /**
+   * Extra "inside" predicate for the outside-click listener. Nested popup
+   * stacks pass a check covering sibling popup hosts so a pointerdown inside
+   * another level is not treated as an outside click.
+   */
+  readonly isInsideOtherHost?: (e: PointerEvent) => boolean;
+  /**
+   * Called instead of `close()` for outside pointerdowns when provided —
+   * the nested-stack controller routes it to stack-level dismissal.
+   */
+  readonly onOutsidePointerDown?: () => void;
 }
 
 export interface PopupDictionaryMountController {
+  /** The shadow host element — identifies this popup level for nested stacks. */
+  readonly host: HTMLElement;
   /** Unmount the popup and remove the shadow host. */
   readonly destroy: () => void;
   /** Show or hide the forced loading state. */
@@ -77,8 +90,10 @@ export interface PopupDictionaryMountController {
   readonly setResult: (result: LookupResult, candidates?: readonly LookupResult[]) => void;
   /** Update the active result's status from an external source (e.g. keyboard shortcut). */
   readonly setStatus: (term: string, status: WordStatus) => void;
-  /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context) without re-mounting. */
-  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset'>>) => void;
+  /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context, defaultActiveTab) without re-mounting. */
+  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset' | 'defaultActiveTab'>>) => void;
+  /** Move the popup to a new anchor without re-mounting (same-level re-lookup). */
+  readonly setAnchor: (anchor: PopupAnchor, pointer?: PopupPointerHint, lineRect?: PopupLineRect | null) => void;
 }
 
 function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
@@ -88,7 +103,11 @@ function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
   });
 }
 
-type CurrentOptions = MountPopupDictionaryOptions & {
+type MutableOptions = {
+  -readonly [K in keyof MountPopupDictionaryOptions]: MountPopupDictionaryOptions[K];
+};
+
+type CurrentOptions = MutableOptions & {
   /** Forced loading state controlled by setLoading. */
   isLoading: boolean;
   /** Result controlled by setResult. */
@@ -99,6 +118,8 @@ type CurrentOptions = MountPopupDictionaryOptions & {
   syncStatus?: { readonly term: string; readonly status: WordStatus };
   /** Default media tab controlled by the parent. */
   defaultActiveTab?: PopupTab | null;
+  /** Bumped by setAnchor so usePopupPosition recomputes placement. */
+  anchorVersion: number;
 };
 
 /**
@@ -117,6 +138,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   const current: CurrentOptions = {
     ...options,
     isLoading: options.isLoading ?? false,
+    anchorVersion: 0,
   };
 
   const close = (): void => {
@@ -152,6 +174,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onOpenSettings: current.onOpenSettings,
     defaultActiveTab: current.defaultActiveTab,
     syncStatus: current.syncStatus,
+    anchorVersion: current.anchorVersion,
   });
 
   const render = (): void => {
@@ -179,10 +202,15 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
 
   const onDocumentPointerDown = (e: PointerEvent): void => {
     if (isInsideHost(mount.host, e)) return;
+    if (current.isInsideOtherHost?.(e)) return;
     // Sheet mode keeps the popup open on outside clicks so the user can look
     // up a new word without the sheet vanishing — the controller feeds the new
     // result in via setResult/setOptions. Desktop popup still dismisses.
     if (current.dismissOnOutsideClick === false) return;
+    if (current.onOutsidePointerDown) {
+      current.onOutsidePointerDown();
+      return;
+    }
     close();
   };
 
@@ -190,7 +218,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
 
   const onFullscreenChange = (): void => {
     const parent = getMountParent();
-    if (parent !== mount.host.parentElement) {
+    if (parent !== mount.host.parentNode) {
       parent.appendChild(mount.host);
     }
   };
@@ -198,10 +226,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-  // If already in fullscreen when mount is called, attach to the fullscreen element.
-  if (document.fullscreenElement && document.fullscreenElement !== mount.host.parentElement) {
-    document.fullscreenElement.appendChild(mount.host);
-  }
+  onFullscreenChange();
 
   const cleanup = (): void => {
     document.removeEventListener('pointerdown', onDocumentPointerDown, true);
@@ -211,7 +236,12 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   };
 
   return {
-    destroy: cleanup,
+    host: mount.host,
+    destroy: () => {
+      if (destroyed) return;
+      destroyed = true;
+      cleanup();
+    },
     setLoading: (isLoading) => {
       current.isLoading = isLoading;
       // Clear the previous result when entering loading so the popup shows a
@@ -234,6 +264,13 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     },
     setOptions: (updates) => {
       Object.assign(current, updates);
+      render();
+    },
+    setAnchor: (anchor, pointer, lineRect) => {
+      current.anchor = anchor;
+      current.pointer = pointer;
+      current.lineRect = lineRect ?? null;
+      current.anchorVersion += 1;
       render();
     },
   };

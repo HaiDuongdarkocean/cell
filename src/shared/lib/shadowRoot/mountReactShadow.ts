@@ -5,8 +5,10 @@ import { injectShadowCss } from './injectShadowCss';
 export type ShadowPosition = 'fixed' | 'absolute' | 'relative';
 
 export interface MountShadowOptions {
-  /** Light-DOM parent. Defaults to `document.body`. */
-  parent?: HTMLElement;
+  /** Light-DOM parent. Defaults to `document.body`. A ShadowRoot parent is
+   *  also accepted (e.g. when the fullscreen element is itself a shadow
+   *  host — light-DOM children without a <slot> never render). */
+  parent?: HTMLElement | ShadowRoot;
   /**
    * Stacking layer. Higher numbers render above lower numbers.
    * Maps to `z-index: layer * 100` by default.
@@ -88,13 +90,22 @@ export function mountReactShadow(
 
 export function attachFullscreenReparenting(
   host: HTMLElement,
-  parent: HTMLElement,
+  parent: HTMLElement | ShadowRoot,
 ): () => void {
+  const mountPoint = (el: Element): HTMLElement | ShadowRoot =>
+    el.tagName === 'VIDEO'
+      ? ((el as HTMLElement).parentElement ?? document.body)
+      : ((el as HTMLElement).shadowRoot ?? (el as HTMLElement));
+
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
-    if (fsEl && fsEl !== host.parentElement) {
-      fsEl.appendChild(host);
-    } else if (!fsEl && host.parentElement !== parent) {
+    if (fsEl) {
+      // The fullscreen element can be this host itself (Player Mode roots the
+      // overlay host) — appending it into its own shadow throws.
+      if (fsEl === host || host.contains(fsEl)) return;
+      const target = mountPoint(fsEl);
+      if (target !== host.parentNode) target.appendChild(host);
+    } else if (host.parentNode !== parent) {
       parent.appendChild(host);
     }
   };
@@ -102,10 +113,7 @@ export function attachFullscreenReparenting(
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-  // If already in fullscreen when mount is called, move the host now.
-  if (document.fullscreenElement && document.fullscreenElement !== host.parentElement) {
-    document.fullscreenElement.appendChild(host);
-  }
+  onFullscreenChange();
 
   return () => {
     document.removeEventListener('fullscreenchange', onFullscreenChange);

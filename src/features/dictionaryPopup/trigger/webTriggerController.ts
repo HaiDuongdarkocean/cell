@@ -81,6 +81,16 @@ function eventBlockedForLookup(e: MouseEvent): boolean {
  *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer.
  *  When (x, y) is over a data-allow-lookup region inside a host's shadow tree, that host
  *  is kept hit-testable — disabling it would hide the text from elementFromPoint. */
+function deepElementFromPoint(root: Document | ShadowRoot, x: number, y: number): Element | null {
+  let hit = root.elementFromPoint?.(x, y) ?? null;
+  while (hit?.shadowRoot) {
+    const inner = hit.shadowRoot.elementFromPoint?.(x, y) ?? null;
+    if (!inner || inner === hit) break;
+    hit = inner;
+  }
+  return hit;
+}
+
 function withUiHostsPointerEventsDisabled<T>(fn: () => T, x?: number, y?: number): T {
   const hosts = Array.from(document.querySelectorAll(POINTER_EVENT_HOST_SELECTORS)) as HTMLElement[];
   interface NodePointerStyle { element: HTMLElement; original: string; }
@@ -95,8 +105,8 @@ function withUiHostsPointerEventsDisabled<T>(fn: () => T, x?: number, y?: number
     }
   }
   for (const host of hosts) {
-    const innerHit = x !== undefined && y !== undefined
-      ? (host.shadowRoot?.elementFromPoint?.(x, y) ?? null)
+    const innerHit = x !== undefined && y !== undefined && host.shadowRoot
+      ? deepElementFromPoint(host.shadowRoot, x, y)
       : null;
     if (innerHit instanceof Element && innerHit.closest(ALLOW_LOOKUP_SELECTOR)) continue;
     collect(host);
