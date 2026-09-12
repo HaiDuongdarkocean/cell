@@ -13,15 +13,15 @@ const SHOWCASE_HTML_PATH = resolve(
  * Vite transformIndexHtml inject script với base đúng (/src/entrypoints/design-system-showcase/).
  */
 /**
- * Move build output từ `dist/design-system-showcase/src/entrypoints/design-system-showcase/index.html`
- * sang `dist/design-system-showcase/design-system-showcase.html` để `npm run design-system` serve
+ * Move build output từ `build/showcase/src/entrypoints/design-system-showcase/index.html`
+ * sang `build/showcase/design-system-showcase.html` để `npm run design-system` serve
  * artifact mới nhất từ root.
  */
 const showcaseOutputMover = (): Plugin => ({
   name: 'showcase-output-mover',
   apply: 'build',
   closeBundle() {
-    const outDir = resolve(import.meta.dirname, 'dist-design-system-showcase');
+    const outDir = resolve(import.meta.dirname, 'build/showcase');
     const deep = resolve(outDir, 'src/entrypoints/design-system-showcase/index.html');
     const flat = resolve(outDir, 'design-system-showcase.html');
     try {
@@ -73,7 +73,7 @@ export default defineConfig({
     open: '/src/entrypoints/design-system-showcase/index.html',
   },
   build: {
-    outDir: 'dist-design-system-showcase',
+    outDir: 'build/showcase',
     emptyOutDir: true,
     rollupOptions: {
       input: {

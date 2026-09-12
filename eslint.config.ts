@@ -9,7 +9,7 @@ export default tseslint.config(
   {
     ignores: [
       'dist/',
-      'dist-*/',
+      'build/',
       'node_modules/',
       'coverage/',
       'e2e-results/',

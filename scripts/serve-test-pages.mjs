@@ -23,7 +23,7 @@ import { randomUUID } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const DIST = resolve(ROOT, 'dist-pages');
+const DIST = resolve(ROOT, 'build/pages');
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const agentName = (process.env.PW_OUTPUT_DIR || '').trim() || 'default';

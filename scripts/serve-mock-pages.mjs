@@ -30,7 +30,7 @@ import { randomUUID } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const DIST = resolve(ROOT, 'dist-mock-pages');
+const DIST = resolve(ROOT, 'build/mock-pages');
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const agentName = (process.env.PW_OUTPUT_DIR || '').trim() || 'default';

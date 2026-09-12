@@ -3,9 +3,7 @@ node_modules/
 
 # Build output
 dist/
-dist-design-system-showcase/
-dist-mock-pages/
-dist-pages/
+build/
 
 # Test coverage
 coverage/

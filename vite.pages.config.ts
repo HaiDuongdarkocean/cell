@@ -27,7 +27,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist-pages',
+    outDir: 'build/pages',
     emptyOutDir: true,
     rollupOptions: {
       input: PAGES,

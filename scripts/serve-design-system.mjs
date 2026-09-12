@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const OUT_DIR = resolve(ROOT, 'dist-design-system-showcase');
+const OUT_DIR = resolve(ROOT, 'build/showcase');
 
 const portOffset = parseInt(process.env.PW_PORT_OFFSET || '0', 10);
 const BASE_PORT = 8123;

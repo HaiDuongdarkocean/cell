@@ -163,7 +163,7 @@ export default defineConfig(({ mode }) => {
   const isFast = mode === 'fast';
   const isMock = mode === 'mock';
   const isExtension = !isMock;
-  const outDir = isMock ? 'dist-mock-pages' : 'dist';
+  const outDir = isMock ? 'build/mock-pages' : 'dist';
   const buildInput = isMock ? MOCK_INPUT : (isFast ? FAST_INPUT : FULL_INPUT);
   return {
     define: {
