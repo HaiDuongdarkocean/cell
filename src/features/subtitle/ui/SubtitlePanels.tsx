@@ -605,14 +605,20 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           host.style.inset = saved.inset;
           playerModeSavedStyles.current = null;
         }
+        const hostWithProp = host as HTMLElement & { __cellOriginalParent?: HTMLElement };
         const originalParent = playerModeOriginalParent.current
-          ?? (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent
+          ?? hostWithProp.__cellOriginalParent
           ?? null;
         if (originalParent && host.parentElement !== originalParent) {
-          originalParent.appendChild(host);
+          if (!host.contains(originalParent)) {
+            originalParent.appendChild(host);
+            playerModeOriginalParent.current = null;
+            hostWithProp.__cellOriginalParent = undefined;
+          }
+        } else {
+          playerModeOriginalParent.current = null;
+          hostWithProp.__cellOriginalParent = undefined;
         }
-        playerModeOriginalParent.current = null;
-        (host as HTMLElement & { __cellOriginalParent?: HTMLElement }).__cellOriginalParent = undefined;
       }
     }, [playerMode]);
 

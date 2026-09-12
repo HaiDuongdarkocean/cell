@@ -61,4 +61,31 @@ describe('mountReactShadow', () => {
     fsContainer.remove();
     await act(async () => unmount());
   });
+
+  it('skips the exit restore when the original parent is inside the host', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const Component = () => createElement('span');
+    const { host, unmount } = mountReactShadow(createElement(Component), {
+      parent: container,
+      reparentOnFullscreen: true,
+    });
+    await act(async () => {});
+    expect(host.parentElement).toBe(container);
+
+    // Player Mode scenario: the host was moved to body, then the container
+    // was moved inside the host's light DOM — restoring host into it would
+    // create a cycle.
+    document.body.appendChild(host);
+    host.appendChild(container);
+    (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentNode).not.toBe(container);
+    expect(host.isConnected).toBe(true);
+
+    container.remove();
+    await act(async () => unmount());
+  });
 });

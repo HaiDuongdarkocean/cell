@@ -105,7 +105,7 @@ export function attachFullscreenReparenting(
       if (fsEl === host || host.contains(fsEl)) return;
       const target = mountPoint(fsEl);
       if (target !== host.parentNode) target.appendChild(host);
-    } else if (host.parentNode !== parent) {
+    } else if (host.parentNode !== parent && !host.contains(parent)) {
       parent.appendChild(host);
     }
   };

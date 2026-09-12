@@ -266,6 +266,16 @@ function PlayerModeOverlayInner({
           targetParent.appendChild(player);
         }
       }
+      const hostWithProp = shadowHost as HTMLElement & { __cellOriginalParent?: HTMLElement };
+      const originalHostParent = hostWithProp.__cellOriginalParent;
+      hostWithProp.__cellOriginalParent = undefined;
+      if (
+        originalHostParent?.isConnected
+        && shadowHost.parentElement !== originalHostParent
+        && !shadowHost.contains(originalHostParent)
+      ) {
+        originalHostParent.appendChild(shadowHost);
+      }
     };
   }, []);
 
