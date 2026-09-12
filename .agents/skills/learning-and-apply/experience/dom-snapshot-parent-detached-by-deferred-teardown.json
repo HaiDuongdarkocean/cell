@@ -1,0 +1,20 @@
+{
+  "id": "dom-snapshot-parent-detached-by-deferred-teardown",
+  "title": "Snapshotting node.parentElement inside another feature's teardown window — record a live anchor outside the doomed subtree as restore fallback",
+  "category": ["async", "state"],
+  "tags": ["dom-reparent", "mutation", "detached-subtree", "snapshot", "restore", "live-anchor", "player-mode", "split-view", "race"],
+  "trigger": "Feature A reparents a shared node and schedules DEFERRED teardown of its wrapper (e.g. exit animation). Feature B mounts inside that window and snapshots `node.parentElement` for later restore — but the snapshot points inside A's wrapper, which A's timer then detaches. B's restore inserts the node into a dead subtree: the node vanishes from the page permanently.",
+  "principle": "A parentElement snapshot is only valid if the parent outlives the snapshot. When the parent may belong to another feature's pending teardown, record a LIVE anchor outside that subtree at snapshot time (the doomed wrapper's own parent/nextSibling). On restore: use the snapshot if `parent.isConnected`, else fall back to the live anchor. Draining A's pending restore before B mounts is not sufficient — mount ordering puts B's snapshot between A's cleanup-schedule and A's timer fire; the live anchor covers that gap.",
+  "cases": [
+    {
+      "context": "Player Mode mounts while Split View's 410ms close-restore is still pending. PM snapshots `player.parentElement` = the split-view stageCell (still connected at that instant). The timer then removes the wrapper, detaching stageCell. PM exit-restore calls `originalParent.appendChild(player)` into the detached stageCell → video gone from the page, `findPlayerContainer()` returns null, split view stuck open forever.",
+      "bad": "const originalParent = player.parentElement;\n// ... later, on exit:\noriginalParent.appendChild(player); // may be detached by now",
+      "good": "const originalParent = player.parentElement;\nconst doomedAncestor = player.closest('[data-cell-split-view=\"stage\"]');\nconst wrapper = doomedAncestor?.closest('[data-cell-split-view=\"wrapper\"]');\nconst liveAnchorParent = wrapper?.parentElement ?? null;\n// ... on exit:\nconst target = originalParent?.isConnected ? originalParent\n  : liveAnchorParent?.isConnected ? liveAnchorParent : null;\nif (target) target.appendChild(player);"
+    }
+  ],
+  "applyFor": [
+    "Any feature that snapshots a DOM position (parentElement/nextSibling) for later restore while other features may reparent or teardown the same subtree",
+    "Exit-restore paths of overlays/modes that move a shared node (player, panel) — always guard `parent.isConnected` and keep a live fallback anchor",
+    "Entering a mode during another mode's deferred cleanup window"
+  ]
+}

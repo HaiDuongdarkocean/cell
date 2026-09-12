@@ -1971,6 +1971,26 @@
         "storage-listener"
       ],
       "trigger": "Form/dialog load remote schema once per open context via a ref guard; user fixes config in an embedded settings panel but the form stays stale until remount"
+    },
+    {
+      "type": "experience",
+      "id": "dom-snapshot-parent-detached-by-deferred-teardown",
+      "title": "Snapshot parentElement trong teardown window của feature khác → ghi live anchor ngoài doomed subtree làm restore fallback",
+      "category": [
+        "async",
+        "state"
+      ],
+      "tags": [
+        "dom-reparent",
+        "detached-subtree",
+        "snapshot",
+        "restore",
+        "live-anchor",
+        "player-mode",
+        "split-view",
+        "race"
+      ],
+      "trigger": "Snapshot node.parentElement để restore sau, trong khi feature khác có deferred teardown sắp detach subtree chứa parent đó"
     }
   ]
 }

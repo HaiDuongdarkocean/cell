@@ -483,6 +483,17 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
+      // Drain a pending split-view restore BEFORE PM mounts: otherwise PM's
+      // findPlayerContainer runs while the shell is still inside the doomed
+      // stageCell — PM snapshots that as its originalParent, the deferred
+      // restore then removes the wrapper (detaching the stageCell), and PM's
+      // exit-restore strands the player in a detached subtree (video lost,
+      // findPlayerContainer returns null forever).
+      const pendingRestore = splitViewPendingRestoreRef.current;
+      if (pendingRestore) {
+        splitViewPendingRestoreRef.current = null;
+        pendingRestore();
+      }
       setPlayerMode((prev) => togglePlayerMode(prev));
     }, [addToast, playerMode]);
 
@@ -1182,6 +1193,28 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             }
             svLog('cleanup NORMAL done', { playerShellRect: rectLog(playerShell), originalParentTag: originalParent?.tagName });
           }
+        }
+        // User closed Split View while the player is fullscreen: the
+        // normal-branch wrapper still wraps the fullscreen element. Removing
+        // it now would detach the fs element and force-exit fullscreen, so
+        // the unwrap is deferred to the first fullscreenchange that reports
+        // no fullscreen element. Without this, a zombie wrapper + stage cell
+        // (flex row, hardcoded height) stays in the page forever.
+        const leftoverWrapper = splitViewWrapperRef.current;
+        if (leftoverWrapper && document.fullscreenElement && leftoverWrapper.contains(document.fullscreenElement)) {
+          const unwrapWhenFsExits = (): void => {
+            if (document.fullscreenElement) return;
+            document.removeEventListener('fullscreenchange', unwrapWhenFsExits);
+            const wrapperParent = leftoverWrapper.parentElement;
+            if (wrapperParent && leftoverWrapper.contains(playerShell)) {
+              wrapperParent.insertBefore(playerShell, leftoverWrapper);
+            }
+            leftoverWrapper.remove();
+            if (splitViewWrapperRef.current === leftoverWrapper) {
+              splitViewWrapperRef.current = null;
+            }
+          };
+          document.addEventListener('fullscreenchange', unwrapWhenFsExits);
         }
         // Restore all saved styles (display+flex-direction in fullscreen, all in normal).
         for (const property of playerShellStyleProperties) {

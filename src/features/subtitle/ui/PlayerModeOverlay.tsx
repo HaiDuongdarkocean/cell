@@ -168,6 +168,16 @@ function PlayerModeOverlayInner({
 
     const originalParent = player.parentElement;
     const originalNextSibling = player.nextSibling;
+    // If the player still sits inside a split-view stage cell, the split view's
+    // deferred teardown (410ms after the playerMode state flip) will detach the
+    // wrapper — including this cell — AFTER we snapshot it. Record the
+    // wrapper's live parent + sibling so the exit-restore can fall back to a
+    // connected anchor instead of inserting the player into a detached subtree
+    // (which would remove the video from the page permanently).
+    const svStage = player.closest('[data-cell-split-view="stage"]');
+    const svWrapper = svStage ? svStage.closest('[data-cell-split-view="wrapper"]') : null;
+    const liveAnchorParent = svWrapper ? svWrapper.parentElement : null;
+    const liveAnchorSibling = svWrapper ? svWrapper.nextSibling : null;
     const savedStyle = {
       width: player.style.width,
       height: player.style.height,
@@ -241,11 +251,19 @@ function PlayerModeOverlayInner({
       shadowHost.style.height = savedHostStyle.height;
       shadowHost.style.display = savedHostStyle.display;
       centerStyle.remove();
-      if (originalParent && player.parentElement !== originalParent) {
-        if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
-          originalParent.insertBefore(player, originalNextSibling);
+      const targetParent = originalParent?.isConnected
+        ? originalParent
+        : liveAnchorParent?.isConnected
+          ? liveAnchorParent
+          : null;
+      if (targetParent && player.parentElement !== targetParent) {
+        const refSibling = targetParent === originalParent
+          ? originalNextSibling
+          : liveAnchorSibling;
+        if (refSibling && refSibling.parentElement === targetParent) {
+          targetParent.insertBefore(player, refSibling);
         } else {
-          originalParent.appendChild(player);
+          targetParent.appendChild(player);
         }
       }
     };
