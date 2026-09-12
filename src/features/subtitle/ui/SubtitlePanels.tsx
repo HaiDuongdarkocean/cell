@@ -31,7 +31,7 @@ import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider
 import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
@@ -60,32 +60,12 @@ export type {
   AppearanceState,
 } from './subtitlePanelsTypes';
 
-// --- Split View diagnostic logging (temporary — remove after fix) ---
+// --- Split View diagnostic logging ---
 // Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
-// Also relays to the background service worker (chrome://extensions → service
-// worker) because sites with anti-debug reload the page when DevTools opens.
-// The SW console is stable and not affected by the host page's anti-debug.
 function svLog(event: string, data?: Record<string, unknown>): void {
   const ts = new Date().toISOString().slice(11, 23);
   const line = `[Cell:SplitView ${ts}] ${event}`;
-   
   console.log(line, data ?? '');
-  const payload = {
-    type: '__CELL_SPLIT_VIEW_LOG',
-    line,
-    data: data ?? null,
-    url: typeof location !== 'undefined' ? location.href : null,
-    isChildFrame: (() => { try { return window.self !== window.top; } catch { return true; } })(),
-  };
-  // Relay 1: background SW console (chrome://extensions → service worker).
-  void sendMessage(payload).catch(() => undefined);
-  // Relay 2: postMessage to parent (top frame) so the top-frame content
-  // script can store it in documentElement.dataset — readable via MCP
-  // execute_script on the top frame (cross-origin iframes can't be inspected
-  // directly). Anti-debug sites reload on F12, but stealth MCP bypasses that.
-  try {
-    if (window.self !== window.top) window.parent.postMessage(payload, '*');
-  } catch { /* cross-origin — best effort */ }
 }
 function rectLog(el: Element | null | undefined): Record<string, number> | null {
   if (!el) return null;

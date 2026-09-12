@@ -16,18 +16,7 @@ export function sendMessage<T = unknown>(
   if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
     return Promise.resolve(undefined as T);
   }
-  // Debug: log sendMessage calls for offscreen debugging.
-  const msgType = (message as { type?: string })?.type ?? 'unknown';
-  const p = chrome.runtime.sendMessage(message) as Promise<T>;
-  // Log resolve/reject for _OFFSCREEN_ messages (debugging OCR init hang).
-  if (msgType.startsWith('_OFFSCREEN_')) {
-    p.then((r) => {
-      try { chrome.storage.local.set({ __sendMessageDebug: { type: msgType, resolved: true, response: JSON.stringify(r)?.slice(0, 200), time: Date.now() } }); } catch {}
-    }).catch((e) => {
-      try { chrome.storage.local.set({ __sendMessageDebug: { type: msgType, rejected: true, error: String(e)?.slice(0, 200), time: Date.now() } }); } catch {}
-    });
-  }
-  return p;
+  return chrome.runtime.sendMessage(message) as Promise<T>;
 }
 
 export function onMessage(

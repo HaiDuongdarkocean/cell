@@ -166,28 +166,6 @@ export class BackgroundService implements BackgroundContext {
     this.registerHandlers();
     this.messageBus.start();
 
-    // 1a. Split View diagnostic log relay — content scripts (especially in
-    // cross-origin iframes on anti-debug sites like animekai) cannot use
-    // DevTools console (page reloads on F12). Relay logs here so they appear
-    // in the service worker console (chrome://extensions → service worker).
-    // Temporary — remove after split view iframe bug is fixed.
-    const svLogListener = (
-      msg: unknown,
-      _sender: chrome.runtime.MessageSender,
-    ): void => {
-      if (typeof msg !== 'object' || msg === null) return;
-      const m = msg as { type?: string; line?: string; data?: unknown; url?: string; isChildFrame?: boolean };
-      if (m.type !== '__CELL_SPLIT_VIEW_LOG') return;
-       
-      console.log(m.line ?? '[Cell:SplitView]', m.data ?? '', {
-        url: m.url,
-        isChildFrame: m.isChildFrame,
-        tabId: _sender.tab?.id,
-      });
-    };
-    chrome.runtime.onMessage.addListener(svLogListener);
-    this.unsubscribers.push(() => chrome.runtime.onMessage.removeListener(svLogListener));
-
     // 1b. Start session restore IMMEDIATELY (before any await)
     this.sessionReady = performSessionRestore(this);
 
@@ -346,8 +324,6 @@ export async function initBackground(): Promise<BackgroundService> {
   }
   backgroundService = new BackgroundService();
   await backgroundService.init();
-  // TEMP DEBUG: expose background state for CDP inspection
-  (globalThis as Record<string, unknown>).__cellBg = backgroundService;
   return backgroundService;
 }
 

@@ -69,12 +69,12 @@ const PATCHES = [
   {
     name: 'createNamedFunction (main)',
     find: 'Function(`body`,`return function `+e+`() {\n    "use strict";    return body.apply(this, arguments);\n};\n`)(t)',
-    replace: '(function(e, t) { var fn = function() { "use strict"; return t.apply(this, arguments); }; Object.defineProperty(fn, "name", { value: e, configurable: true }); try{self.__debugBroadcast({kind:`named-fn`,name:e})}catch{}; return fn; })(e, t)',
+    replace: '(function(e, t) { var fn = function() { "use strict"; return t.apply(this, arguments); }; Object.defineProperty(fn, "name", { value: e, configurable: true }); return fn; })(e, t)',
   },
   {
     name: 'createDynCallWrapper (main)',
     find: 'Function(`dynCall`,`rawFunction`,a)(n,t)',
-    replace: '(function(dynCall, rawFunction) { var cnt=0; return function() { cnt++; if(cnt<=5) try{self.__debugBroadcast({kind:`dyncall`,fn:rawFunction,args:arguments.length})}catch{}; var args = Array.from(arguments); var rv = dynCall.apply(null, [rawFunction].concat(args)); if(cnt<=5) try{self.__debugBroadcast({kind:`dyncall-ret`,fn:rawFunction})}catch{}; return rv; }; })(n, t)',
+    replace: '(function(dynCall, rawFunction) { return function() { var args = Array.from(arguments); return dynCall.apply(null, [rawFunction].concat(args)); }; })(n, t)',
   },
   // === ort.bundle.min: ONNX Runtime Web methodCaller ===
   {
@@ -90,7 +90,7 @@ const PATCHES = [
   {
     name: 'craftInvokerFunction (offscreen, Pn)',
     find: 'Pn(Function,m).apply(null,h)',
-    replace: '(function(m,h){var tbe=h[0],inv=h[1],fn=h[2],rd=h[3],rt=h[4],cp=h[5];var ac=0;for(var i=6;i<m.length-1;i++){if(m[i].indexOf(`argType`)===0)ac++;else break}var ats=h.slice(6,6+ac);var ht=cp!==null;var hr=rt.name!==`void`;var urd=false;if(ht&&cp.destructorFunction===void 0)urd=true;for(var i=0;i<ac;i++)if(ats[i].destructorFunction===void 0){urd=true;break}try{var rv2=function(){try{if(arguments.length!==ac)tbe(`function called with `+arguments.length+` arguments, expected `+ac+` args!`);var ds=urd?[]:null;var wa=[];for(var i=0;i<ac;i++)wa.push(ats[i].toWireType(ds,arguments[i]));var ca=[];if(ht)ca.push(cp.toWireType(ds,this));for(var i=0;i<ac;i++)ca.push(wa[i]);var rv=inv.apply(null,[fn].concat(ca));if(urd)rd(ds);else{if(ht&&cp.destructorFunction!==null)cp.destructorFunction(ca[0]);for(var i=0;i<ac;i++)if(ats[i].destructorFunction!==null)ats[i].destructorFunction(wa[i])}if(hr)return rt.fromWireType(rv)}catch(e){try{self.__debugBroadcast({kind:`craft-invoker-err`,err:String(e).slice(0,200),ac,ht,hr,urd})}catch{};throw e}};try{self.__debugBroadcast({kind:`craft-invoker`,name:rt.name,ac,ht,hr})}catch{};return rv2}catch(e){try{self.__debugBroadcast({kind:`craft-invoker-setup-err`,err:String(e).slice(0,200),ac,ht,hr,urd,mLen:m.length,hLen:h.length})}catch{};throw e}})(m,h)',
+    replace: '(function(m,h){var tbe=h[0],inv=h[1],fn=h[2],rd=h[3],rt=h[4],cp=h[5];var ac=0;for(var i=6;i<m.length-1;i++){if(m[i].indexOf(`argType`)===0)ac++;else break}var ats=h.slice(6,6+ac);var ht=cp!==null;var hr=rt.name!==`void`;var urd=false;if(ht&&cp.destructorFunction===void 0)urd=true;for(var i=0;i<ac;i++)if(ats[i].destructorFunction===void 0){urd=true;break}try{var rv2=function(){try{if(arguments.length!==ac)tbe(`function called with `+arguments.length+` arguments, expected `+ac+` args!`);var ds=urd?[]:null;var wa=[];for(var i=0;i<ac;i++)wa.push(ats[i].toWireType(ds,arguments[i]));var ca=[];if(ht)ca.push(cp.toWireType(ds,this));for(var i=0;i<ac;i++)ca.push(wa[i]);var rv=inv.apply(null,[fn].concat(ca));if(urd)rd(ds);else{if(ht&&cp.destructorFunction!==null)cp.destructorFunction(ca[0]);for(var i=0;i<ac;i++)if(ats[i].destructorFunction!==null)ats[i].destructorFunction(wa[i])}if(hr)return rt.fromWireType(rv)}catch(e){throw e}};return rv2}catch(e){throw e}})(m,h)',
   },
   {
     name: 'craftInvokerFunction (offscreen, Nn legacy)',
@@ -133,14 +133,6 @@ const PATCHES = [
     name: 'getOpenCv race condition (main)',
     find: 't.Mat||await new Promise(e=>{t.onRuntimeInitialized=()=>{e()}}),e=$e.default',
     replace: 'await new Promise(r=>{if(t.then)t.then(()=>r());else if(t.calledRun)r();else t.onRuntimeInitialized=()=>r()}),e=$e.default',
-  },
-  // === Debug: wrap OpenCV module export to detect evaluation completion ===
-  // The export default n() call triggers the full module evaluation.
-  // If evaluation hangs, the debugBroadcast never fires.
-  {
-    name: 'opencv-export-debug',
-    find: 'export default n();export{n as t}',
-    replace: 'export default (function(){try{self.__debugBroadcast({kind:`opencv-before-export`})}catch{};var rv=n();try{self.__debugBroadcast({kind:`opencv-after-export`,hasMat:typeof rv?.Mat})}catch{};return rv})();export{n as t}',
   },
 ];
 

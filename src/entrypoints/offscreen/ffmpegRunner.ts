@@ -333,15 +333,7 @@ export async function startMessageListener(): Promise<void> {
     const request = message as MessageRequest;
     const type = request.type as string;
 
-    // Debug: log every message received by the offscreen listener.
     console.log('[OFFSCREEN-LISTENER] received:', type);
-    try {
-      chrome.storage.local.set({ __offscreenListenerMsg: type + '@' + Date.now() }).catch((e: unknown) => {
-        console.error('[OFFSCREEN] chrome.storage.local.set rejected:', e);
-      });
-    } catch (e) {
-      console.error('[OFFSCREEN] chrome.storage.local.set threw:', e);
-    }
 
     if (
       type === MESSAGE_TYPES.OCR_INIT ||
@@ -534,23 +526,10 @@ function bootstrapOffscreenListener(): void {
   if (typeof chrome === 'undefined' || !chrome?.runtime?.onMessage) return;
 
   bootstrapped = true;
-  console.log('[OFFSCREEN] bootstrapOffscreenListener start');
-  try { chrome.storage.local.set({ __ffmpegBootstrap: 'start@' + Date.now() }).catch(() => {}); } catch {}
-  void startMessageListener().then(() => {
-    console.log('[OFFSCREEN] startMessageListener done');
-    try { chrome.storage.local.set({ __ffmpegBootstrap: 'done@' + Date.now() }).catch(() => {}); } catch {}
-  }).catch((e) => {
+  void startMessageListener().catch((e) => {
     console.error('[OFFSCREEN] startMessageListener error:', e);
-    try { chrome.storage.local.set({ __ffmpegBootstrap: 'error:' + String(e)?.slice(0, 200) }).catch(() => {}); } catch {}
   });
 }
 
 bootstrapOffscreenListener();
-// Debug: log script load to chrome.storage.local.
-console.log('[OFFSCREEN] ffmpegRunner.ts script loaded');
-try { chrome.storage.local.set({ __ffmpegScriptLoaded: true, __ffmpegLoadTime: Date.now() }).catch((e: unknown) => {
-  console.error('[OFFSCREEN] __ffmpegScriptLoaded storage.set rejected:', e);
-}); } catch (e) {
-  console.error('[OFFSCREEN] __ffmpegScriptLoaded storage.set threw:', e);
-}
 

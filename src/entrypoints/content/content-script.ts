@@ -157,18 +157,15 @@ const csInjectTime = performance.now();
 // content script stores the last auto-load / scan signal on documentElement.
 if (window.self === window.top) {
   window.addEventListener('message', (e) => {
-    // AUTO_LOAD_SUBTITLES is acknowledged by the player iframe and by the
-    // top frame on direct sites. Record every one — it is never the top's
-    // own diagnostic noise.
-    if (e.data?.type === '__CELL_AUTOLOAD_HANDLED') {
-      document.documentElement.setAttribute(
-        'data-cell-autoload-handled',
-        JSON.stringify({ href: e.data.href, target: e.data.target }),
-      );
-    }
-    // PAGE_SCAN debug markers: only record those coming from a player iframe.
-    // The top frame's own runPageScan postMessage should not overwrite data.
+    // Debug-only DOM markers (E2E builds, CELL_E2E=1): autoload acknowledgements
+    // from player iframes + PAGE_SCAN signals from non-own frames.
     if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+      if (e.data?.type === '__CELL_AUTOLOAD_HANDLED') {
+        document.documentElement.setAttribute(
+          'data-cell-autoload-handled',
+          JSON.stringify({ href: e.data.href, target: e.data.target }),
+        );
+      }
       const isOwnFrame = e.source === window || e.origin === window.location.origin;
       if (e.data?.type === '__CELL_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
         document.documentElement.setAttribute(
@@ -263,23 +260,6 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 // top). If later code throws, this listener still catches MAIN-world posts.
 window.addEventListener('message', (event) => {
   const dataEarly = event.data as { type?: string } | null;
-  // === Split View diagnostic log relay (from child iframe) ===
-  // MUST run before the `event.source !== window` guard below — iframe
-  // posts have event.source === iframe.contentWindow, not the top window.
-  // Store entries in documentElement.dataset so MCP execute_script (top
-  // frame) can read them. Anti-debug sites reload on F12, but stealth MCP
-  // bypasses that. Temporary — remove after split view iframe bug is fixed.
-  if (dataEarly?.type === '__CELL_SPLIT_VIEW_LOG') {
-    try {
-      const raw = document.documentElement.getAttribute('data-cell-sv-log');
-      const arr: unknown[] = raw ? JSON.parse(raw) : [];
-      const d = event.data as { line?: string; data?: unknown };
-      arr.push({ line: d.line, data: d.data, t: Date.now() });
-      if (arr.length > 200) arr.splice(0, arr.length - 200);
-      document.documentElement.setAttribute('data-cell-sv-log', JSON.stringify(arr));
-    } catch { /* best effort */ }
-    return;
-  }
   // === Subtitle discovery relay from cross-origin player iframe ===
   // MAIN-world scripts inside player iframes (playembed.vip, vidnest, etc.)
   // post discovery signals to window.parent. The parent frame cannot read
@@ -1327,6 +1307,7 @@ async function logDetectedMedia(): Promise<void> {
 
 function scheduleMediaLog(): void {
   if (!isTopFrame) return;
+  if (typeof __CELL_DEBUG__ === 'undefined' || __CELL_DEBUG__ !== 'true') return;
   setTimeout(() => {
     mediaLogAttempts++;
     void logDetectedMedia();
