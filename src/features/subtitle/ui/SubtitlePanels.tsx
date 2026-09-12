@@ -784,7 +784,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       });
       const panelInner = document.createElement('div');
       panelInner.setAttribute('data-theme', 'dark');
-      panelInner.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;';
+      // Translucent surface + blur (same spec as SubtitlePanel/.contentOther)
+      // so the split-view column never looks empty even before/if the panel
+      // content portals in.
+      panelInner.style.cssText = 'width:100%;height:100%;display:flex;flex-direction:column;background:color-mix(in srgb, var(--color-surface) 85%, transparent);backdrop-filter:blur(var(--blur-lg));-webkit-backdrop-filter:blur(var(--blur-lg));';
       panelShadow.appendChild(panelInner);
 
       const handle = document.createElement('div');
@@ -1375,7 +1378,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {splitViewOpen && splitViewPortalTarget && (cues.length > 0 || playlistContent) && onSeek && createPortal(
+        {splitViewOpen && splitViewPortalTarget && onSeek && createPortal(
           <SubtitlePanel
             cues={[...cues]}
             currentTimeMs={currentTimeMs}

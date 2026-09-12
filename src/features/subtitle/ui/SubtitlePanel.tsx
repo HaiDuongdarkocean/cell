@@ -14,7 +14,7 @@ import type { BilingualCue } from '@/entities/media';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import { ChevronRight } from 'lucide-react';
 
-import { Button, Tabs } from '@/shared/ui';
+import { Button, EmptyState, Tabs } from '@/shared/ui';
 import styles from './SubtitlePanel.module.css';
 
 export interface SubtitlePanelProps {
@@ -52,6 +52,19 @@ function SubtitlePanelImpl({
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
   const [activeTab, setActiveTab] = useState<PanelTab>(cues.length > 0 ? 'subtitles' : 'playlist');
 
+  // Empty cue list → EmptyState instead of a blank area (same copy as the
+  // side panel). flex:1 fills cueListWrap so content centers vertically.
+  const subtitleContent = cues.length > 0 ? (
+    <CueList
+      cues={cues}
+      currentTimeMs={currentTimeMs}
+      offsetMs={offsetMs}
+      onSeek={onSeek}
+    />
+  ) : (
+    <EmptyState title="No subtitles loaded" size="compact" style={{ flex: 1 }} />
+  );
+
   return (
     <div className={styles.panel} data-cell-id="subtitle-panel">
       {onClose && (
@@ -82,12 +95,7 @@ function SubtitlePanelImpl({
 
           <Tabs.Content value="subtitles" className={styles.tabContent}>
             <div className={styles.cueListWrap}>
-              <CueList
-                cues={cues}
-                currentTimeMs={currentTimeMs}
-                offsetMs={offsetMs}
-                onSeek={onSeek}
-              />
+              {subtitleContent}
             </div>
           </Tabs.Content>
 
@@ -97,12 +105,7 @@ function SubtitlePanelImpl({
         </Tabs>
       ) : (
         <div className={styles.cueListWrap}>
-          <CueList
-            cues={cues}
-            currentTimeMs={currentTimeMs}
-            offsetMs={offsetMs}
-            onSeek={onSeek}
-          />
+          {subtitleContent}
         </div>
       )}
     </div>
