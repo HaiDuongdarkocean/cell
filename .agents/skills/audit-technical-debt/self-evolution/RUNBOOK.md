@@ -174,3 +174,4 @@ Audit toàn bộ codebase `cell` (src/, tests/, build, dependencies, process) đ
 - **Re-run command:** `find src -type f \( -name "*.ts" -o -name "*.tsx" \) ! -name "*.test.*" -exec wc -l {} + | sort -n | tail -n 15` produced a clear list of largest files, confirming the new Step 2 guidance works.
 - **Updated skill quality score:** Workflow clarity 5/5, Template usefulness 5/5, Anti-pattern coverage 4/5, Falsifiability 5/5. **Total quality = 19/20** (up from 17/20).
 - **Skill search result:** `audit-technical-debt` is discoverable via `/using-agent-skills` search.
+2026-09-13: autonomous audit of src/features+src/entrypoints+src/shared; 14 items; top score 4.20; docs/audits/20260913_src-features-entrypoints-shared.md
