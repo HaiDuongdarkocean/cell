@@ -301,6 +301,10 @@ describe('Background integration', () => {
       ensureOffscreenReady: jest.fn().mockResolvedValue(undefined),
       closeOffscreenDocument: jest.fn().mockResolvedValue(undefined),
       hasDocument: jest.fn().mockReturnValue(false),
+      sendToOffscreen: jest.fn(async (request: unknown) => {
+        await mockOffscreen.ensureOffscreenReady();
+        return mockChrome.runtime.sendMessage(request);
+      }),
     } as unknown as OffscreenManager;
 
     service = new BackgroundService({
@@ -1406,6 +1410,97 @@ https://cdn.example.com/low.m3u8`;
 
     // Second call should not re-ping (cached).
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('sendToOffscreen sends after readiness and closes the document when idle', async () => {
+    jest.useFakeTimers();
+    try {
+      manager = new OffscreenManager();
+      mockChrome.runtime.sendMessage.mockResolvedValue({ success: true });
+
+      await manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST });
+
+      // One ping handshake + one send.
+      expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+
+      await jest.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(mockChrome.offscreen.closeDocument).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('sendToOffscreen resets the idle close timer on each send', async () => {
+    jest.useFakeTimers();
+    try {
+      manager = new OffscreenManager();
+      mockChrome.runtime.sendMessage.mockResolvedValue({ success: true });
+
+      await manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST });
+      await jest.advanceTimersByTimeAsync(4 * 60 * 1000);
+
+      await manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST });
+      await jest.advanceTimersByTimeAsync(4 * 60 * 1000);
+      expect(mockChrome.offscreen.closeDocument).not.toHaveBeenCalled();
+
+      await jest.advanceTimersByTimeAsync(60 * 1000);
+      expect(mockChrome.offscreen.closeDocument).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('sendToOffscreen does not close the document while a send is in-flight', async () => {
+    jest.useFakeTimers();
+    try {
+      manager = new OffscreenManager();
+      let resolveSend: ((value: unknown) => void) | undefined;
+      mockChrome.runtime.sendMessage
+        .mockResolvedValueOnce({ success: true })
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSend = resolve;
+            }),
+        );
+
+      const pending = manager.sendToOffscreen({
+        type: MESSAGE_TYPES.FETCH_REQUEST,
+      });
+      await jest.advanceTimersByTimeAsync(10 * 60 * 1000);
+      expect(mockChrome.offscreen.closeDocument).not.toHaveBeenCalled();
+
+      resolveSend?.({ success: true });
+      await pending;
+      await manager.closeOffscreenDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('sendToOffscreen revalidates readiness after a failed send', async () => {
+    manager = new OffscreenManager();
+    mockChrome.runtime.sendMessage.mockResolvedValue({ success: true });
+
+    await manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST });
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+
+    mockChrome.runtime.sendMessage.mockRejectedValueOnce(
+      new Error('Could not establish connection'),
+    );
+    await expect(
+      manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST }),
+    ).rejects.toThrow('Could not establish connection');
+
+    await manager.sendToOffscreen({ type: MESSAGE_TYPES.FETCH_REQUEST });
+    // Failed send marks readiness stale → next send re-creates + re-pings.
+    expect(mockChrome.runtime.sendMessage).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({ type: MESSAGE_TYPES.OFFSCREEN_PING }),
+    );
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(5);
+
+    await manager.closeOffscreenDocument();
   });
 
   it('clears toolbar badge + media when tab navigates to a new page (loading event)', async () => {
@@ -2521,6 +2616,163 @@ https://cdn.example.com/low.m3u8`;
     expect(videos[0].id).toBe('vid-1');
 
     freshService.stop();
+  });
+
+  it('session restore repopulates mediaMap so restored queued downloads execute', async () => {
+    // Simulate a previous SW session that persisted both detected media and
+    // a queued download referencing it. Without mediaMap repopulation the
+    // queue executor throws "No media found" after every SW restart.
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_MEDIA) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_MEDIA]: {
+            '123': {
+              videos: [
+                {
+                  id: 'vid-1',
+                  url: 'https://example.com/video.m3u8',
+                  tabId: 123,
+                  tabUrl: 'https://example.com/watch',
+                  title: 'Test Video',
+                  format: 'm3u8',
+                  variants: [],
+                },
+              ],
+              subtitles: [],
+            },
+          },
+        });
+      }
+      if (key === STORAGE_KEYS.SESSION_DOWNLOADS) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_DOWNLOADS]: {
+            '123': [
+              {
+                id: 'dl-queued',
+                mediaType: 'video',
+                url: 'https://example.com/video.m3u8',
+                title: 'Test Video',
+                tabId: 123,
+                status: 'queued',
+                progress: 0,
+                videoId: 'vid-1',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const freshService = new BackgroundService({
+      networkInterceptor: new NetworkInterceptor(),
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+    await freshService.init();
+
+    expect(freshService.mediaMap.get('dl-queued')).toEqual(
+      expect.objectContaining({
+        id: 'vid-1',
+        url: 'https://example.com/video.m3u8',
+      }),
+    );
+
+    const executorCalls = mockQueue.setExecutor.mock.calls;
+    const executor = executorCalls[executorCalls.length - 1][0] as (
+      item: DownloadItem,
+    ) => Promise<void>;
+    const restored = mockQueue.restore.mock.calls
+      .map((call) => call[0] as DownloadItem)
+      .find((item) => item.id === 'dl-queued');
+    expect(restored).toBeDefined();
+
+    await executor(restored as DownloadItem);
+
+    expect(mockDownloader.downloadVideo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'vid-1' }),
+      'dl-queued',
+    );
+
+    freshService.stop();
+  });
+
+  it('queue executor falls back to interceptor media on mediaMap miss', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/restored.mp4', 123),
+    );
+    const video = interceptor.getVideos(123)[0];
+
+    const executorCalls = mockQueue.setExecutor.mock.calls;
+    const executor = executorCalls[executorCalls.length - 1][0] as (
+      item: DownloadItem,
+    ) => Promise<void>;
+
+    await executor({
+      id: 'dl-orphan',
+      mediaType: 'video',
+      url: video.url,
+      title: video.title,
+      tabId: video.tabId,
+      status: 'downloading',
+      progress: 0,
+      videoId: video.id,
+    });
+
+    expect(mockDownloader.downloadVideo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: video.id }),
+      'dl-orphan',
+    );
+  });
+
+  it('queue executor resolves restored subtitle downloads via url+tabId match', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/restored.vtt', 123),
+    );
+    const subtitle = interceptor.getSubtitles(123)[0];
+
+    const executorCalls = mockQueue.setExecutor.mock.calls;
+    const executor = executorCalls[executorCalls.length - 1][0] as (
+      item: DownloadItem,
+    ) => Promise<void>;
+
+    await executor({
+      id: 'dl-sub-orphan',
+      mediaType: 'subtitle',
+      url: subtitle.url,
+      title: 'restored',
+      tabId: subtitle.tabId,
+      status: 'downloading',
+      progress: 0,
+    });
+
+    expect(mockDownloader.downloadSubtitle).toHaveBeenCalledWith(
+      expect.objectContaining({ id: subtitle.id }),
+      'dl-sub-orphan',
+      undefined,
+    );
+  });
+
+  it('queue executor still throws when no media matches a download item', async () => {
+    const executorCalls = mockQueue.setExecutor.mock.calls;
+    const executor = executorCalls[executorCalls.length - 1][0] as (
+      item: DownloadItem,
+    ) => Promise<void>;
+
+    await expect(
+      executor({
+        id: 'dl-missing',
+        mediaType: 'video',
+        url: 'https://example.com/missing.mp4',
+        title: 'Missing',
+        tabId: 123,
+        status: 'downloading',
+        progress: 0,
+        videoId: 'vid-missing',
+      }),
+    ).rejects.toThrow('No media found for download dl-missing');
   });
 
   it('init() aborts when stop() is called during async init (onInstalled update race)', async () => {
