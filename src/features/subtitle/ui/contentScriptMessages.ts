@@ -5,6 +5,7 @@ import { BackgroundPrefillController } from '@/features/translate/logic/translat
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import {
   seekVideo,
+  resumeIfPaused,
   navigateCue,
   handleAutoLoadSubtitles,
   mergeCuesForPanel,
@@ -73,6 +74,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
         // ADR-030: route through seekVideo to avoid Netflix M7375.
         seekVideo(video, (payload.seekTime - offsetMs) / 1000);
+        if (action === 'replay-cue') resumeIfPaused(video);
       } else {
         // Fallback: calculate from video.currentTime (in-page keydown path)
         // ADR-033: use getEffectiveMs so rapid press computes from intended pos.

@@ -57,6 +57,10 @@ export function playVideo(video: HTMLVideoElement): Promise<void> {
   return video.play();
 }
 
+export function resumeIfPaused(video: HTMLVideoElement): void {
+  if (video.paused) void playVideo(video).catch(() => { /* autoplay may be blocked */ });
+}
+
 /**
  * Pause video. On Netflix, dispatches `__NF_PAUSE` → MAIN-world `player.pause()`.
  * Off Netflix, calls `video.pause()` directly.

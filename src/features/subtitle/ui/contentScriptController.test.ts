@@ -108,6 +108,7 @@ jest.mock('@/features/subtitle', () => ({
   seekVideo: jest.fn(),
   playVideo: jest.fn<Promise<unknown>, []>().mockResolvedValue(undefined),
   pauseVideo: jest.fn(),
+  resumeIfPaused: jest.fn(),
   createTranslateFunction: jest.fn().mockReturnValue(jest.fn()),
   broadcastCues: jest.fn(),
   loadSettingsOrToast: jest.fn<Promise<unknown>, []>().mockResolvedValue({}),

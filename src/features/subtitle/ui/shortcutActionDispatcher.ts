@@ -1,4 +1,4 @@
-import { seekToCue } from '@/shared/lib/dom/netflixPlayback';
+import { seekToCue, resumeIfPaused } from '@/shared/lib/dom/netflixPlayback';
 import type { BilingualCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 
@@ -33,7 +33,10 @@ export function navigateCue(
       // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
       const currentCue = cues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
         ?? [...cues].reverse().find((c) => c.start < effectiveMs);
-      if (currentCue) seekToCue(video, currentCue, offsetMs);
+      if (currentCue) {
+        seekToCue(video, currentCue, offsetMs);
+        resumeIfPaused(video);
+      }
       break;
     }
   }
