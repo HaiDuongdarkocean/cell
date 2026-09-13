@@ -235,6 +235,14 @@ In the first hour after launch:
 6. Confirm rollback mechanism works (dry run if possible)
 ```
 
+### Post-Launch Business Review
+
+Technical health xanh ≠ build đúng thứ. Sau khi deploy stable (24–48h hoặc cuối session ship), human sign-off phần business — đây là gate cuối của pipeline:
+
+- [ ] So kết quả thực tế với Success Criteria trong `docs/specs/[feature].md`
+- [ ] Human confirm "đúng thứ cần build" — không chỉ "build đúng spec"
+- [ ] Miss → ghi finding vào `docs/reviews/` và/hoặc process atom vào `learning-and-apply` (`type: "process"`)
+
 ## Rollback Strategy
 
 Every deployment needs a rollback plan before it happens:
@@ -265,10 +273,10 @@ Every deployment needs a rollback plan before it happens:
 ```
 ## See Also
 
-- For the project-wide Definition of Done that every change must clear before this checklist, see `references/definition-of-done.md`
-- For security pre-launch checks, see `references/security-checklist.md`
-- For performance pre-launch checklist, see `references/performance-checklist.md`
-- For accessibility verification before launch, see `references/accessibility-checklist.md`
+- For the project-wide Definition of Done that every change must clear before this checklist, see `docs/knowledge-base/agentic-sdlc.md` § Deterministic gates
+- For security pre-launch checks, invoke `/security-and-hardening`
+- For performance pre-launch checklist, invoke `/performance-optimization`
+- For accessibility verification before launch, run the e2e axe specs (`e2e/showcase-axe.spec.ts`)
 
 ## Common Rationalizations
 
@@ -308,6 +316,7 @@ After deploying:
 - [ ] Critical user flow works
 - [ ] Logs are flowing
 - [ ] Rollback tested or verified ready
+- [ ] Business outcome confirmed vs spec success criteria (post-launch business review)
 
 
 ---

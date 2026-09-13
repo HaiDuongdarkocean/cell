@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-08-25T13:35:26.451Z",
-  "count": 46,
+  "generated": "2026-09-13T00:50:27.187Z",
+  "count": 45,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -9,14 +9,9 @@
       "path": ".agents/skills/animation-vocabulary/SKILL.md"
     },
     {
-      "name": "api-and-interface-design",
-      "description": "Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type contracts between modules, or establishing boundaries between frontend and backend.",
-      "path": ".agents/skills/api-and-interface-design/SKILL.md"
-    },
-    {
-      "name": "apple-design",
-      "description": "Apple's approach to interface design and fluid, physical motion, translated for the web. Use when building or reviewing gesture-driven UI, spring animations, drag/swipe/sheet interactions, momentum and interruptible transitions, translucent materials and depth, typography (optical sizing, tracking, leading), reduced-motion, or the design foundations (feedback, spatial consistency, restraint) behind Apple-style interfaces.",
-      "path": ".agents/skills/apple-design/SKILL.md"
+      "name": "audit-technical-debt",
+      "description": "Autonomously audit technical debt in a codebase, score and rank it, and produce a prioritized remediation roadmap with subagent verification. Use when the user asks to assess, prioritize, audit, or reduce technical debt. Not for one-off bug fixes, new features, or simple code review.",
+      "path": ".agents/skills/audit-technical-debt/SKILL.md"
     },
     {
       "name": "caveman",
@@ -75,18 +70,8 @@
     },
     {
       "name": "elicitation",
-      "description": "Orchestrate the full elicitation pipeline — transform a vague idea or pain into a confirmed 8-field frame by routing through idea-refine, interview, observation, and doubt-driven validation before handing off to spec-driven development.",
+      "description": "Orchestrate the full elicitation-to-final-spec pipeline — transform a vague idea or pain into a reviewed, finalized spec by routing through idea-refine, interview, observation, doubt-driven validation, spec-driven development, and stakeholder review with an auto-fix loop.",
       "path": ".agents/skills/elicitation/SKILL.md"
-    },
-    {
-      "name": "emil-design-eng",
-      "description": "This skill encodes Emil Kowalski's philosophy on UI polish, component design, animation decisions, and the invisible details that make software feel great.",
-      "path": ".agents/skills/emil-design-eng/SKILL.md"
-    },
-    {
-      "name": "epub",
-      "description": "Read and extract content from EPUB ebook files. Use this skill when the user wants to read an EPUB file, extract text from an ebook, view EPUB metadata (title, author), list chapters or table of contents, search within EPUB content, or analyze ebook content.",
-      "path": ".agents/skills/epub/SKILL.md"
     },
     {
       "name": "find-animation-opportunities",
@@ -97,11 +82,6 @@
       "name": "find-skills",
       "description": "Helps users discover and install agent skills when they ask questions like \"how do I do X\", \"find a skill for X\", \"is there a skill that can...\", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill.",
       "path": ".agents/skills/find-skills/SKILL.md"
-    },
-    {
-      "name": "frontend-ui-engineering",
-      "description": "Builds production-quality, accessible, responsive user-facing UIs. Use when building or modifying interfaces and pages, creating components, implementing layouts, meeting WCAG accessibility requirements, managing state, redesigning existing UI through mockup-first user-journey-driven workflow, or when the output needs to look and feel production-quality rather than AI-generated.",
-      "path": ".agents/skills/frontend-ui-engineering/SKILL.md"
     },
     {
       "name": "git-workflow-and-versioning",
@@ -134,11 +114,6 @@
       "path": ".agents/skills/learning-and-apply/SKILL.md"
     },
     {
-      "name": "m3-design-standard",
-      "description": "Material Design 3 standard for building or redesigning UI. Use when designing new components/pages, redesigning existing UI, auditing design system compliance, filling token gaps, or when agent needs M3 rules to make design decisions. Contains verified M3 token specs, atomic design composition rules, responsive breakpoints, and hybrid audit (script + checklist).",
-      "path": ".agents/skills/m3-design-standard/SKILL.md"
-    },
-    {
       "name": "observability-and-instrumentation",
       "description": "Instruments code so production behavior is visible and diagnosable. Use when adding logging, metrics, tracing, or alerting. Use when shipping any feature that runs in production and you need evidence it works. Use when production issues are reported but you can't tell what happened from the available data.",
       "path": ".agents/skills/observability-and-instrumentation/SKILL.md"
@@ -149,11 +124,6 @@
       "path": ".agents/skills/performance-optimization/SKILL.md"
     },
     {
-      "name": "pick-ui-library",
-      "description": "Pick the right library for a given frontend task from a curated, opinionated list — numbers, OTP inputs, charts, command menus, virtualization, drag and drop, toasts, state, styling, and more. Only runs when explicitly invoked; it does not trigger on its own.",
-      "path": ".agents/skills/pick-ui-library/SKILL.md"
-    },
-    {
       "name": "planning-and-task-breakdown",
       "description": "Breaks work into ordered tasks. Use when you have a spec or clear requirements and need to break work into implementable tasks. Use when a task feels too large to start, when you need to estimate scope, or when parallel work is possible.",
       "path": ".agents/skills/planning-and-task-breakdown/SKILL.md"
@@ -162,11 +132,6 @@
       "name": "pre-commit-gate",
       "description": "Run deterministic local quality checks before any commit. Use when an agent is about to finish a task and needs to verify build, typecheck, tests, lint, and design-system compliance before the human reviews or before commit.",
       "path": ".agents/skills/pre-commit-gate/SKILL.md"
-    },
-    {
-      "name": "redesign-in-showcase",
-      "description": "Open a Cell showcase page in real Chrome with URL parameters (showcase, mode, viewport) for redesign and visual verification. Use when redesigning a UI component/page in the design-system showcase, when you need to see the current state of a showcase before editing, or when verifying a UI change visually without building the extension. Not for extension browser testing (use testing-extension-browser), performance traces, or headless CI.",
-      "path": ".agents/skills/redesign-in-showcase/SKILL.md"
     },
     {
       "name": "reprompt",
@@ -229,9 +194,39 @@
       "path": ".agents/skills/write-skill/SKILL.md"
     },
     {
-      "name": "audit-technical-debt",
-      "description": "Audit technical debt in a codebase, score it, and produce a prioritized remediation roadmap. Use when the user asks to assess, prioritize, audit, or reduce technical debt. Not for one-off bug fixes, new features, or simple code review.",
-      "path": ".agents/skills/audit-technical-debt/SKILL.md"
+      "name": "audit-text-in-ui",
+      "description": "Audit and rewrite user-visible text in Cell UI surfaces (buttons, labels, errors, empty states, tooltips, headings, aria-labels, placeholders) against the education copy standard, then route every string into MV3 i18n (chrome.i18n + _locales/messages.json) instead of inline literals. Use when reviewing or rewriting screen text, preparing a surface for localization, or when asked \"is this text correct?\". Not for token/CSS audits (design-system-guardian), pre-build design gates (education-ui-principles), or non-UI logic.",
+      "path": ".devin/skills/audit-text-in-ui/SKILL.md"
+    },
+    {
+      "name": "audit-ui-ux-then-redesign",
+      "description": "Question-first UI/UX audit. Reframe user feedback into the right design question, then run a taxonomy-driven, evidence-based critique and produce a redesign brief. Use when a page feels off, before a redesign, or when validating a design system decision. Not for logic bugs, backend, or brand-new ideas without a target.",
+      "path": ".devin/skills/audit-ui-ux-then-redesign/SKILL.md"
+    },
+    {
+      "name": "continuous-ux-audit-cycle",
+      "description": "Continuous UX Audit Cycle — 7-stage loop to audit a system's whole UI, plan redesign, delegate, verify, and re-scan until no gaps remain. Use when auditing end-to-end UI/UX, driving iterative redesign, or setting up a recurring design-quality loop. Not for single-screen tweaks or one-off bug fixes.",
+      "path": ".devin/skills/continuous-ux-audit-cycle/SKILL.md"
+    },
+    {
+      "name": "idea-to-interface",
+      "description": "Transform a raw or confirmed UI idea into three Socratic-grounded concepts and an interactive mockup site, then map the chosen concept to the project's component system. Use when the user has an inspiration, a redesign need, or a confirmed intent and wants real alternatives before implementing. Not for debugging, already-fixed designs, or pure audits.",
+      "path": ".devin/skills/idea-to-interface/SKILL.md"
+    },
+    {
+      "name": "inquiry-creativity",
+      "description": "Turn a vague topic into sharp questions, verified knowledge, and original design decisions using Bloom's taxonomy, critical thinking, and the 4-Step Knowledge Distillation method. Use when the user wants to ask better questions, research a domain, or generate creative solutions from first principles. Not for direct implementation or one-off search queries without synthesis.",
+      "path": ".devin/skills/inquiry-creativity/SKILL.md"
+    },
+    {
+      "name": "subtitle-player-research",
+      "description": "Investigate a supplied streaming-page URL to discover how its subtitle list is produced, verify list and replay requirements, identify the extension root cause, and output an evidence-graded solution or precise blocker. Use when researching subtitle detection support for a new player/site. Not for implementing adapters, guessing undocumented endpoints, or claiming extension support from DevTools-only evidence.",
+      "path": ".devin/skills/subtitle-player-research/SKILL.md"
+    },
+    {
+      "name": "testing-with-playwright",
+      "description": "Playwright E2E testing for Cell — fixtures (worker/test-scoped) + typed actors that pierce shadow DOM, stage2 specs, scripts/e2e.sh pipeline. Use when writing or running Playwright E2E specs for the extension, creating actors/fixtures, or verifying features via automated browser tests. Not for interactive MCP stealth-Chrome sessions (use testing-extension-browser) or Jest unit tests.",
+      "path": ".devin/skills/testing-with-playwright/SKILL.md"
     }
   ]
 }

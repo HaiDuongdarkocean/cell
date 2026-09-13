@@ -18,7 +18,8 @@
 8. [Sơ đồ tổng hợp](#8-sơ-đồ-tổng-hợp)
 9. [So sánh Agentic SDLC vs SDLC truyền thống](#9-so-sánh-agentic-sdlc-vs-sdlc-truyền-thống)
 10. [Takeaway cho Cell](#10-takeaway-cho-cell)
-11. [Nguồn tài liệu](#11-nguồn-tài-liệu)
+11. [Cell Agentic SDLC Runbook](#11-cell-agentic-sdlc-runbook)
+12. [Nguồn tài liệu](#12-nguồn-tài-liệu)
 
 ---
 
@@ -374,28 +375,50 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 
 ## 10. Takeaway cho Cell
 
-| Nguyên lý agentic SDLC | Cell hiện có | Gap |
-|---|---|---|
-| **Spec-driven** | `docs/specs/*.md` trước code | Đã có |
-| **On the loop** | AGENTS.md gate: build pass + verify pass mới commit | Đã có |
-| **Adversarial review** | `doubt-driven-development` + `spec-review-stakeholder` | Đã có (pre-implementation) |
-| **Verification debt** | `npm run build` + `test:unit` + chrome-devtools verify mỗi change | Đã có (technical) |
-| **Guardrail** | Ponytail rules + AGENTS.md convention (no `any`, named export, SSOT) | Đã có |
-| **Eval gate mỗi change** | `debugging` yêu cầu regression test sau fix, nhưng không có eval suite mỗi change | **Gap** — không có dedicated regression-eval-gate |
-| **BA-style elicitation** | `interview-me` (AI-led) + `idea-refine` (AI-side) | **Gap** — không có observation/prototype elicitation |
-| **Post-ship business review** | `spec-review-stakeholder` pre-implementation only | **Gap** — không có "did we build the RIGHT thing" post-ship |
-| **Post-ship retrospective** | `learning-and-apply` capture technical knowledge | **Gap** — không capture pipeline/process improvement |
-| **Stakeholder sign-off** | `testing-extension-browser` UAT-like (technical) | **Gap** — không có business stakeholder approve |
+> Audit 2026-09-13 — đo bằng **artifact thật trong repo**, không đo bằng skill tồn tại trên giấy.
 
-Cell đã implement ngầm ~60% nguyên lý agentic SDLC qua skill system + AGENTS.md. 4 gap còn lại: elicitation đa kỹ thuật, eval gate, post-ship business review, pipeline retrospective.
+| Nguyên lý agentic SDLC | Cell hiện có | Bằng chứng trong repo | Trạng thái |
+|---|---|---|---|
+| **Spec-driven** | `spec-driven-development` + `elicitation` auto-spec (Autonomous Mode) | 33 specs trong `docs/specs/` | ✅ Đã có |
+| **On the loop** | AGENTS.md gate: typecheck + test:unit + build + browser verify trước commit | `pre-commit-gate` skill; mandate trong AGENTS.md | ✅ Đã có |
+| **Adversarial review** | `doubt-driven-development` + `spec-review-stakeholder` + `pre-commit-gate` Step 1.6 warn | Chỉ **3/33 spec** có artifact trong `docs/reviews/`; giờ gate warn khi spec đổi mà không có review | ⚠️ Soft gate từ 2026-09-13 — siết thành block khi quen |
+| **Verification debt** | Deterministic gate local + CI | `design-system-ci.yml`: typecheck + DS unit tests + icons + 2 builds + health report | ✅ Đã có (technical) |
+| **Guardrail** | AGENTS.md + Ponytail + `design-system-guardian` + check scripts + hook | `check-icons` + `check-design-system-css` trong CI; `.devin/hooks.v1.json` auto-regen skill index | ✅ Đã có |
+| **Persistent context trong repo** | `docs/` + `tasks/` + learning atoms | 24 ADR, 29 intent docs, 20 plans, 15 todos, 101 experience + 1 process atoms | ✅ Đã có |
+| **Elicitation đa kỹ thuật** | `elicitation` 9-step: observation + interview + prototype (`idea-to-interface`) | 29 files `docs/intent/` gồm design-brief + component-mapping | ✅ Đã có (từ 2026-08-29) |
+| **Skill catalog integrity** | `scripts/update-skill-index.mjs` + PostToolUse hook | Index giờ cover cả `.devin/skills` (45 skills); hook auto-regen khi SKILL.md đổi | ✅ Đã có (2026-09-13) |
+| **Eval gate mỗi change** | CI `e2e` job (full Playwright) + full `test:unit`/`lint` non-blocking | Full suite non-blocking vì còn nợ test OCR/dictionary — siết blocking khi green | ⚠️ Soft gate |
+| **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
+| **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | Atom đầu tiên: `process-generated-catalog-drift` | ✅ Đã có (2026-09-13) |
+| **Stakeholder sign-off** | `elicitation` step 9 (pre-impl) + `shipping-and-launch` post-launch review | Đã cover cả hai đầu | ✅ Đã có |
+
+Cell implement **~85%** nguyên lý agentic SDLC (10/12 solid sau batch 2026-09-13, 2 soft gate). Việc còn lại là **siết các soft gate thành blocking** khi nợ test sạch và quan sát adoption thực tế.
+
+### 10.1. Roadmap cải tiến (theo ROI) — trạng thái sau 2026-09-13
+
+| # | Cải tiến | Vì sao | Trạng thái |
+|---|---|---|---|
+| 1 | `pre-commit-gate` thêm scope check: `docs/specs/*` đổi mà không có artifact mới trong `docs/reviews/` → warn | Review adoption 9% = adversarial principle chỉ trên giấy; đây là lỗ hổng lớn nhất | ✅ Done — Step 1.6 (warn) |
+| 2 | CI thêm job full `npm run lint` + `npm run test:unit` | "Evaluations gate every change" (Red Hat) — gate trước đây chỉ local, dễ skip | ✅ Done — non-blocking; **TODO: siết blocking khi suite green** |
+| 3 | `learning-and-apply` thêm `type: "process"` cho pipeline lessons | Retro chỉ capture code-level; process drift không được học lại | ✅ Done — `process/` store + atom đầu tiên + validator |
+| 4 | `shipping-and-launch` thêm post-ship step: human confirm business outcome | Đóng gap "did we build the right thing" | ✅ Done — § Post-Launch Business Review |
+| 5 | `.devin/hooks.v1.json` → hook auto-regen `index.json` khi SKILL.md đổi | Enforcement bằng hook > convention — index stale 3 tuần là bằng chứng | ✅ Done — PostToolUse hook + `scripts/hook-skill-index.mjs` |
+
+### 10.2. Rot đã fix trong audit 2026-09-13
+
+- `index.json` stale (46 listed vs 38 disk, 8 phantom skill) → regen, giờ 45 skills gồm cả `.devin/skills` + PostToolUse hook chống tái phạm.
+- Router `using-agent-skills` trỏ `frontend-ui-engineering`, `api-and-interface-design`, `browser-testing-with-devtools` — không skill nào tồn tại → sửa về skill thật.
+- `using-agent-skills` cite `references/definition-of-done.md` không tồn tại → trỏ về §11.3 runbook; `shipping-and-launch` See Also cite 4 file `references/` phantom → trỏ skill/doc thật.
+- `testing-with-playwright` thiếu frontmatter → không index/trigger được → thêm frontmatter, giờ là canonical route cho browser-verify (`testing-extension-browser` chỉ còn cho interactive/stealth session).
+- Doc này: section 12 đứng trước section 11, TOC thiếu runbook → renumber.
 
 ---
 
-## 12. Cell Agentic SDLC Runbook
+## 11. Cell Agentic SDLC Runbook
 
 > Ánh xạ lý thuyết sang commands, skills, và output files cụ thể trong repo. Đây là SSOT vận hành; khi skill hoặc command thay đổi, cập nhật section này.
 
-### 12.1. Phase — Skill — Output
+### 11.1. Phase — Skill — Output
 
 | Phase | Khi nào | Skill / Command | Output / SSOT |
 |---|---|---|---|
@@ -405,23 +428,24 @@ Cell đã implement ngầm ~60% nguyên lý agentic SDLC qua skill system + AGEN
 | **Plan** | Spec approved | `planning-and-task-breakdown` | `tasks/plan.md` + `tasks/todo.md` |
 | **Build** | Implement từng task | `incremental-implementation` + `learning-and-apply` (APPLY) | `src/` + `tests/` |
 | **Local verify** | Code sửa xong | `pre-commit-gate` | build + test pass, không file mới |
-| **Browser verify** | Cần real page | `testing-extension-browser` | DOM evidence trong session |
+| **Browser verify** | Cần real page | `testing-with-playwright` (e2e) / `testing-extension-browser` (interactive) | spec pass / DOM evidence |
 | **Code review** | Pre-merge | `code-review-and-quality` | PR comments / approval |
 | **Commit** | Ready | `git-workflow-and-versioning` | clean commit |
 | **Ship** | Release | `shipping-and-launch` | release notes + tag |
 | **Accumulate** | Sau bug/feature insight | `learning-and-apply` (ACCUMULATE) | `.agents/skills/learning-and-apply/experience/[id].json` |
+| **Skill change** | Thêm/sửa/xóa skill | `write-skill` + `node scripts/update-skill-index.mjs` | `SKILL.md` + `index.json` regen |
 
-### 12.2. Skill routing cheat sheet
+### 11.2. Skill routing cheat sheet
 
 | Tình huống | Skill | Ghi chú |
 |---|---|---|
 | Không biết dùng skill nào | `using-agent-skills` | Meta-router, re-run khi task đổi |
 | Sửa CSS/TS | `learning-and-apply` (APPLY) | Grep `index.json` theo tags trước code |
 | Bug | `debugging-and-error-recovery` -> `test-driven-development` | Reproduce trước fix |
-| UI task | `frontend-ui-engineering` + `design-system-guardian` | Audit token/component sau |
+| UI task | `design-system-guardian` | Build theo `DESIGN.md`, audit token/component sau |
 | Performance | `performance-optimization` | Measure first |
 
-### 12.3. Deterministic gates
+### 11.3. Deterministic gates
 
 Mỗi change phải pass trước khi commit:
 
@@ -429,13 +453,13 @@ Mỗi change phải pass trước khi commit:
 2. `npm run test:unit`
 3. `npm run build`
 4. `npx vite build --mode development` (nếu cần seed data)
-5. Browser verify theo `testing-extension-browser` contract (nếu change ảnh hưởng UI/page)
+5. Browser verify: `testing-with-playwright` e2e — `testing-extension-browser` cho interactive session (nếu change ảnh hưởng UI/page)
 
-### 12.4. SSOT catalog
+### 11.4. SSOT catalog
 
 | Artifact | Path | Update khi |
 |---|---|---|
-| Skill catalog | `.agents/skills/index.json` | Chạy `node scripts/update-skill-index.mjs` |
+| Skill catalog | `.agents/skills/index.json` | Chạy `node scripts/update-skill-index.mjs` (cover `.agents/skills` + `.devin/skills`) |
 | Kiến trúc | `docs/2-architechture-system.md` | Thêm/xóa/sửa `src/` |
 | Wiki | `docs/0-wiki.md` | Thêm/xóa `docs/` |
 | Glossary | `docs/1-share-language.md` | Thêm/sửa term |
@@ -443,7 +467,7 @@ Mỗi change phải pass trước khi commit:
 
 ---
 
-## 11. Nguồn tài liệu
+## 12. Nguồn tài liệu
 
 | # | Tổ chức | Tài liệu | URL |
 |---|---|---|---|

@@ -22,6 +22,7 @@ const SKILL_DIR = path.resolve(__dirname, '..');
 const INDEX_PATH = path.join(SKILL_DIR, 'index.json');
 const KNOWLEDGE_DIR = path.join(SKILL_DIR, 'knowledge');
 const EXPERIENCE_DIR = path.join(SKILL_DIR, 'experience');
+const PROCESS_DIR = path.join(SKILL_DIR, 'process');
 
 const REQUIRED_EXP_FIELDS = ['id', 'title', 'category', 'tags', 'trigger', 'principle', 'cases', 'applyFor'];
 const REQUIRED_CASE_FIELDS = ['context', 'bad', 'good'];
@@ -47,6 +48,7 @@ if (!Array.isArray(index.principles)) {
 const allowedCategories = new Set(index.categories || []);
 const indexKnowledgeTopics = new Set();
 const indexExperienceIds = new Set();
+const indexProcessIds = new Set();
 const seenIds = new Set();
 
 for (const entry of index.principles) {
@@ -55,11 +57,12 @@ for (const entry of index.principles) {
     if (seenIds.has('k:' + entry.topic)) { fail(`index duplicate knowledge topic: ${entry.topic}`); continue; }
     seenIds.add('k:' + entry.topic);
     indexKnowledgeTopics.add(entry.topic);
-  } else if (entry.type === 'experience') {
-    if (!entry.id) { fail(`index experience entry missing id: ${JSON.stringify(entry)}`); continue; }
-    if (seenIds.has('e:' + entry.id)) { fail(`index duplicate experience id: ${entry.id}`); continue; }
-    seenIds.add('e:' + entry.id);
-    indexExperienceIds.add(entry.id);
+  } else if (entry.type === 'experience' || entry.type === 'process') {
+    if (!entry.id) { fail(`index ${entry.type} entry missing id: ${JSON.stringify(entry)}`); continue; }
+    const key = (entry.type === 'process' ? 'p:' : 'e:') + entry.id;
+    if (seenIds.has(key)) { fail(`index duplicate ${entry.type} id: ${entry.id}`); continue; }
+    seenIds.add(key);
+    (entry.type === 'process' ? indexProcessIds : indexExperienceIds).add(entry.id);
   } else {
     fail(`index entry unknown type "${entry.type}": ${JSON.stringify(entry)}`);
   }
@@ -109,48 +112,54 @@ for (const file of knowledgeFiles) {
   }
 }
 
-// 3. Validate experience/*.json (atom files)
-const expFiles = fs.existsSync(EXPERIENCE_DIR) ? fs.readdirSync(EXPERIENCE_DIR).filter(f => f.endsWith('.json')) : [];
-const expIds = new Set();
+// 3. Validate experience/*.json + process/*.json (atom files)
+function validateAtomDir(dir, indexIds, label) {
+  const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith('.json')) : [];
+  const ids = new Set();
 
-for (const file of expFiles) {
-  const filePath = path.join(EXPERIENCE_DIR, file);
-  let atom;
-  try {
-    atom = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-  } catch (e) {
-    fail(`${file}: ${e.message}`);
-    continue;
-  }
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    let atom;
+    try {
+      atom = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+      fail(`${file}: ${e.message}`);
+      continue;
+    }
 
-  if (!atom.id) { fail(`${file}: missing "id"`); continue; }
-  if (expIds.has(atom.id)) { fail(`${file}: duplicate id "${atom.id}"`); continue; }
-  expIds.add(atom.id);
+    if (!atom.id) { fail(`${file}: missing "id"`); continue; }
+    if (ids.has(atom.id)) { fail(`${file}: duplicate id "${atom.id}"`); continue; }
+    ids.add(atom.id);
 
-  for (const field of REQUIRED_EXP_FIELDS) {
-    if (!(field in atom)) fail(`${file}: missing field "${field}"`);
-  }
+    for (const field of REQUIRED_EXP_FIELDS) {
+      if (!(field in atom)) fail(`${file}: missing field "${field}"`);
+    }
 
-  if (Array.isArray(atom.cases)) {
-    atom.cases.forEach((c, i) => {
-      for (const field of REQUIRED_CASE_FIELDS) {
-        if (!(field in c)) fail(`${file}: cases[${i}] missing "${field}"`);
-      }
-    });
-  }
+    if (Array.isArray(atom.cases)) {
+      atom.cases.forEach((c, i) => {
+        for (const field of REQUIRED_CASE_FIELDS) {
+          if (!(field in c)) fail(`${file}: cases[${i}] missing "${field}"`);
+        }
+      });
+    }
 
-  if (Array.isArray(atom.category)) {
-    for (const cat of atom.category) {
-      if (allowedCategories.size > 0 && !allowedCategories.has(cat)) {
-        fail(`${file}: category "${cat}" not in index.categories[]`);
+    if (Array.isArray(atom.category)) {
+      for (const cat of atom.category) {
+        if (allowedCategories.size > 0 && !allowedCategories.has(cat)) {
+          fail(`${file}: category "${cat}" not in index.categories[]`);
+        }
       }
     }
-  }
 
-  if (!indexExperienceIds.has(atom.id)) {
-    fail(`${file}: experience atom "${atom.id}" has no index entry`);
+    if (!indexIds.has(atom.id)) {
+      fail(`${file}: ${label} atom "${atom.id}" has no index entry`);
+    }
   }
+  return ids;
 }
+
+const expIds = validateAtomDir(EXPERIENCE_DIR, indexExperienceIds, 'experience');
+const procIds = validateAtomDir(PROCESS_DIR, indexProcessIds, 'process');
 
 // 4. Check index entries have files
 for (const topic of indexKnowledgeTopics) {
@@ -163,12 +172,17 @@ for (const id of indexExperienceIds) {
     fail(`index experience id "${id}" has no experience/${id}.json file`);
   }
 }
+for (const id of indexProcessIds) {
+  if (!procIds.has(id)) {
+    fail(`index process id "${id}" has no process/${id}.json file`);
+  }
+}
 
 // Summary
 const totalRules = allRuleIds.size;
-const totalAtoms = expIds.size;
+const totalAtoms = expIds.size + procIds.size;
 if (errors === 0) {
-  console.log(`OK: ${knowledgeFiles.length} knowledge topics (${totalRules} rules), ${totalAtoms} experience atoms, ${allowedCategories.size} categories`);
+  console.log(`OK: ${knowledgeFiles.length} knowledge topics (${totalRules} rules), ${expIds.size} experience atoms, ${procIds.size} process atoms, ${allowedCategories.size} categories`);
   process.exit(0);
 } else {
   console.error(`\n${errors} violation(s) across ${totalRules} rules + ${totalAtoms} atoms`);

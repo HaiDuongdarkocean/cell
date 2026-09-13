@@ -25,6 +25,7 @@ When a task arrives, identify the development phase and apply the corresponding 
 ```
 Task arrives
     │
+    ├── Vague idea → final spec? ───────────→ elicitation (idea-refine → observation → interview → spec → review → auto-fix)
     ├── Don't know what you want yet? ──────→ interview-me
     ├── Can't articulate abstract questions? → interview-me (elicitation mode: context + domain scoping + prototype)
     ├── Have a rough concept, need variants? → idea-refine
@@ -34,13 +35,13 @@ Task arrives
     │   └── Need to plan remediation? ──→ planning-and-task-breakdown
     ├── Implementing code? ────────────→ learning-and-apply (APPLY) ← grep knowledge first
     │   └── incremental-implementation
-    │       ├── UI work? ─────────────────→ frontend-ui-engineering
-    │       ├── API work? ────────────────→ api-and-interface-design
+    │       ├── UI work? ─────────────────→ design-system-guardian (build theo DESIGN.md, audit sau)
     │       ├── Need better context? ─────→ context-engineering
     │       ├── Need doc-verified code? ───→ source-driven-development
     │       └── Stakes high / unfamiliar code? ──→ doubt-driven-development
     ├── Writing/running tests? ────────→ test-driven-development
-    │   └── Browser-based? ───────────→ browser-testing-with-devtools
+    │   └── Browser-based? ───────────→ testing-with-playwright (e2e specs)
+    │       ├── Interactive/stealth session? → testing-extension-browser
     │       └── Model can't see images? → vision-reader
     ├── Something broke? ──────────────→ debugging-and-error-recovery
     │   └── Root cause found + fix verified? → learning-and-apply (ACCUMULATE) ← extract principle
@@ -126,7 +127,7 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
-Per-skill verification is the local check. The project-wide bar that applies to *every* change, regardless of which skill is active, is the Definition of Done: tests pass, no regressions, behavior verified at runtime, docs updated. See `references/definition-of-done.md`. It complements each task's acceptance criteria rather than replacing them.
+Per-skill verification is the local check. The project-wide bar that applies to *every* change, regardless of which skill is active, is the Definition of Done: tests pass, no regressions, behavior verified at runtime, docs updated. See `docs/knowledge-base/agentic-sdlc.md` § Deterministic gates. It complements each task's acceptance criteria rather than replacing them.
 
 ## Failure Modes to Avoid
 
@@ -154,8 +155,6 @@ These are the subtle errors that look like productivity but create problems:
 4. **When in doubt, start with a spec.** If the task is non-trivial and there's no spec, begin with `spec-driven-development`.
 
 ## Lifecycle Sequence
-
-For a complete feature, the typical skill sequence is:
 
 For paying down technical debt, the typical skill sequence is:
 
@@ -202,9 +201,11 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 
 | Phase | Skill | One-Line Summary |
 |-------|-------|-----------------|
+| Define | elicitation | Orchestrate vague idea → confirmed 8-field frame → auto-spec → review → auto-fix → final spec |
 | Define | interview-me | Surface what the user actually wants — interview mode (CAN articulate) + elicitation mode (CANNOT: context + domain scoping + dependency mapping + prototype) |
 | Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
+| Define | spec-review-stakeholder | BA/PO/TL adversarial review of a spec before implementation |
 | Plan | audit-technical-debt | Score and prioritize technical debt with a remediation roadmap |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
 | Build | learning-and-apply (APPLY) | Grep knowledge index.json, check bad patterns before coding |
@@ -212,11 +213,11 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | source-driven-development | Verify against official docs before implementing |
 | Build | doubt-driven-development | Adversarial fresh-context review of every non-trivial decision |
 | Build | context-engineering | Right context at the right time |
-| Build | frontend-ui-engineering | Production-quality UI with accessibility |
-| Build | api-and-interface-design | Stable interfaces with clear contracts |
 | Verify | design-system-guardian | Audit UI against DESIGN.md (token, component, layout) |
 | Verify | test-driven-development | Failing test first, then make it pass |
-| Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
+| Verify | pre-commit-gate | Deterministic local checks (lint, typecheck, test, build, debt smell) before commit |
+| Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Cell + uBOLite loaded in Chromium |
+| Verify | testing-extension-browser | Interactive stealth-Chrome session (nodriver + MCP) cho ad-hoc verify |
 | Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Verify | learning-and-apply (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |

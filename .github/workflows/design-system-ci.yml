@@ -29,6 +29,17 @@ jobs:
       - name: Design-system unit tests
         run: npm run test:unit:design-system
 
+      - name: Full unit test suite
+        # Non-blocking: known pre-existing failures outside design-system scope
+        # (OCR/dictionary debt). Runs for signal; tighten to blocking once green.
+        continue-on-error: true
+        run: npm run test:unit
+
+      - name: Lint
+        # Non-blocking for the same reason — surface drift, tighten later.
+        continue-on-error: true
+        run: npm run lint
+
       - name: Icon integrity check
         run: npm run check-icons
 

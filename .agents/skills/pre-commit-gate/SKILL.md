@@ -40,6 +40,11 @@ Change ready
     │
     ▼
 ┌─────────────────────┐
+│ 1.6 Spec→review     │ docs/specs đổi mà docs/reviews không → warn
+└─────────────────────┘
+    │
+    ▼
+┌─────────────────────┐
 │ 2. Lint             │ npm run lint (if .ts/.tsx/.css changed)
 └─────────────────────┘
     │
@@ -86,6 +91,7 @@ git status --short
 | `*.css`, `*.module.css` in `src/` | build, design-system-guardian |
 | `tokens.json` | build (regenerates tokens.css), typecheck |
 | `package.json`, `*.config.*` | build, typecheck |
+| `docs/specs/*.md` | spec→review check (Step 1.6) |
 | `.md`, `.txt` | skip (no build impact) |
 
 ## Step 1.5: Debt Smell Check
@@ -103,6 +109,17 @@ git status --short
 **Guard:** No new behavior is added to files > 500 lines without a documented extraction plan; no new `TODO`/`FIXME` without a tracking item; no 0% coverage logic changes without a test.
 
 **Loop back:** If a debt smell is found, re-route to `incremental-implementation` or `test-driven-development` before continuing the gate.
+
+## Step 1.6: Spec→Review Artifact Check (warn)
+
+**Purpose:** Đóng gap adversarial-review adoption — spec đổi scope/AC mà không qua `spec-review-stakeholder` thì review principle chỉ trên giấy (evidence: 3/33 spec có artifact).
+
+**Actions:**
+- Nếu `git status` có file đổi/thêm dưới `docs/specs/` nhưng không có file nào đổi/thêm dưới `docs/reviews/` trong cùng commit → **WARN**, liệt kê spec nào thiếu review.
+- Recommend chạy `/spec-review-stakeholder` trước khi commit.
+- Skip warn khi: change là typo/format rõ ràng, hoặc spec đó đã có review artifact và change không đụng scope/AC.
+
+**Guard:** WARN, không FAIL — report ghi rõ spec thiếu review.
 
 ## Step 2: Lint
 
@@ -193,6 +210,7 @@ npm run build
 | Unit tests | ✅ pass |
 | Build | ✅ pass |
 | UI audit | ✅ pass (not needed) |
+| Spec→review | ✅ pass / ⚠️ warn (n specs thiếu artifact) |
 
 Ready for commit.
 ```

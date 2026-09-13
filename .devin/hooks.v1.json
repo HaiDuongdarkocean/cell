@@ -1,0 +1,14 @@
+{
+  "PostToolUse": [
+    {
+      "matcher": "^(write|edit|notebook_edit)$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-skill-index.mjs",
+          "timeout": 15
+        }
+      ]
+    }
+  ]
+}

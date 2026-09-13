@@ -7,12 +7,13 @@ description: "Prevents recurring mistakes by applying accumulated knowledge befo
 
 ## Overview
 
-Two knowledge stores, one skill:
+Three knowledge stores, one skill:
 
 - **knowledge/** — rules from style guides, books, external sources (Google HTML/CSS, TypeScript, BEM). Organized by topic file (`htmlcss.json`, `typescript.json`), each containing a `rules[]` array.
 - **experience/** — principles extracted from real project bug fixes. One atom JSON per principle, with `cases[bad/good]` code snippets.
+- **process/** — pipeline/workflow lessons (drift, skipped gates, wrong routing, doc rot). Same atom schema as experience; `cases` mô tả process failure thay vì code snippet.
 
-Both stores share the same rule schema. Knowledge rules have a `source` field at the topic level; experience atoms are self-contained.
+All stores share the same rule schema. Knowledge rules have a `source` field at the topic level; experience/process atoms are self-contained.
 
 ## When to Use
 
@@ -29,6 +30,7 @@ Apply this mode when **insight is reusable** — any of 5 triggers:
 | 3 | **Architecture decision** | ADR written or design decision made | ASS→SRT reuse existing converter, layered clean architecture |
 | 4 | **Refactor discovery** | Code pass + simplification pattern found | ftyp+moov stripping, tfdt offset patching |
 | 5 | **Cross-cutting pattern** | Same logic appears 2+ times in codebase | Broadcasts fan out (popup + background + content script) |
+| 6 | **Process/pipeline lesson** | Drift hoặc gate bị skip được phát hiện → root cause là process | Stale skill index, router trỏ skill không tồn tại, spec đổi không review |
 
 **When NOT to accumulate:**
 - Bug is 1-off (no reusable pattern)
@@ -57,7 +59,9 @@ learning/
 ├── experience/                   # từ project thực tế (real bug fixes)
 │   ├── css-shadow-dom-token-injection.json
 │   ├── css-shadow-dom-theme-propagation.json
-│   └── ... (41 atoms)
+│   └── ... (100+ atoms)
+├── process/                      # pipeline/workflow lessons (process drift, gate skips)
+│   └── process-generated-catalog-drift.json
 └── scripts/
     ├── validate.cjs              # check index sync + schema
     └── convert-conventions.cjs   # convert style guide JSON → knowledge schema
@@ -124,10 +128,20 @@ Self-contained trong skill folder → portable, mang đi project khác.
   "trigger": "Shadow DOM component cần shared design tokens"
 }
 ```
+```json
+{
+  "type": "process",
+  "id": "process-generated-catalog-drift",
+  "title": "Generated SSOT catalog drift âm thầm",
+  "category": ["process"],
+  "tags": ["index", "drift", "hook"],
+  "trigger": "Generated catalog không có gate regen"
+}
+```
 
 **Quy tắc:**
 - `id` (experience) / `topic` (knowledge): kebab-case, cụ thể, grep-able
-- `category[]`: 1-2 category từ: css, rendering, async, state, messaging, data, detection, ux, build, testing
+- `category[]`: 1-2 category từ: css, rendering, async, state, messaging, data, detection, ux, build, testing, process
 - `tags[]`: 3-5 keyword grep-able (technology, pattern, symptom)
 - `trigger`: 1 câu — "khi nào áp dụng principle này"
 - `principle`: 1-2 câu — nguyên lý abstract, không cụ thể codebase
@@ -167,7 +181,7 @@ Create `experience/<id>.json` (15-25 dòng):
 
 ### Step 3: Update index.json
 
-Append entry vào `index.json` `principles[]` with `type: "experience"`.
+Append entry vào `index.json` `principles[]` with `type: "experience"` (code lessons) hoặc `type: "process"` + file trong `process/` (pipeline lessons).
 
 ### Step 4: Validate
 
@@ -198,6 +212,7 @@ grep '"type": "knowledge"' index.json
 
 - `type: "knowledge"` → open `knowledge/<topic>.json`, grep `rules[]` by tags/trigger
 - `type: "experience"` → open `experience/<id>.json`, read principle + cases[bad/good]
+- `type: "process"` → open `process/<id>.json`, read principle + cases[bad/good]
 
 ### Step 4: Apply
 

@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "description": "Index of learning principles. type=knowledge: from style guides (grep rules[] inside topic file). type=experience: from real project fixes (open atom file for bad/good).",
+  "description": "Index of learning principles. type=knowledge: from style guides (grep rules[] inside topic file). type=experience: from real project fixes (open atom file for bad/good). type=process: pipeline/workflow lessons (open atom file in process/).",
   "categories": [
     "async",
     "build",
@@ -11,7 +11,8 @@
     "rendering",
     "state",
     "testing",
-    "ux"
+    "ux",
+    "process"
   ],
   "principles": [
     {
@@ -1991,6 +1992,23 @@
         "race"
       ],
       "trigger": "Snapshot node.parentElement để restore sau, trong khi feature khác có deferred teardown sắp detach subtree chứa parent đó"
+    },
+    {
+      "type": "process",
+      "id": "process-generated-catalog-drift",
+      "title": "Generated SSOT catalog drift âm thầm — regen mỗi lần đổi + đối chiếu với disk",
+      "category": [
+        "process"
+      ],
+      "tags": [
+        "index",
+        "ssot",
+        "catalog",
+        "drift",
+        "generated-file",
+        "hook"
+      ],
+      "trigger": "Repo có generated index/catalog/registry mà không có gate regen hoặc hook tự động"
     }
   ]
 }

@@ -1,3 +1,8 @@
+---
+name: testing-with-playwright
+description: Playwright E2E testing for Cell — fixtures (worker/test-scoped) + typed actors that pierce shadow DOM, stage2 specs, scripts/e2e.sh pipeline. Use when writing or running Playwright E2E specs for the extension, creating actors/fixtures, or verifying features via automated browser tests. Not for interactive MCP stealth-Chrome sessions (use testing-extension-browser) or Jest unit tests.
+---
+
 # testing-with-playwright
 
 ## Core concepts
