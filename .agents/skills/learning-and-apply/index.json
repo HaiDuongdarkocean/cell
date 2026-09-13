@@ -2157,6 +2157,24 @@
         "background-tab"
       ],
       "trigger": "Logic render/bind/prepare nội dung đang active được schedule qua requestAnimationFrame, verify qua automation mở tab phụ khiến tab chính occluded"
+    },
+    {
+      "type": "experience",
+      "id": "vite-preload-resolves-against-host-page",
+      "title": "Vite dep preloads resolve against document.baseURI — always the host page in content scripts",
+      "category": [
+        "build",
+        "testing"
+      ],
+      "tags": [
+        "vite",
+        "content-script",
+        "lazy-import",
+        "modulePreload",
+        "vite:preloadError",
+        "production-only"
+      ],
+      "trigger": "A lazy import() inside a bundled content script fails in production with Unable to preload CSS while unit tests and dev build work fine"
     }
   ]
 }

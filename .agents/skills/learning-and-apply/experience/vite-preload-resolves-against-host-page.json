@@ -1,0 +1,16 @@
+{
+  "id": "vite-preload-resolves-against-host-page",
+  "title": "Vite dep preloads resolve against document.baseURI — always the host page in content scripts",
+  "category": ["build", "testing"],
+  "tags": ["vite", "content-script", "lazy-import", "modulePreload", "vite:preloadError", "production-only"],
+  "trigger": "A lazy import() inside a bundled content script fails in production with 'Unable to preload CSS for /assets/...' while unit tests and the dev build work fine.",
+  "principle": "Vite wraps lazy imports in __vitePreload, which fetches dependency chunks/CSS relative to document.baseURI. In a content script that is the host page's origin, so every preload 404s and the rejection propagates, silently aborting any Promise.all init path. modulePreload: false still keeps CSS deps (FOUC guard), so the reliable fix is window.addEventListener('vite:preloadError', e => e.preventDefault()) early in the content script — the event is the designed escape hatch; the real chrome-extension:// import then proceeds. Verify production-only init paths with E2E, never trust unit tests for bundler behavior.",
+  "cases": [
+    {
+      "context": "initHeavyFeatures (OCR + Study Mode init) never ran in the packed extension: the lazy subtitle chunk's CSS preload 404'd against the mock page origin, rejecting Promise.all before initializeStudyModeController.",
+      "bad": "// relying on modulePreload: false alone\nbuild: { modulePreload: isExtension ? false : undefined } // CSS deps still preload",
+      "good": "// top of content-script.ts\nwindow.addEventListener('vite:preloadError', (e) => e.preventDefault());"
+    }
+  ],
+  "applyFor": ["Content-script lazy imports", "Extension builds with code-split chunks", "init paths wrapped in Promise.all", "Production-only E2E failures"]
+}
