@@ -57,7 +57,6 @@ import {
   LookupCancelPayloadSchema,
   LookupRequestPayloadSchema,
   PronunciationEspeakTtsPayloadSchema,
-  QuickAddPayloadMessageSchema,
   TranslatePayloadSchema,
   TtsDownloadProgressPayloadSchema,
   TtsDownloadVoicePayloadSchema,
@@ -96,12 +95,6 @@ export interface MessageContract {
 }
 
 export const MESSAGE_REGISTRY = {
-  [MESSAGE_TYPES.DETECT_MEDIA]: {
-    type: MESSAGE_TYPES.DETECT_MEDIA,
-    schema: undefined,
-    direction: 'any',
-    owner: 'background',
-  },
   [MESSAGE_TYPES.GET_DETECTED_MEDIA]: {
     type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
     schema: GetDetectedMediaPayloadSchema,
@@ -198,46 +191,16 @@ export const MESSAGE_REGISTRY = {
     direction: 'panel->bg',
     owner: 'background/handlers/settings',
   },
-  [MESSAGE_TYPES.EXTENSION_STATUS_UPDATE]: {
-    type: MESSAGE_TYPES.EXTENSION_STATUS_UPDATE,
-    schema: undefined,
-    direction: 'any',
-    owner: 'background',
-  },
   [MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE]: {
     type: MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE,
     schema: UpdateSubtitleLanguagePayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/subtitle',
   },
-  [MESSAGE_TYPES.GET_SUBTITLE_FOR_OVERLAY]: {
-    type: MESSAGE_TYPES.GET_SUBTITLE_FOR_OVERLAY,
-    schema: undefined,
-    direction: 'cs->bg',
-    owner: 'background',
-  },
-  [MESSAGE_TYPES.CONVERT_TS_TO_MP4]: {
-    type: MESSAGE_TYPES.CONVERT_TS_TO_MP4,
-    schema: undefined,
-    direction: 'bg->offscreen',
-    owner: 'offscreen',
-  },
-  [MESSAGE_TYPES.CONVERT_TS_TO_MP4_RESULT]: {
-    type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_RESULT,
-    schema: undefined,
-    direction: 'offscreen->bg',
-    owner: 'offscreen',
-  },
   [MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2]: {
     type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2,
     schema: undefined,
     direction: 'bg->offscreen',
-    owner: 'offscreen',
-  },
-  [MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2_RESULT]: {
-    type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2_RESULT,
-    schema: undefined,
-    direction: 'offscreen->bg',
     owner: 'offscreen',
   },
   [MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE]: {
@@ -378,12 +341,6 @@ export const MESSAGE_REGISTRY = {
     direction: 'bg->offscreen',
     owner: 'offscreen',
   },
-  [MESSAGE_TYPES.FETCH_RESPONSE]: {
-    type: MESSAGE_TYPES.FETCH_RESPONSE,
-    schema: undefined,
-    direction: 'offscreen->bg',
-    owner: 'offscreen',
-  },
   [MESSAGE_TYPES.TRANSLATE]: {
     type: MESSAGE_TYPES.TRANSLATE,
     schema: TranslatePayloadSchema,
@@ -479,12 +436,6 @@ export const MESSAGE_REGISTRY = {
     schema: FrequencyGetPayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/frequency',
-  },
-  [MESSAGE_TYPES.QUICK_ADD]: {
-    type: MESSAGE_TYPES.QUICK_ADD,
-    schema: QuickAddPayloadMessageSchema,
-    direction: 'cs->bg',
-    owner: 'background',
   },
   [MESSAGE_TYPES.LOOKUP_REQUEST]: {
     type: MESSAGE_TYPES.LOOKUP_REQUEST,
@@ -599,18 +550,6 @@ export const MESSAGE_REGISTRY = {
     schema: OcrDisposePayloadSchema,
     direction: 'cs->bg',
     owner: 'background/handlers/ocr',
-  },
-  [MESSAGE_TYPES.OCR_GET_STATE]: {
-    type: MESSAGE_TYPES.OCR_GET_STATE,
-    schema: undefined,
-    direction: 'cs->bg',
-    owner: 'content',
-  },
-  [MESSAGE_TYPES.OCR_SET_STATE]: {
-    type: MESSAGE_TYPES.OCR_SET_STATE,
-    schema: undefined,
-    direction: 'cs->bg',
-    owner: 'content',
   },
   [MESSAGE_TYPES.OCR_REGION_COMMAND]: {
     type: MESSAGE_TYPES.OCR_REGION_COMMAND,

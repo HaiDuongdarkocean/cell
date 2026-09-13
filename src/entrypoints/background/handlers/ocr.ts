@@ -109,7 +109,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     },
   );
 
-  // OCR_GET_STATE / OCR_SET_STATE handled by content-script directly via ocrStateStore.
+  // OCR state get/set is handled by content-script directly via ocrStateStore.
   // Background does not need to mediate — content-script reads/writes chrome.storage.local.
 
   // OCR_REGION_COMMAND — forward to active tab's content script.

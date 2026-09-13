@@ -36,7 +36,7 @@ export interface OffscreenFetchResult {
 
 /**
  * Fetch a URL via the offscreen document. Ensures the offscreen document is
- * ready first, then sends a FETCH_REQUEST and awaits the FETCH_RESPONSE.
+ * ready first, then sends a FETCH_REQUEST and awaits its response.
  *
  * @throws Error if the offscreen document fails to respond or returns an error.
  */
