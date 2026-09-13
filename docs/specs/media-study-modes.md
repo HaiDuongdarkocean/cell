@@ -136,8 +136,11 @@ export interface StudyModeState {
 export const PRESETS: readonly StudyMode[] = [
   { id: 'normal',     type: 'preset', icon: 'play',       title: 'Normal',        description: 'Both subtitles visible, no auto-pause.',  steps: [{ subtitle: 'both',   pause: 'none',  repeat: 1, speed: 1,    after: 'continue' }] },
   { id: 'listen',     type: 'preset', icon: 'volumeHigh', title: 'Listen',        description: 'Hide both subtitles, focus on listening.', steps: [{ subtitle: 'none',   pause: 'none',  repeat: 1, speed: 1,    after: 'continue' }] },
-  { id: 'read',       type: 'preset', icon: 'bookOpen',   title: 'Read',          description: 'Pause at cue start so subtitle can be read.', steps: [{ subtitle: 'both',   pause: 'start', repeat: 1, speed: 1,    after: 'wait' }] },
-  { id: 'listen-check', type: 'preset', icon: 'eyeOff',   title: 'Listen-Check',  description: 'Hide subtitles while playing, then pause and reveal.', steps: [{ subtitle: 'none',   pause: 'end',   repeat: 1, speed: 1,    after: 'wait' }] },
+  { id: 'read',       type: 'preset', icon: 'bookOpen',   title: 'Read',          description: 'Pause at cue start so subtitle can be read.', steps: [{ subtitle: 'both',   pause: 'start', repeat: 1, speed: 1,    after: 'continue' }] },
+  { id: 'listen-check', type: 'preset', icon: 'eyeOff',   title: 'Listen-Check',  description: 'Hide subtitles while playing, pause to recall, then replay with subtitles.', steps: [
+    { subtitle: 'none',   pause: 'end',   repeat: 1, speed: 1,    after: 'continue' },
+    { subtitle: 'both',   pause: 'end',   repeat: 1, speed: 1,    after: 'wait' },
+  ]},
   { id: 'hybrid',     type: 'preset', icon: 'layers',     title: 'Hybrid',        description: 'Native → target → audio only, in one cue loop.', steps: [
     { subtitle: 'native', pause: 'none',  repeat: 1, speed: 1, after: 'continue' },
     { subtitle: 'target', pause: 'none',  repeat: 1, speed: 1, after: 'continue' },

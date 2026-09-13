@@ -25,15 +25,18 @@ export const PRESETS: readonly StudyMode[] = [
     icon: 'bookOpen',
     title: 'Read',
     description: 'Pause at cue start so subtitle can be read.',
-    steps: [{ subtitle: 'both', pause: 'start', repeat: 1, speed: 1, after: 'wait' }],
+    steps: [{ subtitle: 'both', pause: 'start', repeat: 1, speed: 1, after: 'continue' }],
   },
   {
     id: 'listen-check',
     type: 'preset',
     icon: 'eyeOff',
     title: 'Listen-Check',
-    description: 'Hide subtitles while playing, then pause and reveal.',
-    steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
+    description: 'Hide subtitles while playing, pause to recall, then replay with subtitles.',
+    steps: [
+      { subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'continue' },
+      { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait' },
+    ],
   },
   {
     id: 'hybrid',

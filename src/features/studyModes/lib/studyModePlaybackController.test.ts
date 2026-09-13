@@ -1,5 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { StudyModePlaybackController } from './studyModePlaybackController';
+import { PRESET_LOOKUP } from '@/entities/studyMode';
 import type { SrtCue } from '@/entities/media';
 import type { StudyMode } from '@/entities/studyMode';
 
@@ -30,7 +31,7 @@ const readMode: StudyMode = {
   title: 'Read',
   description: '',
   steps: [
-    { subtitle: 'both', pause: 'start', repeat: 1, speed: 1, after: 'wait' },
+    { subtitle: 'both', pause: 'start', repeat: 1, speed: 1, after: 'continue' },
   ],
 };
 
@@ -178,6 +179,43 @@ describe('StudyModePlaybackController', () => {
     expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'setSpeed', speed: 2 }]);
     expect(ctrl.onTimeUpdate(2600)).toEqual([]);
     expect(ctrl.onTimeUpdate(10000)).toEqual([{ type: 'setSpeed', speed: 2 }]);
+  });
+
+  it('read preset pauses at cue start only — resuming runs to next cue without an end pause', () => {
+    const read = PRESET_LOOKUP.get('read');
+    expect(read).toBeDefined();
+    const cue1 = makeCue(1, 1000, 5000, 'a');
+    const cue2 = makeCue(2, 8000, 11000, 'b');
+    const ctrl = new StudyModePlaybackController(read!, advancedOff, [cue1, cue2]);
+
+    expect(ctrl.enterCue(cue1, 0)).toContainEqual({ type: 'pause' });
+    expect(ctrl.continue()).toContainEqual({ type: 'play' });
+
+    const end = ctrl.onTimeUpdate(5000);
+    expect(end).toEqual([]);
+    expect(ctrl.hasActiveCue).toBe(false);
+
+    expect(ctrl.enterCue(cue2, 1)).toContainEqual({ type: 'pause' });
+  });
+
+  it('listen-check preset pauses after a blind listen, then reviews the cue with subtitles', () => {
+    const listenCheck = PRESET_LOOKUP.get('listen-check');
+    expect(listenCheck).toBeDefined();
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const ctrl = new StudyModePlaybackController(listenCheck!, advancedOff, [cue]);
+
+    expect(ctrl.enterCue(cue, 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'none' });
+
+    const end = ctrl.onTimeUpdate(5000);
+    expect(end).toContainEqual({ type: 'pause' });
+
+    const review = ctrl.continue();
+    expect(review).toContainEqual({ type: 'seek', timeMs: 1000 });
+    expect(review).toContainEqual({ type: 'setSubtitle', subtitle: 'both' });
+
+    expect(ctrl.onTimeUpdate(5000)).toContainEqual({ type: 'pause' });
+    expect(ctrl.continue()).toContainEqual({ type: 'play' });
+    expect(ctrl.hasActiveCue).toBe(false);
   });
 
   it('abort() clears the active cue and pause state', () => {

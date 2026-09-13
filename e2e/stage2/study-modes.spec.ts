@@ -5,6 +5,7 @@ const OVERLAY_TARGET_SELECTOR = '[data-cell-id="subtitle-block"] [data-role="tar
 const VIDEO_SELECTOR = '#player-wrapper video';
 
 const CUE2_START_S = 20.2;
+const CUE2_END_S = 25.533;
 const CUE3_START_S = 29.266;
 const GAP_TIME_S = 27.0;
 const FAR_GAP_S = 50.0;
@@ -60,6 +61,16 @@ async function seekPaused(page: Page, timeS: number): Promise<void> {
     v.pause();
     v.currentTime = t;
   }, timeS);
+  await expect
+    .poll(
+      async () =>
+        video.evaluate(
+          (v: HTMLVideoElement, t: number) => v.paused && Math.abs(v.currentTime - t) < 0.5,
+          timeS,
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true);
 }
 
 async function play(page: Page): Promise<void> {
@@ -118,6 +129,9 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       v.playbackRate = 1.25;
       v.currentTime = t;
     }, CUE2_START_S + 0.4);
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 10_000 })
+      .toBe(true);
     await waitForCue2(streamFlixPage);
 
     await writeStudyModes(cellContext, 'dictation');
@@ -137,7 +151,7 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     await expect(targetLine(streamFlixPage)).toContainText(/lyin/i, { timeout: 10_000 });
   });
 
-  test('read pauses at cue start, resumes on user play, pauses at cue end', async ({
+  test('read pauses at cue start, resumes on user play, then pauses at the next cue start', async ({
     cellContext,
     streamFlixPage,
   }) => {
@@ -159,7 +173,61 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .toBe(false);
 
     await expect
-      .poll(() => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 15_000 })
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cue3Start: number) =>
+              v.paused && v.currentTime >= cue3Start - 0.5,
+            CUE3_START_S,
+          ),
+        { timeout: 20_000 },
+      )
+      .toBe(true);
+
+    await writeStudyModes(cellContext, 'normal');
+  });
+
+  test('listen-check pauses after a blind listen, then replays the cue with subtitles', async ({
+    cellContext,
+    streamFlixPage,
+  }) => {
+    await seedOverlaySettings(cellContext);
+    await writeStudyModes(cellContext, 'normal');
+    await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
+    await waitForCue2(streamFlixPage);
+
+    const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
+    await writeStudyModes(cellContext, 'listen-check');
+    await expect.poll(() => isTargetHidden(streamFlixPage), { timeout: 10_000 }).toBe(true);
+
+    await play(streamFlixPage);
+    await expect
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd - 0.5,
+            CUE2_END_S,
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+    expect(await isTargetHidden(streamFlixPage)).toBe(true);
+
+    await play(streamFlixPage);
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 10_000 })
+      .toBeLessThan(CUE2_START_S + 2);
+    await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 10_000 });
+
+    await expect
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd - 0.5,
+            CUE2_END_S,
+          ),
+        { timeout: 15_000 },
+      )
       .toBe(true);
 
     await writeStudyModes(cellContext, 'normal');
@@ -208,10 +276,17 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
     });
     await expect.poll(() => isTargetHidden(streamFlixPage), { timeout: 10_000 }).toBe(true);
 
-    await seekPaused(streamFlixPage, GAP_TIME_S);
+    const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
+    await video.evaluate((v: HTMLVideoElement, t: number) => {
+      v.muted = true;
+      v.pause();
+      v.currentTime = t;
+    }, GAP_TIME_S);
+    await expect
+      .poll(() => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 10_000 })
+      .toBe(true);
     await play(streamFlixPage);
 
-    const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
     await expect
       .poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 10_000 })
       .toBeGreaterThanOrEqual(CUE3_START_S);
