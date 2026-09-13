@@ -50,6 +50,12 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       // ADR-030: route through playVideo/pauseVideo to avoid Netflix M7375.
       ctx.togglePlay();
     }
+    if (m?.type === MESSAGE_TYPES.SET_PLAYBACK_RATE) {
+      const rate = (m.payload as { rate?: number })?.rate;
+      if (rate === 0.5 || rate === 0.75 || rate === 1 || rate === 1.25 || rate === 1.5) {
+        video.playbackRate = rate;
+      }
+    }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
     // cue navigation. ADR-021 D8: if seekTime provided (from sidepanel's local
     // calculation), seek directly — avoids stale video.currentTime at arrival.

@@ -27,6 +27,7 @@ import {
   VideoTimeUpdatePayloadSchema,
   VideoPlayStatePayloadSchema,
   SeekToPayloadSchema,
+  SetPlaybackRatePayloadSchema,
   ShortcutActionPayloadSchema,
   VideoEpisodeChangedPayloadSchema,
 } from '@/entities/message/schema';
@@ -200,6 +201,37 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`TOGGLE_PLAY relay failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.SET_PLAYBACK_RATE, async (request): Promise<MessageResponse> => {
+    const parsed = SetPlaybackRatePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid SET_PLAYBACK_RATE payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    let tabId = payload.tabId;
+    if (tabId === undefined) {
+      try {
+        const [activeTab] = await queryTabs({ active: true, currentWindow: true });
+        if (!activeTab?.id) {
+          return { success: false, error: 'No active tab found for SET_PLAYBACK_RATE' };
+        }
+        tabId = activeTab.id;
+      } catch {
+        return { success: false, error: 'Failed to query active tab for SET_PLAYBACK_RATE' };
+      }
+    }
+    try {
+      await sendTabMessage(tabId, {
+        type: MESSAGE_TYPES.SET_PLAYBACK_RATE,
+        payload: { rate: payload.rate },
+      });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`SET_PLAYBACK_RATE relay failed for tab ${tabId}: ${msg}`);
       return { success: false, error: msg };
     }
   });

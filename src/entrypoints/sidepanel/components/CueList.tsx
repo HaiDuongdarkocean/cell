@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import styles from './CueList.module.css';
 
@@ -9,6 +10,8 @@ interface CueListProps {
   // effective = currentTimeMs + offsetMs to match the overlay.
   offsetMs?: number;
   onSeek: (timeMs: number) => void;
+  renderCueContent?: (cue: BilingualCue, index: number, isCurrent: boolean) => ReactNode | undefined;
+  showNative?: boolean;
 }
 
 // Human-friendly timestamp: drop leading zeros + millisecond noise.
@@ -22,7 +25,7 @@ function formatTimestamp(ms: number, hasHours: boolean): string {
   return hasHours ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -56,19 +59,55 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
   // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   useEffect(() => {
     if (currentIndex < 0) return;
-    if (highlightedRef.current === currentIndex) return;
-    highlightedRef.current = currentIndex;
     const el = itemRefs.current[currentIndex];
     const list = listRef.current;
     if (!el || !list) return;
-    const targetScroll = el.offsetTop - (list.clientHeight - el.offsetHeight) / 2;
-    list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
+    const cueTop = (): number => {
+      const cueRect = el.getBoundingClientRect();
+      const listRect = list.getBoundingClientRect();
+      return cueRect.top - listRect.top + list.scrollTop;
+    };
+    const align = (): void => {
+      const top = cueTop();
+      const targetScroll = el.offsetHeight >= list.clientHeight
+        ? top
+        : top - (list.clientHeight - el.offsetHeight) / 2;
+      list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
+    };
+    if (highlightedRef.current !== currentIndex) {
+      highlightedRef.current = currentIndex;
+      align();
+    }
+    const observer = new ResizeObserver(() => {
+      const cueRect = el.getBoundingClientRect();
+      const listRect = list.getBoundingClientRect();
+      if (cueRect.top < listRect.top || cueRect.bottom > listRect.bottom) align();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [currentIndex, effectiveMs]);
+
+  useLayoutEffect(() => {
+    if (currentIndex < 0) return;
+    const el = itemRefs.current[currentIndex];
+    const list = listRef.current;
+    if (!el || !list) return;
+    const cueRect = el.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    if (cueRect.top < listRect.top || cueRect.bottom > listRect.bottom) {
+      const top = cueRect.top - listRect.top + list.scrollTop;
+      const targetScroll = el.offsetHeight >= list.clientHeight
+        ? top
+        : top - (list.clientHeight - el.offsetHeight) / 2;
+      list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
+    }
+  });
 
   return (
     <div ref={listRef} className={styles.list} role="list" data-cell-id="cue-list-scroll">
       {cues.map((cue, i) => {
         const isCurrent = i === currentIndex;
+        const customContent = renderCueContent?.(cue, i, isCurrent);
         return (
           <div
             key={cue.index}
@@ -96,16 +135,20 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
                   cue.start; SEEK_TO handler subtracts offset. */}
               {formatTimestamp(cue.start - offsetMs, hasHours)}
             </button>
-            <div className={styles.text} data-allow-lookup>
-              <div data-cell-id="cue-target-text" className={styles.targetText}>
-                {cue.targetText}
-              </div>
-              {cue.nativeText && (
-                <div data-cell-id="cue-native-text" className={styles.nativeText}>
-                  {cue.nativeText}
+            {customContent !== undefined ? (
+              customContent
+            ) : (
+              <div className={styles.text} data-allow-lookup>
+                <div data-cell-id="cue-target-text" className={styles.targetText}>
+                  {cue.targetText}
                 </div>
-              )}
-            </div>
+                {showNative && cue.nativeText && (
+                  <div data-cell-id="cue-native-text" className={styles.nativeText}>
+                    {cue.nativeText}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

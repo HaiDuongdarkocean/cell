@@ -707,4 +707,33 @@ describe('contentScriptController', () => {
     cleanup!();
     cleanupCalled = true;
   });
+
+  it('onMessage SET_PLAYBACK_RATE applies only allowed rates', async () => {
+    cleanup = init(video);
+    await flushPromises();
+
+    const onRuntimeMessage = onMessageCallbacks[0];
+    void onRuntimeMessage(
+      {
+        type: MESSAGE_TYPES.SET_PLAYBACK_RATE,
+        payload: { rate: 1.5 },
+      },
+      {},
+      jest.fn(),
+    );
+    expect(video.playbackRate).toBe(1.5);
+
+    void onRuntimeMessage(
+      {
+        type: MESSAGE_TYPES.SET_PLAYBACK_RATE,
+        payload: { rate: 3 },
+      },
+      {},
+      jest.fn(),
+    );
+    expect(video.playbackRate).toBe(1.5);
+
+    cleanup!();
+    cleanupCalled = true;
+  });
 });

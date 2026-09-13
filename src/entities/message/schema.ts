@@ -176,6 +176,11 @@ export const SeekToPayloadSchema = z.object({
   timeMs: z.number().int(),
 });
 
+export const SetPlaybackRatePayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  rate: z.union([z.literal(0.5), z.literal(0.75), z.literal(1), z.literal(1.25), z.literal(1.5)]),
+});
+
 export const ShortcutActionPayloadSchema = z.object({
   tabId: z.number().int().optional(),
   action: z.enum(['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'play-pause']),

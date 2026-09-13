@@ -8,6 +8,8 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 
 import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
 import type { ToastVariant } from './SubtitleToast';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import type { ICON_CATALOG } from '@/shared/icons';
 
@@ -54,6 +56,12 @@ export interface MountSubtitleOptions {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue. */
   onSeek?: (timeMs: number) => void;
+  practiceMode?: SubtitlePracticeMode;
+  onPracticeModeChange?: (mode: SubtitlePracticeMode) => void;
+  onPlaybackSpeedChange?: (speed: PlaybackSpeed) => void;
+  onPreviousCue?: (cue: BilingualCue) => void;
+  onReplayCue?: (cue: BilingualCue) => void;
+  onContinueCue?: (cue: BilingualCue) => void;
 }
 
 export interface MountSubtitleResult {
@@ -87,6 +95,8 @@ export interface MountSubtitleResult {
   toggleSplitView: () => void;
   /** Update OCR enabled state (drives toolbar button active state). */
   setOcrEnabled: (enabled: boolean) => void;
+  setPracticeMode: (mode: SubtitlePracticeMode) => void;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
 }
 
 export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResult {
@@ -124,6 +134,12 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     currentTimeMs,
     offsetMs,
     onSeek,
+    practiceMode,
+    onPracticeModeChange,
+    onPlaybackSpeedChange,
+    onPreviousCue,
+    onReplayCue,
+    onContinueCue,
   } = options;
 
   let controllerRef: SubtitlePanelsRef | null = null;
@@ -163,6 +179,12 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       currentTimeMs={currentTimeMs}
       offsetMs={offsetMs}
       onSeek={onSeek}
+      practiceMode={practiceMode}
+      onPracticeModeChange={onPracticeModeChange}
+      onPlaybackSpeedChange={onPlaybackSpeedChange}
+      onPreviousCue={onPreviousCue}
+      onReplayCue={onReplayCue}
+      onContinueCue={onContinueCue}
       managerShadowCss={[...allModuleCss, buildTokenSpanCssForShadow()]}
     />
   );
@@ -225,5 +247,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),
     toggleSplitView: () => controllerRef?.toggleSplitView(),
     setOcrEnabled: (enabled) => controllerRef?.setOcrEnabled(enabled),
+    setPracticeMode: (mode) => controllerRef?.setPracticeMode(mode),
+    setPlaybackSpeed: (speed) => controllerRef?.setPlaybackSpeed(speed),
   };
 }

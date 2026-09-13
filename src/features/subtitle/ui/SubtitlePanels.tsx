@@ -21,6 +21,8 @@ import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
 import { useManagerHostDelegation } from './subtitleManagerHost';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type {
   ManagerState,
   OffsetState,
@@ -81,6 +83,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       filename,
       fallbackPlayerContainerRef,
       removeBracketed: initialRemoveBracketed = false,
+      practiceMode: initialPracticeMode = 'off',
+      onPracticeModeChange,
+      onPlaybackSpeedChange,
+      onPreviousCue,
+      onReplayCue,
+      onContinueCue,
     },
     ref,
   ): React.JSX.Element {
@@ -145,6 +153,23 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
+    const [practiceMode, setPracticeMode] = useState<SubtitlePracticeMode>(initialPracticeMode);
+    const lastInitialPracticeModeRef = useRef(initialPracticeMode);
+    useEffect(() => {
+      if (initialPracticeMode !== lastInitialPracticeModeRef.current) {
+        lastInitialPracticeModeRef.current = initialPracticeMode;
+        setPracticeMode(initialPracticeMode);
+      }
+    }, [initialPracticeMode]);
+    const handlePracticeModeChange = useCallback((mode: SubtitlePracticeMode): void => {
+      setPracticeMode(mode);
+      onPracticeModeChange?.(mode);
+    }, [onPracticeModeChange]);
+    const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
+    const handlePlaybackSpeedChange = useCallback((speed: PlaybackSpeed): void => {
+      setPlaybackSpeed(speed);
+      onPlaybackSpeedChange?.(speed);
+    }, [onPlaybackSpeedChange]);
     // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
     useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
     useEffect(() => { setCurrentTimeMs(initialCurrentTimeMs ?? 0); }, [initialCurrentTimeMs]);
@@ -209,6 +234,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         toggleSplitView: () => { handleToggleSplitView(); },
         setSplitViewOpen,
         setOcrEnabled: (enabled: boolean) => { setOcrEnabledState(enabled); },
+        setPracticeMode: (mode: SubtitlePracticeMode) => { setPracticeMode(mode); },
+        setPlaybackSpeed: (speed: PlaybackSpeed) => { setPlaybackSpeed(speed); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView, setSplitViewOpen],
     );
@@ -258,6 +285,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}
           onSeek={onSeek}
+          practiceMode={practiceMode}
+          onPracticeModeChange={handlePracticeModeChange}
+          playbackSpeed={playbackSpeed}
+          onPlaybackSpeedChange={handlePlaybackSpeedChange}
+          onPreviousCue={onPreviousCue}
+          onReplayCue={onReplayCue}
+          onContinueCue={onContinueCue}
         />
       );
     }
@@ -351,6 +385,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onClose={handleToggleSplitView}
             playlistContent={playlistContent}
             filename={filename}
+            practiceMode={practiceMode}
+            onPracticeModeChange={handlePracticeModeChange}
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            onPlaybackSpeedChange={handlePlaybackSpeedChange}
+            onPlayPause={onPlayPause}
+            onPreviousCue={onPreviousCue}
+            onReplayCue={onReplayCue}
+            onContinueCue={onContinueCue}
           />,
           splitViewPortalTarget,
         )}

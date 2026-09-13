@@ -1,6 +1,6 @@
-import type { SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
+import type { SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings, BilingualCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
+import type { StudyMode, StudyModeAdvancedSettings, PlaybackSpeed } from '@/entities/studyMode';
 import {
   DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   DEFAULT_OVERLAY_STYLE_TARGET,
@@ -25,6 +25,8 @@ import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } 
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
+import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes/lib/practiceModeState';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 
 import type { ICON_CATALOG } from '@/shared/icons';
 
@@ -68,6 +70,7 @@ export class ReactSubtitleController {
   private generateNativeEnabled = true;
   private hasSearchKeys = false;
   private searchApiKeys: readonly SubtitleApiKey[] = [];
+  private panelCues: BilingualCue[] = [];
   private onApiKeysChangeCallback: ((keys: SubtitleApiKey[]) => void) | null = null;
 
   /** Style/manager state lives in a dedicated controller. */
@@ -178,6 +181,11 @@ export class ReactSubtitleController {
       currentTimeMs: video.currentTime * 1000,
       offsetMs: this.offsetMs,
       onSeek: (timeMs: number) => this.handleCueSeek(timeMs),
+      onPracticeModeChange: (mode: SubtitlePracticeMode) => { void setSubtitlePracticeMode(mode); },
+      onPlaybackSpeedChange: (speed: PlaybackSpeed) => { this.video.playbackRate = speed; },
+      onPreviousCue: (cue: BilingualCue) => this.handlePreviousCue(cue),
+      onReplayCue: (cue: BilingualCue) => this.handleReplayCue(cue),
+      onContinueCue: (cue: BilingualCue) => this.handleContinueCue(cue),
     });
 
     this.styleController = new SubtitleStyleController({
@@ -378,6 +386,29 @@ export class ReactSubtitleController {
     this.video.currentTime = (timeMs - this.offsetMs) / 1000;
   }
 
+  private handlePreviousCue(cue: BilingualCue): void {
+    const index = this.panelCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const prev = index > 0 ? this.panelCues[index - 1] : undefined;
+    if (prev) {
+      this.video.currentTime = (prev.start - this.offsetMs) / 1000;
+    }
+    void this.video.play().catch(() => undefined);
+  }
+
+  private handleReplayCue(cue: BilingualCue): void {
+    this.video.currentTime = (cue.start - this.offsetMs) / 1000;
+    void this.video.play().catch(() => undefined);
+  }
+
+  private handleContinueCue(cue: BilingualCue): void {
+    const index = this.panelCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const next = index >= 0 ? this.panelCues[index + 1] : undefined;
+    if (next) {
+      this.video.currentTime = (next.start - this.offsetMs) / 1000;
+    }
+    void this.video.play().catch(() => undefined);
+  }
+
   setOffsetProvider(_provider: () => number): void {
     // The React controller owns the offset provider internally.
   }
@@ -403,7 +434,8 @@ export class ReactSubtitleController {
     this.engine.onTimeUpdate();
     this.syncFromEngine();
     // Sync CueList in Player Mode with merged bilingual cues.
-    this.mount.setCues(mergeCuesForPanel(targetCues, nativeCues));
+    this.panelCues = mergeCuesForPanel(targetCues, nativeCues);
+    this.mount.setCues(this.panelCues);
     this.studyMode.setCues(this.engine.getTargetCues(), this.getOffsetMs());
     this.syncStudyMode();
   }
@@ -411,6 +443,7 @@ export class ReactSubtitleController {
   clearCues(): void {
     this.engine.clearCues();
     this.syncFromEngine();
+    this.panelCues = [];
     this.mount.setCues([]);
     this.studyMode.clearCues(this.getOffsetMs());
   }
@@ -488,6 +521,7 @@ export class ReactSubtitleController {
    *  removeBracketed is applied to overlay rendering. */
   applyStudyMode(activeMode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     if (this.destroyed) return;
+    this.mount.setPracticeMode(practiceModeFromStudyModeId(activeMode.id));
     this.studyMode.applyStudyMode(activeMode, advanced, this.engine.getTargetCues(), this.getOffsetMs());
     this.mount.setRemoveBracketed(advanced.removeBracketed);
 
@@ -526,6 +560,7 @@ export class ReactSubtitleController {
         }
         case 'setSpeed':
           this.video.playbackRate = action.speed;
+          this.mount.setPlaybackSpeed(action.speed as PlaybackSpeed);
           break;
         case 'seek':
           this.video.currentTime = (action.timeMs - this.getOffsetMs()) / 1000;
@@ -534,7 +569,7 @@ export class ReactSubtitleController {
           this.video.pause();
           break;
         case 'play':
-          void this.video.play();
+          void this.video.play().catch(() => undefined);
           break;
       }
     }

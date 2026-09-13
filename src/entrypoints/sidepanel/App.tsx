@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
-import { CueList } from './components/CueList';
+import { SubtitlePanel } from '@/features/subtitle/ui/SubtitlePanel';
+import { practiceModeFromStudyModeId } from '@/features/studyModes/lib/practiceModeState';
+import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes/studyModeStore';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
@@ -15,6 +19,9 @@ export function App() {
   const currentTimeMs = useSidePanelStore((s) => s.currentTimeMs);
   const offsetMs = useSidePanelStore((s) => s.offsetMs);
   const isPlaying = useSidePanelStore((s) => s.isPlaying);
+  const activeModeId = useStudyModeStore((s) => s.activeModeId);
+  const practiceMode = practiceModeFromStudyModeId(activeModeId);
+  const [playbackSpeed, setPlaybackSpeed] = useState<PlaybackSpeed>(1);
   const [shortcuts] = useState<KeyboardShortcut[]>(() => {
     // Load shortcuts from storage async; start with defaults so hotkeys
     // work immediately on panel open. Updated below via effect.
@@ -157,8 +164,50 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    void loadStudyModeState();
+  }, []);
+
   const handleSeek = (timeMs: number) => {
     void sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
+  };
+
+  const handlePracticeModeChange = (mode: SubtitlePracticeMode) => {
+    useStudyModeStore.getState().setActiveModeId(mode === 'off' ? 'normal' : mode);
+  };
+
+  const seekAndResume = (timeMs: number): void => {
+    void sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
+    if (!useSidePanelStore.getState().isPlaying) {
+      void sendMessage({ type: 'TOGGLE_PLAY' });
+    }
+  };
+
+  const handlePreviousCue = (cue: BilingualCue): void => {
+    const store = useSidePanelStore.getState();
+    const index = store.cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const prev = index > 0 ? store.cues[index - 1] : undefined;
+    if (prev) seekAndResume(prev.start);
+  };
+
+  const handleReplayCue = (cue: BilingualCue): void => {
+    seekAndResume(cue.start);
+  };
+
+  const handleContinueCue = (cue: BilingualCue): void => {
+    const store = useSidePanelStore.getState();
+    const index = store.cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const next = index >= 0 ? store.cues[index + 1] : undefined;
+    if (next) {
+      seekAndResume(next.start);
+    } else if (!store.isPlaying) {
+      void sendMessage({ type: 'TOGGLE_PLAY' });
+    }
+  };
+
+  const handlePlaybackSpeedChange = (speed: PlaybackSpeed): void => {
+    setPlaybackSpeed(speed);
+    void sendMessage({ type: 'SET_PLAYBACK_RATE', payload: { rate: speed } });
   };
 
   // Spacebar → toggle play/pause (only when focus is not in an input/textarea)
@@ -244,18 +293,24 @@ export function App() {
 
   return (
     <div className={styles.app}>
-      <div className={styles.header}>
-        <span className={styles.title}>Subtitles</span>
-        {cues.length > 0 && (
-          <span className={styles.meta}>
-            {cues.length} cues {isPlaying ? '▶' : '⏸'}
-          </span>
-        )}
-      </div>
       {cues.length === 0 ? (
         <EmptyState title="No subtitles loaded" size="compact" />
       ) : (
-        <CueList cues={cues} currentTimeMs={currentTimeMs} offsetMs={offsetMs} onSeek={handleSeek} />
+        <SubtitlePanel
+          cues={cues}
+          currentTimeMs={currentTimeMs}
+          offsetMs={offsetMs}
+          onSeek={handleSeek}
+          practiceMode={practiceMode}
+          onPracticeModeChange={handlePracticeModeChange}
+          isPlaying={isPlaying}
+          playbackSpeed={playbackSpeed}
+          onPlaybackSpeedChange={handlePlaybackSpeedChange}
+          onPlayPause={() => { void sendMessage({ type: 'TOGGLE_PLAY' }); }}
+          onPreviousCue={handlePreviousCue}
+          onReplayCue={handleReplayCue}
+          onContinueCue={handleContinueCue}
+        />
       )}
     </div>
   );

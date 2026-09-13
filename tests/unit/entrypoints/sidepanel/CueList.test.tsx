@@ -177,6 +177,61 @@ describe('CueList', () => {
     });
   });
 
+  describe('practice presentation props', () => {
+    it('renders default cue markup when no practice props are given', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      expect(screen.getAllByTestId('cue-target-text')).toHaveLength(2);
+      expect(screen.queryByTestId('cue-masked-target')).toBeNull();
+    });
+
+    it('renders renderCueContent output in place of the default text slot', () => {
+      const renderCueContent = jest.fn(
+        (_cue: BilingualCue, _index: number, isCurrent: boolean) =>
+          isCurrent ? (
+            <div data-cell-id="practice-active-cue">exercise</div>
+          ) : (
+            <div data-cell-id="cue-masked-target" />
+          ),
+      );
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={2000}
+          onSeek={jest.fn()}
+          renderCueContent={renderCueContent}
+        />,
+      );
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].querySelector('[data-cell-id="practice-active-cue"]')).toBeTruthy();
+      expect(items[0].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
+      expect(items[1].querySelector('[data-cell-id="practice-active-cue"]')).toBeNull();
+      expect(items[1].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
+      expect(items[1].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
+      expect(screen.queryByText('How are you?')).toBeNull();
+      expect(items[1].querySelector('[data-cell-id="cue-timestamp"]')).toBeTruthy();
+      expect(renderCueContent).toHaveBeenCalledWith(sampleCues[0], 0, true);
+      expect(renderCueContent).toHaveBeenCalledWith(sampleCues[1], 1, false);
+    });
+
+    it('falls back to default text when renderCueContent returns undefined', () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={2000}
+          onSeek={jest.fn()}
+          renderCueContent={() => undefined}
+        />,
+      );
+      expect(screen.getAllByTestId('cue-target-text')).toHaveLength(2);
+    });
+
+    it('hides native text when showNative is false', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} showNative={false} />);
+      expect(screen.queryByTestId('cue-native-text')).toBeNull();
+      expect(screen.getAllByTestId('cue-target-text')).toHaveLength(2);
+    });
+  });
+
   // Regression: auto-scroll must use manual scrollTop on the list container,
   // NOT scrollIntoView. scrollIntoView({ block: 'center' }) scrolls ALL
   // scrollable ancestors — in split view (normal mode), the panel is inserted

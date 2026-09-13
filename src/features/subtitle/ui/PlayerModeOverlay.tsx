@@ -8,6 +8,8 @@ import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
@@ -79,6 +81,13 @@ export interface PlayerModeOverlayProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue in the list. */
   onSeek?: (timeMs: number) => void;
+  practiceMode?: SubtitlePracticeMode;
+  onPracticeModeChange?: (mode: SubtitlePracticeMode) => void;
+  playbackSpeed?: PlaybackSpeed;
+  onPlaybackSpeedChange?: (speed: PlaybackSpeed) => void;
+  onPreviousCue?: (cue: BilingualCue) => void;
+  onReplayCue?: (cue: BilingualCue) => void;
+  onContinueCue?: (cue: BilingualCue) => void;
 }
 
 function PlayerModeOverlayInner({
@@ -113,6 +122,13 @@ function PlayerModeOverlayInner({
   currentTimeMs,
   offsetMs,
   onSeek,
+  practiceMode,
+  onPracticeModeChange,
+  playbackSpeed,
+  onPlaybackSpeedChange,
+  onPreviousCue,
+  onReplayCue,
+  onContinueCue,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -426,6 +442,7 @@ function PlayerModeOverlayInner({
     <div
       className={styles.overlay}
       data-cell-id="player-mode-overlay"
+      data-practice-active={practiceMode && practiceMode !== 'off' ? 'true' : 'false'}
       role="application"
       aria-label="Player mode"
     >
@@ -471,6 +488,15 @@ function PlayerModeOverlayInner({
               currentTimeMs={currentTimeMs ?? 0}
               offsetMs={offsetMs}
               onSeek={onSeek}
+              practiceMode={practiceMode}
+              onPracticeModeChange={onPracticeModeChange}
+              isPlaying={isPlaying}
+              playbackSpeed={playbackSpeed}
+              onPlaybackSpeedChange={onPlaybackSpeedChange}
+              onPlayPause={onPlayPause}
+              onPreviousCue={onPreviousCue}
+              onReplayCue={onReplayCue}
+              onContinueCue={onContinueCue}
             />
           )}
         </div>

@@ -36,6 +36,7 @@ import {
   SaveResumePositionPayloadSchema,
   SearchSubtitlesPayloadSchema,
   SeekToPayloadSchema,
+  SetPlaybackRatePayloadSchema,
   ShortcutActionPayloadSchema,
   SrsAddNotePayloadSchema,
   SrsGetDecksNotetypesPayloadSchema,
@@ -302,6 +303,12 @@ export const MESSAGE_REGISTRY = {
   [MESSAGE_TYPES.TOGGLE_PLAY]: {
     type: MESSAGE_TYPES.TOGGLE_PLAY,
     schema: TogglePlayPayloadSchema,
+    direction: 'panel->bg',
+    owner: 'background/handlers/sidePanelRelay',
+  },
+  [MESSAGE_TYPES.SET_PLAYBACK_RATE]: {
+    type: MESSAGE_TYPES.SET_PLAYBACK_RATE,
+    schema: SetPlaybackRatePayloadSchema,
     direction: 'panel->bg',
     owner: 'background/handlers/sidePanelRelay',
   },

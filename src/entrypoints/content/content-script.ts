@@ -23,6 +23,7 @@ import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/entities/dictionary';
+
 import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -1346,10 +1347,12 @@ onStorageChanged((changes, area) => {
 // via the __CELL_FAST_BUILD__ compile-time flag.
 async function initHeavyFeatures(): Promise<void> {
   if (__CELL_FAST_BUILD__) return;
+  window.addEventListener('vite:preloadError', (e) => e.preventDefault());
+  const studyModeInit = import('@/features/studyModes/content/studyModeController')
+    .then(({ initializeStudyModeController }) => initializeStudyModeController());
   try {
-    const [{ initOcrContentScript }, { initializeStudyModeController }, { SubtitleTriggerController }] = await Promise.all([
+    const [{ initOcrContentScript }, { SubtitleTriggerController }] = await Promise.all([
       import('./ocrContentScript'),
-      import('@/features/studyModes/content/studyModeController'),
       import('@/features/dictionaryPopup/trigger/subtitleTriggerController'),
     ]);
     function createOcrTriggerController(): SubtitleTriggerController | null {
@@ -1367,10 +1370,10 @@ async function initHeavyFeatures(): Promise<void> {
       });
     }
     initOcrContentScript(createOcrTriggerController);
-    initializeStudyModeController();
   } catch (err) {
     console.warn('[content-script] initHeavyFeatures failed', err);
   }
+  await studyModeInit.catch((err) => console.warn('[content-script] study mode init failed', err));
 }
 
 if (isTopFrame) {

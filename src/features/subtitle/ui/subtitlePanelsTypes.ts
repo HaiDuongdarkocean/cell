@@ -15,6 +15,8 @@ import type { ReactNode, RefObject } from 'react';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
+import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { ICON_CATALOG } from '@/shared/icons';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
@@ -129,6 +131,8 @@ export interface SubtitlePanelsRef {
   setSplitViewOpen: (open: boolean) => void;
   /** Update OCR enabled state (drives toolbar button active state). */
   setOcrEnabled: (enabled: boolean) => void;
+  setPracticeMode: (mode: SubtitlePracticeMode) => void;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -205,4 +209,10 @@ export interface SubtitlePanelsProps {
    *  accessible. RefObject (not HTMLElement) so it's stable across renders
    *  and doesn't trigger effect re-runs. Other host pages never pass this. */
   fallbackPlayerContainerRef?: RefObject<HTMLElement | null>;
+  practiceMode?: SubtitlePracticeMode;
+  onPracticeModeChange?: (mode: SubtitlePracticeMode) => void;
+  onPlaybackSpeedChange?: (speed: PlaybackSpeed) => void;
+  onPreviousCue?: (cue: BilingualCue) => void;
+  onReplayCue?: (cue: BilingualCue) => void;
+  onContinueCue?: (cue: BilingualCue) => void;
 }

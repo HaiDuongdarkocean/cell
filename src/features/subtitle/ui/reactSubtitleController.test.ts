@@ -90,6 +90,8 @@ function createFakeMount(): MountSubtitleResult {
     togglePlayerMode: jest.fn(),
     toggleSplitView: jest.fn(),
     setOcrEnabled: jest.fn(),
+    setPracticeMode: jest.fn(),
+    setPlaybackSpeed: jest.fn(),
   };
 }
 
@@ -397,6 +399,61 @@ describe('ReactSubtitleController', () => {
     expect(fakeEngine.updateSettings).not.toHaveBeenCalled();
     expect(video.playbackRate).toBe(1.25);
     expect(video.paused).toBe(true);
+  });
+
+  it('applyStudyMode syncs the panel practice mode from the preset id', () => {
+    const dictationMode: StudyMode = {
+      id: 'dictation',
+      type: 'preset',
+      icon: 'pencil',
+      title: 'Dictation',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'end', repeat: 2, speed: 0.75, after: 'wait' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(dictationMode, advanced);
+    expect(fakeMount.setPracticeMode).toHaveBeenCalledWith('dictation');
+
+    const normalMode: StudyMode = {
+      id: 'normal',
+      type: 'preset',
+      icon: 'play',
+      title: 'Normal',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    controller.applyStudyMode(normalMode, advanced);
+    expect(fakeMount.setPracticeMode).toHaveBeenCalledWith('off');
+  });
+
+  it('replay and continue operate on explicit cue identity', () => {
+    const twoTargets: SrtCue[] = [
+      { index: 1, start: 1000, end: 3000, text: 'One' },
+      { index: 2, start: 4000, end: 6000, text: 'Two' },
+    ];
+    controller.loadBilingualCues(twoTargets, []);
+    const playSpy = jest.spyOn(video, 'play').mockImplementation(() => Promise.resolve());
+
+    const options = mockMountSubtitle.mock.calls[0][0] as {
+      onReplayCue?: (cue: { index: number; start: number }) => void;
+      onContinueCue?: (cue: { index: number; start: number }) => void;
+    };
+
+    options.onReplayCue?.({ index: 1, start: 1000 } as never);
+    expect(video.currentTime).toBe(1);
+    expect(playSpy).toHaveBeenCalled();
+
+    video.currentTime = 0;
+    options.onContinueCue?.({ index: 1, start: 1000 } as never);
+    expect(video.currentTime).toBe(4);
+
+    video.currentTime = 0;
+    playSpy.mockClear();
+    options.onContinueCue?.({ index: 2, start: 4000 } as never);
+    expect(video.currentTime).toBe(0);
+    expect(playSpy).toHaveBeenCalled();
+    playSpy.mockRestore();
   });
 
   it('destroy removes play/pause/timeupdate listeners and unmounts', () => {

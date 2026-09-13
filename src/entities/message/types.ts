@@ -61,6 +61,7 @@ export type MessageType =
   | 'VIDEO_PLAY_STATE'
   | 'SEEK_TO'
   | 'TOGGLE_PLAY'
+  | 'SET_PLAYBACK_RATE'
   | 'SHORTCUT_ACTION'
   | 'VIDEO_EPISODE_CHANGED'
   | 'DETECTED_SUBTITLE_URL'
@@ -445,6 +446,11 @@ export interface VideoPlayStatePayload {
 export interface SeekToPayload {
   readonly tabId?: number;
   readonly timeMs: number;
+}
+
+export interface SetPlaybackRatePayload {
+  readonly tabId?: number;
+  readonly rate: 0.5 | 0.75 | 1 | 1.25 | 1.5;
 }
 
 /** Side panel → background → content-script: trigger a keyboard shortcut

@@ -5,7 +5,9 @@
 .panel {
   width: 100%;
   height: 100%;
+  container-type: inline-size;
   display: flex;
+  font-family: var(--font-family);
   flex-direction: column;
   /* Translucent panel — same spec as the subtitle manager sheet
      (85% surface + blur) so video/page content shows through. */
@@ -53,6 +55,7 @@
 }
 
 .title {
+  flex: 1;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
@@ -77,6 +80,16 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.panel[data-practice-mode='dictation'] .cueListWrap,
+.panel[data-practice-mode='cloze'] .cueListWrap {
+  min-height: calc(var(--touch-target) + var(--space-2) * 2);
+}
+
+.panel[data-practice-mode='dictation'][data-has-close='false'] .header,
+.panel[data-practice-mode='cloze'][data-has-close='false'] .header {
+  display: none;
 }
 
 /* === Tabs (local-player Split View + Playlist) === */
