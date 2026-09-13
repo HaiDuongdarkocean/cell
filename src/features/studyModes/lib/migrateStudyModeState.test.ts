@@ -22,4 +22,28 @@ describe('migrateStudyModeState', () => {
     };
     expect(migrateStudyModeState(state)).toEqual({ ...state, version: 1 });
   });
+
+  it('drops malformed custom modes from storage', () => {
+    const raw = {
+      version: 1,
+      activeModeId: 'normal',
+      customModes: [
+        null,
+        { id: 'custom-bad', type: 'custom', icon: 'play', title: 'No steps', description: '', steps: [] },
+        { id: 'custom-badstep', type: 'custom', icon: 'play', title: 'Bad step', description: '', steps: [{ subtitle: 'loud' }] },
+        {
+          id: 'custom-ok',
+          type: 'custom',
+          icon: 'play',
+          title: 'Ok',
+          description: '',
+          steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+        },
+      ],
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
+    };
+    const state = migrateStudyModeState(raw);
+    expect(state.customModes).toHaveLength(1);
+    expect(state.customModes[0]?.id).toBe('custom-ok');
+  });
 });

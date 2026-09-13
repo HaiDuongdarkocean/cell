@@ -11,6 +11,7 @@ import type { ToastVariant } from './SubtitleToast';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
+import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
@@ -86,6 +87,8 @@ export interface MountSubtitleResult {
   clearToasts: () => void;
   /** Update bilingual cues for CueList in Player Mode. */
   setCues: (cues: BilingualCue[]) => void;
+  /** Enable/disable word-token rendering in cue lists. */
+  setTokenize: (tokenize: CueListTokenize | null) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
   /** Toggle whether bracketed content is stripped from the overlay. */
@@ -242,6 +245,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     addToast: (message, variant) => controllerRef?.addToast(message, variant),
     clearToasts: () => controllerRef?.clearToasts(),
     setCues: (cues) => controllerRef?.setCues(cues),
+    setTokenize: (tokenize) => controllerRef?.setTokenize(tokenize),
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
     setRemoveBracketed: (enabled) => controllerRef?.setRemoveBracketed(enabled),
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),

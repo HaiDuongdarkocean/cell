@@ -85,6 +85,7 @@ function createFakeMount(): MountSubtitleResult {
     addToast: jest.fn(),
     clearToasts: jest.fn(),
     setCues: jest.fn(),
+    setTokenize: jest.fn(),
     setCurrentTimeMs: jest.fn(),
     setRemoveBracketed: jest.fn(),
     togglePlayerMode: jest.fn(),
@@ -569,9 +570,14 @@ describe('ReactSubtitleController', () => {
 
     controller.enableTokenize(tokenizeOptions);
     expect(fakeEngine.enableTokenize).toHaveBeenCalledWith(tokenizeOptions);
+    expect(fakeMount.setTokenize).toHaveBeenCalledWith({
+      langCode: 'en',
+      onTokenClick: tokenizeOptions.onOpenDictionary,
+    });
 
     controller.disableTokenize();
     expect(fakeEngine.disableTokenize).toHaveBeenCalled();
+    expect(fakeMount.setTokenize).toHaveBeenLastCalledWith(null);
     expect(controller.isTokenizeEnabled()).toBe(false);
 
     const onLookup = jest.fn();
@@ -603,5 +609,62 @@ describe('ReactSubtitleController', () => {
       controller.setOffsetProvider(() => 42);
       controller.attachOverflowButtons({ panelToggle: document.createElement('button') });
     }).not.toThrow();
+  });
+
+  it('restores playback rate and subtitle visibility when the study mode deactivates', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    video.playbackRate = 1.25;
+
+    const studyMode: StudyMode = {
+      id: 'shadowing',
+      type: 'custom',
+      icon: 'bookOpen',
+      title: 'Shadowing',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 0.5, after: 'continue' }],
+    };
+    const normalMode: StudyMode = {
+      id: 'normal',
+      type: 'preset',
+      icon: 'play',
+      title: 'Normal',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(studyMode, advanced);
+    expect(video.playbackRate).toBe(0.5);
+    expect(fakeEngine.getTargetStyle().visible).toBe(false);
+    expect(fakeEngine.getNativeStyle().visible).toBe(false);
+
+    controller.applyStudyMode(normalMode, advanced);
+    expect(video.playbackRate).toBe(1.25);
+    expect(fakeEngine.getTargetStyle().visible).toBe(true);
+    expect(fakeEngine.getNativeStyle().visible).toBe(true);
+  });
+
+  it('seek actions convert raw cue time through offset and landing epsilon', () => {
+    controller.setOffsetMs(500);
+    const cue: SrtCue = { index: 1, start: 2000, end: 5000, text: 'Hello' };
+    controller.loadCues([cue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const repeatMode: StudyMode = {
+      id: 'repeat',
+      type: 'custom',
+      icon: 'slidersHorizontal',
+      title: 'Repeat',
+      description: '',
+      steps: [{ subtitle: 'target', pause: 'none', repeat: 2, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    controller.applyStudyMode(repeatMode, advanced);
+
+    video.currentTime = 4.6;
+    video.dispatchEvent(new Event('timeupdate'));
+
+    expect(video.currentTime).toBeCloseTo((2000 - 500 + 80) / 1000);
   });
 });

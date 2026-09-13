@@ -2,7 +2,7 @@ import type { SrtCue } from '@/entities/media';
 import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/features/tokenize/types';
 import type { WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
-import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
+import { TokenizeScheduler, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
@@ -57,8 +57,8 @@ function isEditableTarget(target: EventTarget | null): boolean {
 /** Build a TokenBlock from the current text node of a cue line. */
 function createBlock(element: Element, text: string, tokens: Token[] | undefined): TokenBlock | null {
   if (!tokens || tokens.length === 0) return null;
-  const textNode = element.firstChild as Text | null;
-  if (!textNode) return null;
+  const textNode = element.firstChild;
+  if (!(textNode instanceof Text)) return null;
   return {
     id: `sub-${Math.random().toString(36).slice(2, 9)}`,
     element,
@@ -113,17 +113,19 @@ export function createSubtitleTokenizeController(
     const tokens = tokenizeTextBlock(text, langCode);
     const terms = [...new Set(tokens.filter((t) => !t.isSeparator).map((t) => t.term))];
     if (terms.length > 0) {
-      const [statusMap, freqMaps, bandOpts] = await Promise.all([
-        getWordStatuses(langCode, terms),
-        getFrequencyEntries(langCode, terms),
-        frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
-          .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
-      ]);
-      await resolveTokenMetadata(
-        tokens,
-        (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
-      );
+      try {
+        const [statusMap, freqMaps, bandOpts] = await Promise.all([
+          getWordStatuses(langCode, terms),
+          getFrequencyEntries(langCode, terms),
+          frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
+            .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
+        ]);
+        await resolveTokenMetadata(
+          tokens,
+          (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
+          (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
+        );
+      } catch { /* metadata is decorative — bind without status/frequency */ }
     }
     cache.set(index, { text, tokens });
   }
@@ -159,15 +161,16 @@ export function createSubtitleTokenizeController(
       setCurrent(block);
       return;
     }
+    if (element.querySelector('[data-cell-block-id]')) return;
     setCurrent(null);
     if (!prepared) {
-      // Not prepared yet; schedule and bind when ready.
-      scheduler.schedule(async () => {
-        await prepareCue(cache, cues, cueIndex);
+      // Not prepared yet; prepare inline — rAF-gated scheduling would stall
+      // tokenization entirely in hidden/occluded tabs.
+      void prepareCue(cache, cues, cueIndex).then(() => {
         if (stateStore.getState().enabled && isActive()) {
           bindLine(element, text, cueIndex, cache, cues, isActive, setCurrent);
         }
-      }, PRIORITY_VIEWPORT);
+      });
     }
   }
 

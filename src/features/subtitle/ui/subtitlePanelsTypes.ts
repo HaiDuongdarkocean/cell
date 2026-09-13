@@ -17,6 +17,7 @@ import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
+import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
@@ -119,6 +120,8 @@ export interface SubtitlePanelsRef {
   setYOffsetPercent: (yOffsetPercent: number) => void;
   /** Update bilingual cues for CueList in Player Mode. */
   setCues: (cues: BilingualCue[]) => void;
+  /** Enable/disable word-token rendering in cue lists (Player Mode + Split View). */
+  setTokenize: (tokenize: CueListTokenize | null) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
   /** Toggle whether bracketed content is stripped from the overlay. */
@@ -191,6 +194,8 @@ export interface SubtitlePanelsProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue. */
   onSeek?: (timeMs: number) => void;
+  /** Tokenize cue target text into clickable word tokens in cue lists. */
+  tokenize?: CueListTokenize | null;
   /** Fired when user toggles Split View (local-player persists enable state). */
   onSplitViewChange?: (open: boolean) => void;
   /** CSS strings to inject into the body-level shadow root for the manager panel.

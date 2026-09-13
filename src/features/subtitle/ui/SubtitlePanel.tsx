@@ -12,7 +12,7 @@ import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList, type CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import { ChevronRight } from 'lucide-react';
@@ -46,6 +46,8 @@ export interface SubtitlePanelProps {
   onPreviousCue?: (cue: BilingualCue) => void;
   onReplayCue?: (cue: BilingualCue) => void;
   onContinueCue?: (cue: BilingualCue) => void;
+  /** Tokenize cue target text into clickable word tokens. */
+  tokenize?: CueListTokenize | null;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -69,6 +71,7 @@ function SubtitlePanelImpl({
   onPreviousCue,
   onReplayCue,
   onContinueCue,
+  tokenize,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
@@ -112,6 +115,7 @@ function SubtitlePanelImpl({
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
         onSeek={onSeek}
+        tokenize={tokenize}
       />
     ) : (
       <SubtitlePracticeSession

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Heading, Text, Button, HStack, VStack, FormGroup, Dialog } from '@/shared/ui';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import { Input } from '@/shared/ui/Input';
@@ -56,8 +56,11 @@ export function CustomModeBuilder({ open, onOpenChange, editingId }: CustomModeB
     return formatModeDescription(draft);
   }, [editingId, steps, title]);
 
+  const prevOpen = useRef(false);
   useEffect(() => {
-    if (open) {
+    const justOpened = open && !prevOpen.current;
+    prevOpen.current = open;
+    if (justOpened) {
       setTitle(initial.title);
       setSteps(initial.steps);
       setError(null);

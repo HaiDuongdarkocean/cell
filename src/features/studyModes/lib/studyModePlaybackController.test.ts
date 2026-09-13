@@ -144,4 +144,49 @@ describe('StudyModePlaybackController', () => {
     const actions = ctrl.onTimeUpdate(2500);
     expect(actions).toEqual([{ type: 'setSpeed', speed: 2 }]);
   });
+
+  it('emits raw cue start in seek actions when offsetMs is set', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const ctrl = new StudyModePlaybackController(repeatMode, advancedOff, [cue], 500);
+    ctrl.enterCue(cue, 0);
+    const actions = ctrl.onTimeUpdate(4500);
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 1000 });
+  });
+
+  it('JUMP seeks to the raw start of the next cue, once per gap', () => {
+    const cues = [makeCue(1, 0, 1000, 'a'), makeCue(2, 5000, 8000, 'b')];
+    const ctrl = new StudyModePlaybackController(hybridMode, advancedJump, cues, 500);
+    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'seek', timeMs: 5000 }]);
+    expect(ctrl.onTimeUpdate(2600)).toEqual([]);
+  });
+
+  it('does not jump or fast-forward while inside a cue', () => {
+    const cues = [makeCue(1, 0, 1000, 'a'), makeCue(2, 5000, 8000, 'b')];
+    const jumpCtrl = new StudyModePlaybackController(hybridMode, advancedJump, cues);
+    expect(jumpCtrl.onTimeUpdate(500)).toEqual([]);
+    const speedCtrl = new StudyModePlaybackController(hybridMode, advanced2X, cues);
+    expect(speedCtrl.onTimeUpdate(500)).toEqual([]);
+  });
+
+  it('emits the silence speed-up once per gap, again for the next gap', () => {
+    const cues = [
+      makeCue(1, 0, 1000, 'a'),
+      makeCue(2, 5000, 8000, 'b'),
+      makeCue(3, 12000, 15000, 'c'),
+    ];
+    const ctrl = new StudyModePlaybackController(hybridMode, advanced2X, cues);
+    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'setSpeed', speed: 2 }]);
+    expect(ctrl.onTimeUpdate(2600)).toEqual([]);
+    expect(ctrl.onTimeUpdate(10000)).toEqual([{ type: 'setSpeed', speed: 2 }]);
+  });
+
+  it('abort() clears the active cue and pause state', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const ctrl = new StudyModePlaybackController(readMode, advancedOff, [cue]);
+    ctrl.enterCue(cue, 0);
+    expect(ctrl.hasActiveCue).toBe(true);
+    ctrl.abort();
+    expect(ctrl.hasActiveCue).toBe(false);
+    expect(ctrl.continue()).toEqual([]);
+  });
 });

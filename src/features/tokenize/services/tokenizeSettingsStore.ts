@@ -36,10 +36,18 @@ export async function saveTokenizeSettings(settings: TokenizeSettings): Promise<
   await setStorage({ [STORAGE_KEYS.TOKENIZE_SETTINGS]: settings });
 }
 
+function canonicalPageKey(url: string): string {
+  const u = new URL(url);
+  const videoId = u.searchParams.get('v');
+  return `${u.origin}${u.pathname}${videoId ? `?v=${videoId}` : ''}`;
+}
+
 /** Check whether tokenize is enabled for a URL. Exact URL wins over origin. */
 export function isTokenizeEnabledForUrl(settings: TokenizeSettings, url: string): boolean {
   try {
     const { origin, href } = new URL(url);
+    const key = canonicalPageKey(url);
+    if (settings.urls[key] !== undefined) return settings.urls[key];
     if (settings.urls[href] !== undefined) return settings.urls[href];
     if (settings.origins[origin] !== undefined) return settings.origins[origin];
     return false;
@@ -54,10 +62,9 @@ export function setTokenizeEnabledForUrl(
   url: string,
   enabled: boolean,
 ): TokenizeSettings {
-  const { href } = new URL(url);
   return {
     ...settings,
-    urls: { ...settings.urls, [href]: enabled },
+    urls: { ...settings.urls, [canonicalPageKey(url)]: enabled },
   };
 }
 
@@ -77,6 +84,8 @@ export function setTokenizeEnabledForOrigin(
 export function isSubtitleTokenizeEnabledForUrl(settings: TokenizeSettings, url: string): boolean {
   try {
     const { href } = new URL(url);
+    const key = canonicalPageKey(url);
+    if (settings.subtitleUrls[key] !== undefined) return settings.subtitleUrls[key];
     if (settings.subtitleUrls[href] !== undefined) return settings.subtitleUrls[href];
     return false;
   } catch {
@@ -90,9 +99,8 @@ export function setSubtitleTokenizeEnabledForUrl(
   url: string,
   enabled: boolean,
 ): TokenizeSettings {
-  const { href } = new URL(url);
   return {
     ...settings,
-    subtitleUrls: { ...settings.subtitleUrls, [href]: enabled },
+    subtitleUrls: { ...settings.subtitleUrls, [canonicalPageKey(url)]: enabled },
   };
 }

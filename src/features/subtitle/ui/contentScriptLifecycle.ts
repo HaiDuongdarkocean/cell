@@ -67,6 +67,7 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
     ctx.refreshPanel('native');
     useCuesStore.getState().setLoadStatus('target', { state: 'none' });
     useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
+    void ctx.syncSubtitleTokenize();
   };
 
   // OCR dual-stream bridge (spec ocr-split-dual-stream): the OCR content script

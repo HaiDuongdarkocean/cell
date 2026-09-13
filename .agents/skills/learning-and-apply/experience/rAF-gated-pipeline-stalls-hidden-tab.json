@@ -1,0 +1,33 @@
+{
+  "id": "rAF-gated-pipeline-stalls-hidden-tab",
+  "title": "Pipeline active-content không được gate trên rAF — hidden/occluded tab không bao giờ có frame",
+  "category": ["rendering", "async"],
+  "tags": [
+    "requestanimationframe",
+    "hidden-tab",
+    "occluded",
+    "tokenize",
+    "scheduler",
+    "visibility",
+    "background-tab"
+  ],
+  "trigger": "Logic render/bind/prepare nội dung 'đang active' được schedule qua requestAnimationFrame (trực tiếp hoặc qua scheduler dùng rAF cho priority cao), và kết quả được verify qua automation mở tab phụ (popup/extension page) khiến tab chính bị occluded",
+  "principle": "rAF chỉ fire khi tab visible — mọi pipeline mà user kỳ vọng chạy đúng cả khi tab ẩn (active subtitle cue, media đang phát, storage-driven enable) phải có đường frame-independent: promise trực tiếp cho prepare active item + setTimeout fallback cạnh rAF cho render hook. Scheduler rAF chỉ dành cho work trang trí (offscreen prepare, scroll-linked). Khi nhiều async completion có thể bind cùng một element, completion callback phải re-validate DOM state (firstChild còn là Text node? element đã chứa token spans?) trước khi bind — nếu không, bind thứ hai capture nhầm token span làm sourceNode và replaceChild tích lũy nội dung ×N.",
+  "cases": [
+    {
+      "context": "Subtitle tokenize: syncSubtitleTokenize chạy lúc init khi cues còn rỗng → setCues([]) → render(-1). Cues load sau → onCuesUpdated → rAF → render → bindLine → schedule prepare qua TokenizeScheduler PRIORITY_VIEWPORT (rAF). Tab bị occluded (automation mở popup, hoặc user chuyển tab) → rAF không fire → prepare không bao giờ chạy → 0 tokens vĩnh viễn dù enabled=true và cues đã hiển thị. CueList (React render, không cần rAF) vẫn tokenize bình thường → triệu chứng 'panel có token, overlay không'.",
+      "bad": "scheduler.schedule(async () => { await prepareCue(cache, cues, idx); if (enabled && isActive()) bindLine(...); }, PRIORITY_VIEWPORT); // rAF-gated — chết trong hidden tab",
+      "good": "void prepareCue(cache, cues, idx).then(() => { if (enabled && isActive() && !element.querySelector('[data-cell-block-id]')) bindLine(...); }); // frame-independent cho active cue"
+    },
+    {
+      "context": "Cùng feature: nhiều render call khi cue chưa prepare → nhiều scheduled task cùng cue. Task đầu bind xong (text node thay bằng token spans). Task sau re-invoke bindLine → createBlock capture element.firstChild = token span (element node) làm sourceNode → bindTokenBlock replaceChild(fragment, span) → 11 spans mới thế 1 span → nội dung tích lũy ×3 (text lặp, childNodes 31).",
+      "bad": "const textNode = element.firstChild as Text | null; // cast mù — có thể là token span từ bind trước\nif (!textNode) return null;",
+      "good": "const textNode = element.firstChild;\nif (!(textNode instanceof Text)) return null; // element đã tokenized → bỏ\n// + trong bindLine: if (element.querySelector('[data-cell-block-id]')) return; // giữ tracking block hiện tại"
+    }
+  ],
+  "applyFor": [
+    "Active-content pipeline (subtitle cue, media playback state) cần chạy đúng trong hidden tab",
+    "Verify trên automation mở tab phụ (extension popup, devtools) khiến tab chính occluded",
+    "Async completion re-bind vào DOM có thể đã bị thay đổi bởi completion khác hoặc React re-render"
+  ]
+}

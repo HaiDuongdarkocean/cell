@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/glo
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { StudyModesTab } from './StudyModesTab';
 import { useStudyModeStore } from '../studyModeStore';
+import { getActiveStudyMode, setActiveStudyMode } from '../content/studyModeController';
 import { INITIAL_STUDY_MODE_STATE } from '../lib/migrateStudyModeState';
 
 describe('StudyModesTab', () => {
@@ -28,6 +29,7 @@ describe('StudyModesTab', () => {
     storageSet.mockReset().mockResolvedValue(undefined);
     sendMessage.mockReset().mockResolvedValue(undefined);
     useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true });
+    setActiveStudyMode(null);
   });
 
   afterAll(() => {
@@ -46,7 +48,7 @@ describe('StudyModesTab', () => {
     expect(within(presets).getByText('Listen')).toBeInTheDocument();
   });
 
-  it('selects a different preset on click', async () => {
+  it('selects a different preset on click and applies it to the player', async () => {
     render(<StudyModesTab />);
     const presets = await waitFor(() => screen.getByLabelText('Preset study modes'));
     const listen = within(presets).getByText('Listen');
@@ -54,8 +56,6 @@ describe('StudyModesTab', () => {
     await waitFor(() => {
       expect(useStudyModeStore.getState().activeModeId).toBe('listen');
     });
-    expect(sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'APPLY_STUDY_MODE' }),
-    );
+    expect(getActiveStudyMode()?.activeMode.id).toBe('listen');
   });
 });

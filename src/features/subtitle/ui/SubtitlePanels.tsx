@@ -89,6 +89,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onPreviousCue,
       onReplayCue,
       onContinueCue,
+      tokenize: initialTokenize = null,
     },
     ref,
   ): React.JSX.Element {
@@ -152,6 +153,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const { managerPortalTarget } = useOverlayPortals({ rootRef, managerShadowCss, isMobile });
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
+    const [tokenize, setTokenize] = useState(initialTokenize);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [practiceMode, setPracticeMode] = useState<SubtitlePracticeMode>(initialPracticeMode);
     const lastInitialPracticeModeRef = useRef(initialPracticeMode);
@@ -228,6 +230,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setCollapsed,
         setYOffsetPercent,
         setCues,
+        setTokenize,
         setCurrentTimeMs,
         setRemoveBracketed,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
@@ -292,6 +295,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onPreviousCue={onPreviousCue}
           onReplayCue={onReplayCue}
           onContinueCue={onContinueCue}
+          tokenize={tokenize}
         />
       );
     }
@@ -394,6 +398,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onPreviousCue={onPreviousCue}
             onReplayCue={onReplayCue}
             onContinueCue={onContinueCue}
+            tokenize={tokenize}
           />,
           splitViewPortalTarget,
         )}

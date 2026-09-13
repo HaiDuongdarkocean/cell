@@ -1,7 +1,13 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
+import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import styles from './CueList.module.css';
+
+export interface CueListTokenize {
+  langCode: string;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+}
 
 interface CueListProps {
   cues: BilingualCue[];
@@ -12,6 +18,7 @@ interface CueListProps {
   onSeek: (timeMs: number) => void;
   renderCueContent?: (cue: BilingualCue, index: number, isCurrent: boolean) => ReactNode | undefined;
   showNative?: boolean;
+  tokenize?: CueListTokenize | null;
 }
 
 // Human-friendly timestamp: drop leading zeros + millisecond noise.
@@ -25,7 +32,51 @@ function formatTimestamp(ms: number, hasHours: boolean): string {
   return hasHours ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true }: CueListProps) {
+const CueTokenText = memo(function CueTokenText({
+  text,
+  langCode,
+  onTokenClick,
+}: {
+  text: string;
+  langCode: string;
+  onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+}) {
+  const tokens = tokenizeTextBlock(text, langCode).filter((t) => !t.isSeparator);
+  const children: React.ReactNode[] = [];
+  let lastEnd = 0;
+  for (const token of tokens) {
+    if (token.start > lastEnd) {
+      children.push(
+        <span key={`gap-${token.start}`} className="js-cell-token js-cell-token--separator">
+          {text.slice(lastEnd, token.start)}
+        </span>,
+      );
+    }
+    children.push(
+      <span
+        key={`tok-${token.start}`}
+        className="js-cell-token"
+        data-cell-term={token.term}
+        data-cell-start={token.start}
+        data-cell-end={token.end}
+        onClick={(e) => onTokenClick(token.term, e.currentTarget, text)}
+      >
+        {token.text}
+      </span>,
+    );
+    lastEnd = token.end;
+  }
+  if (lastEnd < text.length) {
+    children.push(
+      <span key="tail" className="js-cell-token js-cell-token--separator">
+        {text.slice(lastEnd)}
+      </span>,
+    );
+  }
+  return <>{children}</>;
+});
+
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -140,7 +191,15 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             ) : (
               <div className={styles.text} data-allow-lookup>
                 <div data-cell-id="cue-target-text" className={styles.targetText}>
-                  {cue.targetText}
+                  {tokenize ? (
+                    <CueTokenText
+                      text={cue.targetText}
+                      langCode={tokenize.langCode}
+                      onTokenClick={tokenize.onTokenClick}
+                    />
+                  ) : (
+                    cue.targetText
+                  )}
                 </div>
                 {showNative && cue.nativeText && (
                   <div data-cell-id="cue-native-text" className={styles.nativeText}>

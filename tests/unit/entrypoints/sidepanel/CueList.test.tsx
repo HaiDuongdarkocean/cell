@@ -232,6 +232,59 @@ describe('CueList', () => {
     });
   });
 
+  describe('tokenize', () => {
+    it('renders target text as clickable token spans when tokenize is set', () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      const tokens = target.querySelectorAll('.js-cell-token');
+      expect(tokens.length).toBeGreaterThan(0);
+      expect(target.textContent).toBe('Hello world');
+      // 'Hello' and 'world' are word tokens with term/start/end attributes.
+      const hello = target.querySelector('[data-cell-term="hello"]');
+      expect(hello).not.toBeNull();
+      expect(hello?.getAttribute('data-cell-start')).toBe('0');
+      expect(hello?.getAttribute('data-cell-end')).toBe('5');
+      // Native text stays plain.
+      expect(screen.getByText('Xin chào')).toBeTruthy();
+    });
+
+    it('calls onTokenClick with term, element and full cue text', () => {
+      const onTokenClick = jest.fn();
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      const world = target.querySelector('[data-cell-term="world"]') as HTMLElement;
+      fireEvent.click(world);
+
+      expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world');
+    });
+
+    it('renders plain text when tokenize is null', () => {
+      render(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+      expect(target.textContent).toBe('Hello world');
+    });
+  });
+
   // Regression: auto-scroll must use manual scrollTop on the list container,
   // NOT scrollIntoView. scrollIntoView({ block: 'center' }) scrolls ALL
   // scrollable ancestors — in split view (normal mode), the panel is inserted

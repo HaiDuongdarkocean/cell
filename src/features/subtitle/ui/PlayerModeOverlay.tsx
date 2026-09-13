@@ -10,6 +10,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
+import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
@@ -88,6 +89,8 @@ export interface PlayerModeOverlayProps {
   onPreviousCue?: (cue: BilingualCue) => void;
   onReplayCue?: (cue: BilingualCue) => void;
   onContinueCue?: (cue: BilingualCue) => void;
+  /** Tokenize cue target text into clickable word tokens. */
+  tokenize?: CueListTokenize | null;
 }
 
 function PlayerModeOverlayInner({
@@ -129,6 +132,7 @@ function PlayerModeOverlayInner({
   onPreviousCue,
   onReplayCue,
   onContinueCue,
+  tokenize,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -497,6 +501,7 @@ function PlayerModeOverlayInner({
               onPreviousCue={onPreviousCue}
               onReplayCue={onReplayCue}
               onContinueCue={onContinueCue}
+              tokenize={tokenize}
             />
           )}
         </div>

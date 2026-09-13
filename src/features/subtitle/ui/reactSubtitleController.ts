@@ -24,6 +24,7 @@ import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSea
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { SubtitleApiKey } from '@/entities/settings';
+import { pauseVideo, playVideo, seekToCue } from '@/shared/lib/dom/netflixPlayback';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 import { practiceModeFromStudyModeId, setSubtitlePracticeMode } from '@/features/studyModes/lib/practiceModeState';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
@@ -79,6 +80,9 @@ export class ReactSubtitleController {
   private playerModeResizeHandler: (() => void) | null = null;
   /** Study mode playback coordinator. Null when no study mode is active. */
   private studyMode: SubtitleStudyModeController = new SubtitleStudyModeController();
+  /** Player state captured when a study mode takes over; restored when the
+   *  mode deactivates (back to 'normal'). */
+  private studyBaseline: { playbackRate: number; targetHidden: boolean; nativeHidden: boolean } | null = null;
 
   /** Called when the user selects a subtitle track from the manager panel. */
   public onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -148,6 +152,7 @@ export class ReactSubtitleController {
     this.isPlaying = !video.paused;
     video.addEventListener('play', this.onVideoPlay);
     video.addEventListener('pause', this.onVideoPause);
+    video.addEventListener('seeking', this.onVideoSeeking);
 
     this.mount = mountSubtitle({
       container,
@@ -346,6 +351,9 @@ export class ReactSubtitleController {
     if (actions.length) this.applyPlaybackActions(actions);
   };
   private readonly onVideoPause = (): void => this.setIsPlaying(false);
+  private readonly onVideoSeeking = (): void => {
+    this.studyMode.onSeeking(this.video.currentTime * 1000);
+  };
   private readonly onVideoTimeUpdate = (): void => {
     this.engine.onTimeUpdate();
     this.mount.setCurrentTimeMs(this.video.currentTime * 1000);
@@ -383,7 +391,7 @@ export class ReactSubtitleController {
   /** Seek video to a cue's raw start time (ms). Shifts by -offsetMs so the
       overlay displays that cue (ADR-019 sync, mirrors SEEK_TO handler). */
   private handleCueSeek(timeMs: number): void {
-    this.video.currentTime = (timeMs - this.offsetMs) / 1000;
+    seekToCue(this.video, { start: timeMs }, this.offsetMs);
   }
 
   private handlePreviousCue(cue: BilingualCue): void {
@@ -521,9 +529,23 @@ export class ReactSubtitleController {
    *  removeBracketed is applied to overlay rendering. */
   applyStudyMode(activeMode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     if (this.destroyed) return;
+    const wasActive = this.studyMode.isActive;
     this.mount.setPracticeMode(practiceModeFromStudyModeId(activeMode.id));
     this.studyMode.applyStudyMode(activeMode, advanced, this.engine.getTargetCues(), this.getOffsetMs());
     this.mount.setRemoveBracketed(advanced.removeBracketed);
+
+    if (!wasActive && this.studyMode.isActive) {
+      this.studyBaseline = {
+        playbackRate: this.video.playbackRate,
+        targetHidden: this.styleController?.getTargetHidden() ?? false,
+        nativeHidden: this.styleController?.getNativeHidden() ?? false,
+      };
+    } else if (wasActive && !this.studyMode.isActive && this.studyBaseline) {
+      const baseline = this.studyBaseline;
+      this.studyBaseline = null;
+      this.video.playbackRate = baseline.playbackRate;
+      this.applySubtitleHidden(baseline.targetHidden, baseline.nativeHidden);
+    }
 
     // Apply first step immediately if a cue is currently active.
     this.syncStudyMode();
@@ -543,19 +565,23 @@ export class ReactSubtitleController {
     if (actions.length) this.applyPlaybackActions(actions);
   }
 
+  private applySubtitleHidden(targetHidden: boolean, nativeHidden: boolean): void {
+    this.styleController?.setHidden(targetHidden, nativeHidden);
+    this.engine.updateSettings({
+      targetStyle: { ...this.engine.getTargetStyle(), visible: !targetHidden },
+      nativeStyle: { ...this.engine.getNativeStyle(), visible: !nativeHidden },
+    });
+    this.styleController?.updateStylesFromEngine();
+    this.mount.setManager(this.buildManagerState());
+  }
+
   private applyPlaybackActions(actions: readonly PlaybackAction[]): void {
     for (const action of actions) {
       switch (action.type) {
         case 'setSubtitle': {
           const targetHidden = action.subtitle === 'none' || action.subtitle === 'native';
           const nativeHidden = action.subtitle === 'none' || action.subtitle === 'target';
-          this.styleController?.setHidden(targetHidden, nativeHidden);
-          this.engine.updateSettings({
-            targetStyle: { ...this.engine.getTargetStyle(), visible: !targetHidden },
-            nativeStyle: { ...this.engine.getNativeStyle(), visible: !nativeHidden },
-          });
-          this.styleController?.updateStylesFromEngine();
-          this.mount.setManager(this.buildManagerState());
+          this.applySubtitleHidden(targetHidden, nativeHidden);
           break;
         }
         case 'setSpeed':
@@ -563,13 +589,13 @@ export class ReactSubtitleController {
           this.mount.setPlaybackSpeed(action.speed as PlaybackSpeed);
           break;
         case 'seek':
-          this.video.currentTime = (action.timeMs - this.getOffsetMs()) / 1000;
+          seekToCue(this.video, { start: action.timeMs }, this.getOffsetMs());
           break;
         case 'pause':
-          this.video.pause();
+          pauseVideo(this.video);
           break;
         case 'play':
-          void this.video.play().catch(() => undefined);
+          void playVideo(this.video);
           break;
       }
     }
@@ -624,10 +650,12 @@ export class ReactSubtitleController {
 
   enableTokenize(options: SubtitleCueEngineTokenizeOptions): void {
     this.engine.enableTokenize(options);
+    this.mount.setTokenize({ langCode: options.langCode, onTokenClick: options.onOpenDictionary });
   }
 
   disableTokenize(): void {
     this.engine.disableTokenize();
+    this.mount.setTokenize(null);
   }
 
   isTokenizeEnabled(): boolean {
@@ -757,6 +785,7 @@ export class ReactSubtitleController {
     if (this.persistTimer) { clearTimeout(this.persistTimer); this.persistTimer = null; }
     this.video.removeEventListener('play', this.onVideoPlay);
     this.video.removeEventListener('pause', this.onVideoPause);
+    this.video.removeEventListener('seeking', this.onVideoSeeking);
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
     this.studyMode.destroy();
     this.mount.unmount();

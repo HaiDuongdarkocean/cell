@@ -206,6 +206,9 @@ export default defineConfig(({ mode }) => {
     // from CSS modules — especially ?inline imports for shadow DOM injection.
     // esbuild preserves all properties. See vitejs/vite#22649.
     cssMinify: false,
+    // ponytail: dep preload resolves against document.baseURI = host page in
+    // content scripts → lazy imports reject and initHeavyFeatures never runs.
+    modulePreload: isExtension ? false : undefined,
     rolldownOptions: {
       input: buildInput,
       output: {

@@ -5,6 +5,8 @@ import {
   isTokenizeEnabledForUrl,
   setTokenizeEnabledForUrl,
   setTokenizeEnabledForOrigin,
+  isSubtitleTokenizeEnabledForUrl,
+  setSubtitleTokenizeEnabledForUrl,
   DEFAULT_TOKENIZE_SETTINGS,
 } from './tokenizeSettingsStore';
 
@@ -55,5 +57,43 @@ describe('tokenizeSettingsStore', () => {
     );
     expect(isTokenizeEnabledForUrl(settings, 'https://example.com/page')).toBe(true);
     expect(isTokenizeEnabledForUrl(settings, 'https://example.com/other')).toBe(false);
+  });
+
+  it('subtitle setting survives volatile query param churn', () => {
+    const settings = setSubtitleTokenizeEnabledForUrl(
+      DEFAULT_TOKENIZE_SETTINGS,
+      'http://localhost:4321/?theme=dark',
+      true,
+    );
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'http://localhost:4321/?theme=light')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'http://localhost:4321/')).toBe(true);
+  });
+
+  it('subtitle setting keeps video identity via v param', () => {
+    const settings = setSubtitleTokenizeEnabledForUrl(
+      DEFAULT_TOKENIZE_SETTINGS,
+      'https://www.youtube.com/watch?v=abc&t=42&themeRefresh=1',
+      true,
+    );
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=abc&list=xyz')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://www.youtube.com/watch?v=other')).toBe(false);
+  });
+
+  it('subtitle read falls back to legacy raw-href key', () => {
+    const settings = {
+      ...DEFAULT_TOKENIZE_SETTINGS,
+      subtitleUrls: { 'https://example.com/watch?theme=dark': true },
+    };
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://example.com/watch?theme=dark')).toBe(true);
+    expect(isSubtitleTokenizeEnabledForUrl(settings, 'https://example.com/watch?theme=light')).toBe(false);
+  });
+
+  it('text tokenize setting survives volatile query param churn', () => {
+    const settings = setTokenizeEnabledForUrl(
+      DEFAULT_TOKENIZE_SETTINGS,
+      'https://example.com/read?utm=a',
+      true,
+    );
+    expect(isTokenizeEnabledForUrl(settings, 'https://example.com/read?utm=b&x=1')).toBe(true);
   });
 });
