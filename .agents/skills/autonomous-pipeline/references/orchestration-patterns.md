@@ -11,6 +11,8 @@ Rules for the main-session orchestrator when spawning subagents. Applies to `aut
 5. **Bounded lanes.** Cap concurrent lanes (default 3). Queue by priority; dispatch a held task when its dependency's verifier passes.
 6. **Escalate, don't loop.** After 2 failed fix cycles on the same blocker, stop and surface the evidence to the human.
 7. **Worktree isolation for parallel lanes.** Disjoint files prevent *logical* collisions; worktrees prevent *physical* ones — two lanes running `npm run build`, `git add`, or jest in the same directory collide regardless of which files they own. Each parallel lane of scope M+ gets its own worktree and branch; merges happen explicitly, in dependency order, with gates re-run after each merge.
+8. **Re-dispatch must be idempotent.** A lane may be re-run after crash, timeout, or verify failure. Re-running a lane whose work already passed verify must be a no-op — the lane checks its own task-id/branch state before doing work, and never duplicates artifacts, branches, or commits. If a lane cannot be made idempotent, mark it `parallel: false` — non-idempotent work in a re-runnable system corrupts state silently.
+9. **Crash recovery via lane state, not memory.** The orchestrator does not rely on a dead lane's report to know where it stopped. Before dispatch, record per-lane state in the plan (`status: dispatched | verified | failed`), and a crashed lane is resumed by inspecting its branch diff against the contract — never by asking "what were you doing?" If the branch state is ambiguous, restart the lane from scratch; a clean re-run beats a guessed resume.
 
 ## Worktree rules
 

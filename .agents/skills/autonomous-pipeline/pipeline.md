@@ -23,7 +23,9 @@
 3. Grep `.agents/skills/learning-and-apply/index.json` by the feature's domain keywords; open every matching `experience/` and `process/` atom (APPLY).
 4. Build the dispatch table:
 
-   `| Task | Priority | Parallel | Depends on | Blocked strategy | Files |`
+   `| Task | Priority | Parallel | Depends on | Blocked strategy | Files | Status |`
+
+   `Status` tracks `dispatched | verified | failed` per lane — the orchestrator's recovery record when a lane crashes (rule 9, `references/orchestration-patterns.md`).
 
 **Guard:** every task has acceptance criteria AND a files list.
 **Loop back:** missing either → `planning-and-task-breakdown` to complete the plan first.
