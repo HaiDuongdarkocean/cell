@@ -541,8 +541,9 @@ export interface DetectedSubtitleUrlPayload {
  * the raw tracks to `DetectedSubtitle[]` and triggers auto-load.
  *
  * `source` discriminates the adapter for the unified `detectionDispatch.ts`
- * handler (ADR-028 — `messageBus.on()` overwrites, so only one handler may
- * register `DETECTED_SUBTITLES`). `source === undefined` is backward-compatible
+ * handler (ADR-028 — `messageBus.on()` throws on duplicate registration, so
+ * only one handler may register `DETECTED_SUBTITLES`). `source === undefined`
+ * is backward-compatible
  * with ADR-020 YouTube posts (treated as 'youtube').
  *
  * `videoId` is YouTube-specific; iQIYI uses `tvid` + `origin` instead.

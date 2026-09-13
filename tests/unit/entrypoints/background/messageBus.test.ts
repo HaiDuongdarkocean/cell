@@ -70,6 +70,27 @@ describe('MessageBus', () => {
       expect(handler).toHaveBeenCalledWith(request);
     });
 
+    it('throws on duplicate registration for the same type', () => {
+      const bus = new MessageBus();
+      const first: MessageHandler = jest.fn();
+      const second: MessageHandler = jest.fn();
+
+      bus.on('DETECT_MEDIA', first);
+
+      expect(() => bus.on('DETECT_MEDIA', second)).toThrow('DETECT_MEDIA');
+    });
+
+    it('allows re-registration after unsubscribe', () => {
+      const bus = new MessageBus();
+      const first: MessageHandler = jest.fn();
+      const second: MessageHandler = jest.fn();
+
+      const off = bus.on('DETECT_MEDIA', first);
+      off();
+
+      expect(() => bus.on('DETECT_MEDIA', second)).not.toThrow();
+    });
+
     it('unsubscribe removes the handler', () => {
       const bus = new MessageBus();
       const handler: MessageHandler = jest.fn();

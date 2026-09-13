@@ -30,6 +30,9 @@ export class MessageBus {
    * @returns an unsubscribe function.
    */
   on<T extends MessageType>(type: T, handler: MessageHandler): () => void {
+    if (this.handlers.has(type)) {
+      throw new Error(`Duplicate handler registration for message type: ${type}`);
+    }
     this.handlers.set(type, handler);
     return () => {
       if (this.handlers.get(type) === handler) {

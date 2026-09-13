@@ -1,11 +1,9 @@
 /**
  * Unified DETECTED_SUBTITLES handler — dispatch by `payload.source` (ADR-028).
  *
- * CRITICAL: `messageBus.on()` uses `handlers.set(type, handler)` — registering
- * two handlers for the same `DETECTED_SUBTITLES` type overwrites the first
- * (see `messageBus.ts:32`). This file is the SINGLE registrant for
- * `DETECTED_SUBTITLES`; it dispatches to the YouTube or iQIYI mapper based on
- * `payload.source`:
+ * CRITICAL: `messageBus.on()` throws on a second registration for the same
+ * type. This file is the SINGLE registrant for `DETECTED_SUBTITLES`;
+ * it dispatches to the YouTube or iQIYI mapper based on `payload.source`:
  * - `source === 'iqiyi'` → `mapIqiyiSubtitleTracks` (ADR-028)
  * - `source === 'netflix'` → `mapNetflixSubtitleTracks` (ADR-029)
  * - `source === 'youtube'` or `undefined` (backward compat ADR-020) →

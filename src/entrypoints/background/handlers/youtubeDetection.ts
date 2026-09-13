@@ -5,8 +5,9 @@
  * posts caption tracks via `window.postMessage`. The isolated content-script
  * relays them to the background as `DETECTED_SUBTITLES`. **As of ADR-028 the
  * `DETECTED_SUBTITLES` handler lives in `detectionDispatch.ts`** (unified
- * dispatch by `payload.source`) — `messageBus.on()` overwrites, so only one
- * registrant is allowed. This file keeps the YouTube-specific
+ * dispatch by `payload.source`) — `messageBus.on()` throws on a duplicate
+ * registration, so only one registrant is allowed. This file keeps the
+ * YouTube-specific
  * `INNERTUBE_FALLBACK_REQUEST` handler (iQIYI has no fallback).
  *
  * When the DOM parse yields no tracks, the MAIN-world script requests an
