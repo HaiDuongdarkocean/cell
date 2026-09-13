@@ -22,6 +22,7 @@ jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({
       data: new ArrayBuffer(0),
     },
   })),
+  seekAndWaitReady: jest.fn(() => Promise.resolve(true)),
 }));
 // isChildFrame is the single source of truth for the child-frame orbital-badge
 // gate. Mocked so tests can toggle the frame context without touching window.top.
@@ -33,6 +34,7 @@ import { createWebTextDictionaryController } from './webTextDictionaryController
 import type { WebTextDictionaryControllerDeps } from './webTextDictionaryController';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 
@@ -170,6 +172,8 @@ beforeEach(() => {
     }
     return Promise.resolve({} as unknown as never);
   });
+  jest.mocked(captureSentenceAudio).mockClear();
+  jest.mocked(seekAndWaitReady).mockClear().mockResolvedValue(true);
   document.body.innerHTML = '';
 });
 
@@ -1074,6 +1078,169 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.video).toBeUndefined();
     expect(prefill.initialMedia ?? []).toHaveLength(0);
     expect(prefill.cue).toBeUndefined();
+
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Send to Card from a subtitle panel cue seeks to and records that cue', async () => {
+    const panelController = makePanelController();
+    const mockVideo = {
+      videoWidth: 1920,
+      readyState: 2,
+      currentTime: 50,
+      play: jest.fn(),
+      pause: jest.fn(),
+    } as unknown as HTMLVideoElement;
+    const ctrl = createWebTextDictionaryController(makeDeps({
+      panelController,
+      hasVideo: true,
+      video: mockVideo,
+      getTargetCues: () => [
+        { index: 1, start: 0, end: 2000, text: 'Current cue.' },
+        { index: 2, start: 10000, end: 12000, text: 'Clicked cue.' },
+      ],
+    }));
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
+
+    const item = document.createElement('div');
+    item.dataset.cellId = 'cue-item';
+    item.dataset.cueStart = '10000';
+    item.dataset.cueEnd = '12000';
+    const text = document.createElement('div');
+    text.dataset.allowLookup = '';
+    text.textContent = 'Take off your shoes.';
+    item.appendChild(text);
+    document.body.appendChild(item);
+    const range = document.createRange();
+    range.selectNodeContents(text.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-send', new DOMRect(0, 0, 0, 0), range) });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    const seekCalls = jest.mocked(seekAndWaitReady).mock.calls;
+    expect(seekCalls.length).toBe(1);
+    expect(seekCalls[0]![0]).toBe(mockVideo);
+    expect(seekCalls[0]![1]).toBe(10);
+    const captureCalls = jest.mocked(captureSentenceAudio).mock.calls;
+    expect(captureCalls[0]![0]).toBe(mockVideo);
+    expect(captureCalls[0]![1]).toEqual({ start: 10000, end: 12000 });
+    expect(prefill.video).toBe(mockVideo);
+    expect(prefill.cue).toMatchObject({ start: 10000, end: 12000, targetText: 'Take off your shoes.' });
+    expect((prefill.initialMedia ?? []).map((f: { kind: string }) => f.kind)).toEqual(['image', 'audio']);
+    expect(prefill.sentenceAudioUrls).toEqual([]);
+
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Send to Card from a panel cue already playing skips the extra seek', async () => {
+    const panelController = makePanelController();
+    const mockVideo = {
+      videoWidth: 1920,
+      readyState: 2,
+      currentTime: 11,
+      play: jest.fn(),
+      pause: jest.fn(),
+    } as unknown as HTMLVideoElement;
+    const ctrl = createWebTextDictionaryController(makeDeps({
+      panelController,
+      hasVideo: true,
+      video: mockVideo,
+      getTargetCues: () => [{ index: 2, start: 10000, end: 12000, text: 'Clicked cue.' }],
+    }));
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
+
+    const item = document.createElement('div');
+    item.dataset.cellId = 'cue-item';
+    item.dataset.cueStart = '10000';
+    item.dataset.cueEnd = '12000';
+    const text = document.createElement('div');
+    text.dataset.allowLookup = '';
+    text.textContent = 'Take off your shoes.';
+    item.appendChild(text);
+    document.body.appendChild(item);
+    const range = document.createRange();
+    range.selectNodeContents(text.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-current', new DOMRect(0, 0, 0, 0), range) });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    expect(jest.mocked(seekAndWaitReady).mock.calls.length).toBe(0);
+    const captureCalls = jest.mocked(captureSentenceAudio).mock.calls;
+    expect(captureCalls[0]![0]).toBe(mockVideo);
+    expect(captureCalls[0]![1]).toEqual({ start: 10000, end: 12000 });
+
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Send to Card falls back to TTS when the panel cue seek cannot land', async () => {
+    const panelController = makePanelController();
+    const mockVideo = {
+      videoWidth: 1920,
+      readyState: 2,
+      currentTime: 50,
+      play: jest.fn(),
+      pause: jest.fn(),
+    } as unknown as HTMLVideoElement;
+    jest.mocked(seekAndWaitReady).mockResolvedValue(false);
+    const ctrl = createWebTextDictionaryController(makeDeps({
+      panelController,
+      hasVideo: true,
+      video: mockVideo,
+      getTargetCues: () => [{ index: 2, start: 10000, end: 12000, text: 'Clicked cue.' }],
+    }));
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
+
+    const item = document.createElement('div');
+    item.dataset.cellId = 'cue-item';
+    item.dataset.cueStart = '10000';
+    item.dataset.cueEnd = '12000';
+    const text = document.createElement('div');
+    text.dataset.allowLookup = '';
+    text.textContent = 'Take off your shoes.';
+    item.appendChild(text);
+    document.body.appendChild(item);
+    const range = document.createRange();
+    range.selectNodeContents(text.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-panel-seekfail', new DOMRect(0, 0, 0, 0), range) });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    expect(jest.mocked(captureSentenceAudio).mock.calls.length).toBe(0);
+    expect(prefill.initialMedia ?? []).toHaveLength(0);
+    expect(prefill.cue).toBeUndefined();
+    expect(prefill.sentenceAudioUrls).toEqual(['https://tts.example/sentence.mp3']);
 
     act(() => { ctrl.destroy() });
   });

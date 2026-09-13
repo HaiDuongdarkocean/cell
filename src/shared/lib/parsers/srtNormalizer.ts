@@ -66,6 +66,32 @@ function toMs(
   return h * 3_600_000 + m * 60_000 + s * 1_000 + ms;
 }
 
+const NAMED_SUBTITLE_ENTITIES: Record<string, string> = {
+  nbsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+};
+
+/**
+ * Decode HTML entities in cue text with a single pass. Named entities use a
+ * small allowlist; numeric (&#160;) and hex (&#xA0;) entities decode via
+ * code point. Unknown entities pass through unchanged, so `&amp;nbsp;`
+ * correctly becomes the literal text "&nbsp;".
+ */
+function decodeSubtitleEntities(text: string): string {
+  return text.replace(/&([a-zA-Z]+|#\d+|#x[0-9a-fA-F]+);/g, (match, body: string) => {
+    if (body.startsWith('#')) {
+      const isHex = body[1] === 'x' || body[1] === 'X';
+      const code = Number.parseInt(body.slice(isHex ? 2 : 1), isHex ? 16 : 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+    }
+    return NAMED_SUBTITLE_ENTITIES[body.toLowerCase()] ?? match;
+  });
+}
+
 /**
  * Strip all inline tags from cue text, leaving only plain text (newlines preserved).
  *
@@ -73,13 +99,18 @@ function toMs(
  * - VTT/ASS override tags: `{\an8}`, `{\b1}`, …
  * - All HTML/VTT tags: `<i>`, `</i>`, `<b>`, `<c.yellow>`, `<v Bob>`, …
  *
+ * Then decodes HTML entities (`&nbsp;` → space, `&amp;` → &, numeric/hex).
+ * Decoding runs AFTER tag stripping so escaped markup like `&lt;i&gt;`
+ * stays literal text instead of being treated as a tag.
+ *
  * Does NOT collapse blank lines or trim — callers that need collapsed
  * plain text (e.g. `normalizeSrt`) should post-process. Used by the
  * display path (`parseSrt`/`parseVtt`) so cue text rendered via
  * `textContent` / React text children shows no literal `<i>` markup.
  */
 export function stripSubtitleTags(text: string): string {
-  return text.replace(/\{[^}]*\}/g, '').replace(/<[^>]*>/g, '');
+  const stripped = text.replace(/\{[^}]*\}/g, '').replace(/<[^>]*>/g, '');
+  return decodeSubtitleEntities(stripped).replace(/\u00A0/g, ' ');
 }
 
 /**

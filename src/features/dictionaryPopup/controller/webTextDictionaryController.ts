@@ -52,7 +52,7 @@ import type { DictionaryPanelPrefill } from '@/entities/dictionary';
 import { openSettingsSection, type PanelMountController } from './panelBridge';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
+import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { getModelFields } from '@/features/cardCreator/service/ankiSchemaCache';
 import { autoMapFields } from '@/features/cardCreator/service/fieldMapping';
@@ -567,15 +567,32 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return null;
   }
 
-  /** Check if the level's lookup target is inside the subtitle overlay block.
-   *  Media recording (screenshot + sentence audio) is only allowed when the
-   *  user looked up a word inside the subtitle overlay, not from web text. */
-  function isLookupFromSubtitle(level: PopupLevel): boolean {
+  function lookupAnchorElement(level: PopupLevel): Element | null {
     const target = level.highlightTarget;
-    if (!target) return false;
+    if (!target) return null;
     const node = target instanceof Range ? target.startContainer : target;
-    const el = node instanceof Element ? node : node.parentElement;
-    return el?.closest('[data-cell-id="subtitle-block"]') !== null;
+    return node instanceof Element ? node : node.parentElement;
+  }
+
+  /** Check if the level's lookup target is inside the subtitle overlay block
+   *  or a subtitle panel cue. Media recording (screenshot + sentence audio)
+   *  is only allowed for subtitle-origin lookups, not plain web text. */
+  function isLookupFromSubtitle(level: PopupLevel): boolean {
+    const el = lookupAnchorElement(level);
+    return el?.closest('[data-cell-id="subtitle-block"], [data-cue-start]') !== null;
+  }
+
+  /** Resolve the cue range a panel lookup was made on. CueList items carry
+   *  data-cue-start/data-cue-end so the clicked cue is identified directly
+   *  instead of being inferred from video.currentTime — the selected cue is
+   *  often not the currently-playing one. */
+  function lookupCueRange(level: PopupLevel): CueRange | null {
+    const item = lookupAnchorElement(level)?.closest('[data-cue-start][data-cue-end]');
+    if (!item) return null;
+    const start = Number(item.getAttribute('data-cue-start'));
+    const end = Number(item.getAttribute('data-cue-end'));
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+    return { start, end };
   }
 
   function getTokenById(id: { term: string; start: string; blockId: string }): HTMLElement | null {
@@ -1121,10 +1138,59 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return (cardCreatorMount?.isOpen() ?? false) || (deps.panelController?.isOpen() ?? false);
   }
 
+  /** Capture screenshot + sentence audio for the cue a subtitle-origin lookup
+   *  belongs to. When lookupCue names a cue that is not currently playing
+   *  (subtitle panel), the video is first seeked into it and must land with
+   *  decodable data — otherwise nothing is captured rather than attaching a
+   *  wrong-position screenshot or a different sentence's audio. */
+  async function captureCueMedia(
+    captureVideo: HTMLVideoElement,
+    lookupCue: CueRange | undefined,
+    onRecordingStart?: () => void,
+  ): Promise<{ screenshot?: MediaFile; audio?: MediaFile; cue?: BilingualCue }> {
+    await waitForVideoReady(captureVideo);
+    const currentMs = captureVideo.currentTime * 1000;
+
+    if (lookupCue && !(currentMs >= lookupCue.start && currentMs <= lookupCue.end)) {
+      const landed = await seekAndWaitReady(captureVideo, lookupCue.start / 1000);
+      if (!landed) return {};
+    }
+
+    const result: { screenshot?: MediaFile; audio?: MediaFile; cue?: BilingualCue } = {};
+    try {
+      result.screenshot = await captureScreenshot(captureVideo);
+    } catch { /* non-fatal */ }
+
+    const target =
+      lookupCue ??
+      (() => {
+        const cues = getTargetCues?.() ?? [];
+        const ms = captureVideo.currentTime * 1000;
+        return cues.find((c) => ms >= c.start && ms <= c.end);
+      })();
+
+    if (target) {
+      result.cue = {
+        index: target.index ?? 0,
+        start: target.start,
+        end: target.end,
+        targetText: target.text ?? '',
+        nativeText: '',
+      };
+      onRecordingStart?.();
+      try {
+        const audioR = await captureSentenceAudio(captureVideo, { start: target.start, end: target.end });
+        if (audioR.ok) result.audio = audioR.file;
+      } catch { /* non-fatal */ }
+    }
+    return result;
+  }
+
   async function openStandaloneCardCreator(
     action: PopupCardCreatorAction,
     prefill: PopupCardCreatorPrefill,
     fromSubtitle: boolean,
+    lookupCue?: CueRange,
   ): Promise<void> {
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
@@ -1168,23 +1234,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       void (async () => {
         let recorded = false;
         try {
-          await waitForVideoReady(captureVideo);
-          try {
-            const screenshot = await captureScreenshot(captureVideo);
-            cardCreatorMount?.addMediaFiles('images', [screenshot]);
-          } catch { /* non-fatal */ }
-          try {
-            const cues = getTargetCues?.() ?? [];
-            const currentMs = captureVideo.currentTime * 1000;
-            const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-            if (matchingCue) {
-              const audioR = await captureSentenceAudio(captureVideo, { start: matchingCue.start, end: matchingCue.end });
-              if (audioR.ok) {
-                cardCreatorMount?.addMediaFiles('sentenceAudios', [audioR.file]);
-                recorded = true;
-              }
-            }
-          } catch { /* non-fatal */ }
+          const captured = await captureCueMedia(captureVideo, lookupCue);
+          if (captured.screenshot) {
+            cardCreatorMount?.addMediaFiles('images', [captured.screenshot]);
+          }
+          if (captured.audio) {
+            cardCreatorMount?.addMediaFiles('sentenceAudios', [captured.audio]);
+            recorded = true;
+          }
         } catch { /* non-fatal */ }
         chip.dismiss();
         if (recorded) return;
@@ -1305,6 +1362,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     fromSubtitle: boolean,
     warnings?: string[],
     onRecordingStart?: () => void,
+    lookupCue?: CueRange,
   ): Promise<{
     wordAudioUrls: readonly string[];
     sentenceAudioUrls: readonly string[];
@@ -1320,25 +1378,23 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     const captureTask = (async (): Promise<void> => {
       if (video && video.videoWidth > 0 && fromSubtitle) {
-        await waitForVideoReady(video);
         try {
-          initialMedia.push(await captureScreenshot(video));
-        } catch { warnings?.push('screenshot'); }
-        try {
-          const cues = getTargetCues?.() ?? [];
-          const currentMs = video.currentTime * 1000;
-          const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-          if (matchingCue) {
+          const captured = await captureCueMedia(video, lookupCue, onRecordingStart);
+          if (captured.screenshot) {
+            initialMedia.push(captured.screenshot);
+          } else {
+            warnings?.push('screenshot');
+          }
+          if (captured.cue) {
             cue = {
-              index: matchingCue.index ?? 0,
-              start: matchingCue.start,
-              end: matchingCue.end,
-              targetText: matchingCue.text ?? prefill.contextSentence ?? '',
-              nativeText: '',
+              ...captured.cue,
+              targetText: captured.cue.targetText || prefill.contextSentence || '',
             };
-            onRecordingStart?.();
-            const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-            if (audioR.ok) initialMedia.push(audioR.file);
+          }
+          if (captured.audio) {
+            initialMedia.push(captured.audio);
+          } else if (captured.cue) {
+            warnings?.push('sentence audio capture');
           }
         } catch { warnings?.push('sentence audio capture'); }
       }
@@ -1429,6 +1485,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // Capture subtitle context BEFORE returning — closePopup clears the
     // level's highlightTarget synchronously after this function returns.
     const fromSubtitle = isLookupFromSubtitle(level);
+    const lookupCue = lookupCueRange(level) ?? undefined;
     closePopup();
 
     if (deps.panelController) {
@@ -1461,7 +1518,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           })();
           const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, undefined, () => {
             chip.update(t('dict.toast.recording'));
-          });
+          }, lookupCue);
           const sentenceTranslation = prefill.translation ?? (await translationTask);
 
           const context: CardCreatorOpenContext = {
@@ -1492,7 +1549,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     }
 
     // Standalone Card Creator dialog fallback — open the dialog in the background.
-    void openStandaloneCardCreator(action, prefill, fromSubtitle);
+    void openStandaloneCardCreator(action, prefill, fromSubtitle, lookupCue);
     return { stayOpen: false };
   }
 
@@ -1507,6 +1564,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   async function handlePopupAnkiQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): Promise<void> {
     // Capture subtitle context BEFORE any await / close.
     const fromSubtitle = isLookupFromSubtitle(level);
+    const lookupCue = lookupCueRange(level) ?? undefined;
     closePopup();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
@@ -1571,7 +1629,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // Fetch missing URL media and capture subtitle screenshot/audio in one place.
     const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, warnings, () => {
       chip.update(t('dict.toast.recording'));
-    });
+    }, lookupCue);
     const sentenceTranslation = prefill.translation ?? (await translationTask);
 
     chip.update(t('dict.toast.quickAddAdding'));

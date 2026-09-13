@@ -2082,6 +2082,43 @@
         "browser-behavior"
       ],
       "trigger": "Logic điều hướng cue dùng boundary chính xác của video.currentTime — seek tới cue.start rồi so strict >"
+    },
+    {
+      "type": "experience",
+      "id": "panel-lookup-cue-explicit-over-inferred",
+      "title": "Lookup từ danh sách cue phải resolve cue đích từ DOM của phần tử được click — suy ra từ video.currentTime sẽ record sai câu",
+      "category": [
+        "state",
+        "architecture"
+      ],
+      "tags": [
+        "subtitle-panel",
+        "cue-list",
+        "dictionary-lookup",
+        "audio-capture",
+        "video-seek",
+        "data-attribute",
+        "wrong-cue"
+      ],
+      "trigger": "Hành động trên cue user vừa tương tác trong danh sách cue tĩnh (record audio, screenshot, seek)"
+    },
+    {
+      "type": "experience",
+      "id": "subtitle-text-entity-decode-ssot",
+      "title": "Entity HTML trong cue text phải decode ở normalizer SSOT — xử lý lẻ từng parser sẽ lệch format",
+      "category": [
+        "state"
+      ],
+      "tags": [
+        "subtitle-parser",
+        "html-entities",
+        "nbsp",
+        "ssot",
+        "text-normalization",
+        "srt",
+        "vtt"
+      ],
+      "trigger": "Cue text hiển thị literal &nbsp;/&amp;/&#39; hoặc mỗi format parser tự decode entity một kiểu"
     }
   ]
 }

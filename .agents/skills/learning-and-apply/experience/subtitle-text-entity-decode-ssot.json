@@ -1,0 +1,27 @@
+{
+  "id": "subtitle-text-entity-decode-ssot",
+  "title": "Entity HTML trong cue text phải decode ở normalizer SSOT — xử lý lẻ từng parser sẽ lệch format",
+  "category": ["state"],
+  "tags": [
+    "subtitle-parser",
+    "html-entities",
+    "nbsp",
+    "ssot",
+    "text-normalization",
+    "srt",
+    "vtt"
+  ],
+  "trigger": "Cue text hiển thị literal &nbsp; / &amp; / &#39; hoặc mỗi format parser tự decode entity một kiểu",
+  "principle": "Nguồn phụ đề ngoài (SRT/VTT/SMI/TTML crawl được) thường chứa HTML entities. Decode phải nằm trong text-normalizer dùng chung (stripSubtitleTags) chứ không rải rác từng parser — SMI từng replace &nbsp; riêng trong khi SRT/VTT để nguyên → cùng cue hiển thị khác nhau theo format. Thứ tự quan trọng: strip tags TRƯỚC, decode SAU (để &lt;i&gt; vẫn là text literal chứ không thành tag bị strip), single-pass regex để &amp;nbsp; decode đúng thành literal '&nbsp;'. U+00A0 sau decode nên normalize về space thường cho lookup/search.",
+  "cases": [
+    {
+      "context": "Cue SRT 'claws&nbsp; hoping&nbsp;&nbsp;' hiển thị literal '&nbsp;' trên overlay + panel vì stripSubtitleTags chỉ strip <tag> và {ass}, không decode entities.",
+      "bad": "return text.replace(/\\{[^}]*\\}/g, '').replace(/<[^>]*>/g, '');",
+      "good": "const stripped = text.replace(/\\{[^}]*\\}/g, '').replace(/<[^>]*>/g, '');\nreturn decodeSubtitleEntities(stripped).replace(/\\u00A0/g, ' ');\n// decode AFTER strip: &lt;i&gt; stays literal; single-pass: &amp;nbsp; → '&nbsp;'"
+    }
+  ],
+  "applyFor": [
+    "Mọi text path hiển thị phụ đề ngoài vào DOM (overlay, panel, card creator sentence)",
+    "Text đi vào dictionary lookup/contextSentence — entity literal làm bẩn sentence audio TTS + card fields"
+  ]
+}

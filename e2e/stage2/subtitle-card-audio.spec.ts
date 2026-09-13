@@ -244,4 +244,76 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
 
     await streamFlixPage.screenshot({ path: testInfo.outputPath('subtitle-card-audio.png') });
   });
+
+  test('send to card from a non-current panel cue seeks to and records that cue', async ({
+    cellContext,
+    streamFlixPage,
+  }, testInfo) => {
+    await seedStorage(cellContext, { settings: makeSettings() });
+    await seedDictionary(cellContext, 'en', [
+      {
+        term: 'good',
+        pos: 'adj.',
+        definition: '1. of high quality\n2. pleasant or enjoyable',
+      },
+    ]);
+
+    const video = streamFlixPage.locator('#player-wrapper video').first();
+    // Park the video far before the clicked cue (cue 6 spans 47.2s-49.1s,
+    // "YOU WERE GOOD TO ME") so the lookup cue is provably not current.
+    await video.evaluate((v: HTMLVideoElement) => {
+      v.muted = true;
+      v.pause();
+      v.currentTime = 1;
+    });
+
+    // Open the Player Mode cue list — its items carry data-cue-start/end.
+    await streamFlixPage.keyboard.press('g');
+    const cueItem = streamFlixPage.locator(
+      '[data-cell-id="cue-item"][data-cue-start="47233"]',
+    );
+    await expect(cueItem).toBeAttached({ timeout: 15_000 });
+    const targetText = cueItem.locator('[data-cell-id="cue-target-text"]');
+    await expect(targetText).toContainText(/good/i, { timeout: 5_000 });
+    await targetText.scrollIntoViewIfNeeded();
+
+    const point = await pointForWord(targetText, '\\bgood\\b');
+    expect(point).not.toBeNull();
+    await streamFlixPage.mouse.click(point!.x, point!.y);
+
+    const sendButton = streamFlixPage.locator(
+      '.js-cell-popup-host [data-cell-id="dictionary-send-to-card"]',
+    );
+    await expect(sendButton).toBeVisible({ timeout: 15_000 });
+    await sendButton.click();
+    await expect(streamFlixPage.locator('.js-cell-popup-host')).toHaveCount(0);
+
+    const chip = streamFlixPage.locator('[data-cell-id="subtitle-toast"]');
+    await expect(chip).toContainText(/recording|preparing/i, { timeout: 15_000 });
+
+    // The video must have been seeked INTO the clicked cue's range — not left
+    // at the pre-lookup position — before recording could start.
+    await expect
+      .poll(async () => video.evaluate((v: HTMLVideoElement) => v.currentTime), {
+        timeout: 20_000,
+      })
+      .toBeGreaterThan(46);
+
+    const sentenceRows = streamFlixPage.locator(
+      '[data-cell-id="cc-sentence-audios-list"] [data-cell-id^="cc-sentence-audios-list-view-"]',
+    );
+    await expect(sentenceRows.first()).toBeVisible({ timeout: 30_000 });
+    const labels = await sentenceRows.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('aria-label') ?? ''),
+    );
+    expect(labels.some((l) => /cell-sentence-\d+-[a-z0-9]+\./i.test(l))).toBe(true);
+    expect(labels.every((l) => !/cell-audio-/.test(l))).toBe(true);
+
+    const thumbs = streamFlixPage.locator(
+      '[data-cell-id="cc-images-list"] [data-cell-id^="cc-images-list-thumb-"]',
+    );
+    await expect(thumbs.first()).toBeVisible({ timeout: 5_000 });
+
+    await streamFlixPage.screenshot({ path: testInfo.outputPath('panel-cue-card-audio.png') });
+  });
 });

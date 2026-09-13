@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
+import { normalizeSrt, stripSubtitleTags } from '@/shared/lib/parsers/srtNormalizer';
 
 describe('normalizeSrt', () => {
   it('passes through already-clean SRT unchanged', () => {
@@ -317,5 +317,44 @@ describe('normalizeSrt', () => {
 
     expect(result).toContain('1\n00:00:01,000 --> 00:00:05,000\nHello World');
     expect(result).toContain('2\n00:00:06,000 --> 00:00:10,000\nSecond cue');
+  });
+});
+
+describe('stripSubtitleTags entity decoding', () => {
+  it('decodes &nbsp; to a regular space', () => {
+    expect(stripSubtitleTags("staring at the bottom of your claws&nbsp; hoping one day you'll make a dream last&nbsp;&nbsp;"))
+      .toBe("staring at the bottom of your claws  hoping one day you'll make a dream last  ");
+  });
+
+  it('decodes named entities', () => {
+    expect(stripSubtitleTags('a &amp; b &lt; c &gt; d &quot;e&quot; &apos;f&apos;'))
+      .toBe('a & b < c > d "e" \'f\'');
+  });
+
+  it('decodes numeric and hex entities', () => {
+    expect(stripSubtitleTags('it&#39;s &#x27;ok&#x27;')).toBe("it's 'ok'");
+    expect(stripSubtitleTags('a&#160;b')).toBe('a b');
+  });
+
+  it('leaves double-escaped entities literal (single pass)', () => {
+    expect(stripSubtitleTags('&amp;nbsp;')).toBe('&nbsp;');
+  });
+
+  it('passes unknown entities through unchanged', () => {
+    expect(stripSubtitleTags('fish &chips; &bogus; done')).toBe('fish &chips; &bogus; done');
+  });
+
+  it('decodes entities after tag stripping so escaped tags stay literal', () => {
+    expect(stripSubtitleTags('&lt;i&gt;not a tag&lt;/i&gt; <i>real</i>')).toBe('<i>not a tag</i> real');
+  });
+
+  it('decodes entities through the normalizeSrt path', () => {
+    const srt = [
+      '1',
+      '00:00:01,000 --> 00:00:05,000',
+      'line&nbsp;one&nbsp;&nbsp;end',
+      '',
+    ].join('\n');
+    expect(normalizeSrt(srt)).toContain('line one  end');
   });
 });

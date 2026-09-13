@@ -1,0 +1,28 @@
+{
+  "id": "panel-lookup-cue-explicit-over-inferred",
+  "title": "Lookup từ danh sách cue phải resolve cue đích từ DOM của phần tử được click — suy ra từ video.currentTime sẽ record sai câu",
+  "category": ["state", "architecture"],
+  "tags": [
+    "subtitle-panel",
+    "cue-list",
+    "dictionary-lookup",
+    "audio-capture",
+    "video-seek",
+    "data-attribute",
+    "wrong-cue"
+  ],
+  "trigger": "Bất kỳ hành động nào thao tác trên 'cue mà user vừa tương tác' (record audio, screenshot, seek) khi điểm tương tác nằm trong danh sách cue tĩnh (panel/list) thay vì overlay cue đang phát",
+  "principle": "Có 2 nguồn 'cue hiện tại': (1) cue đang phát — suy ra từ video.currentTime; (2) cue user click trong list — chỉ biết qua DOM. Code chỉ đọc (1) sẽ record/screenshot đúng lúc nhưng SAI câu. Fix: gắn cue identity vào DOM của item (data-cue-start/data-cue-end trên cue-item), resolve từ anchor của lookup (closest()), truyền explicit xuống capture path, và chỉ dùng currentTime làm fallback khi không có explicit cue (overlay lookup). Nếu cue đích không đang phát → phải seek + chờ ready (seeked + readyState ≥ HAVE_CURRENT_DATA) TRƯỚC KHI screenshot/record; nếu seek không tới được → không capture gì thay vì gắn media sai vị trí. Bonus: 2 capture cùng video phải serialize (WeakMap chain) — hai lookup liên tiếp tranh video.currentTime sẽ ghi lẫn audio.",
+  "cases": [
+    {
+      "context": "User click từ trong cue #6 (47.2s) trong CueList panel trong khi video đang ở 1s. Code cũ tìm `cues.find(c => currentMs >= c.start && currentMs <= c.end)` → không cue nào → TTS fallback, hoặc record audio của cue đang phát thay vì cue đã click.",
+      "bad": "const currentMs = video.currentTime * 1000;\nconst matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);\n// clicked cue ≠ playing cue → wrong/no audio",
+      "good": "// CueList: data-cue-start={cue.start} data-cue-end={cue.end}\nconst lookupCue = lookupCueRange(level); // closest('[data-cue-start][data-cue-end]')\nif (lookupCue && !isInside(lookupCue)) {\n  const landed = await seekAndWaitReady(video, lookupCue.start / 1000);\n  if (!landed) return {}; // no wrong-position media\n}\n// screenshot + captureSentenceAudio(video, lookupCue)"
+    }
+  ],
+  "applyFor": [
+    "Media capture (audio/screenshot) theo cue từ danh sách tĩnh bất kỳ",
+    "Lookup trong sidepanel CueList / Player Mode / Split View — cùng data attributes vì CueList là SSOT",
+    "Mọi chỗ 'resolve entity từ vị trí hiện tại' khi entity thực sự được chọn ở chỗ khác"
+  ]
+}

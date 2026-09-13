@@ -23,10 +23,22 @@ import { seekVideo, playVideo, pauseVideo } from '@/shared/lib/dom/netflixPlayba
 /** Max audio capture duration (4GB mobile constraint). */
 const MAX_AUDIO_DURATION_MS = 15_000;
 
+/**
+ * Post-seek landing tolerance. A seek counts as landed when |currentTime -
+ * target| stays under this. Generous enough for keyframe snapping (Netflix)
+ * yet tight enough to refuse recording a different sentence's audio.
+ */
+const SEEK_LAND_TOLERANCE_SEC = 0.75;
+
 /** Result: either a MediaFile or null (unsupported/skipped/failed). */
 export type SentenceAudioResult =
   | { ok: true; file: MediaFile }
   | { ok: false; reason: 'unsupported' | 'hidden' | 'failed'; error?: string };
+
+// Serializes captures per video element: two lookups must not fight over
+// video.currentTime mid-recording. Chained so a failed capture never blocks
+// the next one.
+const captureChains = new WeakMap<HTMLVideoElement, Promise<unknown>>();
 
 /**
  * Capture audio for a subtitle cue's time range.
@@ -35,7 +47,20 @@ export type SentenceAudioResult =
  * @param cue - The cue with start/end in milliseconds.
  * @returns SentenceAudioResult — never throws.
  */
-export async function captureSentenceAudio(
+export function captureSentenceAudio(
+  video: HTMLVideoElement,
+  cue: { start: number; end: number },
+): Promise<SentenceAudioResult> {
+  const prev = captureChains.get(video) ?? Promise.resolve();
+  const run = prev.then(() => captureSentenceAudioOnce(video, cue));
+  captureChains.set(
+    video,
+    run.catch(() => undefined),
+  );
+  return run;
+}
+
+async function captureSentenceAudioOnce(
   video: HTMLVideoElement,
   cue: { start: number; end: number },
 ): Promise<SentenceAudioResult> {
@@ -57,8 +82,12 @@ export async function captureSentenceAudio(
   }
 
   try {
-    // Seek to cue start.
-    await seekTo(video, cue.start / 1000);
+    // Seek to cue start and require the video to actually land there with
+    // decodable data — otherwise we'd silently record a different sentence.
+    const landed = await seekAndWaitReady(video, cue.start / 1000);
+    if (!landed) {
+      return { ok: false, reason: 'failed', error: 'Seek did not reach cue start' };
+    }
 
     // Capture audio-only stream.
     const stream = captureStreamFn.call(video);
@@ -113,31 +142,54 @@ export async function captureSentenceAudio(
   }
 }
 
-/** Seek video to a time, resolving when the seek completes.
- *  Timeout fallback prevents hanging if 'seeked' never fires (hidden tab,
- *  video error, Netflix player edge cases). */
-function seekTo(video: HTMLVideoElement, timeSec: number): Promise<void> {
+/**
+ * Seek video to a time and wait until it has landed there with decodable
+ * data (readyState ≥ HAVE_CURRENT_DATA). Returns false when the seek never
+ * landed within tolerance or the video stays unready — callers must treat
+ * that as "do not record", otherwise they'd capture the wrong sentence.
+ *
+ * Used both by captureSentenceAudio and by callers that need to position
+ * the video before taking a screenshot of a non-current cue.
+ */
+export function seekAndWaitReady(
+  video: HTMLVideoElement,
+  timeSec: number,
+  timeoutMs = 4000,
+): Promise<boolean> {
   return new Promise((resolve) => {
-    let settled = false;
-    const onSeeked = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      video.removeEventListener('seeked', onSeeked);
-      resolve();
+    const start = Date.now();
+    let seekedFired = false;
+
+    const landed = (): boolean =>
+      Math.abs(video.currentTime - timeSec) <= SEEK_LAND_TOLERANCE_SEC &&
+      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+
+    const poll = (): void => {
+      if (landed()) {
+        cleanup();
+        resolve(true);
+        return;
+      }
+      if (Date.now() - start >= timeoutMs) {
+        cleanup();
+        resolve(false);
+        return;
+      }
+      setTimeout(poll, 50);
     };
-    video.addEventListener('seeked', onSeeked);
-    // Timeout: if seek doesn't fire within 3s, resolve anyway (captureScreenshot
-    // will handle the unready state). Prevents listener leak + promise hang.
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
+    const onSeeked = (): void => {
+      seekedFired = true;
+      poll();
+    };
+    const cleanup = (): void => {
       video.removeEventListener('seeked', onSeeked);
-      resolve();
-    }, 3000);
+    };
+
+    video.addEventListener('seeked', onSeeked);
     // ADR-030: route through seekVideo to avoid Netflix M7375.
-    // Netflix player.seek() sets video.currentTime internally → fires 'seeked'.
     seekVideo(video, timeSec);
+    if (seekedFired) return;
+    poll();
   });
 }
 
@@ -160,6 +212,7 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
       settled = true;
       clearTimeout(timer);
       video.removeEventListener('timeupdate', onTimeUpdate);
+      video.removeEventListener('ended', finish);
       // ADR-030: route through pauseVideo to avoid Netflix M7375.
       pauseVideo(video);
       resolve();
@@ -167,6 +220,9 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
     // Timeout fallback in case 'timeupdate' doesn't fire fast enough.
     const timer = setTimeout(finish, durationSec * 1000 + 500);
     video.addEventListener('timeupdate', onTimeUpdate);
+    // Cue can extend past the video end — stop early instead of waiting out
+    // the full timeout on a dead position.
+    video.addEventListener('ended', finish);
     // ADR-030: route through playVideo to avoid Netflix M7375.
     void playVideo(video).then(() => {
       // Record the actual start time once playback begins — this is when the

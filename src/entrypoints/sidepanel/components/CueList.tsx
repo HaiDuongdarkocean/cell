@@ -76,6 +76,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
             role="listitem"
             data-cell-id="cue-item"
             data-cue-index={cue.index}
+            data-cue-start={cue.start}
+            data-cue-end={cue.end}
             data-current={isCurrent ? 'true' : 'false'}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
