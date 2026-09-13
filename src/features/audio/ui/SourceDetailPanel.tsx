@@ -17,7 +17,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { Icon, SettingsRow, Text, Toggle } from '@/shared/ui';
 import type { ICON_CATALOG } from '@/shared/icons';
 import type { AudioEngineKind, PronunciationSettings, TtsSettings } from '@/entities/settings/types';
-import { LocalPronunciationSettingsPanel } from '@/features/settings/ui/LocalPronunciationSettingsPanel';
+import { LocalPronunciationSettingsPanel } from '@/features/pronunciation/ui/LocalPronunciationSettingsPanel';
 import { TtsLanguagePanel } from '@/features/tts/ui/TtsLanguagePanel';
 import { TtsVoiceManagerPanel } from '@/features/tts/ui/TtsVoiceManagerPanel';
 import styles from './SourceDetailPanel.module.css';

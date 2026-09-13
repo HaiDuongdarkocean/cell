@@ -11,7 +11,7 @@ import {
 } from '@/shared/config/config';
 import { SUBTITLE_LANGUAGES } from '@/shared/config/languageRegistry';
 import { MultiSelect } from '@/shared/ui/MultiSelect';
-import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
+import { CardCreatorSettingsPanel } from '@/features/cardCreator/ui/CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { WordBadgeSettingsPanel } from './WordBadgeSettingsPanel';
 import { AudioPanel } from '@/features/audio/ui/AudioPanel';

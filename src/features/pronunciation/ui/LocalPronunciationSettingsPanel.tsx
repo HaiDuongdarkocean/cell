@@ -8,7 +8,7 @@ import { Select } from '@/shared/ui/Select';
 import { Input } from '@/shared/ui/Input';
 import { SettingsRow } from '@/shared/ui/SettingsRow';
 import { VStack } from '@/shared/ui/Stack';
-import styles from './SettingsDialog.module.css';
+import styles from './LocalPronunciationSettingsPanel.module.css';
 
 interface LocalPronunciationSettingsPanelProps {
   settings: PronunciationSettings;

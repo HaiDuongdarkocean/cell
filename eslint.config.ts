@@ -173,6 +173,78 @@ export default tseslint.config(
     },
   },
 
+  // Feature DAG: settings sits at the composition layer — its dialog
+  // aggregates other features' panels (settings → cardCreator/dictionary/
+  // subtitle/tts/audio/theme). No feature may import it back; feature-owned
+  // settings panels live inside the owning feature.
+  {
+    files: [
+      'src/features/audio/**/*.ts',
+      'src/features/audio/**/*.tsx',
+      'src/features/cardCreator/**/*.ts',
+      'src/features/cardCreator/**/*.tsx',
+      'src/features/detection/**/*.ts',
+      'src/features/detection/**/*.tsx',
+      'src/features/dictionary/**/*.ts',
+      'src/features/dictionary/**/*.tsx',
+      'src/features/dictionaryPopup/**/*.ts',
+      'src/features/dictionaryPopup/**/*.tsx',
+      'src/features/download/**/*.ts',
+      'src/features/download/**/*.tsx',
+      'src/features/local-player/**/*.ts',
+      'src/features/local-player/**/*.tsx',
+      'src/features/ocr/**/*.ts',
+      'src/features/ocr/**/*.tsx',
+      'src/features/reader/**/*.ts',
+      'src/features/reader/**/*.tsx',
+      'src/features/srs/**/*.ts',
+      'src/features/srs/**/*.tsx',
+      'src/features/studyModes/**/*.ts',
+      'src/features/studyModes/**/*.tsx',
+      'src/features/subtitle/**/*.ts',
+      'src/features/subtitle/**/*.tsx',
+      'src/features/theme/**/*.ts',
+      'src/features/theme/**/*.tsx',
+      'src/features/tokenize/**/*.ts',
+      'src/features/tokenize/**/*.tsx',
+      'src/features/translate/**/*.ts',
+      'src/features/translate/**/*.tsx',
+      'src/features/transmux/**/*.ts',
+      'src/features/transmux/**/*.tsx',
+      'src/features/tts/**/*.ts',
+      'src/features/tts/**/*.tsx',
+      'src/features/whitelist/**/*.ts',
+      'src/features/whitelist/**/*.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features/settings', '@/features/settings/**'],
+          message: 'Feature DAG: settings is a composition layer — features must not import it back. Move feature-owned panels into the owning feature.',
+        }],
+      }],
+    },
+  },
+  // pronunciation sits below cardCreator (dictionaryGenerate consumes its
+  // orchestrator) and below settings — both directions are banned back.
+  {
+    files: ['src/features/pronunciation/**/*.ts', 'src/features/pronunciation/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['@/features/settings', '@/features/settings/**'],
+            message: 'Feature DAG: settings is a composition layer — features must not import it back. Move feature-owned panels into the owning feature.',
+          },
+          {
+            group: ['@/features/cardCreator', '@/features/cardCreator/**'],
+            message: 'Feature DAG: cardCreator consumes pronunciation — do not import back.',
+          },
+        ],
+      }],
+    },
+  },
+
   // Test files — relax some rules
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
