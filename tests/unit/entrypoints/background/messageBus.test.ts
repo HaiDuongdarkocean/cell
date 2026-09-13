@@ -206,7 +206,10 @@ describe('MessageBus', () => {
 
       bus.on('DOWNLOAD_VIDEO', handler);
 
-      const request: MessageRequest = { type: 'DOWNLOAD_VIDEO' };
+      const request: MessageRequest = {
+        type: 'DOWNLOAD_VIDEO',
+        payload: { videoId: 'v1' },
+      };
       return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(response.success).toBe(false);
         expect(response.error).toBe('boom');

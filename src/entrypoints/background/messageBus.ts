@@ -4,6 +4,7 @@ import {
   removeOnMessageListener,
 } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { MESSAGE_REGISTRY } from '@/entities/message/registry';
 import type {
   MessageRequest,
   MessageResponse,
@@ -33,9 +34,22 @@ export class MessageBus {
     if (this.handlers.has(type)) {
       throw new Error(`Duplicate handler registration for message type: ${type}`);
     }
-    this.handlers.set(type, handler);
+    const schema = MESSAGE_REGISTRY[type].schema;
+    const wrapped: MessageHandler = schema
+      ? (request) => {
+          const parsed = schema.safeParse(request.payload);
+          if (!parsed.success) {
+            return {
+              success: false,
+              error: `Invalid ${type} payload: ${parsed.error.message}`,
+            };
+          }
+          return handler(request);
+        }
+      : handler;
+    this.handlers.set(type, wrapped);
     return () => {
-      if (this.handlers.get(type) === handler) {
+      if (this.handlers.get(type) === wrapped) {
         this.handlers.delete(type);
       }
     };
