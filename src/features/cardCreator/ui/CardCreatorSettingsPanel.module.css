@@ -131,10 +131,10 @@
 
 .mappingRow {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-1);
   min-width: 0;
+  flex-direction: column;
 }
 
 .mappingLabel {
@@ -148,6 +148,5 @@
 }
 
 .mappingSelect {
-  min-width: 140px;
-  flex: 1 1 50%;
+  align-self: stretch;
 }
