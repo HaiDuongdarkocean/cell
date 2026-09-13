@@ -31,7 +31,7 @@
         "cross-module",
         "rename-refactor"
       ],
-      "trigger": "Khi rename attribute/class/selector được query bởi module khác (click-outside, closest, querySelector)"
+      "trigger": "Khi rename/xóa/rewrite markup chứa attribute/class được module khác query (click-outside, closest, querySelector, feature gate)"
     },
     {
       "type": "experience",

@@ -505,7 +505,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   /** Subtitle token path: the original target is a .js-cell-token span (one
    *  word). Find adjacent .js-cell-token spans that together form the phrase. */
   function createPhraseRangeFromToken(token: HTMLElement, phrase: string): Range | null {
-    const line = token.closest('.subtitle-line');
+    const line = token.closest('[data-role="target"]');
     if (!line) return null;
     const tokens = Array.from(line.querySelectorAll('.js-cell-token--word'));
     const tokenIdx = tokens.indexOf(token as HTMLElement);
@@ -564,15 +564,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return null;
   }
 
-  /** Check if the level's lookup target is inside a subtitle-line element.
+  /** Check if the level's lookup target is inside the subtitle overlay block.
    *  Media recording (screenshot + sentence audio) is only allowed when the
    *  user looked up a word inside the subtitle overlay, not from web text. */
   function isLookupFromSubtitle(level: PopupLevel): boolean {
     const target = level.highlightTarget;
     if (!target) return false;
-    const token = getTokenElement(target);
-    if (!token) return false;
-    return token.closest('.subtitle-line') !== null;
+    const node = target instanceof Range ? target.startContainer : target;
+    const el = node instanceof Element ? node : node.parentElement;
+    return el?.closest('[data-cell-id="subtitle-block"]') !== null;
   }
 
   function getTokenById(id: { term: string; start: string; blockId: string }): HTMLElement | null {
@@ -1069,9 +1069,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const wordAudioUrls = context.prefill?.wordAudioUrls?.length
       ? context.prefill.wordAudioUrls
       : (selection?.wordAudioUrls ?? []);
-    const sentenceAudioUrls = context.prefill?.sentenceAudioUrls?.length
-      ? context.prefill.sentenceAudioUrls
-      : (selection?.sentenceAudioUrls ?? []);
+    const hasRecordedAudio = (context.initialMedia ?? []).some((f) => f.kind === 'audio');
+    const sentenceAudioUrls = hasRecordedAudio
+      ? []
+      : context.prefill?.sentenceAudioUrls?.length
+        ? context.prefill.sentenceAudioUrls
+        : (selection?.sentenceAudioUrls ?? []);
     const imageUrls = context.prefill?.imageUrls?.length
       ? context.prefill.imageUrls
       : (selection?.imageUrls ?? []);
@@ -1131,13 +1134,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
 
+    const captureVideo = video && video.videoWidth > 0 && fromSubtitle ? video : undefined;
+
     // Open the dialog IMMEDIATELY with whatever data is already available
     // (term, definitions, sentence, translation, media URLs selected in popup).
     // Missing media is fetched in the background and pushed into the open
     // dialog via addMediaFiles / updateTextField — so the user sees the dialog
     // right away instead of waiting for network calls to complete.
     openCardCreator({
-      video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
+      video: captureVideo,
       sourceLang,
       targetLang,
       prefill: {
@@ -1146,31 +1151,54 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         sentenceTranslation: prefill.translation,
         sentence: prefill.contextSentence,
         wordAudioUrls: prefill.wordAudioUrls,
-        sentenceAudioUrls: prefill.sentenceAudioUrls,
+        sentenceAudioUrls: captureVideo ? [] : prefill.sentenceAudioUrls,
         imageUrls: prefill.imageUrls,
       },
     }, action);
 
     // --- Background media fetch (non-blocking) ---
     // Screenshot + sentence audio (subtitle case only — requires video).
-    if (video && video.videoWidth > 0 && fromSubtitle) {
+    if (captureVideo) {
       void (async () => {
+        let recorded = false;
         try {
-          await waitForVideoReady(video);
+          await waitForVideoReady(captureVideo);
           try {
-            const screenshot = await captureScreenshot(video);
+            const screenshot = await captureScreenshot(captureVideo);
             cardCreatorMount?.addMediaFiles('images', [screenshot]);
           } catch { /* non-fatal */ }
           try {
             const cues = getTargetCues?.() ?? [];
-            const currentMs = video.currentTime * 1000;
+            const currentMs = captureVideo.currentTime * 1000;
             const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
             if (matchingCue) {
-              const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-              if (audioR.ok) cardCreatorMount?.addMediaFiles('sentenceAudios', [audioR.file]);
+              const audioR = await captureSentenceAudio(captureVideo, { start: matchingCue.start, end: matchingCue.end });
+              if (audioR.ok) {
+                cardCreatorMount?.addMediaFiles('sentenceAudios', [audioR.file]);
+                recorded = true;
+              }
             }
           } catch { /* non-fatal */ }
         } catch { /* non-fatal */ }
+        if (recorded) return;
+        for (const url of prefill.sentenceAudioUrls ?? []) {
+          try {
+            const file = await fetchMediaFile(url, 'audio');
+            cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
+          } catch { /* non-fatal */ }
+        }
+        if ((prefill.sentenceAudioUrls ?? []).length === 0 && prefill.contextSentence) {
+          try {
+            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+              payload: { tabId: 0, text: prefill.contextSentence.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
+            });
+            if (res?.success && res.data?.url) {
+              const file = await fetchMediaFile(res.data.url, 'audio');
+              cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
+            }
+          } catch { /* non-fatal */ }
+        }
       })();
     }
 
@@ -1181,7 +1209,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // in the background and push into the open dialog.
     const needsAudio = !prefill.wordAudioUrls?.length;
     const needsImages = !prefill.imageUrls?.length;
-    const needsSentenceAudio = !prefill.sentenceAudioUrls?.length && !!prefill.contextSentence;
+    const needsSentenceAudio = !captureVideo && !prefill.sentenceAudioUrls?.length && !!prefill.contextSentence;
     const needsTranslation = !prefill.translation && !!prefill.contextSentence;
 
     if (needsAudio) {
@@ -1274,13 +1302,40 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     initialMedia: MediaFile[];
     cue?: BilingualCue;
   }> {
+    const initialMedia: MediaFile[] = [];
+    let cue: BilingualCue | undefined;
+
+    if (video && video.videoWidth > 0 && fromSubtitle) {
+      await waitForVideoReady(video);
+      try {
+        initialMedia.push(await captureScreenshot(video));
+      } catch { warnings?.push('screenshot'); }
+      try {
+        const cues = getTargetCues?.() ?? [];
+        const currentMs = video.currentTime * 1000;
+        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+        if (matchingCue) {
+          cue = {
+            index: matchingCue.index ?? 0,
+            start: matchingCue.start,
+            end: matchingCue.end,
+            targetText: matchingCue.text ?? prefill.contextSentence ?? '',
+            nativeText: '',
+          };
+          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+          if (audioR.ok) initialMedia.push(audioR.file);
+        }
+      } catch { warnings?.push('sentence audio capture'); }
+    }
+
+    const hasRecordedAudio = initialMedia.some((f) => f.kind === 'audio');
     let wordAudioUrls = prefill.wordAudioUrls ?? [];
-    let sentenceAudioUrls = prefill.sentenceAudioUrls ?? [];
+    let sentenceAudioUrls = hasRecordedAudio ? [] : (prefill.sentenceAudioUrls ?? []);
     let imageUrls = prefill.imageUrls ?? [];
 
     const needsWordAudio = wordAudioUrls.length === 0;
     const needsImages = imageUrls.length === 0;
-    const needsSentenceAudio = sentenceAudioUrls.length === 0 && !!prefill.contextSentence;
+    const needsSentenceAudio = !hasRecordedAudio && sentenceAudioUrls.length === 0 && !!prefill.contextSentence;
 
     if (needsWordAudio || needsImages || needsSentenceAudio) {
       const tasks: Promise<void>[] = [];
@@ -1342,32 +1397,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       }
 
       await Promise.all(tasks);
-    }
-
-    const initialMedia: MediaFile[] = [];
-    let cue: BilingualCue | undefined;
-
-    if (video && video.videoWidth > 0 && fromSubtitle) {
-      await waitForVideoReady(video);
-      try {
-        initialMedia.push(await captureScreenshot(video));
-      } catch { warnings?.push('screenshot'); }
-      try {
-        const cues = getTargetCues?.() ?? [];
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          cue = {
-            index: matchingCue.index ?? 0,
-            start: matchingCue.start,
-            end: matchingCue.end,
-            targetText: matchingCue.text ?? prefill.contextSentence ?? '',
-            nativeText: '',
-          };
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) initialMedia.push(audioR.file);
-        }
-      } catch { warnings?.push('sentence audio capture'); }
     }
 
     return { wordAudioUrls, sentenceAudioUrls, imageUrls, initialMedia, cue };

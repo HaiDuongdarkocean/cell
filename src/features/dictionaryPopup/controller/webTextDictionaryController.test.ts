@@ -992,15 +992,20 @@ describe('createWebTextDictionaryController', () => {
     }));
     const result = makeResult();
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
-    mockSendMessage.mockResolvedValue({ success: true } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true, data: { url: 'https://tts.example/sentence.mp3' } } as unknown as never);
 
+    const block = document.createElement('div');
+    block.dataset.cellId = 'subtitle-block';
     const line = document.createElement('div');
-    line.className = 'subtitle-line';
+    line.dataset.role = 'target';
+    const lineText = document.createElement('span');
     const token = document.createElement('span');
     token.className = 'js-cell-token';
     token.textContent = 'Take off your shoes.';
-    line.appendChild(token);
-    document.body.appendChild(line);
+    lineText.appendChild(token);
+    line.appendChild(lineText);
+    block.appendChild(line);
+    document.body.appendChild(block);
     const range = document.createRange();
     range.selectNodeContents(token.firstChild as Text);
 
@@ -1023,6 +1028,53 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.initialMedia).toHaveLength(2);
     expect((prefill.initialMedia ?? []).map((f: { kind: string }) => f.kind)).toEqual(['image', 'audio']);
     expect(prefill.cue).toMatchObject({ start: 0, end: 1000, targetText: 'Take off your shoes.' });
+    // The recorded cue clip is the sentence audio — the popup's TTS sentence
+    // URL must not leak through alongside it.
+    expect(prefill.sentenceAudioUrls).toEqual([]);
+
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Send to Card from web text does not capture video media even when a video is configured', async () => {
+    const panelController = makePanelController();
+    const mockVideo = {
+      videoWidth: 1920,
+      readyState: 2,
+      currentTime: 0.5,
+      play: jest.fn(),
+      pause: jest.fn(),
+    } as unknown as HTMLVideoElement;
+    const ctrl = createWebTextDictionaryController(makeDeps({
+      panelController,
+      hasVideo: true,
+      video: mockVideo,
+      getTargetCues: () => [{ index: 1, start: 0, end: 1000, text: 'Take off your shoes.' }],
+    }));
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true } as unknown as never);
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-web-send', new DOMRect(0, 0, 0, 0), range) });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    expect(prefill.video).toBeUndefined();
+    expect(prefill.initialMedia ?? []).toHaveLength(0);
+    expect(prefill.cue).toBeUndefined();
 
     act(() => { ctrl.destroy() });
   });
