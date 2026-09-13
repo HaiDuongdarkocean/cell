@@ -8,6 +8,7 @@
 - **Plan missing or stale:** run `planning-and-task-breakdown` against the spec before dispatching.
 - **Tasks missing `priority`/`parallel`/`blocked_strategy` fields:** infer them — priority from spec Success Criteria order (first criterion = P0); `parallel: true` when the task's "Files likely touched" are disjoint from same-level tasks; `blocked_strategy` defaults to `mock-contract` for interface-shaped dependencies, `wait` for shared-state dependencies.
 - **Lane cap:** maximum 3 concurrent build subagents.
+- **Canonical fan-out:** a spec with explicit acceptance criteria defaults to logic / UI-on-mock / contract-level-tests lanes (pattern owned by `planning-and-task-breakdown`). The test lane's tests, written blind to the implementation, become the fresh-context verify signal at integrate time.
 - **Profiles:** `subagent_general` for build lanes, `subagent_explore` (read-only) for verify lanes.
 - **Verify failure:** dispatch the fix to the owning lane. After 2 failed fix cycles on the same blocker, stop and escalate to the human with evidence.
 - **Diverse-lens verify:** `P0` tasks and lanes touching security/state/migrations get 2–3 verifier lenses; pass on majority (pattern owned by `doubt-driven-development`). Single-lens verify for the rest.

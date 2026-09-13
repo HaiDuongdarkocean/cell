@@ -262,6 +262,7 @@ When multiple agents or sessions are available:
 - **Must be sequential:** Database migrations, shared state changes, dependency chains
 - **Needs coordination:** Features that share an API contract (define the contract first, then parallelize)
 - **Blocked task rule:** a task whose dependency isn't done prefers `mock-contract` — build against the dependency's agreed interface and mark the integration point. Use `wait` only for shared-state dependencies where mocking would hide real coupling.
+- **Canonical spec fan-out:** when the spec has explicit acceptance criteria, the default split is 3 lanes with zero real edges between them — **logic** (implement against contract), **UI** (build on mock data per contract), **tests** (written from Success Criteria, never from implementation). Parallel tests must be contract-level: assert input→output and criteria, never internal names/structure — tests that guess internals calcify wrong and fail correct implementations. Internal unit tests stay with the logic lane.
 - **Dispatch rule (autonomous runs):** in `autonomous-pipeline`, each `parallel: true` task at the current dependency level spawns one `subagent_general` lane. File ownership must be disjoint — two lanes never write the same file; overlap → merge the tasks or mark one `parallel: false`. See `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
 
 ## Common Rationalizations
