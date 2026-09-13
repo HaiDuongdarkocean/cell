@@ -102,6 +102,8 @@ Each task follows this structure:
 
 **Blocked strategy:** [mock-contract — build against the dependency's agreed interface/mock, mark integration point | wait — shared-state dep, hold until its verifier passes]
 
+**Worktree:** [auto — yes for parallel lanes scope ≥ M | no for XS/S lanes or sequential tasks]
+
 **Files likely touched:**
 - `src/path/to/file.ts`
 - `tests/path/to/test.ts`

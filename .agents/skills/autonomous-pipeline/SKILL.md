@@ -38,6 +38,8 @@ Run `pipeline.md` top to bottom. It encodes no-question defaults, per-phase guar
 
 Hard rules for spawning lanes (disjoint file ownership, no nested spawning, generation ≠ review): `references/orchestration-patterns.md`.
 
+Parallel lanes of scope M+ run in isolated **git worktrees** (`../cell-worktrees/<feature>/lane-<N>`) so concurrent builds, tests, and git operations never collide — collisions surface as explicit merge conflicts at integration, never as silent overwrites.
+
 ## Router boomerang
 
 Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).

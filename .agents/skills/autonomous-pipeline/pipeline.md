@@ -10,6 +10,9 @@
 - **Lane cap:** maximum 3 concurrent build subagents.
 - **Profiles:** `subagent_general` for build lanes, `subagent_explore` (read-only) for verify lanes.
 - **Verify failure:** dispatch the fix to the owning lane. After 2 failed fix cycles on the same blocker, stop and escalate to the human with evidence.
+- **Worktree threshold:** provision a worktree per parallel lane of scope M or larger. XS/S parallel lanes run sequentially in the main session — they are already disjoint on files and the setup cost exceeds the benefit.
+- **Worktree location:** `../cell-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
+- **Lane dependencies:** junction `node_modules` into the worktree (Windows: `mklink /J`). Lanes must not run `npm install` — any task touching `package.json`, lockfiles, or `manifest.json` is `parallel: false` by rule (shared state cannot be mocked).
 
 ## Phase 1 — Load
 
@@ -29,17 +32,31 @@
 
 **Purpose:** Execute tasks in dependency order, priority order within a level, parallel where safe.
 
+### Step 0 — Provision (only when ≥ 2 `parallel: true` tasks share a dependency level)
+
+For each parallel lane of scope M or larger:
+
+```
+git worktree add ../cell-worktrees/<feature-slug>/lane-<task-N> -b lane/<feature>/<task-N>
+# junction node_modules — no npm install per lane
+```
+
+Skip provisioning for XS/S lanes (sequential in main session) and for all `parallel: false` tasks.
+
+### Dispatch loop
+
 1. Topological-sort tasks into dependency levels.
 2. Within the current level, sort by Priority (P0 → P3); equal priority → smallest scope first.
 3. For each task:
-   - `parallel: true` + disjoint files → spawn one `subagent_general` lane (respect the lane cap; queue the rest by priority).
+   - `parallel: true` + disjoint files + scope ≥ M → spawn one `subagent_general` lane in its provisioned worktree (respect the lane cap; queue the rest by priority).
+   - `parallel: true` + scope XS/S → run in main session, sequential by priority.
    - `parallel: false` or overlapping files → implement in the main session, priority order.
    - Blocked by an unfinished dependency:
      - `mock-contract` → dispatch with the agreed interface/mock; mark the integration point for the dependency's lane to close.
      - `wait` → hold; dispatch when the dependency's verifier passes, then resume by priority.
-4. Every build-lane prompt carries: task text, acceptance criteria, ALLOWED FILES, FORBIDDEN FILES (everything else, especially files owned by other lanes), the relevant APPLY atoms, and the required local check (`npm run typecheck` minimum).
+4. Every build-lane prompt carries: task text, acceptance criteria, WORKDIR (the lane's worktree path), BRANCH (`lane/<feature>/<task-N>`), ALLOWED FILES, FORBIDDEN FILES (everything else, especially files owned by other lanes), the relevant APPLY atoms, and the required local check (`npm run typecheck` minimum).
 
-**Guard:** no two active lanes may write the same file. Overlap → merge the tasks or mark one `parallel: false`.
+**Guard:** no two active lanes may write the same file. Overlap → merge the tasks or mark one `parallel: false`. Disjoint files keep merges clean; worktrees keep runtime isolated — both rules apply together, neither replaces the other.
 **Loop back:** a lane reports it cannot meet acceptance criteria → re-plan that task before re-dispatching.
 
 ## Phase 3 — Verify
@@ -48,12 +65,25 @@
 
 After each lane reports done:
 
-1. Deterministic, in the main session: `npm run typecheck && npm run test:unit && npm run build`.
-2. Fresh-context: spawn a `subagent_explore` verifier — it reads the spec's acceptance criteria plus the changed files and returns BLOCKERS or PASS. Read-only on purpose: it judges, it does not fix.
+1. Deterministic, **inside the lane's worktree**: `npm run typecheck && npm run test:unit && npm run build`. A lane's failure never corrupts another lane's working state.
+2. Fresh-context: spawn a `subagent_explore` verifier in the main session — it reviews `git diff main...lane/<feature>/<task-N>` against the spec's acceptance criteria and returns BLOCKERS or PASS. Read-only on purpose: it judges, it does not fix.
 3. Browser-facing change → `testing-with-playwright` e2e spec.
 
 **Guard:** verifier returns PASS (or all blockers fixed within 2 cycles) before the task counts as done.
 **Loop back:** blockers → owning lane fixes; 2 failed cycles → escalate to the human with the verifier output.
+
+## Phase 3.5 — Integrate
+
+**Purpose:** Merge lane branches back in dependency order. Worktrees move collisions from silent runtime overwrites to explicit merge conflicts — resolve them deliberately.
+
+1. Merge lane branches into the main worktree, dependency order (foundation lanes first), one at a time.
+2. After **each** merge: `npm run typecheck && npm run test:unit && npm run build` — a lane is only integrated when gates pass on the merged tree.
+3. Merge conflict → the owning lane of the dependent task resolves it (it holds the contract context); 2 failed resolutions → escalate to the human.
+4. `mock-contract` lanes: after the dependency lane merges, run the plan's explicit integration task — swap mock → real implementation, re-run gates.
+5. No lane may modify `package.json`, lockfiles, or `manifest.json` — such tasks were `parallel: false` and already merged from the main session.
+
+**Guard:** all lane branches merged AND gates pass on the merged tree.
+**Loop back:** unresolved conflict after 2 attempts → escalate with both diffs.
 
 ## Phase 4 — Ship
 
@@ -61,7 +91,8 @@ After each lane reports done:
 2. `git-workflow-and-versioning` — atomic commits, clean history.
 3. `shipping-and-launch` checklist → `npm run ship:dist` when the human says ship.
 4. **Post-Launch Business Review** — the one blocking gate: human confirms the right thing was built vs spec Success Criteria.
-5. `learning-and-apply` ACCUMULATE — code lessons → `experience/` atoms; pipeline lessons (drift, skipped gates, bad routing) → `process/` atoms.
+5. `learning-and-apply` ACCUMULATE — code lessons → `experience/` atoms; pipeline lessons (drift, skipped gates, bad routing, merge conflicts that recurred) → `process/` atoms.
+6. Cleanup — always, including on failure: `git worktree remove` for every provisioned lane. Keep lane branches until ship completes (rollback path), then delete. A leftover worktree corrupts the next run.
 
 ## Subagent prompt templates
 
@@ -70,6 +101,8 @@ After each lane reports done:
 ```
 You own Task <N> of <feature>. Implement ONLY the files listed below; other lanes own other files.
 
+WORKDIR: <absolute path to the lane's worktree> — run every command there
+BRANCH: lane/<feature>/<task-N> — commit your work here, never to main
 TASK: <description>
 ACCEPTANCE: <criteria verbatim from the task>
 ALLOWED FILES: <list>
@@ -95,6 +128,8 @@ CHANGED FILES: <list>
 | Every task has criteria + files list | Back to `planning-and-task-breakdown` |
 | No file owned by two lanes | Re-partition before dispatch |
 | Verifier PASS or blockers fixed in ≤ 2 cycles | Escalate to human with evidence |
+| Each merge passes gates on merged tree | Dependent-task lane resolves; 2 fails → escalate |
+| All worktrees removed after run | `git worktree remove` in finally, no exceptions |
 | Business sign-off | Hold ship until human confirms |
 
 ## Tools by phase
@@ -102,6 +137,7 @@ CHANGED FILES: <list>
 | Phase | Primary tools |
 |---|---|
 | 1 — Load | `read`, `grep` |
-| 2 — Dispatch | `run_subagent`, `edit`, `write` |
+| 2 — Dispatch | `exec` (worktree provision), `run_subagent`, `edit`, `write` |
 | 3 — Verify | `exec`, `run_subagent` |
+| 3.5 — Integrate | `exec`, `run_subagent` |
 | 4 — Ship | `exec`, `run_subagent`, `write` |
