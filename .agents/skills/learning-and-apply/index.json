@@ -2011,6 +2011,24 @@
       "trigger": "String chứa \\n được gửi vào sink render HTML (Anki field, rich text, dangerouslySetInnerHTML, email HTML)"
     },
     {
+      "type": "experience",
+      "id": "latency-dispatch-first-backfill-async",
+      "title": "Handler UI không được await unrelated fetches trước khi dispatch — dispatch ngay, backfill async, báo tiến trình bằng sticky chip",
+      "category": [
+        "ux",
+        "async"
+      ],
+      "tags": [
+        "latency",
+        "parallel",
+        "progress-ui",
+        "prefill",
+        "recording",
+        "quick-add"
+      ],
+      "trigger": "Action handler await nhiều network/media fetches trước khi gọi layer xử lý chính, hoặc hàm collect tuần tự await từng tác vụ độc lập trước một side-effect có window thời gian"
+    },
+    {
       "type": "process",
       "id": "process-generated-catalog-drift",
       "title": "Generated SSOT catalog drift âm thầm — regen mỗi lần đổi + đối chiếu với disk",

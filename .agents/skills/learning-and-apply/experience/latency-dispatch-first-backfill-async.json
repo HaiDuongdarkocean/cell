@@ -1,0 +1,29 @@
+{
+  "id": "latency-dispatch-first-backfill-async",
+  "title": "Handler UI không được await unrelated fetches trước khi dispatch — dispatch ngay, backfill async, báo tiến trình bằng sticky chip",
+  "category": ["performance", "ux"],
+  "tags": ["latency", "async", "parallel", "progress-ui", "prefill", "quick-add", "recording"],
+  "trigger": "Một action handler (click nút) await nhiều network/media fetches trước khi gọi layer xử lý chính, hoặc một hàm collect tuần tự await từng tác vụ độc lập",
+  "principle": "Fetch nằm giữa click và side-effect thời-gian-thật (recording, seek, mở panel) tạo độ trễ cảm nhận và có thể bỏ lỡ window capture. Handler chỉ gói dữ liệu đã có sẵn rồi dispatch ngay; layer sau tự backfill phần thiếu. Trong hàm collect, tách tác vụ độc lập thành nhánh song song (capture ∥ URL fetch) thay vì tuần tự, và expose callback mốc (onRecordingStart) để UI lật trạng thái. Async work kéo dài cần sticky progress chip có update/finish/dismiss — toast auto-hide không đủ.",
+  "cases": [
+    {
+      "context": "useCandidate.sendToCard await Promise.all([fetchAudio, fetchImages, translate]) trước khi gọi onSendToCard — fetchAudio chứa loadSettings cap 5s + TTS 8s → recording video bắt đầu sau ~5s, user tưởng nút chết.",
+      "bad": "const [a, i, t] = await Promise.all([fetchAudio(), fetchImages(), translate()]); onSendToCard(buildPrefill(...));",
+      "good": "onSendToCard(buildPrefill(toolbar.translation, toolbar.audioItems, ...)); // dispatch với state hiện có; controller backfill"
+    },
+    {
+      "context": "collectCardCreatorMedia tuần tự: waitForVideoReady → screenshot → cue match → captureSentenceAudio → rồi mới fetch word/image/TTS. Mỗi fetch delay trực tiếp vào thời điểm record và có thể trôi qua cue.",
+      "bad": "await captureSentenceAudio(...); await fetchWordAudio(); await fetchImages();",
+      "good": "await Promise.all([captureTask, fetchTask]); // capture chạy song song fetch, onRecordingStart?.() ngay trước captureSentenceAudio"
+    },
+    {
+      "context": "showToast auto-hide 3s + không update được → không biểu diễn được vòng đời preparing → recording → adding → success/fail.",
+      "bad": "showToast('collecting…'); /* toast biến mất giữa chừng, không biết trạng thái */",
+      "good": "const chip = showProgressToast(msg, container); chip.update('recording…'); chip.finish('done', 'success');"
+    }
+  ],
+  "applyFor": ["Action handler có network call trước side-effect", "Media capture có window thời gian (cue, selection, playback)", "Multi-phase async cần progress UI", "Preflight check (testConnection) trước chuỗi tác vụ phụ thuộc"],
+  "related": [],
+  "supersedes": [],
+  "source": {"date": "2026-09-13"}
+}
