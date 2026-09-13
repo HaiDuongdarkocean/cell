@@ -656,6 +656,42 @@ describe('ReactSubtitleController', () => {
     expect(fakeEngine.getNativeStyle().visible).toBe(true);
   });
 
+  it('re-bases the study-mode chain on offset change so internal seeks stay internal', () => {
+    const cues: SrtCue[] = [
+      { index: 1, start: 2000, end: 6000, text: 'One' },
+      { index: 2, start: 7000, end: 11000, text: 'Two' },
+    ];
+    controller.loadCues(cues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const twoStep: StudyMode = {
+      id: 'two-step',
+      type: 'custom',
+      icon: 'layers',
+      title: 'TwoStep',
+      description: '',
+      steps: [
+        { subtitle: 'native', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+        { subtitle: 'target', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+      ],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    controller.applyStudyMode(twoStep, advanced);
+
+    controller.setOffsetMs(500);
+    fakeEngine.updateSettings.mockClear();
+
+    video.currentTime = 5.6;
+    video.dispatchEvent(new Event('timeupdate'));
+    video.dispatchEvent(new Event('seeking'));
+    video.dispatchEvent(new Event('timeupdate'));
+
+    const calls = fakeEngine.updateSettings.mock.calls as { targetStyle?: { visible?: boolean }; nativeStyle?: { visible?: boolean } }[][];
+    const last = calls[calls.length - 1]?.[0];
+    expect(last?.targetStyle?.visible).toBe(true);
+    expect(last?.nativeStyle?.visible).toBe(false);
+  });
+
   it('seek actions convert raw cue time through offset and landing epsilon', () => {
     controller.setOffsetMs(500);
     const cue: SrtCue = { index: 1, start: 2000, end: 5000, text: 'Hello' };

@@ -51,6 +51,7 @@ export class SubtitleStudyModeController {
     this.offsetMs = offsetMs;
     if (this.playback?.setCues(targetCues, offsetMs)) {
       this.lastTargetIndex = -1;
+      this.internalSeekTargetMs = null;
     }
   }
 
@@ -58,6 +59,7 @@ export class SubtitleStudyModeController {
     this.offsetMs = offsetMs;
     this.playback?.setCues([], offsetMs);
     this.lastTargetIndex = -1;
+    this.internalSeekTargetMs = null;
   }
 
   /** Called on the video 'seeking' event. Seeks the state machine issued

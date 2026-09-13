@@ -491,6 +491,10 @@ export class ReactSubtitleController {
     this.mount.setManager(this.buildManagerState());
     // Re-render current cue with new offset.
     this.engine.onTimeUpdate();
+    // Keep the study-mode coordinator on the same offset — a stale value makes
+    // it classify its own seeks as external user seeks, aborting the chain.
+    this.studyMode.setCues(this.engine.getTargetCues(), this.offsetMs);
+    this.syncStudyMode();
   }
 
   stepBy(deltaMs: number): void {
