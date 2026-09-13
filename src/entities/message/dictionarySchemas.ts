@@ -4,7 +4,7 @@
 // storage edges. Internal code trusts the types after validation.
 
 import { z } from 'zod';
-import type { LookupRequest } from './types';
+import type { LookupRequest } from '@/entities/dictionary';
 
 // === Reusable primitives ===
 

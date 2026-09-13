@@ -12,7 +12,7 @@ import {
   WordStatusGetPayloadSchema,
   WordStatusesGetPayloadSchema,
   WordStatusSetPayloadSchema,
-} from '@/features/dictionaryPopup/schema';
+} from '@/entities/message/dictionarySchemas';
 import {
   getWordStatus,
   getWordStatuses,

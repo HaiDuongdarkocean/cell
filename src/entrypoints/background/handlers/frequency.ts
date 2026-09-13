@@ -8,7 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { FrequencyGetPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { FrequencyGetPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
 import type { FrequencyEntry } from '@/entities/dictionary';
 

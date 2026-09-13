@@ -6,7 +6,7 @@
  * offscreen failure if the caller supports it.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { TtsSpeakLocalPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsSpeakLocalPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 

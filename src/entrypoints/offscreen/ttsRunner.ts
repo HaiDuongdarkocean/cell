@@ -5,7 +5,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { onMessage, sendMessage } from '@/shared/lib/chrome-apis';
-import { TtsSpeakLocalPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsSpeakLocalPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { createSupertonicTtsEngine } from '@/features/tts/services/supertonicTtsEngine';
 import { downloadVoicePack, isVoicePackDownloaded } from '@/features/tts/services/ttsDownloadManager';
 import type { MessageResponse } from '@/entities/message';

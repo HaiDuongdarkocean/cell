@@ -14,7 +14,7 @@ import type { LookupResult } from '@/features/dictionaryPopup/types';
 import {
   LookupRequestPayloadSchema,
   LookupCancelPayloadSchema,
-} from '@/features/dictionaryPopup/schema';
+} from '@/entities/message/dictionarySchemas';
 
 /** In-flight lookup abort controllers (for cancellation). */
 const abortControllers = new Map<string, AbortController>();

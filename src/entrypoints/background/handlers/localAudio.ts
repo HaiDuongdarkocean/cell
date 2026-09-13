@@ -10,7 +10,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { FetchLocalAudioPayloadSchema, FetchLocalAudioResponseSchema } from '@/features/dictionaryPopup/schema';
+import { FetchLocalAudioPayloadSchema, FetchLocalAudioResponseSchema } from '@/entities/message/dictionarySchemas';
 import type { FetchLocalAudioResponse } from '@/features/dictionaryPopup/types';
 import { LingvoDslAudioProvider } from '@/features/pronunciation/services/lingvoDslAudioProvider';
 

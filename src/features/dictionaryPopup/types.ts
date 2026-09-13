@@ -1,11 +1,15 @@
 // Popup Dictionary contracts — spec §9.1, §9.4.
 //
 // Boundary types for lookup, worker transport, Quick Add, and word status.
-// No logic here — pure type module. Zod validation lives in ./schema.ts.
+// No logic here — pure type module. Zod validation lives in
+// `@/entities/message/dictionarySchemas`.
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
 // `@/entities/settings/types.ts` and are added in Task 3.2.
 
 import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
+import type { LookupRequest } from '@/entities/dictionary';
+
+export type { LookupRequest };
 
 // === Logic output → UI input ===
 
@@ -20,16 +24,6 @@ export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'unavailabl
 export type MatchSource = 'dictionary' | 'plugin' | 'fallback';
 
 // === Lookup request / result ===
-
-export interface LookupRequest {
-  readonly term: string;
-  readonly langCode: string;
-  readonly contextSentence: string;
-  /** UTF-16 character offset of hovered token; worker derives token index. */
-  readonly cursorOffset: number;
-  /** true khi user bôi đen text: bỏ qua plugin phraseMatch, dùng term verbatim + lemma only. */
-  readonly fallback?: boolean;
-}
 
 export interface DefinitionEntry {
   readonly id: string;

@@ -5,7 +5,7 @@
  * runner streams progress via TTS_DOWNLOAD_PROGRESS and responds when done.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { TtsDownloadVoicePayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 

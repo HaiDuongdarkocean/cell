@@ -5,7 +5,7 @@
  * can load its Emscripten worker and synthesize audio.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { PronunciationEspeakTtsPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';

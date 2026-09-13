@@ -8,7 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { TtsSpeakPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsSpeakPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { createTtsEngine, type TtsEngine } from '@/features/dictionaryPopup/services/ttsEngineService';
 
 /** Cached engine — created lazily on first TTS_SPEAK. */

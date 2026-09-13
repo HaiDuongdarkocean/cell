@@ -15,7 +15,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
-import { TtsFetchAudioPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsFetchAudioPayloadSchema } from '@/entities/message/dictionarySchemas';
 
 /** Google Translate unofficial TTS endpoint. */
 const GOOGLE_TTS_ENDPOINT = 'https://translate.google.com/translate_tts';
