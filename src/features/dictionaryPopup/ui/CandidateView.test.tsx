@@ -337,7 +337,7 @@ describe('CandidateView', () => {
     }));
   });
 
-  it('sendToCard fetches audio, image and translation and calls onSendToCard', async () => {
+  it('sendToCard calls onSendToCard immediately without blocking on media fetches', async () => {
     const candidate = makeResult('hello', {
       definitions: [
         { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
@@ -358,23 +358,22 @@ describe('CandidateView', () => {
 
     await act(async () => { fireEvent.click(screen.getByTestId('dictionary-send-to-card')); });
 
-    await waitFor(() => expect(onSendToCard).toHaveBeenCalled());
+    expect(onSendToCard).toHaveBeenCalled();
 
-    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
     }));
-    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.FETCH_IMAGES,
     }));
-    expect(mockTranslateSentence).toHaveBeenCalledWith('hello world', 'en', 'vi');
+    expect(mockTranslateSentence).not.toHaveBeenCalled();
 
     expect(onSendToCard).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
       contextSentence: 'hello world',
-      translation: 'xin chào',
-      wordAudioUrls: ['https://audio/1'],
-      sentenceAudioUrls: ['https://audio/tts'],
-      imageUrls: ['https://example.com/i1.jpg'],
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
     }));
   });
 

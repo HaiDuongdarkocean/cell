@@ -57,13 +57,16 @@ import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCrea
 import { getModelFields } from '@/features/cardCreator/service/ankiSchemaCache';
 import { autoMapFields } from '@/features/cardCreator/service/fieldMapping';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
+import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
-import { showToast } from '@/features/subtitle/ui/subtitleUI';
+import { showToast, showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { t } from '@/shared/i18n';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+
+const ANKI_UNREACHABLE_RE = /network error|timed out|unreachable|failed to fetch/i;
 
 /** Minimal cue range used for sentence audio capture. */
 export interface CueRange {
@@ -1159,6 +1162,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // --- Background media fetch (non-blocking) ---
     // Screenshot + sentence audio (subtitle case only — requires video).
     if (captureVideo) {
+      const chip = showProgressToast(t('dict.toast.recording'), deps.container);
       void (async () => {
         let recorded = false;
         try {
@@ -1180,6 +1184,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             }
           } catch { /* non-fatal */ }
         } catch { /* non-fatal */ }
+        chip.dismiss();
         if (recorded) return;
         for (const url of prefill.sentenceAudioUrls ?? []) {
           try {
@@ -1289,12 +1294,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   /** Collect audio/image URLs + captured subtitle media (screenshot + sentence audio)
    *  for a popup Card Creator / Quick Add action. Reused by both the integrated
-   *  panel and standalone dialog paths so neither path forgets the recording. */
+   *  panel and standalone dialog paths so neither path forgets the recording.
+   *  URL fetches run in parallel with the video capture; a recorded cue clip
+   *  wins over TTS sentence audio. */
   async function collectCardCreatorMedia(
     prefill: PopupCardCreatorPrefill,
     sourceLang: string,
     fromSubtitle: boolean,
     warnings?: string[],
+    onRecordingStart?: () => void,
   ): Promise<{
     wordAudioUrls: readonly string[];
     sentenceAudioUrls: readonly string[];
@@ -1304,40 +1312,42 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }> {
     const initialMedia: MediaFile[] = [];
     let cue: BilingualCue | undefined;
-
-    if (video && video.videoWidth > 0 && fromSubtitle) {
-      await waitForVideoReady(video);
-      try {
-        initialMedia.push(await captureScreenshot(video));
-      } catch { warnings?.push('screenshot'); }
-      try {
-        const cues = getTargetCues?.() ?? [];
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          cue = {
-            index: matchingCue.index ?? 0,
-            start: matchingCue.start,
-            end: matchingCue.end,
-            targetText: matchingCue.text ?? prefill.contextSentence ?? '',
-            nativeText: '',
-          };
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) initialMedia.push(audioR.file);
-        }
-      } catch { warnings?.push('sentence audio capture'); }
-    }
-
-    const hasRecordedAudio = initialMedia.some((f) => f.kind === 'audio');
     let wordAudioUrls = prefill.wordAudioUrls ?? [];
-    let sentenceAudioUrls = hasRecordedAudio ? [] : (prefill.sentenceAudioUrls ?? []);
     let imageUrls = prefill.imageUrls ?? [];
+    let ttsSentenceUrls: readonly string[] = [];
 
-    const needsWordAudio = wordAudioUrls.length === 0;
-    const needsImages = imageUrls.length === 0;
-    const needsSentenceAudio = !hasRecordedAudio && sentenceAudioUrls.length === 0 && !!prefill.contextSentence;
+    const captureTask = (async (): Promise<void> => {
+      if (video && video.videoWidth > 0 && fromSubtitle) {
+        await waitForVideoReady(video);
+        try {
+          initialMedia.push(await captureScreenshot(video));
+        } catch { warnings?.push('screenshot'); }
+        try {
+          const cues = getTargetCues?.() ?? [];
+          const currentMs = video.currentTime * 1000;
+          const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+          if (matchingCue) {
+            cue = {
+              index: matchingCue.index ?? 0,
+              start: matchingCue.start,
+              end: matchingCue.end,
+              targetText: matchingCue.text ?? prefill.contextSentence ?? '',
+              nativeText: '',
+            };
+            onRecordingStart?.();
+            const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+            if (audioR.ok) initialMedia.push(audioR.file);
+          }
+        } catch { warnings?.push('sentence audio capture'); }
+      }
+    })();
 
-    if (needsWordAudio || needsImages || needsSentenceAudio) {
+    const fetchTask = (async (): Promise<void> => {
+      const needsWordAudio = wordAudioUrls.length === 0;
+      const needsImages = imageUrls.length === 0;
+      const wantsSentenceTts = (prefill.sentenceAudioUrls ?? []).length === 0 && !!prefill.contextSentence;
+      if (!needsWordAudio && !needsImages && !wantsSentenceTts) return;
+
       const tasks: Promise<void>[] = [];
 
       if (needsWordAudio) {
@@ -1382,7 +1392,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         })());
       }
 
-      if (needsSentenceAudio) {
+      if (wantsSentenceTts) {
         tasks.push((async (): Promise<void> => {
           try {
             const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
@@ -1390,14 +1400,21 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
             });
             if (res?.success && res.data?.url) {
-              sentenceAudioUrls = [res.data.url];
+              ttsSentenceUrls = [res.data.url];
             }
           } catch { /* non-fatal */ }
         })());
       }
 
       await Promise.all(tasks);
-    }
+    })();
+
+    await Promise.all([captureTask, fetchTask]);
+
+    const hasRecordedAudio = initialMedia.some((f) => f.kind === 'audio');
+    const sentenceAudioUrls = hasRecordedAudio
+      ? []
+      : (prefill.sentenceAudioUrls?.length ? prefill.sentenceAudioUrls : ttsSentenceUrls);
 
     return { wordAudioUrls, sentenceAudioUrls, imageUrls, initialMedia, cue };
   }
@@ -1415,27 +1432,34 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       // ADR-065: route to the integrated universal panel and keep the popup open.
       // The popup decision (stayOpen) is returned synchronously, but media is
       // collected asynchronously so the panel opens with screenshot/audio/image.
+      const chip = showProgressToast(t('dict.toast.preparingCard'), deps.container);
       void (async (): Promise<void> => {
         try {
           const settings = await loadSettingsOrToast(deps.container);
-          if (!settings) return;
+          if (!settings) {
+            chip.dismiss();
+            return;
+          }
 
           const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
           const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
-          const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle);
-
-          let sentenceTranslation = prefill.translation;
-          if (!sentenceTranslation && prefill.contextSentence) {
+          const translationTask = (async (): Promise<string | undefined> => {
+            if (prefill.translation || !prefill.contextSentence) return prefill.translation;
             try {
               const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
                 type: MESSAGE_TYPES.TRANSLATE,
                 payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
               });
               if (res?.success && res.data?.translated?.length) {
-                sentenceTranslation = res.data.translated.join(' ');
+                return res.data.translated.join(' ');
               }
             } catch { /* non-fatal */ }
-          }
+            return undefined;
+          })();
+          const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, undefined, () => {
+            chip.update(t('dict.toast.recording'));
+          });
+          const sentenceTranslation = prefill.translation ?? (await translationTask);
 
           const context: CardCreatorOpenContext = {
             video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
@@ -1455,8 +1479,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           };
 
           sendToCard(context, action, prefill);
+          chip.dismiss();
         } catch (err: unknown) {
           console.warn('[web-text-dict] sendToCard failed:', err);
+          chip.finish(t('dict.toast.sendToCardFailed', [err instanceof Error ? err.message : String(err)]), 'error');
         }
       })();
       return { stayOpen: true };
@@ -1486,6 +1512,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const freshCcSettings = settings.cardCreator;
     const url = freshCcSettings.ankiConnectUrl;
 
+    const chip = showProgressToast(t('dict.toast.quickAddCollecting'), deps.container);
+
+    const conn = await testConnection(url);
+    if (!conn.ok) {
+      chip.finish(t('dict.toast.ankiNotRunning'), 'error');
+      return;
+    }
+
     const autosaver = new DraftAutosaver();
     const restored = await autosaver.load();
     const deck = restored?.deck ?? freshCcSettings.defaultDeck;
@@ -1503,25 +1537,43 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const tags = restored?.tags ?? freshCcSettings.defaultTags;
 
     if (!deck || !noteType) {
-      showToast(t('dict.toast.quickAddNeedDeck'), deps.container, { variant: 'error' });
+      chip.finish(t('dict.toast.quickAddNeedDeck'), 'error');
       return;
     }
     if (Object.keys(fieldMapping).length === 0) {
-      showToast(t('dict.toast.quickAddNeedMapping'), deps.container, { variant: 'error' });
+      chip.finish(t('dict.toast.quickAddNeedMapping'), 'error');
       return;
     }
 
-    showToast(t('dict.toast.quickAddCollecting'), deps.container, { variant: 'info' });
-
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
+    const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
 
     const wordAudios: MediaFile[] = [];
     const sentenceAudios: MediaFile[] = [];
     const images: MediaFile[] = [];
     const warnings: string[] = [];
 
+    const translationTask = (async (): Promise<string> => {
+      if (prefill.translation || !prefill.contextSentence) return prefill.translation ?? '';
+      try {
+        const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
+          type: MESSAGE_TYPES.TRANSLATE,
+          payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
+        });
+        if (res?.success && res.data?.translated?.length) {
+          return res.data.translated.join(' ');
+        }
+      } catch { /* non-fatal */ }
+      return '';
+    })();
+
     // Fetch missing URL media and capture subtitle screenshot/audio in one place.
-    const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, warnings);
+    const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, warnings, () => {
+      chip.update(t('dict.toast.recording'));
+    });
+    const sentenceTranslation = prefill.translation ?? (await translationTask);
+
+    chip.update(t('dict.toast.quickAddAdding'));
 
     const [wordResults, sentenceResults, imageResults] = await Promise.all([
       Promise.allSettled((media.wordAudioUrls ?? []).map((u) => fetchMediaFile(u, 'audio'))),
@@ -1555,7 +1607,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       {
         targetWord: prefill.term,
         sentence: prefill.contextSentence,
-        sentenceTranslation: prefill.translation ?? '',
+        sentenceTranslation,
         definitions: definitionsText,
         note: '',
         moreExample: '',
@@ -1566,12 +1618,16 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     if (result.ok) {
       if (result.noteId === null) {
-        showToast(t('dict.toast.duplicate'), deps.container, { variant: 'warning' });
+        chip.finish(t('dict.toast.duplicate'), 'warning');
       } else {
-        showToast(t('dict.toast.cardAdded', [deck, result.noteId]), deps.container, { variant: 'success' });
+        chip.finish(t('dict.toast.cardAdded', [deck, result.noteId]), 'success');
       }
     } else {
-      showToast(t('dict.toast.quickAddFailed', [result.error ?? '']), deps.container, { variant: 'error' });
+      const errMsg = result.error ?? '';
+      chip.finish(
+        ANKI_UNREACHABLE_RE.test(errMsg) ? t('dict.toast.ankiNotRunning') : t('dict.toast.quickAddFailed', [errMsg]),
+        'error',
+      );
     }
   }
 

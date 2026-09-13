@@ -268,7 +268,7 @@ describe('useCandidate', () => {
     }));
   });
 
-  it('sendToCard auto-fetches audio, image, and translation without opening tabs', async () => {
+  it('sendToCard dispatches immediately without blocking on media fetches', async () => {
     const candidate = makeResult('hello');
     const onSendToCard = jest.fn<(prefill: PopupCardCreatorPrefill) => void>();
 
@@ -282,25 +282,22 @@ describe('useCandidate', () => {
 
     await act(async () => { await result.current.sendToCard(); });
 
-    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
     }));
-    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mockSendMessage).not.toHaveBeenCalledWith(expect.objectContaining({
       type: MESSAGE_TYPES.FETCH_IMAGES,
     }));
-    expect(mockTranslateSentence).toHaveBeenCalledWith('hello world', 'en', 'vi');
+    expect(mockTranslateSentence).not.toHaveBeenCalled();
 
     expect(onSendToCard).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
       contextSentence: 'hello world',
-      translation: 'xin chào',
-      wordAudioUrls: ['https://audio/1'],
-      sentenceAudioUrls: ['https://audio/tts'],
-      imageUrls: ['https://example.com/i1.jpg'],
-      // Selection snapshot for the integrated Dictionary clone: audio/image
-      // mirror the effective selection (defaultSelected when never toggled),
-      // definitions mirror explicit ticks, translation checkbox stays off.
-      selectedAudioIds: ['a1'],
+      translation: undefined,
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+      selectedAudioIds: [],
       selectedImageIds: [],
       selectedDefinitionIds: [],
       translationSelected: false,

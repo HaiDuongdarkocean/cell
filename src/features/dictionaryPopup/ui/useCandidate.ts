@@ -188,52 +188,30 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
 
   const sendToCard = useCallback(async (): Promise<void> => {
     if (!onSendToCard) return;
-    const [loadedAudioItems, loadedImageItems, loadedTranslation] = await Promise.all([
-      toolbar.fetchAudio(),
-      toolbar.fetchImages(),
-      toolbar.translate(),
-    ]);
-    const audioSelection = loadedAudioItems.length === toolbar.audioItems.length
-      ? toolbar.audioSelection
-      : new Map(loadedAudioItems.map((item) => [item.id, item.defaultSelected]));
-    const imageSelection = loadedImageItems.length === toolbar.imageItems.length
-      ? toolbar.imageSelection
-      : new Map(loadedImageItems.map((item) => [item.id, item.defaultSelected]));
     onSendToCard(buildPrefill(
       candidate,
       selectedDefinitions,
       contextSentence,
-      loadedTranslation,
-      loadedAudioItems,
-      audioSelection,
-      loadedImageItems,
-      imageSelection,
+      toolbar.translation,
+      toolbar.audioItems,
+      toolbar.audioSelection,
+      toolbar.imageItems,
+      toolbar.imageSelection,
       toolbar.translationSelected,
     ));
   }, [onSendToCard, toolbar, candidate, selectedDefinitions, contextSentence]);
 
   const quickAdd = useCallback(async (): Promise<void> => {
     if (!onQuickAdd) return;
-    const [loadedAudioItems, loadedImageItems, loadedTranslation] = await Promise.all([
-      toolbar.fetchAudio(),
-      toolbar.fetchImages(),
-      toolbar.translate(),
-    ]);
-    const audioSelection = loadedAudioItems.length === toolbar.audioItems.length
-      ? toolbar.audioSelection
-      : new Map(loadedAudioItems.map((item) => [item.id, item.defaultSelected]));
-    const imageSelection = loadedImageItems.length === toolbar.imageItems.length
-      ? toolbar.imageSelection
-      : new Map(loadedImageItems.map((item) => [item.id, item.defaultSelected]));
     onQuickAdd(buildPrefill(
       candidate,
       selectedDefinitions,
       contextSentence,
-      loadedTranslation,
-      loadedAudioItems,
-      audioSelection,
-      loadedImageItems,
-      imageSelection,
+      toolbar.translation,
+      toolbar.audioItems,
+      toolbar.audioSelection,
+      toolbar.imageItems,
+      toolbar.imageSelection,
       toolbar.translationSelected,
     ));
   }, [onQuickAdd, toolbar, candidate, selectedDefinitions, contextSentence]);

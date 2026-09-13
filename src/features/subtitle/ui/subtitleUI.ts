@@ -224,22 +224,15 @@ const VARIANT_COLORS: Record<ToastVariant, string> = {
   info: 'var(--color-info)',
 };
 
-/**
- * Show a temporary toast notification at bottom-center of video (UI v4).
- * Matches docs/mockups/subtitle-selector-mockup.html: bottom 30%, theme tokens,
- * bordered card. Auto-hides after 3 seconds.
- * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
- * not fixed viewport — toast stays anchored to video even on scroll.
- */
-export function showToast(message: string, container: HTMLElement, options: ToastOptions = {}): void {
-  const { variant = 'info' } = options;
-  const color = VARIANT_COLORS[variant];
-
+function buildToastEl(
+  message: string,
+  variant: ToastVariant,
+): { toast: HTMLDivElement; icon: HTMLSpanElement; text: HTMLSpanElement } {
   const toast = document.createElement('div');
   toast.setAttribute('data-cell-id', 'subtitle-toast');
   toast.setAttribute('data-variant', variant);
   toast.className = 'subtitle-toast';
-  toast.style.setProperty('--toast-variant-color', color);
+  toast.style.setProperty('--toast-variant-color', VARIANT_COLORS[variant]);
 
   const icon = document.createElement('span');
   icon.className = 'subtitle-toast-icon';
@@ -250,12 +243,75 @@ export function showToast(message: string, container: HTMLElement, options: Toas
   text.textContent = message;
   toast.appendChild(text);
 
-  container.appendChild(toast);
+  return { toast, icon, text };
+}
 
+function scheduleToastRemove(toast: HTMLElement): void {
   setTimeout(() => {
     toast.classList.add('subtitle-toast--fade-out');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+/**
+ * Show a temporary toast notification at bottom-center of video (UI v4).
+ * Matches docs/mockups/subtitle-selector-mockup.html: bottom 30%, theme tokens,
+ * bordered card. Auto-hides after 3 seconds.
+ * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
+ * not fixed viewport — toast stays anchored to video even on scroll.
+ */
+export function showToast(message: string, container: HTMLElement, options: ToastOptions = {}): void {
+  const { variant = 'info' } = options;
+  const { toast } = buildToastEl(message, variant);
+  container.appendChild(toast);
+  scheduleToastRemove(toast);
+}
+
+export interface ProgressToastHandle {
+  update(message: string, variant?: ToastVariant): void;
+  finish(message: string, variant?: ToastVariant): void;
+  dismiss(): void;
+}
+
+/**
+ * Sticky variant of showToast for multi-phase async work (media recording,
+ * Quick Add). Stays visible until update/finish/dismiss — finish swaps the
+ * message + variant then auto-hides like a normal toast.
+ */
+export function showProgressToast(
+  message: string,
+  container: HTMLElement,
+  options: ToastOptions = {},
+): ProgressToastHandle {
+  const { toast, icon, text } = buildToastEl(message, options.variant ?? 'info');
+  container.appendChild(toast);
+  let closed = false;
+
+  const setVariant = (variant: ToastVariant): void => {
+    toast.setAttribute('data-variant', variant);
+    toast.style.setProperty('--toast-variant-color', VARIANT_COLORS[variant]);
+    icon.innerHTML = ICONS[variant];
+  };
+
+  return {
+    update(msg, variant) {
+      if (closed) return;
+      text.textContent = msg;
+      if (variant) setVariant(variant);
+    },
+    finish(msg, variant) {
+      if (closed) return;
+      closed = true;
+      if (variant) setVariant(variant);
+      text.textContent = msg;
+      scheduleToastRemove(toast);
+    },
+    dismiss() {
+      if (closed) return;
+      closed = true;
+      toast.remove();
+    },
+  };
 }
 
 /**

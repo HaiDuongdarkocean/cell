@@ -211,6 +211,11 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     await expect(sendButton).toBeVisible({ timeout: 15_000 });
     await sendButton.click();
 
+    // The progress chip floats bottom-center over the video while the cue
+    // audio is being recorded ("Preparing card…" then "Recording…").
+    const chip = streamFlixPage.locator('[data-cell-id="subtitle-toast"]');
+    await expect(chip).toContainText(/recording|preparing/i, { timeout: 15_000 });
+
     // collectCardCreatorMedia seeks the video back to the cue start and
     // records ~5.3s of cue audio before the panel mounts — wait generously.
     const sentenceRows = streamFlixPage.locator(
@@ -230,6 +235,9 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
       '[data-cell-id="cc-images-list"] [data-cell-id^="cc-images-list-thumb-"]',
     );
     await expect(thumbs.first()).toBeVisible({ timeout: 5_000 });
+
+    // Panel opened — the chip has been dismissed.
+    await expect(chip).toHaveCount(0);
 
     await streamFlixPage.screenshot({ path: testInfo.outputPath('subtitle-card-audio.png') });
   });
