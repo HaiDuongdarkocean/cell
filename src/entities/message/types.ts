@@ -20,7 +20,7 @@ import type {
   SubtitleSearchResult,
   SearchError,
   KeyQuotaInfo,
-} from '@/features/subtitle/logic/subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 
 // === Message Types ===
