@@ -38,6 +38,7 @@ export class StudyModePlaybackController {
   private stepIndex = 0;
   private repeatRemaining = 1;
   private loopCount = 0;
+  private silenceHandledIndex = -1;
   private state: PlaybackState = { type: 'idle' };
 
   constructor(
@@ -52,15 +53,37 @@ export class StudyModePlaybackController {
     this.offsetMs = offsetMs;
   }
 
-  setCues(cues: readonly SrtCue[], offsetMs = this.offsetMs): void {
+  get hasActiveCue(): boolean {
+    return this.activeCueIndex >= 0;
+  }
+
+  setCues(cues: readonly SrtCue[], offsetMs = this.offsetMs): boolean {
+    const active = this.cues[this.activeCueIndex];
+    const next = cues[this.activeCueIndex];
+    const boundariesChanged =
+      offsetMs !== this.offsetMs ||
+      !active ||
+      !next ||
+      active.start !== next.start ||
+      active.end !== next.end;
     this.cues = cues;
     this.offsetMs = offsetMs;
+    this.silenceHandledIndex = -1;
+    if (boundariesChanged) this.abort();
+    return boundariesChanged;
   }
 
   setMode(mode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     this.mode = mode;
     this.advanced = advanced;
     this.activeCueIndex = -1;
+    this.silenceHandledIndex = -1;
+    this.state = { type: 'idle' };
+  }
+
+  abort(): void {
+    this.activeCueIndex = -1;
+    this.silenceHandledIndex = -1;
     this.state = { type: 'idle' };
   }
 
@@ -70,6 +93,7 @@ export class StudyModePlaybackController {
     this.activeCueEnd = cue.end - this.offsetMs;
     this.stepIndex = 0;
     this.loopCount = 0;
+    this.silenceHandledIndex = -1;
     const step = this.currentStep();
     if (!step) return [];
     this.repeatRemaining = step.repeat;
@@ -192,12 +216,14 @@ export class StudyModePlaybackController {
 
   private handleSilence(currentTimeMs: number): PlaybackAction[] {
     if (this.advanced.skipNoDialogue === 'OFF') return [];
+    if (this.cueIndexAt(currentTimeMs) >= 0) return [];
 
-    const nextCue = this.nextCueAfter(currentTimeMs);
-    if (!nextCue) return [];
+    const nextIndex = this.nextCueIndexAfter(currentTimeMs);
+    if (nextIndex < 0 || nextIndex === this.silenceHandledIndex) return [];
+    this.silenceHandledIndex = nextIndex;
 
     if (this.advanced.skipNoDialogue === 'JUMP') {
-      return [{ type: 'seek', timeMs: nextCue.start - this.offsetMs }];
+      return [{ type: 'seek', timeMs: this.cues[nextIndex].start }];
     }
 
     const multiplier = this.parseSkipMultiplier(this.advanced.skipNoDialogue);
@@ -214,15 +240,23 @@ export class StudyModePlaybackController {
   }
 
   private cueStartMs(): number {
-    const cue = this.cues[this.activeCueIndex];
-    return cue ? cue.start - this.offsetMs : 0;
+    return this.cues[this.activeCueIndex]?.start ?? 0;
   }
 
-  private nextCueAfter(currentTimeMs: number): SrtCue | undefined {
-    for (const cue of this.cues) {
+  private cueIndexAt(currentTimeMs: number): number {
+    for (let i = 0; i < this.cues.length; i++) {
+      const cue = this.cues[i];
       const start = cue.start - this.offsetMs;
-      if (start > currentTimeMs) return cue;
+      if (start > currentTimeMs) continue;
+      if (currentTimeMs < cue.end - this.offsetMs) return i;
     }
-    return undefined;
+    return -1;
+  }
+
+  private nextCueIndexAfter(currentTimeMs: number): number {
+    for (let i = 0; i < this.cues.length; i++) {
+      if (this.cues[i].start - this.offsetMs > currentTimeMs) return i;
+    }
+    return -1;
   }
 }

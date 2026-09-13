@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import type { StudyMode, StudyModeAdvancedSettings, StudyModeState, StudyStep } from '@/entities/studyMode';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
-import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
-import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { applyStudyModeState } from './content/studyModeController';
 import { migrateStudyModeState, INITIAL_STUDY_MODE_STATE } from './lib/migrateStudyModeState';
 import { validateModeName } from './lib/validateModeName';
 import { generateModeId } from './lib/generateModeId';
@@ -34,16 +33,8 @@ async function persist(state: StudyModeState): Promise<void> {
   }
 }
 
-async function applyToPlayer(state: StudyModeState): Promise<void> {
-  try {
-    const activeMode = findActiveMode(state);
-    await sendMessage({
-      type: MESSAGE_TYPES.APPLY_STUDY_MODE,
-      payload: { activeMode, advanced: state.advanced },
-    });
-  } catch (e) {
-    console.error('[studyModeStore] applyToPlayer failed', e);
-  }
+function applyToPlayer(state: StudyModeState): void {
+  applyStudyModeState(state);
 }
 
 export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
@@ -60,7 +51,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     set(next);
     void persist(next);
     if (next.activeModeId !== state.activeModeId) {
-      void applyToPlayer(next);
+      applyToPlayer(next);
     }
   },
 
@@ -69,7 +60,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     const next: StudyModeState = { ...state, advanced };
     set(next);
     void persist(next);
-    void applyToPlayer(next);
+    applyToPlayer(next);
   },
 
   createCustomMode: (title, steps) => {
@@ -99,7 +90,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     };
     set(next);
     void persist(next);
-    void applyToPlayer(next);
+    applyToPlayer(next);
     return newMode;
   },
 
@@ -134,7 +125,7 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     set(next);
     void persist(next);
     if (next.activeModeId === id) {
-      void applyToPlayer(next);
+      applyToPlayer(next);
     }
     return updated;
   },
@@ -151,14 +142,16 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
     set(next);
     void persist(next);
     if (state.activeModeId === id) {
-      void applyToPlayer(next);
+      applyToPlayer(next);
     }
   },
 
   applyActiveMode: async () => {
-    await applyToPlayer(get());
+    applyToPlayer(get());
   },
 }));
+
+let storageSyncBound = false;
 
 export async function loadStudyModeState(): Promise<void> {
   try {
@@ -173,7 +166,10 @@ export async function loadStudyModeState(): Promise<void> {
     }
 
     useStudyModeStore.setState({ ...migrated, isLoaded: true });
-    // ponytail: storage sync across tabs/pages.
+    // ponytail: storage sync across tabs/pages. Registered once per context —
+    // the tab re-mounts on every panel open and addListener would leak.
+    if (storageSyncBound) return;
+    storageSyncBound = true;
     onStorageChanged((changes, area) => {
       if (area !== 'local') return;
       const change = changes[STORAGE_KEYS.STUDY_MODES];

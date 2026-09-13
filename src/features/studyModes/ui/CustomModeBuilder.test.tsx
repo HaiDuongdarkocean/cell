@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/globals';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CustomModeBuilder } from './CustomModeBuilder';
 import { useStudyModeStore } from '../studyModeStore';
 import { INITIAL_STUDY_MODE_STATE } from '../lib/migrateStudyModeState';
@@ -110,6 +110,34 @@ describe('CustomModeBuilder', () => {
     });
 
     expect(useStudyModeStore.getState().customModes).toHaveLength(0);
+  });
+
+  it('keeps in-progress edits when the store updates while the builder is open', async () => {
+    render(<CustomModeBuilder open={true} onOpenChange={onOpenChange} editingId={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    const input = screen.getByTestId('builder-title-input');
+    fireEvent.change(input, { target: { value: 'My typing' } });
+
+    act(() => {
+      useStudyModeStore.setState({
+        customModes: [
+          {
+            id: 'custom-ext',
+            type: 'custom',
+            icon: 'slidersHorizontal',
+            title: 'External',
+            description: '',
+            steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+          },
+        ],
+      });
+    });
+
+    expect(input).toHaveValue('My typing');
   });
 
   it('adds and reorders steps via the cue strip', async () => {

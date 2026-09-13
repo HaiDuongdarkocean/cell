@@ -42,6 +42,11 @@ import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/
 // cross-origin iframe. Child frames request the host container via postMessage.
 installIframePlayerModeBridge();
 
+// ponytail: lazy-import dep preloads resolve against the host page and always
+// 404 in content-script context; swallowing the error lets the real
+// chrome-extension:// import proceed (initHeavyFeatures, lazy panels).
+window.addEventListener('vite:preloadError', (event) => event.preventDefault());
+
 // Clear per-page caches immediately. The MAIN-world fetch interceptor may
 // re-post captured bodies as soon as the listener below announces readiness,
 // so the cache must be empty before registration to avoid replaying stale

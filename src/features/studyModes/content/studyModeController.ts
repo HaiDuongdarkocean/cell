@@ -1,8 +1,8 @@
-import { getStorage } from '@/shared/lib/chrome-apis';
+import { getStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { onMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
-import { INITIAL_STUDY_MODE_STATE } from '../lib/migrateStudyModeState';
+import { INITIAL_STUDY_MODE_STATE, migrateStudyModeState } from '../lib/migrateStudyModeState';
 import { findActiveMode } from '../lib/findActiveMode';
 import type { StudyMode, StudyModeAdvancedSettings, StudyModeState } from '@/entities/studyMode';
 
@@ -29,39 +29,29 @@ export function subscribeToStudyMode(cb: (state: ActiveStudyMode | null) => void
 }
 
 export function applyStudyModeState(state: StudyModeState): void {
-  const activeMode = findActiveMode(state);
+  let activeMode = findActiveMode(state);
+  if (activeMode.id !== state.activeModeId) {
+    state = { ...state, activeModeId: 'normal' };
+    activeMode = findActiveMode(state);
+  }
   setActiveStudyMode({ activeMode, advanced: state.advanced });
 }
 
 export function initializeStudyModeController(): void {
   void getStorage<Record<string, unknown>>(STORAGE_KEYS.STUDY_MODES)
     .then((data) => {
-      const raw = data[STORAGE_KEYS.STUDY_MODES] as Partial<StudyModeState> | undefined;
-      if (!raw) {
-        setActiveStudyMode({
-          activeMode: findActiveMode(INITIAL_STUDY_MODE_STATE),
-          advanced: INITIAL_STUDY_MODE_STATE.advanced,
-        });
-        return;
-      }
-      const state: StudyModeState = {
-        version: raw.version ?? 1,
-        activeModeId: raw.activeModeId ?? 'normal',
-        customModes: Array.isArray(raw.customModes) ? raw.customModes : [],
-        advanced: raw.advanced ?? INITIAL_STUDY_MODE_STATE.advanced,
-      };
-      const activeMode = findActiveMode(state);
-      if (activeMode.id !== state.activeModeId) {
-        state.activeModeId = 'normal';
-      }
-      setActiveStudyMode({ activeMode, advanced: state.advanced });
+      applyStudyModeState(migrateStudyModeState(data[STORAGE_KEYS.STUDY_MODES]));
     })
     .catch(() => {
-      setActiveStudyMode({
-        activeMode: findActiveMode(INITIAL_STUDY_MODE_STATE),
-        advanced: INITIAL_STUDY_MODE_STATE.advanced,
-      });
+      applyStudyModeState(INITIAL_STUDY_MODE_STATE);
     });
+
+  onStorageChanged((changes, area) => {
+    if (area !== 'local') return;
+    const change = changes[STORAGE_KEYS.STUDY_MODES];
+    if (!change) return;
+    applyStudyModeState(migrateStudyModeState(change.newValue));
+  });
 
   const remove = onMessage((msg) => {
     if ((msg as { type?: string }).type === MESSAGE_TYPES.APPLY_STUDY_MODE) {

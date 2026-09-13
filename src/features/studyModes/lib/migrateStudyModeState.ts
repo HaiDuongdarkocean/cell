@@ -1,6 +1,13 @@
-import type { StudyModeState } from '@/entities/studyMode';
+import type { StudyMode, StudyModeAdvancedSettings, StudyModeState, StudyStep } from '@/entities/studyMode';
 
 const CURRENT_VERSION = 1;
+
+const SUBTITLE_VALUES = new Set(['none', 'native', 'target', 'both']);
+const PAUSE_VALUES = new Set(['none', 'start', 'end']);
+const REPEAT_VALUES = new Set([1, 2, 3]);
+const SPEED_VALUES = new Set([0.5, 0.75, 1, 1.25, 1.5]);
+const AFTER_VALUES = new Set(['continue', 'wait', 'loop']);
+const SKIP_VALUES = new Set(['OFF', '2X', '4X', '6X', '8X', 'JUMP']);
 
 export const INITIAL_STUDY_MODE_STATE: StudyModeState = {
   version: CURRENT_VERSION,
@@ -12,8 +19,46 @@ export const INITIAL_STUDY_MODE_STATE: StudyModeState = {
   },
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isValidStep(step: unknown): step is StudyStep {
+  if (!isRecord(step)) return false;
+  return (
+    SUBTITLE_VALUES.has(step.subtitle as string) &&
+    PAUSE_VALUES.has(step.pause as string) &&
+    REPEAT_VALUES.has(step.repeat as number) &&
+    SPEED_VALUES.has(step.speed as number) &&
+    AFTER_VALUES.has(step.after as string)
+  );
+}
+
+function isValidMode(mode: unknown): mode is StudyMode {
+  if (!isRecord(mode)) return false;
+  return (
+    typeof mode.id === 'string' &&
+    typeof mode.title === 'string' &&
+    Array.isArray(mode.steps) &&
+    mode.steps.length > 0 &&
+    mode.steps.every(isValidStep)
+  );
+}
+
+function sanitizeAdvanced(raw: unknown): StudyModeAdvancedSettings {
+  const fallback = INITIAL_STUDY_MODE_STATE.advanced;
+  if (!isRecord(raw)) return { ...fallback };
+  return {
+    skipNoDialogue: SKIP_VALUES.has(raw.skipNoDialogue as string)
+      ? (raw.skipNoDialogue as StudyModeAdvancedSettings['skipNoDialogue'])
+      : fallback.skipNoDialogue,
+    removeBracketed:
+      typeof raw.removeBracketed === 'boolean' ? raw.removeBracketed : fallback.removeBracketed,
+  };
+}
+
 export function migrateStudyModeState(raw: unknown): StudyModeState {
-  if (!raw || typeof raw !== 'object') {
+  if (!isRecord(raw)) {
     return { ...INITIAL_STUDY_MODE_STATE };
   }
 
@@ -25,8 +70,9 @@ export function migrateStudyModeState(raw: unknown): StudyModeState {
   }
 
   return {
-    ...INITIAL_STUDY_MODE_STATE,
-    ...state,
     version: CURRENT_VERSION,
+    activeModeId: typeof state.activeModeId === 'string' ? state.activeModeId : 'normal',
+    customModes: Array.isArray(state.customModes) ? state.customModes.filter(isValidMode) : [],
+    advanced: sanitizeAdvanced(state.advanced),
   };
 }

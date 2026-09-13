@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll, afterAll } from '@jest/globals';
 import { useStudyModeStore, loadStudyModeState } from './studyModeStore';
+import { getActiveStudyMode, setActiveStudyMode } from './content/studyModeController';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { findActiveMode } from './lib/findActiveMode';
 
@@ -33,6 +34,7 @@ describe('studyModeStore', () => {
       advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
       isLoaded: true,
     });
+    setActiveStudyMode(null);
   });
 
   afterAll(() => {
@@ -45,13 +47,11 @@ describe('studyModeStore', () => {
     expect(findActiveMode(state).id).toBe('normal');
   });
 
-  it('setActiveModeId changes active mode', () => {
+  it('setActiveModeId changes active mode and applies it to the player in-context', () => {
     useStudyModeStore.getState().setActiveModeId('listen');
     expect(useStudyModeStore.getState().activeModeId).toBe('listen');
     expect(storageSet).toHaveBeenCalled();
-    expect(sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'APPLY_STUDY_MODE' }),
-    );
+    expect(getActiveStudyMode()?.activeMode.id).toBe('listen');
   });
 
   it('creates a custom mode and activates it', () => {
@@ -108,5 +108,13 @@ describe('studyModeStore', () => {
     });
     await loadStudyModeState();
     expect(useStudyModeStore.getState().activeModeId).toBe('normal');
+  });
+
+  it('registers the storage sync listener at most once across reloads', async () => {
+    const addListener = chrome.storage.onChanged.addListener as jest.Mock;
+    const before = addListener.mock.calls.length;
+    await loadStudyModeState();
+    await loadStudyModeState();
+    expect(addListener.mock.calls.length - before).toBeLessThanOrEqual(1);
   });
 });

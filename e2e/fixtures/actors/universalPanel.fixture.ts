@@ -9,7 +9,7 @@ export const SELECTORS = {
   orbitalBadge: '[data-cell-id="orbital-badge"]',
   host: '#cell-universal-panel-host',
   tabDictionary: '[data-cell-id="universal-panel-tab-dictionary"]',
-  tabStudyModes: '[data-cell-id="universal-panel-tab-study-modes"]',
+  tabStudyModes: '[data-cell-id="universal-panel-tab-studyModes"]',
   tabSettings: '[data-cell-id="universal-panel-tab-settings"]',
   dictionarySearchInput: 'input[data-cell-id="dictionary-search-input"]',
   cardCreatorMobileSheet: '[data-cell-id="card-creator-mobile-sheet"]',
