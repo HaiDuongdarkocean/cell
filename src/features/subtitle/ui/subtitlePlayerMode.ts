@@ -18,7 +18,7 @@ export function usePlayerMode({
   onTogglePlayerMode,
   addToast,
   drainPendingRestore,
-}: PlayerModeParams): () => void {
+}: PlayerModeParams): () => Promise<void> {
   // Listen for ENTERED/EXITED from the top-frame bridge so the child overlay
   // mounts/unmounts when the user presses `g` on the top document (not inside
   // the iframe). When the child triggers PM itself, requestIframePlayerModeEnter
