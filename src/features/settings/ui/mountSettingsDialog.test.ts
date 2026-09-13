@@ -95,6 +95,7 @@ jest.mock('@/features/theme/logic/themeTokens', () => ({
   THEME_STYLE_ID: 'subtitle-theme-tokens',
   syncElementTheme: jest.fn(() => jest.fn()),
   injectThemeTokens: jest.fn(() => jest.fn()),
+  findThemeCarrier: jest.fn(() => document.body),
 }));
 
 jest.mock('@/shared/config/config', () => ({

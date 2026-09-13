@@ -1,4 +1,4 @@
-import { injectThemeTokens, buildStyleContent, syncElementTheme } from '@/features/theme/logic/themeTokens';
+import { injectThemeTokens, buildStyleContent, syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
 import { buildColorTokenCSS } from '@/shared/lib/tokens';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -279,5 +279,82 @@ describe('syncElementTheme (ADR-024)', () => {
     container.setAttribute('data-theme', 'light');
     await new Promise<void>((r) => setTimeout(r, 0));
     expect(element.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('syncs data-preset alongside data-theme', () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    container.setAttribute('data-theme', 'light');
+    container.setAttribute('data-preset', 'dawn');
+    syncElementTheme(element, container);
+    expect(element.getAttribute('data-preset')).toBe('dawn');
+  });
+
+  it('removes data-preset when the carrier drops it', async () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    container.setAttribute('data-theme', 'light');
+    container.setAttribute('data-preset', 'dawn');
+    syncElementTheme(element, container);
+    container.removeAttribute('data-preset');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(element.getAttribute('data-preset')).toBeNull();
+  });
+});
+
+describe('findThemeCarrier', () => {
+  beforeEach(() => {
+    // Earlier suites leave themed containers appended to body — remove them.
+    document.querySelectorAll('[data-theme], [data-preset], [data-cell-theme-carrier]').forEach((el) => {
+      el.removeAttribute('data-theme');
+      el.removeAttribute('data-preset');
+      el.removeAttribute('data-cell-theme-carrier');
+      el.remove();
+    });
+  });
+
+  it('prefers the injectThemeTokens carrier over host-page data-theme elements', () => {
+    const hostThemed = document.createElement('div');
+    hostThemed.setAttribute('data-theme', 'dark');
+    hostThemed.setAttribute('data-preset', 'host-preset');
+    const carrier = document.createElement('div');
+    carrier.setAttribute('data-cell-theme-carrier', '');
+    carrier.setAttribute('data-theme', 'light');
+    carrier.setAttribute('data-preset', 'dawn');
+    document.body.appendChild(hostThemed);
+    document.body.appendChild(carrier);
+    try {
+      expect(findThemeCarrier()).toBe(carrier);
+    } finally {
+      hostThemed.remove();
+      carrier.remove();
+    }
+  });
+
+  it('falls back to a synced data-preset element when no carrier exists', () => {
+    const synced = document.createElement('div');
+    synced.setAttribute('data-theme', 'dark');
+    synced.setAttribute('data-preset', 'dawn');
+    document.body.appendChild(synced);
+    try {
+      expect(findThemeCarrier()).toBe(synced);
+    } finally {
+      synced.remove();
+    }
+  });
+
+  it('ignores host-page data-theme-only elements', () => {
+    const hostThemed = document.createElement('div');
+    hostThemed.setAttribute('data-theme', 'dark');
+    document.body.appendChild(hostThemed);
+    try {
+      expect(findThemeCarrier()).toBe(document.body);
+    } finally {
+      hostThemed.remove();
+    }
+  });
+
+  it('returns document.body when nothing carries theme attributes', () => {
+    expect(findThemeCarrier()).toBe(document.body);
   });
 });

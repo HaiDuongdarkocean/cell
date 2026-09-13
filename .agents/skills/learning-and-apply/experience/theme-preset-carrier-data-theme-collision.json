@@ -1,0 +1,29 @@
+{
+  "id": "theme-preset-carrier-data-theme-collision",
+  "title": "data-theme thiếu data-preset rơi về base palette (màu tím sai preset); querySelector('[data-theme]') bắt nhầm theme attr của host page",
+  "category": ["state"],
+  "tags": [
+    "theme",
+    "data-preset",
+    "data-theme",
+    "host-page-collision",
+    "shadow-dom",
+    "carrier",
+    "css-variables",
+    "light-mode"
+  ],
+  "trigger": "Một UI boundary có màu sai preset (vd tím indigo thay vì dawn xanh) trong light mode, hoặc cần tìm nguồn theme để sync cho element reparented/portal",
+  "principle": "Hai lỗi chồng nhau: (1) Color tokens scoped trên `[data-preset=\"X\"][data-theme=\"Y\"]` — element mang `data-theme` mà THIẾU `data-preset` chỉ match block base `[data-theme]` → resolve base palette (#5E6AD2 indigo) bất kể preset user chọn. Mọi chỗ `setAttribute('data-theme', ...)` phải đi kèm `data-preset`, hoặc dùng syncElementTheme. (2) Host pages (YouTube, Netflix, mock StreamFlix) TỰ set `data-theme` cho theme riêng của họ — `querySelector('[data-theme]')` bắt nhầm node của host làm nguồn sync. Phải đánh dấu carrier Cell bằng attr riêng `data-cell-theme-carrier` (injectThemeTokens set) và findThemeCarrier() ưu tiên marker đó → element có data-preset → body fallback.",
+  "cases": [
+    {
+      "context": "Light mode + dawn preset trên StreamFlix: popup ok (#5EA5E9) nhưng split view hardcode `data-theme=\"dark\"` không preset → accent #8C94E7. Verify script bắt nhầm <html data-theme=\"dark\"> của HOST page làm carrier — YouTube/Netflix thật cũng set data-theme → sync từ sai nguồn.",
+      "bad": "panelInner.setAttribute('data-theme', 'dark'); // no preset → base palette\nconst src = document.querySelector('[data-theme]') ?? document.body; // grabs host page's theme node\nconst theme = el.getAttribute('data-theme') ?? 'dark'; // copies theme, drops preset",
+      "good": "const carrier = findThemeCarrier(); // prefers [data-cell-theme-carrier]\nsyncElementTheme(panelInner, carrier); // syncs BOTH data-theme + data-preset via MutationObserver\nel.setAttribute('data-theme', src.getAttribute('data-theme'));\nel.setAttribute('data-preset', src.getAttribute('data-preset'));"
+    }
+  ],
+  "applyFor": [
+    "Bất kỳ portal/shadow/light-DOM surface nào mount ngoài theme boundary gốc (split view, manager portal, reparented Netflix UI, word-highlight overlay)",
+    "Audit màu sai preset: grep setAttribute('data-theme' → check có preset đi kèm không",
+    "Đọc theme state trong content script: KHÔNG BAO GIỜ query bare [data-theme] — luôn qua findThemeCarrier()"
+  ]
+}

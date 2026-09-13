@@ -291,7 +291,7 @@ export function AppRedesigned(): React.JSX.Element {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className={styles.popup} data-cell-id="app-root" data-theme={resolveMode(themeMode)}>
+    <div className={styles.popup} data-cell-id="app-root">
       <Header
         isActive={isActive}
         onToggleExtension={toggle}

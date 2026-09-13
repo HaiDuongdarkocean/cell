@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
+import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
 import { attachFullscreenReparenting } from '@/shared/lib/shadowRoot/mountReactShadow';
 
 export interface OverlayPortalsParams {
@@ -73,9 +74,10 @@ export function useOverlayPortals({ rootRef, managerShadowCss, isMobile }: Overl
     const inner = document.createElement('div');
     inner.style.display = 'contents';
     shadow.appendChild(inner);
+    const cleanupThemeSync = syncElementTheme(inner, findThemeCarrier());
     setManagerPortalTarget(inner);
     const cleanupFullscreen = attachFullscreenReparenting(host, container);
-    managerPortalRef.current = { host, cleanup: () => { cleanupFullscreen(); cleanupCss(); host.remove(); } };
+    managerPortalRef.current = { host, cleanup: () => { cleanupFullscreen(); cleanupThemeSync(); cleanupCss(); host.remove(); } };
     return () => {
       setManagerPortalTarget(null);
       managerPortalRef.current?.cleanup();

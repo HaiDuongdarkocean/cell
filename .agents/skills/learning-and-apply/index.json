@@ -2119,6 +2119,25 @@
         "vtt"
       ],
       "trigger": "Cue text hiển thị literal &nbsp;/&amp;/&#39; hoặc mỗi format parser tự decode entity một kiểu"
+    },
+    {
+      "type": "experience",
+      "id": "theme-preset-carrier-data-theme-collision",
+      "title": "data-theme thiếu data-preset rơi về base palette (màu tím sai preset); querySelector [data-theme] bắt nhầm theme attr của host page",
+      "category": [
+        "state"
+      ],
+      "tags": [
+        "theme",
+        "data-preset",
+        "data-theme",
+        "host-page-collision",
+        "shadow-dom",
+        "carrier",
+        "css-variables",
+        "light-mode"
+      ],
+      "trigger": "Một UI boundary có màu sai preset (vd tím indigo thay vì dawn xanh) trong light mode, hoặc cần tìm nguồn theme để sync cho element reparented/portal"
     }
   ]
 }

@@ -22,6 +22,7 @@
 // - css-js-hook-separate-from-data-attribute: `.js-cell-*` class for JS hooks.
 
 import tokensJson from '@/shared/styles/tokens.json';
+import { findThemeCarrier } from '@/features/theme/logic/themeTokens';
 
 type HighlightConfig = {
   readonly styleId: string;
@@ -39,9 +40,13 @@ const WORD_CONFIG: HighlightConfig = {
     const darkSubtle = tokensJson.derived.dark['color-primary-subtle'];
     const radiusXs = tokensJson.static.radius.xs;
     const duration100 = tokensJson.static.motion['duration-100'];
+    // --cell-highlight-subtle is resolved live from the theme carrier in
+    // show() (preset or custom palette); --color-primary-subtle resolves for
+    // spans inside a themed boundary (subtitle shadow); literals are the
+    // base-palette fallback for unthemed page DOM.
     return `
 .${WORD_CONFIG.highlightClass} {
-  background-color: ${lightSubtle} !important;
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
   color: inherit !important;
   border-radius: ${radiusXs} !important;
   padding: 0 !important;
@@ -51,15 +56,15 @@ const WORD_CONFIG: HighlightConfig = {
 }
 @media (prefers-color-scheme: dark) {
   .${WORD_CONFIG.highlightClass} {
-    background-color: ${darkSubtle} !important;
+    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
   }
 }
 [data-theme="dark"] .${WORD_CONFIG.highlightClass} {
-  background-color: ${darkSubtle} !important;
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
 }
 .${WORD_CONFIG.overlayClass} {
   position: absolute !important;
-  background-color: ${lightSubtle} !important;
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${lightSubtle})) !important;
   border-radius: ${radiusXs} !important;
   pointer-events: none !important;
   z-index: var(--z-overlay-secondary) !important;
@@ -70,11 +75,11 @@ const WORD_CONFIG: HighlightConfig = {
 }
 @media (prefers-color-scheme: dark) {
   .${WORD_CONFIG.overlayClass} {
-    background-color: ${darkSubtle} !important;
+    background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
   }
 }
 [data-theme="dark"] .${WORD_CONFIG.overlayClass} {
-  background-color: ${darkSubtle} !important;
+  background-color: var(--cell-highlight-subtle, var(--color-primary-subtle, ${darkSubtle})) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .${WORD_CONFIG.highlightClass},
@@ -146,6 +151,11 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
     activeOverlays = [];
   }
 
+  function applyCarrierSubtle(el: HTMLElement): void {
+    const subtle = resolveCarrierSubtle();
+    if (subtle) el.style.setProperty('--cell-highlight-subtle', subtle);
+  }
+
   function showOverlay(range: Range): void {
     if (!document.body) return; // guard: content scripts may fire before </body>
     // jsdom doesn't implement getClientRects — guard against non-function.
@@ -154,6 +164,7 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
     for (const rect of rects) {
       const overlay = document.createElement('div');
       overlay.className = config.overlayClass;
+      applyCarrierSubtle(overlay);
       overlay.style.setProperty('left', `${rect.left + window.scrollX}px`, 'important');
       overlay.style.setProperty('top', `${rect.top + window.scrollY}px`, 'important');
       overlay.style.setProperty('width', `${rect.width}px`, 'important');
@@ -170,6 +181,7 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
     if (target instanceof HTMLElement) {
       // Element mode: just add the class.
       target.classList.add(config.highlightClass);
+      applyCarrierSubtle(target);
       activeElement = target;
       return;
     }
@@ -181,6 +193,7 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
     try {
       const wrapper = document.createElement('span');
       wrapper.className = config.highlightClass;
+      applyCarrierSubtle(wrapper);
       range.surroundContents(wrapper);
       // Guard against empty wrappers caused by collapsed ranges or host DOM
       // mutation: if surroundContents produced an empty node, remove it and
@@ -211,6 +224,16 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
 
 /** Create a WordHighlight instance. Call show/clear to toggle highlight. */
 export type WordHighlight = TextHighlight;
+
+/** Resolve the live --color-primary-subtle from the theme carrier so page-DOM
+ *  highlights (outside any themed boundary) still follow the active palette. */
+function resolveCarrierSubtle(): string | null {
+  const carrier = findThemeCarrier();
+  if (carrier === document.body && !carrier.hasAttribute('data-theme')) return null;
+  const value = getComputedStyle(carrier).getPropertyValue('--color-primary-subtle').trim();
+  return value || null;
+}
+
 export function createWordHighlight(): WordHighlight {
   return createTextHighlight(WORD_CONFIG);
 }

@@ -11,6 +11,7 @@ import {
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
+import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 
@@ -283,7 +284,7 @@ export function useSplitView({
       css: allModuleCss,
     });
     const panelInner = document.createElement('div');
-    panelInner.setAttribute('data-theme', 'dark');
+    const themeSyncCleanup = syncElementTheme(panelInner, findThemeCarrier());
     // Translucent surface + blur (same spec as SubtitlePanel/.contentOther)
     // so the split-view column never looks empty even before/if the panel
     // content portals in.
@@ -583,6 +584,7 @@ export function useSplitView({
 
     return () => {
       detachObserver.disconnect();
+      themeSyncCleanup();
       svLog('cleanup START', { splitViewOpen, isPlayerFullscreen, playerShellTag: playerShell.tagName, playerShellInDom: document.body.contains(playerShell) });
       handle.removeEventListener('pointerdown', onPointerDown);
       handle.removeEventListener('pointermove', onPointerMove);

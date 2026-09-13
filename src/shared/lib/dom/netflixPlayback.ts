@@ -112,6 +112,12 @@ export function mountToWatchVideo(el: HTMLElement, container: HTMLElement): void
   if (!watchVideo || watchVideo === el.parentElement) return;
   const theme = container.getAttribute('data-theme') ?? 'dark';
   el.setAttribute('data-theme', theme);
+  const preset = container.getAttribute('data-preset');
+  if (preset) {
+    el.setAttribute('data-preset', preset);
+  } else {
+    el.removeAttribute('data-preset');
+  }
   watchVideo.appendChild(el);
   el.style.zIndex = 'var(--z-overlay-video)';
 }

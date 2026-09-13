@@ -10,7 +10,7 @@ import { DictionaryTab } from './tabs/DictionaryTab';
 import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
-import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/features/theme/logic/themeTokens';
+import { syncElementTheme, injectThemeTokens, findThemeCarrier, THEME_STYLE_ID } from '@/features/theme/logic/themeTokens';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
@@ -99,13 +99,14 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-  // Ensure global theme tokens exist and sync data-theme from document.body.
+  // Ensure global theme tokens exist and sync data-theme/data-preset from the
+  // element carrying the theme boundary (the video container — body never has it).
   let tokenStyleCleanup: (() => void) | null = null;
   if (!document.getElementById(THEME_STYLE_ID)) {
     const throwaway = document.createElement('div');
     tokenStyleCleanup = injectThemeTokens(throwaway);
   }
-  const themeSyncCleanup = syncElementTheme(host, document.body);
+  const themeSyncCleanup = syncElementTheme(host, findThemeCarrier());
 
   const rootEl = document.createElement('div');
   rootEl.style.cssText =

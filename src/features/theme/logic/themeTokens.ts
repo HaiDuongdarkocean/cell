@@ -155,6 +155,27 @@ export function syncElementTheme(element: HTMLElement, container: HTMLElement): 
   return () => observer.disconnect();
 }
 
+/** Marks the element `injectThemeTokens` owns — the video container. Host
+ *  pages set their own `data-theme`/`data-preset` attributes (StreamFlix,
+ *  Netflix, YouTube all do), so the carrier must be identified by a
+ *  Cell-specific marker, never by the theme attributes themselves. */
+export const THEME_CARRIER_ATTR = 'data-cell-theme-carrier';
+
+/**
+ * Find the light-DOM element that carries the live `data-theme`/`data-preset`
+ * boundary — the video container targeted by `injectThemeTokens`. Portable UI
+ * (panel hosts, shadow portals) syncs its theme attributes from this element;
+ * `document.body` never carries them. Falls back to elements synced by
+ * `syncElementTheme` (they mirror the carrier) when the carrier is gone.
+ */
+export function findThemeCarrier(): HTMLElement {
+  return (
+    document.querySelector<HTMLElement>(`[${THEME_CARRIER_ATTR}]`) ??
+    document.querySelector<HTMLElement>('[data-preset]') ??
+    document.body
+  );
+}
+
 /**
  * Inject theme tokens `<style>` into document.head + set initial `data-theme`
  * on container. Returns a cleanup function that removes the style + storage listener.
@@ -173,6 +194,7 @@ export function injectThemeTokens(container: HTMLElement): () => void {
 
   // Set initial theme synchronously to default 'dark' to avoid FOUC.
   container.setAttribute('data-theme', 'dark');
+  container.setAttribute(THEME_CARRIER_ATTR, '');
 
   // Load mode + config from storage, then apply.
   let currentMode: ThemeMode = DEFAULT_THEME_MODE;
