@@ -125,6 +125,54 @@ export default tseslint.config(
     },
   },
 
+  // Feature DAG: dictionaryPopup is the lookup orchestration hub — lower
+  // features must not import it back (contracts live in entities/dictionary,
+  // logic in features/dictionary, utilities in shared/). universalPanel is the
+  // top composition layer: it MAY host dictionaryPopup UI (ui/Dictionary) and
+  // reuse the panel port helper (controller/panelBridge) — everything else
+  // under dictionaryPopup is banned there too.
+  {
+    files: [
+      'src/features/cardCreator/**/*.ts',
+      'src/features/cardCreator/**/*.tsx',
+      'src/features/subtitle/**/*.ts',
+      'src/features/subtitle/**/*.tsx',
+      'src/features/tokenize/**/*.ts',
+      'src/features/tokenize/**/*.tsx',
+      'src/features/dictionary/**/*.ts',
+      'src/features/dictionary/**/*.tsx',
+      'src/features/ocr/**/*.ts',
+      'src/features/ocr/**/*.tsx',
+      'src/features/pronunciation/**/*.ts',
+      'src/features/pronunciation/**/*.tsx',
+      'src/features/reader/**/*.ts',
+      'src/features/reader/**/*.tsx',
+      'src/features/srs/**/*.ts',
+      'src/features/srs/**/*.tsx',
+      'src/features/tts/**/*.ts',
+      'src/features/tts/**/*.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features/dictionaryPopup', '@/features/dictionaryPopup/**'],
+          message: 'Feature DAG: this feature is below dictionaryPopup — move shared contracts to entities/dictionary, logic to features/dictionary, utilities to shared/.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/features/universalPanel/**/*.ts', 'src/features/universalPanel/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^@/features/dictionaryPopup(?!/ui/Dictionary$|/controller/panelBridge$)',
+          message: 'Feature DAG: universalPanel may only host dictionaryPopup ui/Dictionary + reuse controller/panelBridge — contracts live in entities/dictionary.',
+        }],
+      }],
+    },
+  },
+
   // Test files — relax some rules
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
