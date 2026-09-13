@@ -60,11 +60,14 @@
 - [x] Feature cycle → DAG: `dictionaryPopup` thành orchestrator một chiều; `cardCreator/subtitle/tokenize/dictionary/ocr/pronunciation/reader/srs/tts` = 0 imports; `universalPanel` chỉ giữ `ui/Dictionary` + `controller/panelBridge`; guardrail `no-restricted-imports` — `9253bcea`, `5da53576`, `03cbe2ef`, `2adb67e7`
 - [x] Message registry SSOT: `entities/message/registry.ts` — 100 types → `{schema, direction, owner}` (79 có schema, 21 deliberately không); `MessageBus.on()` central reject-only validation; completeness test ép type mới đăng ký — `bacad23e`, `baedfe4a`
 
+## Phase 8 — Residuals đợt 2 ✅
+
+- [x] Dead message types: bỏ 10/11 candidates khỏi `MESSAGE_TYPES` + registry + `MessageType` union — `05f9d59a`. Giữ `LOOKUP_RESULT` (literal `'LOOKUP_RESULT'` sống trong worker requestId bridge — `entities/dictionary/popupTypes.ts` `WorkerMessageType` + `dictionaryPopup/worker/lookupWorkerHandler.ts`; transport postMessage riêng, không qua MV3 bus). CONVERT_TS_TO_MP4 v1 + `*_RESULT`/`FETCH_RESPONSE`/`QUICK_ADD`/`OCR_*_STATE`/`DETECT_MEDIA`/`EXTENSION_STATUS_UPDATE`/`GET_SUBTITLE_FOR_OVERLAY` đều zero-ref (kết quả offscreen đi qua `sendResponse`, không qua type riêng)
+- [x] Cycle `settings↔{cardCreator,subtitle,audio}`: settings thành composition layer thuần — move `CardCreatorSettingsPanel`→`cardCreator/ui`, `ApiKeyManager`→`subtitle/ui`, `LocalPronunciationSettingsPanel`→`pronunciation/ui`; cạnh `settings→{dictionary,tts}` vốn đã một chiều. `cardCreator→pronunciation` là cạnh live (không phải cycle — pronunciation không import ngược). Guardrail `no-restricted-imports` cấm `@/features/settings` trong mọi feature trừ settings/universalPanel + cấm `@/features/cardCreator` trong pronunciation — `978fb248`
+- [x] Deps verdict: **giữ `unzipit`** — `zipAudioResolver.ts` dựa vào lazy central-directory + per-entry slice reads trên File local (archive ~3.4GB); fflate `unzip`/`unzipSync` đòi toàn bộ archive trong `Uint8Array`, streaming `Unzip` vẫn phải scan tuần tự — không an toàn. **Giữ `@phosphor-icons/react`** — nav icons cố ý dùng Phosphor `fill` weight cho liquid-glass buttons (index.ts:8-9); lucide chỉ có stroke, không có fill-weight equivalent
+
 ## Residual (multi-sprint — không làm trong session này)
 
-- [ ] Cycle nhỏ còn lại (pre-existing, scope khác): `settings↔{cardCreator,dictionary,subtitle,tts}`, `cardCreator→pronunciation`
 - [ ] T13 phần còn lại: bỏ string-patching dần (upstream patch hoặc CSP-safe builds), unify vite configs, gỡ `cardCreatorTest`/`mockup-*` khỏi FULL_INPUT, cân nhắc opencv cv-only build (10.3MB chunk — hiện đã lazy)
-- [ ] Deps: consolidate `unzipit`→`fflate` (check range-read semantics), gom `lucide-react`+`@phosphor-icons` về 1 icon lib
 - [ ] Chunk-boundary tuning: `content-script.ts` entry 33→67KB sau DAG refactor (module hoist — total dist không đổi); `subtitle` chunk hấp thụ `mountCardCreatorDialog` (1.36MB)
-- [ ] Dead message types: registry ghi nhận ~11 MESSAGE_TYPES không có usage nào — candidate cleanup
 - [ ] Real Chrome MV3 session qua `testing-extension-browser` trước khi merge
