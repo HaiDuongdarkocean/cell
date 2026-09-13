@@ -211,6 +211,9 @@ test.describe('Stage 2: Subtitle lookup > Card Creator media source on StreamFli
     await expect(sendButton).toBeVisible({ timeout: 15_000 });
     await sendButton.click();
 
+    // The popup hides on click so the recording chip is visible over the video.
+    await expect(streamFlixPage.locator('.js-cell-popup-host')).toHaveCount(0);
+
     // The progress chip floats bottom-center over the video while the cue
     // audio is being recorded ("Preparing card…" then "Recording…").
     const chip = streamFlixPage.locator('[data-cell-id="subtitle-toast"]');

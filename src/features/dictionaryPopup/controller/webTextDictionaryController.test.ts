@@ -921,9 +921,8 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.term).toBe('take off');
     expect(prefill.contextSentence).toBe('Take off your shoes.');
 
-    // Popup should remain visible.
-    const popupEl = popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]') as HTMLDivElement;
-    expect(popupEl).not.toBeNull();
+    // Popup closes on click — media collection continues in the background.
+    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
 
     act(() => { ctrl.destroy() });
   });

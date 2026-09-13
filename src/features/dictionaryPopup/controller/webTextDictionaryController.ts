@@ -1427,11 +1427,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // Capture subtitle context BEFORE returning — closePopup clears the
     // level's highlightTarget synchronously after this function returns.
     const fromSubtitle = isLookupFromSubtitle(level);
+    closePopup();
 
     if (deps.panelController) {
-      // ADR-065: route to the integrated universal panel and keep the popup open.
-      // The popup decision (stayOpen) is returned synchronously, but media is
-      // collected asynchronously so the panel opens with screenshot/audio/image.
+      // ADR-065: route to the integrated universal panel. Media is collected
+      // asynchronously so the panel opens with screenshot/audio/image while
+      // the progress chip reports the recording state over the video.
       const chip = showProgressToast(t('dict.toast.preparingCard'), deps.container);
       void (async (): Promise<void> => {
         try {
@@ -1485,12 +1486,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           chip.finish(t('dict.toast.sendToCardFailed', [err instanceof Error ? err.message : String(err)]), 'error');
         }
       })();
-      return { stayOpen: true };
+      return { stayOpen: false };
     }
 
-    // Standalone Card Creator dialog fallback — hide the popup immediately
-    // and open the dialog in the background.
-    closePopup();
+    // Standalone Card Creator dialog fallback — open the dialog in the background.
     void openStandaloneCardCreator(action, prefill, fromSubtitle);
     return { stayOpen: false };
   }

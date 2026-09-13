@@ -14,12 +14,17 @@ import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
+import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
+import { showProgressToast } from '@/features/subtitle/ui/subtitleUI';
+import { t } from '@/shared/i18n';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import type { LookupResult } from '@/entities/dictionary';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import type { SubtitleActionContext } from './subtitleActionContext';
+
+const ANKI_UNREACHABLE_RE = /network error|timed out|unreachable|failed to fetch/i;
 
 /** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
  *  timeout. Used before screenshot capture — the user may have just seeked
@@ -137,7 +142,7 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
     targetLang,
   );
   if (!cardCtx) {
-    ctx.showToast('No active subtitle — play the video and wait for a subtitle line.', { variant: 'info' });
+    ctx.showToast(t('dict.toast.noActiveSubtitle'), { variant: 'info' });
     return;
   }
 
@@ -145,9 +150,8 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   // opening the dialog. The screenshot must reflect the frame the user saw
   // when they clicked (before any UI changes). Audio capture seeks the video
   // to cue.start and plays until cue.end — doing this before the dialog opens
-  // avoids the overlay interfering with playback. Show a brief "capturing"
-  // toast so the user knows why there's a short delay.
-  ctx.showToast('Capturing media…', { variant: 'info' });
+  // avoids the overlay interfering with playback.
+  const chip = showProgressToast(t('dict.toast.recording'), ctx.container);
   await waitForVideoReady(ctx.video);
   const initialMedia: MediaFile[] = [];
   try {
@@ -172,6 +176,7 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   const queue = await buildSubtitleQueue(targetText, sourceLang);
 
   ctx.webTextCtrl.sendToCard({ ...cardCtx, initialMedia, queue }, initialAction);
+  chip.dismiss();
 }
 
 /** Batch quick-add: find all unknown/tracking words in the current subtitle
@@ -182,15 +187,27 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
 export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise<void> {
   const targetText = ctx.getCurrentTargetText();
   if (!targetText) {
-    ctx.showToast('No active subtitle — play the video and wait for a subtitle line.', { variant: 'info' });
+    ctx.showToast(t('dict.toast.noActiveSubtitle'), { variant: 'info' });
     return;
   }
   const nativeText = ctx.getCurrentNativeText() ?? '';
 
+  const chip = showProgressToast(t('dict.toast.quickAddCollecting'), ctx.container);
+
   // Load settings + draft config.
   const settings = await ctx.loadSettingsOrToast(ctx.container);
-  if (!settings) return;
+  if (!settings) {
+    chip.dismiss();
+    return;
+  }
   const cc = settings.cardCreator;
+
+  const conn = await testConnection(cc.ankiConnectUrl);
+  if (!conn.ok) {
+    chip.finish(t('dict.toast.ankiNotRunning'), 'error');
+    return;
+  }
+
   const autosaver = new DraftAutosaver();
   const restored = await autosaver.load();
   const deck = restored?.deck ?? cc.defaultDeck;
@@ -198,11 +215,11 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
   const fieldMapping = restored?.fieldMapping ?? {};
   const tags = restored?.tags ?? cc.defaultTags;
   if (!deck || !noteType) {
-    ctx.showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', { variant: 'error' });
+    chip.finish(t('dict.toast.quickAddNeedDeck'), 'error');
     return;
   }
   if (Object.keys(fieldMapping).length === 0) {
-    ctx.showToast('Quick Add needs field mapping. Open Card Creator first to configure.', { variant: 'error' });
+    chip.finish(t('dict.toast.quickAddNeedMapping'), 'error');
     return;
   }
 
@@ -211,7 +228,7 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
   // Tokenize the subtitle into unique lowercase word terms.
   const words = tokenizeSubtitleWords(targetText);
   if (words.length === 0) {
-    ctx.showToast('No words found in the current subtitle.', { variant: 'info' });
+    chip.finish(t('dict.toast.noWordsInSubtitle'), 'info');
     return;
   }
 
@@ -222,11 +239,9 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
     return s === 'unknown' || s === 'tracking';
   });
   if (learnWords.length === 0) {
-    ctx.showToast('No unknown/tracking words in this subtitle line.', { variant: 'info' });
+    chip.finish(t('dict.toast.noLearnWords'), 'info');
     return;
   }
-
-  ctx.showToast(`Quick Add — looking up ${learnWords.length} word${learnWords.length > 1 ? 's' : ''}…`, { variant: 'info' });
 
   // Capture media once (shared across all cards).
   const images: MediaFile[] = [];
@@ -242,6 +257,7 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
       const currentMs = ctx.video.currentTime * 1000;
       const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
       if (matchingCue) {
+        chip.update(t('dict.toast.recording'));
         const audioR = await captureSentenceAudio(ctx.video, { start: matchingCue.start, end: matchingCue.end });
         if (audioR.ok) sentenceAudios.push(audioR.file);
       }
@@ -251,8 +267,11 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
   // Look up each word + add a card.
   let added = 0;
   let skipped = 0;
+  let index = 0;
   const errors: string[] = [];
   for (const term of learnWords) {
+    index++;
+    chip.update(t('dict.toast.quickAddAddingOf', [String(index), String(learnWords.length)]));
     // Dictionary lookup via background service worker.
     let definitions = '';
     try {
@@ -300,12 +319,20 @@ export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise
     }
   }
 
-  // Summary toast.
   if (added > 0) {
-    ctx.showToast(`Added ${added} card${added > 1 ? 's' : ''} to "${deck}"${skipped > 0 ? `, ${skipped} duplicate${skipped > 1 ? 's' : ''} skipped` : ''}.`, { variant: 'success' });
+    chip.finish(
+      skipped > 0
+        ? t('dict.toast.cardsAddedSkipped', [String(added), deck, String(skipped)])
+        : t('dict.toast.cardsAddedTo', [String(added), deck]),
+      'success',
+    );
   } else if (skipped > 0) {
-    ctx.showToast(`All ${skipped} card${skipped > 1 ? 's' : ''} already exist (duplicates).`, { variant: 'warning' });
+    chip.finish(t('dict.toast.allDuplicates', [String(skipped)]), 'warning');
   } else {
-    ctx.showToast(`Quick Add failed: ${errors.join('; ')}`, { variant: 'error' });
+    const errMsg = errors.join('; ');
+    chip.finish(
+      ANKI_UNREACHABLE_RE.test(errMsg) ? t('dict.toast.ankiNotRunning') : t('dict.toast.quickAddFailed', [errMsg]),
+      'error',
+    );
   }
 }
