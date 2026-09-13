@@ -226,14 +226,14 @@ describe('cardCreatorService', () => {
       expect(note.fields).toEqual({ Front: 'new' }); // Back omitted (empty)
     });
 
-    it('append: joins with newline when existing non-empty', async () => {
+    it('append: joins with <br> when existing non-empty', async () => {
       const captured: { value: CapturedPayload | null } = { value: null };
       queueInspecting({ result: null }, (p) => {
         captured.value = p;
       });
       await updateNote(URL, 123, { Front: 'new' }, 'append', { Front: 'old' });
       const note = captured.value?.params?.note as { fields: Record<string, string> };
-      expect(note.fields.Front).toBe('old\nnew');
+      expect(note.fields.Front).toBe('old<br>new');
     });
 
     it('append: sets value when existing empty', async () => {

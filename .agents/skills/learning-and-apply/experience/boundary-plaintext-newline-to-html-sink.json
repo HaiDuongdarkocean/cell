@@ -1,0 +1,24 @@
+{
+  "id": "boundary-plaintext-newline-to-html-sink",
+  "title": "\\n là separator plain-text → phải convert sang <br> tại boundary vào HTML sink",
+  "category": ["data"],
+  "tags": ["newline", "br", "html-field", "anki", "serialization", "boundary"],
+  "trigger": "String chứa \\n được gửi vào sink render HTML (Anki field, rich text, dangerouslySetInnerHTML, email HTML)",
+  "principle": "\\n chỉ là line break trong plain-text context (textarea, console). Trong HTML nó collapse thành space — nhiều đoạn dính thành một dòng, không error nên bug lặng. Giữ \\n ở layer data/UI (textarea) và convert \\n → <br> đúng 1 chỗ tại boundary serialize ra HTML sink — không convert sớm trong formatter (sẽ lộ <br> literal trong textarea).",
+  "cases": [
+    {
+      "context": "formatDefinitions join senses bằng \\n\\n → textarea Card Creator hiển thị đúng từng dòng, nhưng quickAddNote/buildAnkiFields gửi nguyên string vào addNote → Anki render HTML → mọi definition dính thành 1 cục trên card.",
+      "bad": "fields[ankiField] = value; // '• def A\\n\\n• def B' → Anki hiện '• def A • def B' một dòng",
+      "good": "fields[ankiField] = value.replace(/\\r?\\n/g, '<br>'); // convert tại boundary, textarea vẫn giữ \\n"
+    },
+    {
+      "context": "Append mode của updateNote join existing + new value bằng '\\n' — cùng lỗi collapse, fix phải grep mọi chỗ build field value không chỉ 1 chỗ.",
+      "bad": "merged[k] = existing ? `${existing}\\n${v}` : v;",
+      "good": "merged[k] = existing ? `${existing}<br>${v}` : v;"
+    }
+  ],
+  "applyFor": ["AnkiConnect addNote/updateNoteFields", "dangerouslySetInnerHTML", "Email HTML body từ plain text", "Markdown/template render HTML", "Tooltip/preview render HTML"],
+  "related": [],
+  "supersedes": [],
+  "source": {"date": "2026-09-13"}
+}

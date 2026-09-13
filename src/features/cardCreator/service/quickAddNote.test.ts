@@ -107,6 +107,33 @@ describe('quickAddNote', () => {
     expect(note.tags).toEqual(['cell', 'learning']);
   });
 
+  it('multi-line definitions: newlines become <br> so Anki keeps one sense per line', async () => {
+    queueResponses([{ result: 55 }]);
+
+    const r = await quickAddNote(
+      URL,
+      'Default',
+      'Basic',
+      fieldMapping,
+      '',
+      {
+        ...text,
+        definitions: '• (pron) one more person\n\n• (pron) each other',
+        sentence: 'LINE ONE\nLINE TWO',
+      },
+      { images: [], wordAudios: [], sentenceAudios: [] },
+    );
+
+    expect(r.ok).toBe(true);
+    const last = captureLastAction();
+    const note = (last?.params as { note: Record<string, unknown> }).note;
+    const fields = note.fields as Record<string, string>;
+    expect(fields.Back).toBe('• (pron) one more person<br><br>• (pron) each other');
+    expect(fields.Sentence).toBe('LINE ONE<br>LINE TWO');
+    expect(fields.Back).not.toContain('\n');
+    expect(fields.Sentence).not.toContain('\n');
+  });
+
   it('empty fieldMapping: no fields set, addNote still called', async () => {
     queueResponses([{ result: 99 }]);
 

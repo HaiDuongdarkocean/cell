@@ -229,7 +229,7 @@ export async function addNote(
  *
  *  `overwrite` — replace existing field values with new ones (fields not in
  *                the update payload are preserved by AnkiConnect).
- *  `append`    — append new value to existing value (separated by newline).
+ *  `append`    — append new value to existing value (separated by <br>).
  *  `skip`      — only set fields that are empty in the current note.
  *
  *  Note: AnkiConnect `updateNoteFields` only updates the fields present in
@@ -254,7 +254,7 @@ export async function updateNote(
     for (const [k, v] of Object.entries(fields)) {
       if (!v) continue;
       const existing = currentFields[k] ?? '';
-      merged[k] = existing ? `${existing}\n${v}` : v;
+      merged[k] = existing ? `${existing}<br>${v}` : v;
     }
   } else {
     // skip: only set fields that are empty in the current note.

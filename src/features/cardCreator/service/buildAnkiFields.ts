@@ -59,7 +59,8 @@ export async function buildAnkiFields(
   for (const [sourceKey, value] of Object.entries(textMap)) {
     const ankiField = fieldMapping[sourceKey as keyof FieldMapping];
     if (ankiField && value) {
-      fields[ankiField] = value;
+      // Anki renders fields as HTML — literal newlines collapse to spaces.
+      fields[ankiField] = value.replace(/\r?\n/g, '<br>');
     }
   }
 

@@ -1290,7 +1290,7 @@ export function useCardCreatorState(
               if (newValue) updateFields[ankiField] = newValue;
             } else if (draft.mediaUpdateMode === 'append') {
               if (newValue) {
-                updateFields[ankiField] = existingValue ? `${existingValue}\n${newValue}` : newValue;
+                updateFields[ankiField] = existingValue ? `${existingValue}<br>${newValue}` : newValue;
               }
             } else {
               // skip: only update if existing is empty.

@@ -1994,6 +1994,23 @@
       "trigger": "Snapshot node.parentElement để restore sau, trong khi feature khác có deferred teardown sắp detach subtree chứa parent đó"
     },
     {
+      "type": "experience",
+      "id": "boundary-plaintext-newline-to-html-sink",
+      "title": "\\n là separator plain-text → phải convert sang <br> tại boundary vào HTML sink",
+      "category": [
+        "data"
+      ],
+      "tags": [
+        "newline",
+        "br",
+        "html-field",
+        "anki",
+        "serialization",
+        "boundary"
+      ],
+      "trigger": "String chứa \\n được gửi vào sink render HTML (Anki field, rich text, dangerouslySetInnerHTML, email HTML)"
+    },
+    {
       "type": "process",
       "id": "process-generated-catalog-drift",
       "title": "Generated SSOT catalog drift âm thầm — regen mỗi lần đổi + đối chiếu với disk",
