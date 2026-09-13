@@ -2209,6 +2209,25 @@
         "production-only"
       ],
       "trigger": "A lazy import() inside a bundled content script fails in production with Unable to preload CSS while unit tests and dev build work fine"
+    },
+    {
+      "type": "experience",
+      "id": "ux-replay-intent-resumes-playback",
+      "title": "Replay/repeat action phải resume playback sau seek — paused seek là dead action",
+      "category": [
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "video-player",
+        "video-seek",
+        "replay-cue",
+        "playback",
+        "resume",
+        "ux",
+        "subtitle-navigation"
+      ],
+      "trigger": "User-triggered action mà intent là 'nghe/xem lại đoạn vừa rồi' (replay cue, repeat sentence, loop) chỉ seek mà không play"
     }
   ]
 }

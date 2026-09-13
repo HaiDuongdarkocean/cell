@@ -1,0 +1,28 @@
+{
+  "id": "ux-replay-intent-resumes-playback",
+  "title": "Replay/repeat action phải resume playback sau seek — paused seek là dead action",
+  "category": ["state", "ux"],
+  "tags": ["video-player", "video-seek", "replay-cue", "playback", "resume", "ux", "subtitle-navigation"],
+  "trigger": "User-triggered action mà intent là 'nghe/xem lại đoạn vừa rồi' (replay cue, repeat sentence, loop) chỉ seek mà không play",
+  "principle": "Action có intent phát lại phải đảm bảo video đang playing sau khi seek — người dùng bấm replay để NGHE, nên nếu video paused thì seek-only là dead action (không nghe được gì). Dùng guard `if (video.paused) play()` chứ không toggle, và route qua player-safe wrapper (resumeIfPaused → playVideo) để tránh Netflix M7375. Áp dụng cho MỌI entry point của cùng intent: in-page keydown, message relay path, engine method — không chỉ path chính.",
+  "cases": [
+    {
+      "context": "navigateCue('replay-cue') và SubtitleCueEngine.repeatOnce() chỉ gọi seekVideo — video paused thì user bấm 's' không nghe được gì",
+      "bad": "if (currentCue) seekToCue(video, currentCue, offsetMs);",
+      "good": "if (currentCue) { seekToCue(video, currentCue, offsetMs); resumeIfPaused(video); }"
+    },
+    {
+      "context": "SHORTCUT_ACTION seekTime path bypass navigateCue — fix chỉ ở dispatcher sẽ bỏ sót path side panel",
+      "bad": "seekVideo(video, (payload.seekTime - offsetMs) / 1000);",
+      "good": "seekVideo(video, (payload.seekTime - offsetMs) / 1000); if (action === 'replay-cue') resumeIfPaused(video);"
+    }
+  ],
+  "applyFor": [
+    "Cue navigation actions (replay/prev/next) trên video player",
+    "Study-mode playback actions có intent phát lại",
+    "Bất kỳ seek action nào mà user intent là tiếp tục xem/nghe"
+  ],
+  "related": ["video-seek-landing-frame-boundary-epsilon"],
+  "supersedes": [],
+  "source": {"commit": "c66efbdf", "date": "2026-09-14"}
+}
