@@ -1,6 +1,6 @@
 ---
 name: audit-text-in-ui
-description: Audit and rewrite user-visible text in Cell UI surfaces (buttons, labels, errors, empty states, tooltips, headings, aria-labels, placeholders) against the education copy standard, then route every string into MV3 i18n (chrome.i18n + _locales/messages.json) instead of inline literals. Use when reviewing or rewriting screen text, preparing a surface for localization, or when asked "is this text correct?". Not for token/CSS audits (design-system-guardian), pre-build design gates (education-ui-principles), or non-UI logic.
+description: Audit and rewrite user-visible UI text against the copy standard, routed through MV3 i18n. Use when reviewing screen text.
 ---
 
 # Audit Text in UI — audit + rewrite chữ trên màn hình, chuẩn i18n
@@ -24,7 +24,7 @@ Skill này trả lời 2 câu hỏi cho mọi chuỗi text trên màn hình:
 ## When NOT to Use
 
 - Audit token/CSS/component → `design-system-guardian`.
-- Gate nguyên tắc trước khi build UI → `education-ui-principles`.
+- Gate nguyên tắc trước khi build UI → `design-system-guardian`.
 - Nội dung bài học / từ điển / phụ đề (content người học đọc, không phải chrome UI).
 - String không render ra màn hình (log, error nội bộ không user-facing).
 
@@ -111,7 +111,7 @@ Khi chuẩn bị viết lại một chuỗi, hãy chạy 16 câu hỏi này. Câ
 
 **Nguồn bổ sung để hỏi sâu hơn:**
 - `/inquiry-creativity` — khi cần 5W1H, first-principles, hoặc trade-off matrix trước khi quyết định rewrite.
-- `/education-ui-principles` — khi cần gate persona 5→80, cognitive load, calm tone trước khi build UI.
+- `/design-system-guardian` — khi cần gate persona 5→80, cognitive load, calm tone trước khi build UI.
 - Microsoft Writing Style, Material Content Design, GOV.UK Service Manual, Apple Style Guide — cho các quyết định ngôn ngữ Anh.
 
 ## Workflow
@@ -147,7 +147,7 @@ Khi chuẩn bị viết lại một chuỗi, hãy chạy 16 câu hỏi này. Câ
 
 **Actions:**
 1. Trace code: tìm handler/consumer của action/prop để hiểu tính năng thực sự làm gì (không chỉ dịch từ tên `action` hoặc từ tiếng Anh).
-2. Chạy 16 câu hỏi trong mục **Hỏi trước khi rewrite**. Nếu trả lời được ngay → rewrite. Nếu không → invoke `/inquiry-creativity` hoặc `/education-ui-principles`.
+2. Chạy 16 câu hỏi trong mục **Hỏi trước khi rewrite**. Nếu trả lời được ngay → rewrite. Nếu không → invoke `/inquiry-creativity`.
 3. Viết đề xuất vào dòng output.
 4. Đặt message key theo L4.
 
@@ -239,7 +239,7 @@ Khi chuẩn bị viết lại một chuỗi, hãy chạy 16 câu hỏi này. Câ
 ## Router boomerang
 
 - Audit token/CSS/component → `design-system-guardian`.
-- Gate nguyên tắc trước khi build UI → `education-ui-principles`.
+- Gate nguyên tắc trước khi build UI → `design-system-guardian`.
 - Cần đặt câu hỏi sắc, first-principles, hoặc trade-off trước khi rewrite → `inquiry-creativity`.
 - Verify trên browser thật → `testing-extension-browser`.
 - Không rõ skill → `using-agent-skills`.

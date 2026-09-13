@@ -1,6 +1,6 @@
 ---
 name: design-system-guardian
-description: Audit any UI change against Cell's design system (DESIGN.md). Run before merging a UI task or when the user asks "is this design correct?". Checks token usage (no M3), component reuse (src/shared/ui/*), hardcoded values, inline SVG, and z-index. Returns pass/fail with specific fixes.
+description: Audit UI changes against Cell's design system - tokens, shared components, hardcoded values. Use before merging UI work.
 ---
 
 # Design System Guardian

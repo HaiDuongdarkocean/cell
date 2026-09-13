@@ -1,6 +1,6 @@
 ---
 name: elicitation
-description: Orchestrate the full elicitation-to-final-spec pipeline — transform a vague idea or pain into a reviewed, finalized spec by routing through idea-refine, interview, observation, doubt-driven validation, spec-driven development, and stakeholder review with an auto-fix loop.
+description: Turn a vague idea into a reviewed spec - owns the idea-to-spec pipeline end-to-end. Use when the user describes wants loosely.
 ---
 
 # Elicitation

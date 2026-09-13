@@ -9,7 +9,7 @@
 ## Workflow
 
 - Mọi task → route qua skill `using-agent-skills` (skills ở `.agents/skills/`); task đổi → re-route.
-- Trước khi code: đọc `docs/0-wiki.md` → `1-share-language.md` → `2-architechture-system.md`; grep `.agents/skills/learning-and-apply/index.json` theo tags.
+- Context theo nhu cầu, không đọc trước toàn bộ: `docs/2-architechture-system.md` khi đụng `src/`; `docs/1-share-language.md` khi gặp thuật ngữ domain lạ; `docs/0-wiki.md` khi cần map repo hoặc changelog. Trước khi viết logic mới: grep `.agents/skills/learning-and-apply/index.json` theo tags.
 - Sau khi code: `npm run typecheck && npm run test:unit && npm run build` (build bắt lỗi Vite mà tsc không thấy) → verify trên Chrome thật → mới commit (`git-workflow-and-versioning`).
 
 ## Code conventions

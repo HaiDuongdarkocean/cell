@@ -1,6 +1,6 @@
 ---
 name: design-svg
-description: Design new SVG icons following the Nucleus iconography system (24×24, stroke 1.5, round caps, geometric foundation). Use when the user requests a new icon, wants to redesign an existing icon, or needs custom SVG artwork for the UI. Not for modifying existing SVG code, debugging rendering issues, or creating non-icon illustrations.
+description: Design SVG icons in the Nucleus system (24x24, stroke 1.5). Use when creating or redesigning an icon. Not for non-icon artwork.
 ---
 
 # Design SVG Icon (Nucleus)

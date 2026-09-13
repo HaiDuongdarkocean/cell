@@ -1,6 +1,6 @@
 ---
 name: audit-technical-debt
-description: Autonomously audit technical debt in a codebase, score and rank it, and produce a prioritized remediation roadmap with subagent verification. Use when the user asks to assess, prioritize, audit, or reduce technical debt. Not for one-off bug fixes, new features, or simple code review.
+description: Audit technical debt, score and rank it, produce a prioritized remediation roadmap. Use when assessing or reducing debt.
 ---
 
 # Audit Technical Debt

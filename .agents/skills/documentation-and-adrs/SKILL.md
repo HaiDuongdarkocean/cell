@@ -1,324 +1,60 @@
 ---
 name: documentation-and-adrs
-description: Records decisions and documentation. Use when making architectural decisions, changing public APIs, shipping features, or when you need to record context that future engineers and agents will need to understand the codebase.
+description: Record decisions and docs - ADRs, architecture notes. Use when making architectural decisions or changing public APIs.
 ---
 
 # Documentation and ADRs
 
 ## Overview
 
-Document decisions, not just code. The most valuable documentation captures the *why* — the context, constraints, and trade-offs that led to a decision. Code shows *what* was built; documentation explains *why it was built this way* and *what alternatives were considered*. This context is essential for future humans and agents working in the codebase.
+Document decisions, not just code. Code shows *what*; docs explain *why it was built this way* and *what alternatives were rejected* — context future humans and agents need.
 
-## When to Use
+## When to Use / NOT
 
-- Making a significant architectural decision
-- Choosing between competing approaches
-- Adding or changing a public API
-- Shipping a feature that changes user-facing behavior
-- Onboarding new team members (or agents) to the project
-- When you find yourself explaining the same thing repeatedly
+**Use:** significant architectural decisions; choosing between approaches; public API changes; user-facing behavior changes; repeating the same explanation.
 
-**When NOT to use:** Don't document obvious code. Don't add comments that restate what the code already says. Don't write docs for throwaway prototypes.
+**NOT:** obvious code; comments that restate the code; throwaway prototypes.
 
-## Architecture Decision Records (ADRs)
+## ADRs (highest-value docs)
 
-ADRs capture the reasoning behind significant technical decisions. They're the highest-value documentation you can write.
+**Write one for:** framework/library/major-dep choices, data models, auth strategy, API architecture, build/hosting/infra, anything expensive to reverse.
 
-### When to Write an ADR
+**Structure:** Status (Accepted/Superseded/Deprecated) · Date · Context (requirements + constraints) · Decision · Alternatives Considered (pros/cons/rejected-why) · Consequences. Store in `docs/adr/` with sequential numbering.
 
-- Choosing a framework, library, or major dependency
-- Designing a data model or database schema
-- Selecting an authentication strategy
-- Deciding on an API architecture (REST vs. GraphQL vs. tRPC)
-- Choosing between build tools, hosting platforms, or infrastructure
-- Any decision that would be expensive to reverse
+**Debt payback ADR variant** adds: audit item ref, debt type, current state, trigger, chosen strategy (Strangler Fig / Branch by Abstraction / Boy Scout / test sprint), temporary abstractions + removal conditions, rollback plan.
 
-### ADR Template
+**Lifecycle:** PROPOSED → ACCEPTED → SUPERSEDED/DEPRECATED. Never delete old ADRs — supersede them.
 
-Store ADRs in `docs/decisions/` with sequential numbering:
+→ Full ADR + debt-ADR templates, README skeleton, changelog format, OpenAPI example: `references/templates.md`
 
-```markdown
-# ADR-001: Use PostgreSQL for primary database
+## Inline documentation
 
-## Status
-Accepted | Superseded by ADR-XXX | Deprecated
+- **Comment the why, not the what.** `// increment counter` is noise; "sliding window resets at boundary to prevent burst attacks" is signal.
+- **Don't:** narrate self-explanatory code; leave `// TODO` for things you should do now; leave commented-out code (git has history).
+- **Do document gotchas:** "must be called before first render or FOUC — see ADR-003".
 
-## Date
-2025-01-15
+## API docs
 
-## Context
-We need a primary database for the task management application. Key requirements:
-- Relational data model (users, tasks, teams with relationships)
-- ACID transactions for task state changes
-- Support for full-text search on task content
-- Managed hosting available (for small team, limited ops capacity)
+- **TypeScript:** TSDoc on public functions — `@param`, `@returns`, `@throws`, `@example`.
+- **REST:** OpenAPI/Swagger specs.
+- **README:** quick start, commands table, architecture overview, contributing.
+- **Changelog:** grouped by impact (Added/Fixed/Changed/Deprecated/Removed/Security), user-facing phrasing, linked issues.
 
-## Decision
-Use PostgreSQL with Prisma ORM.
+## Docs for agents
 
-## Alternatives Considered
+`AGENTS.md` conventions, kept-current specs, ADRs (prevent re-deciding), inline gotchas — these are what agents actually read.
 
-### MongoDB
-- Pros: Flexible schema, easy to start with
-- Cons: Our data is inherently relational; would need to manage relationships manually
-- Rejected: Relational data in a document store leads to complex joins or data duplication
+## Rationalizations / red flags
 
-### SQLite
-- Pros: Zero configuration, embedded, fast for reads
-- Cons: Limited concurrent write support, no managed hosting for production
-- Rejected: Not suitable for multi-user web application in production
-
-### MySQL
-- Pros: Mature, widely supported
-- Cons: PostgreSQL has better JSON support, full-text search, and ecosystem tooling
-- Rejected: PostgreSQL is the better fit for our feature requirements
-
-## Consequences
-- Prisma provides type-safe database access and migration management
-- We can use PostgreSQL's full-text search instead of adding Elasticsearch
-- Team needs PostgreSQL knowledge (standard skill, low risk)
-- Hosting on managed service (Supabase, Neon, or RDS)
-```
-
-### Debt Payback ADR Template
-
-Use this when a significant technical-debt remediation starts (e.g., extracting a large controller, replacing a dependency, raising coverage for a whole module).
-
-```markdown
-# ADR-XXX: Pay down [debt item] in [module]
-
-## Status
-Proposed
-
-## Date
-2025-06-22
-
-## Context
-- Audit item: #[N] in [audit file or date]
-- Debt type: [Testing | Architectural | Dependency | Code quality | Process]
-- Current state: [file size, coverage, score, risk]
-- Trigger: [feature blocked, flaky tests, bundle size, etc.]
-
-## Decision
-[What strategy: Strangler Fig / Branch by Abstraction / Boy Scout / dedicated test sprint]
-
-## Alternatives Considered
-### [Alternative 1]
-- Pros: ...
-- Cons: ...
-- Rejected because: ...
-
-## Temporary Abstractions
-- [Abstraction name] introduced in [file]; will be removed when [condition].
-- Tracking issue: [ticket or task].
-
-## Consequences
-- [Expected state after: file size, coverage, score]
-- [Risks and rollback plan]
-- [When the old implementation will be deleted]
-```
-
-### ADR Lifecycle
-
-```
-PROPOSED → ACCEPTED → (SUPERSEDED or DEPRECATED)
-```
-
-- **Don't delete old ADRs.** They capture historical context.
-- When a decision changes, write a new ADR that references and supersedes the old one.
-
-## Inline Documentation
-
-### When to Comment
-
-Comment the *why*, not the *what*:
-
-```typescript
-// BAD: Restates the code
-// Increment counter by 1
-counter += 1;
-
-// GOOD: Explains non-obvious intent
-// Rate limit uses a sliding window — reset counter at window boundary,
-// not on a fixed schedule, to prevent burst attacks at window edges
-if (now - windowStart > WINDOW_SIZE_MS) {
-  counter = 0;
-  windowStart = now;
-}
-```
-
-### When NOT to Comment
-
-```typescript
-// Don't comment self-explanatory code
-function calculateTotal(items: CartItem[]): number {
-  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-}
-
-// Don't leave TODO comments for things you should just do now
-// TODO: add error handling  ← Just add it
-
-// Don't leave commented-out code
-// const oldImplementation = () => { ... }  ← Delete it, git has history
-```
-
-### Document Known Gotchas
-
-```typescript
-/**
- * IMPORTANT: This function must be called before the first render.
- * If called after hydration, it causes a flash of unstyled content
- * because the theme context isn't available during SSR.
- *
- * See ADR-003 for the full design rationale.
- */
-export function initializeTheme(theme: Theme): void {
-  // ...
-}
-```
-
-## API Documentation
-
-For public APIs (REST, GraphQL, library interfaces):
-
-### Inline with Types (Preferred for TypeScript)
-
-```typescript
-/**
- * Creates a new task.
- *
- * @param input - Task creation data (title required, description optional)
- * @returns The created task with server-generated ID and timestamps
- * @throws {ValidationError} If title is empty or exceeds 200 characters
- * @throws {AuthenticationError} If the user is not authenticated
- *
- * @example
- * const task = await createTask({ title: 'Buy groceries' });
- * console.log(task.id); // "task_abc123"
- */
-export async function createTask(input: CreateTaskInput): Promise<Task> {
-  // ...
-}
-```
-
-### OpenAPI / Swagger for REST APIs
-
-```yaml
-paths:
-  /api/tasks:
-    post:
-      summary: Create a task
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTaskInput'
-      responses:
-        '201':
-          description: Task created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-        '422':
-          description: Validation error
-```
-
-## README Structure
-
-Every project should have a README that covers:
-
-```markdown
-# Project Name
-
-One-paragraph description of what this project does.
-
-## Quick Start
-1. Clone the repo
-2. Install dependencies: `npm install`
-3. Set up environment: `cp .env.example .env`
-4. Run the dev server: `npm run dev`
-
-## Commands
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm test` | Run tests |
-| `npm run build` | Production build |
-| `npm run lint` | Run linter |
-
-## Architecture
-Brief overview of the project structure and key design decisions.
-Link to ADRs for details.
-
-## Contributing
-How to contribute, coding standards, PR process.
-```
-
-## Changelog Maintenance
-
-For shipped features:
-
-```markdown
-# Changelog
-
-## [1.2.0] - 2025-01-20
-### Added
-- Task sharing: users can share tasks with team members (#123)
-- Email notifications for task assignments (#124)
-
-### Fixed
-- Duplicate tasks appearing when rapidly clicking create button (#125)
-
-### Changed
-- Task list now loads 50 items per page (was 20) for better UX (#126)
-```
-
-## Documentation for Agents
-
-Special consideration for AI agent context:
-
-- **CLAUDE.md / rules files** — Document project conventions so agents follow them
-- **Spec files** — Keep specs updated so agents build the right thing
-- **ADRs** — Help agents understand why past decisions were made (prevents re-deciding)
-- **Inline gotchas** — Prevent agents from falling into known traps
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "The code is self-documenting" | Code shows what. It doesn't show why, what alternatives were rejected, or what constraints apply. |
-| "We'll write docs when the API stabilizes" | APIs stabilize faster when you document them. The doc is the first test of the design. |
-| "Nobody reads docs" | Agents do. Future engineers do. Your 3-months-later self does. |
-| "ADRs are overhead" | A 10-minute ADR prevents a 2-hour debate about the same decision six months later. |
-| "Comments get outdated" | Comments on *why* are stable. Comments on *what* get outdated — that's why you only write the former. |
-
-## Red Flags
-
-- Architectural decisions with no written rationale
-- Public APIs with no documentation or types
-- README that doesn't explain how to run the project
-- Commented-out code instead of deletion
-- TODO comments that have been there for weeks
-- No ADRs in a project with significant architectural choices
-- Documentation that restates the code instead of explaining intent
+- "Code is self-documenting" → it doesn't show why or rejected alternatives · "docs when the API stabilizes" → the doc is the first test of the design
+- "Nobody reads docs" → agents do; future you does · "ADRs are overhead" → 10 min now vs a 2-hour re-debate in 6 months
+- Red flags: undocumented architectural decisions; undocumented public APIs; README without run instructions; commented-out code; stale TODOs; docs that restate code
 
 ## Verification
 
-After documenting:
-
-- [ ] ADRs exist for all significant architectural decisions
-- [ ] README covers quick start, commands, and architecture overview
-- [ ] API functions have parameter and return type documentation
-- [ ] Known gotchas are documented inline where they matter
-- [ ] No commented-out code remains
-- [ ] Rules files (CLAUDE.md etc.) are current and accurate
-
-
----
+- [ ] ADRs exist for all significant decisions; README covers quickstart + commands + architecture
+- [ ] Public APIs have param/return docs; known gotchas documented inline; no commented-out code
 
 ## Router boomerang
 
 Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
-

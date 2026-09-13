@@ -1,6 +1,6 @@
 ---
 name: spec-review-stakeholder
-description: Review spec qua 3 góc nhìn BA/PO/TL, trả về báo cáo trực tiếp dạng plain text. Dùng khi cần sanity-check spec trước khi implement.
+description: Adversarial BA/PO/TL review of a spec before implementation. Use to sanity-check a spec.
 ---
 
 Review spec theo 3 góc nhìn stakeholder, trả kết quả trực tiếp trong cuộc hội thoại.

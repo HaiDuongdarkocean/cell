@@ -1,6 +1,6 @@
 ---
 name: vision-reader
-description: Delegates image reading to a vision-capable subagent when the main agent cannot see images. Use when verifying browser screenshots, mockups, or error screenshots requires visual ground truth the coding model lacks. Not for text-only DOM inspection, performance traces, or non-visual decisions.
+description: Delegate screenshot/image reading to a vision subagent. Use when the main model can't see images.
 ---
 
 # Vision Reader
@@ -149,4 +149,4 @@ Before treating the subagent's report as ground truth:
 
 ## Router boomerang
 
-Done with the visual check? Re-invoke `/using-agent-skills` to route the next phase — usually `debugging-and-error-recovery` (if deviations found), `frontend-ui-engineering` (if a UI fix is needed), or `git-workflow-and-versioning` (if the fix is verified and ready to commit).
+Done with the visual check? Re-invoke `/using-agent-skills` to route the next phase — usually `debugging-and-error-recovery` (if deviations found), `incremental-implementation` (if a UI fix is needed), or `git-workflow-and-versioning` (if the fix is verified and ready to commit).

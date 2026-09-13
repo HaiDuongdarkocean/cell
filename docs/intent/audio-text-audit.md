@@ -7,7 +7,7 @@
 - `TtsVoiceManagerPanel.tsx` + `.module.css`
 - `TtsLanguagePanel.tsx` (rendered inside card 10)
 - `src/shared/i18n/messages/{en,vi}.json`
-- `.devin/skills/audit-text-in-ui/SKILL.md` (W/S/E/L rules)
+- `.agents/skills/audit-text-in-ui/SKILL.md` (W/S/E/L rules)
 
 ---
 

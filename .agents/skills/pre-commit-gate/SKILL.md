@@ -1,6 +1,6 @@
 ---
 name: pre-commit-gate
-description: Run deterministic local quality checks before any commit. Use when an agent is about to finish a task and needs to verify build, typecheck, tests, lint, and design-system compliance before the human reviews or before commit.
+description: Deterministic local checks before commit - lint, typecheck, tests, build, debt smell. Use before any commit.
 ---
 
 # Pre-Commit Gate

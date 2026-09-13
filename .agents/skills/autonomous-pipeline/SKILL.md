@@ -1,6 +1,6 @@
 ---
 name: autonomous-pipeline
-description: End-to-end autonomous run from a confirmed spec to shipped code — plan with priority + parallel lanes, dispatch build tasks to subagents, verify with fresh-context subagents, ship. Use when a spec exists in docs/specs/ and the work should run without per-phase human gates; humans hold async veto until commit and business sign-off at the end. Use for multi-task features where parallel execution is safe.
+description: Run a confirmed spec end-to-end: plan, parallel subagent build lanes, fresh-context verify, ship. Use for multi-task features.
 ---
 
 # Autonomous Pipeline

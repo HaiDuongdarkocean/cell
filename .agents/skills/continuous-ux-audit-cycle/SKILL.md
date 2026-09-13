@@ -1,6 +1,6 @@
 ---
 name: continuous-ux-audit-cycle
-description: Continuous UX Audit Cycle — 7-stage loop to audit a system's whole UI, plan redesign, delegate, verify, and re-scan until no gaps remain. Use when auditing end-to-end UI/UX, driving iterative redesign, or setting up a recurring design-quality loop. Not for single-screen tweaks or one-off bug fixes.
+description: Recurring 7-stage loop auditing the whole UI, planning redesigns, verifying fixes. Use for ongoing design-quality sweeps.
 ---
 
 # Continuous UX Audit Cycle
@@ -47,7 +47,7 @@ bash scripts/e2e.sh --stage2 <audit-spec>
 **Fallback 2: local launch script:**
 
 ```text
-node .devin/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs
+node .agents/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs
 ```
 
 **Fallback 3: `testing-extension-browser`** if neither of the above can load the extension, recorded as a limitation.

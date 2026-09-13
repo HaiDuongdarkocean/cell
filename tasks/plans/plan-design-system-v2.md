@@ -612,7 +612,7 @@ Final maturity audit ≥85/100
 **Description:** Agent skills hiện bị phân mảnh: skill mới không xuất hiện trong `using-agent-skills`, một số skill duplicate dưới nhiều path khác nhau, và tổng số skill vượt quá 20. Cần audit, gộp, cập nhật router.
 
 **Acceptance criteria:**
-- [ ] Danh sách skill được audit từ `.agents/skills/`, `.devin/skills/`, `.claude/skills/`, `.codeium/windsurf/skills/`.
+- [ ] Danh sách skill được audit từ `.agents/skills/` (canonical home — tất cả skill đã consolidate về đây).
 - [ ] Các skill duplicate/overlay được gộp hoặc đánh dấu deprecated.
 - [ ] `using-agent-skills` index được cập nhật để reflect đầy đủ skill hiện hành.
 - [ ] Tổng số skill active ≤ 20.

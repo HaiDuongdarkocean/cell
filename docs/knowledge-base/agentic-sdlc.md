@@ -386,7 +386,7 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 | **Guardrail** | AGENTS.md + Ponytail + `design-system-guardian` + check scripts + hook | `check-icons` + `check-design-system-css` trong CI; `.devin/hooks.v1.json` auto-regen skill index | ✅ Đã có |
 | **Persistent context trong repo** | `docs/` + `tasks/` + learning atoms | 24 ADR, 29 intent docs, 20 plans, 15 todos, 101 experience + 1 process atoms | ✅ Đã có |
 | **Elicitation đa kỹ thuật** | `elicitation` 9-step: observation + interview + prototype (`idea-to-interface`) | 29 files `docs/intent/` gồm design-brief + component-mapping | ✅ Đã có (từ 2026-08-29) |
-| **Skill catalog integrity** | `scripts/update-skill-index.mjs` + PostToolUse hook | Index giờ cover cả `.devin/skills` (45 skills); hook auto-regen khi SKILL.md đổi | ✅ Đã có (2026-09-13) |
+| **Skill catalog integrity** | `scripts/update-skill-index.mjs` + PostToolUse hook | Tất cả skill consolidate về `.agents/skills/` (46 skills); hook auto-regen khi SKILL.md đổi | ✅ Đã có (2026-09-13) |
 | **Eval gate mỗi change** | CI `e2e` job (full Playwright) + full `test:unit`/`lint` non-blocking | Full suite non-blocking vì còn nợ test OCR/dictionary — siết blocking khi green | ⚠️ Soft gate |
 | **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
 | **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | Atom đầu tiên: `process-generated-catalog-drift` | ✅ Đã có (2026-09-13) |
@@ -407,7 +407,7 @@ Cell implement **~90%** nguyên lý agentic SDLC (11/13 có cơ chế sau batch 
 
 ### 10.2. Rot đã fix trong audit 2026-09-13
 
-- `index.json` stale (46 listed vs 38 disk, 8 phantom skill) → regen, giờ 45 skills gồm cả `.devin/skills` + PostToolUse hook chống tái phạm.
+- `index.json` stale (46 listed vs 38 disk, 8 phantom skill) → regen; PostToolUse hook chống tái phạm. Sau đó consolidate: 7 skill ở `.devin/skills` move hết về `.agents/skills` — single source of truth, index + hook chỉ quét `.agents/skills`.
 - Router `using-agent-skills` trỏ `frontend-ui-engineering`, `api-and-interface-design`, `browser-testing-with-devtools` — không skill nào tồn tại → sửa về skill thật.
 - `using-agent-skills` cite `references/definition-of-done.md` không tồn tại → trỏ về §11.3 runbook; `shipping-and-launch` See Also cite 4 file `references/` phantom → trỏ skill/doc thật.
 - `testing-with-playwright` thiếu frontmatter → không index/trigger được → thêm frontmatter, giờ là canonical route cho browser-verify (`testing-extension-browser` chỉ còn cho interactive/stealth session).
@@ -461,7 +461,7 @@ Mỗi change phải pass trước khi commit:
 
 | Artifact | Path | Update khi |
 |---|---|---|
-| Skill catalog | `.agents/skills/index.json` | Chạy `node scripts/update-skill-index.mjs` (cover `.agents/skills` + `.devin/skills`) |
+| Skill catalog | `.agents/skills/index.json` | Chạy `node scripts/update-skill-index.mjs` (skills chỉ sống ở `.agents/skills/`) |
 | Kiến trúc | `docs/2-architechture-system.md` | Thêm/xóa/sửa `src/` |
 | Wiki | `docs/0-wiki.md` | Thêm/xóa `docs/` |
 | Glossary | `docs/1-share-language.md` | Thêm/sửa term |

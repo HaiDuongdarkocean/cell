@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const bases = ['.agents/skills', '.devin/skills'];
+const bases = ['.agents/skills'];
 
 const skills = [];
 for (const base of bases) {

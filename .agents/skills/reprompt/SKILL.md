@@ -1,6 +1,6 @@
 ---
 name: reprompt
-description: Reformulate colloquial requests into precise technical prompts. Use when the user says "prompt lại", "nói lại cho dễ hiểu", "viết lại yêu cầu", "sửa lời anh cho chuẩn", or when a request contains vague terms that obscure intent. Not for implementing the request — only for rewriting it.
+description: Rephrase a failed or fuzzy prompt for a better result. Use when a prompt underperforms.
 ---
 
 # Reprompt
