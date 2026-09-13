@@ -19,6 +19,8 @@ export const VideoQualitySchema = z.enum([
   'auto',
 ]);
 
+export const EmptyPayloadSchema = z.object({}).passthrough().optional();
+
 // === Download payloads ===
 
 export const DownloadVideoPayloadSchema = z.object({
@@ -235,4 +237,67 @@ export const SrsOpenStudyPagePayloadSchema = z.object({
 
 export const SrsGetDecksNotetypesPayloadSchema = z.object({
   collectionId: z.string().min(1),
+});
+
+// === Local Player payloads (spec: local-video-player.md) ===
+
+export const OpenLocalPlayerPayloadSchema = z.object({
+  videoId: z.string().min(1).optional(),
+}).optional();
+
+export const SaveResumePositionPayloadSchema = z.object({
+  videoId: z.string().min(1),
+  timeMs: z.number().min(0),
+  durationMs: z.number().min(0),
+});
+
+export const GetResumePositionPayloadSchema = z.object({
+  videoId: z.string().min(1),
+});
+
+export const GetHistoryPayloadSchema = z.object({
+  limit: z.number().int().min(1).optional(),
+}).optional();
+
+export const SaveHistoryPayloadSchema = z.object({
+  videoId: z.string().min(1),
+  watchedAt: z.number(),
+  durationWatchedMs: z.number().min(0),
+});
+
+export const GetLibraryPayloadSchema = z.object({
+  sortBy: z.enum(['recent', 'title', 'added']).optional(),
+}).optional();
+
+export const LocalPlayerVideoOpenedPayloadSchema = z.object({
+  videoId: z.string().min(1),
+  filename: z.string().min(1),
+  title: z.string().min(1),
+  durationMs: z.number().min(0),
+});
+
+// === OCR payloads (spec: orca-ocr-layer.md) ===
+
+export const OcrInitPayloadSchema = z.object({
+  languageMode: z.string().min(1),
+  backend: z.enum(['webgpu', 'wasm']),
+  engineKey: z.string().min(1).optional(),
+});
+
+export const OcrRecognizePayloadSchema = z.object({
+  image: z.object({
+    data: z.union([z.string().min(1), z.array(z.number()).min(1)]),
+    width: z.number().int().min(1),
+    height: z.number().int().min(1),
+  }),
+  minScore: z.number().min(0).max(1).optional(),
+  engineKey: z.string().min(1).optional(),
+});
+
+export const OcrDisposePayloadSchema = z.object({
+  engineKey: z.string().min(1).optional(),
+}).optional();
+
+export const OcrRegionCommandPayloadSchema = z.object({
+  mode: z.enum(['view', 'select', 'edit', 'reset']),
 });

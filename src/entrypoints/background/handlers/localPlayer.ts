@@ -16,15 +16,19 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
-  OpenLocalPlayerPayload,
-  SaveResumePositionPayload,
-  GetResumePositionPayload,
   GetResumePositionResult,
   GetHistoryResult,
-  SaveHistoryPayload,
   GetLibraryResult,
-  LocalPlayerVideoOpenedPayload,
 } from '@/entities/message';
+import {
+  OpenLocalPlayerPayloadSchema,
+  SaveResumePositionPayloadSchema,
+  GetResumePositionPayloadSchema,
+  GetHistoryPayloadSchema,
+  SaveHistoryPayloadSchema,
+  GetLibraryPayloadSchema,
+  LocalPlayerVideoOpenedPayloadSchema,
+} from '@/entities/message/schema';
 import {
   saveVideo,
   getVideo,
@@ -45,7 +49,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.OPEN_LOCAL_PLAYER,
     async (request): Promise<MessageResponse<{ tabId: number }>> => {
-      const payload = request.payload as OpenLocalPlayerPayload | undefined;
+      const parsed = OpenLocalPlayerPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid OPEN_LOCAL_PLAYER payload: ${parsed.error.message}` };
+      }
+      const payload = parsed.data;
       const url = chrome.runtime.getURL(LOCAL_PLAYER_PATH);
       const fullUrl = payload?.videoId
         ? `${url}?videoId=${encodeURIComponent(payload.videoId)}`
@@ -62,10 +70,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.SAVE_RESUME_POSITION,
     async (request): Promise<MessageResponse> => {
-      const payload = request.payload as SaveResumePositionPayload | undefined;
-      if (!payload?.videoId) {
-        return { success: false, error: 'Missing videoId' };
+      const parsed = SaveResumePositionPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid SAVE_RESUME_POSITION payload: ${parsed.error.message}` };
       }
+      const payload = parsed.data;
       await updateResumePosition(
         payload.videoId,
         payload.timeMs,
@@ -79,11 +88,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.GET_RESUME_POSITION,
     async (request): Promise<MessageResponse<GetResumePositionResult>> => {
-      const payload = request.payload as GetResumePositionPayload | undefined;
-      if (!payload?.videoId) {
-        return { success: false, error: 'Missing videoId' };
+      const parsed = GetResumePositionPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid GET_RESUME_POSITION payload: ${parsed.error.message}` };
       }
-      const video = await getVideo(payload.videoId);
+      const video = await getVideo(parsed.data.videoId);
       if (!video) {
         return {
           success: true,
@@ -110,7 +119,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   // GET_HISTORY — return all history entries (sorted by watchedAt desc).
   ctx.on(
     MESSAGE_TYPES.GET_HISTORY,
-    async (): Promise<MessageResponse<GetHistoryResult>> => {
+    async (request): Promise<MessageResponse<GetHistoryResult>> => {
+      const parsed = GetHistoryPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid GET_HISTORY payload: ${parsed.error.message}` };
+      }
       const history = await getHistory();
       return { success: true, data: { history } };
     },
@@ -120,10 +133,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.SAVE_HISTORY,
     async (request): Promise<MessageResponse> => {
-      const payload = request.payload as SaveHistoryPayload | undefined;
-      if (!payload?.videoId) {
-        return { success: false, error: 'Missing videoId' };
+      const parsed = SaveHistoryPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid SAVE_HISTORY payload: ${parsed.error.message}` };
       }
+      const payload = parsed.data;
       await addHistoryEntry({
         id: `${payload.videoId}-${payload.watchedAt}`,
         videoId: payload.videoId,
@@ -138,7 +152,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   // GET_LIBRARY — return all library videos.
   ctx.on(
     MESSAGE_TYPES.GET_LIBRARY,
-    async (): Promise<MessageResponse<GetLibraryResult>> => {
+    async (request): Promise<MessageResponse<GetLibraryResult>> => {
+      const parsed = GetLibraryPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid GET_LIBRARY payload: ${parsed.error.message}` };
+      }
       const videos = await getAllVideos();
       return { success: true, data: { videos } };
     },
@@ -148,12 +166,11 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.LOCAL_PLAYER_VIDEO_OPENED,
     async (request): Promise<MessageResponse> => {
-      const payload = request.payload as
-        | LocalPlayerVideoOpenedPayload
-        | undefined;
-      if (!payload?.videoId) {
-        return { success: false, error: 'Missing videoId' };
+      const parsed = LocalPlayerVideoOpenedPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid LOCAL_PLAYER_VIDEO_OPENED payload: ${parsed.error.message}` };
       }
+      const payload = parsed.data;
       const now = new Date().toISOString();
       const record: VideoRecord = {
         id: payload.videoId,

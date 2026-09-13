@@ -5,7 +5,7 @@
  * runner streams progress via TTS_DOWNLOAD_PROGRESS and responds when done.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
+import { TtsDownloadProgressPayloadSchema, TtsDownloadVoicePayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 
@@ -29,7 +29,11 @@ export function registerTtsDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   // Progress fan-out from offscreen → any listening popups.
-  ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS, async (_request): Promise<MessageResponse<null>> => {
+  ctx.on(MESSAGE_TYPES.TTS_DOWNLOAD_PROGRESS, async (request): Promise<MessageResponse<null>> => {
+    const parsed = TtsDownloadProgressPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid TTS_DOWNLOAD_PROGRESS payload: ${parsed.error.message}` };
+    }
     return { success: true, data: null };
   });
 }
