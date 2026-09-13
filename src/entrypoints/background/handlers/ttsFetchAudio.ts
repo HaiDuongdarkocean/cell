@@ -23,6 +23,18 @@ const GOOGLE_TTS_ENDPOINT = 'https://translate.google.com/translate_tts';
 /** Max text length for a single TTS request (Google's limit). */
 const MAX_TTS_TEXT_LEN = 200;
 
+/**
+ * Musical-note glyphs common in lyric subtitles (♩♪♫♬♭♮♯, beamed notes,
+ * 𝄞/𝄢 clefs). Display keeps them, but they are decoration — a TTS engine
+ * would vocalize them as noise or stall on them.
+ */
+const UNSPOKEN_GLYPHS_RE = /[\u2669-\u266F\u{1D100}-\u{1D1FF}\u{1F3B5}\u{1F3B6}]/gu;
+
+/** Strip unspoken glyphs and collapse the whitespace they leave behind. */
+export function sanitizeTtsText(text: string): string {
+  return text.replace(UNSPOKEN_GLYPHS_RE, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Build the Google Translate TTS request URL. */
 function buildTtsUrl(text: string, langCode: string): string {
   const truncated = text.slice(0, MAX_TTS_TEXT_LEN);
@@ -53,8 +65,12 @@ export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid TTS_FETCH_AUDIO payload: ${parsed.error.message}` };
     }
     const { text, langCode } = parsed.data;
+    const speakable = sanitizeTtsText(text);
+    if (!speakable) {
+      return { success: false, error: 'TTS text has no speakable content' };
+    }
 
-    const url = buildTtsUrl(text, langCode);
+    const url = buildTtsUrl(speakable, langCode);
     try {
       const response = await fetch(url, {
         method: 'GET',
