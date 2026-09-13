@@ -41,3 +41,4 @@
 - Không thêm dependency mà không kiểm bundle size; không sửa `manifest.json` mà không test Chrome thật. Chrome API: cite https://developer.chrome.com/docs/extensions/reference/
 - Đổi `src/` → update `docs/2-architechture-system.md`; đổi `docs/` → update `docs/0-wiki.md`; quyết định kiến trúc → `docs/adr/`.
 - Ship: `npm run build && npm run ship:dist` → release Google Drive (config: `scripts/ship.config.json`).
+- Commit message sạch — CẤM trailer `Generated with Devin`/`Co-Authored-By` hay bất kỳ attribution nào vào commit của Anh.
