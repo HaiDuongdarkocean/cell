@@ -10,7 +10,7 @@ import { OffsetLayer } from './OffsetLayer';
 import { SubtitleToast } from './SubtitleToast';
 import { useToasts } from './subtitleToasts';
 import { SubtitleHint } from './SubtitleHint';
-import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
+import { useSubtitleBlockDrag } from './subtitleDrag';
 import { usePlayerMode } from './subtitlePlayerMode';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { SubtitlePanel } from './SubtitlePanel';
@@ -95,7 +95,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [yOffsetPercent, setYOffsetPercent] = useState(initialYOffsetPercent);
     const [clusterSettings, setClusterSettingsState] = useState<NavClusterSettings | undefined>(initialClusterSettings);
     const [blockSettings, setBlockSettingsState] = useState<SubtitleBlockSettings | undefined>(initialBlockSettings);
-    const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     // Sync manager prop → state when parent passes a *new* manager object
     // (e.g. local-player rebuilds ManagerState when subtitles change). Guard
@@ -215,76 +214,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView, setSplitViewOpen],
     );
 
-    // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
-    // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
-    // (atom ux-touch-action-none-for-pointer-drag). Drag chỉ trên background —
-    // cluster/button/text có pointer-events:auto nên không trigger drag.
-    const dragState = useRef<{
-      startY: number;
-      startOffset: number;
-      containerHeight: number;
-      rafId: number | null;
-      pendingDelta: number;
-    } | null>(null);
-
-    const handlePointerDown = useCallback(
-      (e: React.PointerEvent<HTMLDivElement>): void => {
-        // Chỉ drag khi nhấn trực tiếp lên root background (không qua child interactive).
-        // Children interactive có pointer-events:auto + e.target !== currentTarget.
-        if (e.target !== e.currentTarget) return;
-        const root = rootRef.current;
-        if (!root) return;
-        const rootNode = root.getRootNode();
-        const host = rootNode instanceof ShadowRoot ? (rootNode.host as HTMLElement) : root.parentElement;
-        const containerHeight = host ? host.getBoundingClientRect().height : 0;
-        if (containerHeight <= 0) return;
-        dragState.current = {
-          startY: e.clientY,
-          startOffset: yOffsetPercent,
-          containerHeight,
-          rafId: null,
-          pendingDelta: 0,
-        };
-        setDragging(true);
-        root.setPointerCapture(e.pointerId);
-      },
-      [yOffsetPercent],
-    );
-
-    const handlePointerMove = useCallback(
-      (e: React.PointerEvent<HTMLDivElement>): void => {
-        const st = dragState.current;
-        if (!st) return;
-        st.pendingDelta = e.clientY - st.startY;
-        if (st.rafId !== null) return;
-        st.rafId = requestAnimationFrame(() => {
-          st.rafId = null;
-          const next = dragDeltaToYOffset(st.startOffset, st.pendingDelta, st.containerHeight);
-          setYOffsetPercent(next);
-        });
-      },
-      [],
-    );
-
-    const handlePointerUp = useCallback(
-      (e: React.PointerEvent<HTMLDivElement>): void => {
-        const st = dragState.current;
-        if (!st) return;
-        if (st.rafId !== null) {
-          cancelAnimationFrame(st.rafId);
-          st.rafId = null;
-        }
-        const finalDelta = e.clientY - st.startY;
-        // Release ở đâu giữ nguyên đó — chỉ clamp 0-95%, không snap (theo yêu cầu).
-        const next = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
-        setYOffsetPercent(next);
-        onDragReposition?.(next);
-        dragState.current = null;
-        setDragging(false);
-        rootRef.current?.releasePointerCapture(e.pointerId);
-      },
-      [onDragReposition],
-    );
+    const { dragging, handlePointerDown, handlePointerMove, handlePointerUp } = useSubtitleBlockDrag({
+      rootRef,
+      yOffsetPercent,
+      setYOffsetPercent,
+      onDragReposition,
+    });
 
     // Cluster settings CSS variables — áp dụng cho cả clusterLeft (NavCluster) + clusterRight
     // Cluster CSS vars — SSOT: buildClusterCssVars (shared with NavCluster + PlayerModeOverlay + OverlayPreview)
