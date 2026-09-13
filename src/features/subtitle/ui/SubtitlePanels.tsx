@@ -1,5 +1,4 @@
-import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect, Component } from 'react';
-import type { ReactNode } from 'react';
+import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
@@ -12,7 +11,7 @@ import { useToasts } from './subtitleToasts';
 import { SubtitleHint } from './SubtitleHint';
 import { useSubtitleBlockDrag } from './subtitleDrag';
 import { usePlayerMode } from './subtitlePlayerMode';
-import { PlayerModeOverlay } from './PlayerModeOverlay';
+import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
 import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
@@ -227,41 +226,39 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
     if (playerMode) {
       return (
-        <PlayerModeErrorBoundary>
-          <PlayerModeOverlay
-            targetStyle={targetStyle}
-            nativeStyle={nativeStyle}
-            isPlaying={isPlaying}
-            repeatActive={repeatActive}
-            repeatIcon={repeatIcon}
-            repeatLabel={repeatLabel}
-            clusterSettings={clusterSettings}
-            blockSettings={blockSettings}
-            videoAspectRatio={videoAspectRatio}
-            onQuickAdd={onQuickAdd}
-            onEditCard={onEditCard}
-            onToggleOcr={onToggleOcr}
-            ocrEnabled={ocrEnabledState}
-            onGenerateNative={onGenerateNative}
-            onToggleSidePanel={onToggleSidePanel}
-            onToggleManager={onToggleManager}
-            generateNativeEnabled={generateNativeEnabled}
-            toolsExpanded={toolsExpanded}
-            onToggleTools={() => setToolsExpanded((value) => !value)}
-            onPrev={onPrev}
-            onNext={onNext}
-            onRepeat={onRepeat}
-            onRewind={onRewind}
-            onForward={onForward}
-            onPlayPause={onPlayPause}
-            onToggleCollapsed={handleToggleCollapsed}
-            onExit={() => { void handleTogglePlayerMode(); }}
-            cues={cues as BilingualCue[]}
-            currentTimeMs={currentTimeMs}
-            offsetMs={offsetMs}
-            onSeek={onSeek}
-          />
-        </PlayerModeErrorBoundary>
+        <PlayerModeLayer
+          targetStyle={targetStyle}
+          nativeStyle={nativeStyle}
+          isPlaying={isPlaying}
+          repeatActive={repeatActive}
+          repeatIcon={repeatIcon}
+          repeatLabel={repeatLabel}
+          clusterSettings={clusterSettings}
+          blockSettings={blockSettings}
+          videoAspectRatio={videoAspectRatio}
+          onQuickAdd={onQuickAdd}
+          onEditCard={onEditCard}
+          onToggleOcr={onToggleOcr}
+          ocrEnabled={ocrEnabledState}
+          onGenerateNative={onGenerateNative}
+          onToggleSidePanel={onToggleSidePanel}
+          onToggleManager={onToggleManager}
+          generateNativeEnabled={generateNativeEnabled}
+          toolsExpanded={toolsExpanded}
+          onToggleTools={() => setToolsExpanded((value) => !value)}
+          onPrev={onPrev}
+          onNext={onNext}
+          onRepeat={onRepeat}
+          onRewind={onRewind}
+          onForward={onForward}
+          onPlayPause={onPlayPause}
+          onToggleCollapsed={handleToggleCollapsed}
+          onExit={() => { void handleTogglePlayerMode(); }}
+          cues={cues as BilingualCue[]}
+          currentTimeMs={currentTimeMs}
+          offsetMs={offsetMs}
+          onSeek={onSeek}
+        />
       );
     }
 
@@ -361,34 +358,3 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     );
   },
 );
-
-class PlayerModeErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
-  state: { error: Error | null } = { error: null };
-
-  static getDerivedStateFromError(error: Error): { error: Error } {
-    return { error };
-  }
-
-  componentDidCatch(error: Error): void {
-     
-    console.error('[PlayerModeErrorBoundary]', error.message, error.stack);
-  }
-
-  render(): ReactNode {
-    if (this.state.error) {
-      // max-int: intentional top-most overlay
-      return (
-        <div style={{ position: 'fixed', inset: 0, background: '#1a1a1a', color: '#ff4444', padding: 20, fontSize: 14, fontFamily: 'monospace', zIndex: 2147483647, overflow: 'auto' }}>
-          <div style={{ marginBottom: 8, color: '#fff', fontSize: 16 }}>Player Mode crashed:</div>
-          <div>{this.state.error.message}</div>
-          <pre style={{ marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{this.state.error.stack}</pre>
-          <div style={{ marginTop: 12, color: '#aaa' }}>Check console for details.</div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
