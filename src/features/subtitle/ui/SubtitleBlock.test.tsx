@@ -139,20 +139,31 @@ describe('SubtitleBlock', () => {
     expect(screen.getByText('Loaded English (imported) (track 1)')).toBeInTheDocument();
   });
 
-  it('shows "Translating to Vietnamese… (50/200)" with progress', () => {
+  it('does not render "Translating" progress — streamed cues are the feedback', () => {
+    setCues([makeCue(0, 'target 0')], [makeCue(0, 'native 0')], 0, 0);
     act(() => {
-      useCuesStore.getState().setLoadStatus('target', { state: 'translating', languageLabel: 'Vietnamese', progress: { current: 50, total: 200 } });
+      useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: 'Vietnamese', progress: { current: 50, total: 200 } });
     });
     render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
-    expect(screen.getByText('Translating to Vietnamese… (50/200)')).toBeInTheDocument();
+
+    expect(screen.queryByText(/Translating/)).not.toBeInTheDocument();
+    expect(screen.getByText('native 0')).toBeInTheDocument();
   });
 
-  it('shows "Translating to Vietnamese…" without progress', () => {
+  it('"Loaded" notice wins over the active cue for 3s, then cue text shows', () => {
+    jest.useFakeTimers();
     act(() => {
-      useCuesStore.getState().setLoadStatus('target', { state: 'translating', languageLabel: 'Vietnamese' });
+      useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'English' });
     });
+    setCues([makeCue(0, 'target 0')], [], 0, -1);
     render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
-    expect(screen.getByText('Translating to Vietnamese…')).toBeInTheDocument();
+
+    expect(screen.getByText('Loaded English')).toBeInTheDocument();
+    expect(screen.queryByText('target 0')).not.toBeInTheDocument();
+
+    act(() => { jest.advanceTimersByTime(3000); });
+    expect(screen.queryByText('Loaded English')).not.toBeInTheDocument();
+    expect(screen.getByText('target 0')).toBeInTheDocument();
   });
 
   it('shows "Couldn\'t load English subtitle (timeout)" with errorType timeout', () => {
@@ -171,7 +182,7 @@ describe('SubtitleBlock', () => {
     expect(screen.getByText("Couldn't load English subtitle (not found)")).toBeInTheDocument();
   });
 
-  it('auto-clears "loaded" target status after 5 seconds', () => {
+  it('auto-clears "loaded" target status after 3 seconds', () => {
     jest.useFakeTimers();
     act(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'loaded', languageLabel: 'English' });
@@ -179,7 +190,7 @@ describe('SubtitleBlock', () => {
     render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
     expect(screen.getByText('Loaded English')).toBeInTheDocument();
 
-    act(() => { jest.advanceTimersByTime(5000); });
+    act(() => { jest.advanceTimersByTime(3000); });
     expect(screen.queryByText('Loaded English')).not.toBeInTheDocument();
     expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
   });

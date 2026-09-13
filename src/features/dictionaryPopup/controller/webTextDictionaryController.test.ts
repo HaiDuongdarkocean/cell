@@ -1284,7 +1284,35 @@ describe('nested popup stack', () => {
     act(() => { ctrl.destroy() });
   });
 
-  it('pointerdown inside a sibling level does not dismiss the stack', async () => {
+  it('pointerdown inside an ancestor level closes deeper levels and focuses it', async () => {
+    makeLookupForTerms();
+    const ctrl = createWebTextDictionaryController(makeDeps());
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
+    await flushLookup();
+    const lv1 = popupHosts()[0]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+    await flushLookup();
+    const lv2 = popupHosts()[1]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'c')) });
+    await flushLookup();
+    const lv3 = popupHosts()[2]!;
+    expect(popupHosts()).toHaveLength(3);
+
+    act(() => {
+      lv1.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+    });
+
+    expect(popupHosts()).toHaveLength(1);
+    expect(popupHosts()[0]).toBe(lv1);
+    expect(document.body.contains(lv2)).toBe(false);
+    expect(document.body.contains(lv3)).toBe(false);
+    const surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+    expect(lv1.shadowRoot!.activeElement).toBe(surface);
+    act(() => { ctrl.destroy() });
+  });
+
+  it('pointerdown inside the top level keeps the stack intact', async () => {
     makeLookupForTerms();
     const ctrl = createWebTextDictionaryController(makeDeps());
 
@@ -1295,12 +1323,10 @@ describe('nested popup stack', () => {
     await flushLookup();
     const lv2 = popupHosts()[1]!;
 
-    // Pointerdown on non-text chrome inside level 1: inside a stack host →
-    // no lookup, no dismissal.
     act(() => {
-      lv1.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
+      lv2.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true }));
     });
-    expect(document.body.contains(lv2)).toBe(true);
+
     expect(popupHosts()).toHaveLength(2);
     act(() => { ctrl.destroy() });
   });
@@ -1324,6 +1350,39 @@ describe('nested popup stack', () => {
 
     expect(popupHosts()).toHaveLength(1);
     expect(popupHosts()[0]).toBe(lv1);
+    const lv1Surface = lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]') as HTMLElement;
+    expect(lv1.shadowRoot!.activeElement).toBe(lv1Surface);
+    act(() => { ctrl.destroy() });
+  });
+
+  it('Escape with focus outside the popup walks the stack down level by level', async () => {
+    makeLookupForTerms();
+    const ctrl = createWebTextDictionaryController(makeDeps());
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
+    await flushLookup();
+    const lv1 = popupHosts()[0]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+    await flushLookup();
+    const lv2 = popupHosts()[1]!;
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'c' }), 'r3', new DOMRect(70, 80, 50, 20), rangeInPopup(lv2, 'c')) });
+    await flushLookup();
+    expect(popupHosts()).toHaveLength(3);
+
+    const pressEscape = (): void => {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    };
+
+    await act(async () => { pressEscape(); });
+    expect(popupHosts()).toHaveLength(2);
+    expect(lv2.shadowRoot!.activeElement).toBe(lv2.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]'));
+
+    await act(async () => { pressEscape(); });
+    expect(popupHosts()).toHaveLength(1);
+    expect(lv1.shadowRoot!.activeElement).toBe(lv1.shadowRoot!.querySelector('[data-cell-id="popup-dictionary"]'));
+
+    await act(async () => { pressEscape(); });
+    expect(popupHosts()).toHaveLength(0);
     act(() => { ctrl.destroy() });
   });
 

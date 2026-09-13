@@ -337,6 +337,36 @@ describe('CandidateView', () => {
     }));
   });
 
+  it('clicking definition text does not toggle selection — text is for word lookup', () => {
+    const candidate = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: ['a warm greeting'], source: 'test', defaultSelected: true },
+      ],
+    });
+
+    render(
+      <CandidateView
+        candidate={candidate}
+        index={0}
+        contextSentence=""
+        sourceLang="en"
+        targetLang="vi"
+      />,
+    );
+
+    const row = screen.getByTestId('dictionary-definition');
+    expect(row).toHaveAttribute('aria-checked', 'false');
+
+    fireEvent.click(row.querySelector('.cellDefText')!);
+    expect(row).toHaveAttribute('aria-checked', 'false');
+
+    fireEvent.click(row.querySelector('.cellDefExamples')!);
+    expect(row).toHaveAttribute('aria-checked', 'false');
+
+    fireEvent.click(row);
+    expect(row).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('sendToCard calls onSendToCard immediately without blocking on media fetches', async () => {
     const candidate = makeResult('hello', {
       definitions: [

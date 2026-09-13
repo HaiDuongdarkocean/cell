@@ -296,4 +296,61 @@ test.describe('Stage 2: Nested dictionary popup stack', () => {
     }
     await expect(popupHosts(streamFlixPage)).toHaveCount(0, { timeout: 10_000 });
   });
+
+  test('Escape closes the top level and focuses the exposed parent', async ({ streamFlixPage }) => {
+    await streamFlixPage.keyboard.press('g');
+
+    const cueTexts = streamFlixPage.locator('[data-cell-id="cue-target-text"]');
+    await expect(cueTexts.first()).toBeVisible({ timeout: 15_000 });
+
+    const silenceCue = cueTexts.filter({ hasText: /silence/i }).first();
+    const silencePoint = await wordPoint(silenceCue, 'silence');
+    expect(silencePoint).not.toBeNull();
+    await streamFlixPage.mouse.click(silencePoint!.x, silencePoint!.y);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+
+    const lv1Defs = popupHosts(streamFlixPage).nth(0).locator('[data-allow-lookup]');
+    await expect(lv1Defs).toContainText(/absence/i, { timeout: 15_000 });
+
+    const lv2Point = await nestedWordPoint(streamFlixPage, 0, 'absence');
+    expect(lv2Point).not.toBeNull();
+    await streamFlixPage.mouse.click(lv2Point!.x, lv2Point!.y);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(2, { timeout: 10_000 });
+
+    const lv2Defs = popupHosts(streamFlixPage).nth(1).locator('[data-allow-lookup]');
+    await expect(lv2Defs).toContainText(/state/i, { timeout: 15_000 });
+    const lv3Point = await nestedWordPoint(streamFlixPage, 1, 'state');
+    expect(lv3Point).not.toBeNull();
+    await streamFlixPage.mouse.click(lv3Point!.x, lv3Point!.y);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(3, { timeout: 10_000 });
+
+    const focusedHostIndex = () =>
+      streamFlixPage.evaluate(() => {
+        let active: Element | null = document.activeElement;
+        while (active instanceof HTMLElement && active.shadowRoot?.activeElement) {
+          active = active.shadowRoot.activeElement;
+        }
+        const root = active?.getRootNode();
+        const focusedHost = root instanceof ShadowRoot ? root.host : active;
+        const hosts = [
+          ...Array.from(document.querySelectorAll('.js-cell-popup-host')),
+          ...Array.from(
+            document.getElementById('cell-subtitle-root')?.shadowRoot
+              ?.querySelectorAll('.js-cell-popup-host') ?? [],
+          ),
+        ];
+        return hosts.indexOf(focusedHost as HTMLElement);
+      });
+
+    await streamFlixPage.keyboard.press('Escape');
+    await expect(popupHosts(streamFlixPage)).toHaveCount(2, { timeout: 10_000 });
+    expect(await focusedHostIndex()).toBe(1);
+
+    await streamFlixPage.keyboard.press('Escape');
+    await expect(popupHosts(streamFlixPage)).toHaveCount(1, { timeout: 10_000 });
+    expect(await focusedHostIndex()).toBe(0);
+
+    await streamFlixPage.keyboard.press('Escape');
+    await expect(popupHosts(streamFlixPage)).toHaveCount(0, { timeout: 10_000 });
+  });
 });

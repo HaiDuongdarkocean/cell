@@ -82,6 +82,8 @@ export interface MountPopupDictionaryOptions {
 export interface PopupDictionaryMountController {
   /** The shadow host element — identifies this popup level for nested stacks. */
   readonly host: HTMLElement;
+  /** Move DOM focus to the popup surface (after a deeper level closes). */
+  readonly focus: () => void;
   /** Unmount the popup and remove the shadow host. */
   readonly destroy: () => void;
   /** Show or hide the forced loading state. */
@@ -237,6 +239,12 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
 
   return {
     host: mount.host,
+    focus: () => {
+      const el = mount.rootEl.querySelector<HTMLElement>('[data-cell-id="popup-dictionary"]');
+      if (!el) return;
+      if (el.tabIndex < 0) el.tabIndex = -1;
+      el.focus();
+    },
     destroy: () => {
       if (destroyed) return;
       destroyed = true;

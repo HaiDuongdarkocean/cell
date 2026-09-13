@@ -52,9 +52,9 @@ const ERROR_SUFFIX: Record<LoadErrorType, string> = {
 };
 
 /** Build a human-readable inline status message from a LoadStatus.
- *  Returns null when state is 'idle' (no status to show).
- *  'loaded' shows "Loaded English" — cleared automatically when an active
- *  cue appears (caller passes null when there IS an active cue). */
+ *  Returns null for 'idle' and 'translating' (progress text is noise — the
+ *  streamed cues are the feedback). 'loaded' is a timed notice; the caller
+ *  decides whether it wins over an active cue. */
 function buildStatusText(status: LoadStatus): string | null {
   const lang = status.languageLabel ?? '';
   switch (status.state) {
@@ -65,11 +65,7 @@ function buildStatusText(status: LoadStatus): string | null {
       const trackSuffix = status.trackIndex && status.trackIndex > 0 ? ` (track ${status.trackIndex})` : '';
       return `Loaded ${lang}${sourceSuffix}${trackSuffix}`;
     }
-    case 'translating': {
-      const target = lang || 'native';
-      const progressSuffix = status.progress ? ` (${status.progress.current}/${status.progress.total})` : '';
-      return `Translating to ${target}…${progressSuffix}`;
-    }
+    case 'translating': return null;
     case 'error': {
       const errorSuffix = status.errorType ? ERROR_SUFFIX[status.errorType] : '';
       return lang ? `Couldn't load ${lang} subtitle${errorSuffix}` : `Couldn't load subtitle${errorSuffix}`;
@@ -126,17 +122,25 @@ function SubtitleBlockInner({
     ? (removeBracketed ? removeBracketedText(nativeCue.text) : nativeCue.text)
     : null;
 
-  // Inline load status — shown only when no active cue. When cues arrive,
-  // setCues clears the status → subtitle text takes over.
-  const targetStatusText = !targetCue ? buildStatusText(storeTargetLoadStatus) : null;
-  const nativeStatusText = !nativeCue ? buildStatusText(storeNativeLoadStatus) : null;
+  // Inline load status. 'loaded' is a timed notice that wins over an active
+  // cue for its display window; every other state only renders when no cue
+  // is active.
+  const targetStatusText = buildStatusText(storeTargetLoadStatus);
+  const nativeStatusText = buildStatusText(storeNativeLoadStatus);
+  const showTargetStatus = storeTargetLoadStatus.state === 'loaded'
+    ? targetStatusText !== null
+    : !targetCue && targetStatusText !== null;
+  const showNativeStatus = storeNativeLoadStatus.state === 'loaded'
+    ? nativeStatusText !== null
+    : !nativeCue && nativeStatusText !== null;
 
-  // Auto-clear "loaded" after 5s so it doesn't linger when a video has no cues.
+  // Auto-clear "loaded" after 3s — the notice is a confirmation, not a cue
+  // replacement, so cue text takes over once the window expires.
   useEffect(() => {
     if (storeTargetLoadStatus.state !== 'loaded') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
-    }, 5000);
+    }, 3000);
     return () => clearTimeout(timer);
   }, [storeTargetLoadStatus.state]);
 
@@ -144,7 +148,7 @@ function SubtitleBlockInner({
     if (storeNativeLoadStatus.state !== 'loaded') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
-    }, 5000);
+    }, 3000);
     return () => clearTimeout(timer);
   }, [storeNativeLoadStatus.state]);
 
@@ -178,8 +182,8 @@ function SubtitleBlockInner({
   // Load status (loading/error/none) shows a muted background so the message is readable.
   const hasTargetCue = targetStyle.visible && targetCue;
   const hasNativeCue = nativeStyle.visible && nativeCue;
-  const hasTargetStatus = targetStyle.visible && !editable && Boolean(targetStatusText);
-  const hasNativeStatus = nativeStyle.visible && !editable && Boolean(nativeStatusText);
+  const hasTargetStatus = targetStyle.visible && !editable && showTargetStatus;
+  const hasNativeStatus = nativeStyle.visible && !editable && showNativeStatus;
   const handleTextBlur = (role: 'target' | 'native', event: React.FocusEvent<HTMLSpanElement>): void => {
     onTextChange?.(role, event.currentTarget.textContent ?? '');
   };
@@ -199,14 +203,14 @@ function SubtitleBlockInner({
         }}
       >
         <span
-          className={targetStatusText ? styles.statusText : styles.text}
+          className={showTargetStatus ? styles.statusText : styles.text}
           data-cell-id={editable ? 'overlay-preview-target-line' : undefined}
           data-allow-lookup={editable ? undefined : true}
           contentEditable={editable}
           suppressContentEditableWarning={editable}
           onBlur={editable ? (event) => handleTextBlur('target', event) : undefined}
         >
-          {targetText ?? targetStatusText ?? ''}
+          {showTargetStatus ? targetStatusText : (targetText ?? '')}
         </span>
       </div>
       {(hasNativeCue || hasNativeStatus) && (
@@ -221,14 +225,14 @@ function SubtitleBlockInner({
           }}
         >
           <span
-            className={nativeStatusText ? styles.statusText : styles.text}
+            className={showNativeStatus ? styles.statusText : styles.text}
             data-cell-id={editable ? 'overlay-preview-native-line' : undefined}
             data-allow-lookup={editable ? undefined : true}
             contentEditable={editable}
             suppressContentEditableWarning={editable}
             onBlur={editable ? (event) => handleTextBlur('native', event) : undefined}
           >
-            {nativeText ?? nativeStatusText ?? ''}
+            {showNativeStatus ? nativeStatusText : (nativeText ?? '')}
           </span>
         </div>
       )}

@@ -673,7 +673,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   /** Close level `index` and every deeper level. Resumes the video only once
-   *  the whole stack is gone. */
+   *  the whole stack is gone; otherwise focus lands on the exposed parent. */
   function closeFromLevel(index: number): void {
     if (index < 0 || index >= popupStack.length) return;
     while (popupStack.length > index) {
@@ -682,6 +682,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     if (popupStack.length === 0) {
       resumeVideoIfNeeded();
       popupDictWasPlaying = false;
+    } else {
+      popupStack[popupStack.length - 1]?.mount?.focus();
     }
   }
 
@@ -1677,6 +1679,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function destroy(): void {
     detach();
     cancelPendingDismiss();
+    document.removeEventListener('keydown', onStackKeydown);
+    document.removeEventListener('pointerdown', onStackPointerDown, true);
     for (const level of popupStack) level.highlight.destroy();
     closePopup();
     cardCreatorMount?.unmount();
@@ -1796,6 +1800,32 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       level.mount?.setStatus(term, status);
     }
   }
+
+  // Stack-level keyboard/pointer routing. The per-popup Surface already owns
+  // Escape when focus is inside it (and stops propagation); this document
+  // listener covers Escape with focus outside the popup — it closes the top
+  // level only, so repeated Escape walks the stack down level by level.
+  const onStackKeydown = (e: KeyboardEvent): void => {
+    if (e.key !== 'Escape' || popupStack.length === 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    closeFromLevel(popupStack.length - 1);
+  };
+
+  // A pointerdown inside an ancestor level's host closes every deeper level
+  // and lands focus on that ancestor; the surviving level stays interactive.
+  const onStackPointerDown = (e: PointerEvent): void => {
+    if (popupStack.length < 2) return;
+    const path = e.composedPath();
+    const idx = popupStack.findIndex(
+      (level) => level.mount !== null && path.includes(level.mount.host),
+    );
+    if (idx < 0 || idx >= popupStack.length - 1) return;
+    closeFromLevel(idx + 1);
+  };
+
+  document.addEventListener('keydown', onStackKeydown);
+  document.addEventListener('pointerdown', onStackPointerDown, true);
 
   return {
     attach,

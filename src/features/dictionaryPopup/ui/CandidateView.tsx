@@ -341,7 +341,12 @@ function DefinitionItem({
       role="checkbox"
       aria-checked={checked}
       tabIndex={0}
-      onClick={() => onToggle(definition.id, !checked)}
+      onClick={(e) => {
+        const el = e.target as HTMLElement;
+        if (el.closest(`.${styles.cellDefText}`) !== null) return;
+        if (el.closest(`.${styles.cellDefExamples}`) !== null) return;
+        onToggle(definition.id, !checked);
+      }}
       onKeyDown={(e) => {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
