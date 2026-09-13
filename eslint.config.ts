@@ -100,6 +100,31 @@ export default tseslint.config(
     },
   },
 
+  // FSD layer boundaries: shared and entities are lower layers and must not
+  // import from features (dependency arrow points features → entities → shared).
+  {
+    files: ['src/shared/**/*.ts', 'src/shared/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features', '@/features/*', '@/features/**', '**/features/**'],
+          message: 'FSD boundary: shared/ must not import from features/. Move the logic down or the consumer up.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/entities/**/*.ts', 'src/entities/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features', '@/features/*', '@/features/**', '**/features/**'],
+          message: 'FSD boundary: entities/ must not import from features/. Move the contract down into entities/.',
+        }],
+      }],
+    },
+  },
+
   // Test files — relax some rules
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
