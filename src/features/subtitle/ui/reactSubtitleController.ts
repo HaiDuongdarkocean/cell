@@ -353,6 +353,7 @@ export class ReactSubtitleController {
   private readonly onVideoPause = (): void => this.setIsPlaying(false);
   private readonly onVideoSeeking = (): void => {
     this.studyMode.onSeeking(this.video.currentTime * 1000);
+    this.syncHeldCue();
   };
   private readonly onVideoTimeUpdate = (): void => {
     this.engine.onTimeUpdate();
@@ -537,6 +538,7 @@ export class ReactSubtitleController {
     this.mount.setPracticeMode(practiceModeFromStudyModeId(activeMode.id));
     this.studyMode.applyStudyMode(activeMode, advanced, this.engine.getTargetCues(), this.getOffsetMs());
     this.mount.setRemoveBracketed(advanced.removeBracketed);
+    this.engine.setHeldCue(this.studyMode.heldCueIndex);
 
     if (!wasActive && this.studyMode.isActive) {
       this.studyBaseline = {
@@ -553,6 +555,7 @@ export class ReactSubtitleController {
 
     // Apply first step immediately if a cue is currently active.
     this.syncStudyMode();
+    this.syncHeldCue();
   }
 
   /** Drive the study-mode state machine on every time update. */
@@ -567,6 +570,11 @@ export class ReactSubtitleController {
     };
     const actions = this.studyMode.onTimeUpdate(state);
     if (actions.length) this.applyPlaybackActions(actions);
+    this.syncHeldCue();
+  }
+
+  private syncHeldCue(): void {
+    this.engine.setHeldCue(this.studyMode.heldCueIndex);
   }
 
   private applySubtitleHidden(targetHidden: boolean, nativeHidden: boolean): void {
@@ -603,6 +611,7 @@ export class ReactSubtitleController {
           break;
       }
     }
+    this.syncHeldCue();
   }
 
   // === Subtitle manager panel (legacy managerPanel replacement) ===
@@ -794,6 +803,7 @@ export class ReactSubtitleController {
     this.video.removeEventListener('seeking', this.onVideoSeeking);
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate);
     this.studyMode.destroy();
+    this.engine.setHeldCue(this.studyMode.heldCueIndex);
     this.mount.unmount();
   }
 }

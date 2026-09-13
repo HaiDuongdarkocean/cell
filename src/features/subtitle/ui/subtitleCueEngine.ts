@@ -83,6 +83,7 @@ export class SubtitleCueEngine {
   private tokenizeEnabled = false;
   private dpOptions: SubtitleCueEngineDictionaryOptions | null = null;
   private dpEnabled = false;
+  private heldCueIndex = -1;
 
   readonly onTimeUpdate = (): void => {
     if (this.loopState === 'looping' && this.video.currentTime >= this.loopEnd) {
@@ -93,21 +94,27 @@ export class SubtitleCueEngine {
     const currentTimeMs = this.video.currentTime * 1000;
     const offsetMs = this.getOffsetMs();
 
-    if (this.bilingual) {
-      const targetIndex = findCurrentLine(this.targetCues, currentTimeMs, offsetMs);
-      const nativeIndex = findCurrentLine(this.nativeCues, currentTimeMs, offsetMs);
-      if (targetIndex === this.lastTargetIndex && nativeIndex === this.lastNativeIndex) return;
-      this.lastTargetIndex = targetIndex;
-      this.lastNativeIndex = nativeIndex;
-      this.emitCuesUpdated();
-      return;
+    const heldCue = this.heldCueIndex >= 0 ? this.targetCues[this.heldCueIndex] : undefined;
+
+    let targetIndex: number;
+    let nativeIndex = -1;
+
+    if (heldCue) {
+      targetIndex = this.heldCueIndex;
+      if (this.nativeCues.length > 0) {
+        nativeIndex = findCurrentLine(this.nativeCues, heldCue.start, 0);
+      }
+    } else if (this.bilingual) {
+      targetIndex = findCurrentLine(this.targetCues, currentTimeMs, offsetMs);
+      nativeIndex = findCurrentLine(this.nativeCues, currentTimeMs, offsetMs);
+    } else {
+      if (this.targetCues.length === 0) return;
+      targetIndex = findCurrentLine(this.targetCues, currentTimeMs, offsetMs);
     }
 
-    if (this.targetCues.length === 0) return;
-    const targetIndex = findCurrentLine(this.targetCues, currentTimeMs, offsetMs);
-    if (targetIndex === this.lastTargetIndex) return;
+    if (targetIndex === this.lastTargetIndex && nativeIndex === this.lastNativeIndex) return;
     this.lastTargetIndex = targetIndex;
-    this.lastNativeIndex = -1;
+    this.lastNativeIndex = nativeIndex;
     this.emitCuesUpdated();
   };
 
@@ -134,6 +141,12 @@ export class SubtitleCueEngine {
 
   setOffsetProvider(provider: () => number): void {
     this.getOffsetMs = provider;
+  }
+
+  setHeldCue(index: number): void {
+    if (index === this.heldCueIndex) return;
+    this.heldCueIndex = index;
+    this.onTimeUpdate();
   }
 
   updateSettings(update: SubtitleCueEngineUpdate): void {

@@ -30,6 +30,10 @@ export class SubtitleStudyModeController {
     return this.playback !== null;
   }
 
+  get heldCueIndex(): number {
+    return this.playback?.heldCueIndex ?? -1;
+  }
+
   applyStudyMode(
     activeMode: StudyMode,
     advanced: StudyModeAdvancedSettings,

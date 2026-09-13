@@ -218,6 +218,45 @@ describe('StudyModePlaybackController', () => {
     expect(ctrl.hasActiveCue).toBe(false);
   });
 
+  it('exposes the cue held while paused at its end', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const pauseEndMode: StudyMode = {
+      id: 'pause-end',
+      type: 'custom',
+      icon: 'pencil',
+      title: 'Pause End',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const waitMode: StudyMode = {
+      id: 'wait',
+      type: 'custom',
+      icon: 'eye',
+      title: 'Wait',
+      description: '',
+      steps: [{ subtitle: 'target', pause: 'none', repeat: 1, speed: 1, after: 'wait' }],
+    };
+
+    const ctrlPause = new StudyModePlaybackController(pauseEndMode, advancedOff, [cue]);
+    ctrlPause.enterCue(cue, 0);
+    expect(ctrlPause.heldCueIndex).toBe(-1);
+    ctrlPause.onTimeUpdate(5000);
+    expect(ctrlPause.heldCueIndex).toBe(0);
+    ctrlPause.continue();
+    expect(ctrlPause.heldCueIndex).toBe(-1);
+
+    const ctrlWait = new StudyModePlaybackController(waitMode, advancedOff, [cue]);
+    ctrlWait.enterCue(cue, 0);
+    ctrlWait.onTimeUpdate(5000);
+    expect(ctrlWait.heldCueIndex).toBe(0);
+    ctrlWait.continue();
+    expect(ctrlWait.heldCueIndex).toBe(-1);
+
+    const ctrl = new StudyModePlaybackController(readMode, advancedOff, [cue]);
+    ctrl.enterCue(cue, 0);
+    expect(ctrl.heldCueIndex).toBe(-1);
+  });
+
   it('abort() clears the active cue and pause state', () => {
     const cue = makeCue(1, 1000, 5000, 'hi');
     const ctrl = new StudyModePlaybackController(readMode, advancedOff, [cue]);

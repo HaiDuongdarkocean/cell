@@ -57,6 +57,12 @@ export class StudyModePlaybackController {
     return this.activeCueIndex >= 0;
   }
 
+  get heldCueIndex(): number {
+    return this.state.type === 'pausedEnd' || this.state.type === 'waiting'
+      ? this.activeCueIndex
+      : -1;
+  }
+
   setCues(cues: readonly SrtCue[], offsetMs = this.offsetMs): boolean {
     const active = this.cues[this.activeCueIndex];
     const next = cues[this.activeCueIndex];

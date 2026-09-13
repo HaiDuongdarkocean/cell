@@ -230,6 +230,9 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       )
       .toBe(true);
 
+    // The cue text should stay visible while paused at the end for review.
+    await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 5_000 });
+
     await writeStudyModes(cellContext, 'normal');
   });
 

@@ -61,6 +61,7 @@ interface FakeEngine {
   disableDictionaryPopup: jest.Mock;
   setDictionaryPopupTriggerMode: jest.Mock;
   isDictionaryPopupEnabled: jest.Mock;
+  setHeldCue: jest.Mock;
 }
 
 function createFakeMount(): MountSubtitleResult {
@@ -167,6 +168,7 @@ function createFakeEngine(): FakeEngine {
     disableDictionaryPopup: jest.fn(),
     setDictionaryPopupTriggerMode: jest.fn(),
     isDictionaryPopupEnabled: jest.fn(() => false),
+    setHeldCue: jest.fn(),
   };
 }
 
@@ -690,6 +692,33 @@ describe('ReactSubtitleController', () => {
     const last = calls[calls.length - 1]?.[0];
     expect(last?.targetStyle?.visible).toBe(true);
     expect(last?.nativeStyle?.visible).toBe(false);
+  });
+
+  it('pins the finished cue while an end-pause is active in listen-check', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const listenCheck: StudyMode = {
+      id: 'listen-check',
+      type: 'preset',
+      icon: 'eyeOff',
+      title: 'Listen-Check',
+      description: '',
+      steps: [
+        { subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'continue' },
+        { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait' },
+      ],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    controller.applyStudyMode(listenCheck, advanced);
+    fakeEngine.setHeldCue.mockClear();
+
+    video.currentTime = 5.2;
+    video.dispatchEvent(new Event('timeupdate'));
+    expect(fakeEngine.setHeldCue).toHaveBeenCalledWith(0);
+
+    video.dispatchEvent(new Event('play'));
+    expect(fakeEngine.setHeldCue).toHaveBeenLastCalledWith(-1);
   });
 
   it('seek actions convert raw cue time through offset and landing epsilon', () => {
