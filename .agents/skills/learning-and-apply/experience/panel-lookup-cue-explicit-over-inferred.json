@@ -1,7 +1,7 @@
 {
   "id": "panel-lookup-cue-explicit-over-inferred",
   "title": "Lookup từ danh sách cue phải resolve cue đích từ DOM của phần tử được click — suy ra từ video.currentTime sẽ record sai câu",
-  "category": ["state", "architecture"],
+  "category": ["state"],
   "tags": [
     "subtitle-panel",
     "cue-list",

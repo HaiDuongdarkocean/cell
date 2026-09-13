@@ -13,6 +13,7 @@ export default tseslint.config(
       'node_modules/',
       'coverage/',
       'e2e-results/',
+      'tmp/',
       'bin/',
       'tests/integration/.cache/',
       'project-reference/',

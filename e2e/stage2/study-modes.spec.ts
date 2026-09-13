@@ -5,7 +5,6 @@ const OVERLAY_TARGET_SELECTOR = '[data-cell-id="subtitle-block"] [data-role="tar
 const VIDEO_SELECTOR = '#player-wrapper video';
 
 const CUE2_START_S = 20.2;
-const CUE2_END_S = 25.533;
 const CUE3_START_S = 29.266;
 const GAP_TIME_S = 27.0;
 const FAR_GAP_S = 50.0;

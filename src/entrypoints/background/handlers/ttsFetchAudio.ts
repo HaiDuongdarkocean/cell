@@ -36,23 +36,44 @@ const MAX_TTS_TEXT_LEN = 200;
  * Kept: letters/numbers of every script, standard + CJK punctuation,
  * meaningful marks (+ = % © ※ • † ‡ 〜), and bracketed text (may be speech).
  */
-const UNSPOKEN_GLYPHS_RE = new RegExp(
-  [
-    '[\\u00AD\\u200B\\u200D-\\u200F\\u2060-\\u2069\\uFE00-\\uFE0F\\uFEFF\\uFFFC\\uFFFD]',
-    '[\\u20E3\\u2190-\\u21FF\\u2300-\\u23FF\\u2460-\\u24FF\\u2500-\\u25FF]',
-    '[\\u2600-\\u26FF\\u2700-\\u27BF\\u27F0-\\u27FF\\u2800-\\u28FF\\u2900-\\u297F\\u2B00-\\u2BFF]',
-    '[\\u3030\\u303D]',
-    '[\\u{1D100}-\\u{1D1FF}\\u{1F000}-\\u{1FAFF}\\u{1FB00}-\\u{1FBFF}]',
-    '[\\u{E0000}-\\u{E007F}]',
-  ].join('|'),
-  'gu',
-);
+const UNSPOKEN_CODE_POINT_RANGES: readonly (readonly [number, number])[] = [
+  [0x00ad, 0x00ad],
+  [0x200b, 0x200b],
+  [0x200d, 0x200f],
+  [0x2060, 0x2069],
+  [0x20e3, 0x20e3],
+  [0x2190, 0x21ff],
+  [0x2300, 0x23ff],
+  [0x2460, 0x24ff],
+  [0x2500, 0x25ff],
+  [0x2600, 0x26ff],
+  [0x2700, 0x27bf],
+  [0x27f0, 0x27ff],
+  [0x2800, 0x28ff],
+  [0x2900, 0x297f],
+  [0x2b00, 0x2bff],
+  [0x3030, 0x3030],
+  [0x303d, 0x303d],
+  [0xfe00, 0xfe0f],
+  [0xfeff, 0xfeff],
+  [0xfffc, 0xfffd],
+  [0x1d100, 0x1d1ff],
+  [0x1f000, 0x1faff],
+  [0x1fb00, 0x1fbff],
+  [0xe0000, 0xe007f],
+];
+
+function isUnspokenCodePoint(codePoint: number): boolean {
+  return UNSPOKEN_CODE_POINT_RANGES.some(([start, end]) => codePoint >= start && codePoint <= end);
+}
 
 const EMPTIED_BRACKETS_RE = /\(\s*\)|\[\s*\]|\{\s*\}|（\s*）|【\s*】|「\s*」|『\s*』|〈\s*〉|《\s*》/g;
 
 /** Strip unspoken glyphs, drop brackets emptied by the strip, collapse whitespace. */
 export function sanitizeTtsText(text: string): string {
-  let out = text.replace(UNSPOKEN_GLYPHS_RE, ' ');
+  let out = Array.from(text, (char) =>
+    isUnspokenCodePoint(char.codePointAt(0) ?? 0) ? ' ' : char,
+  ).join('');
   for (let i = 0; i < 4; i++) {
     const next = out.replace(EMPTIED_BRACKETS_RE, ' ');
     if (next === out) break;

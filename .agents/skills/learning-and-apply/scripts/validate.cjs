@@ -164,7 +164,7 @@ const procIds = validateAtomDir(PROCESS_DIR, indexProcessIds, 'process');
 // 3b. Validate graph fields (related/supersedes edges + source provenance)
 const allAtomIds = new Set([...expIds, ...procIds]);
 
-function validateEdges(dir, label) {
+function validateEdges(dir) {
   if (!fs.existsSync(dir)) return;
   for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
     let atom;
@@ -195,8 +195,8 @@ function validateEdges(dir, label) {
   }
 }
 
-validateEdges(EXPERIENCE_DIR, 'experience');
-validateEdges(PROCESS_DIR, 'process');
+validateEdges(EXPERIENCE_DIR);
+validateEdges(PROCESS_DIR);
 
 // 4. Check index entries have files
 for (const topic of indexKnowledgeTopics) {

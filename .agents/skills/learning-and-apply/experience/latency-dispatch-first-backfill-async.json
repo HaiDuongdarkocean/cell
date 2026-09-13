@@ -1,7 +1,7 @@
 {
   "id": "latency-dispatch-first-backfill-async",
   "title": "Handler UI không được await unrelated fetches trước khi dispatch — dispatch ngay, backfill async, báo tiến trình bằng sticky chip",
-  "category": ["performance", "ux"],
+  "category": ["async", "ux"],
   "tags": ["latency", "async", "parallel", "progress-ui", "prefill", "quick-add", "recording"],
   "trigger": "Một action handler (click nút) await nhiều network/media fetches trước khi gọi layer xử lý chính, hoặc một hàm collect tuần tự await từng tác vụ độc lập",
   "principle": "Fetch nằm giữa click và side-effect thời-gian-thật (recording, seek, mở panel) tạo độ trễ cảm nhận và có thể bỏ lỡ window capture. Handler chỉ gói dữ liệu đã có sẵn rồi dispatch ngay; layer sau tự backfill phần thiếu. Trong hàm collect, tách tác vụ độc lập thành nhánh song song (capture ∥ URL fetch) thay vì tuần tự, và expose callback mốc (onRecordingStart) để UI lật trạng thái. Async work kéo dài cần sticky progress chip có update/finish/dismiss — toast auto-hide không đủ.",
