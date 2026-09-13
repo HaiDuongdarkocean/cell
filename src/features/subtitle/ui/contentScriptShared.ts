@@ -50,6 +50,24 @@ export async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   return DEFAULT_KEYBOARD_SHORTCUTS;
 }
 
+// YouTube rewrites volatile query params during initial load + SPA nav
+// (themeRefresh=1, pp=, list=, t=, tracking). Comparing raw location.href
+// treats same-video param churn as a navigation → wipes freshly loaded cues.
+// Canonical key = video identity: `v` param for /watch, pathname otherwise.
+export function canonicalNavUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith('youtube.com') || u.hostname.endsWith('youtube-nocookie.com')) {
+      const videoId = u.searchParams.get('v');
+      if (videoId) return `${u.origin}/watch?v=${videoId}`;
+      return `${u.origin}${u.pathname}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 // ADR-032 cue-seek dedupe — module-level so multiple init() instances
 // (Netflix SPA re-init leaks onMessage listeners, see cleanup ponytail)
 // share the same dedupe state. Without this, each instance has its own

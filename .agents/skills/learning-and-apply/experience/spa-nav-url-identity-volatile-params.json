@@ -1,0 +1,28 @@
+{
+  "id": "spa-nav-url-identity-volatile-params",
+  "title": "SPA-nav detection phải so video identity, không so raw location.href — host rewrite volatile params",
+  "category": ["messaging", "state"],
+  "tags": [
+    "spa-navigation",
+    "url",
+    "video-identity",
+    "race",
+    "stale-state",
+    "youtube",
+    "canonicalization"
+  ],
+  "trigger": "Logic 'video đổi chưa' so sánh raw URL (location.href) trên SPA host có habit rewrite query params sau nav (YouTube themeRefresh/pp/list/t, tracking, consent)",
+  "principle": "Trên SPA host, URL string không phải video identity — host append/remove volatile params trong cùng một video. Clear-on-nav phải canonicalize URL về video key (YouTube: `v` param → `origin/watch?v=<id>`; pathname cho /shorts|/results) trước khi so. Nếu clear bằng raw href, một nav-event với param churn sẽ wipe cues vừa load xong và vì producer dedup theo videoId nên không có message nào re-push → state chết vĩnh viễn cho tới nav thật.",
+  "cases": [
+    {
+      "context": "YouTube initial load: AUTO_LOAD_SUBTITLES đến khi URL là `watch?v=X&themeRefresh=1` → lastAutoLoadUrl = URL có param. ~550ms sau YouTube strip param → `yt-navigate-finish` fire với `watch?v=X` → onSpaNav thấy href khác → clearCues + status 'none' → 'No subtitles found' dù 74 cues đã rendered. MAIN-world dedup theo videoId nên không re-post → user phải nav sang video khác mới thấy sub. Triệu chứng: 'video đầu không load, video 2 load được'.",
+      "bad": "const onSpaNav = () => {\n  if (ctx.getLastAutoLoadUrl() === location.href) return;\n  clearCues(); // raw href compare — param churn = false nav\n};",
+      "good": "const currentNav = canonicalNavUrl(location.href); // yt: watch?v=<id>\nif (lastAutoLoadUrl === undefined || lastAutoLoadUrl === currentNav) return;\nclearCues();"
+    }
+  ],
+  "applyFor": [
+    "SPA nav detection trên host rewrite URL (YouTube, Netflix, bất kỳ SPA có tracking params)",
+    "Dedup/identity key lấy từ URL — canonicalize trước khi store/compare",
+    "Race giữa consumer-recorded-URL và host-rewritten-URL trong cùng một navigation"
+  ]
+}

@@ -1,5 +1,6 @@
 import { useCuesStore } from '@/stores/cuesStore';
 import { mergeCuesForPanel, broadcastCues } from '@/features/subtitle';
+import { canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 
@@ -39,7 +40,9 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
   // MutationObserver on <video> src.
   const onSpaNav = (): void => {
     const lastAutoLoadUrl = ctx.getLastAutoLoadUrl();
-    if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === location.href) return;
+    const currentNavUrl = canonicalNavUrl(location.href);
+    if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === currentNavUrl) return;
+    try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
     blockController?.clearCues();
     ctx.getOffsetController()?.loadCues(false);
     syncController.latestTargetCues = [];

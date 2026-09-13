@@ -12,7 +12,7 @@ import {
   createTranslateFunction,
   broadcastCues,
 } from '@/features/subtitle';
-import { shouldDedupeCueSeek } from './contentScriptShared';
+import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { ApplyStudyModePayload, AutoLoadSubtitlesPayload } from '@/entities/message';
@@ -175,7 +175,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       // so without this clear a partial load on the new video (target only, no
       // native or vice versa) leaves the previous video's cues visible. Covers
       // all cases: 0 tracks, partial, full — any URL change clears both sides.
-      const currentUrl = location.href;
+      const currentUrl = canonicalNavUrl(location.href);
       if (ctx.getLastAutoLoadUrl() !== undefined && ctx.getLastAutoLoadUrl() !== currentUrl) {
         blockController?.clearCues();
         ctx.getOffsetController()?.loadCues(false);
@@ -241,6 +241,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         },
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
+          try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
           ctx.setBilingualCues(mergeCuesForPanel(targetCues, nativeCues));
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
           // (4↔6 nút transition when subtitles become available).
@@ -255,7 +256,10 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           // Send cues to Side Panel
           broadcastCues(ctx.getBilingualCues());
         },
-        onLoadStatus: (role, status) => useCuesStore.getState().setLoadStatus(role, status),
+        onLoadStatus: (role, status) => {
+          try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          useCuesStore.getState().setLoadStatus(role, status);
+        },
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
         onStartTranslatePrefill: (targetCues: SrtCue[]) => {
           // ADR-021: start background prefill to translate target→native.

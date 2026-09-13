@@ -2029,6 +2029,25 @@
       "trigger": "Action handler await nhiều network/media fetches trước khi gọi layer xử lý chính, hoặc hàm collect tuần tự await từng tác vụ độc lập trước một side-effect có window thời gian"
     },
     {
+      "type": "experience",
+      "id": "spa-nav-url-identity-volatile-params",
+      "title": "SPA-nav detection phải so video identity, không so raw location.href — host rewrite volatile params",
+      "category": [
+        "messaging",
+        "state"
+      ],
+      "tags": [
+        "spa-navigation",
+        "url",
+        "video-identity",
+        "race",
+        "stale-state",
+        "youtube",
+        "canonicalization"
+      ],
+      "trigger": "Logic 'video đổi chưa' so sánh raw URL (location.href) trên SPA host có habit rewrite query params sau nav (YouTube themeRefresh/pp/list/t, tracking, consent)"
+    },
+    {
       "type": "process",
       "id": "process-generated-catalog-drift",
       "title": "Generated SSOT catalog drift âm thầm — regen mỗi lần đổi + đối chiếu với disk",
