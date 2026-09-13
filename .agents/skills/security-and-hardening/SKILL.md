@@ -56,6 +56,9 @@ Can't name the trust boundaries → not ready to secure it (OWASP A04: most brea
 - **SSRF:** any server-side fetch of a user-influenced URL needs scheme+host allowlist, all resolved IPs checked private/reserved, redirects forbidden — and there's still a TOCTOU gap (pin the IP or use a filtering agent for high-risk surfaces).
 - **Dependency audits** find known advisories only — triage by reachability, never `npm audit fix --force`, review install scripts and lockfile diffs.
 - **LLM output is untrusted input** — never pass to eval/SQL/shell/innerHTML; enforce permissions in code, not prompts; keep secrets and cross-tenant data out of the context; cap consumption.
+- **Skills are injection vectors** — read a skill's source before installing from outside; a SKILL.md description is a prompt hiding in metadata.
+- **Permission scope creep** — a permission granted "just once for convenience" never gets removed by itself; re-audit granted permissions every ~30 days.
+- **Unattended runs are attack surface** — no verbose logging in long-running loops (secrets scatter into unmonitored logs); every irreversible action keeps a human gate.
 
 → OWASP prevention patterns with code examples, SSRF allowlist implementation, input validation, rate limiting, secrets management, LLM hardening: `references/patterns.md`
 → Dependency-audit triage tree + supply-chain hygiene: `references/supply-chain.md`

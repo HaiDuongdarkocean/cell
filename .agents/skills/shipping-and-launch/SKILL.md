@@ -53,6 +53,7 @@ Technical green ≠ built the right thing. After deploy is stable (24–48h or e
 
 - [ ] Actual outcome vs Success Criteria in `docs/specs/[feature].md`
 - [ ] Human confirms "đúng thứ cần build" — not just "build đúng spec"
+- [ ] **Comprehension debt check:** human spot-checks merged diffs — if they can't explain what the shipped code does, that's debt accruing at compound interest, not velocity. Record unexplained lanes in `docs/reviews/`.
 - [ ] Miss → finding into `docs/reviews/` and/or process atom in `learning-and-apply` (`type: "process"`)
 
 ## Rationalizations / red flags
