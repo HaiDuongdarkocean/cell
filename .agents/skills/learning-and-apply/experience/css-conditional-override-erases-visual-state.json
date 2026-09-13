@@ -1,0 +1,17 @@
+{
+  "id": "css-conditional-override-erases-visual-state",
+  "title": "A later conditional CSS rule can erase the visual state it only intended to restyle",
+  "category": ["css", "testing"],
+  "tags": ["css-cascade", "conditional-selector", "box-shadow", "computed-style", "status-class", "visual-contract"],
+  "trigger": "A base state rule paints a visual indicator, but a later :not(:hover)/state-specific rule writes the same property for a subset of states.",
+  "principle": "Check the cascade per visual property, not only whether the base rule exists. If a state indicator must remain visible, conditional restyling rules must not overwrite that property unless the hiding behavior is part of the contract; regression tests should assert computed style for every state and surface.",
+  "cases": [
+    {
+      "context": "Token status CSS painted a semantic inset underline for every status, then a later known/ignore :not(:hover) rule replaced box-shadow with the generic shadow. Unknown/tracking showed underlines, while known/ignore looked unstyled until hover.",
+      "bad": ".token--status-known { box-shadow: inset 0 -2px 0 0 var(--status-known) }\n.token--status-known:not(:hover) { box-shadow: var(--shadow-sm) }",
+      "good": ".token--status-known { box-shadow: inset 0 -2px 0 0 var(--status-known) }\n.token--status-known:not(:hover) { text-shadow: var(--shadow-sm) }\nexpect(getComputedStyle(token).boxShadow).toContain('inset')"
+    }
+  ],
+  "applyFor": ["State-class CSS", "Conditional hover/restyle rules", "Injected stylesheets", "Shadow DOM visual contracts", "Computed-style regression tests"],
+  "related": ["rendering-marker-is-not-visual-contract", "css-injector-must-resolve-all-referenced-tokens"]
+}

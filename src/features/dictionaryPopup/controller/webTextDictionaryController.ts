@@ -43,6 +43,7 @@ import { createWordHighlight, type HighlightTarget, type WordHighlight } from '@
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -748,6 +749,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function handlePopupStatusChange(level: PopupLevel, term: string, langCode: string, status: WordStatus): void {
+    emitWordStatusChanged({ term, langCode, status });
     deps.onStatusChange?.(term, langCode, status);
     const token = level.popupTokenId ? getTokenById(level.popupTokenId) : null;
     if (token) {

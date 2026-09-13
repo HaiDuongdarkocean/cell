@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { buildTokenSpanCss } from './tokenSpanCss';
+import { buildTokenSpanCss, buildTokenSpanCssForShadow } from './tokenSpanCss';
 
 // Regression guard: status bar box-shadow uses calc(var(--border-width-status) * -1).
 // On host pages tokens.css is never loaded, so buildTokenSpanCss() must
@@ -50,5 +50,12 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(css).toContain('html body .js-cell-token.js-cell-token--status-unknown');
     expect(css).toContain('html body .js-cell-token.js-cell-token--frequency-core');
     expect(css).toContain('html body .js-cell-token.js-cell-token--status-off');
+  });
+
+  it.each(['unknown', 'tracking', 'known', 'ignore'])('keeps the %s status underline visible in light and shadow DOM', (status) => {
+    for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
+      expect(source).toMatch(new RegExp(`status-${status}[^}]*box-shadow:\\s*inset 0 calc\\(var\\(--border-width-status\\)`));
+      expect(source).not.toMatch(new RegExp(`status-${status}[^}]*box-shadow:\\s*var\\(--shadow-sm\\)`));
+    }
   });
 });

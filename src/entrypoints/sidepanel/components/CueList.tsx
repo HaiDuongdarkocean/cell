@@ -1,8 +1,19 @@
-import { memo, useEffect, useLayoutEffect, useRef } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
-import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
+import type { WordStatus } from '@/entities/dictionary';
+import type { Token } from '@/features/tokenize/types';
+import { onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import {
+  applyCueListTokenStatus,
+  applyCueListTokenStatuses,
+  createCueListTokenMap,
+  resolveCueListTokenMetadata,
+  type CueListTokenMap,
+} from '@/features/tokenize/logic/cueListTokens';
 import styles from './CueList.module.css';
+
+const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
 
 export interface CueListTokenize {
   langCode: string;
@@ -34,17 +45,17 @@ function formatTimestamp(ms: number, hasHours: boolean): string {
 
 const CueTokenText = memo(function CueTokenText({
   text,
-  langCode,
+  tokens,
   onTokenClick,
 }: {
   text: string;
-  langCode: string;
+  tokens: readonly Token[];
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
 }) {
-  const tokens = tokenizeTextBlock(text, langCode).filter((t) => !t.isSeparator);
   const children: React.ReactNode[] = [];
   let lastEnd = 0;
   for (const token of tokens) {
+    if (token.isSeparator) continue;
     if (token.start > lastEnd) {
       children.push(
         <span key={`gap-${token.start}`} className="js-cell-token js-cell-token--separator">
@@ -55,13 +66,23 @@ const CueTokenText = memo(function CueTokenText({
     children.push(
       <span
         key={`tok-${token.start}`}
-        className="js-cell-token"
+        className={[
+          'js-cell-token',
+          'js-cell-token--word',
+          `js-cell-token--status-${token.status ?? 'unknown'}`,
+          token.frequencyBand && token.frequencyBand !== 'none'
+            ? `js-cell-token--frequency-${token.frequencyBand}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         data-cell-term={token.term}
         data-cell-start={token.start}
         data-cell-end={token.end}
-        onClick={(e) => onTokenClick(token.term, e.currentTarget, text)}
+        onClick={(event) => onTokenClick(token.term, event.currentTarget, text)}
       >
-        {token.text}
+        <span className="js-cell-token-word">{token.text}</span>
+        <span className="js-cell-token-status" aria-hidden="true" />
       </span>,
     );
     lastEnd = token.end;
@@ -80,6 +101,41 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
+  const statusOverridesRef = useRef(new Map<string, Map<string, WordStatus>>());
+  const [tokenMap, setTokenMap] = useState<CueListTokenMap>(EMPTY_TOKEN_MAP);
+
+  const tokenizeLangCode = tokenize?.langCode;
+  useEffect(() => {
+    if (!tokenizeLangCode) {
+      setTokenMap(EMPTY_TOKEN_MAP);
+      return;
+    }
+    const statusOverrides = statusOverridesRef.current;
+    let overrides = statusOverrides.get(tokenizeLangCode);
+    if (!overrides) {
+      overrides = new Map<string, WordStatus>();
+      statusOverrides.set(tokenizeLangCode, overrides);
+    }
+    const unsubscribe = onWordStatusChanged((detail) => {
+      if (detail.langCode !== tokenizeLangCode) return;
+      overrides.set(detail.term, detail.status);
+      setTokenMap((current) => applyCueListTokenStatus(current, detail.term, detail.status));
+    });
+    const immediate = applyCueListTokenStatuses(
+      createCueListTokenMap(cues, tokenizeLangCode),
+      overrides,
+    );
+    setTokenMap(immediate);
+    let active = true;
+    void resolveCueListTokenMetadata(immediate, tokenizeLangCode).then((resolved) => {
+      if (!active) return;
+      setTokenMap(applyCueListTokenStatuses(resolved, overrides));
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [cues, tokenizeLangCode]);
 
   // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
   // Edge case: offset shift could push an earlier cue's display ≥ 1h while last
@@ -194,7 +250,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                   {tokenize ? (
                     <CueTokenText
                       text={cue.targetText}
-                      langCode={tokenize.langCode}
+                      tokens={tokenMap.get(cue.index) ?? []}
                       onTokenClick={tokenize.onTokenClick}
                     />
                   ) : (

@@ -15,6 +15,10 @@ import {
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import {
+  emitWordStatusChanged,
+  onWordStatusChanged,
+} from '@/features/dictionary/services/wordStatusEvents';
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
@@ -758,6 +762,7 @@ export async function createWebTokenizeController(
       }
     }
     for (const term of terms) {
+      emitWordStatusChanged({ langCode, term, status });
       options.onStatusChange?.(term, langCode, status);
     }
   }
@@ -794,6 +799,10 @@ export async function createWebTokenizeController(
     }
     return 'unknown';
   }
+
+  const unsubscribeWordStatus = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
+    if (eventLangCode === langCode) applyStatusForTerm(term, status);
+  });
 
   function handleKeydown(e: KeyboardEvent): void {
     if (isEditableTarget(e.target)) return;
@@ -863,6 +872,7 @@ export async function createWebTokenizeController(
     destroy: () => {
       document.removeEventListener('keydown', handleKeydown);
       unsubscribe();
+      unsubscribeWordStatus();
       scheduler.stop();
       setActive(false);
       cancelPendingActivation?.();

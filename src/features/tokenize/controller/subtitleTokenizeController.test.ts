@@ -15,6 +15,7 @@ jest.mock('@/features/dictionary/services/frequencyClient', () => ({
 }));
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
+import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {
@@ -106,6 +107,48 @@ describe('createSubtitleTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+
+    controller.destroy();
+  });
+
+  it('applies status through handleStatusKey for player-mode keyboard routing', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    hello?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    expect(controller.handleStatusKey('4')).toBe(true);
+
+    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-cell-token--status-ignore');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'ignore');
+
+    controller.destroy();
+  });
+
+  it('updates an already-rendered token when a status change is emitted', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const before = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(before?.className).toContain('js-cell-token--status-unknown');
+
+    emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'ignore' });
+
+    const after = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(after?.className).toContain('js-cell-token--status-ignore');
+    expect(after?.className).not.toContain('js-cell-token--status-unknown');
 
     controller.destroy();
   });

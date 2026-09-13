@@ -712,6 +712,7 @@ export class ReactSubtitleController {
       this.playerModeHost?.restore();
       this.playerModeHost = null;
       this.clearPlayerModeBounds();
+      this.onCuesUpdated?.();
       return;
     }
 
@@ -728,6 +729,7 @@ export class ReactSubtitleController {
     };
     this.playerModeResizeHandler = onResize;
     window.addEventListener('resize', onResize);
+    this.onCuesUpdated?.();
   }
 
   /** Toggle Player Mode via keyboard shortcut 'g'. Delegates to the mounted

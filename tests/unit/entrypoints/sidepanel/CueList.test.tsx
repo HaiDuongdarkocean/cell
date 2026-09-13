@@ -1,5 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 import type { BilingualCue } from '@/types/media';
 
 // jsdom does not implement scrollIntoView or layout (offsetTop/scrollHeight) —
@@ -274,6 +275,30 @@ describe('CueList', () => {
       expect(onTokenClick).toHaveBeenCalledWith('world', world, 'Hello world');
     });
 
+    it('updates an already-rendered token when its status changes', async () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      await waitFor(() => {
+        expect(target.querySelector('[data-cell-term="hello"]')?.className).toContain('js-cell-token--status-unknown');
+      });
+
+      act(() => {
+        emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
+      });
+
+      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-cell-token--status-known');
+      expect(hello.className).not.toContain('js-cell-token--status-unknown');
+    });
+
     it('renders plain text when tokenize is null', () => {
       render(
         <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
@@ -282,6 +307,34 @@ describe('CueList', () => {
       const target = screen.getAllByTestId('cue-target-text')[0];
       expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
       expect(target.textContent).toBe('Hello world');
+    });
+
+    it('tokenizes an already-open list when tokenize turns on via rerender', async () => {
+      const onTokenClick = jest.fn();
+      const { rerender } = render(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick }}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+      });
+      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-cell-token--word');
+      expect(hello.className).toContain('js-cell-token--status-unknown');
+      expect(hello.querySelector('.js-cell-token-word')?.textContent).toBe('Hello');
+      expect(hello.querySelector('.js-cell-token-status')).not.toBeNull();
     });
   });
 

@@ -99,6 +99,11 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
           alt: e.altKey,
         });
     if (!action) {
+      if (blockController.isPlayerModeActive && !isEditableEvent(e) && ctx.handleSubtitleStatusKey(key)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       // Player Mode: block ALL host keyboard shortcuts (host page is covered by
       // backdrop, no host interaction should work). Let Escape through so the
       // overlay's window listener can exit Player Mode / close CueList.

@@ -652,6 +652,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     updateGenerateNativeEnabled,
     handleCardCreatorAction,
     handleGenerateNative,
+    handleSubtitleStatusKey: (key) => subtitleTokenizeCtrl?.handleStatusKey(key) ?? false,
     syncSubtitleTokenize,
   };
 

@@ -1,0 +1,16 @@
+{
+  "id": "rendering-marker-is-not-visual-contract",
+  "title": "A marker class is not the complete visual rendering contract",
+  "category": ["rendering", "testing"],
+  "tags": ["css-contract", "semantic-classes", "dom-structure", "visual-regression", "tokenize"],
+  "trigger": "A component reimplements an existing styled element and tests only its base marker selector, while CSS depends on modifier classes or required child elements.",
+  "principle": "Reusing a base DOM marker does not reproduce a visual component. Mirror every CSS-driving modifier class and required child node, then assert that semantic structure in regression tests; otherwise DOM tests can pass while the UI remains visually plain.",
+  "cases": [
+    {
+      "context": "A subtitle cue emitted .js-cell-token[data-cell-term], so the E2E selector passed, but omitted word/status/frequency classes and inner/status children required by token CSS.",
+      "bad": "<span className=\"js-cell-token\" data-cell-term={term}>{text}</span>\nexpect(token).toBeVisible();",
+      "good": "<span className=\"js-cell-token js-cell-token--word js-cell-token--status-unknown\"><span className=\"js-cell-token-word\">{text}</span><span className=\"js-cell-token-status\" /></span>\nexpect(token).toHaveClass(/js-cell-token--status-/);\nexpect(token.querySelector('.js-cell-token-status')).not.toBeNull();"
+    }
+  ],
+  "applyFor": ["CSS modifier-class components", "Shadow DOM renderers", "Design-system primitives", "Visual regression tests"]
+}

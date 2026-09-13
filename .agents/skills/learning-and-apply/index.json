@@ -2088,8 +2088,7 @@
       "id": "panel-lookup-cue-explicit-over-inferred",
       "title": "Lookup từ danh sách cue phải resolve cue đích từ DOM của phần tử được click — suy ra từ video.currentTime sẽ record sai câu",
       "category": [
-        "state",
-        "architecture"
+        "state"
       ],
       "tags": [
         "subtitle-panel",
@@ -2157,6 +2156,41 @@
         "background-tab"
       ],
       "trigger": "Logic render/bind/prepare nội dung đang active được schedule qua requestAnimationFrame, verify qua automation mở tab phụ khiến tab chính occluded"
+    },
+    {
+      "type": "experience",
+      "id": "rendering-marker-is-not-visual-contract",
+      "title": "A marker class is not the complete visual rendering contract",
+      "category": [
+        "rendering",
+        "testing"
+      ],
+      "tags": [
+        "css-contract",
+        "semantic-classes",
+        "dom-structure",
+        "visual-regression",
+        "tokenize"
+      ],
+      "trigger": "A component reimplements an existing styled element and tests only its base marker selector, while CSS depends on modifier classes or required child elements."
+    },
+    {
+      "type": "experience",
+      "id": "css-conditional-override-erases-visual-state",
+      "title": "A later conditional CSS rule can erase the visual state it only intended to restyle",
+      "category": [
+        "css",
+        "testing"
+      ],
+      "tags": [
+        "css-cascade",
+        "conditional-selector",
+        "box-shadow",
+        "computed-style",
+        "status-class",
+        "visual-contract"
+      ],
+      "trigger": "A base state rule paints a visual indicator, but a later :not(:hover)/state-specific rule writes the same property for a subset of states."
     },
     {
       "type": "experience",

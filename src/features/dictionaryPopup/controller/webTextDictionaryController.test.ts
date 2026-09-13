@@ -35,6 +35,7 @@ import type { WebTextDictionaryControllerDeps } from './webTextDictionaryControl
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
+import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary/services/wordStatusEvents';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 
@@ -331,6 +332,8 @@ describe('createWebTextDictionaryController', () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
 
     const onStatusChange = jest.fn();
+    const emitted: WordStatusChangedDetail[] = [];
+    const unsubscribe = onWordStatusChanged((detail) => emitted.push(detail));
     const ctrl = createWebTextDictionaryController(makeDeps({ onStatusChange }));
     const request = makeRequest();
     const p = document.createElement('p');
@@ -357,6 +360,8 @@ describe('createWebTextDictionaryController', () => {
     act(() => { statusBadge.click() });
 
     expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
+    expect(emitted).toContainEqual({ term: 'take off', langCode: 'en', status: 'tracking' });
+    unsubscribe();
     act(() => { ctrl.destroy() });
   });
 

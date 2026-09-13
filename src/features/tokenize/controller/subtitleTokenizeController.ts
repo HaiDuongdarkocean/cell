@@ -6,6 +6,10 @@ import { TokenizeScheduler, PRIORITY_IDLE } from '@/features/tokenize/logic/toke
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import {
+  emitWordStatusChanged,
+  onWordStatusChanged,
+} from '@/features/dictionary/services/wordStatusEvents';
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
@@ -31,6 +35,7 @@ export interface SubtitleTokenizeController extends TokenizeController {
   render(activeTargetIndex: number, activeNativeIndex: number): void;
   /** Force rebind with current state (used after showStatus/showFrequency changes). */
   rebind(): void;
+  handleStatusKey(key: string): boolean;
   /** Current tokenize state. */
   getState(): TokenizeState;
 }
@@ -77,6 +82,7 @@ export function createSubtitleTokenizeController(
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({ initialEnabled: false });
   const targetCache = new Map<number, PreparedCue>();
+  const statusOverrides = new Map<string, WordStatus>();
   let targetCues: readonly SrtCue[] = [];
   let frequencyBandOptions: Promise<FrequencyBandOptions> | null = null;
   let lastTargetIndex = -1;
@@ -96,6 +102,51 @@ export function createSubtitleTokenizeController(
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
     };
   }
+
+  function setTokenStatus(tokens: readonly Token[] | undefined, term: string, status: WordStatus): boolean {
+    let changed = false;
+    if (!tokens) return false;
+    for (const token of tokens) {
+      if (!token.isSeparator && token.term === term && token.status !== status) {
+        token.status = status;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  function setTokenStatuses(tokens: readonly Token[] | undefined, terms: ReadonlySet<string>, status: WordStatus): boolean {
+    let changed = false;
+    if (!tokens) return false;
+    for (const token of tokens) {
+      if (!token.isSeparator && terms.has(token.term) && token.status !== status) {
+        token.status = status;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  function applyStatusOverrides(tokens: readonly Token[] | undefined): void {
+    if (!tokens) return;
+    for (const token of tokens) {
+      const status = statusOverrides.get(token.term);
+      if (!token.isSeparator && status) token.status = status;
+    }
+  }
+
+  const unsubscribeWordStatus = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
+    if (eventLangCode !== langCode) return;
+    statusOverrides.set(term, status);
+    const rebindCurrent = currentTargetBlock && setTokenStatus(currentTargetBlock.tokens, term, status);
+    for (const prepared of targetCache.values()) {
+      setTokenStatus(prepared.tokens, term, status);
+    }
+    if (rebindCurrent && currentTargetBlock) {
+      unbindTokenBlock(currentTargetBlock);
+      bindTokenBlock(currentTargetBlock, getDisplayOptions());
+    }
+  });
 
   async function prepareCue(
     cache: Map<number, PreparedCue>,
@@ -126,6 +177,7 @@ export function createSubtitleTokenizeController(
           (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
         );
       } catch { /* metadata is decorative — bind without status/frequency */ }
+      applyStatusOverrides(tokens);
     }
     cache.set(index, { text, tokens });
   }
@@ -189,37 +241,30 @@ export function createSubtitleTokenizeController(
   }
 
   function applyStatusToTerms(terms: readonly string[], status: WordStatus): void {
-    const allBlocks: TokenBlock[] = [];
-    if (currentTargetBlock) allBlocks.push(currentTargetBlock);
-    if (allBlocks.length === 0 || terms.length === 0) return;
+    if (terms.length === 0) return;
 
     void Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
 
-    for (const block of allBlocks) {
-      if (!block.tokens) continue;
-      let changed = false;
-      for (const token of block.tokens) {
-        if (terms.includes(token.term)) {
-          token.status = status;
-          changed = true;
-        }
-      }
-      if (changed) {
-        unbindTokenBlock(block);
-        bindTokenBlock(block, getDisplayOptions());
-      }
+    const termSet = new Set(terms);
+    const currentChanged = currentTargetBlock
+      ? setTokenStatuses(currentTargetBlock.tokens, termSet, status)
+      : false;
+    for (const prepared of targetCache.values()) {
+      setTokenStatuses(prepared.tokens, termSet, status);
+    }
+    for (const term of terms) {
+      statusOverrides.set(term, status);
+      emitWordStatusChanged({ langCode, term, status });
+    }
+    if (currentChanged && currentTargetBlock) {
+      unbindTokenBlock(currentTargetBlock);
+      bindTokenBlock(currentTargetBlock, getDisplayOptions());
     }
   }
 
-  function handleKeydown(e: KeyboardEvent): void {
-    if (isEditableTarget(e.target)) return;
-    if (e.key === 'Escape') {
-      stateStore.clearSelection();
-      stateStore.setHoveredTerm(null);
-      return;
-    }
-    const status = STATUS_BY_KEY[e.key];
-    if (!status) return;
+  function applyStatusKey(key: string): boolean {
+    const status = STATUS_BY_KEY[key];
+    if (!status) return false;
     const state = stateStore.getState();
     // Priority: Ctrl+Click selection > hovered token > native text selection.
     // Native selection lets the user select a passage and batch-change the
@@ -230,11 +275,23 @@ export function createSubtitleTokenizeController(
       terms = extractTermsFromSelection(window.getSelection());
       usedNativeSelection = terms.length > 0;
     }
-    if (terms.length === 0) return;
-    e.preventDefault();
+    if (terms.length === 0) return false;
     applyStatusToTerms(terms, status);
     if (state.selectedTerms.size > 0) stateStore.clearSelection();
     if (usedNativeSelection) window.getSelection()?.removeAllRanges();
+    return true;
+  }
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (isEditableTarget(e.target)) return;
+    if (e.key === 'Escape') {
+      stateStore.clearSelection();
+      stateStore.setHoveredTerm(null);
+      return;
+    }
+    if (!applyStatusKey(e.key)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
   }
 
   document.addEventListener('keydown', handleKeydown);
@@ -272,6 +329,10 @@ export function createSubtitleTokenizeController(
       this.render(lastTargetIndex, -1);
     },
 
+    handleStatusKey(key) {
+      return applyStatusKey(key);
+    },
+
     render(activeTargetIndex, _activeNativeIndex) {
       lastTargetIndex = activeTargetIndex;
       const { target } = getLineElements();
@@ -299,6 +360,7 @@ export function createSubtitleTokenizeController(
 
     destroy() {
       document.removeEventListener('keydown', handleKeydown);
+      unsubscribeWordStatus();
       scheduler.stop();
       clearCurrentBlocks();
       targetCache.clear();

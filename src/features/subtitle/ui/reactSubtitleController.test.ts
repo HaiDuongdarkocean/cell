@@ -243,6 +243,17 @@ describe('ReactSubtitleController', () => {
     expect(addEventListenerSpy).toHaveBeenCalledWith('timeupdate', expect.any(Function));
   });
 
+  it('re-renders cue tokens after player mode remounts the subtitle block', () => {
+    const onCuesUpdated = jest.fn();
+    controller.onCuesUpdated = onCuesUpdated;
+    const mountOptions = mockMountSubtitle.mock.calls[0][0];
+
+    mountOptions.onTogglePlayerMode?.(true);
+    mountOptions.onTogglePlayerMode?.(false);
+
+    expect(onCuesUpdated).toHaveBeenCalledTimes(2);
+  });
+
   it('timeupdate listener forwards to the cue engine and updates currentTimeMs', () => {
     fakeEngine.onTimeUpdate.mockClear();
     fakeMount.setCurrentTimeMs.mockClear();

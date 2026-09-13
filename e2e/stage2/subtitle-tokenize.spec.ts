@@ -116,7 +116,12 @@ test.describe('Stage 2: Subtitle tokenize > token spans on StreamFlix', () => {
     );
     await expect(cueTargetText).toBeAttached({ timeout: 15_000 });
     await expect(cueTargetText).toContainText(/silence/i, { timeout: 15_000 });
-    await expect(cueTargetText.locator(TOKEN_SELECTOR).first()).toBeVisible({ timeout: 15_000 });
+    const firstCueToken = cueTargetText.locator(TOKEN_SELECTOR).first();
+    await expect(firstCueToken).toBeVisible({ timeout: 15_000 });
+    await expect(firstCueToken).toHaveClass(/js-cell-token--word/);
+    await expect(firstCueToken).toHaveClass(/js-cell-token--status-[a-z]+/);
+    await expect(firstCueToken.locator('.js-cell-token-word')).toHaveCount(1);
+    await expect(firstCueToken.locator('.js-cell-token-status')).toHaveCount(1);
   });
 
   test('disabling subtitle tokenize restores plain subtitle text', async ({

@@ -237,11 +237,9 @@ html body .js-cell-token.js-cell-token--status-ignore {
   text-shadow: var(--shadow-sm) !important;
 }
 
-/* known/ignore hide frequency and status by default; hover reveals status when
-   the status layer is on. A popup-open pin keeps status visible while the popup
-   is open. Frequency reappears for unknown/tracking.
-   Quadruple-specificity (html body ancestor) so host !important color/box-shadow
-   rules don't fight back. */
+/* known/ignore hide frequency by default while keeping the status underline.
+   Frequency reappears for unknown/tracking. Quadruple-specificity (html body
+   ancestor) so host !important color/box-shadow rules don't fight back. */
 html body .js-cell-token.js-cell-token--status-known,
 html body .js-cell-token.js-cell-token--status-ignore {
   --cell-token-guard: currentColor;
@@ -251,12 +249,11 @@ html body .js-cell-token.js-cell-token--status-ignore {
 }
 html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
-  box-shadow: var(--shadow-sm) !important;
   text-shadow: var(--shadow-sm) !important;
 }
 
-/* Ignore is rendered the same as known: no frequency, no status by default,
-   status appears on hover. No extra de-emphasis styling is applied. */
+/* Ignore is rendered the same as known: no frequency pill by default while the
+   status underline stays visible. No extra de-emphasis styling is applied. */
 
 /* Global layer toggles (applied per token).
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
@@ -408,7 +405,6 @@ export function buildTokenSpanCssForShadow(): string {
 }
 .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
-  box-shadow: var(--shadow-sm) !important;
   text-shadow: var(--shadow-sm) !important;
 }
 
