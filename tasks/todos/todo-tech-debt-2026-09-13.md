@@ -55,9 +55,16 @@
 - [x] `npm run test:e2e:full` — 36–38 pass; 2 fail là environmental flakes (themoviebox ad-redirect `nn125.com`; `:49` overlay-click timing flake — pass 4/5 runs kể cả cùng ordering). Đã reproduce bằng debug spec: `popupHost: true`.
 - [ ] Real Chrome MV3 session qua `testing-extension-browser` (MCP stealth-chrome-devtools không có trong session này — cần verify tay hoặc session có MCP)
 
+## Phase 7 — Residuals đã xử ✅
+
+- [x] Feature cycle → DAG: `dictionaryPopup` thành orchestrator một chiều; `cardCreator/subtitle/tokenize/dictionary/ocr/pronunciation/reader/srs/tts` = 0 imports; `universalPanel` chỉ giữ `ui/Dictionary` + `controller/panelBridge`; guardrail `no-restricted-imports` — `9253bcea`, `5da53576`, `03cbe2ef`, `2adb67e7`
+- [x] Message registry SSOT: `entities/message/registry.ts` — 100 types → `{schema, direction, owner}` (79 có schema, 21 deliberately không); `MessageBus.on()` central reject-only validation; completeness test ép type mới đăng ký — `bacad23e`, `baedfe4a`
+
 ## Residual (multi-sprint — không làm trong session này)
 
-- [ ] T11 phần còn lại: real barrels mọi feature + phá cycle `dictionaryPopup↔universalPanel↔cardCreator↔subtitle` (~16 deep imports / 13 files)
-- [ ] T12 phần còn lại: message registry SSOT (type+schema+direction+owner một bảng)
+- [ ] Cycle nhỏ còn lại (pre-existing, scope khác): `settings↔{cardCreator,dictionary,subtitle,tts}`, `cardCreator→pronunciation`
 - [ ] T13 phần còn lại: bỏ string-patching dần (upstream patch hoặc CSP-safe builds), unify vite configs, gỡ `cardCreatorTest`/`mockup-*` khỏi FULL_INPUT, cân nhắc opencv cv-only build (10.3MB chunk — hiện đã lazy)
 - [ ] Deps: consolidate `unzipit`→`fflate` (check range-read semantics), gom `lucide-react`+`@phosphor-icons` về 1 icon lib
+- [ ] Chunk-boundary tuning: `content-script.ts` entry 33→67KB sau DAG refactor (module hoist — total dist không đổi); `subtitle` chunk hấp thụ `mountCardCreatorDialog` (1.36MB)
+- [ ] Dead message types: registry ghi nhận ~11 MESSAGE_TYPES không có usage nào — candidate cleanup
+- [ ] Real Chrome MV3 session qua `testing-extension-browser` trước khi merge
