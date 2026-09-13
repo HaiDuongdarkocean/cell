@@ -1,6 +1,6 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';

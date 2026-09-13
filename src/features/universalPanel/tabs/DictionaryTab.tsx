@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Dictionary } from '@/features/dictionaryPopup/ui/Dictionary';
-import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/types';
+import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { CardCreatorPanel } from './CardCreatorPanel';
 import styles from './DictionaryTab.module.css';

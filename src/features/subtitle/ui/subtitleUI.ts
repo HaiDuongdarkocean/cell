@@ -2,7 +2,7 @@ import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import type { NavClusterSettings } from '@/entities/media';
 import type { CSSProperties } from 'react';
 import { ICON_CATALOG } from '@/shared/icons';
-import { mountToWatchVideo } from './netflixPlayback';
+import { mountToWatchVideo } from '@/shared/lib/dom/netflixPlayback';
 
 // === Pure style helpers (ADR-013 D6) ===
 // Logic ở pure function — testable 100%, no DOM side effect.

@@ -8,7 +8,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { SettingsDialog } from './SettingsDialog';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';

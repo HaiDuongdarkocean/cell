@@ -9,6 +9,24 @@
 // 1. createNamedFunction — Emscripten named function wrapper
 // 2. createDynCallWrapper — Emscripten dynamic call wrapper
 // 3. methodCaller — Embind method caller
+//
+// Hardening gates (fail the BUILD, not the user's browser):
+// A. Required-patch gate — every patch marked `required: true` must apply to at
+//    least one emitted file; `required: 'worker'` patches must apply only when a
+//    worker-entry-*.js chunk was emitted. If a dependency update shifts minified
+//    identifiers so a pattern matches nothing, the build fails here instead of
+//    shipping a CSP-broken dist. Patches without `required` are optional/legacy
+//    (e.g. the Nn variants kept for older opencv-js minification).
+// B. Residual CSP-unsafe scan — after patching, all emitted .js are scanned:
+//    - `new Function(` in dist/assets/** (service worker, offscreen document +
+//      its workers, extension pages, isolated-world content scripts — all under
+//      extension_pages CSP) is a HARD FAIL.
+//    - `new Function(` outside dist/assets is WARN-only: main-world IIFE content
+//      scripts run in the page's MAIN world (page CSP, not extension CSP), and
+//      dist/ffmpeg/*.js is a static public/ payload no extension code loads —
+//      its single `new Function("return this")()` is a guarded globalThis
+//      polyfill inside try/catch.
+//    - `eval(` is WARN-only everywhere (matches inside string literals).
 
 import { readFileSync, writeFileSync, readdirSync, copyFileSync, existsSync } from 'fs';
 import { join } from 'path';
@@ -51,16 +69,19 @@ const PATCHES = [
   // === worker-entry file: new Function() patterns ===
   {
     name: 'createNamedFunction (worker)',
+    required: 'worker',
     find: 'return new Function("body", "return function " + name + \'() {\\n    "use strict";    return body.apply(this, arguments);\\n};\\n\')(body);',
     replace: 'return (function(name, body) { var fn = function() { "use strict"; return body.apply(this, arguments); }; Object.defineProperty(fn, "name", { value: name, configurable: true }); return fn; })(name, body);',
   },
   {
     name: 'createDynCallWrapper (worker)',
+    required: 'worker',
     find: 'return new Function("dynCall", "rawFunction", body)(dynCall, rawFunction);',
     replace: 'return (function(dynCall, rawFunction) { var fn = function() { var a = Array.from(arguments); return dynCall.apply(null, [rawFunction].concat(a)); }; Object.defineProperty(fn, "name", { value: name, configurable: true }); return fn; })(dynCall, rawFunction);',
   },
   {
     name: 'methodCaller (worker)',
+    required: 'worker',
     find: 'h = new Function(Object.keys(P), B)(...Object.values(P))',
     replace: 'h = (function(P, B) { if (B.indexOf("getStringOrSymbol") >= 0) { return function(handle, methodName, destructorsRef, args) { return P.emval_returnValue(P.toReturnWire, destructorsRef, P.toValue(handle)[P.getStringOrSymbol(methodName)](args)); }; } else { return function(handle, methodName, destructorsRef, args) { return P.emval_returnValue(P.toReturnWire, destructorsRef, args); }; } })(P, B)',
   },
@@ -68,17 +89,20 @@ const PATCHES = [
   // Note: backtick strings in the bundle contain ACTUAL newlines, not literal \n.
   {
     name: 'createNamedFunction (main)',
+    required: true,
     find: 'Function(`body`,`return function `+e+`() {\n    "use strict";    return body.apply(this, arguments);\n};\n`)(t)',
-    replace: '(function(e, t) { var fn = function() { "use strict"; return t.apply(this, arguments); }; Object.defineProperty(fn, "name", { value: e, configurable: true }); try{self.__debugBroadcast({kind:`named-fn`,name:e})}catch{}; return fn; })(e, t)',
+    replace: '(function(e, t) { var fn = function() { "use strict"; return t.apply(this, arguments); }; Object.defineProperty(fn, "name", { value: e, configurable: true }); return fn; })(e, t)',
   },
   {
     name: 'createDynCallWrapper (main)',
+    required: true,
     find: 'Function(`dynCall`,`rawFunction`,a)(n,t)',
-    replace: '(function(dynCall, rawFunction) { var cnt=0; return function() { cnt++; if(cnt<=5) try{self.__debugBroadcast({kind:`dyncall`,fn:rawFunction,args:arguments.length})}catch{}; var args = Array.from(arguments); var rv = dynCall.apply(null, [rawFunction].concat(args)); if(cnt<=5) try{self.__debugBroadcast({kind:`dyncall-ret`,fn:rawFunction})}catch{}; return rv; }; })(n, t)',
+    replace: '(function(dynCall, rawFunction) { return function() { var args = Array.from(arguments); return dynCall.apply(null, [rawFunction].concat(args)); }; })(n, t)',
   },
   // === ort.bundle.min: ONNX Runtime Web methodCaller ===
   {
     name: 'methodCaller (ort.bundle)',
+    required: true,
     find: 'n=Function(Object.keys(o),s)(...Object.values(o))',
     replace: 'n=(function(o,s){if(s.indexOf("getStringOrSymbol")>=0){return function(handle,methodName,destructorsRef,args){return o.emval_returnValue(o.toReturnWire,destructorsRef,o.toValue(handle)[o.getStringOrSymbol(methodName)](args))}}else{return function(handle,methodName,destructorsRef,args){return o.emval_returnValue(o.toReturnWire,destructorsRef,args)}}})(o,s)',
   },
@@ -89,8 +113,9 @@ const PATCHES = [
   // Key fix: pass `null` to toWireType when s=false (not an array), matching original Emscripten behavior.
   {
     name: 'craftInvokerFunction (offscreen, Pn)',
+    required: true,
     find: 'Pn(Function,m).apply(null,h)',
-    replace: '(function(m,h){var tbe=h[0],inv=h[1],fn=h[2],rd=h[3],rt=h[4],cp=h[5];var ac=0;for(var i=6;i<m.length-1;i++){if(m[i].indexOf(`argType`)===0)ac++;else break}var ats=h.slice(6,6+ac);var ht=cp!==null;var hr=rt.name!==`void`;var urd=false;if(ht&&cp.destructorFunction===void 0)urd=true;for(var i=0;i<ac;i++)if(ats[i].destructorFunction===void 0){urd=true;break}try{var rv2=function(){try{if(arguments.length!==ac)tbe(`function called with `+arguments.length+` arguments, expected `+ac+` args!`);var ds=urd?[]:null;var wa=[];for(var i=0;i<ac;i++)wa.push(ats[i].toWireType(ds,arguments[i]));var ca=[];if(ht)ca.push(cp.toWireType(ds,this));for(var i=0;i<ac;i++)ca.push(wa[i]);var rv=inv.apply(null,[fn].concat(ca));if(urd)rd(ds);else{if(ht&&cp.destructorFunction!==null)cp.destructorFunction(ca[0]);for(var i=0;i<ac;i++)if(ats[i].destructorFunction!==null)ats[i].destructorFunction(wa[i])}if(hr)return rt.fromWireType(rv)}catch(e){try{self.__debugBroadcast({kind:`craft-invoker-err`,err:String(e).slice(0,200),ac,ht,hr,urd})}catch{};throw e}};try{self.__debugBroadcast({kind:`craft-invoker`,name:rt.name,ac,ht,hr})}catch{};return rv2}catch(e){try{self.__debugBroadcast({kind:`craft-invoker-setup-err`,err:String(e).slice(0,200),ac,ht,hr,urd,mLen:m.length,hLen:h.length})}catch{};throw e}})(m,h)',
+    replace: '(function(m,h){var tbe=h[0],inv=h[1],fn=h[2],rd=h[3],rt=h[4],cp=h[5];var ac=0;for(var i=6;i<m.length-1;i++){if(m[i].indexOf(`argType`)===0)ac++;else break}var ats=h.slice(6,6+ac);var ht=cp!==null;var hr=rt.name!==`void`;var urd=false;if(ht&&cp.destructorFunction===void 0)urd=true;for(var i=0;i<ac;i++)if(ats[i].destructorFunction===void 0){urd=true;break}try{var rv2=function(){try{if(arguments.length!==ac)tbe(`function called with `+arguments.length+` arguments, expected `+ac+` args!`);var ds=urd?[]:null;var wa=[];for(var i=0;i<ac;i++)wa.push(ats[i].toWireType(ds,arguments[i]));var ca=[];if(ht)ca.push(cp.toWireType(ds,this));for(var i=0;i<ac;i++)ca.push(wa[i]);var rv=inv.apply(null,[fn].concat(ca));if(urd)rd(ds);else{if(ht&&cp.destructorFunction!==null)cp.destructorFunction(ca[0]);for(var i=0;i<ac;i++)if(ats[i].destructorFunction!==null)ats[i].destructorFunction(wa[i])}if(hr)return rt.fromWireType(rv)}catch(e){throw e}};return rv2}catch(e){throw e}})(m,h)',
   },
   {
     name: 'craftInvokerFunction (offscreen, Nn legacy)',
@@ -101,6 +126,7 @@ const PATCHES = [
   // Same Pn(Function,...) pattern, wrapped in _r(). Generic replacement.
   {
     name: 'methodCaller (offscreen, Pn)',
+    required: true,
     find: '_r(Pn(Function,a).apply(null,o))',
     replace: '_r((function(o){var rt=o[0],at=o.slice(1);try{return function(h,n,d,a){try{var v=[],off=0;for(var i=0;i<at.length;i++){v.push(at[i].readValueFromPointer(a+off));off+=at[i].argPackAdvance}var rv=h[n].apply(h,v);for(var i=0;i<at.length;i++)if(at[i].deleteObject)at[i].deleteObject(v[i]);if(!rt.isVoid)return rt.toWireType(d,rv)}catch(e){console.error(`[METHOD_CALLER] error:`,e);throw e}}}catch(e){console.error(`[METHOD_CALLER] setup error:`,e);throw e}})(o))',
   },
@@ -115,12 +141,14 @@ const PATCHES = [
   // Key fix: pass `null` to toWireType when s=false (not an array), matching original Emscripten behavior.
   {
     name: 'craftInvokerFunction (worker-entry)',
+    required: 'worker',
     find: 'new_(Function, args1).apply(null, args2)',
     replace: '(function(args1, args2){var tbe=args2[0],inv=args2[1],fn=args2[2],rd=args2[3],rt=args2[4],cp=args2[5];var ac=0;for(var i=6;i<args1.length-1;i++){if(args1[i].indexOf(`argType`)===0)ac++;else break}var ats=args2.slice(6,6+ac);var ht=cp!==null;var hr=rt.name!==`void`;var urd=false;if(ht&&cp.destructorFunction===void 0)urd=true;for(var i=0;i<ac;i++)if(ats[i].destructorFunction===void 0){urd=true;break}return function(){if(arguments.length!==ac)tbe(`function called with `+arguments.length+` arguments, expected `+ac+` args!`);var ds=urd?[]:null;var wa=[];for(var i=0;i<ac;i++)wa.push(ats[i].toWireType(ds,arguments[i]));var ca=[];if(ht)ca.push(cp.toWireType(ds,this));for(var i=0;i<ac;i++)ca.push(wa[i]);var rv=inv.apply(null,[fn].concat(ca));if(urd)rd(ds);else{if(ht&&cp.destructorFunction!==null)cp.destructorFunction(ca[0]);for(var i=0;i<ac;i++)if(ats[i].destructorFunction!==null)ats[i].destructorFunction(wa[i])}if(hr)return rt.fromWireType(rv)}})(args1, args2)',
   },
   // === worker-entry (PaddleOCR worker): methodCaller (emval) — new_(Function, params).apply(null, args) ===
   {
     name: 'methodCaller (worker-entry)',
+    required: 'worker',
     find: 'new_(Function, params).apply(null, args)',
     replace: '(function(params, args){var rt=args[0],at=args.slice(1);return function(h,n,d,a){var v=[],off=0;for(var i=0;i<at.length;i++){v.push(at[i].readValueFromPointer(a+off));off+=at[i].argPackAdvance}var rv=h[n].apply(h,v);for(var i=0;i<at.length;i++)if(at[i].deleteObject)at[i].deleteObject(v[i]);if(!rt.isVoid)return rt.toWireType(d,rv)}})(params, args)',
   },
@@ -131,21 +159,15 @@ const PATCHES = [
   // Patch: always wait for runtime init via then(), calledRun, or onRuntimeInitialized.
   {
     name: 'getOpenCv race condition (main)',
+    required: true,
     find: 't.Mat||await new Promise(e=>{t.onRuntimeInitialized=()=>{e()}}),e=$e.default',
     replace: 'await new Promise(r=>{if(t.then)t.then(()=>r());else if(t.calledRun)r();else t.onRuntimeInitialized=()=>r()}),e=$e.default',
-  },
-  // === Debug: wrap OpenCV module export to detect evaluation completion ===
-  // The export default n() call triggers the full module evaluation.
-  // If evaluation hangs, the debugBroadcast never fires.
-  {
-    name: 'opencv-export-debug',
-    find: 'export default n();export{n as t}',
-    replace: 'export default (function(){try{self.__debugBroadcast({kind:`opencv-before-export`})}catch{};var rv=n();try{self.__debugBroadcast({kind:`opencv-after-export`,hasMat:typeof rv?.Mat})}catch{};return rv})();export{n as t}',
   },
 ];
 
 let patched = 0;
 let failed = 0;
+const appliedCount = new Map(PATCHES.map(({ name }) => [name, 0]));
 
 for (const file of readdirSync(distAssets)) {
   if (!file.endsWith('.js')) continue;
@@ -159,6 +181,7 @@ for (const file of readdirSync(distAssets)) {
       content = content.split(find).join(replace);
       modified = true;
       applied.push(name);
+      appliedCount.set(name, appliedCount.get(name) + 1);
       console.log(`  [OK] ${name}: patched in ${file}`);
     }
   }
@@ -190,6 +213,49 @@ for (const file of readdirSync(distAssets)) {
     }
     patched++;
   }
+}
+
+// === Gate A: required patches must have applied to ≥1 file ===
+// `required: 'worker'` patches are only expected when a worker-entry-*.js chunk
+// was emitted (see copy step above).
+const workerEntryEmitted = workerFiles.length > 0;
+const missingRequired = PATCHES.filter(({ name, required }) => {
+  const isRequired = required === 'worker' ? workerEntryEmitted : required === true;
+  return isRequired && appliedCount.get(name) === 0;
+});
+if (missingRequired.length > 0) {
+  for (const { name } of missingRequired) {
+    console.error(`  [FAIL] Required patch "${name}" applied to 0 files — dependency output likely changed; update PATCHES or pin the dependency.`);
+  }
+  process.exit(1);
+}
+
+// === Gate B: residual CSP-unsafe scan over all emitted .js ===
+// See header comments for the per-context hard-fail vs warn policy.
+const CSP_EXEMPT = /(^|[\\/])src[\\/]entrypoints[\\/]content[\\/].+\.iife\.js$|(^|[\\/])ffmpeg[\\/]/;
+const countOccurrences = (haystack, needle) => haystack.split(needle).length - 1;
+const distRoot = join(process.cwd(), 'dist');
+const residualFailures = [];
+for (const entry of readdirSync(distRoot, { recursive: true, withFileTypes: true })) {
+  if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+  const relPath = join(entry.parentPath ?? entry.path, entry.name).slice(distRoot.length + 1);
+  const content = readFileSync(join(distRoot, relPath), 'utf-8');
+  const newFn = countOccurrences(content, 'new Function(');
+  const evalCount = countOccurrences(content, 'eval(');
+  const exempt = CSP_EXEMPT.test(relPath);
+  if (newFn > 0 && !exempt) {
+    residualFailures.push(`${relPath}: ${newFn}× new Function(`);
+    console.error(`  [FAIL] ${relPath}: ${newFn} residual new Function( in CSP-restricted context`);
+  } else if (newFn > 0) {
+    console.warn(`  [WARN] ${relPath}: ${newFn}× new Function( in CSP-exempt context (main-world / unreferenced payload)`);
+  }
+  if (evalCount > 0) {
+    console.warn(`  [WARN] ${relPath}: ${evalCount}× eval( — may be a string-literal false positive`);
+  }
+}
+if (residualFailures.length > 0) {
+  console.error(`Done. ${residualFailures.length} file(s) contain residual new Function( in CSP-restricted contexts.`);
+  process.exit(1);
 }
 
 if (failed > 0) {

@@ -9,7 +9,7 @@ import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciatio
 import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
 import type { AudioEngineKind } from '@/features/pronunciation/types';
-import { nextStatus } from '../services/wordStatusStore';
+import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { t } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
 import { AudioPanel } from './AudioPanel';
@@ -20,7 +20,7 @@ import { DictionaryToolbar } from './DictionaryToolbar';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '@/entities/dictionary';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -151,7 +151,7 @@ export function CandidateView({
               className={styles.cellHeaderSend}
               aria-label={t('dict.action.sendToCard')}
               title={t('dict.action.sendToCard')}
-              onClick={panel.sendToCard}
+              onClick={() => { void panel.sendToCard(); }}
               data-cell-id="dictionary-send-to-card"
             >
               <Icon name="pencil"  />
@@ -164,7 +164,7 @@ export function CandidateView({
                 className={styles.cellHeaderQuickAdd}
                 aria-label={t('dict.action.quickAdd')}
                 title={t('dict.action.quickAdd')}
-                onClick={panel.quickAdd}
+                onClick={() => { void panel.quickAdd(); }}
                 data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap"  />
@@ -274,7 +274,7 @@ export function CandidateView({
             loading={panel.isTranslating}
             selected={panel.translationSelected}
             onToggle={panel.toggleTranslation}
-            onTranslate={panel.translate}
+            onTranslate={() => { void panel.translate(); }}
           />
         )}
         {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}

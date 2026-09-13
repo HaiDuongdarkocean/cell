@@ -7,7 +7,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
-import type { AudioItem, ImageItem, LookupResult } from '@/features/dictionaryPopup/types';
+import type { AudioItem, ImageItem, LookupResult } from '@/entities/dictionary';
 import { lookupDictionaryResources } from './dictionaryGenerate';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({

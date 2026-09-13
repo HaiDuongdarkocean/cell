@@ -5,7 +5,7 @@
 
 import { useCallback } from 'react';
 import { useDictionaryLookup } from '../logic/useDictionaryLookup';
-import type { LookupResult, WordStatus } from '../types';
+import type { LookupResult, WordStatus } from '@/entities/dictionary';
 
 export interface UseDictionaryPanelOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */

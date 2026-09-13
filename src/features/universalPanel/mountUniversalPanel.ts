@@ -9,7 +9,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';

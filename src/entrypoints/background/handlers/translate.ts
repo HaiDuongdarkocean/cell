@@ -10,7 +10,7 @@ import type {
   MessageResponse,
   TranslateResult,
 } from '@/entities/message';
-import { TranslatePayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TranslatePayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import {
   buildTranslateUrl,

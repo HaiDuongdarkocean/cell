@@ -4,7 +4,7 @@ import type { Settings } from '@/entities/media';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
-import { syncElementTheme, injectThemeTokens } from '@/shared/lib/themeTokens';
+import { syncElementTheme, injectThemeTokens } from '@/features/theme/logic/themeTokens';
 import { mountSettingsDialog } from './mountSettingsDialog';
 import { mountSettingsDialogLegacy } from './mountSettingsDialogLegacy';
 
@@ -42,7 +42,7 @@ jest.mock('./SettingsDialog', () => {
   };
 });
 
-jest.mock('@/shared/lib/shadowRoot/ShadowThemeProvider', () => {
+jest.mock('@/features/theme/ui/ShadowThemeProvider', () => {
   const React = require('react');
   return {
     ShadowThemeProvider: ({ children }: { children: unknown }) =>
@@ -91,7 +91,7 @@ jest.mock('@/shared/lib/chrome-apis', () => ({
   removeOnStorageChangedListener: jest.fn(),
 }));
 
-jest.mock('@/shared/lib/themeTokens', () => ({
+jest.mock('@/features/theme/logic/themeTokens', () => ({
   THEME_STYLE_ID: 'subtitle-theme-tokens',
   syncElementTheme: jest.fn(() => jest.fn()),
   injectThemeTokens: jest.fn(() => jest.fn()),

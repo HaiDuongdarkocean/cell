@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
+import { ThemeProvider } from './ThemeProvider';
 
 interface ShadowThemeProviderProps {
   /**

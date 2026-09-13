@@ -22,7 +22,7 @@ import type {
   PopupCardCreatorPrefill,
   PopupCardCreatorAction,
   OnCardCreatorActionResult,
-} from '../types';
+} from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { BilingualCue } from '@/entities/media';
 import type { PopupLineRect } from '../ui/popupGeometry';
@@ -42,13 +42,14 @@ import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTrigge
 import { createWordHighlight, type HighlightTarget, type WordHighlight } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
+import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 
-import type { UniversalPanelMountController, DictionaryPanelPrefill } from '@/features/universalPanel';
-import { openSettingsSection } from '@/features/universalPanel';
+import type { DictionaryPanelPrefill } from '@/entities/dictionary';
+import { openSettingsSection, type PanelMountController } from './panelBridge';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -62,7 +63,7 @@ import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
 import { t } from '@/shared/i18n';
-import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 
 /** Minimal cue range used for sentence audio capture. */
 export interface CueRange {
@@ -102,7 +103,7 @@ export interface WebTextDictionaryControllerDeps {
   /** Generic panel controller toggled by the orbital badge (ADR-065).
    *  When present, Send to Card routes to the integrated universal panel
    *  instead of opening a standalone Card Creator dialog. */
-  readonly panelController?: UniversalPanelMountController;
+  readonly panelController?: PanelMountController;
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -201,24 +202,6 @@ function computeLineRect(target: HighlightTarget): PopupLineRect | null {
     : null;
   if (!wordRect || wordRect.width <= 0 || wordRect.height <= 0) return null;
   return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
-}
-
-const BULLET_PREFIX_RE = /^(?:\s*•\s*)+/;
-
-/** Format selected definitions for Card Creator / Quick Add:
- *  - Each definition: `• {pos} {text}` (or `• {text}` if no pos)
- *  - Definitions separated by exactly one blank line (\n\n)
- *  Respects user selection — only checked definitions are included.
- *  Strips any leading `•` characters already present in the source text so
- *  the output always has exactly one bullet. */
-export function formatDefinitions(defs: readonly { readonly pos?: string; readonly text: string }[]): string {
-  return defs
-    .map((d) => {
-      const text = d.text.replace(BULLET_PREFIX_RE, '');
-      return `• ${d.pos ? `${d.pos} ` : ''}${text}`.trim();
-    })
-    .join('\n\n')
-    .trim();
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {

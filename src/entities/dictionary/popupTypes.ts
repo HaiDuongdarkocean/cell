@@ -1,11 +1,16 @@
 // Popup Dictionary contracts — spec §9.1, §9.4.
 //
 // Boundary types for lookup, worker transport, Quick Add, and word status.
-// No logic here — pure type module. Zod validation lives in ./schema.ts.
+// No logic here — pure type module. Zod validation lives in
+// `@/entities/message/dictionarySchemas`.
 // Settings v14 types (DictionaryPopupSettings, CardCreatorSettingsV14) live in
-// `@/entities/settings/types.ts` and are added in Task 3.2.
+// `@/entities/settings/types.ts`.
 
-import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
+import type { LookupRequest, PhraseMatch } from './types';
+import type { BilingualCue, MediaFile } from '@/entities/media';
+import type { CardCreatorQueueItem } from '@/entities/cardCreator';
+
+export type { LookupRequest };
 
 // === Logic output → UI input ===
 
@@ -20,16 +25,6 @@ export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'unavailabl
 export type MatchSource = 'dictionary' | 'plugin' | 'fallback';
 
 // === Lookup request / result ===
-
-export interface LookupRequest {
-  readonly term: string;
-  readonly langCode: string;
-  readonly contextSentence: string;
-  /** UTF-16 character offset of hovered token; worker derives token index. */
-  readonly cursorOffset: number;
-  /** true khi user bôi đen text: bỏ qua plugin phraseMatch, dùng term verbatim + lemma only. */
-  readonly fallback?: boolean;
-}
 
 export interface DefinitionEntry {
   readonly id: string;
@@ -346,3 +341,26 @@ export type OnCardCreatorAction = (
 
 /** Callback to Quick Add directly (bypass dialog). Wired by content script. */
 export type OnQuickAddDirect = (prefill: PopupCardCreatorPrefill) => void;
+
+/** Prefill/context sent to the Dictionary tab's integrated Card Creator.
+ *  Extends the popup prefill with optional subtitle capture context
+ *  (video, cue, pre-captured media, queue, initial action).
+ *  Also inherits the popup selection snapshot (`selectedImageIds`,
+ *  `selectedAudioIds`, `selectedDefinitionIds`, `translationSelected`) so the
+ *  integrated Dictionary can initialize as an exact clone of the popup. */
+export interface DictionaryPanelPrefill extends Omit<PopupCardCreatorPrefill, 'term'> {
+  /** Search term for the left dictionary pane. Optional — omitted when the
+   *  context has no single target word (e.g. empty subtitle queue). */
+  readonly term?: string;
+  /** Video element for screenshot/sentence-audio capture. */
+  readonly video?: HTMLVideoElement;
+  /** Current subtitle cue (target + native text + timing). */
+  readonly cue?: BilingualCue;
+  /** Media already captured before opening (screenshot + sentence audio). */
+  readonly initialMedia?: readonly MediaFile[];
+  /** I+N review queue. ≥2 items opens the queue sidebar; 1 item pre-fills
+   *  the target word without showing the sidebar. */
+  readonly queue?: readonly CardCreatorQueueItem[];
+  /** Hint for initial focus/state. */
+  readonly initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+}

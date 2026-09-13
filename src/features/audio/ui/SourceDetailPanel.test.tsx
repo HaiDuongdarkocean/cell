@@ -10,7 +10,7 @@ jest.mock('@/features/tts/ui/TtsVoiceManagerPanel', () => ({
     return <div data-cell-id="tts-voice-manager">TTS Voice Manager (mock)</div>;
   },
 }));
-jest.mock('@/features/dictionaryPopup/services/ttsEngineService', () => ({
+jest.mock('@/features/tts/services/ttsEngineService', () => ({
   createTtsEngine: () => ({
     getVoices: () => Promise.resolve([]),
     speak: () => Promise.resolve(),

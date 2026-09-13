@@ -12,7 +12,7 @@ import { createRoot } from 'react-dom/client';
 import '@/shared/styles/document.css';
 import { CardCreatorDialog } from '@/features/cardCreator/ui/CardCreatorDialog';
 import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBottomSheet';
-import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
+import { CardCreatorSettingsPanel } from '@/features/cardCreator/ui/CardCreatorSettingsPanel';
 import { useCardCreatorStore } from '@/stores/cardCreatorStore';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';

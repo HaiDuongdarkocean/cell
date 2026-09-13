@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { buildPrefill } from './buildCandidatePrefill';
-import type { AudioItem, ImageItem, LookupResult } from '../types';
+import type { AudioItem, ImageItem, LookupResult } from '@/entities/dictionary';
 
 function makeResult(overrides?: Partial<LookupResult>): LookupResult {
   return {

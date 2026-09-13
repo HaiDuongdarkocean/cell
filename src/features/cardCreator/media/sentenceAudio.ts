@@ -18,7 +18,7 @@
  */
 import type { MediaFile } from './mediaFile';
 import { generateMediaFilename } from './mediaFile';
-import { seekVideo, playVideo, pauseVideo } from '@/features/subtitle/ui/netflixPlayback';
+import { seekVideo, playVideo, pauseVideo } from '@/shared/lib/dom/netflixPlayback';
 
 /** Max audio capture duration (4GB mobile constraint). */
 const MAX_AUDIO_DURATION_MS = 15_000;

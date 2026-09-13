@@ -8,8 +8,8 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import type { FetchImagesResponse } from '@/features/dictionaryPopup/types';
-import { FetchImagesPayloadSchema } from '@/features/dictionaryPopup/schema';
+import type { FetchImagesResponse } from '@/entities/dictionary';
+import { FetchImagesPayloadSchema } from '@/entities/message/dictionarySchemas';
 import {
   buildWikimediaImagesUrl,
   parseWikimediaImagesResponse,

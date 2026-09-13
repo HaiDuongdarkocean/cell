@@ -6,13 +6,9 @@
  * offscreen failure if the caller supports it.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis';
-import { OffscreenManager } from '../offscreenManager';
-import { TtsSpeakLocalPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsSpeakLocalPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-
-const offscreen = new OffscreenManager();
 
 export function registerLocalTtsHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TTS_SPEAK_LOCAL, async (request): Promise<MessageResponse<null>> => {
@@ -22,8 +18,7 @@ export function registerLocalTtsHandlers(ctx: BackgroundContext): void {
     }
 
     try {
-      await offscreen.ensureOffscreenDocument();
-      const response = await sendMessage<MessageResponse<null>>({
+      const response = await ctx.offscreenManager.sendToOffscreen<MessageResponse<null>>({
         type: MESSAGE_TYPES.TTS_SPEAK_LOCAL,
         payload: parsed.data,
       });

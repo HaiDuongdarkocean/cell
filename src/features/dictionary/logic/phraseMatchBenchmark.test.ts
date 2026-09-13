@@ -31,12 +31,14 @@ const TEST_VERBS = new Set([
   'design', 'arrive', 'visit',
 ]);
 
+const FIXTURE_PATH = path.resolve(
+  __dirname,
+  '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+);
+const FIXTURE_EXISTS = fs.existsSync(FIXTURE_PATH);
+
 function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: PhraseIndexInput[] } {
-  const fixturePath = path.resolve(
-    __dirname,
-    '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
-  );
-  const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
+  const entries = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')) as { term?: string }[];
   const seen = new Set<string>();
   const inputs: PhraseIndexInput[] = [];
   let nextId = 0;
@@ -62,7 +64,7 @@ function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: Ph
   return { index, blob, inputs };
 }
 
-describe('phraseMatch benchmark (ADR-037 §11)', () => {
+(FIXTURE_EXISTS ? describe : describe.skip)('phraseMatch benchmark (ADR-037 §11)', () => {
   let fixture: { index: PhraseIndex; blob: ArrayBuffer; inputs: PhraseIndexInput[] };
 
   beforeAll(() => {

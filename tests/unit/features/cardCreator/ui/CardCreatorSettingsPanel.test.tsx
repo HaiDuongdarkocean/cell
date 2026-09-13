@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
+import { CardCreatorSettingsPanel } from '@/features/cardCreator/ui/CardCreatorSettingsPanel';
 import { DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { testConnection } from '@/features/cardCreator/service/cardCreatorService';

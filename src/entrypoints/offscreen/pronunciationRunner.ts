@@ -5,7 +5,7 @@
 
 import { onMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { PronunciationEspeakTtsPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { synthesizeEspeakToWav } from '@/features/pronunciation/services/espeakOffscreenEngine';
 import type { MessageResponse } from '@/entities/message';
 

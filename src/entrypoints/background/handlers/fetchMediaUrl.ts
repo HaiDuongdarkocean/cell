@@ -8,7 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse, FetchMediaUrlResponse } from '@/entities/message/types';
-import { FetchMediaUrlPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { FetchMediaUrlPayloadSchema } from '@/entities/message/dictionarySchemas';
 
 /** Convert an ArrayBuffer to a base64 string. */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

@@ -299,7 +299,7 @@ export function AppRedesigned(): React.JSX.Element {
         onOpenSettings={() => setIsSettingsOpen(true)}
         currentTheme={resolveMode(themeMode)}
         isAutoDownloadActive={isAutoDownloadActive}
-        onToggleAutoDownload={handleToggleAutoDownload}
+        onToggleAutoDownload={() => { void handleToggleAutoDownload(); }}
       />
 
       <main className={styles.content}>

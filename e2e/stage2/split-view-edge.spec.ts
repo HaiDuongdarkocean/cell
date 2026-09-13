@@ -5,7 +5,6 @@ const WRAPPER = '[data-cell-split-view="wrapper"]';
 const PANEL = '[data-cell-split-view="panel"]';
 const HANDLE = '[data-cell-split-view="handle"]';
 const VIDEO = '#player-wrapper video';
-const PLAYER = '#player-wrapper';
 const CUE_ITEM = '[data-cell-id="cue-item"]';
 const CUE_LIST = '[data-cell-id="cue-list-scroll"]';
 

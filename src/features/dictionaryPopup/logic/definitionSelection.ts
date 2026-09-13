@@ -2,7 +2,7 @@
 // still consumed by useCandidate and useDictionaryLookup, so they have been
 // extracted into a standalone logic module before that legacy file was deleted.
 
-import type { LookupResult, DefinitionEntry } from '../types';
+import type { LookupResult, DefinitionEntry } from '@/entities/dictionary';
 
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;

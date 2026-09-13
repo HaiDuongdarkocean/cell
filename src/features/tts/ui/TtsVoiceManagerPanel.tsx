@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, type ReactElement, t
 import { Alert } from '@/shared/ui/Alert';
 import { Heading } from '@/shared/ui/Heading';
 import { Button, Card, Icon, Toggle, Select, Textarea, Input, Checkbox } from '@/shared/ui';
-import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
+import { createTtsEngine, type TtsVoiceInfo } from '@/features/tts/services/ttsEngineService';
 import type { TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
 import { TtsLanguagePanel } from './TtsLanguagePanel';
 import styles from './TtsVoiceManagerPanel.module.css';

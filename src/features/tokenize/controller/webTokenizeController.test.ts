@@ -22,12 +22,12 @@ jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
   DEFAULT_TOKENIZE_SETTINGS: { schemaVersion: 1, origins: {}, urls: {}, subtitleUrls: {} },
 }));
 
-jest.mock('@/features/dictionaryPopup/services/wordStatusClient', () => ({
+jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
   getWordStatuses,
   setWordStatus,
 }));
 
-jest.mock('@/features/dictionaryPopup/services/frequencyClient', () => ({
+jest.mock('@/features/dictionary/services/frequencyClient', () => ({
   getFrequencyEntries,
 }));
 

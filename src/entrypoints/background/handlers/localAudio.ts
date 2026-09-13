@@ -10,8 +10,8 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { FetchLocalAudioPayloadSchema, FetchLocalAudioResponseSchema } from '@/features/dictionaryPopup/schema';
-import type { FetchLocalAudioResponse } from '@/features/dictionaryPopup/types';
+import { FetchLocalAudioPayloadSchema, FetchLocalAudioResponseSchema } from '@/entities/message/dictionarySchemas';
+import type { FetchLocalAudioResponse } from '@/entities/dictionary';
 import { LingvoDslAudioProvider } from '@/features/pronunciation/services/lingvoDslAudioProvider';
 
 export function registerLocalAudioHandlers(ctx: BackgroundContext): void {

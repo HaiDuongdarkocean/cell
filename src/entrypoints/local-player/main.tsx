@@ -1060,7 +1060,7 @@ function LocalPlayerApp(): React.JSX.Element {
         // Find the SubtitleMatch by filename (id = `${role}-${filename}`)
         const filename = item.id.slice(role.length + 1);
         const match = allMatches.find((m) => m.filename === filename);
-        if (match) handleSelectTrack(match);
+        if (match) void handleSelectTrack(match);
       },
       onImport: () => { void handleOpenSubtitle(); },
       onGenerateNative: subtitleActions.onGenerateNative,
@@ -1091,15 +1091,15 @@ function LocalPlayerApp(): React.JSX.Element {
       librarySort={librarySort as SortBy}
       targetStyle={subtitleEngine.targetStyle}
       nativeStyle={subtitleEngine.nativeStyle}
-      onOpenFile={handleOpenFile}
-      onOpenFolder={handleOpenFolder}
-      onOpenSubtitle={handleOpenSubtitle}
-      onSelectTrack={handleSelectTrack}
+      onOpenFile={() => { void handleOpenFile(); }}
+      onOpenFolder={() => { void handleOpenFolder(); }}
+      onOpenSubtitle={() => { void handleOpenSubtitle(); }}
+      onSelectTrack={(m) => { void handleSelectTrack(m); }}
       onFilesDrop={handleFilesDrop}
-      onVideoSelect={handleVideoSelect}
-      onVideoDelete={handleVideoDelete}
-      onClearAll={handleClearAll}
-      onSubtitleSelect={handleSubtitleSelect}
+      onVideoSelect={(id) => { void handleVideoSelect(id); }}
+      onVideoDelete={(id) => { void handleVideoDelete(id); }}
+      onClearAll={() => { void handleClearAll(); }}
+      onSubtitleSelect={(id) => { void handleSubtitleSelect(id); }}
       onSortChange={handleSortChange}
       currentVideoId={currentVideo?.id ?? null}
       onTimeUpdate={handleTimeUpdate}

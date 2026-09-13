@@ -5,7 +5,7 @@
  * Unlike Forvo, these sources are not behind Cloudflare bot protection and are
  * reachable from a Chrome MV3 service worker.
  */
-import type { AudioItem } from '../types';
+import type { AudioItem } from '@/entities/dictionary';
 import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { scoreAudioByAccent } from './forvoAudioService';
 

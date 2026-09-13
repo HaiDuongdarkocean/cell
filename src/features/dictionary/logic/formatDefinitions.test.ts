@@ -2,7 +2,7 @@
 // Verifies: • prefix, pos + text, \n\n between defs, no trailing \n.
 
 import { describe, it, expect } from '@jest/globals';
-import { formatDefinitions } from './webTextDictionaryController';
+import { formatDefinitions } from './formatDefinitions';
 
 describe('formatDefinitions', () => {
   it('formats multiple definitions with bullet + pos + \\n\\n', () => {

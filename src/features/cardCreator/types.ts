@@ -1,5 +1,7 @@
-import type { BilingualCue } from '@/entities/media';
-import type { MediaFile } from './media/mediaFile';
+import type { BilingualCue, MediaFile } from '@/entities/media';
+import type { CardCreatorQueueItem } from '@/entities/cardCreator';
+
+export type { CardCreatorQueueItem };
 
 /** Card Creator action hint.
  *  - 'quick-add' = popup dictionary Quick Add (hardcoded as Add mode for now),
@@ -22,17 +24,6 @@ export interface CardCreatorPrefill {
   readonly sentenceAudioUrls?: readonly string[];
   /** Image URLs (Google Images) selected in the popup — fetched + stored as MediaFile. */
   readonly imageUrls?: readonly string[];
-}
-
-/** A single item in the Send to Card queue (I+N review flow).
- *  Each item represents one unknown/tracking word from the current subtitle
- *  line, with its dictionary definitions pre-looked-up. Media (screenshot +
- *  sentence audio) is shared across all items — captured once before the
- *  dialog opens. */
-export interface CardCreatorQueueItem {
-  readonly term: string;
-  readonly definitions: string;
-  readonly status: 'unknown' | 'tracking';
 }
 
 /** Context for opening the card creator (video + cue + languages + prefill).

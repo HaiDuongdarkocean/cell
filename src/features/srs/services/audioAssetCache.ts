@@ -1,7 +1,7 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
-import type { TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
+import type { TtsFetchAudioResponse } from '@/entities/dictionary';
 import type { PronunciationSettings } from '@/entities/settings/types';
 import type { SrsAudioAsset } from '@/entities/srs/types';
 import { generateId } from '@/features/srs/lib/helpers';

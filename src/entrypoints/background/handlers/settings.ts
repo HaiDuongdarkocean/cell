@@ -14,12 +14,16 @@ import {
 } from '../helpers';
 import type { Settings } from '@/entities/media';
 import type { MessageResponse } from '@/entities/message';
-import { UpdateSettingsPayloadSchema } from '@/entities/message/schema';
+import { EmptyPayloadSchema, UpdateSettingsPayloadSchema } from '@/entities/message/schema';
 
 /** Register settings message handlers. */
 export function registerSettingsHandlers(ctx: BackgroundContext): void {
   // GET_SETTINGS: return persisted settings (or defaults).
-  ctx.on(MESSAGE_TYPES.GET_SETTINGS, async (): Promise<MessageResponse<Settings>> => {
+  ctx.on(MESSAGE_TYPES.GET_SETTINGS, async (request): Promise<MessageResponse<Settings>> => {
+    const parsed = EmptyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid GET_SETTINGS payload: ${parsed.error.message}` };
+    }
     const settings = await loadSettings();
     return { success: true, data: settings };
   });
@@ -55,12 +59,20 @@ export function registerSettingsHandlers(ctx: BackgroundContext): void {
   });
 
   // GET_EXTENSION_STATUS: return the active state.
-  ctx.on(MESSAGE_TYPES.GET_EXTENSION_STATUS, async (): Promise<MessageResponse<{ active: boolean }>> => {
+  ctx.on(MESSAGE_TYPES.GET_EXTENSION_STATUS, async (request): Promise<MessageResponse<{ active: boolean }>> => {
+    const parsed = EmptyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid GET_EXTENSION_STATUS payload: ${parsed.error.message}` };
+    }
     return { success: true, data: { active: ctx.extensionActive } };
   });
 
   // TOGGLE_EXTENSION: toggle, persist, and start/stop the interceptor.
-  ctx.on(MESSAGE_TYPES.TOGGLE_EXTENSION, async (): Promise<MessageResponse<{ active: boolean }>> => {
+  ctx.on(MESSAGE_TYPES.TOGGLE_EXTENSION, async (request): Promise<MessageResponse<{ active: boolean }>> => {
+    const parsed = EmptyPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid TOGGLE_EXTENSION payload: ${parsed.error.message}` };
+    }
     ctx.extensionActive = !ctx.extensionActive;
     await saveExtensionStatus(ctx, ctx.extensionActive);
 

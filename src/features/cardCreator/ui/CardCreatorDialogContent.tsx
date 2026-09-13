@@ -434,7 +434,7 @@ export function CardCreatorDialogContent({
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => submit('add')}
+            onClick={() => { void submit('add'); }}
             disabled={submitting}
             data-cell-id="cc-add"
           >
@@ -443,7 +443,7 @@ export function CardCreatorDialogContent({
           <Button
             variant="primary"
             size="sm"
-            onClick={() => submit('update')}
+            onClick={() => { void submit('update'); }}
             disabled={submitting || recentNoteId === null}
             data-cell-id="cc-update"
           >

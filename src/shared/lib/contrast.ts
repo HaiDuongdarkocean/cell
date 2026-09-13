@@ -1,7 +1,7 @@
 // contrast.ts — Canonical WCAG 2.1 color contrast engine.
 //
 // Pure (no DOM). Used by:
-//   - runtime: src/shared/lib/tokens.ts (via src/features/theme/logic/contrastValidator.ts)
+//   - runtime: src/shared/lib/tokens.ts (via src/shared/lib/contrastValidator.ts)
 //   - build:   scripts/generate-tokens.js (via jiti)
 //
 // Supports literal hex, rgb, rgba, color-mix(in srgb, ...), named colors,

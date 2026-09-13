@@ -13,9 +13,9 @@ import {
   isTokenizeEnabledForUrl,
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
-import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
-import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
-import type { WordStatus } from '@/features/dictionaryPopup/types';
+import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
+import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';

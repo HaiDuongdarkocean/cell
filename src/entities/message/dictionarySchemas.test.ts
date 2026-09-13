@@ -26,7 +26,7 @@ import {
   TtsSpeakPayloadSchema,
   QuickAddPayloadMessageSchema,
   QuickAddResponseSchema,
-} from './schema';
+} from './dictionarySchemas';
 
 describe('LookupRequestSchema', () => {
   it('accepts a valid phrase lookup request', () => {

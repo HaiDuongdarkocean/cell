@@ -203,7 +203,7 @@ describe('wireOcrHitboxesToTrigger (T16)', () => {
       attach: (spans: readonly HTMLSpanElement[], sentence: string, langCode: string) => {
         attachCalls.push({ spans: spans.length, sentence, langCode });
       },
-    } as unknown as import('@/features/dictionaryPopup/trigger/subtitleTriggerController').SubtitleTriggerController;
+    } as unknown as import('./ocrOverlay').OcrLookupTrigger;
 
     wireOcrHitboxesToTrigger(overlay, mockTrigger);
 

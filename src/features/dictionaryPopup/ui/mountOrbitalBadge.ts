@@ -1,9 +1,9 @@
 import { createElement, type RefObject } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
-import type { UniversalPanelMountController } from '@/features/universalPanel/UniversalPanelController';
+import type { PanelMountController } from '../controller/panelBridge';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 
 export interface OrbitalBadgeMountOptions {
@@ -22,7 +22,7 @@ export interface OrbitalBadgeMountOptions {
   /** Called on every pointer move while expanded. */
   onTipMoving?: (tip: Point, preset: PointerPreset, badgeCenter: Point) => void;
   /** Generic panel controller. When provided, a single click toggles the panel. */
-  panelController?: UniversalPanelMountController;
+  panelController?: PanelMountController;
 }
 
 export interface OrbitalBadgeMountController {

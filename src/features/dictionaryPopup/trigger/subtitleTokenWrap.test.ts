@@ -8,7 +8,7 @@ import {
   disableTokenWrap,
   setTriggerMode,
 } from './subtitleTokenWrap';
-import type { LookupRequest } from '../types';
+import type { LookupRequest } from '@/entities/dictionary';
 
 describe('createTokenWrapState', () => {
   it('creates a disabled state with no trigger controller', () => {

@@ -32,8 +32,8 @@ import type {
   WorkerHydrateDoneMessage,
   WorkerLookupMessage,
   WorkerPushDefinitionMessage,
-} from '../types';
-import type { DefinitionEntry } from '../types';
+} from '@/entities/dictionary';
+import type { DefinitionEntry } from '@/entities/dictionary';
 
 const TEST_VERBS = new Set(['take', 'kick', 'give', 'put', 'look', 'carry']);
 

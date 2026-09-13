@@ -8,7 +8,7 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: (...args: unknown[]) => mockSendMessage(...args),
 }));
 
-function makeResult(term: string, overrides: Partial<import('../types').LookupResult> = {}): import('../types').LookupResult {
+function makeResult(term: string, overrides: Partial<import('@/entities/dictionary').LookupResult> = {}): import('@/entities/dictionary').LookupResult {
   return {
     term,
     langCode: 'en',
@@ -18,7 +18,7 @@ function makeResult(term: string, overrides: Partial<import('../types').LookupRe
     definitions: [],
     candidates: [],
     ...overrides,
-  } as import('../types').LookupResult;
+  } as import('@/entities/dictionary').LookupResult;
 }
 
 describe('useDictionaryLookup', () => {

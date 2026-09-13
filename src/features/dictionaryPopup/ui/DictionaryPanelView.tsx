@@ -16,10 +16,10 @@ import {
   loadSearchHistory,
   persistSearchHistory,
   removeSearchHistoryTerm,
-} from '@/features/universalPanel/searchHistory';
+} from '@/features/dictionaryPopup/logic/searchHistory';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { CandidateView } from './CandidateView';
-import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab, PopupSelectionSnapshot } from '@/entities/dictionary';
 import candidateStyles from './CandidateView.module.css';
 import checkStyles from './DictionaryCheckable.module.css';
 import toolbarStyles from './DictionaryToolbar.module.css';

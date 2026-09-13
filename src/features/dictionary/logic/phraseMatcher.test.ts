@@ -4,7 +4,7 @@ import {
   tokenizeSentence,
   type PhraseMatchRequest,
 } from '@/features/dictionary/logic/phraseMatcher';
-import type { MatchTraceData } from '@/features/dictionaryPopup/log/lookupLogTypes';
+import type { MatchTraceData } from '@/features/dictionary/logic/lookupLogTypes';
 import {
   compilePhraseIndex,
   type PhraseIndexInput,

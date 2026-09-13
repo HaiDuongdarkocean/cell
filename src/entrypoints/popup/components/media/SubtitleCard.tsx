@@ -150,7 +150,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
               size="xs"
               className={styles.copyBtn}
               leadingIcon={<Icon name="copy"  />}
-              onClick={handleUrlClick}
+              onClick={(e) => { void handleUrlClick(e); }}
               data-cell-id="subtitle-url"
               title="Click to copy URL"
               aria-label="Copy URL"

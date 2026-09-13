@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AudioItem } from '@/features/dictionaryPopup/types';
+import type { AudioItem } from '@/entities/dictionary';
 
 /**
  * Return a playable URL for an AudioItem, creating an in-memory blob URL

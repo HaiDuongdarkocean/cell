@@ -9,8 +9,8 @@ import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
 } from '@/entities/message';
-import type { FetchCommunityAudioResponse } from '@/features/dictionaryPopup/types';
-import { FetchCommunityAudioPayloadSchema } from '@/features/dictionaryPopup/schema';
+import type { FetchCommunityAudioResponse } from '@/entities/dictionary';
+import { FetchCommunityAudioPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchScoredCommunityAudioItems } from '@/features/dictionaryPopup/services/communityAudioService';
 
 export function registerForvoAudioHandlers(ctx: BackgroundContext): void {

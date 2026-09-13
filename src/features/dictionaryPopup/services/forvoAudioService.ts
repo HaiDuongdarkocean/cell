@@ -11,7 +11,7 @@
  * Reference: project-reference/theocean-extension-dictionary/scripts/audioManager.js
  * (parseContainer + readSpeakerMeta) and background.js fetchForvo handler.
  */
-import type { AudioItem } from '../types';
+import type { AudioItem } from '@/entities/dictionary';
 
 /** Base URL for Forvo audio CDN (decoded base64 path appended). */
 export const FORVO_AUDIO_CDN = 'https://audio00.forvo.com/mp3/';

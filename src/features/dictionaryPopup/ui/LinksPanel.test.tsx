@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { render, screen, within } from '@testing-library/react';
 import { LinksPanel } from './LinksPanel';
-import type { ExternalDictLink } from '../types';
+import type { ExternalDictLink } from '@/entities/dictionary';
 
 describe('LinksPanel', () => {
   it('renders an empty state when no links are provided', () => {

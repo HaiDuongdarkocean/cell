@@ -58,7 +58,7 @@ export function SrsReviewCard(): React.JSX.Element | null {
           audioCache={audioCache}
           imageCache={imageCache}
           onSubmit={handleSubmit}
-          markStudyAgain={markStudyAgain}
+          markStudyAgain={(ct) => { void markStudyAgain(ct); }}
           resetCurrentComponent={resetCurrentComponent}
           resetCurrentCard={resetCurrentCard}
         />

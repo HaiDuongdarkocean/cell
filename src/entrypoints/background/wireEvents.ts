@@ -4,7 +4,6 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
-  sendMessage,
   getExtensionId,
   download,
   addOnDeterminingFilenameListener,
@@ -32,6 +31,7 @@ import {
   maybeAutoDownload,
   pushAutoLoadSubtitles,
   resolveUnknownSubtitleLanguages,
+  findMediaForDownloadItem,
 } from './helpers';
 // SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
@@ -175,8 +175,6 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       _dirHandle: FileSystemDirectoryHandle,
       downloadId: string,
     ): Promise<ConvertResult> => {
-      await ctx.offscreenManager.ensureOffscreenReady();
-
       const currentSettings = await loadSettings();
 
       const request: MessageRequest = {
@@ -189,9 +187,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         } satisfies ConvertTsToMp4V2Payload,
       };
 
-      const response = (await sendMessage(
-        request,
-      )) as MessageResponse<ConvertTsToMp4V2ResultPayload> | undefined;
+      const response = await ctx.offscreenManager.sendToOffscreen<
+        MessageResponse<ConvertTsToMp4V2ResultPayload> | undefined
+      >(request);
 
       if (!response) {
         throw new Error(
@@ -218,8 +216,6 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       downloadFilename: string,
       mimeType: string,
     ): Promise<void> => {
-      await ctx.offscreenManager.ensureOffscreenReady();
-
       const createRequest: MessageRequest = {
         type: MESSAGE_TYPES.CREATE_OPFS_BLOB_URL,
         payload: {
@@ -229,9 +225,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         } satisfies CreateOpfsBlobUrlPayload,
       };
 
-      const createResponse = (await sendMessage(
-        createRequest,
-      )) as MessageResponse<CreateOpfsBlobUrlResultPayload> | undefined;
+      const createResponse = await ctx.offscreenManager.sendToOffscreen<
+        MessageResponse<CreateOpfsBlobUrlResultPayload> | undefined
+      >(createRequest);
 
       if (!createResponse) {
         throw new Error(
@@ -261,13 +257,15 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
           delta.state?.current === 'interrupted'
         ) {
           removeOnDownloadsChangedListener(revokeListener);
-          const revokeRequest: MessageRequest = {
-            type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
-            payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
-          };
-          void sendMessage(revokeRequest).catch((err) => {
-            console.warn('[background] Failed to revoke Blob URL:', err);
-          });
+          if (ctx.offscreenManager.hasDocument()) {
+            const revokeRequest: MessageRequest = {
+              type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
+              payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
+            };
+            void ctx.offscreenManager.sendToOffscreen(revokeRequest).catch((err) => {
+              console.warn('[background] Failed to revoke Blob URL:', err);
+            });
+          }
         }
       };
       addOnDownloadsChangedListener(revokeListener);
@@ -276,7 +274,8 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
 
   // 7. Queue executor: dispatch each item to the downloader
   ctx.downloadQueue.setExecutor(async (item: DownloadItem) => {
-    const media = ctx.mediaMap.get(item.id);
+    const media =
+      ctx.mediaMap.get(item.id) ?? findMediaForDownloadItem(ctx, item);
     if (!media) {
       throw new Error(`No media found for download ${item.id}`);
     }

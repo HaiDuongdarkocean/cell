@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ImagePanel } from './ImagePanel';
-import type { ImageItem } from '../types';
+import type { ImageItem } from '@/entities/dictionary';
 
 function makeImage(id: string, selected = false): ImageItem {
   return {

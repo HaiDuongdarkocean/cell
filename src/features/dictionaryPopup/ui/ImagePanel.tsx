@@ -6,7 +6,7 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './ImagePanel.module.css';
-import type { ImageItem } from '../types';
+import type { ImageItem } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 
 export interface ImagePanelProps {

@@ -20,13 +20,12 @@ import type {
   SubtitleSearchResult,
   SearchError,
   KeyQuotaInfo,
-} from '@/features/subtitle/logic/subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 
 // === Message Types ===
 
 export type MessageType =
-  | 'DETECT_MEDIA'
   | 'GET_DETECTED_MEDIA'
   | 'DETECTED_MEDIA_UPDATE'
   | 'DOWNLOAD_VIDEO'
@@ -43,13 +42,8 @@ export type MessageType =
   | 'UPDATE_SETTINGS'
   | 'GET_EXTENSION_STATUS'
   | 'TOGGLE_EXTENSION'
-  | 'EXTENSION_STATUS_UPDATE'
   | 'UPDATE_SUBTITLE_LANGUAGE'
-  | 'GET_SUBTITLE_FOR_OVERLAY'
-  | 'CONVERT_TS_TO_MP4'
-  | 'CONVERT_TS_TO_MP4_RESULT'
   | 'CONVERT_TS_TO_MP4_V2'
-  | 'CONVERT_TS_TO_MP4_V2_RESULT'
   | 'CONVERSION_PROGRESS_UPDATE'
   | 'CREATE_OPFS_BLOB_URL'
   | 'REVOKE_OPFS_BLOB_URL'
@@ -73,7 +67,6 @@ export type MessageType =
   | 'DETECTED_SUBTITLES'
   | 'INNERTUBE_FALLBACK_REQUEST'
   | 'FETCH_REQUEST'
-  | 'FETCH_RESPONSE'
   | 'TRANSLATE'
   | 'CARD_CREATOR_REQUEST'
   | 'FETCH_COMMUNITY_AUDIO'
@@ -90,7 +83,6 @@ export type MessageType =
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
   | 'FREQUENCY_GET'
-  | 'QUICK_ADD'
   | 'LOOKUP_REQUEST'
   | 'LOOKUP_RESULT'
   | 'LOOKUP_CANCEL'
@@ -111,8 +103,6 @@ export type MessageType =
   | 'OCR_INIT'
   | 'OCR_RECOGNIZE'
   | 'OCR_DISPOSE'
-  | 'OCR_GET_STATE'
-  | 'OCR_SET_STATE'
   | 'OCR_REGION_COMMAND'
   | 'OPEN_READER'
   // Study Modes (spec media-study-modes.md)
@@ -150,11 +140,6 @@ export interface MessageResponse<T = unknown> {
 
 // === Typed Payloads ===
 
-export interface DetectMediaPayload {
-  readonly tabId: number;
-  readonly tabUrl: string;
-}
-
 export interface GetDetectedMediaPayload {
   readonly tabId: number;
 }
@@ -179,11 +164,6 @@ export interface DownloadSubtitlePayload {
 export interface UpdateSubtitleLanguagePayload {
   readonly subtitleId: string;
   readonly language: string;
-}
-
-/** Request: content script asks background for subtitle matching target language. */
-export interface GetSubtitleForOverlayPayload {
-  readonly tabId: number;
 }
 
 /** Response: background returns matching subtitle URL + language, or null if no match. */
@@ -235,18 +215,6 @@ export interface DownloadProgressUpdatePayload {
 
 export interface UpdateSettingsPayload {
   readonly settings: Partial<Settings>;
-}
-
-export interface ConvertTsToMp4Payload {
-  readonly segments: ArrayBuffer[]; // serialized segments
-  readonly downloadId: string;
-}
-
-export interface ConvertTsToMp4ResultPayload {
-  readonly downloadId: string;
-  readonly mp4Data: ArrayBuffer;
-  readonly success: boolean;
-  readonly error?: string;
 }
 
 /**
@@ -541,8 +509,9 @@ export interface DetectedSubtitleUrlPayload {
  * the raw tracks to `DetectedSubtitle[]` and triggers auto-load.
  *
  * `source` discriminates the adapter for the unified `detectionDispatch.ts`
- * handler (ADR-028 — `messageBus.on()` overwrites, so only one handler may
- * register `DETECTED_SUBTITLES`). `source === undefined` is backward-compatible
+ * handler (ADR-028 — `messageBus.on()` throws on duplicate registration, so
+ * only one handler may register `DETECTED_SUBTITLES`). `source === undefined`
+ * is backward-compatible
  * with ADR-020 YouTube posts (treated as 'youtube').
  *
  * `videoId` is YouTube-specific; iQIYI uses `tvid` + `origin` instead.
@@ -599,7 +568,7 @@ export interface CardCreatorResponseData {
 //
 // These ride the MV3 fan-out bus (payload always carries `tabId` on responses).
 // The worker dict-match path does NOT use these — it uses the dedicated
-// requestId bridge defined in `@/features/dictionaryPopup/types.ts`.
+// requestId bridge defined in `@/entities/dictionary/popupTypes.ts`.
 
 /** Content → background: fetch community audio for a term. */
 export interface FetchCommunityAudioPayload {
@@ -691,21 +660,6 @@ export interface WordStatusSetPayload {
   readonly term: string;
   readonly langCode: string;
   readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
-}
-
-/** Content → background: Quick Add to Anki. */
-export interface QuickAddPayload {
-  readonly tabId?: number;
-  // Payload shape defined in @/features/dictionaryPopup/types.ts QuickAddPayload;
-  // kept as unknown at the MV3 boundary — consumer validates via QuickAddPayloadSchema.
-  readonly payload: unknown;
-}
-
-/** Background → content: Quick Add result. */
-export interface QuickAddResult {
-  readonly ok: boolean;
-  readonly noteId?: number;
-  readonly error?: string;
 }
 
 // === Typed Message Helpers ===

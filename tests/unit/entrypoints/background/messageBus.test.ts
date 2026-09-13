@@ -60,24 +60,45 @@ describe('MessageBus', () => {
       const bus = new MessageBus();
       const handler: MessageHandler = jest.fn();
 
-      const off = bus.on('DETECT_MEDIA', handler);
+      const off = bus.on('DETECTED_MEDIA_UPDATE', handler);
 
       expect(typeof off).toBe('function');
 
       // Handler should be invoked via handleMessage
-      const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 1 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 1 };
       void bus.handleMessage(request, { id: '1' });
       expect(handler).toHaveBeenCalledWith(request);
+    });
+
+    it('throws on duplicate registration for the same type', () => {
+      const bus = new MessageBus();
+      const first: MessageHandler = jest.fn();
+      const second: MessageHandler = jest.fn();
+
+      bus.on('DETECTED_MEDIA_UPDATE', first);
+
+      expect(() => bus.on('DETECTED_MEDIA_UPDATE', second)).toThrow('DETECTED_MEDIA_UPDATE');
+    });
+
+    it('allows re-registration after unsubscribe', () => {
+      const bus = new MessageBus();
+      const first: MessageHandler = jest.fn();
+      const second: MessageHandler = jest.fn();
+
+      const off = bus.on('DETECTED_MEDIA_UPDATE', first);
+      off();
+
+      expect(() => bus.on('DETECTED_MEDIA_UPDATE', second)).not.toThrow();
     });
 
     it('unsubscribe removes the handler', () => {
       const bus = new MessageBus();
       const handler: MessageHandler = jest.fn();
 
-      const off = bus.on('DETECT_MEDIA', handler);
+      const off = bus.on('DETECTED_MEDIA_UPDATE', handler);
       off();
 
-      const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 1 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 1 };
       return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(handler).not.toHaveBeenCalled();
         expect(response.success).toBe(false);
@@ -158,9 +179,9 @@ describe('MessageBus', () => {
         .fn()
         .mockResolvedValue({ success: true, data: 'ok' });
 
-      bus.on('DETECT_MEDIA', handler);
+      bus.on('DETECTED_MEDIA_UPDATE', handler);
 
-      const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 42 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 42 };
       return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(handler).toHaveBeenCalledWith(request);
         expect(response).toEqual({ success: true, data: 'ok' });
@@ -185,7 +206,10 @@ describe('MessageBus', () => {
 
       bus.on('DOWNLOAD_VIDEO', handler);
 
-      const request: MessageRequest = { type: 'DOWNLOAD_VIDEO' };
+      const request: MessageRequest = {
+        type: 'DOWNLOAD_VIDEO',
+        payload: { videoId: 'v1' },
+      };
       return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(response.success).toBe(false);
         expect(response.error).toBe('boom');
@@ -220,13 +244,13 @@ describe('MessageBus', () => {
       const handler: MessageHandler = jest
         .fn()
         .mockResolvedValue({ success: true, data: 'routed' });
-      bus.on('DETECT_MEDIA', handler);
+      bus.on('DETECTED_MEDIA_UPDATE', handler);
       bus.start();
 
       const listener = mockChrome.onMessage.addListener.mock
         .calls[0][0] as Listener;
       const sendResponse = jest.fn();
-      const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 7 };
+      const request: MessageRequest = { type: 'DETECTED_MEDIA_UPDATE', payload: 7 };
 
       // Returning true means sendResponse will be called asynchronously
       const result = listener(request, { id: '1' }, sendResponse);

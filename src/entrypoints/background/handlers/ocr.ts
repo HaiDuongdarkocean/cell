@@ -5,8 +5,13 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import type { OcrBackend, OcrLanguageMode, OcrResult } from '@/features/ocr/engine/types';
-import { sendMessage } from '@/shared/lib/chrome-apis';
+import {
+  OcrInitPayloadSchema,
+  OcrRecognizePayloadSchema,
+  OcrDisposePayloadSchema,
+  OcrRegionCommandPayloadSchema,
+} from '@/entities/message/schema';
+import type { OcrBackend, OcrResult } from '@/features/ocr/engine/types';
 
 /** OCR init result from offscreen. */
 export interface OcrInitResult {
@@ -20,20 +25,6 @@ export interface OcrRecognizeResult {
   readonly results: OcrResult[];
 }
 
-/** OCR init payload — forwarded verbatim to offscreen. */
-export interface OcrInitPayload {
-  readonly languageMode: OcrLanguageMode;
-  readonly backend: OcrBackend;
-  /** Model name (ADR-082). Missing → default model (backward compat). */
-  readonly engineKey?: string;
-}
-
-/** OCR dispose payload — forwarded verbatim to offscreen. */
-export interface OcrDisposePayload {
-  /** Dispose a single engine; missing → dispose all (legacy behavior). */
-  readonly engineKey?: string;
-}
-
 /** Register OCR handlers on the background message bus. */
 export function registerOcrHandlers(ctx: BackgroundContext): void {
   // OCR_INIT — route to offscreen document via sendMessage.
@@ -41,41 +32,37 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   // including background itself. We use a distinct message type (_OFFSCREEN_ prefix)
   // for background→offscreen forwarding so the background handler never re-handles it.
   ctx.on(MESSAGE_TYPES.OCR_INIT, async (request): Promise<MessageResponse<OcrInitResult>> => {
+    const parsed = OcrInitPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid OCR_INIT payload: ${parsed.error.message}` };
+    }
     try {
       console.log('[OCR_BG] OCR_INIT received, ensuring offscreen...');
-      try { chrome.storage.local.set({ __ocrBgStep: '1-ensuring-offscreen@' + Date.now() }); } catch {}
       await Promise.race([
         ctx.offscreenManager.ensureOffscreenReady(),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('ensureOffscreenReady timeout (10s)')), 10000)),
       ]);
       console.log('[OCR_BG] offscreen ready, sending OCR_INIT');
-      try { chrome.storage.local.set({ __ocrBgStep: '2-offscreen-ready@' + Date.now() }); } catch {}
-      const payload = request.payload as OcrInitPayload;
+      const payload = parsed.data;
       console.log('[OCR_BG] sending OCR_INIT to offscreen', payload);
       // Use _OFFSCREEN_OCR_INIT type to avoid loopback — background handler only
       // listens for OCR_INIT, not _OFFSCREEN_OCR_INIT. The offscreen listener
       // (ffmpegRunner.ts) handles both types.
       // Add 180s timeout — model download from Baidu CDN can be slow on first run.
-      try { chrome.storage.local.set({ __ocrBgStep: '3-sending-offscreen-init@' + Date.now() }); } catch {}
       const response = await Promise.race([
-        sendMessage<{ status: string; backend: OcrBackend; error?: string }>({
+        ctx.offscreenManager.sendToOffscreen<{ status: string; backend: OcrBackend; error?: string }>({
           type: '_OFFSCREEN_OCR_INIT' as unknown as typeof MESSAGE_TYPES.OCR_INIT,
           payload,
         }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_INIT timeout (30s) — offscreen did not respond, possible CSP/WASM init failure')), 30000)),
       ]);
       console.log('[OCR_BG] offscreen response:', JSON.stringify(response));
-      // Store debug info in chrome.storage.local for content script to read.
-      try {
-        chrome.storage.local.set({ __ocrBgDebug: { response, timestamp: Date.now() } });
-      } catch {}
       if (response?.status === 'ready') {
         return { success: true, data: { status: 'ready', backend: response.backend } };
       }
       return { success: false, error: response?.error ?? 'OCR init failed' };
     } catch (e) {
       console.error('[OCR_BG] OCR_INIT error:', e);
-      try { chrome.storage.local.set({ __ocrBgDebug: { error: String(e), timestamp: Date.now() } }); } catch {}
       return { success: false, error: `OCR_INIT failed: ${String(e)}` };
     }
   });
@@ -83,11 +70,14 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   // OCR_DISPOSE — route to offscreen. Frees engine, does NOT close offscreen.
   // Payload forwarded verbatim: engineKey disposes one engine, missing disposes all.
   ctx.on(MESSAGE_TYPES.OCR_DISPOSE, async (request): Promise<MessageResponse<{ ok: true }>> => {
+    const parsed = OcrDisposePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid OCR_DISPOSE payload: ${parsed.error.message}` };
+    }
     try {
-      await ctx.offscreenManager.ensureOffscreenReady();
-      await sendMessage({
+      await ctx.offscreenManager.sendToOffscreen({
         type: '_OFFSCREEN_OCR_DISPOSE' as unknown as typeof MESSAGE_TYPES.OCR_DISPOSE,
-        payload: request.payload as OcrDisposePayload | undefined,
+        payload: parsed.data,
       });
       return { success: true, data: { ok: true } };
     } catch (e) {
@@ -99,10 +89,13 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.OCR_RECOGNIZE,
     async (request): Promise<MessageResponse<OcrRecognizeResult>> => {
+      const parsed = OcrRecognizePayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid OCR_RECOGNIZE payload: ${parsed.error.message}` };
+      }
       try {
-        await ctx.offscreenManager.ensureOffscreenReady();
-        const payload = request.payload as { image: { data: Uint8ClampedArray | number[] | string; width: number; height: number }; minScore?: number; engineKey?: string };
-        const response = await sendMessage<{ results: OcrResult[]; error?: string }>({
+        const payload = parsed.data;
+        const response = await ctx.offscreenManager.sendToOffscreen<{ results: OcrResult[]; error?: string }>({
           type: '_OFFSCREEN_OCR_RECOGNIZE' as unknown as typeof MESSAGE_TYPES.OCR_RECOGNIZE,
           payload,
         });
@@ -116,15 +109,19 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
     },
   );
 
-  // OCR_GET_STATE / OCR_SET_STATE handled by content-script directly via ocrStateStore.
+  // OCR state get/set is handled by content-script directly via ocrStateStore.
   // Background does not need to mediate — content-script reads/writes chrome.storage.local.
 
   // OCR_REGION_COMMAND — forward to active tab's content script.
   ctx.on(MESSAGE_TYPES.OCR_REGION_COMMAND, async (request): Promise<MessageResponse<{ ok: true }>> => {
+    const parsed = OcrRegionCommandPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid OCR_REGION_COMMAND payload: ${parsed.error.message}` };
+    }
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) return { success: false, error: 'No active tab' };
-      await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: request.payload });
+      await chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.OCR_REGION_COMMAND, payload: parsed.data });
       return { success: true, data: { ok: true } };
     } catch (e) {
       return { success: false, error: `OCR_REGION_COMMAND failed: ${String(e)}` };

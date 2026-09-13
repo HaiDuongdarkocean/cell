@@ -1,7 +1,7 @@
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import styles from './DictionaryToolbar.module.css';
-import type { PopupTab } from '../types';
+import type { PopupTab } from '@/entities/dictionary';
 import { t, type MessageKey } from '@/shared/i18n';
 
 type IconName = React.ComponentProps<typeof Icon>['name'];

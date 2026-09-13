@@ -4,6 +4,7 @@ import {
   removeOnMessageListener,
 } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { MESSAGE_REGISTRY } from '@/entities/message/registry';
 import type {
   MessageRequest,
   MessageResponse,
@@ -30,9 +31,25 @@ export class MessageBus {
    * @returns an unsubscribe function.
    */
   on<T extends MessageType>(type: T, handler: MessageHandler): () => void {
-    this.handlers.set(type, handler);
+    if (this.handlers.has(type)) {
+      throw new Error(`Duplicate handler registration for message type: ${type}`);
+    }
+    const schema = MESSAGE_REGISTRY[type].schema;
+    const wrapped: MessageHandler = schema
+      ? (request) => {
+          const parsed = schema.safeParse(request.payload);
+          if (!parsed.success) {
+            return {
+              success: false,
+              error: `Invalid ${type} payload: ${parsed.error.message}`,
+            };
+          }
+          return handler(request);
+        }
+      : handler;
+    this.handlers.set(type, wrapped);
     return () => {
-      if (this.handlers.get(type) === handler) {
+      if (this.handlers.get(type) === wrapped) {
         this.handlers.delete(type);
       }
     };
@@ -90,8 +107,9 @@ export class MessageBus {
 
   /**
    * Handle an incoming message. Extracted for testability.
-   * Injects sender.tab.id into payload when tabId is missing (content scripts
-   * don't have chrome.tabs API — they send without tabId, background resolves it).
+   * Resolves payload.tabId from sender.tab.id when the sender is a content
+   * script (sender always wins over a caller-supplied tabId); payload.tabId
+   * is the fallback for senders without a tab (popup, side panel, offscreen).
    */
   async handleMessage(
     request: MessageRequest,
@@ -111,16 +129,16 @@ export class MessageBus {
       };
     }
 
-    // Inject tabId/frameId from sender when missing (content script → background).
-    // Create a shallow copy to avoid mutating the original request payload
-    // (callers may retain references for retry/logging).
+    // Resolve tabId from the sender (content script → background); the sender's
+    // own tab is authoritative — a payload-supplied tabId is only a fallback
+    // for senders without one (popup, side panel, offscreen). frameId is
+    // still only filled when missing. Shallow copy: callers may retain
+    // references to the original payload for retry/logging.
     if (sender.tab?.id !== undefined) {
       const payload = request.payload as Record<string, unknown> | undefined;
       if (payload) {
         const next: Record<string, unknown> = { ...payload };
-        if (next.tabId === undefined) {
-          next.tabId = sender.tab.id;
-        }
+        next.tabId = sender.tab.id;
         if (next.frameId === undefined && sender.frameId !== undefined) {
           next.frameId = sender.frameId;
         }

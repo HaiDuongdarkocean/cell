@@ -1,4 +1,4 @@
-import type { WordStatus } from '@/features/dictionaryPopup/types';
+import type { WordStatus } from '@/entities/dictionary';
 import type { TokenFrequencyBand } from '@/shared/lib/frequencyBand';
 
 export type { TokenFrequencyBand };

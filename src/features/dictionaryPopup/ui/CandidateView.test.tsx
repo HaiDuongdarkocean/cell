@@ -6,7 +6,7 @@ import { translateSentence } from '@/features/cardCreator/media/translation';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '@/entities/dictionary';
 
 jest.mock('@/features/pronunciation/services/pronunciationEngineSingleton', () => ({
   pronunciationEngine: {

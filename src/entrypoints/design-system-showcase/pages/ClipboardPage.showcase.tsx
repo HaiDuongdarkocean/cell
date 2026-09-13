@@ -403,7 +403,7 @@ export function Showcase(): ReactElement {
                           <Icon name={isEditing ? 'check' : 'pencil'} /><span>{isEditing ? 'Save edit' : 'Edit'}</span>
                         </button>
                         {!splitSentences && (
-                          <button className={styles.menuItem} onClick={() => { navigator.clipboard?.writeText(currentText); setMenuOpenId(null); }}>
+                          <button className={styles.menuItem} onClick={() => { void navigator.clipboard?.writeText(currentText); setMenuOpenId(null); }}>
                             <Icon name="copy" /><span>Copy all</span>
                           </button>
                         )}

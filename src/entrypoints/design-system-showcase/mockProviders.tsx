@@ -16,7 +16,7 @@ import type { CardCreatorState, LoadStatus } from '@/features/cardCreator/ui/use
 import type { CardCreatorQueueItem, Toast } from '@/features/cardCreator/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { SrtCue } from '@/entities/media/types';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
+import type { LookupResult } from '@/entities/dictionary';
 
 /** Cues snapshot supplied by {@link MockCuesProvider}. */
 export interface MockCuesValue {

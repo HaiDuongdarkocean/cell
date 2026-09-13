@@ -1,4 +1,4 @@
-import { injectThemeTokens, buildStyleContent, syncElementTheme } from '@/shared/lib/themeTokens';
+import { injectThemeTokens, buildStyleContent, syncElementTheme } from '@/features/theme/logic/themeTokens';
 import { buildColorTokenCSS } from '@/shared/lib/tokens';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { TtsDownloadProgressPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { TtsDownloadProgressPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { deleteVoicePack } from '@/features/tts/services/ttsDownloadManager';
 import { SettingsRow, Toggle, Select, Button, Progress, Icon, Label } from '@/shared/ui';
 import type { SelectOption } from '@/shared/ui/Select';

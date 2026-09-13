@@ -8,7 +8,7 @@
 // caller shows toast, lookup still works with existing data.
 
 import { getDB, getStore, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
-import type { WordStatus } from '../types';
+import type { WordStatus } from '@/entities/dictionary';
 
 /** Word status entry — 1 row per term (langWordStatus store). */
 export interface WordStatusEntry {

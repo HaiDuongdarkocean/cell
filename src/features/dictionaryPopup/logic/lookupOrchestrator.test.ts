@@ -7,7 +7,7 @@ import { addResource } from '@/features/dictionary/repositories/resourceReposito
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
 import { addFrequencyEntry } from '@/features/dictionary/repositories/frequencyRepository';
 import { putPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
-import { setWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
+import { setWordStatus } from '@/features/dictionary/services/wordStatusStore';
 import {
   compilePhraseIndex,
   serializePhraseIndex,

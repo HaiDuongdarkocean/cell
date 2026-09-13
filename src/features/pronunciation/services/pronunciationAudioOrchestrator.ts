@@ -10,12 +10,12 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
-import type { AudioItem } from '@/features/dictionaryPopup/types';
+import type { AudioItem } from '@/entities/dictionary';
 import type {
   FetchCommunityAudioResponse,
   FetchLocalAudioResponse,
   TtsFetchAudioResponse,
-} from '@/features/dictionaryPopup/types';
+} from '@/entities/dictionary';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
 import type { AudioEngineKind } from '../types';
 import type { PronunciationSettings } from '@/entities/settings/types';

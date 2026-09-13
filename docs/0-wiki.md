@@ -25,6 +25,8 @@ docs/           # Tài liệu dự án
 │   ├── 089-foundation-iconography.md            # WHY: 24×24 1.5px round stroke, currentColor, semantic naming
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
 │   └── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
+├── audits/                             # Audit reports (design system, tech debt, UI/UX)
+│   ├── 20260913_src-features-entrypoints-shared.md  # Tech-debt audit: 14 items scored — top: SW-state fragility 4.20, layer boundaries 4.05, production debug seams 4.05, god files 4.00; roadmap quick-wins/pay-down/watch
 ├── specs/
 │   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery

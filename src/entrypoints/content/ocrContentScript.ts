@@ -25,6 +25,8 @@ import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
+declare const __CELL_DEBUG__: string;
+
 /** Session pipeline config = shared pipeline config + split dual-stream fields. */
 interface OcrSessionConfig extends OcrPipelineConfig {
   readonly splitEnabled: boolean;
@@ -318,7 +320,7 @@ export class OcrSession {
       if (result.status === 'drm_detected') {
         // Stop OCR — DRM-protected content.
         document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
-        this.stop();
+        void this.stop();
         return;
       }
 
@@ -475,14 +477,14 @@ export class OcrSession {
       cues[cues.length - 1] = { ...last, end: Math.max(last.end, nowMs + 30000) };
       return cues;
     };
-    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues: extendLastCue(targetCues), nativeCues: extendLastCue(nativeCues) }, '*');
+    window.postMessage({ type: '__CELL_OCR_TRACKS', targetCues: extendLastCue(targetCues), nativeCues: extendLastCue(nativeCues) }, window.location.origin);
     this.splitTracksPosted = true;
   }
 
   /** Tell the subtitle controller the OCR tracks are gone (session stop / split off). */
   private endOcrTracks(): void {
     if (!this.splitTracksPosted) return;
-    window.postMessage({ type: '__CELL_OCR_TRACKS_END' }, '*');
+    window.postMessage({ type: '__CELL_OCR_TRACKS_END' }, window.location.origin);
     this.splitTracksPosted = false;
   }
 
@@ -853,6 +855,8 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
 
   // Dev debug hook: page can request OCR init via postMessage (used by MCP browser tests).
   // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto', splitEnabled: true, splitRatio: 0.5, splitTopIsTarget: true, customRegion: {xPct,yPct,widthPct,heightPct} }, '*')
+  // Only compiled in for E2E builds (CELL_E2E=1) — production builds skip it.
+  if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as {
@@ -897,6 +901,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
       }
     })();
   });
+  }
 
   // OCR toggle from subtitle overlay toolbar button.
   // Toggles ocrEnabled for current origin in storage; storage.onChanged listener

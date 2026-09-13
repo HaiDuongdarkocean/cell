@@ -11,7 +11,6 @@
  * fetch pipeline (which has its own resume logic).
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { OffscreenManager } from './offscreenManager';
 import type {
   FetchRequestPayload,
@@ -37,7 +36,7 @@ export interface OffscreenFetchResult {
 
 /**
  * Fetch a URL via the offscreen document. Ensures the offscreen document is
- * ready first, then sends a FETCH_REQUEST and awaits the FETCH_RESPONSE.
+ * ready first, then sends a FETCH_REQUEST and awaits its response.
  *
  * @throws Error if the offscreen document fails to respond or returns an error.
  */
@@ -46,8 +45,6 @@ export async function offscreenFetch(
   url: string,
   options?: OffscreenFetchOptions,
 ): Promise<OffscreenFetchResult> {
-  await offscreenManager.ensureOffscreenReady();
-
   const request: MessageRequest = {
     type: MESSAGE_TYPES.FETCH_REQUEST,
     payload: {
@@ -56,9 +53,9 @@ export async function offscreenFetch(
     } satisfies FetchRequestPayload,
   };
 
-  const response = (await sendMessage(
-    request,
-  )) as MessageResponse<FetchResponsePayload> | undefined;
+  const response = await offscreenManager.sendToOffscreen<
+    MessageResponse<FetchResponsePayload> | undefined
+  >(request);
 
   if (!response) {
     throw new Error(

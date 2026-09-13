@@ -6,7 +6,7 @@ import {
   generateTint,
   generateHoverColor,
   generatePalette,
-} from '@/features/theme/logic/colorGenerator';
+} from '@/shared/lib/colorGenerator';
 
 describe('colorGenerator', () => {
   describe('hexToRgb', () => {

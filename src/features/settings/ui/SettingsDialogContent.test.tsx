@@ -7,7 +7,7 @@ import { SettingsDialogContent } from './SettingsDialogContent';
 // The settings dialog composes many feature panels; stub the heavy ones so
 // this test stays focused on the Audio card merge (spec
 // fnc_audio-settings-pipeline — Task 5).
-jest.mock('./CardCreatorSettingsPanel', () => ({
+jest.mock('@/features/cardCreator/ui/CardCreatorSettingsPanel', () => ({
   CardCreatorSettingsPanel: () => <div data-cell-id="card-creator-panel" />,
 }));
 jest.mock('./DictionaryPopupSettingsPanel', () => ({

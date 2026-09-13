@@ -211,3 +211,21 @@ export interface NetworkRequest {
    */
   readonly initiator?: string;
 }
+
+// === Media file (Anki-bound extracted media) ===
+
+/** Kind of media — determines the Anki field reference format. */
+export type MediaKind = 'image' | 'audio';
+
+/** In-memory media file ready for upload to AnkiConnect. */
+export interface MediaFile {
+  readonly kind: MediaKind;
+  /** Filename (without path). Will be stored in Anki's collection.media. */
+  readonly filename: string;
+  /** MIME type, e.g. 'image/png', 'audio/webm'. */
+  readonly mimeType: string;
+  /** Raw file bytes. */
+  readonly data: ArrayBuffer;
+  /** Original source URL, when this file was fetched from a prefill URL. */
+  readonly sourceUrl?: string;
+}

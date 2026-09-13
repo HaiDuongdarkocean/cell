@@ -1,6 +1,6 @@
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/types';
+import type { PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { SrsFieldValue } from '@/entities/srs/types';
 import type { MessageResponse, SrsAddNotePayload, SrsAddNoteResult } from '@/entities/message/types';
 

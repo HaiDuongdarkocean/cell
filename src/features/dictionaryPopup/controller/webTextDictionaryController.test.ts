@@ -25,15 +25,15 @@ jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({
 }));
 // isChildFrame is the single source of truth for the child-frame orbital-badge
 // gate. Mocked so tests can toggle the frame context without touching window.top.
-jest.mock('@/features/subtitle/logic/iframeContext', () => ({
+jest.mock('@/shared/lib/dom/isChildFrame', () => ({
   isChildFrame: jest.fn(() => false),
 }));
 
 import { createWebTextDictionaryController } from './webTextDictionaryController';
 import type { WebTextDictionaryControllerDeps } from './webTextDictionaryController';
 import { sendMessage } from '@/shared/lib/chrome-apis';
-import { isChildFrame } from '@/features/subtitle/logic/iframeContext';
-import type { LookupResult, LookupRequest } from '@/features/dictionaryPopup/types';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+import type { LookupResult, LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 
 const mockSendMessage = jest.mocked(sendMessage);

@@ -9,7 +9,7 @@
  */
 
 import type { LocalFileAudioSettings } from '@/entities/settings';
-import type { AudioItem } from '@/features/dictionaryPopup/types';
+import type { AudioItem } from '@/entities/dictionary';
 import { getFileHandle, verifyPermission } from '@/shared/lib/storage/localFileHandleStorage';
 import { getLingvoDslAudioPaths } from '../repositories/lingvoDslIndexRepository';
 import { SingleZipAudioResolver, SplitZipAudioResolver, type ZipAudioResolver } from './zipAudioResolver';

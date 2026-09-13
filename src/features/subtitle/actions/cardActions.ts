@@ -8,7 +8,7 @@
  */
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { getWordStatuses } from '@/features/dictionaryPopup/services/wordStatusClient';
+import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
 import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -16,7 +16,7 @@ import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCrea
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
+import type { LookupResult } from '@/entities/dictionary';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import type { SubtitleActionContext } from './subtitleActionContext';

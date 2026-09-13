@@ -10,11 +10,11 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { lookupOrchestratorMulti } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
-import type { LookupResult } from '@/features/dictionaryPopup/types';
+import type { LookupResult } from '@/entities/dictionary';
 import {
   LookupRequestPayloadSchema,
   LookupCancelPayloadSchema,
-} from '@/features/dictionaryPopup/schema';
+} from '@/entities/message/dictionarySchemas';
 
 /** In-flight lookup abort controllers (for cancellation). */
 const abortControllers = new Map<string, AbortController>();

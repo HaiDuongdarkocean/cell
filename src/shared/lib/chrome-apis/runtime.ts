@@ -16,18 +16,18 @@ export function sendMessage<T = unknown>(
   if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
     return Promise.resolve(undefined as T);
   }
-  // Debug: log sendMessage calls for offscreen debugging.
-  const msgType = (message as { type?: string })?.type ?? 'unknown';
-  const p = chrome.runtime.sendMessage(message) as Promise<T>;
-  // Log resolve/reject for _OFFSCREEN_ messages (debugging OCR init hang).
-  if (msgType.startsWith('_OFFSCREEN_')) {
-    p.then((r) => {
-      try { chrome.storage.local.set({ __sendMessageDebug: { type: msgType, resolved: true, response: JSON.stringify(r)?.slice(0, 200), time: Date.now() } }); } catch {}
-    }).catch((e) => {
-      try { chrome.storage.local.set({ __sendMessageDebug: { type: msgType, rejected: true, error: String(e)?.slice(0, 200), time: Date.now() } }); } catch {}
-    });
-  }
-  return p;
+  return Promise.resolve(chrome.runtime.sendMessage(message) as Promise<T>).catch(
+    (error: unknown) => {
+      const detail = error instanceof Error ? error.message : String(error);
+      if (!detail.includes('Could not establish connection')) {
+        throw error;
+      }
+      const type = (message as { type?: unknown } | undefined)?.type;
+      throw new Error(
+        `sendMessage(${typeof type === 'string' ? type : 'unknown'}): no receiving end — ${detail}`,
+      );
+    },
+  );
 }
 
 export function onMessage(
@@ -38,6 +38,7 @@ export function onMessage(
   ) => boolean | Promise<unknown> | void,
 ): void {
   if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises -- adapter contract intentionally tolerates Promise returns; Chrome ignores them
   chrome.runtime.onMessage.addListener(callback);
 }
 

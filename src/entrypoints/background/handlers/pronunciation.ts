@@ -5,14 +5,10 @@
  * can load its Emscripten worker and synthesize audio.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { sendMessage } from '@/shared/lib/chrome-apis';
-import { OffscreenManager } from '../offscreenManager';
-import { PronunciationEspeakTtsPayloadSchema } from '@/features/dictionaryPopup/schema';
+import { PronunciationEspeakTtsPayloadSchema } from '@/entities/message/dictionarySchemas';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import type { PronunciationEspeakTtsResult } from '@/entities/message/types';
-
-const offscreen = new OffscreenManager();
 
 export function registerPronunciationHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS, async (request): Promise<MessageResponse<PronunciationEspeakTtsResult>> => {
@@ -22,8 +18,7 @@ export function registerPronunciationHandlers(ctx: BackgroundContext): void {
     }
 
     try {
-      await offscreen.ensureOffscreenDocument();
-      const response = await sendMessage<MessageResponse<PronunciationEspeakTtsResult>>({
+      const response = await ctx.offscreenManager.sendToOffscreen<MessageResponse<PronunciationEspeakTtsResult>>({
         type: MESSAGE_TYPES.PRONUNCIATION_ESPEAK_TTS,
         payload: parsed.data,
       });

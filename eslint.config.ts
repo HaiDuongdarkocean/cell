@@ -44,6 +44,21 @@ export default tseslint.config(
 
   // TypeScript recommended (type-checked)
   ...tseslint.configs.recommended,
+  // Type-aware promise rules on src/ + tests/ only — MV3 async code paths
+  // (SW lifecycle, messaging, offscreen) are the audit's highest-risk area.
+  // Scoped so non-project files (e2e, scripts, *.cjs) aren't parsed for types.
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx', 'tests/**/*.ts', 'tests/**/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
 
   // React
   {
@@ -82,6 +97,151 @@ export default tseslint.config(
       // Empty catch clauses are intentionally used at extension API boundaries
       // where the only safe recovery is to fall through (e.g. chrome.storage).
       'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+
+  // FSD layer boundaries: shared and entities are lower layers and must not
+  // import from features (dependency arrow points features → entities → shared).
+  {
+    files: ['src/shared/**/*.ts', 'src/shared/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features', '@/features/*', '@/features/**', '**/features/**'],
+          message: 'FSD boundary: shared/ must not import from features/. Move the logic down or the consumer up.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/entities/**/*.ts', 'src/entities/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features', '@/features/*', '@/features/**', '**/features/**'],
+          message: 'FSD boundary: entities/ must not import from features/. Move the contract down into entities/.',
+        }],
+      }],
+    },
+  },
+
+  // Feature DAG: dictionaryPopup is the lookup orchestration hub — lower
+  // features must not import it back (contracts live in entities/dictionary,
+  // logic in features/dictionary, utilities in shared/). universalPanel is the
+  // top composition layer: it MAY host dictionaryPopup UI (ui/Dictionary) and
+  // reuse the panel port helper (controller/panelBridge) — everything else
+  // under dictionaryPopup is banned there too.
+  {
+    files: [
+      'src/features/cardCreator/**/*.ts',
+      'src/features/cardCreator/**/*.tsx',
+      'src/features/subtitle/**/*.ts',
+      'src/features/subtitle/**/*.tsx',
+      'src/features/tokenize/**/*.ts',
+      'src/features/tokenize/**/*.tsx',
+      'src/features/dictionary/**/*.ts',
+      'src/features/dictionary/**/*.tsx',
+      'src/features/ocr/**/*.ts',
+      'src/features/ocr/**/*.tsx',
+      'src/features/pronunciation/**/*.ts',
+      'src/features/pronunciation/**/*.tsx',
+      'src/features/reader/**/*.ts',
+      'src/features/reader/**/*.tsx',
+      'src/features/srs/**/*.ts',
+      'src/features/srs/**/*.tsx',
+      'src/features/tts/**/*.ts',
+      'src/features/tts/**/*.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features/dictionaryPopup', '@/features/dictionaryPopup/**'],
+          message: 'Feature DAG: this feature is below dictionaryPopup — move shared contracts to entities/dictionary, logic to features/dictionary, utilities to shared/.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/features/universalPanel/**/*.ts', 'src/features/universalPanel/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^@/features/dictionaryPopup(?!/ui/Dictionary$|/controller/panelBridge$)',
+          message: 'Feature DAG: universalPanel may only host dictionaryPopup ui/Dictionary + reuse controller/panelBridge — contracts live in entities/dictionary.',
+        }],
+      }],
+    },
+  },
+
+  // Feature DAG: settings sits at the composition layer — its dialog
+  // aggregates other features' panels (settings → cardCreator/dictionary/
+  // subtitle/tts/audio/theme). No feature may import it back; feature-owned
+  // settings panels live inside the owning feature.
+  {
+    files: [
+      'src/features/audio/**/*.ts',
+      'src/features/audio/**/*.tsx',
+      'src/features/cardCreator/**/*.ts',
+      'src/features/cardCreator/**/*.tsx',
+      'src/features/detection/**/*.ts',
+      'src/features/detection/**/*.tsx',
+      'src/features/dictionary/**/*.ts',
+      'src/features/dictionary/**/*.tsx',
+      'src/features/dictionaryPopup/**/*.ts',
+      'src/features/dictionaryPopup/**/*.tsx',
+      'src/features/download/**/*.ts',
+      'src/features/download/**/*.tsx',
+      'src/features/local-player/**/*.ts',
+      'src/features/local-player/**/*.tsx',
+      'src/features/ocr/**/*.ts',
+      'src/features/ocr/**/*.tsx',
+      'src/features/reader/**/*.ts',
+      'src/features/reader/**/*.tsx',
+      'src/features/srs/**/*.ts',
+      'src/features/srs/**/*.tsx',
+      'src/features/studyModes/**/*.ts',
+      'src/features/studyModes/**/*.tsx',
+      'src/features/subtitle/**/*.ts',
+      'src/features/subtitle/**/*.tsx',
+      'src/features/theme/**/*.ts',
+      'src/features/theme/**/*.tsx',
+      'src/features/tokenize/**/*.ts',
+      'src/features/tokenize/**/*.tsx',
+      'src/features/translate/**/*.ts',
+      'src/features/translate/**/*.tsx',
+      'src/features/transmux/**/*.ts',
+      'src/features/transmux/**/*.tsx',
+      'src/features/tts/**/*.ts',
+      'src/features/tts/**/*.tsx',
+      'src/features/whitelist/**/*.ts',
+      'src/features/whitelist/**/*.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/features/settings', '@/features/settings/**'],
+          message: 'Feature DAG: settings is a composition layer — features must not import it back. Move feature-owned panels into the owning feature.',
+        }],
+      }],
+    },
+  },
+  // pronunciation sits below cardCreator (dictionaryGenerate consumes its
+  // orchestrator) and below settings — both directions are banned back.
+  {
+    files: ['src/features/pronunciation/**/*.ts', 'src/features/pronunciation/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            group: ['@/features/settings', '@/features/settings/**'],
+            message: 'Feature DAG: settings is a composition layer — features must not import it back. Move feature-owned panels into the owning feature.',
+          },
+          {
+            group: ['@/features/cardCreator', '@/features/cardCreator/**'],
+            message: 'Feature DAG: cardCreator consumes pronunciation — do not import back.',
+          },
+        ],
+      }],
     },
   },
 

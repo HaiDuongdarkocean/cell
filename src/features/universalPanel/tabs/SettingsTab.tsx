@@ -73,7 +73,7 @@ export function SettingsTab(): React.JSX.Element | null {
     <div ref={tabRef} className={styles.settingsTab} data-cell-id="settings-tab" tabIndex={-1}>
       <SettingsDialogContent
         settings={settings}
-        onChange={handleChange}
+        onChange={(next) => { void handleChange(next); }}
         showSidebarHeader={false}
       />
     </div>

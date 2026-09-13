@@ -3,7 +3,7 @@ import {
   parseGoogleImagesHtml,
   DEFAULT_MAX_IMAGE_RESULTS,
 } from './imageSearchService';
-import type { ImageItem } from '../types';
+import type { ImageItem } from '@/entities/dictionary';
 
 describe('imageSearchService', () => {
   describe('buildGoogleImagesUrl', () => {

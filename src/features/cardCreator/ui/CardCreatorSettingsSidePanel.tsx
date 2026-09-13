@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { CardCreatorSidePanel } from './CardCreatorSidePanel';
 import { t } from '@/shared/i18n';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
-import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
+import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import type { Settings } from '@/entities/media';
 import type { CardCreatorSettings, SrsDestination } from '@/entities/settings';
 

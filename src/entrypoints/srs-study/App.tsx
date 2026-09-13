@@ -45,7 +45,7 @@ export function App() {
           )}
           <Button
             className={styles.studyButton}
-            onClick={start}
+            onClick={() => { void start(); }}
             disabled={loading}
           >
             {loading ? 'Loading…' : 'Study'}

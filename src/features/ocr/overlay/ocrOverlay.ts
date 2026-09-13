@@ -6,7 +6,6 @@
 import type { OcrResultItem } from '@/features/ocr/engine/types';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 import { routeScript } from '../language/languageRouter';
-import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
 
 /** Base styling shared by every OCR hitbox — injected inline to avoid a stylesheet
@@ -175,11 +174,15 @@ export class OcrOverlay {
   }
 }
 
+export interface OcrLookupTrigger {
+  attach(tokenSpans: readonly HTMLSpanElement[], sentence: string, langCode: string): void;
+}
+
 /** T16: Wire OCR hitbox spans to SubtitleTriggerController for dictionary lookup.
  *  Groups hitboxes by langCode, calls attach() per group. */
 export function wireOcrHitboxesToTrigger(
   overlay: OcrOverlay,
-  triggerController: SubtitleTriggerController,
+  triggerController: OcrLookupTrigger,
 ): void {
   const spans = overlay.getHitboxElements();
   // Group by langCode — attach() takes a single langCode per call.

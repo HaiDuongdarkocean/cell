@@ -575,7 +575,7 @@ export function useCardCreatorState(
     }
 
     const autosaver = autosaverRef.current;
-    autosaver.load().then((restored) => {
+    void autosaver.load().then((restored) => {
       useCardCreatorStore.getState().reset();
       useCardCreatorStore.getState().setInitialAction(initialAction);
       loadedSettingsKeyRef.current = null;
@@ -1369,8 +1369,8 @@ export function useCardCreatorState(
     updateDraft,
     updateField,
     updateMapping,
-    changeNoteType,
-    changeDeck,
+    changeNoteType: (noteType: string) => { void changeNoteType(noteType); },
+    changeDeck: (deck: string) => { void changeDeck(deck); },
     addScreenshot,
     addSentenceAudio,
     addFileFromDisk,

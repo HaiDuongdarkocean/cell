@@ -1,5 +1,5 @@
 import type { AudioEngineKind, LocalFileAudioSettings, PronunciationSettings, TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
-import type { TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
+import type { TtsVoiceInfo } from '@/features/tts/services/ttsEngineService';
 import { DEFAULT_PRONUNCIATION_SETTINGS } from '@/shared/config/config';
 import { DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
 

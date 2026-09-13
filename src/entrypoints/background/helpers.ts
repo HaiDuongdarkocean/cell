@@ -305,6 +305,26 @@ export function createDownloadItem(
   };
 }
 
+/** Find the detected media a persisted download item was created from. */
+export function findMediaForDownloadItem(
+  ctx: BackgroundContext,
+  item: DownloadItem,
+): DetectedVideo | DetectedSubtitle | undefined {
+  if (item.mediaType === 'video') {
+    const videos = ctx.networkInterceptor.getAllVideos();
+    const byId =
+      item.videoId !== undefined
+        ? videos.find((v) => v.id === item.videoId)
+        : undefined;
+    return (
+      byId ?? videos.find((v) => v.url === item.url && v.tabId === item.tabId)
+    );
+  }
+  return ctx.networkInterceptor
+    .getAllSubtitles()
+    .find((s) => s.url === item.url && s.tabId === item.tabId);
+}
+
 // --- settings helpers ---
 
 export async function loadSettings(_ctx?: BackgroundContext): Promise<Settings> {
@@ -406,6 +426,10 @@ export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void
           });
         } else {
           ctx.downloadQueue.restore(item);
+        }
+        const media = findMediaForDownloadItem(ctx, item);
+        if (media !== undefined) {
+          ctx.mediaMap.set(item.id, media);
         }
       }
     }

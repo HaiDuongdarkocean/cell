@@ -13,7 +13,7 @@ import fs, { existsSync } from 'node:fs';
 import path from 'node:path';
 import 'fake-indexeddb/auto';
 import { describe, expect, it, beforeAll, beforeEach, afterAll } from '@jest/globals';
-import { segmentFMM, isChengyu } from '../plugins/chinesePlugin';
+import { segmentFMM, isChengyu } from '@/features/dictionary/logic/chineseSegmenter';
 import type { TermProbe } from '../plugins/languagePlugin';
 import { lookupOrchestrator, createDictionaryProbeAsync, clearDictionaryProbeCache } from './lookupOrchestrator';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';

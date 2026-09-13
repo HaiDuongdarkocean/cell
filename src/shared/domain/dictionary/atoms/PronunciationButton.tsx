@@ -39,7 +39,7 @@ export function PronunciationButton({
         audioRef.current.src = audioUrl;
       }
       setBusy(true);
-      audioRef.current.play().finally(() => setBusy(false));
+      void audioRef.current.play().finally(() => setBusy(false));
       return;
     }
     if (typeof speechSynthesis !== 'undefined') {

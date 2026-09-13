@@ -7,6 +7,10 @@
 // (Task 2.2) adds dictionary-driven FMM segmentation + pinyin. A fallback
 // "minimal" plugin handles languages without a dedicated implementation.
 
+import type { PhraseMatch, PhraseMatchQuality } from '@/entities/dictionary';
+
+export type { PhraseMatch, PhraseMatchQuality };
+
 /** A token in a tokenized/segmented sentence. */
 export interface Token {
   readonly text: string;
@@ -18,22 +22,6 @@ export interface Token {
 export interface PhraseMatchRequest {
   readonly sentence: string;
   readonly cursorOffset: number;
-}
-
-/** Quality of a phrase match (ADR-037 §9). */
-export type PhraseMatchQuality =
-  | 'fixed'
-  | 'inflected'
-  | 'possessive-template'
-  | 'slot-template';
-
-/** A phrase match result. */
-export interface PhraseMatch {
-  readonly dictionaryTerm: string;
-  readonly surface: string;
-  readonly span: { readonly start: number; readonly end: number };
-  readonly quality: PhraseMatchQuality;
-  readonly sourceResourceId: number;
 }
 
 /** Accent/voice priority for audio playback. */
