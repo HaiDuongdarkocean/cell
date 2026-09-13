@@ -10,6 +10,7 @@
 - **Lane cap:** maximum 3 concurrent build subagents.
 - **Profiles:** `subagent_general` for build lanes, `subagent_explore` (read-only) for verify lanes.
 - **Verify failure:** dispatch the fix to the owning lane. After 2 failed fix cycles on the same blocker, stop and escalate to the human with evidence.
+- **Diverse-lens verify:** `P0` tasks and lanes touching security/state/migrations get 2–3 verifier lenses (correctness, security, regression); pass on majority. Single-lens verify for the rest.
 - **Worktree threshold:** provision a worktree per parallel lane of scope M or larger. XS/S parallel lanes run sequentially in the main session — they are already disjoint on files and the setup cost exceeds the benefit.
 - **Worktree location:** `../cell-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
 - **Lane dependencies:** junction `node_modules` into the worktree (Windows: `mklink /J`). Lanes must not run `npm install` — any task touching `package.json`, lockfiles, or `manifest.json` is `parallel: false` by rule (shared state cannot be mocked).
