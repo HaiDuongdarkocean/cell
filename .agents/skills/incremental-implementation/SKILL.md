@@ -282,7 +282,7 @@ After completing all increments for a task:
 
 ## See Also
 
-Per-increment verification is the local check. Before declaring a task done, apply the project-wide Definition of Done as the final gate, the standing bar every increment clears regardless of the task. See `references/definition-of-done.md`.
+Per-increment verification is the local check. Before declaring a task done, apply the project-wide Definition of Done as the final gate, the standing bar every increment clears regardless of the task. See `docs/knowledge-base/agentic-sdlc.md` §11.3 (deterministic gates).
 
 For paying down technical debt, also see `audit-technical-debt` (how to find and score debt), `planning-and-task-breakdown` (how to turn an audit into tasks), and `pre-commit-gate` (how to verify each slice).
 

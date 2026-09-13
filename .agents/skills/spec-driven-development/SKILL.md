@@ -168,7 +168,7 @@ With the validated spec, generate a technical implementation plan. The plan must
 1. Identify the major components and their dependencies
 2. Determine the implementation order (what must be built first)
 3. Note risks and mitigation strategies
-4. **Identify what can be built in parallel vs. what must be sequential; label each task with `parallel: true/false` and its dependency set.**
+4. **Identify what can be built in parallel vs. what must be sequential; label each task with `priority` (P0–P3), `parallel: true/false`, `blocked_strategy: mock-contract | wait`, and its dependency set.**
 5. Break tasks into small, verifiable increments (S/M size preferred; no XL tasks)
 6. Define explicit acceptance criteria and verification steps for every task
 7. Define verification checkpoints between phases
@@ -177,7 +177,7 @@ With the validated spec, generate a technical implementation plan. The plan must
 >
 > **Output convention:** Save the plan to `tasks/plan.md` and the task list to `tasks/todo.md`, per the `/plan` command convention. When a project already has active `tasks/plan.md` / `tasks/todo.md`, create named variants (e.g. `tasks/plan-<feature>.md` / `tasks/todo-<feature>.md`) to avoid overwriting. Create `tasks/` if it does not exist. Downstream commands (`/build`, etc.) expect these paths.
 
-The plan should be reviewable: the human should be able to read it and say "yes, that's the right approach" or "no, change X."
+The plan should be reviewable: present it and proceed — the human can veto or adjust before implementation lands (async veto, không blocking).
 
 ### Phase 3: Tasks
 

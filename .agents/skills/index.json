@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-09-13T00:50:27.187Z",
-  "count": 45,
+  "generated": "2026-09-13T01:25:21.816Z",
+  "count": 46,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -12,6 +12,11 @@
       "name": "audit-technical-debt",
       "description": "Autonomously audit technical debt in a codebase, score and rank it, and produce a prioritized remediation roadmap with subagent verification. Use when the user asks to assess, prioritize, audit, or reduce technical debt. Not for one-off bug fixes, new features, or simple code review.",
       "path": ".agents/skills/audit-technical-debt/SKILL.md"
+    },
+    {
+      "name": "autonomous-pipeline",
+      "description": "End-to-end autonomous run from a confirmed spec to shipped code — plan with priority + parallel lanes, dispatch build tasks to subagents, verify with fresh-context subagents, ship. Use when a spec exists in docs/specs/ and the work should run without per-phase human gates; humans hold async veto until commit and business sign-off at the end. Use for multi-task features where parallel execution is safe.",
+      "path": ".agents/skills/autonomous-pipeline/SKILL.md"
     },
     {
       "name": "caveman",

@@ -30,6 +30,7 @@ Task arrives
     ├── Can't articulate abstract questions? → interview-me (elicitation mode: context + domain scoping + prototype)
     ├── Have a rough concept, need variants? → idea-refine
     ├── New project/feature/change? ──→ spec-driven-development
+    ├── Spec confirmed, "just do it" end-to-end? → autonomous-pipeline (plan → parallel subagent build → subagent verify → ship)
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
     ├── Audit or assess technical debt? ─→ audit-technical-debt
     │   └── Need to plan remediation? ──→ planning-and-task-breakdown
@@ -207,7 +208,8 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
 | Define | spec-review-stakeholder | BA/PO/TL adversarial review of a spec before implementation |
 | Plan | audit-technical-debt | Score and prioritize technical debt with a remediation roadmap |
-| Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
+| Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks (priority + parallel + blocked_strategy fields) |
+| Plan→Ship | autonomous-pipeline | Orchestrate spec → parallel subagent lanes → fresh-context verify → ship; async veto, blocking chỉ ở business sign-off |
 | Build | learning-and-apply (APPLY) | Grep knowledge index.json, check bad patterns before coding |
 | Build | incremental-implementation | Thin vertical slices, test each before expanding |
 | Build | source-driven-development | Verify against official docs before implementing |

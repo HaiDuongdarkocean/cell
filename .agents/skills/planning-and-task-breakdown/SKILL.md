@@ -96,6 +96,12 @@ Each task follows this structure:
 
 **Dependencies:** [Task numbers this depends on, or "None"]
 
+**Priority:** [P0 release-blocking | P1 high | P2 normal | P3 polish]
+
+**Parallel:** [true — files disjoint from other same-level tasks | false — shared state/files]
+
+**Blocked strategy:** [mock-contract — build against the dependency's agreed interface/mock, mark integration point | wait — shared-state dep, hold until its verifier passes]
+
 **Files likely touched:**
 - `src/path/to/file.ts`
 - `tests/path/to/test.ts`
@@ -154,14 +160,16 @@ When the plan comes from an `audit-technical-debt` output, use this structure:
 Arrange tasks so that:
 
 1. Dependencies are satisfied (build foundation first)
-2. Each task leaves the system in a working state
-3. Verification checkpoints occur after every 2-3 tasks
-4. High-risk tasks are early (fail fast)
-5. **For debt remediation:** Order by audit score (highest first) and by quick-win vs. pay-down.
+2. Within a dependency level, sort by Priority (P0 → P3); equal priority → smallest scope first
+3. Blocked tasks follow their `Blocked strategy`: `mock-contract` proceeds against the agreed interface and marks the integration point; `wait` holds until the dependency's verification passes, then resumes by priority
+4. Each task leaves the system in a working state
+5. Verification checkpoints occur after every 2-3 tasks
+6. High-risk tasks are early (fail fast)
+7. **For debt remediation:** Order by audit score (highest first) and by quick-win vs. pay-down.
    - Quick wins (low cost, medium-high score) go first to build momentum.
    - High-score, high-cost pay-down items come next, scheduled across sprints.
    - Watch-list items are tracked but not scheduled until they become active blockers.
-6. **For each island (module),** complete stabilization (tests, characterization) before structural changes.
+8. **For each island (module),** complete stabilization (tests, characterization) before structural changes.
 
 Add explicit checkpoints:
 
@@ -250,6 +258,8 @@ When multiple agents or sessions are available:
 - **Safe to parallelize:** Independent feature slices, tests for already-implemented features, documentation
 - **Must be sequential:** Database migrations, shared state changes, dependency chains
 - **Needs coordination:** Features that share an API contract (define the contract first, then parallelize)
+- **Blocked task rule:** a task whose dependency isn't done prefers `mock-contract` — build against the dependency's agreed interface and mark the integration point. Use `wait` only for shared-state dependencies where mocking would hide real coupling.
+- **Dispatch rule (autonomous runs):** in `autonomous-pipeline`, each `parallel: true` task at the current dependency level spawns one `subagent_general` lane. File ownership must be disjoint — two lanes never write the same file; overlap → merge the tasks or mark one `parallel: false`. See `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
 
 ## Common Rationalizations
 
@@ -281,11 +291,12 @@ Before starting implementation, confirm:
 - [ ] Task dependencies are identified and ordered correctly
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
-- [ ] The human has reviewed and approved the plan
+- [ ] Every task has Priority, Parallel, and Blocked strategy fields filled
+- [ ] The plan is presented to the human — async veto, proceed unless they object before implementation lands
 
 ## See Also
 
-Acceptance criteria are per-task and answer "did we build the right thing?". They sit on top of the project-wide Definition of Done, the standing bar every task clears before it counts as done. See `references/definition-of-done.md`.
+Acceptance criteria are per-task and answer "did we build the right thing?". They sit on top of the project-wide Definition of Done, the standing bar every task clears before it counts as done. See `docs/knowledge-base/agentic-sdlc.md` §11.3 (deterministic gates).
 
 For technical debt plans, start with `audit-technical-debt` to produce the inventory, then use `incremental-implementation` to execute slices and `pre-commit-gate` to verify each one.
 

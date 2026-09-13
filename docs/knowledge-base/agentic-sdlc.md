@@ -391,8 +391,9 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 | **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
 | **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | Atom đầu tiên: `process-generated-catalog-drift` | ✅ Đã có (2026-09-13) |
 | **Stakeholder sign-off** | `elicitation` step 9 = async veto (spec pass auto-review → proceed, human veto trước commit) + `shipping-and-launch` post-launch review | Blocking gate chỉ còn 2: intent frame + business outcome | ✅ Đã có — spec gate giảm từ blocking approval xuống async veto (2026-09-13) |
+| **Parallel orchestration** | `autonomous-pipeline` — dispatch `subagent_general` lanes theo priority + dependency levels, `mock-contract`/`wait` cho blocked tasks, `subagent_explore` fresh-context verify | Runtime `run_subagent` đã có sẵn; giờ workflow wire vào Plan→Ship | ✅ Đã có (2026-09-13) — chưa có track record |
 
-Cell implement **~85%** nguyên lý agentic SDLC (10/12 solid sau batch 2026-09-13, 2 soft gate). Việc còn lại là **siết các soft gate thành blocking** khi nợ test sạch và quan sát adoption thực tế.
+Cell implement **~90%** nguyên lý agentic SDLC (11/13 có cơ chế sau batch 2026-09-13; 3 chưa proven — eval gate non-blocking, business review + orchestrator chưa có track record). Việc còn lại là **siết các soft gate thành blocking** khi nợ test sạch và quan sát adoption thực tế.
 
 ### 10.1. Roadmap cải tiến (theo ROI) — trạng thái sau 2026-09-13
 
@@ -425,7 +426,8 @@ Cell implement **~85%** nguyên lý agentic SDLC (10/12 solid sau batch 2026-09-
 | **Define** | Idea mơ hồ, chưa rõ yêu cầu | `interview-me` / `idea-refine` | `docs/intent/[topic].md` |
 | **Specify** | Feature xác định | `spec-driven-development` | `docs/specs/[feature].md` |
 | **Adversarial review** | Trước implement | `spec-review-stakeholder` | `docs/reviews/[feature]-adversarial.md` |
-| **Plan** | Spec approved | `planning-and-task-breakdown` | `tasks/plan.md` + `tasks/todo.md` |
+| **Plan** | Spec approved | `planning-and-task-breakdown` | `tasks/plan.md` + `tasks/todo.md` (priority + parallel + blocked_strategy) |
+| **Autonomous run** | Spec confirmed, "just do it" | `autonomous-pipeline` (orchestrator: dispatch `subagent_general` lanes → `subagent_explore` verify) | shipped feature + verify evidence |
 | **Build** | Implement từng task | `incremental-implementation` + `learning-and-apply` (APPLY) | `src/` + `tests/` |
 | **Local verify** | Code sửa xong | `pre-commit-gate` | build + test pass, không file mới |
 | **Browser verify** | Cần real page | `testing-with-playwright` (e2e) / `testing-extension-browser` (interactive) | spec pass / DOM evidence |
