@@ -1,7 +1,7 @@
 {
-  "githubRepo": "HaiDuongdarkocean/cell",
+  "githubRepo": "tihoka-official/tihoka",
   "releaseBranch": "main",
   "updateXmlPath": "updates.xml",
-  "crxAssetName": "cell.crx",
+  "crxAssetName": "tihoka.crx",
   "publishToGitHub": true
 }

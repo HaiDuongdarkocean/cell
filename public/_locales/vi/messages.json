@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Video Downloader",
+    "message": "Tihoka",
     "description": "Tên extension"
   },
   "extDescription": {
-    "message": "Phát hiện và tải video + phụ đề từ các trang xem miễn phí, dành cho người học ngoại ngữ",
+    "message": "Biến mọi nội dung thành tài liệu học tập. Học từ video, stream, website, mạng xã hội và nhiều hơn nữa.",
     "description": "Mô tả extension"
   }
 }

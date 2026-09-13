@@ -365,7 +365,7 @@ if (typeof chrome !== 'undefined' && getExtensionId()) {
   // Browser startup — rehydrate state from session storage immediately.
   onStartup(() => {
     initBackground().catch((err) => {
-      console.error('[Video Downloader] onStartup init failed:', err);
+      console.error('[Tihoka] onStartup init failed:', err);
     });
   });
 
@@ -378,7 +378,7 @@ if (typeof chrome !== 'undefined' && getExtensionId()) {
     }
     // On install: fresh init (no persisted state yet — session storage is empty).
     initBackground().catch((err) => {
-      console.error('[Video Downloader] onInstalled init failed:', err);
+      console.error('[Tihoka] onInstalled init failed:', err);
     });
     // Auto-seed: import default dictionary + frequency data if DB empty.
     // Fire-and-forget — never blocks SW init. Only runs in development builds
@@ -388,6 +388,6 @@ if (typeof chrome !== 'undefined' && getExtensionId()) {
 
   // Top-level: (re)initialise on every SW wake-up (idle eviction restart).
   initBackground().catch((err) => {
-    console.error('[Video Downloader] Failed to initialise background service:', err);
+    console.error('[Tihoka] Failed to initialise background service:', err);
   });
 }

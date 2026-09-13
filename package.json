@@ -1,7 +1,7 @@
 {
-  "name": "chrome-extension-video-downloader",
+  "name": "tihoka",
   "version": "0.1.1",
-  "description": "Chrome Extension MV3 to detect and download video + subtitle from free streaming sites",
+  "description": "Tihoka - Chrome MV3 extension: turn any content into study material (video + subtitle capture + Anki cards)",
   "type": "module",
   "private": true,
   "scripts": {

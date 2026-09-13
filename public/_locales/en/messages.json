@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "Video Downloader",
+    "message": "Tihoka",
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Detect and download video + subtitle from free streaming sites for language learners",
+    "message": "Turn any content into study material. Learn from videos, streams, websites, social media and much more.",
     "description": "Extension description"
   }
 }

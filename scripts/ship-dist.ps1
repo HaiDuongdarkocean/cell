@@ -2,7 +2,7 @@
 #   1. Pack dist/ into a .crx using the project's private key.
 #   2. Generate an update manifest (updates.xml) for Chrome auto-update.
 #   3. Rotate release -> archive on the target drive.
-#   4. Copy dist/, dist.zip, cell.crx and updates.xml into the release folder.
+#   4. Copy dist/, dist.zip, tihoka.crx and updates.xml into the release folder.
 #   5. Optionally create a GitHub release and upload assets (when configured).
 #
 # Usage:
@@ -33,10 +33,10 @@ if (-not $ConfigPath) {
 }
 
 $sourceDist = Join-Path $SourceRoot 'dist'
-$cellDir    = Join-Path $TargetRoot 'cell'
-$release    = Join-Path $cellDir 'release'
-$archive    = Join-Path $cellDir 'archive'
-$keyFile    = Join-Path $SourceRoot 'cell-key.pem'
+$tihokaDir    = Join-Path $TargetRoot 'tihoka'
+$release    = Join-Path $tihokaDir 'release'
+$archive    = Join-Path $tihokaDir 'archive'
+$keyFile    = Join-Path $SourceRoot 'tihoka-key.pem'
 
 if (-not (Test-Path $sourceDist -PathType Container)) {
   throw "dist folder not found at: $sourceDist. Run 'npm run build' first."
@@ -51,7 +51,7 @@ if (Test-Path $ConfigPath) {
 $githubRepo    = $shipConfig.githubRepo
 $releaseBranch = if ($shipConfig.releaseBranch) { $shipConfig.releaseBranch } else { 'main' }
 $updateXmlPath = if ($shipConfig.updateXmlPath) { $shipConfig.updateXmlPath } else { 'updates.xml' }
-$crxAssetName  = if ($shipConfig.crxAssetName)  { $shipConfig.crxAssetName }  else { 'cell.crx' }
+$crxAssetName  = if ($shipConfig.crxAssetName)  { $shipConfig.crxAssetName }  else { 'tihoka.crx' }
 $publishToGitHub = [bool]$shipConfig.publishToGitHub
 
 if (-not (Test-Path $keyFile)) {
@@ -152,7 +152,7 @@ try {
   if ($publishToGitHub -and $githubRepo) {
     if (Get-Command gh -ErrorAction SilentlyContinue) {
       $tag = "v$version"
-      $releaseTitle = "Cell $version"
+      $releaseTitle = "Tihoka $version"
       gh release create $tag "$crxOutput#$crxAssetName" "$xmlOutput#$updateXmlPath" --repo $githubRepo --title $releaseTitle --generate-notes
       if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE" }
       Write-Host "  [OK] Created GitHub release $tag"
