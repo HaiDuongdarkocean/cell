@@ -325,6 +325,7 @@ describe('useDetectedMedia', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
 
     // Must request media for the CONTENT tab (id=1), never the extension
     // app-window (id=999).
@@ -514,6 +515,7 @@ describe('useDownloadProgress', () => {
 
     renderHook(() => useDownloadProgress());
 
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
