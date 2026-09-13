@@ -12,5 +12,6 @@
       "good": "PostToolUse hook trên SKILL.md edit → auto regen index; audit định kỳ: diff index.names vs disk dirs; router chỉ trỏ skill có trên disk"
     }
   ],
-  "applyFor": ["component inventory", "icon catalog", "route table", "API registry", "file-tree docs"]
+  "applyFor": ["component inventory", "icon catalog", "route table", "API registry", "file-tree docs"],
+  "source": {"commit": "14c716dc", "spec": "docs/knowledge-base/agentic-sdlc.md", "date": "2026-09-13"}
 }

@@ -103,7 +103,10 @@ Self-contained trong skill folder → portable, mang đi project khác.
   "trigger": "Shadow DOM component cần shared design tokens",
   "principle": "Rendering boundary cô lập CSS. Inject tokens via ?raw import string, remap :root→:host.",
   "cases": [{"context": "...", "bad": "...", "good": "..."}],
-  "applyFor": ["Shadow DOM", "iframe widgets", "Web Worker canvas"]
+  "applyFor": ["Shadow DOM", "iframe widgets", "Web Worker canvas"],
+  "related": ["css-shadow-dom-theme-propagation"],
+  "supersedes": [],
+  "source": {"commit": "abc1234", "spec": "docs/specs/feature.md", "date": "2026-09-13"}
 }
 ```
 
@@ -147,6 +150,9 @@ Self-contained trong skill folder → portable, mang đi project khác.
 - `principle`: 1-2 câu — nguyên lý abstract, không cụ thể codebase
 - `cases[]`: ít nhất 1 case, mỗi case có `context` + `bad` + `good`
 - `applyFor[]`: 3-5 tình huống khác principle đúng (cross-project)
+- `related[]` (optional): ids của atoms cùng root-cause family — edge ngang, atom nào cũng đúng độc lập
+- `supersedes[]` (optional): ids của atoms atom này thay thế — atom cũ giữ lại làm history, entry mới là truth hiện hành
+- `source` (optional): provenance `{commit?, spec?, date?}` — atom biết nó sinh ra từ đâu; metadata tham chiếu, không phải code dep
 - **KHÔNG có `files[]`** — không gắn file path (portability)
 - **Knowledge** thêm `source` ở topic level (không per-rule)
 
@@ -156,7 +162,17 @@ Self-contained trong skill folder → portable, mang đi project khác.
 
 Ask: "What is the underlying principle that caused this bug?"
 
-### Step 2: Create experience atom
+### Step 2: Dedupe/link trước khi tạo
+
+Grep `index.json` theo tags của atom sắp tạo → đọc atoms trùng chủ đề:
+- Cùng principle, case mới → **merge** case vào atom cũ, không tạo atom mới
+- Principle đúng hơn/sai lệch → tạo atom mới với `supersedes: [old-id]`
+- Cùng root-cause family, khác surface → tạo atom mới với `related: [old-id]`
+- Không liên quan → tạo mới sạch
+
+Điền `source` khi biết: commit hash fix, spec path, ngày — atom có provenance đáng tin hơn atom trôi nổi.
+
+### Step 3: Create experience atom
 
 Create `experience/<id>.json` (15-25 dòng):
 
@@ -179,11 +195,11 @@ Create `experience/<id>.json` (15-25 dòng):
 }
 ```
 
-### Step 3: Update index.json
+### Step 4: Update index.json
 
 Append entry vào `index.json` `principles[]` with `type: "experience"` (code lessons) hoặc `type: "process"` + file trong `process/` (pipeline lessons).
 
-### Step 4: Validate
+### Step 5: Validate
 
 ```bash
 node scripts/validate.cjs

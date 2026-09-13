@@ -161,6 +161,43 @@ function validateAtomDir(dir, indexIds, label) {
 const expIds = validateAtomDir(EXPERIENCE_DIR, indexExperienceIds, 'experience');
 const procIds = validateAtomDir(PROCESS_DIR, indexProcessIds, 'process');
 
+// 3b. Validate graph fields (related/supersedes edges + source provenance)
+const allAtomIds = new Set([...expIds, ...procIds]);
+
+function validateEdges(dir, label) {
+  if (!fs.existsSync(dir)) return;
+  for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
+    let atom;
+    try {
+      atom = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+    } catch { continue; }
+
+    for (const field of ['related', 'supersedes']) {
+      if (field in atom) {
+        if (!Array.isArray(atom[field])) {
+          fail(`${file}: "${field}" must be an array of atom ids`);
+          continue;
+        }
+        for (const ref of atom[field]) {
+          if (!allAtomIds.has(ref)) fail(`${file}: ${field} references missing atom "${ref}"`);
+        }
+      }
+    }
+
+    if ('source' in atom) {
+      const s = atom.source;
+      const ok = s && typeof s === 'object' && !Array.isArray(s)
+        && Object.keys(s).length > 0
+        && Object.keys(s).every(k => ['commit', 'spec', 'date'].includes(k))
+        && Object.values(s).every(v => typeof v === 'string');
+      if (!ok) fail(`${file}: "source" must be an object with only commit/spec/date string fields`);
+    }
+  }
+}
+
+validateEdges(EXPERIENCE_DIR, 'experience');
+validateEdges(PROCESS_DIR, 'process');
+
 // 4. Check index entries have files
 for (const topic of indexKnowledgeTopics) {
   if (!fileKnowledgeTopics.has(topic)) {
