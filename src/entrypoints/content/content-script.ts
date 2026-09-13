@@ -33,7 +33,7 @@ import {
   sendManagerCloseToChild,
 } from '@/features/subtitle/logic/iframeManagerBridgeHost';
 import { HostManagerSheet } from '@/features/subtitle/ui/HostManagerSheet';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { hostManagerSheetShadowCss } from '@/features/subtitle/ui/hostManagerSheetShadowCss';
 import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/logic/iframeManagerBridgeTypes';

@@ -15,7 +15,7 @@ import { PlayerModeLayer } from './PlayerModeLayer';
 import { SubtitlePanel } from './SubtitlePanel';
 import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
-import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';

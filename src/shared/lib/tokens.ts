@@ -10,9 +10,9 @@ import {
   generateHoverColor,
   generateShade,
   generateTint,
-} from '@/features/theme/logic/colorGenerator';
+} from '@/shared/lib/colorGenerator';
 import { hexToRgb } from '@/shared/lib/contrast';
-import { pickPrimaryForeground } from '@/features/theme/logic/contrastValidator';
+import { pickPrimaryForeground } from '@/shared/lib/contrastValidator';
 import type { CoreColorTokens, PresetName, ResolvedMode } from '@/entities/theme/types';
 
 /** Map of CSS custom-property name (incl. leading --) to value. */

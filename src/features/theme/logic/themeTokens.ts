@@ -16,8 +16,8 @@
 
 import { onStorageChanged, removeOnStorageChangedListener, getStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
-import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
-import { DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
+import { DEFAULT_THEME_CONFIG } from './themeConfig';
+import { DEFAULT_THEME_MODE } from './themeStorage';
 import {
   buildColorTokenCSS,
   formatComponentTokens,

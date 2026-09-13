@@ -57,7 +57,7 @@ jest.mock('@/shared/lib/storage/settingsStore', () => ({
   saveSettings: jest.fn(),
 }));
 
-jest.mock('@/shared/lib/themeTokens', () => ({
+jest.mock('@/features/theme/logic/themeTokens', () => ({
   injectThemeTokens: jest.fn(),
 }));
 

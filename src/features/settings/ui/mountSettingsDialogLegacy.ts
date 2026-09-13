@@ -8,7 +8,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { SettingsDialog } from './SettingsDialog';
-import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
+import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/features/theme/logic/themeTokens';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
