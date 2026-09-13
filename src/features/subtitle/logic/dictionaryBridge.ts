@@ -1,14 +1,7 @@
-// dictionaryBridge — the port subtitle uses to talk to the web-text
-// dictionary controller. Structural interface: the real
-// WebTextDictionaryController (features/dictionaryPopup) satisfies it without
-// subtitle importing dictionaryPopup back (dependency arrow:
-// dictionaryPopup → subtitle).
-
 import type { LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { CardCreatorOpenContext } from '@/features/cardCreator/types';
 
-/** Minimal cue range used for sentence audio capture. */
 export interface DictionaryCueRange {
   readonly index?: number;
   readonly start: number;

@@ -1,7 +1,3 @@
-// Card Creator entity types.
-//
-// Module boundary: entities/types only — no logic, no storage deps.
-
 /** One item in the Send-to-Card review queue (I+N flow from the subtitle
  *  cluster): the target word + its pre-formatted definitions + word status.
  *  Media (screenshot + sentence audio) is shared across all items — captured

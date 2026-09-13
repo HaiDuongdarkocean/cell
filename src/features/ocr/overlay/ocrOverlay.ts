@@ -174,8 +174,6 @@ export class OcrOverlay {
   }
 }
 
-/** Structural port for the lookup trigger OCR hitboxes wire into — the real
- *  SubtitleTriggerController (features/dictionaryPopup) satisfies it. */
 export interface OcrLookupTrigger {
   attach(tokenSpans: readonly HTMLSpanElement[], sentence: string, langCode: string): void;
 }

@@ -1,8 +1,3 @@
-// panelBridge — the port dictionaryPopup uses to talk to the host panel
-// (ADR-065 universal panel). Structural interface: the real
-// UniversalPanelMountController satisfies it without dictionaryPopup
-// importing universalPanel (dependency arrow: universalPanel → dictionaryPopup).
-
 import type { DictionaryPanelPrefill } from '@/entities/dictionary';
 
 export type PanelTab = 'dictionary' | 'settings' | 'studyModes';
