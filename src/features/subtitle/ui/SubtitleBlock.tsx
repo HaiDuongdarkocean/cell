@@ -134,10 +134,12 @@ function SubtitleBlockInner({
     ? nativeStatusText !== null
     : !nativeCue && nativeStatusText !== null;
 
-  // Auto-clear "loaded" after 3s — the notice is a confirmation, not a cue
-  // replacement, so cue text takes over once the window expires.
+  // Auto-clear timed notices ("loaded", "none") after 3s — the notice is a
+  // confirmation, not a cue replacement, so cue text takes over once the
+  // window expires.
   useEffect(() => {
-    if (storeTargetLoadStatus.state !== 'loaded') return;
+    const state = storeTargetLoadStatus.state;
+    if (state !== 'loaded' && state !== 'none') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'idle' });
     }, 3000);
@@ -145,14 +147,15 @@ function SubtitleBlockInner({
   }, [storeTargetLoadStatus.state]);
 
   useEffect(() => {
-    if (storeNativeLoadStatus.state !== 'loaded') return;
+    const state = storeNativeLoadStatus.state;
+    if (state !== 'loaded' && state !== 'none') return;
     const timer = setTimeout(() => {
       useCuesStore.getState().setLoadStatus('native', { state: 'idle' });
     }, 3000);
     return () => clearTimeout(timer);
   }, [storeNativeLoadStatus.state]);
 
-  // Auto-clear "error" after 10s. 'none' persists (Case 70) until SPA nav/user action.
+  // Auto-clear "error" after 10s.
   useEffect(() => {
     if (storeTargetLoadStatus.state !== 'error') return;
     const timer = setTimeout(() => {

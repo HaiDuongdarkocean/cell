@@ -208,7 +208,7 @@ describe('SubtitleBlock', () => {
     expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
   });
 
-  it('does NOT auto-clear "none" status (persists until SPA nav/user action)', () => {
+  it('auto-clears "none" status after 3 seconds like other load notices', () => {
     jest.useFakeTimers();
     act(() => {
       useCuesStore.getState().setLoadStatus('target', { state: 'none' });
@@ -216,7 +216,8 @@ describe('SubtitleBlock', () => {
     render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
     expect(screen.getByText('No subtitles found on this page')).toBeInTheDocument();
 
-    act(() => { jest.advanceTimersByTime(30000); });
-    expect(screen.getByText('No subtitles found on this page')).toBeInTheDocument();
+    act(() => { jest.advanceTimersByTime(3000); });
+    expect(screen.queryByText('No subtitles found on this page')).not.toBeInTheDocument();
+    expect(useCuesStore.getState().targetLoadStatus.state).toBe('idle');
   });
 });
