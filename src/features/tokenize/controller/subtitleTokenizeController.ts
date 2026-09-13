@@ -1,12 +1,12 @@
 import type { SrtCue } from '@/entities/media';
 import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/features/tokenize/types';
-import type { WordStatus } from '@/features/dictionaryPopup/types';
+import type { WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
-import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
+import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 

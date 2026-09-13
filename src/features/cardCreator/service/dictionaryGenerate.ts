@@ -21,14 +21,14 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { DEFAULT_PRONUNCIATION_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import { PronunciationAudioOrchestrator } from '@/features/pronunciation/services/pronunciationAudioOrchestrator';
-import { formatDefinitions } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
 import type { MessageResponse } from '@/entities/message/types';
 import type {
   FetchImagesResponse,
   LookupRequest,
   LookupResult,
   TtsFetchAudioResponse,
-} from '@/features/dictionaryPopup/types';
+} from '@/entities/dictionary';
 import type { CardCreatorPrefill } from '../types';
 
 const LOOKUP_TIMEOUT_MS = 15_000;

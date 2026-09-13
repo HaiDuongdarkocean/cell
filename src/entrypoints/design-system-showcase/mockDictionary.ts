@@ -1,4 +1,4 @@
-import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/features/dictionaryPopup/types';
+import type { AudioItem, ImageItem, LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import type { MessageResponse } from '@/entities/message';
 import type { ResourceInfo, ImportResult } from '@/entities/dictionary';
 import { MESSAGE_TYPES } from '@/shared/config/messages';

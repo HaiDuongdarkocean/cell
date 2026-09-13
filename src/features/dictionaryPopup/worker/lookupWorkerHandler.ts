@@ -15,8 +15,8 @@ import type {
   WorkerLookupResultMessage,
   WorkerReadyMessage,
   WorkerRequestMessage,
-} from '../types';
-import type { LookupResult, DefinitionEntry } from '../types';
+} from '@/entities/dictionary';
+import type { LookupResult, DefinitionEntry } from '@/entities/dictionary';
 import { matchPhrase, tokenizeSentence, comparePhraseMatches } from '@/features/dictionary/logic/phraseMatcher';
 import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
 import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
@@ -24,7 +24,7 @@ import {
   loadPhraseIndexBlob,
   type ResidentPhraseIndex,
 } from './phraseIndexLoader';
-import { LruCache } from '../logic/lruCache';
+import { LruCache } from '@/shared/lib/lruCache';
 import { sortResidentIndexesByPriority } from './resourcePriority';
 
 /** Hard cap for the definitions LRU (spec §9.5: exactly 10k live entries). */

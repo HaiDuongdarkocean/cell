@@ -2,7 +2,7 @@ import {
   PronunciationAudioOrchestrator,
   type PronunciationAudioProvider,
 } from './pronunciationAudioOrchestrator';
-import type { AudioItem } from '@/features/dictionaryPopup/types';
+import type { AudioItem } from '@/entities/dictionary';
 import type { PronunciationSettings } from '@/entities/settings/types';
 
 import type { AudioEngineKind } from '../types';

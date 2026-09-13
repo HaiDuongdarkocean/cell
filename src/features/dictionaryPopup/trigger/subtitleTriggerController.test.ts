@@ -10,7 +10,7 @@ import {
   nextRequestId,
   HOVER_DEBOUNCE_MS,
 } from './subtitleTriggerController';
-import type { LookupRequest, TriggerMode } from '../types';
+import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 
 // jsdom is available via jest-environment-jsdom (default for unit project).
 

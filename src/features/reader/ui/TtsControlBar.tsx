@@ -3,7 +3,7 @@ import { Button } from '@/shared/ui';
 import {
   createTtsEngine,
   type TtsEngine,
-} from '@/features/dictionaryPopup/services/ttsEngineService';
+} from '@/features/tts/services/ttsEngineService';
 import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { getSentenceText } from '@/features/reader/logic/sentenceText';
 import styles from './TtsControlBar.module.css';

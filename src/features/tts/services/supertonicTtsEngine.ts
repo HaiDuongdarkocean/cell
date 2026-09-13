@@ -7,7 +7,7 @@
 
 import { createTtsAudioQueue, type TtsAudioQueue } from './ttsQueue';
 import { synthesizeSupertonic } from './supertonicInference';
-import type { TtsEngine, TtsSpeakOptions, TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
+import type { TtsEngine, TtsSpeakOptions, TtsVoiceInfo } from '@/features/tts/services/ttsEngineService';
 
 const DEFAULT_VOICE: TtsVoiceInfo = {
   voiceName: 'supertonic-v3-en',

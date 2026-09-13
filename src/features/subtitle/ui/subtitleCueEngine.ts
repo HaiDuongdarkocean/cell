@@ -9,8 +9,8 @@ import {
 } from '@/shared/config/config';
 import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle/events';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
-import { seekVideo } from './netflixPlayback';
-import type { TriggerMode } from '@/features/dictionaryPopup/types';
+import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
+import type { TriggerMode } from '@/entities/dictionary';
 
 export interface SubtitleCueEngineUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -39,7 +39,7 @@ export interface SubtitleCueEngineCallbacks {
 
 export interface SubtitleCueEngineDictionaryOptions {
   triggerMode: TriggerMode;
-  onLookup: (request: import('@/features/dictionaryPopup/types').LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void;
+  onLookup: (request: import('@/entities/dictionary').LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void;
   onCancel: (requestId: string) => void;
   onClear?: () => void;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import type { LookupResult } from '../types';
+import type { LookupResult } from '@/entities/dictionary';
 import { useDictionaryToolbar } from './useDictionaryToolbar';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';

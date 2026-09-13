@@ -1,4 +1,4 @@
-import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill } from '@/entities/dictionary';
 
 /**
  * Build a card-creator prefill from a candidate and the user's selections.

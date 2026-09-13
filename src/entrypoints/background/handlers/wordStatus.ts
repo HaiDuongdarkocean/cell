@@ -17,8 +17,8 @@ import {
   getWordStatus,
   getWordStatuses,
   setWordStatus,
-} from '@/features/dictionaryPopup/services/wordStatusStore';
-import type { WordStatus } from '@/features/dictionaryPopup/types';
+} from '@/features/dictionary/services/wordStatusStore';
+import type { WordStatus } from '@/entities/dictionary';
 
 /** Register word status GET/SET handlers. */
 export function registerWordStatusHandlers(ctx: BackgroundContext): void {

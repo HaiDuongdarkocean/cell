@@ -14,7 +14,7 @@ import type { SrtCue } from '@/entities/media';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import type { SubtitleBlockSettings, SubtitleApiKey } from '@/entities/settings';
 import type { SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
-import type { TriggerMode } from '@/features/dictionaryPopup/types';
+import type { TriggerMode } from '@/entities/dictionary';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 
 jest.mock('./mountSubtitle', () => ({ mountSubtitle: jest.fn() }));

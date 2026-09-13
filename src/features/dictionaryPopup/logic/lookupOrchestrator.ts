@@ -19,7 +19,7 @@
 // worker). The worker handles phrase matching + LRU; this orchestrator
 // handles dictionary DB queries + result assembly.
 
-import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource } from '../types';
+import type { LookupRequest, LookupResult, DefinitionEntry, MatchSource } from '@/entities/dictionary';
 import type { Token, TermProbe, LanguagePlugin } from '../plugins/languagePlugin';
 import { pluginRegistry } from '../plugins/pluginRegistry';
 import {
@@ -28,7 +28,7 @@ import {
 } from '@/features/dictionary/repositories/dictionaryRepository';
 import { findFrequencyByTerm } from '@/features/dictionary/repositories/frequencyRepository';
 import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
-import { getWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
+import { getWordStatus } from '@/features/dictionary/services/wordStatusStore';
 import {
   getAllPhraseIndexes,
 } from '@/features/dictionary/repositories/phraseIndexRepository';
@@ -53,7 +53,7 @@ import type {
   MatchTraceData,
   CandidateMatchTrace,
   RankedCandidateTrace,
-} from '../log/lookupLogTypes';
+} from '@/features/dictionary/logic/lookupLogTypes';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import { pickBestFrequencyEntry } from '@/shared/lib/frequencyBand';
 import type { Settings } from '@/entities/settings';

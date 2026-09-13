@@ -5,7 +5,7 @@
  * and pass it to the shared action functions in cardActions.ts / generateNativeAction.ts.
  * This is the SSOT contract between the action layer and its consumers.
  */
-import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import type { DictionaryBridge } from '../logic/dictionaryBridge';
 import type { SrtCue, Settings } from '@/entities/media';
 import type { ToastVariant } from '@/features/subtitle/ui/SubtitleToast';
 
@@ -19,7 +19,7 @@ export interface SubtitleActionContext {
   /** Container element for toast positioning (shadow host or overlay parent). */
   readonly container: HTMLElement;
   /** Web text dictionary controller — owns Card Creator dialog. Undefined if not configured. */
-  readonly webTextCtrl: WebTextDictionaryController | undefined;
+   readonly webTextCtrl: DictionaryBridge | undefined;
   /** Get current target language cues. */
   readonly getTargetCues: () => readonly SrtCue[];
   /** Get current native language cues. */

@@ -600,7 +600,7 @@ export interface CardCreatorResponseData {
 //
 // These ride the MV3 fan-out bus (payload always carries `tabId` on responses).
 // The worker dict-match path does NOT use these — it uses the dedicated
-// requestId bridge defined in `@/features/dictionaryPopup/types.ts`.
+// requestId bridge defined in `@/entities/dictionary/popupTypes.ts`.
 
 /** Content → background: fetch community audio for a term. */
 export interface FetchCommunityAudioPayload {
@@ -697,7 +697,7 @@ export interface WordStatusSetPayload {
 /** Content → background: Quick Add to Anki. */
 export interface QuickAddPayload {
   readonly tabId?: number;
-  // Payload shape defined in @/features/dictionaryPopup/types.ts QuickAddPayload;
+  // Payload shape defined in @/entities/dictionary/popupTypes.ts QuickAddPayload;
   // kept as unknown at the MV3 boundary — consumer validates via QuickAddPayloadSchema.
   readonly payload: unknown;
 }

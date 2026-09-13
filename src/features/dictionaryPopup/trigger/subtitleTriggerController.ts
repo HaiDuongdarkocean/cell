@@ -14,10 +14,10 @@
 // This controller is framework-agnostic (no React) — it operates on the
 // subtitle overlay's text span DOM directly, same as subtitleUI.ts.
 
-import type { LookupRequest, TriggerMode } from '../types';
+import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 import type { Token } from '../plugins/languagePlugin';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
-import { segmentFMM } from '../plugins/chinesePlugin';
+import { segmentFMM } from '@/features/dictionary/logic/chineseSegmenter';
 import { scriptRunSegmenter } from '@/features/ocr/language/scriptRunSegmenter';
 
 /** Hover debounce: only lookup after the cursor has stayed on the token for this long. */

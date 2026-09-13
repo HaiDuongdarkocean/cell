@@ -20,7 +20,7 @@ import type {
   ExternalDictLink,
   FetchImagesResponse,
   TtsFetchAudioResponse,
-} from '../types';
+} from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {

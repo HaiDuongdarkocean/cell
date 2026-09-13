@@ -24,7 +24,7 @@ import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompile
 import {
   englishLookupCandidates,
   englishLemma as sharedEnglishLemma,
-} from '../logic/englishLemma';
+} from '@/features/dictionary/logic/englishLemma';
 
 /** English accents for audio priority (spec §4.6.3). */
 export const ENGLISH_ACCENTS: readonly Accent[] = [

@@ -8,21 +8,9 @@
  * (`<img src="...">` for images, `[sound:...]` for audio).
  */
 
-/** Kind of media — determines the Anki field reference format. */
-export type MediaKind = 'image' | 'audio';
+import type { MediaFile, MediaKind } from '@/entities/media';
 
-/** In-memory media file ready for upload to AnkiConnect. */
-export interface MediaFile {
-  readonly kind: MediaKind;
-  /** Filename (without path). Will be stored in Anki's collection.media. */
-  readonly filename: string;
-  /** MIME type, e.g. 'image/png', 'audio/webm'. */
-  readonly mimeType: string;
-  /** Raw file bytes. */
-  readonly data: ArrayBuffer;
-  /** Original source URL, when this file was fetched from a prefill URL. */
-  readonly sourceUrl?: string;
-}
+export type { MediaFile, MediaKind };
 
 /** Convert ArrayBuffer to base64 string (no data: prefix). */
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {

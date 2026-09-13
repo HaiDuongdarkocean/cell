@@ -22,7 +22,7 @@ import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleToken
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import { installIframePlayerModeBridge } from '@/features/subtitle/logic/iframePlayerModeBridge';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import type { LookupRequest } from '@/entities/dictionary';
 import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';

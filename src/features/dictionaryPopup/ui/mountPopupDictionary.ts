@@ -5,7 +5,7 @@ import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { PopupDictionary } from './PopupDictionary';
 import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
-import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/features/dictionaryPopup/types';
+import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/entities/dictionary';
 
 
 const POPUP_Z_INDEX = 'var(--z-overlay-top)';

@@ -4,7 +4,7 @@
 // ADR-030: seek routes through seekVideo to avoid Netflix M7375.
 
 import { findCurrentLine } from '../logic/subtitleSync';
-import { seekVideo } from './netflixPlayback';
+import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
 import type { SrtCue } from '@/entities/media';
 
 /** Result of looking up the active cue for the current playback time. */

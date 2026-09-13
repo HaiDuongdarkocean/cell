@@ -90,3 +90,19 @@ export interface LookupRequest {
   /** true khi user bôi đen text: bỏ qua plugin phraseMatch, dùng term verbatim + lemma only. */
   readonly fallback?: boolean;
 }
+
+/** Quality of a phrase match (ADR-037 §9). */
+export type PhraseMatchQuality =
+  | 'fixed'
+  | 'inflected'
+  | 'possessive-template'
+  | 'slot-template';
+
+/** A phrase match result. */
+export interface PhraseMatch {
+  readonly dictionaryTerm: string;
+  readonly surface: string;
+  readonly span: { readonly start: number; readonly end: number };
+  readonly quality: PhraseMatchQuality;
+  readonly sourceResourceId: number;
+}

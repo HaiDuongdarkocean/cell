@@ -7,7 +7,7 @@
 // isDevMode trước khi import hàm save). Export/clear qua DevTools console.
 
 import { isDevMode } from '@/shared/lib/env/devMode';
-import type { LookupLogEntry } from './lookupLogTypes';
+import type { LookupLogEntry } from '@/features/dictionary/logic/lookupLogTypes';
 
 const STORAGE_KEY = 'lookupLog';
 const MAX_ENTRIES = 500;

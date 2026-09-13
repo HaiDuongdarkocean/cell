@@ -13,7 +13,7 @@ import {
   createLookupWorkerState,
   handleWorkerMessage,
 } from './lookupWorkerHandler';
-import type { WorkerRequestMessage, WorkerReadyMessage } from '../types';
+import type { WorkerRequestMessage, WorkerReadyMessage } from '@/entities/dictionary';
 
 const state = createLookupWorkerState();
 

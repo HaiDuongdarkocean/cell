@@ -16,7 +16,7 @@ import {
 import type { PlaybackAction } from '@/features/studyModes/lib/studyModePlaybackController';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
-import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
+import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import { cuesToSrt } from '@/features/subtitle/logic/cuesToSrt';

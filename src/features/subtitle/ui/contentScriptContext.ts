@@ -1,7 +1,7 @@
 import type { ReactSubtitleController } from './reactSubtitleController';
 import type { SubtitleSyncController } from './subtitleSyncController';
 import type { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import type { DictionaryBridge } from '../logic/dictionaryBridge';
 import type { ToastOptions } from './subtitleUI';
 import type { CardCreatorAction } from './subtitleCueEngine';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
@@ -11,7 +11,7 @@ export interface ContentScriptContext {
   readonly container: HTMLElement;
   readonly blockController: ReactSubtitleController;
   readonly syncController: SubtitleSyncController;
-  readonly sharedWebTextCtrl: WebTextDictionaryController | undefined;
+   readonly sharedWebTextCtrl: DictionaryBridge | undefined;
   readonly debouncedToast: (message: string, container: HTMLElement, options?: ToastOptions) => void;
 
   getOffsetController(): ReactSubtitleController | null;

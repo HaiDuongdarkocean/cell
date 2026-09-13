@@ -11,7 +11,7 @@
 // intercepts the text update when popup is enabled.
 
 import { wrapTokenSpans, detectLangCode, SubtitleTriggerController } from '../trigger/subtitleTriggerController';
-import type { LookupRequest, TriggerMode } from '../types';
+import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 
 export interface TokenWrapState {
   enabled: boolean;

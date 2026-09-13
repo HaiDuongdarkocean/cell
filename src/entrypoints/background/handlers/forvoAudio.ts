@@ -9,7 +9,7 @@ import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
 } from '@/entities/message';
-import type { FetchCommunityAudioResponse } from '@/features/dictionaryPopup/types';
+import type { FetchCommunityAudioResponse } from '@/entities/dictionary';
 import { FetchCommunityAudioPayloadSchema } from '@/entities/message/dictionarySchemas';
 import { fetchScoredCommunityAudioItems } from '@/features/dictionaryPopup/services/communityAudioService';
 

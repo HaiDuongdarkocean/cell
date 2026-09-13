@@ -5,7 +5,7 @@ import { AudioPanel } from './AudioPanel';
 
 // SourceDetailPanel → TtsVoiceManagerPanel loads voices via createTtsEngine()
 // in an effect; jsdom has neither chrome.tts nor speechSynthesis, so stub it.
-jest.mock('@/features/dictionaryPopup/services/ttsEngineService', () => ({
+jest.mock('@/features/tts/services/ttsEngineService', () => ({
   createTtsEngine: () => ({
     getVoices: () => Promise.resolve([]),
     speak: () => Promise.resolve(),

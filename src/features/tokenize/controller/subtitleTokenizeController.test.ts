@@ -5,12 +5,12 @@ const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, term
 const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 
-jest.mock('@/features/dictionaryPopup/services/wordStatusClient', () => ({
+jest.mock('@/features/dictionary/services/wordStatusClient', () => ({
   getWordStatuses,
   setWordStatus,
 }));
 
-jest.mock('@/features/dictionaryPopup/services/frequencyClient', () => ({
+jest.mock('@/features/dictionary/services/frequencyClient', () => ({
   getFrequencyEntries,
 }));
 

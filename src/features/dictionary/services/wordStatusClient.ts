@@ -8,7 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import type { MessageResponse } from '@/entities/message';
-import type { WordStatus } from '../types';
+import type { WordStatus } from '@/entities/dictionary';
 
 /**
  * Get statuses for many terms from the background word-status store.

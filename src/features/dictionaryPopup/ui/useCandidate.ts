@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { nextStatus } from '../services/wordStatusStore';
-import { setWordStatus } from '../services/wordStatusClient';
+import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
+import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
@@ -16,7 +16,7 @@ import type {
   ExternalDictLink,
   PopupCardCreatorPrefill,
   PopupSelectionSnapshot,
-} from '../types';
+} from '@/entities/dictionary';
 import type { DefinitionSelection } from '../logic/definitionSelection';
 
 export interface UseCandidateOptions {

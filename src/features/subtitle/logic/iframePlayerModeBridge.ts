@@ -1,6 +1,9 @@
 import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+
+export { isChildFrame };
 
 // Iframe Player Mode bridge — top-frame coordinator.
 //
@@ -39,16 +42,6 @@ interface TopFrameState {
 }
 
 let topState: TopFrameState | null = null;
-
-/** True when the current frame is a child iframe (not the top frame). */
-export function isChildFrame(): boolean {
-  try {
-    return window.self !== window.top;
-  } catch {
-    // Cross-origin window.top access throws — definitely a child frame.
-    return true;
-  }
-}
 
 /** Find the iframe element in the top document whose contentWindow posted. */
 function findIframeBySource(src: string): HTMLIFrameElement | null {

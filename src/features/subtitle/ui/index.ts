@@ -14,7 +14,7 @@ export type { ManagerState, OffsetState, SubtitlePanelsRef, SubtitlePanelsProps,
 export { SubtitleToast } from './SubtitleToast';
 export { SubtitleHint } from './SubtitleHint';
 export * from './subtitlePanelModel';
-export * from './netflixPlayback';
+export * from '@/shared/lib/dom/netflixPlayback';
 export * from './subtitleControllerHelpers';
 export * from './shortcutActionDispatcher';
 export { init as initContentScriptController } from './contentScriptController';

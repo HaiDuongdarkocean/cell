@@ -1,6 +1,6 @@
 import { extractWordAtOffset, resolveWordAtPoint } from '../sentence/sentenceModule';
 import { detectLangCode } from '../trigger/subtitleTriggerController';
-import type { LookupRequest } from '../types';
+import type { LookupRequest } from '@/entities/dictionary';
 
 export interface ResolvedWord {
   readonly request: LookupRequest;

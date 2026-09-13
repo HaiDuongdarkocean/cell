@@ -3,7 +3,7 @@ import {
   parseForvoHtml,
   scoreAudioByAccent,
 } from './forvoAudioService';
-import type { AudioItem } from '../types';
+import type { AudioItem } from '@/entities/dictionary';
 
 /** Minimal Forvo HTML with one UK + one US play button. */
 const SAMPLE_HTML = `

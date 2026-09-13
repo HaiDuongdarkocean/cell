@@ -21,7 +21,7 @@ import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncContr
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
-import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import type { LookupRequest } from '@/entities/dictionary';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import type { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
@@ -35,14 +35,14 @@ import { createProcessImportedFiles, wireContainerDragImport } from './contentSc
 import { createSubtitleSelectionHandlers } from './contentScriptSelection';
 import { createContentScriptLifecycleHandlers } from './contentScriptLifecycle';
 
-import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import type { DictionaryBridge } from '../logic/dictionaryBridge';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
 import type { SubtitlePanelItem } from '@/features/subtitle';
 // === Subtitle Overlay Integration ===
 
-export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryController): () => void {
+export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).

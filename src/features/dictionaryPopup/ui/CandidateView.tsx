@@ -9,7 +9,7 @@ import { usePronunciation } from '@/features/pronunciation/hooks/usePronunciatio
 import { useAudioItemUrl } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import { PronunciationPanel } from '@/features/pronunciation/ui/PronunciationPanel';
 import type { AudioEngineKind } from '@/features/pronunciation/types';
-import { nextStatus } from '../services/wordStatusStore';
+import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { t } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
 import { AudioPanel } from './AudioPanel';
@@ -20,7 +20,7 @@ import { DictionaryToolbar } from './DictionaryToolbar';
 import checkStyles from './DictionaryCheckable.module.css';
 import panelStyles from './DictionaryPanelView.module.css';
 import styles from './CandidateView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab, AudioItem, AudioSourceKind, PopupSelectionSnapshot } from '@/entities/dictionary';
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([

@@ -12,7 +12,7 @@
  * (`AF_initDataCallback` blocks) instead of regexing raw hrefs.
  */
 
-import type { ImageItem } from '../types';
+import type { ImageItem } from '@/entities/dictionary';
 
 /** Default cap on returned images when caller omits maxResults. */
 export const DEFAULT_MAX_IMAGE_RESULTS = 8;

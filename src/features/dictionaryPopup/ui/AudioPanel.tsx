@@ -6,7 +6,7 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import checkStyles from './DictionaryCheckable.module.css';
 import styles from './AudioPanel.module.css';
-import type { AudioItem } from '../types';
+import type { AudioItem } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 
 export interface AudioPanelProps {

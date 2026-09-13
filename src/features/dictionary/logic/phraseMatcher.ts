@@ -16,13 +16,16 @@
 
 import type { PhraseNode } from './phraseTemplateParser';
 import type { CompiledTemplate, PhraseIndex } from './phraseIndexCompiler';
-import { englishLemmaCandidates } from '@/features/dictionaryPopup/logic/englishLemma';
-import { serializeNodes } from '@/features/dictionaryPopup/log/serializeNodes';
+import type { PhraseMatch } from '@/entities/dictionary';
+import { englishLemmaCandidates } from './englishLemma';
+import { serializeNodes } from './serializeNodes';
 import type {
   MatchTraceData,
   CandidateMatchTrace,
   RankedCandidateTrace,
-} from '@/features/dictionaryPopup/log/lookupLogTypes';
+} from './lookupLogTypes';
+
+export type { PhraseMatch };
 
 // --- Constants (ADR §8.2) ---
 
@@ -44,13 +47,7 @@ export interface PhraseMatchRequest {
   readonly cursorOffset: number;
 }
 
-export interface PhraseMatch {
-  readonly dictionaryTerm: string;
-  readonly surface: string;
-  readonly span: { readonly start: number; readonly end: number };
-  readonly quality: 'fixed' | 'inflected' | 'possessive-template' | 'slot-template';
-  readonly sourceResourceId: number;
-}
+
 
 // --- Tokenizer ---
 

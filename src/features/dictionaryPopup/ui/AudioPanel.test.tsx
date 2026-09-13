@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { AudioPanel } from './AudioPanel';
-import type { AudioItem } from '../types';
+import type { AudioItem } from '@/entities/dictionary';
 
 function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: string, selected = false): AudioItem {
   return {

@@ -1,4 +1,4 @@
-import { LruCache } from '@/features/dictionaryPopup/logic/lruCache';
+import { LruCache } from '@/shared/lib/lruCache';
 import type { TokenBlock } from '@/features/tokenize/types';
 
 export interface TokenizeCacheOptions {

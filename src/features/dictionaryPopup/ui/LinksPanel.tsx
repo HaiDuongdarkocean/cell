@@ -1,7 +1,7 @@
 import { Icon } from '@/shared/ui/Icon';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import styles from './LinksPanel.module.css';
-import type { ExternalDictLink } from '../types';
+import type { ExternalDictLink } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 
 export interface LinksPanelProps {

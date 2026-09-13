@@ -8,7 +8,7 @@
 // Same debounce + cancellation as subtitleTriggerController.
 // Same LookupRequest contract — just different source (page DOM vs subtitle span).
 
-import type { LookupRequest, TriggerMode } from '../types';
+import type { LookupRequest, TriggerMode } from '@/entities/dictionary';
 import { detectLangCode, nextRequestId, isPointOverRange } from './subtitleTriggerController';
 import {
   extractSentenceContext,

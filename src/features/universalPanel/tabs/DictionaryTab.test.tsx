@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import type { LookupResult, PopupCardCreatorPrefill } from '@/features/dictionaryPopup/types';
+import type { LookupResult, PopupCardCreatorPrefill } from '@/entities/dictionary';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';

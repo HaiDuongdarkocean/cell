@@ -14,7 +14,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import type { TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
+import type { TtsFetchAudioResponse } from '@/entities/dictionary';
 import { TtsFetchAudioPayloadSchema } from '@/entities/message/dictionarySchemas';
 
 /** Google Translate unofficial TTS endpoint. */

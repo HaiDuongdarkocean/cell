@@ -12,7 +12,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
-import { formatDefinitions } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
 import styles from './CardCreatorPanel.module.css';
 
 export interface CardCreatorPanelProps {
