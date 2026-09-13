@@ -7,9 +7,9 @@ description: Orchestrate the full elicitation-to-final-spec pipeline — transfo
 
 ## Overview
 
-Elicitation is the bridge between a vague idea and a buildable spec. It is not one technique — it is an **orchestrated pipeline** of specialized skills that surface what the user actually wants, validate assumptions, write a first spec, review it, fix it, and deliver a final spec for human approval.
+Elicitation is the bridge between a vague idea and a buildable spec. It is not one technique — it is an **orchestrated pipeline** of specialized skills that surface what the user actually wants, validate assumptions, write a first spec, review it, fix it, and hand off a final spec the human can veto but does not have to approve.
 
-The human only needs to say **"yes"** at the confirmed 8-field frame. After that, the agent runs the spec/review/fix loop autonomously and presents the final spec.
+The human only needs to say **"yes"** at the confirmed 8-field frame. After that, the agent runs the spec/review/fix loop autonomously, presents the final spec, and proceeds to planning — the human retains veto power but approval is not a blocking gate.
 
 ## When to Use
 
@@ -223,16 +223,12 @@ Ask the user to walk through how they do the job **without the tool**.
 
 ## Step 9: Final Output
 
-**Purpose:** Present the finalized spec to the human for approval.
+**Purpose:** Hand off the finalized spec — async veto, không blocking. Spec đã qua auto-review + auto-fix nên không cần human approval tường minh; human giữ quyền veto bất cứ lúc nào trước commit.
 
 **Actions:**
-- Present `docs/specs/[topic].md`
-- Present the final review summary (verdict, residual risks, accepted trade-offs)
-- Ask the human one final approval question:
-  ```
-  Bản spec [topic] đã sẵn sàng. Anh yêu APPROVE để chuyển sang implement,
-  hay muốn chỉnh sửa thêm?
-  ```
+- Present `docs/specs/[topic].md` + final review summary (verdict, residual risks, accepted trade-offs)
+- State the handoff: spec passed review → proceeding to `/planning-and-task-breakdown` trừ khi Anh yêu phản đối
+- Proceed without waiting for a reply
 
 **Deliverable:**
 ```markdown
@@ -257,7 +253,7 @@ Ask the user to walk through how they do the job **without the tool**.
 - [ ] `docs/specs/[topic].md` drafted by `/spec-driven-development` Autonomous Mode
 - [ ] `/spec-review-stakeholder` ran at least once
 - [ ] Auto-fix loop completed (≤ 3 rounds)
-- [ ] Final spec presented to human for approval
+- [ ] Final spec + review summary presented; proceeded to planning unless human objected
 
 ## Anti-patterns
 

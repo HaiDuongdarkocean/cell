@@ -322,7 +322,7 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 ┌──────────────────────────────────────────────────────────────┐
 │  CON NGƯỜI (business gate — không delegate)                  │
 │                                                               │
-│  Idea → BA elicitation → feature spec approval → UAT sign-off│
+│  Idea → BA elicitation → spec auto-review pass → UAT sign-off│
 │         (intent)        (critical decision)     (final call)  │
 └─────────────┬────────────────────────────────────┬───────────┘
               │                                    │
@@ -390,7 +390,7 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 | **Eval gate mỗi change** | CI `e2e` job (full Playwright) + full `test:unit`/`lint` non-blocking | Full suite non-blocking vì còn nợ test OCR/dictionary — siết blocking khi green | ⚠️ Soft gate |
 | **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
 | **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | Atom đầu tiên: `process-generated-catalog-drift` | ✅ Đã có (2026-09-13) |
-| **Stakeholder sign-off** | `elicitation` step 9 (pre-impl) + `shipping-and-launch` post-launch review | Đã cover cả hai đầu | ✅ Đã có |
+| **Stakeholder sign-off** | `elicitation` step 9 = async veto (spec pass auto-review → proceed, human veto trước commit) + `shipping-and-launch` post-launch review | Blocking gate chỉ còn 2: intent frame + business outcome | ✅ Đã có — spec gate giảm từ blocking approval xuống async veto (2026-09-13) |
 
 Cell implement **~85%** nguyên lý agentic SDLC (10/12 solid sau batch 2026-09-13, 2 soft gate). Việc còn lại là **siết các soft gate thành blocking** khi nợ test sạch và quan sát adoption thực tế.
 
