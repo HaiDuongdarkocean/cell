@@ -16,6 +16,14 @@
 // no-ops — caller's intent is lost for that one call. Acceptable because
 // user-initiated seek/play/pause happens after player load.
 
+/**
+ * Seek landing tolerance (~2 frames @24fps). Browsers resolve a seek to the
+ * frame at or just before the requested time, so seeking to cue.start can
+ * land at start - a few ms — before the cue begins. Cue-boundary seeks add
+ * this margin so the landing position stays inside the intended cue.
+ */
+export const SEEK_LANDING_EPS_MS = 80;
+
 /** True on www.netflix.com (where netflix-main-world.iife.ts is injected). */
 export function isNetflixPage(): boolean {
   return location.hostname.includes('netflix.com');
@@ -72,7 +80,7 @@ export function pauseVideo(video: HTMLVideoElement): void {
  */
 export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offsetMs: number = 0): void {
   // ADR-030: route through seekVideo to avoid Netflix M7375.
-  seekVideo(video, (cue.start - offsetMs) / 1000);
+  seekVideo(video, (cue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
 }
 
 /**

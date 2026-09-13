@@ -249,6 +249,42 @@
 .btn--lg { height: var(--button-height-lg); padding: var(--button-padding-y-lg) var(--button-padding-x-lg); font-size: var(--button-font-size-lg); }
 
 
+/* === Ripple — shared press feedback ===
+   Spans are spawned by shared/lib/dom/ripple.ts (delegated pointerdown on
+   every shadow root, plus Button's own handler for light-DOM surfaces).
+   Marker is an attribute so CSS-module :not() exclusions can target it
+   without knowing the hashed class. */
+[data-cell-ripple] {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, currentColor 30%, transparent) 0%,
+    color-mix(in srgb, currentColor 12%, transparent) 40%,
+    transparent 70%
+  );
+  transform: scale(0);
+  opacity: var(--button-ripple-start-opacity);
+  animation: cell-ripple var(--button-ripple-duration) var(--button-ripple-ease);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes cell-ripple {
+  0% {
+    transform: scale(0);
+    opacity: var(--button-ripple-start-opacity);
+  }
+  100% {
+    transform: scale(var(--button-ripple-scale));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-cell-ripple] { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .icon-btn { transition: none; animation: none; }
   .btn { transition: none; animation: none; }

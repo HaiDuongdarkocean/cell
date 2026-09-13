@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import { AppRedesigned } from './App.redesigned';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
+import { installRippleDelegation } from '@/shared/lib/dom/ripple';
+
+installRippleDelegation(document);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -25,6 +25,7 @@ export function SubtitleHint({
       role="button"
       tabIndex={0}
       aria-label={title}
+      data-cell-no-ripple
     >
       <div className={styles.dashedBox}>
         <span className={styles.title}>{title}</span>

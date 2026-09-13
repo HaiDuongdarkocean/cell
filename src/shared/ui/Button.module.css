@@ -30,7 +30,7 @@
     box-shadow var(--duration-slow) var(--ease-out);
 }
 
-.button > * {
+.button > *:not([data-cell-ripple]) {
   pointer-events: none;
   position: relative;
   z-index: calc(var(--z-base) + 1);
@@ -505,46 +505,12 @@
   }
 }
 
-/* === Ripple — wave expanding from the touch point === */
+/* === Ripple — wave expanding from the touch point ===
+   Span styles live in components.css ([data-cell-ripple]) so the same
+   element works for delegated ripples on non-Button controls. */
 
 .rippleHost {
   overflow: hidden;
-}
-
-.ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, currentColor 30%, transparent) 0%,
-    color-mix(in srgb, currentColor 12%, transparent) 40%,
-    transparent 70%
-  );
-  transform: scale(0);
-  opacity: var(--button-ripple-start-opacity);
-  animation: ripple var(--button-ripple-duration) var(--button-ripple-ease);
-  pointer-events: none;
-  z-index: var(--z-base);
-}
-
-.primary .ripple,
-.success .ripple {
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--button-fg) 28%, transparent) 0%,
-    transparent 70%
-  );
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: var(--button-ripple-start-opacity);
-  }
-  100% {
-    transform: scale(var(--button-ripple-scale));
-    opacity: 0;
-  }
 }
 
 .ripplePulsing {
@@ -563,10 +529,6 @@
 @media (prefers-reduced-motion: reduce) {
   .button {
     transition: background-color var(--duration-normal) var(--ease-out), color var(--duration-normal) var(--ease-out), border-color var(--duration-normal) var(--ease-out);
-  }
-
-  .ripple {
-    display: none;
   }
 }
 

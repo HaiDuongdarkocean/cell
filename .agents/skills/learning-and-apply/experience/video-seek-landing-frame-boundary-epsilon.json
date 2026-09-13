@@ -1,0 +1,28 @@
+{
+  "id": "video-seek-landing-frame-boundary-epsilon",
+  "title": "Seek tới cue.start phải cộng epsilon ~80ms — browser đáp seek xuống frame ≤ target, strict-boundary logic wedge vĩnh viễn",
+  "category": ["state", "testing"],
+  "tags": [
+    "video-seek",
+    "currentTime",
+    "frame-quantization",
+    "epsilon",
+    "subtitle-navigation",
+    "wedge",
+    "browser-behavior"
+  ],
+  "trigger": "Logic điều hướng cue dùng boundary chính xác của video.currentTime (seek tới cue.start rồi so 'cue nào start > now') — hoặc bất kỳ so sánh 'đã tới cue chưa' dựa trên vị trí video",
+  "principle": "HTMLMediaElement.currentTime = X resolve xuống frame tại-hoặc-trước X, KHÔNG phải X. Trên Chrome thật request 2.066s đáp 2.065999s. Mọi logic 'strict >' trên boundary (nextSentence tìm cue.start > effective) sẽ chọn lại ĐÚNG cue vừa seek tới → seek lại cùng chỗ → wedge vô hạn, nút trông như bị disable dù còn cue phía trước. Fix 2 tầng: (1) so sánh thêm epsilon ~80ms (~2 frames @24fps): `c.start > effective + EPS`; (2) seek target cộng EPS: `seek(start + EPS)` để landing nằm TRONG cue thay vì ở biên trước. Áp cho mọi cue-boundary seek: nav prev/next, repeat-current, cue-list click (seekToCue).",
+  "cases": [
+    {
+      "context": "nav-next trên StreamFlix (Chrome thật, nodriver): click 1 seek 0→2.065999 (request 2.066). Clicks 2-25 synchronous đọc currentTime=2.065999 < cue.start=2066 → `find(c.start > 2065.999)` trả lại chính cue đó → 25 lần đứng yên — đúng triệu chứng user 'bấm tới ngưỡng không bấm được nữa'. Unit test với fake video không thấy vì set currentTime là exact; phải verify browser thật mới lộ frame quantization.",
+      "bad": "const nextCue = cues.find((c) => c.start > effectiveMs);\nif (nextCue) seekVideo(video, (nextCue.start - offsetMs) / 1000);\n// landing: 2.065999 < 2066 → next press picks same cue forever",
+      "good": "const nextCue = cues.find((c) => c.start > effectiveMs + SEEK_LANDING_EPS_MS);\nif (nextCue) seekVideo(video, (nextCue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);\n// comparison skips the boundary cue AND landing stays inside target cue"
+    }
+  ],
+  "applyFor": [
+    "Cue/sentence navigation (prev/next/repeat) trên HTMLVideoElement",
+    "Mọi seek tới timestamp boundary của entity (chapter, segment, A-B loop)",
+    "Unit test fake media element pass mà browser vẫn wedge → cần verify trên Chrome thật với rapid-fire presses"
+  ]
+}

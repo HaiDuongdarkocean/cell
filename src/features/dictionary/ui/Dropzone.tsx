@@ -64,6 +64,7 @@ export function Dropzone({ label, hint, accept, disabled, onFiles }: DropzonePro
       tabIndex={0}
       aria-label={label}
       data-cell-id="dropzone"
+      data-cell-no-ripple
     >
       <p className={styles.label}>{label}</p>
       {hint && <p className={styles.hint}>{hint}</p>}

@@ -2063,6 +2063,25 @@
         "hook"
       ],
       "trigger": "Repo có generated index/catalog/registry mà không có gate regen hoặc hook tự động"
+    },
+    {
+      "type": "experience",
+      "id": "video-seek-landing-frame-boundary-epsilon",
+      "title": "Seek tới cue.start phải cộng epsilon ~80ms — browser đáp seek xuống frame ≤ target, strict-boundary logic wedge vĩnh viễn",
+      "category": [
+        "state",
+        "testing"
+      ],
+      "tags": [
+        "video-seek",
+        "currentTime",
+        "frame-quantization",
+        "epsilon",
+        "subtitle-navigation",
+        "wedge",
+        "browser-behavior"
+      ],
+      "trigger": "Logic điều hướng cue dùng boundary chính xác của video.currentTime — seek tới cue.start rồi so strict >"
     }
   ]
 }

@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
+import { installRippleDelegation } from '@/shared/lib/dom/ripple';
 import '@/shared/styles/document.css';
+
+installRippleDelegation(document);
 
 // Set initial theme before React renders to avoid flash of unstyled content.
 // Defaults mirror DEFAULT_THEME_MODE and DEFAULT_THEME_CONFIG.preset.

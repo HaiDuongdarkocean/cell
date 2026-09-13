@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Icon } from './Icon';
+import { spawnRipple } from '@/shared/lib/dom/ripple';
 import type { ICON_CATALOG } from '@/shared/icons';
 import styles from './NavItem.module.css';
 
@@ -40,24 +41,11 @@ export function NavItem({
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     rest.onPointerDown?.(e);
     if (disabled || e.defaultPrevented) return;
-
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const diameter = Math.max(rect.width, rect.height) * 1.6;
-    const radius = diameter / 2;
-    const x = e.clientX - rect.left - radius;
-    const y = e.clientY - rect.top - radius;
-    const span = btn.ownerDocument.createElement('span');
-    span.className = styles.ripple;
-    span.style.width = span.style.height = `${diameter}px`;
-    span.style.left = `${x}px`;
-    span.style.top = `${y}px`;
-    btn.appendChild(span);
-    span.addEventListener('animationend', () => span.remove(), { once: true });
+    spawnRipple(e.currentTarget, e.clientX, e.clientY);
   };
 
   return (
-    <button type="button" className={cls} disabled={disabled} title={tooltip ?? title} {...rest} onPointerDown={handlePointerDown}>
+    <button type="button" className={cls} disabled={disabled} title={tooltip ?? title} data-cell-ripple-self {...rest} onPointerDown={handlePointerDown}>
       <span className={styles.pill} aria-hidden="true" />
       {iconNode && <span className={styles.icon}>{iconNode}</span>}
       {label && <span className={styles.label}>{label}</span>}

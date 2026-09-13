@@ -9,7 +9,7 @@ import {
 } from '@/shared/config/config';
 import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle/events';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
-import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
+import { seekVideo, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
 import type { TriggerMode } from '@/entities/dictionary';
 
 export interface SubtitleCueEngineUpdate {
@@ -272,7 +272,7 @@ export class SubtitleCueEngine {
     const offsetMs = this.getOffsetMs();
     const { cues, index } = findActiveCueIndex(this.targetCues, this.nativeCues, currentMs, offsetMs);
     if (index >= 0 && cues[index]) {
-      seekVideo(this.video, (cues[index].start - offsetMs) / 1000);
+      seekVideo(this.video, (cues[index].start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
       return;
     }
     const effectiveMs = currentMs + offsetMs;
@@ -281,7 +281,7 @@ export class SubtitleCueEngine {
       if (cues[i].end <= effectiveMs) { prevIndex = i; break; }
     }
     if (prevIndex >= 0 && cues[prevIndex]) {
-      seekVideo(this.video, (cues[prevIndex].start - offsetMs) / 1000);
+      seekVideo(this.video, (cues[prevIndex].start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
     }
   }
 

@@ -1,5 +1,6 @@
 import { Children, forwardRef, isValidElement, useRef, useState, type ButtonHTMLAttributes, type ReactNode, type PointerEvent as ReactPointerEvent } from 'react';
 import { Spinner } from './Spinner';
+import { spawnRipple } from '@/shared/lib/dom/ripple';
 import styles from './Button.module.css';
 
 type ButtonVariant = 'primary' | 'primarySubtle' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link' | 'success' | 'transparent' | 'overlay';
@@ -85,19 +86,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const handlePointerDown = (e: ReactPointerEvent<HTMLButtonElement>): void => {
     onPointerDown?.(e);
     if (!ripple || e.defaultPrevented) return;
-    const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    const diameter = Math.max(rect.width, rect.height) * 1.6;
-    const radius = diameter / 2;
-    const x = e.clientX - rect.left - radius;
-    const y = e.clientY - rect.top - radius;
-    const span = btn.ownerDocument.createElement('span');
-    span.className = styles.ripple;
-    span.style.width = span.style.height = `${diameter}px`;
-    span.style.left = `${x}px`;
-    span.style.top = `${y}px`;
-    btn.appendChild(span);
-    span.addEventListener('animationend', () => span.remove(), { once: true });
+    spawnRipple(e.currentTarget, e.clientX, e.clientY);
 
     if (ripplePulse) {
       setPulsing(true);
@@ -142,6 +131,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       aria-invalid={error || undefined}
+      data-cell-ripple-self
       onPointerDown={handlePointerDown}
       {...rest}
     >

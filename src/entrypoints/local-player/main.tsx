@@ -71,7 +71,10 @@ import {
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
+import { installRippleDelegation } from '@/shared/lib/dom/ripple';
 import './styles/global.css';
+
+installRippleDelegation(document);
 
 // ─── Repository adapter ─────────────────────────────────────────────────────
 // mediaLibraryRepository (T9) stores position in ms, but the

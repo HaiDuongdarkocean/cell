@@ -34,10 +34,11 @@
 }
 
 /* !important: beats Button's `.sm.circle .label > svg` icon-size rules
-   (0,3,1) and any host-page CSS on the injected overlay. */
-.clusterRight :global(button) :global(span),
+   (0,3,1) and any host-page CSS on the injected overlay. Ripple spans are
+   excluded — forcing them to icon size would shrink the press feedback. */
+.clusterRight :global(button) :global(span):not([data-cell-ripple]),
 .clusterRight :global(button) :global(svg),
-.clusterRight :global([role='button']) :global(span),
+.clusterRight :global([role='button']) :global(span):not([data-cell-ripple]),
 .clusterRight :global([role='button']) :global(svg) {
   width: var(--cluster-icon-size) !important;
   height: var(--cluster-icon-size) !important;

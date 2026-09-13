@@ -1,6 +1,7 @@
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
 import scrollbarsShadowCss from '@/shared/styles/scrollbars-shadow.css?raw';
+import { installRippleDelegation } from '@/shared/lib/dom/ripple';
 
 export interface InjectShadowCssOptions {
   /** Per-component CSS strings (e.g. `Button.module.css?inline`) appended after globals. */
@@ -38,5 +39,10 @@ export function injectShadowCss(
     shadow.appendChild(style);
   }
 
-  return () => style.remove();
+  const cleanupRipple = installRippleDelegation(shadow);
+
+  return () => {
+    cleanupRipple();
+    style.remove();
+  };
 }

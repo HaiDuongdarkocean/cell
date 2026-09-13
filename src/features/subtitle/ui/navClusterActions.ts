@@ -4,7 +4,7 @@
 // ADR-030: seek routes through seekVideo to avoid Netflix M7375.
 
 import { findCurrentLine } from '../logic/subtitleSync';
-import { seekVideo } from '@/shared/lib/dom/netflixPlayback';
+import { seekVideo, SEEK_LANDING_EPS_MS } from '@/shared/lib/dom/netflixPlayback';
 import type { SrtCue } from '@/entities/media';
 
 /** Result of looking up the active cue for the current playback time. */
@@ -67,6 +67,20 @@ export function findNearestCueIndex(cues: readonly SrtCue[], currentTimeMs: numb
 }
 
 /**
+ * Rightmost index of a cue containing effectiveMs (start <= t <= end).
+ * findCurrentLine's binary search returns an arbitrary match among
+ * overlapping cues; navigation needs the latest-started one so seeks keep
+ * making progress instead of landing back inside an earlier overlap.
+ */
+function lastContainingCueIndex(cues: readonly SrtCue[], effectiveMs: number): number {
+  let index = -1;
+  for (let i = 0; i < cues.length && cues[i].start <= effectiveMs; i++) {
+    if (cues[i].end >= effectiveMs) index = i;
+  }
+  return index;
+}
+
+/**
  * Seek to the previous subtitle sentence (spec §F5).
  * - index > 0 → seek cues[index-1].start/1000
  * - index === -1 (in gap) → seek nearest previous cue start
@@ -84,27 +98,31 @@ export function prevSentence(
   // same as findActiveCueIndex. Without this, offset shifted the active-cue
   // lookup but gap-fill used raw time → jumped to wrong cue in gaps.
   const effectiveMs = currentMs + offsetMs;
-  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
+  const { cues } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
   if (cues.length === 0) return;
-  if (index > 0) {
-    // ADR-019 sync: seek so overlay DISPLAYS cues[index-1] → shift by -offsetMs.
-    seekVideo(video, (cues[index - 1].start - offsetMs) / 1000);
-    return;
-  }
+  const index = lastContainingCueIndex(cues, effectiveMs);
   if (index === -1) {
     // In gap — find nearest previous cue (end < effectiveMs)
     const prevCue = [...cues].reverse().find((c) => c.end < effectiveMs);
-    if (prevCue) seekVideo(video, (prevCue.start - offsetMs) / 1000);
+    if (prevCue) seekVideo(video, (prevCue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
     return;
   }
-  // index === 0 → no-op (first cue)
+  // Skip same-start siblings — seeking to an identical start lands at the
+  // same position and would wedge repeated presses on duplicate cues.
+  let prevIndex = index - 1;
+  while (prevIndex >= 0 && cues[prevIndex].start >= cues[index].start) prevIndex--;
+  // ADR-019 sync: seek so overlay DISPLAYS cues[prevIndex] → shift by -offsetMs.
+  if (prevIndex >= 0) {
+    seekVideo(video, (cues[prevIndex].start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
+  }
 }
 
 /**
- * Seek to the next subtitle sentence (spec §F6).
- * - index < length-1 → seek cues[index+1].start/1000
- * - index === -1 (in gap) → seek nearest next cue start
- * - index === length-1 (last cue) → no-op
+ * Seek to the next subtitle sentence (spec §F6): the first cue that starts
+ * after the current effective time. Uniform for in-cue, in-gap and
+ * overlapping cues — the target is always strictly ahead, so repeated
+ * presses can never wedge on an earlier overlapping cue.
+ * - no later cue (last cue / past end) → no-op
  * - no cues → no-op
  */
 export function nextSentence(
@@ -114,21 +132,13 @@ export function nextSentence(
   offsetMs: number = 0,
 ): void {
   const currentMs = video.currentTime * 1000;
-  // ADR-019 sync: gap-fill search must use effective time (currentMs + offset).
   const effectiveMs = currentMs + offsetMs;
-  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
-  if (cues.length === 0) return;
-  if (index === -1) {
-    // In gap — find nearest next cue (start > effectiveMs)
-    const nextCue = cues.find((c) => c.start > effectiveMs);
-    if (nextCue) seekVideo(video, (nextCue.start - offsetMs) / 1000);
-    return;
-  }
-  if (index < cues.length - 1) {
-    // ADR-019 sync: seek so overlay DISPLAYS cues[index+1] → shift by -offsetMs.
-    seekVideo(video, (cues[index + 1].start - offsetMs) / 1000);
-  }
-  // index === length-1 → no-op (last cue)
+  const { cues } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
+  const nextCue = cues.find((c) => c.start > effectiveMs + SEEK_LANDING_EPS_MS);
+  // ADR-019 sync: seek so overlay DISPLAYS nextCue → shift by -offsetMs.
+  // +SEEK_LANDING_EPS_MS lands inside the cue even when the browser resolves
+  // the seek to a frame just before the requested time.
+  if (nextCue) seekVideo(video, (nextCue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000);
 }
 
 /**
