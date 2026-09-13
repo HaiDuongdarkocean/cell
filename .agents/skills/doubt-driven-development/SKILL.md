@@ -129,10 +129,15 @@ This question is mandatory in every interactive doubt cycle — even on artifact
 2. Test it works (`gemini --version` or equivalent) before passing the full prompt — a stale or broken binary may pass `which` but fail on real input.
 3. Confirm the exact invocation with the user, including required flags, auth, and env vars (e.g., API keys). Implementations vary; never assume.
 4. Pass ARTIFACT + CONTRACT + the adversarial prompt **only**. No session context, no CLAIM.
+
 5. Mind shell escaping. If the artifact contains quotes, `$(...)`, or backticks, prefer stdin (`echo … | gemini`) or a heredoc over inline `-p "…"`. When in doubt, ask the user to confirm the invocation before running it.
 6. Take the output into Step 4 (RECONCILE).
 
 **Never interpolate the artifact into a shell-quoted argument.** Code, markdown, and review prompts routinely contain backticks, `$(...)`, and quote characters that will either truncate the prompt or execute embedded shell. Write the full prompt to a file and pipe it through stdin.
+
+### Diverse-lens review (high-risk decisions)
+
+One fresh-context reviewer is enough for normal decisions. For `P0` changes or anything touching security/state/migrations, spawn 2–3 reviewers with **distinct lenses** — correctness, security, regression/reproduction — and let the artifact stand only on majority survive. N identical reviewers catch the same failure mode N times; diverse lenses catch different ones. Same spawn rules apply: each reviewer gets ARTIFACT + CONTRACT + its lens, nothing else.
 
 Example shapes (verify flags against your installed tool — syntax differs across implementations and versions):
 

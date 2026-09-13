@@ -163,7 +163,7 @@ This lets you loop, retry, and problem-solve toward a clear goal rather than gue
 
 ### Phase 2: Plan
 
-With the validated spec, generate a technical implementation plan. The plan must be detailed enough for subagents to execute tasks in parallel and in the correct order.
+With the validated spec, generate a technical implementation plan. The plan must be detailed enough for subagents to execute tasks in parallel and in the correct order. Subagent spawn rules: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
 
 1. Identify the major components and their dependencies
 2. Determine the implementation order (what must be built first)

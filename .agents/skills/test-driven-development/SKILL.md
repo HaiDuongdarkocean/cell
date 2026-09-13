@@ -36,7 +36,7 @@ Bug report → **write a reproduction test** → it FAILS (bug confirmed) → fi
 
 - **Characterization test** (legacy refactor): pin what the code *actually does* — assert a deliberately wrong value, let the failure tell you the real behavior, lock it in. Never "fix" a discovered quirk mid-refactor; pin first, decide separately.
 - **Contract test** (strangler fig / branch by abstraction): run old and new implementations with the same inputs, compare outputs. Must pass for every migrated caller; remove only after the old code is deleted.
-- **Reproduction test** (bugs): written without knowledge of the fix — for complex bugs, spawn a subagent to write it so the test isn't contaminated by fix-knowledge.
+- **Reproduction test** (bugs): written without knowledge of the fix — for complex bugs, spawn a subagent to write it so the test isn't contaminated by fix-knowledge. Subagent spawn rules: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
 
 → Code examples for all three: `references/testing-patterns.md`
 

@@ -75,7 +75,7 @@ If the profile is missing, stop and tell the user — the skill cannot function 
 
 **Purpose:** Give the vision model exactly what it needs: the image, what's expected, and where to focus.
 
-**Actions:** Spawn a `vision-reader` subagent (foreground for a single quick check, background if you'll keep working while it looks). The task prompt MUST contain:
+**Actions:** Spawn a `vision-reader` subagent (foreground for a single quick check, background if you'll keep working while it looks). Spawn rules: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`. The task prompt MUST contain:
 
 - `image_path` — the absolute path from Step 2/1.
 - `expected` — a one-or-two-line description of the intended layout (regions, key elements, behavior). Skip only for a neutral description request.

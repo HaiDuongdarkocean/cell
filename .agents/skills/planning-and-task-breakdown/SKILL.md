@@ -257,6 +257,7 @@ Create the `tasks/` directory if it does not exist. These paths are the conventi
 
 When multiple agents or sessions are available:
 
+- **Edge test (dependency only exists if data crosses):** `Depends on` is real only when task A's *output feeds task B's input* — a file, an interface, a value B consumes. "B after A makes sense" is not an edge; mark both `parallel: true`. Most linear plans hide 2–3 fake edges that only exist because they were typed in that order — for every `Depends on`, name what crosses or delete it.
 - **Safe to parallelize:** Independent feature slices, tests for already-implemented features, documentation
 - **Must be sequential:** Database migrations, shared state changes, dependency chains
 - **Needs coordination:** Features that share an API contract (define the contract first, then parallelize)

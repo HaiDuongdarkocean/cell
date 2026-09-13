@@ -45,6 +45,8 @@
 
 ### Subagent cross-check
 
+Spawn rules for every subagent in this pipeline: `.agents/skills/autonomous-pipeline/references/orchestration-patterns.md`.
+
 - Spawn `subagent_explore`:
   - **title:** `Re-audit for missed debt`
   - **task:** `Scope: <SCOPE>. Identify technical debt a surface scan likely missed: tight coupling, hidden dependencies, outdated patterns, missing error handling, dead code, config drift, inconsistent conventions. Return a markdown table: | Location | Description |. Do not fix anything; only report.`
@@ -53,6 +55,8 @@
 **Guard:** At least one signal exists (automatic, human, or subagent).
 
 **Loop back:** If none, widen the scope to the repo root and re-run Phase 2.
+
+**Loop-until-dry rule (discovery sweeps):** when the sweep loops — finder rounds, re-audits — dedupe every new finding against a `seen` set containing *all* findings (verified AND rejected), not just confirmed ones. Deduping against confirmed-only re-discovers the same dead ends every round: the loop pays forever and never runs dry. Stop after K consecutive rounds with nothing new.
 
 ## Phase 3 — Analyze
 
