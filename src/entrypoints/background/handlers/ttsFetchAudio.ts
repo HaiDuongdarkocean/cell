@@ -24,15 +24,41 @@ const GOOGLE_TTS_ENDPOINT = 'https://translate.google.com/translate_tts';
 const MAX_TTS_TEXT_LEN = 200;
 
 /**
- * Musical-note glyphs common in lyric subtitles (♩♪♫♬♭♮♯, beamed notes,
- * 𝄞/𝄢 clefs). Display keeps them, but they are decoration — a TTS engine
- * would vocalize them as noise or stall on them.
+ * Decorative glyphs that carry no spoken form — common in lyric/karaoke
+ * subtitles and fansub styling. Display keeps them, but a TTS engine would
+ * vocalize them as noise ("eighth note", "black circle") or stall on them:
+ * arrows (karaoke pitch marks), geometric shapes (●○ karaoke dots), box
+ * drawing/blocks (ASCII-art credits), misc symbols (★♥), dingbats (✿❀✨),
+ * misc technical (⌛⏳), enclosed alphanumerics (①Ⓐ episode markers),
+ * braille art, musical symbols (♪𝄞), all emoji blocks, CJK music marks
+ * (〰 wavy dash, 〽 part-alternation mark), invisible format chars (ZWSP,
+ * ZWJ, LRM/RLM, soft hyphen, variation selectors, tag chars), U+FFFC/U+FFFD.
+ * Kept: letters/numbers of every script, standard + CJK punctuation,
+ * meaningful marks (+ = % © ※ • † ‡ 〜), and bracketed text (may be speech).
  */
-const UNSPOKEN_GLYPHS_RE = /[\u2669-\u266F\u{1D100}-\u{1D1FF}\u{1F3B5}\u{1F3B6}]/gu;
+const UNSPOKEN_GLYPHS_RE = new RegExp(
+  [
+    '[\\u00AD\\u200B\\u200D-\\u200F\\u2060-\\u2069\\uFE00-\\uFE0F\\uFEFF\\uFFFC\\uFFFD]',
+    '[\\u20E3\\u2190-\\u21FF\\u2300-\\u23FF\\u2460-\\u24FF\\u2500-\\u25FF]',
+    '[\\u2600-\\u26FF\\u2700-\\u27BF\\u27F0-\\u27FF\\u2800-\\u28FF\\u2900-\\u297F\\u2B00-\\u2BFF]',
+    '[\\u3030\\u303D]',
+    '[\\u{1D100}-\\u{1D1FF}\\u{1F000}-\\u{1FAFF}\\u{1FB00}-\\u{1FBFF}]',
+    '[\\u{E0000}-\\u{E007F}]',
+  ].join('|'),
+  'gu',
+);
 
-/** Strip unspoken glyphs and collapse the whitespace they leave behind. */
+const EMPTIED_BRACKETS_RE = /\(\s*\)|\[\s*\]|\{\s*\}|（\s*）|【\s*】|「\s*」|『\s*』|〈\s*〉|《\s*》/g;
+
+/** Strip unspoken glyphs, drop brackets emptied by the strip, collapse whitespace. */
 export function sanitizeTtsText(text: string): string {
-  return text.replace(UNSPOKEN_GLYPHS_RE, ' ').replace(/\s+/g, ' ').trim();
+  let out = text.replace(UNSPOKEN_GLYPHS_RE, ' ');
+  for (let i = 0; i < 4; i++) {
+    const next = out.replace(EMPTIED_BRACKETS_RE, ' ');
+    if (next === out) break;
+    out = next;
+  }
+  return out.replace(/\s+/g, ' ').trim();
 }
 
 /** Build the Google Translate TTS request URL. */
