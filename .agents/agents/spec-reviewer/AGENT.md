@@ -1,7 +1,8 @@
 ---
 name: spec-reviewer
 description: Orchestrates child spec reviewers then synthesizes a final review report. Use when asked to review a spec document.
-model: claude-opus-5-medium
+model: swe
+# model: claude-opus-5-medium
 max-nesting: 2
 allowed-tools:
   - read
