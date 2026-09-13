@@ -26,6 +26,7 @@
 - Scratch/screenshot/log → `tmp/<task-slug>/` (gitignored); xong việc không cần reproduce thì xóa. Output tool vào path cố định đã gitignore (`dist/`, `build/`, `coverage/`, `e2e-results/`, `.playwright-mcp/`) thì để nguyên.
 - Trước commit check `git status`: file lạ ở root là rác → dời/xóa, KHÔNG vá `.gitignore` cho one-off. File lạ không phải mình tạo → check `git ls-files` + imports trước khi đụng.
 - `docs/`: canon `0,1,2` + `adr|audits|context|design-system|ideas|intent|knowledge-base|mockups|research|reviews|specs`; `tasks/`: `plan.md`/`todo.md` active + `plans|todos|reports`; `tests/`: `unit|integration|data-test|mocks`.
+- Mọi skill chỉ sống ở `.agents/skills/` — không tạo skill ở `.devin/` hay chỗ khác.
 
 ## Environment quirks
 
