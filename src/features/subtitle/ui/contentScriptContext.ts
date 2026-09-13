@@ -37,4 +37,5 @@ export interface ContentScriptContext {
   updateGenerateNativeEnabled(): void;
   handleCardCreatorAction(action: CardCreatorAction): Promise<void>;
   handleGenerateNative(): Promise<void>;
+  syncSubtitleTokenize(): Promise<void>;
 }

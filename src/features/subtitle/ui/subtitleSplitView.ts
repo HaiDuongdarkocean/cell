@@ -11,6 +11,7 @@ import {
 } from '@/features/subtitle/logic/youtubeSplitView';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
@@ -281,7 +282,7 @@ export function useSplitView({
     // undefined → colors fall back to browser defaults.
     const panelShadow = panel.attachShadow({ mode: 'open' });
     injectShadowCss(panelShadow, {
-      css: allModuleCss,
+      css: [...allModuleCss, buildTokenSpanCssForShadow()],
     });
     const panelInner = document.createElement('div');
     const themeSyncCleanup = syncElementTheme(panelInner, findThemeCarrier());

@@ -81,6 +81,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       filename,
       fallbackPlayerContainerRef,
       removeBracketed: initialRemoveBracketed = false,
+      tokenize: initialTokenize = null,
     },
     ref,
   ): React.JSX.Element {
@@ -144,6 +145,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const { managerPortalTarget } = useOverlayPortals({ rootRef, managerShadowCss, isMobile });
     const [playerMode, setPlayerMode] = useState(false);
     const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
+    const [tokenize, setTokenize] = useState(initialTokenize);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     // Sync prop → state when cues change after mount (e.g. subtitle loaded later).
     useEffect(() => { setCues(initialCues ?? []); }, [initialCues]);
@@ -203,6 +205,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setCollapsed,
         setYOffsetPercent,
         setCues,
+        setTokenize,
         setCurrentTimeMs,
         setRemoveBracketed,
         togglePlayerMode: () => { void handleTogglePlayerMode(); },
@@ -258,6 +261,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}
           onSeek={onSeek}
+          tokenize={tokenize}
         />
       );
     }
@@ -351,6 +355,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onClose={handleToggleSplitView}
             playlistContent={playlistContent}
             filename={filename}
+            tokenize={tokenize}
           />,
           splitViewPortalTarget,
         )}

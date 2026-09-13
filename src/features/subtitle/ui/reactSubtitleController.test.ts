@@ -85,6 +85,7 @@ function createFakeMount(): MountSubtitleResult {
     addToast: jest.fn(),
     clearToasts: jest.fn(),
     setCues: jest.fn(),
+    setTokenize: jest.fn(),
     setCurrentTimeMs: jest.fn(),
     setRemoveBracketed: jest.fn(),
     togglePlayerMode: jest.fn(),
@@ -512,9 +513,14 @@ describe('ReactSubtitleController', () => {
 
     controller.enableTokenize(tokenizeOptions);
     expect(fakeEngine.enableTokenize).toHaveBeenCalledWith(tokenizeOptions);
+    expect(fakeMount.setTokenize).toHaveBeenCalledWith({
+      langCode: 'en',
+      onTokenClick: tokenizeOptions.onOpenDictionary,
+    });
 
     controller.disableTokenize();
     expect(fakeEngine.disableTokenize).toHaveBeenCalled();
+    expect(fakeMount.setTokenize).toHaveBeenLastCalledWith(null);
     expect(controller.isTokenizeEnabled()).toBe(false);
 
     const onLookup = jest.fn();

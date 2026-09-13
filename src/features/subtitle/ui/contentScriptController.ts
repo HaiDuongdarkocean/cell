@@ -159,12 +159,26 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
   // Deferred via requestAnimationFrame: React re-renders SubtitleBlock on cue
   // change (useCuesStore update), which overwrites token spans with plain text.
   // Waiting one frame ensures the controller injects AFTER React commits.
+  let lastFedTargetCues: readonly SrtCue[] = [];
+  let lastFedNativeCues: readonly SrtCue[] = [];
   blockController.onCuesUpdated = () => {
     if (!subtitleTokenizeCtrl) return;
+    const targetCues = blockController.getTargetCues();
+    const nativeCues = blockController.getNativeCues();
+    if (targetCues !== lastFedTargetCues || nativeCues !== lastFedNativeCues) {
+      lastFedTargetCues = targetCues;
+      lastFedNativeCues = nativeCues;
+      subtitleTokenizeCtrl.setCues(targetCues, nativeCues);
+    }
     const { target, native } = blockController.getActiveIndices();
-    requestAnimationFrame(() => {
+    let fired = false;
+    const fire = (): void => {
+      if (fired) return;
+      fired = true;
       subtitleTokenizeCtrl?.render(target, native);
-    });
+    };
+    requestAnimationFrame(fire);
+    setTimeout(fire, 100);
   };
 
   /** Enable/disable subtitle tokenize based on current settings and tokenize settings. */
@@ -204,6 +218,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
         // Feed current cues + render active line.
         const targetCues = blockController.getTargetCues();
         const nativeCues = blockController.getNativeCues();
+        lastFedTargetCues = targetCues;
+        lastFedNativeCues = nativeCues;
         subtitleTokenizeCtrl.setCues(targetCues, nativeCues);
         const { target: activeTarget, native: activeNative } = blockController.getActiveIndices();
         subtitleTokenizeCtrl.render(activeTarget, activeNative);
@@ -636,6 +652,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     updateGenerateNativeEnabled,
     handleCardCreatorAction,
     handleGenerateNative,
+    syncSubtitleTokenize,
   };
 
   const processImportedFiles = createProcessImportedFiles(ctx);

@@ -750,6 +750,15 @@ async function toggleSubtitleTokenize(): Promise<void> {
   panelNotify?.(buildPanelState());
 }
 
+const onTokenizeNav = (): void => {
+  void loadTokenizeSettings().then((ts) => {
+    cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
+    panelNotify?.(buildPanelState());
+  });
+};
+window.addEventListener('yt-navigate-finish', onTokenizeNav);
+window.addEventListener('popstate', onTokenizeNav);
+
 function ensureWebTextCtrl(): WebTextDictionaryController {
   if (!webTextCtrl) {
     webTextCtrl = createWebTextDictionaryController({

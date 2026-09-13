@@ -2138,6 +2138,25 @@
         "light-mode"
       ],
       "trigger": "Một UI boundary có màu sai preset (vd tím indigo thay vì dawn xanh) trong light mode, hoặc cần tìm nguồn theme để sync cho element reparented/portal"
+    },
+    {
+      "type": "experience",
+      "id": "rAF-gated-pipeline-stalls-hidden-tab",
+      "title": "Pipeline active-content không được gate trên rAF — hidden/occluded tab không bao giờ có frame",
+      "category": [
+        "rendering",
+        "async"
+      ],
+      "tags": [
+        "requestanimationframe",
+        "hidden-tab",
+        "occluded",
+        "tokenize",
+        "scheduler",
+        "visibility",
+        "background-tab"
+      ],
+      "trigger": "Logic render/bind/prepare nội dung đang active được schedule qua requestAnimationFrame, verify qua automation mở tab phụ khiến tab chính occluded"
     }
   ]
 }

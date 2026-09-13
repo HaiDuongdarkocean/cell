@@ -11,7 +11,7 @@
 import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList, type CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import { ChevronRight } from 'lucide-react';
 
 import { Button, EmptyState, Tabs } from '@/shared/ui';
@@ -34,6 +34,8 @@ export interface SubtitlePanelProps {
   playlistContent?: ReactNode;
   /** Video filename shown in the panel header (local-player only). */
   filename?: string;
+  /** Tokenize cue target text into clickable word tokens. */
+  tokenize?: CueListTokenize | null;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -46,6 +48,7 @@ function SubtitlePanelImpl({
   onClose,
   playlistContent,
   filename,
+  tokenize,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
@@ -60,6 +63,7 @@ function SubtitlePanelImpl({
       currentTimeMs={currentTimeMs}
       offsetMs={offsetMs}
       onSeek={onSeek}
+      tokenize={tokenize}
     />
   ) : (
     <EmptyState title="No subtitles loaded" size="compact" style={{ flex: 1 }} />

@@ -8,6 +8,7 @@ import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
+import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
@@ -79,6 +80,8 @@ export interface PlayerModeOverlayProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue in the list. */
   onSeek?: (timeMs: number) => void;
+  /** Tokenize cue target text into clickable word tokens. */
+  tokenize?: CueListTokenize | null;
 }
 
 function PlayerModeOverlayInner({
@@ -113,6 +116,7 @@ function PlayerModeOverlayInner({
   currentTimeMs,
   offsetMs,
   onSeek,
+  tokenize,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -471,6 +475,7 @@ function PlayerModeOverlayInner({
               currentTimeMs={currentTimeMs ?? 0}
               offsetMs={offsetMs}
               onSeek={onSeek}
+              tokenize={tokenize}
             />
           )}
         </div>
