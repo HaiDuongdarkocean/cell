@@ -14,9 +14,13 @@ import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 
+declare const __CELL_DEBUG__: string;
+
 // --- Split View diagnostic logging ---
 // Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
+// Gated to CELL_E2E=1 builds — dead-code-eliminated in production.
 function svLog(event: string, data?: Record<string, unknown>): void {
+  if (typeof __CELL_DEBUG__ === 'undefined' || __CELL_DEBUG__ !== 'true') return;
   const ts = new Date().toISOString().slice(11, 23);
   const line = `[Cell:SplitView ${ts}] ${event}`;
   console.log(line, data ?? '');
