@@ -8,7 +8,8 @@ import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { ManagerLayer } from './ManagerLayer';
 import { OffsetLayer } from './OffsetLayer';
-import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
+import { SubtitleToast } from './SubtitleToast';
+import { useToasts } from './subtitleToasts';
 import { SubtitleHint } from './SubtitleHint';
 import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
@@ -173,7 +174,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [isMobile]);
     const [offsetOpen, setOffsetOpen] = useState(false);
     const [hintOpen, setHintOpen] = useState(false);
-    const [toasts, setToasts] = useState<ToastItem[]>([]);
+    const { toasts, addToast, clearToasts, removeToast } = useToasts();
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [ocrEnabledState, setOcrEnabledState] = useState(ocrEnabled ?? false);
     const [toolsExpanded, setToolsExpanded] = useState(false);
@@ -408,17 +409,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setManagerOpenOnHost(false);
       }
     }, [managerOpen, managerOpenOnHost]);
-
-    const addToast = useCallback((message: string, variant?: ToastVariant): void => {
-      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      setToasts((prev) => [...prev, { id, message, variant }]);
-    }, []);
-
-    const clearToasts = useCallback((): void => setToasts([]), []);
-
-    const removeToast = useCallback((id: string): void => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, []);
 
     const handleToggleCollapsed = useCallback((): void => {
       setCollapsed((prev) => !prev);
