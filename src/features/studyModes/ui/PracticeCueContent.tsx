@@ -44,7 +44,7 @@ export function DictationActiveCue({
           return (
             <span
               key={i}
-              className={styles.word}
+              className={`${styles.word} ${word.state === 'active' ? styles.wordCurrent : ''}`}
               data-cell-id="dictation-word"
               data-word-state={word.state}
               data-word-index={i}
