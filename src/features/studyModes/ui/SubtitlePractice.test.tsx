@@ -173,6 +173,57 @@ describe('SubtitlePracticeSession — dictation', () => {
     expect((input as HTMLInputElement).value).toBe('');
   });
 
+  it('blocks host/project shortcut keys like f and t from leaving the input', () => {
+    renderSession();
+    const input = screen.getByTestId('practice-input');
+    const documentSpy = jest.fn();
+    document.addEventListener('keydown', documentSpy);
+    fireEvent.keyDown(input, { key: 'f' });
+    fireEvent.keyDown(input, { key: 't' });
+    fireEvent.keyDown(input, { key: 'a' });
+    fireEvent.keyDown(input, { key: 'd' });
+    document.removeEventListener('keydown', documentSpy);
+    expect(documentSpy).not.toHaveBeenCalled();
+  });
+
+  it('lets Escape bubble out of the input so the overlay can close', () => {
+    renderSession();
+    const input = screen.getByTestId('practice-input');
+    const documentSpy = jest.fn();
+    document.addEventListener('keydown', documentSpy);
+    fireEvent.keyDown(input, { key: 'Escape' });
+    document.removeEventListener('keydown', documentSpy);
+    expect(documentSpy).toHaveBeenCalled();
+  });
+
+  it('navigation shortcuts fire and do not leak to document', () => {
+    const { props } = renderSession();
+    const input = screen.getByTestId('practice-input');
+    const documentSpy = jest.fn();
+    document.addEventListener('keydown', documentSpy);
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+    fireEvent.keyDown(input, { key: ' ', shiftKey: true });
+    fireEvent.keyDown(input, { key: 'r', ctrlKey: true });
+    document.removeEventListener('keydown', documentSpy);
+    expect(props.onContinue).toHaveBeenCalledWith(cues[1]);
+    expect(props.onPrevious).toHaveBeenCalledWith(cues[1]);
+    expect(props.onPlayPause).toHaveBeenCalled();
+    expect(props.onReplay).toHaveBeenCalledWith(cues[1]);
+    expect(documentSpy).not.toHaveBeenCalled();
+  });
+
+  it('blocks keyup from leaking out of the input except Escape', () => {
+    renderSession();
+    const input = screen.getByTestId('practice-input');
+    const documentSpy = jest.fn();
+    document.addEventListener('keyup', documentSpy);
+    fireEvent.keyUp(input, { key: 'f' });
+    fireEvent.keyUp(input, { key: ' ' });
+    document.removeEventListener('keyup', documentSpy);
+    expect(documentSpy).not.toHaveBeenCalled();
+  });
+
   it('resets draft and feedback on cue change', () => {
     const { props, rerender } = renderSession();
     const input = screen.getByTestId('practice-input');

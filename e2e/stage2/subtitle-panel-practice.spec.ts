@@ -527,4 +527,67 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     });
     expect(pageErrors).toEqual([]);
   });
+
+  test('dictation and cloze input: typing keys do not leak to host or Cell shortcuts', async ({
+    streamFlixPage,
+  }) => {
+    const pageErrors: string[] = [];
+    streamFlixPage.on('pageerror', (e) => pageErrors.push(e.message));
+
+    await enterPlayerMode(streamFlixPage);
+    await seek(streamFlixPage, CUE2_START_S + 0.3);
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
+
+    const input = streamFlixPage.locator(INPUT);
+    await expect(input).toBeVisible();
+
+    await streamFlixPage.evaluate(() => {
+      (window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys = [];
+      const push = (e: KeyboardEvent, source: string) => {
+        (window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys.push({
+          source,
+          key: e.key,
+          code: e.code,
+        });
+      };
+      document.addEventListener('keydown', (e) => push(e, 'document'));
+      window.addEventListener('keydown', (e) => push(e, 'window'));
+    });
+
+    await input.fill('ftad');
+    await expect(input).toHaveValue('ftad');
+
+    const leaked = await streamFlixPage.evaluate(
+      () => (window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys,
+    );
+    const typingLeaks = leaked.filter((e) => ['KeyF', 'KeyT', 'KeyA', 'KeyD'].includes(e.code));
+    expect(typingLeaks).toEqual([]);
+
+    await input.press('Enter');
+    await expect
+      .poll(() => videoTime(streamFlixPage))
+      .toBeGreaterThanOrEqual(CUE2_NEXT_START_S - 0.5);
+
+    const leakedAfterEnter = await streamFlixPage.evaluate(
+      () => (window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys,
+    );
+    const enterLeaks = leakedAfterEnter.filter((e) => e.code === 'Enter');
+    expect(enterLeaks).toEqual([]);
+
+    await selectStudyMode(streamFlixPage, MODE_CLOZE);
+    await expect(streamFlixPage.locator(INPUT)).toBeVisible();
+    await streamFlixPage.evaluate(
+      () => ((window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys = []),
+    );
+    await input.fill('ftad');
+    await expect(input).toHaveValue('ftad');
+
+    const leakedCloze = await streamFlixPage.evaluate(
+      () => (window as unknown as { __leakedKeys: Array<{ source: string; key: string; code: string }> }).__leakedKeys,
+    );
+    const typingLeaksCloze = leakedCloze.filter((e) => ['KeyF', 'KeyT', 'KeyA', 'KeyD'].includes(e.code));
+    expect(typingLeaksCloze).toEqual([]);
+
+    expect(pageErrors).toEqual([]);
+  });
 });

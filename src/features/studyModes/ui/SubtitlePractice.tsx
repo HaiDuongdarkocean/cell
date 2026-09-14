@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Button, Icon, Input, Kbd } from '@/shared/ui';
@@ -123,28 +123,49 @@ export function SubtitlePracticeSession({
     }
   };
 
-  const handleInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>): void => {
-    if (!activeCue) return;
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      onPrevious(activeCue);
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onContinue(activeCue);
-      return;
-    }
-    if (e.key === ' ' && e.shiftKey) {
-      e.preventDefault();
-      onPlayPause();
-      return;
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
-      e.preventDefault();
-      onReplay(activeCue);
-    }
+  const stopKeyboardLeak = (e: ReactKeyboardEvent<HTMLInputElement>): void => {
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
   };
+
+  const handleInputKeyDown = useCallback((e: ReactKeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Escape') return;
+
+    if (activeCue) {
+      if (e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        onPrevious(activeCue);
+        stopKeyboardLeak(e);
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onContinue(activeCue);
+        stopKeyboardLeak(e);
+        return;
+      }
+      if (e.key === ' ' && e.shiftKey) {
+        e.preventDefault();
+        onPlayPause();
+        stopKeyboardLeak(e);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        onReplay(activeCue);
+        stopKeyboardLeak(e);
+        return;
+      }
+    }
+
+    stopKeyboardLeak(e);
+  }, [activeCue, onContinue, onPlayPause, onPrevious, onReplay]);
+
+  const handleInputKeyUp = useCallback((e: ReactKeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+  }, []);
 
   const renderCueContent = (
     cue: BilingualCue,
@@ -229,6 +250,7 @@ export function SubtitlePracticeSession({
               value={inputValue}
               onChange={(e) => handleInputChange(e.currentTarget.value)}
               onKeyDown={handleInputKeyDown}
+              onKeyUp={handleInputKeyUp}
             />
           </div>
           <Button
