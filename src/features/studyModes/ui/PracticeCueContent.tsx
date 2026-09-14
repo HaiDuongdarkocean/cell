@@ -2,18 +2,74 @@ import { useMemo } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Text, VisuallyHidden } from '@/shared/ui';
 import {
+  buildClozeProgress,
   buildDictationProgress,
   createClozeExercise,
   evaluateDictation,
   normalizePracticeToken,
-  tokenizePracticeText,
   type PracticeResult,
   type PracticeTokenState,
+  type WordProgress,
 } from '../lib/subtitlePractice';
 import styles from './SubtitlePractice.module.css';
 
 export function MaskedCueContent(): React.JSX.Element {
   return <div className={styles.maskedTarget} data-cell-id="cue-masked-target" aria-hidden="true" />;
+}
+
+interface PracticeWordProps {
+  readonly word: WordProgress;
+  readonly cellId: string;
+  readonly charCellId?: string;
+  readonly wordIndex?: number;
+  readonly blankId?: string;
+  readonly className?: string;
+}
+
+const wordDataState = (word: WordProgress): PracticeTokenState | '' => {
+  if (word.state === 'pending') return '';
+  if (word.typed.length === 0) return word.state === 'completed' ? 'missing' : '';
+  return normalizePracticeToken(word.typed) === normalizePracticeToken(word.text) ? 'correct' : 'incorrect';
+};
+
+export function PracticeWord({
+  word,
+  cellId,
+  charCellId,
+  wordIndex,
+  blankId,
+  className = '',
+}: PracticeWordProps): React.JSX.Element {
+  const isHidden = word.visibleChars === null;
+  const tailText = isHidden ? word.text : word.text.slice(word.visibleChars?.length ?? 0);
+  const hasTail = tailText.length > 0;
+  const baseClass = `${styles.word} ${className} ${word.state === 'active' ? styles.wordCurrent : ''}`.trim();
+  return (
+    <span
+      className={baseClass}
+      data-cell-id={cellId}
+      data-word-state={word.state}
+      data-state={wordDataState(word)}
+      data-current={word.state === 'active' ? 'true' : 'false'}
+      data-word-index={wordIndex}
+      data-blank-id={blankId}
+    >
+      {isHidden ? (
+        <span className={styles.guide} data-guide data-expected={word.text} aria-hidden="true" />
+      ) : (
+        <>
+          {word.visibleChars?.map((char, j) => (
+            <span key={j} className={styles[`token-${char.state}`]} data-cell-id={charCellId} data-state={char.state}>
+              {char.char}
+            </span>
+          ))}
+          {hasTail && (
+            <span className={styles.guide} data-guide data-tail data-expected={tailText} aria-hidden="true" />
+          )}
+        </>
+      )}
+    </span>
+  );
 }
 
 export function DictationActiveCue({
@@ -37,52 +93,15 @@ export function DictationActiveCue({
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
       <div className={styles.guides} aria-label="Type what you hear" data-cell-id="practice-active-cue-content">
-        {progress.words.map((word, i) => {
-          const isHidden = word.visibleChars === null;
-          const tailText = isHidden ? word.text : word.text.slice(word.visibleChars?.length ?? 0);
-          const hasTail = tailText.length > 0;
-          return (
-            <span
-              key={i}
-              className={`${styles.word} ${word.state === 'active' ? styles.wordCurrent : ''}`}
-              data-cell-id="dictation-word"
-              data-word-state={word.state}
-              data-word-index={i}
-            >
-              {isHidden ? (
-                <span
-                  className={styles.guide}
-                  data-guide
-                  data-current={word.state === 'active' ? 'true' : 'false'}
-                  data-expected={word.text}
-                  aria-hidden="true"
-                />
-              ) : (
-                <>
-                  {word.visibleChars?.map((char, j) => (
-                    <span
-                      key={j}
-                      className={styles[`token-${char.state}`]}
-                      data-cell-id="dictation-char"
-                      data-state={char.state}
-                    >
-                      {char.char}
-                    </span>
-                  ))}
-                  {hasTail && (
-                    <span
-                      className={styles.guide}
-                      data-guide
-                      data-tail
-                      data-expected={tailText}
-                      aria-hidden="true"
-                    />
-                  )}
-                </>
-              )}
-            </span>
-          );
-        })}
+        {progress.words.map((word, i) => (
+          <PracticeWord
+            key={i}
+            word={word}
+            cellId="dictation-word"
+            charCellId="dictation-char"
+            wordIndex={i}
+          />
+        ))}
       </div>
       {result ? (
         <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
@@ -110,7 +129,7 @@ export function ClozeActiveCue({
   readonly dataCellId?: string;
 }): React.JSX.Element {
   const exercise = useMemo(() => createClozeExercise(cue), [cue]);
-  const typedTokens = useMemo(() => tokenizePracticeText(clozeDraft), [clozeDraft]);
+  const progress = useMemo(() => buildClozeProgress(exercise, clozeDraft), [exercise, clozeDraft]);
   if (exercise.blanks.length === 0) {
     return (
       <div className={styles.activeCue} data-cell-id={dataCellId}>
@@ -119,13 +138,6 @@ export function ClozeActiveCue({
     );
   }
   const blankById = new Map(exercise.blanks.map((b, i) => [b.id, i]));
-  const correctCount = exercise.blanks.reduce(
-    (count, blank, i) =>
-      count + (typedTokens[i] !== undefined && normalizePracticeToken(typedTokens[i]) === normalizePracticeToken(blank.answer) ? 1 : 0),
-    0,
-  );
-  const extraCount = Math.max(0, typedTokens.length - exercise.blanks.length);
-  const currentIndex = Math.min(typedTokens.length, exercise.blanks.length - 1);
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
       <div className={styles.clozeText}>
@@ -134,31 +146,24 @@ export function ClozeActiveCue({
             return <span key={i}>{part.text}</span>;
           }
           const blankIndex = blankById.get(part.id) ?? 0;
-          const typed = typedTokens[blankIndex] ?? '';
-          const isCurrent = blankIndex === currentIndex;
-          const state: PracticeTokenState | '' = typed.length === 0
-            ? ''
-            : normalizePracticeToken(typed) === normalizePracticeToken(part.answer)
-              ? 'correct'
-              : 'incorrect';
+          const word = progress.words[blankIndex];
+          if (!word) return null;
           return (
-            <span
+            <PracticeWord
               key={part.id}
-              className={`${styles.blank} ${isCurrent ? styles.blankCurrent : ''} ${state ? styles[`token-${state}`] : ''}`}
-              data-cell-id="cloze-blank"
-              data-blank-id={part.id}
-              data-current={isCurrent ? 'true' : 'false'}
-              data-state={state}
-            >
-              {typed.length > 0 ? typed : <span className={styles.guide} data-guide aria-hidden="true" />}
-            </span>
+              word={word}
+              cellId="cloze-blank"
+              charCellId="cloze-char"
+              blankId={part.id}
+              className={styles.blank}
+            />
           );
         })}
       </div>
       {clozeDraft.trim().length > 0 && (
         <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
-            {`${correctCount} of ${exercise.blanks.length} correct${extraCount > 0 ? `, ${extraCount} extra` : ''}`}
+            {`${progress.correctCount} of ${exercise.blanks.length} correct${progress.extraCount > 0 ? `, ${progress.extraCount} extra` : ''}`}
           </VisuallyHidden>
         </div>
       )}

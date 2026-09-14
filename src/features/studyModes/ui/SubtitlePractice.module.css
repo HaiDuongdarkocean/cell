@@ -63,17 +63,7 @@
 }
 
 .blank {
-  display: inline-block;
-  vertical-align: baseline;
   margin: 0 var(--space-0-5);
-  min-inline-size: var(--space-6);
-  border-bottom: var(--border-width-hairline) dotted var(--color-text-secondary);
-  overflow-wrap: anywhere;
-}
-
-.blankCurrent {
-  border-bottom-color: var(--color-primary);
-  border-bottom-style: solid;
 }
 
 .feedback {

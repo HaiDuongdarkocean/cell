@@ -1,10 +1,12 @@
 import {
+  buildClozeProgress,
   buildDictationProgress,
   createClozeExercise,
   evaluateCloze,
   evaluateDictation,
   normalizePracticeToken,
   tokenizePracticeText,
+  type ClozeExercise,
 } from './subtitlePractice';
 
 describe('normalizePracticeToken', () => {
@@ -359,5 +361,81 @@ describe('buildDictationProgress', () => {
       { char: 'g', state: 'correct' },
     ]);
     expect(progress.words[0].hiddenTailLength).toBe(0);
+  });
+});
+
+describe('buildClozeProgress', () => {
+  const exercise: ClozeExercise = {
+    blanks: [
+      { type: 'blank', id: 'b0', answer: 'you', start: 0, end: 0 },
+      { type: 'blank', id: 'b1', answer: 'were', start: 0, end: 0 },
+      { type: 'blank', id: 'b2', answer: 'good', start: 0, end: 0 },
+    ],
+    parts: [],
+  };
+
+  it('hides every blank before typing', () => {
+    const progress = buildClozeProgress(exercise, '');
+    expect(progress.words).toHaveLength(3);
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.correctCount).toBe(0);
+    expect(progress.extraCount).toBe(0);
+    expect(progress.words[0].state).toBe('active');
+    expect(progress.words[0].visibleChars).toBeNull();
+    expect(progress.words.slice(1).every((w) => w.state === 'pending' && w.visibleChars === null)).toBe(true);
+  });
+
+  it('reveals the typed prefix of the active blank and hides the tail', () => {
+    const progress = buildClozeProgress(exercise, 'ye');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].state).toBe('active');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'y', state: 'correct' },
+      { char: 'o', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(1);
+    expect(progress.words[1].state).toBe('pending');
+    expect(progress.words[2].state).toBe('pending');
+  });
+
+  it('commits the current blank and activates the next one on a trailing space', () => {
+    const progress = buildClozeProgress(exercise, 'you ');
+    expect(progress.currentIndex).toBe(1);
+    expect(progress.words[0].state).toBe('completed');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'y', state: 'correct' },
+      { char: 'o', state: 'correct' },
+      { char: 'u', state: 'correct' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(0);
+    expect(progress.words[1].state).toBe('active');
+    expect(progress.words[1].visibleChars).toBeNull();
+    expect(progress.correctCount).toBe(1);
+  });
+
+  it('keeps the active blank hidden until the first character is typed', () => {
+    const progress = buildClozeProgress(exercise, ' ');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].state).toBe('active');
+    expect(progress.words[0].visibleChars).toBeNull();
+  });
+
+  it('shows wrong and missing characters when a completed blank does not match', () => {
+    const progress = buildClozeProgress(exercise, 'yoo ');
+    expect(progress.words[0].state).toBe('completed');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'y', state: 'correct' },
+      { char: 'o', state: 'correct' },
+      { char: 'u', state: 'incorrect' },
+    ]);
+    expect(progress.words[1].state).toBe('active');
+  });
+
+  it('counts extra typed words and completes all blanks', () => {
+    const progress = buildClozeProgress(exercise, 'you were good extra');
+    expect(progress.currentIndex).toBe(3);
+    expect(progress.correctCount).toBe(3);
+    expect(progress.extraCount).toBe(1);
+    expect(progress.words.every((w) => w.state === 'completed')).toBe(true);
   });
 });

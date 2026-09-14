@@ -30,6 +30,13 @@ export interface DictationProgress {
   readonly currentIndex: number;
 }
 
+export interface ClozeProgress {
+  readonly words: readonly WordProgress[];
+  readonly currentIndex: number;
+  readonly correctCount: number;
+  readonly extraCount: number;
+}
+
 export interface ClozeTextPart {
   readonly type: 'text';
   readonly text: string;
@@ -110,47 +117,66 @@ interface TokenSpan {
   readonly text: string;
 }
 
+const buildWordProgress = (expected: string, typed: string, state: WordProgress['state']): WordProgress => {
+  const expectedNormalized = normalizeForTokens(expected);
+  const visibleChars: { char: string; state: PracticeTokenState }[] = [];
+  let hiddenTailLength = expectedNormalized.length;
+
+  const showFull = state === 'completed';
+  const isTyping = state === 'active' && typed.length > 0;
+
+  if (showFull || isTyping) {
+    const visibleCount = showFull ? expectedNormalized.length : Math.min(typed.length, expectedNormalized.length);
+    for (let j = 0; j < visibleCount; j += 1) {
+      const displayChar = expected[j] ?? expectedNormalized[j];
+      if (j < typed.length && typed[j] === expectedNormalized[j]) {
+        visibleChars.push({ char: displayChar, state: 'correct' });
+      } else if (j < typed.length) {
+        visibleChars.push({ char: displayChar, state: 'incorrect' });
+      } else {
+        visibleChars.push({ char: displayChar, state: 'missing' });
+      }
+    }
+    hiddenTailLength = expectedNormalized.length - visibleCount;
+  }
+
+  return {
+    text: expected,
+    typed,
+    state,
+    visibleChars: visibleChars.length > 0 ? visibleChars : null,
+    hiddenTailLength,
+  };
+};
+
 export const buildDictationProgress = (expected: string, actual: string): DictationProgress => {
   const spans = collectTokenSpans(expected);
   const typedTokens = tokenizePracticeText(actual);
   const currentIndex = actual.trim().length === 0 ? 0 : actual.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
   const clampedCurrent = Math.min(currentIndex, spans.length);
-  const words: WordProgress[] = [];
-  for (let i = 0; i < spans.length; i += 1) {
-    const span = spans[i];
-    const typed = typedTokens[i] ?? '';
-    const expectedNormalized = normalizeForTokens(span.text);
+  const words = spans.map((span, i) => {
     const state = i < clampedCurrent ? 'completed' : i === clampedCurrent ? 'active' : 'pending';
-    const visibleChars: { char: string; state: PracticeTokenState }[] = [];
-    let hiddenTailLength = 0;
-    if (state === 'pending') {
-      hiddenTailLength = expectedNormalized.length;
-    } else if (state === 'active' && typed.length === 0) {
-      hiddenTailLength = expectedNormalized.length;
-    } else {
-      const showFull = state === 'completed';
-      const visibleCount = showFull ? expectedNormalized.length : Math.min(typed.length, expectedNormalized.length);
-      for (let j = 0; j < visibleCount; j += 1) {
-        const displayChar = span.text[j] ?? expectedNormalized[j];
-        if (j < typed.length && typed[j] === expectedNormalized[j]) {
-          visibleChars.push({ char: displayChar, state: 'correct' });
-        } else if (j < typed.length) {
-          visibleChars.push({ char: displayChar, state: 'incorrect' });
-        } else {
-          visibleChars.push({ char: displayChar, state: 'missing' });
-        }
-      }
-      hiddenTailLength = expectedNormalized.length - visibleCount;
-    }
-    words.push({
-      text: span.text,
-      typed,
-      state,
-      visibleChars: visibleChars.length > 0 ? visibleChars : null,
-      hiddenTailLength,
-    });
-  }
+    const typed = typedTokens[i] ?? '';
+    return buildWordProgress(span.text, typed, state);
+  });
   return { words, currentIndex: clampedCurrent };
+};
+
+export const buildClozeProgress = (exercise: ClozeExercise, draft: string): ClozeProgress => {
+  const typedTokens = tokenizePracticeText(draft);
+  const currentIndex = draft.trim().length === 0 ? 0 : draft.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  const clampedCurrent = Math.min(currentIndex, exercise.blanks.length);
+  const words = exercise.blanks.map((blank, i) => {
+    const state = i < clampedCurrent ? 'completed' : i === clampedCurrent ? 'active' : 'pending';
+    const typed = typedTokens[i] ?? '';
+    return buildWordProgress(blank.answer, typed, state);
+  });
+  const correctCount = exercise.blanks.reduce((count, blank, i) => {
+    const typed = typedTokens[i];
+    return count + (typed !== undefined && normalizePracticeToken(typed) === normalizePracticeToken(blank.answer) ? 1 : 0);
+  }, 0);
+  const extraCount = Math.max(0, typedTokens.length - exercise.blanks.length);
+  return { words, currentIndex: clampedCurrent, correctCount, extraCount };
 };
 
 function hashSeed(value: string): number {

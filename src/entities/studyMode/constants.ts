@@ -64,7 +64,7 @@ export const PRESETS: readonly StudyMode[] = [
     icon: 'scanText',
     title: 'Cloze',
     description: 'Fill in missing target words.',
-    steps: [{ subtitle: 'target', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
+    steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
   },
 ] as const;
 

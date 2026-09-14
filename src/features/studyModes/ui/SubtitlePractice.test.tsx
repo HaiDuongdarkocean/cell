@@ -309,13 +309,15 @@ describe('SubtitlePracticeSession — cloze', () => {
 
   it('marks a wrong token incorrect at its source position', () => {
     renderSession({ mode: 'cloze' });
+    const exercise = createClozeExercise(cues[1]);
     const input = screen.getByTestId('practice-input');
     fireEvent.change(input, { target: { value: 'wrong' } });
     const blank = screen
       .getByTestId('practice-active-cue')
       .querySelector('[data-cell-id="cloze-blank"][data-state="incorrect"]');
     expect(blank).toBeTruthy();
-    expect(blank?.textContent).toContain('wrong');
+    expect(blank?.textContent).toContain(exercise.blanks[0].answer);
+    expect(blank?.textContent).not.toContain('wrong');
   });
 
   it('reports extra typed words in the live summary without adding cue rows', () => {
