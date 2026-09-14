@@ -56,7 +56,7 @@ export const PRESETS: readonly StudyMode[] = [
     icon: 'pencil',
     title: 'Dictation',
     description: 'Play the sentence, then type and check.',
-    steps: [{ subtitle: 'none', pause: 'end', repeat: 2, speed: 1, after: 'wait' }],
+    steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
   },
   {
     id: 'cloze',
