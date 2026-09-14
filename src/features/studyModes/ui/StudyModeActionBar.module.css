@@ -4,18 +4,15 @@
   padding: var(--space-2) var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   background: var(--color-surface);
-}
-
-.scrollWrap {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
+  container-type: inline-size;
+  container-name: actionBar;
 }
 
 .scrollTrack {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -26,26 +23,15 @@
   display: none;
 }
 
-.arrowLeft,
-.arrowRight {
-  position: absolute;
-  z-index: var(--z-overlay-low, 10);
-  top: 50%;
-  transform: translateY(-50%);
+.arrow {
+  flex: none;
   min-block-size: var(--touch-target);
   min-inline-size: var(--touch-target);
 }
 
-.arrowLeft {
-  left: var(--space-1);
-}
-
-.arrowRight {
-  right: var(--space-1);
-}
-
 .modeButton {
   flex: none;
+  scroll-snap-align: start;
   min-block-size: var(--touch-target);
   min-inline-size: var(--touch-target);
 }

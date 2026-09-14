@@ -1,11 +1,11 @@
-import type { StudyMode, StudyModeAdvancedSettings, StudyModeState, StudyStep } from '@/entities/studyMode';
+import { PLAYBACK_SPEEDS, type StudyMode, type StudyModeAdvancedSettings, type StudyModeState, type StudyStep } from '@/entities/studyMode';
 
 const CURRENT_VERSION = 1;
 
 const SUBTITLE_VALUES = new Set(['none', 'native', 'target', 'both']);
 const PAUSE_VALUES = new Set(['none', 'start', 'end']);
 const REPEAT_VALUES = new Set([1, 2, 3]);
-const SPEED_VALUES = new Set([0.5, 0.75, 1, 1.25, 1.5]);
+const SPEED_VALUES = new Set<number>(PLAYBACK_SPEEDS);
 const AFTER_VALUES = new Set(['continue', 'wait', 'loop']);
 const SKIP_VALUES = new Set(['OFF', '2X', '4X', '6X', '8X', 'JUMP']);
 

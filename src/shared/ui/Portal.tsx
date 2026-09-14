@@ -6,7 +6,7 @@ export interface PortalProps {
   /** Content to render into the portal target. */
   children: ReactNode;
   /** Target container. Defaults to document.body. */
-  container?: HTMLElement | null;
+  container?: Element | DocumentFragment | null;
 }
 
 /**

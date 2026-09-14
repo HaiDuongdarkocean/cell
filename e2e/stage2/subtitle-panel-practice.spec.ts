@@ -61,6 +61,12 @@ async function selectSpeed(page: Page, label: string): Promise<void> {
   await expect(listbox).toHaveCount(0);
 }
 
+async function selectStudyMode(page: Page, selector: string): Promise<void> {
+  const locator = page.locator(selector);
+  await locator.scrollIntoViewIfNeeded();
+  await locator.dispatchEvent('click');
+}
+
 interface GeometryReport {
   violations: string[];
 }
@@ -223,7 +229,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await enterPlayerMode(streamFlixPage);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
 
-    await streamFlixPage.locator(MODE_DICTATION).click();
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
     await expect(
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
     ).toBeVisible();
@@ -265,7 +271,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await enterPlayerMode(streamFlixPage);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
 
-    await streamFlixPage.locator(MODE_CLOZE).click();
+    await selectStudyMode(streamFlixPage, MODE_CLOZE);
     await expect(
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
     ).toBeVisible();
@@ -300,11 +306,11 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await seek(streamFlixPage, 29.5);
 
     for (let i = 0; i < 10; i++) {
-      await streamFlixPage.locator(MODE_DICTATION).click();
+      await selectStudyMode(streamFlixPage, MODE_DICTATION);
       await expect(
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
       ).toBeVisible();
-      await streamFlixPage.locator(MODE_CLOZE).click();
+      await selectStudyMode(streamFlixPage, MODE_CLOZE);
       await expect(
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
       ).toBeVisible();
@@ -312,11 +318,11 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         'aria-selected',
         'false',
       );
-      await streamFlixPage.locator(MODE_OFF).click();
+      await selectStudyMode(streamFlixPage, MODE_OFF);
       await expect(streamFlixPage.locator(PRACTICE)).toHaveCount(0);
     }
 
-    await streamFlixPage.locator(MODE_DICTATION).click();
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
     const input = streamFlixPage.locator(INPUT);
     for (let i = 0; i < 10; i++) {
       await input.fill(`completely wrong answer ${i}`);
@@ -359,7 +365,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await enterPlayerMode(streamFlixPage);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
-    await streamFlixPage.locator(MODE_DICTATION).click();
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
     const input = streamFlixPage.locator(INPUT);
     await expect(input).toBeVisible();
 
@@ -409,7 +415,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await enterPlayerMode(streamFlixPage);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
-    await streamFlixPage.locator(MODE_DICTATION).click();
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
 
     const input = streamFlixPage.locator(INPUT);
     await input.fill('Lyin isn better than silence');
@@ -441,22 +447,26 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         await enterPlayerMode(streamFlixPage);
         await seek(streamFlixPage, CUE2_START_S + 0.3);
       }
-      await streamFlixPage.locator(MODE_DICTATION).click();
+      await selectStudyMode(streamFlixPage, MODE_DICTATION);
       await expect(
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
       ).toBeVisible();
+      if (width === 320) {
+        await expect(streamFlixPage.locator('[data-cell-id="speed-value"]')).toBeVisible();
+        await expect(streamFlixPage.locator('[data-cell-id="speed-decrease"]')).toBeHidden();
+      }
       await streamFlixPage.locator(INPUT).fill('x'.repeat(1500));
       await checkPanelGeometry(streamFlixPage, minControlHeight, `w${width} dictation`);
       if (width === 320) await checkFooterArrangement(streamFlixPage, true);
 
-      await streamFlixPage.locator(MODE_CLOZE).click();
+      await selectStudyMode(streamFlixPage, MODE_CLOZE);
       await expect(
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
       ).toBeVisible();
       await streamFlixPage.locator(INPUT).fill('lyin than');
       await checkPanelGeometry(streamFlixPage, minControlHeight, `w${width} cloze`);
 
-      await streamFlixPage.locator(MODE_OFF).click();
+      await selectStudyMode(streamFlixPage, MODE_OFF);
       await expect(streamFlixPage.locator(PRACTICE)).toHaveCount(0);
     }
 
@@ -464,15 +474,15 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       await streamFlixPage.setViewportSize({ width, height });
       const minControlHeight = width < 480 ? 44 : 40;
       await setTouchTarget(streamFlixPage, minControlHeight);
-      await streamFlixPage.locator(MODE_DICTATION).click();
+      await selectStudyMode(streamFlixPage, MODE_DICTATION);
       await expect(streamFlixPage.locator(INPUT)).toBeVisible();
       await streamFlixPage.locator(INPUT).focus();
       await checkPanelGeometry(streamFlixPage, minControlHeight, `${width}x${height} dictation`);
       if (width === 320) await checkFooterArrangement(streamFlixPage, false);
-      await streamFlixPage.locator(MODE_CLOZE).click();
+      await selectStudyMode(streamFlixPage, MODE_CLOZE);
       await expect(streamFlixPage.locator(INPUT)).toBeVisible();
       await checkPanelGeometry(streamFlixPage, minControlHeight, `${width}x${height} cloze`);
-      await streamFlixPage.locator(MODE_OFF).click();
+      await selectStudyMode(streamFlixPage, MODE_OFF);
     }
     expect(pageErrors).toEqual([]);
   });
@@ -487,7 +497,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await enterPlayerMode(streamFlixPage);
     await setTouchTarget(streamFlixPage, 44);
     await seek(streamFlixPage, CUE2_START_S + 0.3);
-    await streamFlixPage.locator(MODE_DICTATION).click();
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
     const input = streamFlixPage.locator(INPUT);
     await expect(input).toBeVisible();
 

@@ -1,53 +1,47 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SpeedPill } from './SpeedPill';
 
 const noop = (): void => undefined;
 
-let originalResizeObserver: unknown;
-
-beforeAll(() => {
-  originalResizeObserver = global.ResizeObserver;
-  global.ResizeObserver = class ResizeObserverMock {
-    observe(): void { /* noop */ }
-    unobserve(): void { /* noop */ }
-    disconnect(): void { /* noop */ }
-  } as unknown as typeof ResizeObserver;
-});
-
-afterAll(() => {
-  global.ResizeObserver = originalResizeObserver as typeof ResizeObserver;
-});
-
 describe('SpeedPill', () => {
-  it('decreases and increases speed with the step buttons', () => {
+  it('decreases and increases speed by 0.5x', () => {
     const onChange = jest.fn();
     render(<SpeedPill speed={1} onChange={onChange} />);
-    fireEvent.click(screen.getByTestId('speed-decrease'));
-    expect(onChange).toHaveBeenCalledWith(0.75);
-    fireEvent.click(screen.getByTestId('speed-increase'));
-    expect(onChange).toHaveBeenCalledWith(1.25);
+    fireEvent.click(screen.getByRole('button', { name: /decrease playback speed/i }));
+    expect(onChange).toHaveBeenCalledWith(0.5);
+    fireEvent.click(screen.getByRole('button', { name: /increase playback speed/i }));
+    expect(onChange).toHaveBeenCalledWith(1.5);
+  });
+
+  it('clamps speed between 0.5x and 10x', () => {
+    const onChange = jest.fn();
+    const { unmount } = render(<SpeedPill speed={0.5} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /decrease playback speed from 0\.5x/i }));
+    expect(onChange).not.toHaveBeenCalled();
+    unmount();
+
+    const onChange2 = jest.fn();
+    render(<SpeedPill speed={10} onChange={onChange2} />);
+    fireEvent.click(screen.getByRole('button', { name: /increase playback speed from 10x/i }));
+    expect(onChange2).not.toHaveBeenCalled();
   });
 
   it('opens the speed list popover when the value is clicked', () => {
     render(<SpeedPill speed={1} onChange={noop} />);
-    fireEvent.click(screen.getByTestId('speed-value'));
+    fireEvent.click(screen.getByRole('button', { name: /current playback speed/i }));
     expect(screen.getByRole('listbox', { name: 'Playback speed' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: '1.5x' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '10x' })).toBeInTheDocument();
   });
 
   it('calls onChange when a speed option is selected', () => {
     const onChange = jest.fn();
     render(<SpeedPill speed={1} onChange={onChange} />);
-    fireEvent.click(screen.getByTestId('speed-value'));
-    fireEvent.click(screen.getByRole('option', { name: '1.5x' }));
-    expect(onChange).toHaveBeenCalledWith(1.5);
+    fireEvent.click(screen.getByRole('button', { name: /current playback speed/i }));
+    fireEvent.click(screen.getByRole('option', { name: '2x' }));
+    expect(onChange).toHaveBeenCalledWith(2);
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 
-  it('renders a compact circle variant', () => {
-    render(<SpeedPill speed={0.75} onChange={noop} compact />);
-    expect(screen.getByTestId('speed-value-circle')).toBeInTheDocument();
-    expect(screen.queryByTestId('speed-pill')).not.toBeInTheDocument();
-  });
 });

@@ -26,8 +26,11 @@ beforeAll(() => {
       this.callback = callback;
     }
     observe(target: Element): void {
+      const rect = target.getBoundingClientRect();
+      const width = rect.width === 0 ? 500 : rect.width;
+      const height = rect.height === 0 ? 40 : rect.height;
       this.callback(
-        [{ target, contentRect: { width: 500, height: 40, top: 0, left: 0, bottom: 40, right: 500, x: 0, y: 0 } } as unknown as ResizeObserverEntry],
+        [{ target, contentRect: { width, height, top: 0, left: 0, bottom: height, right: width, x: 0, y: 0 } } as unknown as ResizeObserverEntry],
         this,
       );
     }
