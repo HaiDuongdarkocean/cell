@@ -11,8 +11,7 @@ export interface SpeedPillProps {
 const SPEEDS: readonly PlaybackSpeed[] = [...PLAYBACK_SPEEDS];
 
 function formatSpeed(speed: PlaybackSpeed): string {
-  const fixed = Number.isInteger(speed) ? String(speed) : speed.toFixed(1);
-  return `${fixed}x`;
+  return `${String(speed)}x`;
 }
 
 function speedOptionId(speed: PlaybackSpeed): string {

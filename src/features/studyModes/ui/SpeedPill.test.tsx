@@ -5,13 +5,13 @@ import { SpeedPill } from './SpeedPill';
 const noop = (): void => undefined;
 
 describe('SpeedPill', () => {
-  it('decreases and increases speed by 0.5x', () => {
+  it('decreases and increases to the adjacent playback speed', () => {
     const onChange = jest.fn();
     render(<SpeedPill speed={1} onChange={onChange} />);
     fireEvent.click(screen.getByRole('button', { name: /decrease playback speed/i }));
-    expect(onChange).toHaveBeenCalledWith(0.5);
+    expect(onChange).toHaveBeenCalledWith(0.75);
     fireEvent.click(screen.getByRole('button', { name: /increase playback speed/i }));
-    expect(onChange).toHaveBeenCalledWith(1.5);
+    expect(onChange).toHaveBeenCalledWith(1.25);
   });
 
   it('clamps speed between 0.5x and 10x', () => {
