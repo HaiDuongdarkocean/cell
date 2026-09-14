@@ -22,6 +22,7 @@ import {
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -732,13 +733,6 @@ export async function createWebTokenizeController(
     }
   }
 
-  function isEditableTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-    const tag = target.tagName.toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-    return target.getAttribute('contenteditable') === 'true' || target.isContentEditable === true;
-  }
-
   async function applyStatusToTerms(terms: readonly string[], status: WordStatus): Promise<void> {
     statusVersionCounter++;
     const version = statusVersionCounter;
@@ -805,7 +799,7 @@ export async function createWebTokenizeController(
   });
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (isEditableTarget(e.target)) return;
+    if (isEditableEvent(e)) return;
     if (e.key === 'Escape') {
       stateStore.clearSelection();
       stateStore.setHoveredTerm(null);

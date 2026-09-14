@@ -1,4 +1,4 @@
-import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
+import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
@@ -260,10 +260,11 @@ export function installIframePlayerModeBridge(): () => void {
     if (settings.keyboardShortcuts?.length) shortcuts = settings.keyboardShortcuts;
   });
   const onKeydown = (e: KeyboardEvent): void => {
-    if (isEditableTarget(e.target)) return;
+    if (isEditableEvent(e)) return;
     if (document.querySelector('video')) return;
     if (!document.querySelector('iframe')) return;
-    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+    const realTarget = e.composedPath()[0] ?? e.target;
+    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, realTarget, {
       ctrl: e.ctrlKey,
       shift: e.shiftKey,
       alt: e.altKey,

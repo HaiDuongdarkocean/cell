@@ -26,6 +26,30 @@ describe('mountReactShadow', () => {
     expect(host.isConnected).toBe(false);
   });
 
+  it('traps non-Escape keyboard events inside the shadow root', async () => {
+    const Component = () => createElement('input', { type: 'text', 'data-cell-id': 'trap-input' });
+    const { host, shadow, unmount } = mountReactShadow(createElement(Component), {});
+    await act(async () => {});
+
+    const input = shadow.querySelector('input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+
+    const documentHandler = jest.fn();
+    document.addEventListener('keydown', documentHandler);
+
+    // Non-Escape key should be stopped at the shadow boundary.
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true, composed: true }));
+    expect(documentHandler).not.toHaveBeenCalled();
+
+    // Escape should be allowed through for close handlers.
+    input!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, composed: true }));
+    expect(documentHandler).toHaveBeenCalled();
+
+    document.removeEventListener('keydown', documentHandler);
+    await act(async () => unmount());
+    expect(host.isConnected).toBe(false);
+  });
+
   it('applies custom position', async () => {
     const Component = () => createElement('span');
     const { host, unmount } = mountReactShadow(createElement(Component), {

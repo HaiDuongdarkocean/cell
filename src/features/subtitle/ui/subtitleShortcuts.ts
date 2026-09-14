@@ -4,6 +4,9 @@
 
 import type { KeyboardShortcut, ShortcutAction } from '@/entities/media';
 import { CELL_UI_HOST_SELECTORS } from '@/shared/lib/dom/cellUiHosts';
+import { isEditableTarget } from '@/shared/lib/dom/isEditable';
+
+export { isEditableTarget, isEditableEvent, isActivatableTarget } from '@/shared/lib/dom/isEditable';
 
 /**
  * Check if a keyboard event originated from inside a Cell UI shadow host.
@@ -14,53 +17,6 @@ export function isInsideCellUi(e: KeyboardEvent): boolean {
   return e.composedPath().some(
     (el) => el instanceof Element && el.matches(CELL_UI_HOST_SELECTORS),
   );
-}
-
-/**
- * Check if the event target is an editable element (input, textarea, select,
- * or contenteditable). Shortcuts should NOT fire when focus is in these elements.
- */
-export function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  const tag = target.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') {
-    return true;
-  }
-  // ponytail: check attribute directly — jsdom doesn't reflect isContentEditable
-  // from the contenteditable attribute. In real browsers isContentEditable works,
-  // but attribute check is more reliable across environments.
-  return target.getAttribute('contenteditable') === 'true' || target.isContentEditable === true;
-}
-
-/**
- * Check if a keyboard event originated from an editable element, crossing
- * shadow DOM boundaries. `e.target` is retargeted to the shadow host when
- * focus is inside a shadow root, so `isEditableTarget(e.target)` returns
- * false even when the real focus is an `<input>`. Use `composedPath()[0]`
- * to see the actual element that has focus.
- */
-export function isEditableEvent(e: KeyboardEvent): boolean {
-  const realTarget = e.composedPath()[0];
-  return realTarget instanceof HTMLElement && isEditableTarget(realTarget);
-}
-
-/**
- * Check if the target is an activatable control (button, link, or
- * `role="button"`) where Enter/Space should trigger the control, not a
- * subtitle shortcut. Shortcuts like 'c' may still fire on these controls,
- * but activation keys (Enter/Space) are reserved for the control.
- */
-export function isActivatableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  const tag = target.tagName.toLowerCase();
-  if (tag === 'button' || tag === 'a') {
-    return true;
-  }
-  return target.getAttribute('role') === 'button';
 }
 
 /**

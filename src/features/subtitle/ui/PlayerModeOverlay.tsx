@@ -350,10 +350,15 @@ function PlayerModeOverlayInner({
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
-        // In native fullscreen: let the browser exit fullscreen (don't
-        // preventDefault). The fullscreenchange listener in SubtitlePanels
-        // exits Player Mode. Esc in fullscreen is a one-step exit.
-        if (document.fullscreenElement) return;
+        // In native fullscreen: explicitly exit fullscreen so Player Mode
+        // closes on Esc in both real user and automation contexts. The
+        // fullscreenchange listener in SubtitlePanels then sets playerMode false.
+        if (document.fullscreenElement) {
+          e.preventDefault();
+          e.stopPropagation();
+          void document.exitFullscreen();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         if (cueListOpen) {

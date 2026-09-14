@@ -13,6 +13,7 @@ import {
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
+import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 
 const DEFAULT_WINDOW = 1;
 
@@ -50,13 +51,6 @@ export interface SubtitleTokenizeControllerOptions {
   readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
   /** Number of cues before/after the active cue to keep prepared. */
   readonly windowSize?: number;
-}
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-  return target.getAttribute('contenteditable') === 'true' || target.isContentEditable === true;
 }
 
 /** Build a TokenBlock from the current text node of a cue line. */
@@ -283,7 +277,7 @@ export function createSubtitleTokenizeController(
   }
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (isEditableTarget(e.target)) return;
+    if (isEditableEvent(e)) return;
     if (e.key === 'Escape') {
       stateStore.clearSelection();
       stateStore.setHoveredTerm(null);

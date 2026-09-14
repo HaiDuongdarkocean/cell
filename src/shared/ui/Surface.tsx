@@ -68,12 +68,14 @@ export const Surface = forwardRef<HTMLDivElement, SurfaceProps>(function Surface
     onKeyDown?.(e);
     if (e.key === 'Escape') return;
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
   }, [onKeyDown]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
     onKeyUp?.(e);
     if (e.key === 'Escape') return;
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
   }, [onKeyUp]);
 
   const cls = [

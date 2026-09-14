@@ -70,6 +70,8 @@ export function mountReactShadow(
   const root = createRoot(rootEl);
   root.render(component);
 
+  const removeKeyboardTrap = attachKeyboardTrap(shadow);
+
   const removeFullscreenListeners = reparentOnFullscreen
     ? attachFullscreenReparenting(host, parent)
     : null;
@@ -80,11 +82,27 @@ export function mountReactShadow(
     shadow,
     root,
     unmount: () => {
+      removeKeyboardTrap();
       removeFullscreenListeners?.();
       cleanupCss();
       root.unmount();
       host.remove();
     },
+  };
+}
+
+function attachKeyboardTrap(shadow: ShadowRoot): () => void {
+  const handler: EventListener = (e) => {
+    if (!(e instanceof KeyboardEvent)) return;
+    if (e.key === 'Escape') return;
+    e.stopPropagation();
+  };
+  const target = shadow as unknown as EventTarget;
+  target.addEventListener('keydown', handler);
+  target.addEventListener('keyup', handler);
+  return () => {
+    target.removeEventListener('keydown', handler);
+    target.removeEventListener('keyup', handler);
   };
 }
 

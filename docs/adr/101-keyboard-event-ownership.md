@@ -25,9 +25,12 @@ Three interaction modes were colliding:
 
 This applies to:
 
+A shared module (`src/shared/lib/dom/isEditable.ts`) owns `isEditableTarget`, `isEditableEvent`, and `isActivatableTarget` so tokenize controllers, the iframe bridge, and the subtitle shortcut layer all use the same detection logic.
+
 - `isEditableEvent(e)` — checks whether the real target is an `input`, `textarea`, `select`, or `contenteditable` element.
 - `handleShortcutKey(key, shortcuts, target, modifiers)` — now receives the real target so it correctly skips shortcuts when focus is in an editable control.
-- `isActivatableTarget(target)` — a new shared helper that identifies `button`, `a`, or `[role="button"]` elements.
+- `isActivatableTarget(target)` — a shared helper that identifies `button`, `a`, or `[role="button"]` elements.
+- `webTokenizeController`, `subtitleTokenizeController`, and `iframePlayerModeBridge` — now use `isEditableEvent(e)` instead of `isEditableTarget(e.target)`, so keys typed inside Cell inputs are no longer mis-classified as tokenize or player-mode shortcuts.
 
 ### 2. Allow Cell shortcuts to win while a Cell panel has focus
 
@@ -52,8 +55,9 @@ Some events must not stop at the `contentScriptController` (e.g. when focus is i
 - `Surface` — panels, dialogs, popovers, cards.
 - `Sheet` — mobile bottom sheets (manager, dictionary popup).
 - `ManagerLayer` desktop `.panelLayer` — subtitle manager overlay.
+- `mountReactShadow` — every React tree mounted into a new shadow root gets a `keydown`/`keyup` bubble listener on the `ShadowRoot` that stops non-`Escape` events from leaving the shadow tree. This is the catch-all for surfaces that don't explicitly trap keys (e.g. the subtitle overlay where `SubtitlePractice` runs).
 
-These handlers call the consumer’s `onKeyDown`/`onKeyUp` first and then `e.stopPropagation()` for non-`Escape` keys.
+These handlers call the consumer’s `onKeyDown`/`onKeyUp` first and then call both `e.stopPropagation()` (so React parent handlers don't run) and `e.nativeEvent.stopImmediatePropagation()` (so the host page never sees the native event) for non-`Escape` keys.
 
 ### 5. Keyup is blocked too
 
@@ -76,15 +80,18 @@ This prevents double-toggles such as YouTube pausing on `keyup` after Cell alrea
 ## Verification performed
 
 ```bash
-npm run lint                    # pass
-npx tsc --noEmit                # pass
-npx jest --selectProjects unit  # pass
+npm run typecheck               # pass
+npm run test:unit               # pass
 npm run build                   # pass
 npx playwright test --config=playwright.stream.config.ts \
-  e2e/stage2/universal-panel-keyboard.spec.ts --project=chromium  # pass
+  e2e/stage2/universal-panel-keyboard.spec.ts \
+  e2e/stage2/subtitle-panel-practice.spec.ts \
+  e2e/stage2/study-modes.spec.ts --project=stage2  # pass
 ```
 
 Relevant unit tests:
 
-- `tests/unit/features/subtitle/ui/subtitleShortcuts.test.ts` — `isEditableEvent`, `isActivatableTarget`, `handleShortcutKey` guard behavior.
+- `src/shared/lib/dom/isEditable.test.ts` — `isEditableEvent`, `isEditableTarget`, `isActivatableTarget` behavior, including `composedPath()` fallback.
+- `tests/unit/features/subtitle/ui/subtitleShortcuts.test.ts` — re-exported `isEditableEvent`, `isActivatableTarget`, `handleShortcutKey` guard behavior.
 - `src/features/subtitle/ui/contentScriptController.test.ts` — shortcut precedence inside Cell UI, editable input bypass, activatable control bypass, host blocking without `preventDefault`.
+- `src/features/tokenize/controller/webTokenizeController.test.ts` and `src/features/tokenize/controller/subtitleTokenizeController.test.ts` — tokenize shortcuts do not fire while typing.

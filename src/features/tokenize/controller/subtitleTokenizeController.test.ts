@@ -111,6 +111,40 @@ describe('createSubtitleTokenizeController', () => {
     controller.destroy();
   });
 
+  it('does not update status when focus is in an input (shadow retargeting)', async () => {
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+
+    const { target, cues, controller } = setup();
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    expect(hello).not.toBeNull();
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    const event = new KeyboardEvent('keydown', { key: '2', bubbles: true });
+    Object.defineProperty(event, 'composedPath', {
+      value: () => [input, document.body, document.documentElement, document, window],
+      configurable: true,
+    });
+
+    setWordStatus.mockClear();
+    document.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).not.toHaveBeenCalled();
+
+    controller.destroy();
+  });
+
   it('applies status through handleStatusKey for player-mode keyboard routing', async () => {
     const { target, cues, controller } = setup();
 

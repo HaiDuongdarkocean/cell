@@ -457,6 +457,46 @@ describe('createWebTokenizeController', () => {
     controller.destroy();
   });
 
+  it('does not change status when focus is in an input (shadow retargeting)', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const input = document.createElement('input');
+    root.appendChild(input);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(hello).not.toBeNull();
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    // Simulate shadow DOM retargeting: e.target is the document, but the real
+    // focused element (composedPath[0]) is the input.
+    const event = new KeyboardEvent('keydown', { key: '2', bubbles: true });
+    Object.defineProperty(event, 'composedPath', {
+      value: () => [input, document.body, document.documentElement, document, window],
+      configurable: true,
+    });
+
+    setWordStatus.mockClear();
+    document.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).not.toHaveBeenCalled();
+    controller.destroy();
+  });
+
   it('changes status of every token inside a native text selection with 1-4 keys', async () => {
     const root = document.createElement('div');
     const paragraph = document.createElement('p');

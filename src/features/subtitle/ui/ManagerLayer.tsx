@@ -91,11 +91,13 @@ export function ManagerLayer({
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') return;
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
   }, []);
 
   const handleKeyUp = useCallback((e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') return;
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
   }, []);
 
   if (isMobile) {
