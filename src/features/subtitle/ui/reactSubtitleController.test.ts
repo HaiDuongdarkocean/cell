@@ -305,6 +305,7 @@ describe('ReactSubtitleController', () => {
   });
 
   it('video play and pause events update the mount isPlaying state', () => {
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
     video.dispatchEvent(new Event('play'));
     expect(fakeMount.setIsPlaying).toHaveBeenCalledWith(true);
 
@@ -656,6 +657,61 @@ describe('ReactSubtitleController', () => {
     expect(video.playbackRate).toBe(1.25);
     expect(fakeEngine.getTargetStyle().visible).toBe(true);
     expect(fakeEngine.getNativeStyle().visible).toBe(true);
+    expect(fakeMount.setPlaybackSpeed).toHaveBeenLastCalledWith(1.25);
+  });
+
+  it('keeps engine visibility when a settings update lands while study mode is active', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const listenMode: StudyMode = {
+      id: 'listen',
+      type: 'preset',
+      icon: 'volumeHigh',
+      title: 'Listen',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    controller.applyStudyMode(listenMode, advanced);
+    expect(fakeEngine.getTargetStyle().visible).toBe(false);
+    expect(fakeEngine.getNativeStyle().visible).toBe(false);
+
+    // A delayed settings write (persistFieldMapping, panel tab change, etc.)
+    // carries visible:true — it must not override the active mode's hidden state.
+    controller.updateSettings({
+      targetStyle: { ...DEFAULT_OVERLAY_STYLE_TARGET, visible: true },
+      nativeStyle: { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: true },
+    });
+    expect(fakeEngine.getTargetStyle().visible).toBe(false);
+    expect(fakeEngine.getNativeStyle().visible).toBe(false);
+  });
+
+  it('does not consume a repeat when a mode is applied while paused at cue end', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const repeatMode: StudyMode = {
+      id: 'dictation',
+      type: 'preset',
+      icon: 'pencil',
+      title: 'Dictation',
+      description: '',
+      steps: [{ subtitle: 'target', pause: 'none', repeat: 2, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    // Video paused at cue end (e.g. user parked it there before switching mode).
+    // applyStudyMode syncs while paused — the step-end must not fire, so the
+    // first repeat seek is NOT consumed.
+    video.currentTime = 5.2;
+    controller.applyStudyMode(repeatMode, advanced);
+    expect(video.currentTime).toBe(5.2);
+
+    // Resume playing past the end — now the repeat fires exactly once.
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
+    video.dispatchEvent(new Event('timeupdate'));
+    expect(video.currentTime).toBeCloseTo(0.08);
   });
 
   it('re-bases the study-mode chain on offset change so internal seeks stay internal', () => {
@@ -683,6 +739,7 @@ describe('ReactSubtitleController', () => {
     controller.setOffsetMs(500);
     fakeEngine.updateSettings.mockClear();
 
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
     video.currentTime = 5.6;
     video.dispatchEvent(new Event('timeupdate'));
     video.dispatchEvent(new Event('seeking'));
@@ -713,6 +770,7 @@ describe('ReactSubtitleController', () => {
     controller.applyStudyMode(listenCheck, advanced);
     fakeEngine.setHeldCue.mockClear();
 
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
     video.currentTime = 5.2;
     video.dispatchEvent(new Event('timeupdate'));
     expect(fakeEngine.setHeldCue).toHaveBeenCalledWith(0);
@@ -738,6 +796,7 @@ describe('ReactSubtitleController', () => {
     const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
     controller.applyStudyMode(repeatMode, advanced);
 
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
     video.currentTime = 4.6;
     video.dispatchEvent(new Event('timeupdate'));
 

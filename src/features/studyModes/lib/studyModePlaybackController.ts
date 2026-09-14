@@ -107,12 +107,20 @@ export class StudyModePlaybackController {
   }
 
   /** Called on every video time update (time in milliseconds). */
-  onTimeUpdate(currentTimeMs: number): PlaybackAction[] {
+  onTimeUpdate(currentTimeMs: number, isPaused = false): PlaybackAction[] {
     if (this.activeCueIndex < 0) {
       return this.handleSilence(currentTimeMs);
     }
 
     if (this.state.type === 'pausedStart' || this.state.type === 'pausedEnd' || this.state.type === 'waiting') {
+      return [];
+    }
+
+    // A paused video can't reach a cue end by playing — suppressing step-end
+    // while paused keeps repeat/advance state from being consumed on mode
+    // switches or timeupdate events that fire without playback (e.g. after
+    // a seeked event while paused).
+    if (isPaused) {
       return [];
     }
 

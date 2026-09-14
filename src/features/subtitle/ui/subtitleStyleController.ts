@@ -158,7 +158,11 @@ export class SubtitleStyleController {
     if (this.stylePersistTimer) clearTimeout(this.stylePersistTimer);
     this.stylePersistTimer = setTimeout(() => {
       const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-      saveSettings({ [key]: merged } as Partial<Settings>).catch(() => undefined);
+      // visible is runtime-owned (user toggles + study mode) — persisting the
+      // engine's transient value would leak study-mode hidden state into the
+      // user's stored style and re-enter through storage.onChanged.
+      const { visible: _visible, ...persisted } = merged;
+      saveSettings({ [key]: persisted } as Partial<Settings>).catch(() => undefined);
       this.stylePersistTimer = null;
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }
@@ -196,13 +200,20 @@ export class SubtitleStyleController {
 
   private handleResetStyle(role: 'target' | 'native'): void {
     const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
-    if (role === 'target') this.engine.updateSettings({ targetStyle: defaults });
-    else this.engine.updateSettings({ nativeStyle: defaults });
+    // Resetting appearance must not un-hide a layer the user (or an active
+    // study mode) has hidden — carry the current runtime visible flag.
+    const currentVisible = role === 'target'
+      ? this.engine.getTargetStyle().visible
+      : this.engine.getNativeStyle().visible;
+    const applied = { ...defaults, visible: currentVisible };
+    if (role === 'target') this.engine.updateSettings({ targetStyle: applied });
+    else this.engine.updateSettings({ nativeStyle: applied });
     this.updateStylesFromEngine();
     this.onManagerUpdate();
 
     const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    saveSettings({ [key]: defaults } as Partial<Settings>).catch(() => undefined);
+    const { visible: _visible, ...persisted } = defaults;
+    saveSettings({ [key]: persisted } as Partial<Settings>).catch(() => undefined);
   }
 
   private handlePreviewTextChange(role: 'target' | 'native', text: string): void {

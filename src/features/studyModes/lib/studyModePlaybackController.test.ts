@@ -266,4 +266,29 @@ describe('StudyModePlaybackController', () => {
     expect(ctrl.hasActiveCue).toBe(false);
     expect(ctrl.continue()).toEqual([]);
   });
+
+  it('suppresses step-end processing while the video is paused', () => {
+    // A paused video cannot reach a cue end by playing — a timeupdate while
+    // paused (e.g. after a seeked event, or a mode switch applied while parked
+    // at cue end) must not consume a repeat or advance the step chain.
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const ctrl = new StudyModePlaybackController(repeatMode, advancedOff, [cue]);
+    ctrl.enterCue(cue, 0);
+
+    const paused = ctrl.onTimeUpdate(5000, true);
+    expect(paused).toEqual([]);
+
+    // Once playing resumes past the end, the step-end runs normally and the
+    // repeat is consumed exactly once.
+    const resumed = ctrl.onTimeUpdate(5000, false);
+    expect(resumed).toContainEqual({ type: 'seek', timeMs: 1000 });
+  });
+
+  it('keeps silence handling active while paused (JUMP still fires)', () => {
+    const cues = [makeCue(1, 1000, 2000, 'a'), makeCue(2, 9000, 10000, 'b')];
+    const ctrl = new StudyModePlaybackController(readMode, advancedJump, cues);
+    // Paused in the gap between cues — JUMP should still seek to the next cue.
+    const actions = ctrl.onTimeUpdate(5000, true);
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 9000 });
+  });
 });

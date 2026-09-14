@@ -423,6 +423,14 @@ export class ReactSubtitleController {
   }
 
   updateSettings(update: SubtitleCueEngineUpdate): void {
+    if (this.studyMode.isActive) {
+      const { targetStyle, nativeStyle } = update;
+      update = {
+        ...update,
+        ...(targetStyle && { targetStyle: { ...targetStyle, visible: this.engine.getTargetStyle().visible } }),
+        ...(nativeStyle && { nativeStyle: { ...nativeStyle, visible: this.engine.getNativeStyle().visible } }),
+      };
+    }
     this.engine.updateSettings(update);
     this.styleController?.updateStylesFromEngine();
   }
@@ -479,6 +487,18 @@ export class ReactSubtitleController {
 
   getOffsetMs(): number {
     return this.offsetMs;
+  }
+
+  getTargetStyle(): OverlayStyleConfig {
+    return this.engine.getTargetStyle();
+  }
+
+  getNativeStyle(): OverlayStyleConfig {
+    return this.engine.getNativeStyle();
+  }
+
+  isStudyModeActive(): boolean {
+    return this.studyMode.isActive;
   }
 
   setOffsetMs(ms: number): void {
@@ -550,6 +570,7 @@ export class ReactSubtitleController {
       const baseline = this.studyBaseline;
       this.studyBaseline = null;
       this.video.playbackRate = baseline.playbackRate;
+      this.mount.setPlaybackSpeed(baseline.playbackRate as PlaybackSpeed);
       this.applySubtitleHidden(baseline.targetHidden, baseline.nativeHidden);
     }
 
@@ -567,6 +588,7 @@ export class ReactSubtitleController {
       targetIndex: target,
       targetCues: this.engine.getTargetCues(),
       currentTimeMs: this.video.currentTime * 1000,
+      isPaused: this.video.paused,
     };
     const actions = this.studyMode.onTimeUpdate(state);
     if (actions.length) this.applyPlaybackActions(actions);

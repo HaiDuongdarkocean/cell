@@ -19,6 +19,15 @@ export function getActiveStudyMode(): ActiveStudyMode | null {
 }
 
 export function setActiveStudyMode(next: ActiveStudyMode | null): void {
+  if (
+    current !== null &&
+    next !== null &&
+    current.activeMode.id === next.activeMode.id &&
+    JSON.stringify(current.activeMode.steps) === JSON.stringify(next.activeMode.steps) &&
+    JSON.stringify(current.advanced) === JSON.stringify(next.advanced)
+  ) {
+    return;
+  }
   current = next;
   listeners.forEach((cb) => cb(next));
 }

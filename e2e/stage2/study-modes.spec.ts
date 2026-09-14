@@ -205,7 +205,7 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .poll(
         async () =>
           video.evaluate(
-            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd - 0.5,
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd,
             CUE2_END_S,
           ),
         { timeout: 15_000 },
@@ -219,21 +219,85 @@ test.describe('Stage 2: Study Modes on StreamFlix', () => {
       .toBeLessThan(CUE2_START_S + 2);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 10_000 });
 
+    // Wait until playback has paused at or past the cue end — the cue is no
+    // longer active in the engine, so text only shows if the study-mode hold
+    // keeps the finished cue pinned for review.
     await expect
       .poll(
         async () =>
           video.evaluate(
-            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd - 0.5,
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd,
             CUE2_END_S,
           ),
         { timeout: 15_000 },
       )
       .toBe(true);
-
-    // The cue text should stay visible while paused at the end for review.
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 5_000 });
 
     await writeStudyModes(cellContext, 'normal');
+  });
+
+  test('panel listen-check click runs the full blind-listen and review flow', async ({
+    cellContext,
+    streamFlixPage,
+    universalPanel,
+  }) => {
+    await seedOverlaySettings(cellContext);
+    await writeStudyModes(cellContext, 'normal');
+    await seekPaused(streamFlixPage, CUE2_START_S + 0.4);
+    await waitForCue2(streamFlixPage);
+
+    await universalPanel.open();
+    await universalPanel.openTab('studyModes');
+
+    const clickModeCard = (id: string) =>
+      streamFlixPage.evaluate((cellId) => {
+        const root = document.getElementById('cell-universal-panel-host')?.shadowRoot;
+        const card = root?.querySelector(`[data-cell-id="${cellId}"]`) as HTMLElement | null;
+        card?.click();
+        return !!card;
+      }, `mode-card-${id}`);
+
+    await expect.poll(() => clickModeCard('listen-check'), { timeout: 15_000 }).toBe(true);
+    await expect.poll(() => isTargetHidden(streamFlixPage), { timeout: 10_000 }).toBe(true);
+
+    const video = streamFlixPage.locator(VIDEO_SELECTOR).first();
+    await play(streamFlixPage);
+
+    // Blind listen pauses at/past the cue end with subtitles still hidden.
+    await expect
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd,
+            CUE2_END_S,
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+    expect(await isTargetHidden(streamFlixPage)).toBe(true);
+
+    // Resume → review replay shows subtitles and pauses past the cue end.
+    await play(streamFlixPage);
+    await expect
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cueEnd: number) => v.paused && v.currentTime >= cueEnd,
+            CUE2_END_S,
+          ),
+        { timeout: 20_000 },
+      )
+      .toBe(true);
+    await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 5_000 });
+
+    // Back to Normal through the panel — held cue releases, so seek into
+    // cue 3 to verify ordinary subtitle display is restored.
+    await universalPanel.open();
+    await universalPanel.openTab('studyModes');
+    await expect.poll(() => clickModeCard('normal'), { timeout: 10_000 }).toBe(true);
+    await seekPaused(streamFlixPage, CUE3_START_S + 0.4);
+    await expect(targetLine(streamFlixPage)).not.toBeEmpty({ timeout: 10_000 });
   });
 
   test('panel preset click applies to the player in-process', async ({

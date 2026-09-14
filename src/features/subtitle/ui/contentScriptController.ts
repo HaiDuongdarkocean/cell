@@ -424,11 +424,14 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
         blockController?.setHasSearchKeys(keys.length > 0);
         blockController?.setSearchApiKeys(keys);
       }
+      // Runtime visibility is owned by the engine (user toggles + study-mode
+      // steps); stored style objects only carry appearance — never let a
+      // settings write re-assert visibility over either owner.
       if (newSettings?.subtitleOverlayTargetStyle) {
-        targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: overlayVisible };
+        targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: blockController.getTargetStyle().visible };
       }
       if (newSettings?.subtitleOverlayNativeStyle) {
-        nativeStyle = { ...newSettings.subtitleOverlayNativeStyle, visible: overlayVisible };
+        nativeStyle = { ...newSettings.subtitleOverlayNativeStyle, visible: blockController.getNativeStyle().visible };
       }
       if (newSettings?.subtitleBlockSettings) {
         blockSettings = { ...newSettings.subtitleBlockSettings };
@@ -448,7 +451,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
         ...(newSettings?.subtitleBlockSettings && { blockSettings }),
         ...(Object.keys(clusterPartial).length > 0 && { clusterSettings: clusterPartial }),
       };
-      if (Object.keys(update).length > 0) blockController.updateSettings(update);
+      if (Object.keys(update).length > 0) {
+        blockController.updateSettings(update);
+      }
       // Reload keyboard shortcuts so remaps (e.g. 't' → 'y') take effect
       // without a page reload. loadShortcuts reads from the new settings.
       if (newSettings?.keyboardShortcuts) {
@@ -506,6 +511,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
   function showOverlay(): void {
     if (overlayVisible) return;
     overlayVisible = true;
+    if (blockController.isStudyModeActive()) return;
     targetStyle = { ...targetStyle, visible: true };
     nativeStyle = { ...nativeStyle, visible: true };
     blockController.updateSettings({ targetStyle, nativeStyle });

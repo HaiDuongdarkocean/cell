@@ -16,7 +16,7 @@ import {
 import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
-import type { ApplyStudyModePayload, AutoLoadSubtitlesPayload } from '@/entities/message';
+import type { AutoLoadSubtitlesPayload } from '@/entities/message';
 
 export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
   onRuntimeMessage: (msg: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => boolean | void;
@@ -135,12 +135,6 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           break;
         }
         }
-      }
-    }
-    if (m?.type === MESSAGE_TYPES.APPLY_STUDY_MODE) {
-      const payload = m.payload as ApplyStudyModePayload | undefined;
-      if (payload?.activeMode) {
-        blockController?.applyStudyMode(payload.activeMode, payload.advanced);
       }
     }
     return false; // synchronous listener

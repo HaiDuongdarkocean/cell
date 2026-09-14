@@ -9,6 +9,8 @@ export interface SubtitleStudyModeTimeState {
   targetCues: readonly SrtCue[];
   /** Current video time in milliseconds. */
   currentTimeMs: number;
+  /** Whether the video element is currently paused. */
+  isPaused?: boolean;
 }
 
 const SEEK_LANDING_TOLERANCE_MS = 300;
@@ -89,7 +91,7 @@ export class SubtitleStudyModeController {
     return actions;
   }
 
-  onTimeUpdate({ targetIndex, targetCues, currentTimeMs }: SubtitleStudyModeTimeState): readonly PlaybackAction[] {
+  onTimeUpdate({ targetIndex, targetCues, currentTimeMs, isPaused }: SubtitleStudyModeTimeState): readonly PlaybackAction[] {
     if (!this.playback) return [];
 
     const actions: PlaybackAction[] = [];
@@ -108,7 +110,7 @@ export class SubtitleStudyModeController {
       actions.push(...this.playback.enterCue(targetCues[targetIndex], targetIndex));
     }
 
-    actions.push(...this.playback.onTimeUpdate(currentTimeMs));
+    actions.push(...this.playback.onTimeUpdate(currentTimeMs, isPaused ?? false));
     this.trackInternalSeek(actions);
     return actions;
   }

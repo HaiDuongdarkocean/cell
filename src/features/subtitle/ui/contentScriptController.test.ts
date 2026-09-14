@@ -162,6 +162,9 @@ interface MockController {
   togglePlayerMode: jest.Mock;
   toggleSplitView: jest.Mock;
   destroy: jest.Mock;
+  getTargetStyle: jest.Mock;
+  getNativeStyle: jest.Mock;
+  isStudyModeActive: jest.Mock;
   isPlayerModeActive: boolean;
   onCuesUpdated?: () => void;
   onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -243,6 +246,9 @@ function createMockController(): MockController {
     togglePlayerMode: jest.fn(),
     toggleSplitView: jest.fn(),
     destroy: jest.fn(),
+    getTargetStyle: jest.fn().mockReturnValue({ visible: true }),
+    getNativeStyle: jest.fn().mockReturnValue({ visible: true }),
+    isStudyModeActive: jest.fn().mockReturnValue(false),
     isPlayerModeActive: false,
   };
 }
@@ -385,13 +391,18 @@ describe('contentScriptController', () => {
     cleanupCalled = true;
   });
 
-  it('init registers onMessage and handles APPLY_STUDY_MODE', async () => {
+  it('init routes APPLY_STUDY_MODE through the study-mode subscriber only', async () => {
     cleanup = init(video);
     await flushPromises();
 
     expect(mockOnMessage).toHaveBeenCalled();
     expect(onMessageCallbacks.length).toBeGreaterThanOrEqual(1);
 
+    // APPLY_STUDY_MODE is handled by studyModeController's own onMessage →
+    // setActiveStudyMode → subscriber. The content-script handler must NOT
+    // apply it directly, or every click would dispatch twice and reset the
+    // step state machine mid-flight.
+    blockController.applyStudyMode.mockClear();
     const onRuntimeMessage = onMessageCallbacks[0];
     void onRuntimeMessage(
       {
@@ -402,6 +413,9 @@ describe('contentScriptController', () => {
       jest.fn(),
     );
 
+    expect(blockController.applyStudyMode).not.toHaveBeenCalled();
+
+    studyModeCallback!({ activeMode: fakeStudyMode, advanced: fakeAdvanced });
     expect(blockController.applyStudyMode).toHaveBeenCalledWith(fakeStudyMode, fakeAdvanced);
 
     cleanup!();
@@ -416,6 +430,11 @@ describe('contentScriptController', () => {
     expect(onStorageChangedCallback).toBeDefined();
 
     blockController.updateSettings.mockClear();
+
+    // Runtime visibility is engine-owned — a stored style write must merge
+    // appearance only and preserve whatever the engine currently shows (user
+    // toggle or an active study mode hiding subtitles).
+    blockController.getTargetStyle.mockReturnValue({ visible: false });
 
     const changedSettings = {
       ...DEFAULT_SETTINGS,
