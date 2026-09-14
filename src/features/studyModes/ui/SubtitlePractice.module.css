@@ -38,7 +38,6 @@
 .guide {
   display: inline-block;
   vertical-align: baseline;
-  border-bottom: var(--border-width-hairline) dotted var(--color-text-secondary);
 }
 
 .guide::before {
@@ -46,13 +45,14 @@
   visibility: hidden;
 }
 
-.guideCurrent {
-  border-bottom-color: var(--color-primary);
-}
-
 .word {
   display: inline-block;
   overflow-wrap: anywhere;
+  border-bottom: var(--border-width-hairline) dotted var(--color-text-secondary);
+}
+
+.wordCurrent {
+  border-bottom-color: var(--color-primary);
 }
 
 .clozeText {
@@ -104,12 +104,6 @@
 .word .token-incorrect,
 .word .token-missing {
   text-decoration: none;
-  border-bottom: var(--border-width-hairline) dotted var(--color-destructive);
-}
-
-.wordCurrent .token-incorrect,
-.wordCurrent .token-missing {
-  border-bottom-color: var(--color-primary);
 }
 
 .token-extra {

@@ -51,7 +51,7 @@ export function DictationActiveCue({
             >
               {isHidden ? (
                 <span
-                  className={`${styles.guide} ${word.state === 'active' ? styles.guideCurrent : ''}`}
+                  className={styles.guide}
                   data-guide
                   data-current={word.state === 'active' ? 'true' : 'false'}
                   data-expected={word.text}
@@ -71,7 +71,7 @@ export function DictationActiveCue({
                   ))}
                   {hasTail && (
                     <span
-                      className={`${styles.guide} ${word.state === 'active' ? styles.guideCurrent : ''}`}
+                      className={styles.guide}
                       data-guide
                       data-tail
                       data-expected={tailText}
