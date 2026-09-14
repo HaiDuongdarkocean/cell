@@ -1,13 +1,14 @@
+import type { Page } from '@playwright/test';
 import { test } from '../fixtures/cellEnvironment.fixture';
 
 const widths = [280, 320, 360, 390, 480, 768, 1024];
 
-async function enterPlayerMode(page: any): Promise<void> {
+async function enterPlayerMode(page: Page): Promise<void> {
   await page.keyboard.press('g');
   await page.waitForSelector('[data-cell-id="cue-item"]', { timeout: 20_000 });
 }
 
-async function selectStudyMode(page: any, selector: string): Promise<void> {
+async function selectStudyMode(page: Page, selector: string): Promise<void> {
   const locator = page.locator(selector);
   await locator.scrollIntoViewIfNeeded();
   await locator.dispatchEvent('click');
