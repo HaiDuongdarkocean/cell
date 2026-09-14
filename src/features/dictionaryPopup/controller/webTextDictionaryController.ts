@@ -674,6 +674,16 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     );
   }
 
+  const LOOKUP_TRIGGER_SELECTOR = '.js-cell-token, .cell-ocr-hitbox';
+
+  /** A pointerdown on a subtitle token or OCR hitbox is a re-lookup, not a
+   *  dismissal — the popup should stay open and move to the new word. */
+  function isReanchorPointerDown(e: PointerEvent): boolean {
+    return e.composedPath().some(
+      (el) => el instanceof Element && el.matches(LOOKUP_TRIGGER_SELECTOR),
+    );
+  }
+
   function destroyLevel(level: PopupLevel): void {
     if (level.requestId) {
       cancelLookup(level.requestId);
@@ -721,6 +731,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         : undefined,
       dismissOnOutsideClick: !isSheetMode(),
       isInsideOtherHost: isInsideStackHostEvent,
+      isReanchorPointerDown,
       onOutsidePointerDown: closePopup,
     });
   }

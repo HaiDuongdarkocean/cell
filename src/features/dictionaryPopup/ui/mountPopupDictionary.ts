@@ -77,6 +77,13 @@ export interface MountPopupDictionaryOptions {
    * the nested-stack controller routes it to stack-level dismissal.
    */
   readonly onOutsidePointerDown?: () => void;
+  /**
+   * When the outside pointerdown is on an element that will immediately
+   * re-trigger a lookup (e.g. another subtitle token / OCR hitbox), the
+   * popup should stay mounted and let the caller re-anchor it instead of
+   * closing and re-opening. Defaults to false.
+   */
+  readonly isReanchorPointerDown?: (e: PointerEvent) => boolean;
 }
 
 export interface PopupDictionaryMountController {
@@ -209,6 +216,9 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     // up a new word without the sheet vanishing — the controller feeds the new
     // result in via setResult/setOptions. Desktop popup still dismisses.
     if (current.dismissOnOutsideClick === false) return;
+    // A pointerdown on another lookup trigger (subtitle token / OCR hitbox)
+    // should not close the popup; the caller will re-anchor it for the new term.
+    if (current.isReanchorPointerDown?.(e)) return;
     if (current.onOutsidePointerDown) {
       current.onOutsidePointerDown();
       return;

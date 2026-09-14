@@ -91,6 +91,57 @@ describe('mountPopupDictionary', () => {
     expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
   });
 
+  it('stays open when an outside pointerdown is a re-anchor event (token/hitbox)', () => {
+    const onClose = jest.fn();
+    const token = document.createElement('span');
+    token.className = 'js-cell-token';
+    document.body.appendChild(token);
+
+    const controller = mountPopupDictionary({
+      anchor: defaultAnchor,
+      langCode: 'en',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      onClose,
+      isReanchorPointerDown: (e) =>
+        e.composedPath().some(
+          (el) => el instanceof HTMLElement && el.classList.contains('js-cell-token'),
+        ),
+    });
+
+    token.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+
+    token.remove();
+    controller.destroy();
+  });
+
+  it('still closes on outside pointerdown when isReanchorPointerDown returns false', () => {
+    const onClose = jest.fn();
+    const token = document.createElement('span');
+    token.className = 'js-cell-token';
+    document.body.appendChild(token);
+
+    const controller = mountPopupDictionary({
+      anchor: defaultAnchor,
+      langCode: 'en',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      onClose,
+      isReanchorPointerDown: () => false,
+    });
+
+    token.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }));
+
+    expect(onClose).toHaveBeenCalled();
+    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+
+    token.remove();
+    controller.destroy();
+  });
+
   it('does not close when the orbital badge is clicked', () => {
     const onClose = jest.fn();
     mountPopupDictionary({

@@ -1313,6 +1313,113 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.destroy() });
     jest.useRealTimers();
   });
+
+  it('keeps the popup open and reuses it when the user clicks another subtitle token', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult({ term: 'over' })] } as unknown as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const token1 = document.createElement('span');
+    token1.className = 'js-cell-token';
+    token1.dataset.cellTerm = 'over';
+    token1.dataset.cellStart = '0';
+    token1.dataset.cellEnd = '4';
+    token1.dataset.cellBlockId = 'b1';
+    token1.textContent = 'over';
+    document.body.appendChild(token1);
+
+    const token2 = document.createElement('span');
+    token2.className = 'js-cell-token';
+    token2.dataset.cellTerm = 'all';
+    token2.dataset.cellStart = '5';
+    token2.dataset.cellEnd = '8';
+    token2.dataset.cellBlockId = 'b1';
+    token2.textContent = 'all';
+    document.body.appendChild(token2);
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'over' }), 'req-over', token1.getBoundingClientRect(), token1) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+    const popup = document.querySelector('.js-cell-popup-host');
+    expect(popup).not.toBeNull();
+
+    // Pointerdown on another token should not close the popup.
+    act(() => { token2.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(mockVideo.play).not.toHaveBeenCalled();
+
+    // The new lookup reuses the same popup host and re-anchors it.
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult({ term: 'all' })] } as unknown as never);
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'all' }), 'req-all', token2.getBoundingClientRect(), token2) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+    expect(mockVideo.play).not.toHaveBeenCalled();
+
+    // A true outside click still dismisses and resumes once.
+    act(() => { document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
+    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    token1.remove();
+    token2.remove();
+    act(() => { ctrl.destroy() });
+  });
+
+  it('keeps the popup open when the user clicks an OCR hitbox', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult({ term: 'over' })] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+
+    const token1 = document.createElement('span');
+    token1.className = 'js-cell-token';
+    token1.dataset.cellTerm = 'over';
+    token1.dataset.cellStart = '0';
+    token1.dataset.cellEnd = '4';
+    token1.dataset.cellBlockId = 'b1';
+    token1.textContent = 'over';
+    document.body.appendChild(token1);
+
+    const hitbox = document.createElement('span');
+    hitbox.className = 'cell-ocr-hitbox';
+    hitbox.dataset.cellTerm = 'all';
+    hitbox.textContent = 'all';
+    document.body.appendChild(hitbox);
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'over' }), 'req-over', token1.getBoundingClientRect(), token1) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+
+    act(() => { hitbox.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true })); });
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+
+    token1.remove();
+    hitbox.remove();
+    act(() => { ctrl.destroy() });
+  });
 });
 
 describe('nested popup stack', () => {
