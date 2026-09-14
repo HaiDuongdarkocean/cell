@@ -18,7 +18,7 @@ import {
 export type { OcrSettings, OcrOriginState } from './ocrStateTypes';
 export { DEFAULT_OCR_SETTINGS, DEFAULT_OCR_ORIGIN_STATE } from './ocrStateTypes';
 
-function mergeWithDefaults(stored: unknown): OcrSettings {
+export function mergeWithDefaults(stored: unknown): OcrSettings {
   if (typeof stored !== 'object' || stored === null) {
     return { ...DEFAULT_OCR_SETTINGS };
   }

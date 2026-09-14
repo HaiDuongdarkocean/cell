@@ -16,10 +16,10 @@ import { computeSplitHalves, type SplitHalf, SPLIT_DEFAULT_REGION_PCT } from '@/
 import { ocrTextToCues, type OcrDetection } from '@/features/ocr/pipeline/ocrToCues';
 import type { SrtCue } from '@/entities/media/types';
 import { resolveOcrLang, ENGINE_KEY_FOR_LANG, type ResolvedOcrLang } from '@/features/ocr/engine/paddleOcrLanguages';
-import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl } from '@/features/ocr/persistence/ocrStateStore';
+import { isOcrEnabledForUrl, loadOcrSettings, saveOcrSettings, setOcrPreference, extractOriginFromUrl, mergeWithDefaults } from '@/features/ocr/persistence/ocrStateStore';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
-import type { OcrOriginState, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
+import type { OcrOriginState, OcrSettings, CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTypes';
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
@@ -481,6 +481,11 @@ export class OcrSession {
     this.splitTracksPosted = true;
   }
 
+  repostCues(): void {
+    if (!this.running) return;
+    this.postOcrTracks();
+  }
+
   /** Tell the subtitle controller the OCR tracks are gone (session stop / split off). */
   private endOcrTracks(): void {
     if (!this.splitTracksPosted) return;
@@ -690,7 +695,7 @@ function startOcrVideoObserver(url: string): void {
 }
 
 /** T20: Start OCR if enabled for the current URL. Called on page load + SPA nav. */
-export async function initOcrForCurrentUrl(url: string): Promise<void> {
+export async function initOcrForCurrentUrl(url: string, freshSettings?: OcrSettings): Promise<void> {
   const newOrigin = extractOriginFromUrl(url);
   if (newOrigin === currentOrigin && activeSession?.isRunning()) {
     stopOcrVideoObserver();
@@ -705,7 +710,8 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   }
   currentOrigin = newOrigin;
 
-  const enabled = await shouldEnableOcr(url);
+  const settings = freshSettings ?? await loadOcrSettings();
+  const enabled = isOcrEnabledForUrl(settings, url);
   if (!enabled) {
     stopOcrVideoObserver();
     postOcrState(false);
@@ -721,7 +727,6 @@ export async function initOcrForCurrentUrl(url: string): Promise<void> {
   }
   stopOcrVideoObserver();
 
-  const settings = await loadOcrSettings();
   const originState = settings.origins[newOrigin];
   if (!originState?.ocrEnabled) return;
 
@@ -754,17 +759,9 @@ function postOcrState(enabled: boolean): void {
   window.postMessage({ type: '__CELL_OCR_STATE', enabled }, '*');
 }
 
-/** T19+T20: Initialize OCR content script — call on content-script load.
- *  Sets up:
- *  - Initial OCR check for current URL
- *  - chrome.storage.onChanged listener (toggle ON/OFF → start/stop)
- *  - SPA nav listener (yt-navigate-finish, popstate → re-check origin) */
+/** T19+T20: Initialize OCR content script. */
 export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerController | null)): void {
   getTriggerController = triggerFactory ?? null;
-  document.body.dataset.ocrInitCalled = 'true';
-
-  // T20: Initial check on page load.
-  void initOcrForCurrentUrl(window.location.href);
 
   // T19: React to settings changes (toggle in Manager Panel).
   if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
@@ -772,26 +769,56 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
       if (area !== 'local' && area !== 'sync') return;
       // OCR settings are stored under the 'ocrSettings' key (STORAGE_KEYS.OCR_SETTINGS),
       // NOT the general 'settings' key. Check both for safety.
-      if (changes.ocrSettings?.newValue || changes.settings?.newValue) {
-        // Light path: if session is running and only region config changed, update without restart.
+      const newValue = changes.ocrSettings?.newValue;
+      const nextOcrSettings = newValue
+        ? mergeWithDefaults(newValue)
+        : undefined;
+      if (nextOcrSettings || changes.settings?.newValue) {
         if (activeSession?.isRunning() && currentOrigin) {
           void (async () => {
-            const settings = await loadOcrSettings();
+            const settings = nextOcrSettings ?? await loadOcrSettings();
             const originState = settings.origins[currentOrigin];
             if (originState?.ocrEnabled) {
               activeSession!.updateRegionConfig(originState);
             } else {
-              // OCR disabled — full stop.
               await stopOcrSession();
             }
           })();
           return;
         }
-        // Full init path: no active session or origin change.
-        void initOcrForCurrentUrl(window.location.href);
+        void initOcrForCurrentUrl(window.location.href, nextOcrSettings);
       }
     });
   }
+
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data as { type?: string };
+    if (data?.type !== '__CELL_OCR_TOGGLE') return;
+    void (async () => {
+      if (!currentOrigin) {
+        currentOrigin = extractOriginFromUrl(window.location.href);
+      }
+      if (!currentOrigin) return;
+      const settings = await loadOcrSettings();
+      const originState = settings.origins[currentOrigin];
+      const currentlyEnabled = originState?.ocrEnabled ?? false;
+      const next = setOcrPreference(settings, currentOrigin, {
+        ...(originState ?? DEFAULT_OCR_ORIGIN_STATE),
+        ocrEnabled: !currentlyEnabled,
+      });
+      await saveOcrSettings(next);
+    })();
+  });
+
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const data = e.data as { type?: string };
+    if (data?.type !== '__CELL_OCR_QUERY_STATE') return;
+    const running = activeSession?.isRunning() ?? false;
+    postOcrState(running);
+    if (running) activeSession?.repostCues();
+  });
 
   // Region-select commands from Settings Panel.
   // Settings Panel sends via chrome.runtime.sendMessage → background → chrome.tabs.sendMessage.
@@ -871,14 +898,12 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
     if (data?.type !== '__CELL_OCR_DEBUG_INIT' || !data.origin) return;
     void (async () => {
       try {
-        document.body.dataset.ocrDebugStep = '1-start';
         if (activeSession?.isRunning()) {
           await activeSession.stop();
           activeSession = null;
         }
         currentOrigin = data.origin ?? '';
         const video = findVideoElement();
-        document.body.dataset.ocrDebugStep = '2-video-' + (video ? 'found' : 'null');
         if (!video) return;
         const originState: OcrOriginState = {
           ...DEFAULT_OCR_ORIGIN_STATE,
@@ -892,31 +917,14 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
         activeSession = new OcrSession();
         const tc = getTriggerController?.() ?? null;
         if (tc) activeSession.setTriggerController(tc);
-        document.body.dataset.ocrDebugStep = '3-before-start';
         await activeSession.start(video, originState);
-        document.body.dataset.ocrDebugStep = '4-after-start';
         postOcrState(true);
-      } catch (e) {
-        document.body.dataset.ocrDebugException = String(e);
+      } catch {
       }
     })();
   });
   }
 
-  // OCR toggle from subtitle overlay toolbar button.
-  // Toggles ocrEnabled for current origin in storage; storage.onChanged listener
-  // handles the actual start/stop.
-  window.addEventListener('message', (e) => {
-    if (e.source !== window) return;
-    const data = e.data as { type?: string };
-    if (data?.type !== '__CELL_OCR_TOGGLE') return;
-    void (async () => {
-      if (!currentOrigin) return;
-      const settings = await loadOcrSettings();
-      const originState = settings.origins[currentOrigin] ?? DEFAULT_OCR_ORIGIN_STATE;
-      const nextEnabled = !originState.ocrEnabled;
-      const next = setOcrPreference(settings, currentOrigin, { ...originState, ocrEnabled: nextEnabled });
-      await saveOcrSettings(next);
-    })();
-  });
+  // T20: Initial check on page load.
+  void initOcrForCurrentUrl(window.location.href);
 }

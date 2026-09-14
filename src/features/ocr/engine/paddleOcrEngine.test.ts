@@ -25,6 +25,10 @@ jest.mock('@techstark/opencv-js', () => ({
   },
 }));
 
+jest.mock('./getOpenCvUrl', () => ({
+  getOpenCvUrl: () => null,
+}));
+
 // Mock chrome-apis getURL — chrome.runtime.getURL not available in jsdom.
 jest.mock('@/shared/lib/chrome-apis', () => ({
   getURL: (path: string) => `chrome-extension://mock/${path}`,

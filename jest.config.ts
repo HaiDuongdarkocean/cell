@@ -43,6 +43,7 @@ const transform = {
     'ts-jest',
     {
       tsconfig: {
+        module: 'commonjs',
         jsx: 'react-jsx',
         esModuleInterop: true,
         types: ['chrome', 'jest', '@testing-library/jest-dom'],

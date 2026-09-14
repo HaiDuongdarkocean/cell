@@ -105,6 +105,19 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     () => { void handleGenerateNative(); },
   );
 
+  blockController.onToggleOcr = () => {
+    window.postMessage({ type: '__CELL_OCR_TOGGLE' }, '*');
+  };
+
+  function onOcrStateMessage(e: MessageEvent): void {
+    if (e.source !== window) return;
+    const d = e.data as { type?: string; enabled?: boolean };
+    if (d?.type === '__CELL_OCR_STATE' && typeof d.enabled === 'boolean') {
+      blockController?.setOcrEnabled(d.enabled);
+    }
+  }
+  window.addEventListener('message', onOcrStateMessage);
+
   // Subtitle sync controller owns active source, panel items, cue snapshots,
   // and virtual replacement slots. contentScriptController remains the
   // side-effect boundary: it fetches, parses, translates, and loads.
@@ -391,11 +404,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
     blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     blockController.onToggleSidePanel = toggleSidePanel;
-    // OCR toggle: post message to OCR content script (same page) to toggle
-    // ocrEnabled for current origin. OCR content script handles storage save.
-    blockController.onToggleOcr = () => {
-      window.postMessage({ type: '__CELL_OCR_TOGGLE' }, '*');
-    };
     blockController.onSearchResultSelect = (result, role) => { void handleSearchResultSelect(result, role); };
     blockController.setHasSearchKeys(hasSearchKeys());
     blockController.setSearchApiKeys(currentSettings?.subtitleApiKeys ?? []);
@@ -403,15 +411,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     // Force re-render with the new callbacks.
     blockController.refreshManagerState();
     // ADR-025: offset provider already wired in ReactSubtitleController constructor.
-
-    // Listen for OCR state changes from ocrContentScript → update toolbar button.
-    window.addEventListener('message', (e) => {
-      if (e.source !== window) return;
-      const d = e.data as { type?: string; enabled?: boolean };
-      if (d?.type === '__CELL_OCR_STATE' && typeof d.enabled === 'boolean') {
-        blockController?.setOcrEnabled(d.enabled);
-      }
-    });
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
     onStorageChangedCallback = (changes, area) => {
@@ -668,6 +667,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
   const { onRuntimeMessage, onRuntimeMessage2 } = createContentScriptMessageHandlers(ctx);
   const { onVisibilityChange, onSpaNav, onOcrTracksMessage } = createContentScriptLifecycleHandlers(ctx);
 
+  window.addEventListener('message', onOcrTracksMessage);
+  window.postMessage({ type: '__CELL_OCR_QUERY_STATE' }, '*');
+
   // ADR-034: listen on window capture (not document capture) so Cell fires
   // BEFORE host keydown listeners (e.g. YouTube space = play/pause). window is
   // the topmost ancestor — capture phase runs window → document → target.
@@ -749,7 +751,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
   document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('yt-navigate-finish', onSpaNav);
   window.addEventListener('popstate', onSpaNav);
-  window.addEventListener('message', onOcrTracksMessage);
 
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
@@ -758,6 +759,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
   // leak after many episode switches. Upgrade path: track + remove all listeners.
   return () => {
     window.removeEventListener('message', onOcrTracksMessage);
+    window.removeEventListener('message', onOcrStateMessage);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);

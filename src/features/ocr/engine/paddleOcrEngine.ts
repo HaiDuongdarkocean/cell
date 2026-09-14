@@ -7,6 +7,7 @@ import type { OcrEngine } from './ocrEngine';
 import type { ImageSource, OcrResult, OcrResultItem, OcrConfig, OcrOptions, OcrBackend, Quad } from './types';
 import { OCR_DEFAULT_ENGINE_KEY } from './types';
 import { ENGINE_KEY_FOR_LANG } from './paddleOcrLanguages';
+import { getOpenCvUrl } from './getOpenCvUrl';
 // OpenCV is dynamically imported inside initialize() — NOT at top level.
 // A static import loads 9.9MB WASM immediately on script load; if it fails
 // in the offscreen document, the entire ocrRunner.ts script throws and
@@ -63,12 +64,8 @@ export class PaddleOcrEngine implements OcrEngine {
     const { PaddleOCR } = mod;
 
     // Dynamic import OpenCV — bypass Vite preload helper with @vite-ignore.
-    // Vite's __vite__preloadHelper creates <link> elements that hang in offscreen
-    // documents. Direct chrome.runtime.getURL() import skips the preload entirely.
     step = 'import-opencv';
-    const cvUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
-      ? chrome.runtime.getURL('assets/opencv-Cphpfehb.js')
-      : null;
+    const cvUrl = getOpenCvUrl();
     const cv = cvUrl
       ? (await Promise.race([
           import(/* @vite-ignore */ cvUrl),

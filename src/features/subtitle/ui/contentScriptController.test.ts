@@ -29,6 +29,8 @@ import {
   isActivatableTarget,
   isInsideCellUi,
   isEditableEvent,
+  broadcastCues,
+  mergeCuesForPanel,
 } from '@/features/subtitle';
 import type { AutoLoadSubtitlesPayload } from '@/entities/message';
 import type { AutoLoadDeps } from '@/features/subtitle/logic/subtitleAutoLoad';
@@ -365,6 +367,70 @@ describe('contentScriptController', () => {
       type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
       payload: { tabId: undefined },
     });
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('wires OCR toggle and state listener before overlay settings load', async () => {
+    mockLoadSettings.mockImplementation(() => new Promise(() => {}));
+    const postMessageSpy = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
+
+    cleanup = init(video);
+
+    expect(typeof blockController.onToggleOcr).toBe('function');
+    blockController.onToggleOcr!();
+    expect(postMessageSpy).toHaveBeenCalledWith(
+      { type: '__CELL_OCR_TOGGLE' },
+      '*',
+    );
+
+    expect(postMessageSpy).toHaveBeenCalledWith(
+      { type: '__CELL_OCR_QUERY_STATE' },
+      '*',
+    );
+
+    window.dispatchEvent(new MessageEvent('message', {
+      data: { type: '__CELL_OCR_STATE', enabled: true },
+      source: window,
+    }));
+    expect(blockController.setOcrEnabled).toHaveBeenCalledWith(true);
+
+    postMessageSpy.mockRestore();
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('__CELL_OCR_TRACKS loads OCR cues, broadcasts merged panel cues, and refreshes panel', async () => {
+    cleanup = init(video);
+    await flushPromises();
+
+    const targetCues = [{ index: 1, start: 0, end: 5000, text: 'Hello World' }];
+    const nativeCues = [{ index: 2, start: 0, end: 5000, text: 'Hello Native' }];
+    const merged = [
+      { index: 1, start: 0, end: 5000, targetText: 'Hello World', nativeText: 'Hello Native' },
+    ];
+    jest.mocked(mergeCuesForPanel).mockReturnValueOnce(merged);
+
+    window.dispatchEvent(new MessageEvent('message', {
+      data: { type: '__CELL_OCR_TRACKS', targetCues, nativeCues },
+      source: window,
+      origin: window.location.origin,
+    }));
+
+    expect(blockController.loadBilingualCues).toHaveBeenCalledWith(targetCues, nativeCues);
+    expect(blockController.loadCues).toHaveBeenCalledWith(true);
+    expect(broadcastCues).toHaveBeenCalledWith(merged);
+    expect(blockController.updateManagerItems).toHaveBeenCalledWith(
+      'target',
+      expect.arrayContaining([expect.objectContaining({ name: 'OCR Target (live)' })]),
+      expect.any(Number),
+    );
+    expect(blockController.updateManagerItems).toHaveBeenCalledWith(
+      'native',
+      expect.arrayContaining([expect.objectContaining({ name: 'OCR Native (live)' })]),
+      expect.any(Number),
+    );
 
     cleanup!();
     cleanupCalled = true;

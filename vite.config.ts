@@ -223,6 +223,12 @@ export default defineConfig(({ mode }) => {
           }
           return undefined;
         },
+        chunkFileNames(chunkInfo) {
+          if (chunkInfo.name === 'opencv') {
+            return 'assets/[name].js';
+          }
+          return 'assets/[name]-[hash].js';
+        },
       },
     },
   },
