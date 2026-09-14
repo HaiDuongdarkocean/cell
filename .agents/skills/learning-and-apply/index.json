@@ -2228,6 +2228,24 @@
         "subtitle-navigation"
       ],
       "trigger": "User-triggered action mà intent là 'nghe/xem lại đoạn vừa rồi' (replay cue, repeat sentence, loop) chỉ seek mà không play"
+    },
+    {
+      "type": "experience",
+      "id": "persisted-style-must-not-carry-runtime-visibility",
+      "title": "Persisted style objects must never carry runtime-owned fields like visible",
+      "category": [
+        "data",
+        "state"
+      ],
+      "tags": [
+        "chrome-storage",
+        "onChanged",
+        "read-modify-write",
+        "visibility",
+        "runtime-state",
+        "single-writer"
+      ],
+      "trigger": "A transient UI state (subtitle hidden by a study mode, user toggle) is silently reverted whenever ANY settings write lands, because saveSettings read-modify-write drags the full style objects into changes.settings.newValue and the listener rebuilds visible from a stale flag."
     }
   ]
 }

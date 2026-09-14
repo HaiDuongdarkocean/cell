@@ -1,0 +1,17 @@
+{
+  "id": "persisted-style-must-not-carry-runtime-visibility",
+  "title": "Persisted style objects must never carry runtime-owned fields like visible",
+  "category": ["data", "state"],
+  "tags": ["chrome-storage", "onChanged", "read-modify-write", "visibility", "runtime-state", "single-writer"],
+  "trigger": "A transient UI state (subtitle hidden by a study mode, user toggle) is silently reverted whenever ANY settings write lands, because saveSettings read-modify-write drags the full style objects into changes.settings.newValue and the listener rebuilds visible from a stale flag.",
+  "principle": "Split ownership at the choke point: persisted styles carry appearance only; runtime fields (visible, heldCue, playing) are engine-owned. Three rules: (1) on storage.onChanged merge persisted fields over the engine's current runtime fields, never the reverse; (2) strip runtime fields before persisting (const { visible: _v, ...persisted } = style); (3) guard the engine's updateSettings choke point so even a missed writer can't re-assert visibility while a mode owns it. Fixing individual writers is whack-a-mole — every future saveSettings caller would reintroduce the stomp.",
+  "cases": [
+    {
+      "context": "Listen-Check hid subtitles, then a delayed persistFieldMapping save ~500ms after the mode click carried stored visible:true through onStorageChanged and re-showed subtitles mid blind-listen.",
+      "bad": "targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: overlayVisible }",
+      "good": "targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: engine.getTargetStyle().visible }"
+    }
+  ],
+  "applyFor": ["chrome.storage.onChanged handlers merging style objects", "saveSettings read-modify-write paths", "Any field owned by a state machine but persisted in a style blob"],
+  "source": { "commit": "edca07cd" }
+}
