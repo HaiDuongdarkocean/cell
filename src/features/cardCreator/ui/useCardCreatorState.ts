@@ -207,6 +207,9 @@ export interface UseCardCreatorStateOptions {
   /** Called when Add or Update completes successfully.
    *  Useful for closing the containing panel. */
   onSubmitSuccess?: () => void;
+  /** Called when the user selects a queue item so the parent can drive
+   *  a Dictionary lookup for that term. Only used in integrated panel mode. */
+  onQueueTermSelect?: (term: string) => void;
 }
 
 export function useCardCreatorState(
@@ -248,7 +251,9 @@ export function useCardCreatorState(
 
   const autosaverRef = useRef(new DraftAutosaver());
   const onSubmitSuccessRef = useRef(options?.onSubmitSuccess);
+  const onQueueTermSelectRef = useRef(options?.onQueueTermSelect);
   useEffect(() => { onSubmitSuccessRef.current = options?.onSubmitSuccess; }, [options?.onSubmitSuccess]);
+  useEffect(() => { onQueueTermSelectRef.current = options?.onQueueTermSelect; }, [options?.onQueueTermSelect]);
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
 
@@ -405,18 +410,28 @@ export function useCardCreatorState(
     const ctxQueue = ctx.queue;
     if (ctxQueue && ctxQueue.length >= 1) {
       store.setQueueItems(ctxQueue);
-      store.setQueueActiveIndex(0);
       store.setQueueSidebarOpen(ctxQueue.length >= 2);
-      // Use first queue item as prefill (overrides cue/prefill).
-      const firstItem = ctxQueue[0]!;
+      // Prefer the queue item matching the resolved prefill term. When the user
+      // selects a queue item, the parent drives a Dictionary lookup and then
+      // pushes a prefill back with that term; we want the queue to stay aligned.
+      const activeIndex = Math.max(
+        0,
+        ctxQueue.findIndex(
+          (item) => item.term.toLowerCase() === prefill?.targetWord?.toLowerCase(),
+        ) ?? 0,
+      );
+      const activeItem = ctxQueue[activeIndex]!;
+      store.setQueueActiveIndex(activeIndex);
+      const usePrefillDefinitions =
+        activeItem.term.toLowerCase() === prefill?.targetWord?.toLowerCase();
       store.setDraft({
         noteType: restoredDraft?.noteType ?? defaultNoteType,
         deck: restoredDraft?.deck ?? defaultDeck,
         fields: {
-          targetWord: firstItem.term,
+          targetWord: activeItem.term,
           sentence: ctx.cue?.targetText ?? prefill?.sentence ?? '',
           sentenceTranslation: ctx.cue?.nativeText ?? prefill?.sentenceTranslation ?? '',
-          definitions: firstItem.definitions,
+          definitions: usePrefillDefinitions ? (prefill?.definitions ?? '') : activeItem.definitions,
           images: initialImages,
           sentenceAudios: initialAudios,
           wordAudios: [],
@@ -1165,14 +1180,14 @@ export function useCardCreatorState(
     }
   }, [resolveGenerateSource, updateField]);
 
-  /** Queue item click: switch the draft to the item, then run the same
-   *  generate mechanism so the card gets the term's dictionary data +
-   *  media. Shared cue media (screenshot, recorded sentence audio) and
-   *  user-entered fields are never overwritten. */
+  /** Queue item click: switch the active queue item and notify the parent
+   *  so the integrated Dictionary can lookup the term. Definitions and media
+   *  are filled later when the user presses Send to Card in the Dictionary. */
   const selectQueueItem = useCallback((index: number) => {
     selectQueueItemStore(index);
-    void generateAll();
-  }, [selectQueueItemStore, generateAll]);
+    const term = useCardCreatorStore.getState().queueItems[index]?.term;
+    if (term) onQueueTermSelectRef.current?.(term);
+  }, [selectQueueItemStore]);
 
   /** Retry the caller once after a schema refresh if the error looks like a
    *  missing deck or note type. */
@@ -1255,14 +1270,19 @@ export function useCardCreatorState(
             success = true;
           }
           // Queue auto-next: advance to next item or signal queue exhausted.
-          // Goes through the same select+generate mechanism as a queue click —
-          // the next card gets its own dictionary data + term-bound media.
+          // In integrated mode, the parent Dictionary pane drives the lookup;
+          // in standalone mode, the dialog generates resources itself.
           const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
             const nextIndex = queueActiveIndex + 1;
             if (nextIndex < queueItems.length) {
               store.selectQueueItem(nextIndex);
-              void generateAll();
+              const nextTerm = queueItems[nextIndex]?.term;
+              if (nextTerm && onQueueTermSelectRef.current) {
+                onQueueTermSelectRef.current(nextTerm);
+              } else {
+                void generateAll();
+              }
             } else {
               store.setQueueItems([]);
               store.setQueueActiveIndex(-1);

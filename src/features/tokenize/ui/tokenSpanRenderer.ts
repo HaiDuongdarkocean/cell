@@ -103,7 +103,9 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
 
 /** Bind a prepared block to the DOM: replace source text with token spans. */
 export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): void {
-  if (!block.tokens || block.tokens.length === 0 || block.sourceNodes.length === 0) return;
+  if (!block.tokens || block.tokens.length === 0 || block.sourceNodes.length === 0) {
+    return;
+  }
 
   const parent = block.element;
   const sourceNode = block.sourceNodes[0]!;

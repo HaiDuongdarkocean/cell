@@ -43,6 +43,7 @@ import { createWordHighlight, type HighlightTarget, type WordHighlight } from '@
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import { buildSubtitleQueue } from '@/features/subtitle/actions/cardActions';
 import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
@@ -55,19 +56,13 @@ import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreat
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { getModelFields } from '@/features/cardCreator/service/ankiSchemaCache';
-import { autoMapFields } from '@/features/cardCreator/service/fieldMapping';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
+
 import { addToOceanSrs, openSrsStudyPage } from '@/features/dictionaryPopup/services/addToOceanSrs';
 import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
-import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast, showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { t } from '@/shared/i18n';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
-
-const ANKI_UNREACHABLE_RE = /network error|timed out|unreachable|failed to fetch/i;
 
 /** Minimal cue range used for sentence audio capture. */
 export interface CueRange {
@@ -1061,30 +1056,32 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       return;
     }
 
-    const firstQueueItem = context.queue?.[0];
+    const hasQueue = (context.queue?.length ?? 0) > 0;
     const sentence = context.prefill?.sentence ?? context.cue?.targetText ?? '';
     const translation =
       context.prefill?.sentenceTranslation ??
       context.cue?.nativeText ??
       selection?.translation ??
       '';
-    const definitionsText =
-      firstQueueItem?.definitions ?? context.prefill?.definitions ?? '';
-    const term =
-      context.prefill?.targetWord ??
-      firstQueueItem?.term ??
-      context.cue?.targetText ??
-      '';
+    // When a queue is present, the panel starts with an empty Dictionary state
+    // and the user picks a term to look up. No term or definitions are resolved
+    // yet, so the integrated Dictionary must not pre-fill a single word.
+    const definitionsText = hasQueue
+      ? ''
+      : (context.prefill?.definitions ?? '');
+    const term = hasQueue
+      ? undefined
+      : (context.prefill?.targetWord ?? context.cue?.targetText ?? '');
 
     const contextDefinitions: { readonly pos?: string; readonly text: string }[] = definitionsText
       ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
       : [];
     const definitions = contextDefinitions.length > 0
       ? contextDefinitions
-      : (selection?.definitions ?? []);
+      : (hasQueue ? [] : (selection?.definitions ?? []));
 
     const rawDefinitions: string[] =
-      selection?.rawDefinitions && selection.rawDefinitions.length > 0
+      selection?.rawDefinitions && selection.rawDefinitions.length > 0 && !hasQueue
         ? [...selection.rawDefinitions]
         : definitionsText
           ? definitionsText.split('\n').filter((line) => line.trim())
@@ -1523,6 +1520,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           }, lookupCue);
           const sentenceTranslation = prefill.translation ?? (await translationTask);
 
+          // Build a lazy queue from the subtitle cue / context sentence. The
+          // queue is shown first; the user selects a term before any lookup.
+          const queueText = fromSubtitle
+            ? (lookupCue?.text ?? media.cue?.targetText ?? prefill.contextSentence)
+            : prefill.contextSentence;
+          const queue = queueText ? await buildSubtitleQueue(queueText, sourceLang) : [];
+
           const context: CardCreatorOpenContext = {
             video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
             sourceLang,
@@ -1538,6 +1542,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               sentenceAudioUrls: media.sentenceAudioUrls,
               imageUrls: media.imageUrls,
             },
+            queue,
           };
 
           sendToCard(context, action, prefill);
@@ -1555,142 +1560,18 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return { stayOpen: false };
   }
 
-  async function handlePopupQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): Promise<void> {
+  function handlePopupQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): void {
     const destination = deps.dictionaryPopupSettings.srsDestination ?? 'anki';
     if (destination === 'ocean-srs') {
-      return handlePopupAddToSrs(prefill);
+      void handlePopupAddToSrs(prefill);
+      return;
     }
-    return handlePopupAnkiQuickAdd(level, prefill);
+    // Anki Quick Add now routes through the same queue + Dictionary flow so the
+    // user can pick one term before it is added.
+    handlePopupCardCreatorAction(level, 'quick-add', prefill);
   }
 
-  async function handlePopupAnkiQuickAdd(level: PopupLevel, prefill: PopupCardCreatorPrefill): Promise<void> {
-    // Capture subtitle context BEFORE any await / close.
-    const fromSubtitle = isLookupFromSubtitle(level);
-    const lookupCue = lookupCueRange(level) ?? undefined;
-    closePopup();
-    const settings = await loadSettingsOrToast(deps.container);
-    if (!settings) return;
-    const freshCcSettings = settings.cardCreator;
-    const url = freshCcSettings.ankiConnectUrl;
 
-    const chip = showProgressToast(t('dict.toast.quickAddCollecting'), deps.container);
-
-    const conn = await testConnection(url);
-    if (!conn.ok) {
-      chip.finish(t('dict.toast.ankiNotRunning'), 'error');
-      return;
-    }
-
-    const autosaver = new DraftAutosaver();
-    const restored = await autosaver.load();
-    const deck = restored?.deck ?? freshCcSettings.defaultDeck;
-    const noteType = restored?.noteType ?? freshCcSettings.defaultNoteType;
-    // Prefer saved per-note-type mapping; fall back to restored draft mapping
-    // only when it matches the current note type, then auto-map from fields.
-    const savedMapping = freshCcSettings.fieldMappings?.[noteType];
-    const restoredMapping =
-      restored?.noteType === noteType ? restored?.fieldMapping : undefined;
-    const noteTypeFields = await getModelFields(url, noteType);
-    const fieldMapping =
-      savedMapping ??
-      restoredMapping ??
-      (noteTypeFields ? autoMapFields(noteTypeFields) : {});
-    const tags = restored?.tags ?? freshCcSettings.defaultTags;
-
-    if (!deck || !noteType) {
-      chip.finish(t('dict.toast.quickAddNeedDeck'), 'error');
-      return;
-    }
-    if (Object.keys(fieldMapping).length === 0) {
-      chip.finish(t('dict.toast.quickAddNeedMapping'), 'error');
-      return;
-    }
-
-    const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
-    const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
-
-    const wordAudios: MediaFile[] = [];
-    const sentenceAudios: MediaFile[] = [];
-    const images: MediaFile[] = [];
-    const warnings: string[] = [];
-
-    const translationTask = (async (): Promise<string> => {
-      if (prefill.translation || !prefill.contextSentence) return prefill.translation ?? '';
-      try {
-        const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
-          type: MESSAGE_TYPES.TRANSLATE,
-          payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
-        });
-        if (res?.success && res.data?.translated?.length) {
-          return res.data.translated.join(' ');
-        }
-      } catch { /* non-fatal */ }
-      return '';
-    })();
-
-    // Fetch missing URL media and capture subtitle screenshot/audio in one place.
-    const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, warnings, () => {
-      chip.update(t('dict.toast.recording'));
-    }, lookupCue);
-    const sentenceTranslation = prefill.translation ?? (await translationTask);
-
-    chip.update(t('dict.toast.quickAddAdding'));
-
-    const [wordResults, sentenceResults, imageResults] = await Promise.all([
-      Promise.allSettled((media.wordAudioUrls ?? []).map((u) => fetchMediaFile(u, 'audio'))),
-      Promise.allSettled((media.sentenceAudioUrls ?? []).map((u) => fetchMediaFile(u, 'audio'))),
-      Promise.allSettled((media.imageUrls ?? []).map((u) => fetchMediaFile(u, 'image'))),
-    ]);
-    wordResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') wordAudios.push(r.value);
-      else warnings.push(`word audio: ${media.wordAudioUrls[i]}`);
-    });
-    sentenceResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') sentenceAudios.push(r.value);
-      else warnings.push(`sentence audio: ${media.sentenceAudioUrls[i]}`);
-    });
-    imageResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') images.push(r.value);
-      else warnings.push(`image: ${media.imageUrls[i]}`);
-    });
-
-    images.push(...media.initialMedia.filter((f) => f.kind === 'image'));
-    sentenceAudios.push(...media.initialMedia.filter((f) => f.kind === 'audio'));
-
-    const definitionsText = formatDefinitions(prefill.definitions);
-
-    const result = await quickAddNote(
-      url,
-      deck,
-      noteType,
-      fieldMapping,
-      tags,
-      {
-        targetWord: prefill.term,
-        sentence: prefill.contextSentence,
-        sentenceTranslation,
-        definitions: definitionsText,
-        note: '',
-        moreExample: '',
-      },
-      { images, sentenceAudios, wordAudios },
-      (msg) => warnings.push(msg),
-    );
-
-    if (result.ok) {
-      if (result.noteId === null) {
-        chip.finish(t('dict.toast.duplicate'), 'warning');
-      } else {
-        chip.finish(t('dict.toast.cardAdded', [deck, result.noteId]), 'success');
-      }
-    } else {
-      const errMsg = result.error ?? '';
-      chip.finish(
-        ANKI_UNREACHABLE_RE.test(errMsg) ? t('dict.toast.ankiNotRunning') : t('dict.toast.quickAddFailed', [errMsg]),
-        'error',
-      );
-    }
-  }
 
   async function handlePopupAddToSrs(prefill: PopupCardCreatorPrefill): Promise<void> {
     closePopup();

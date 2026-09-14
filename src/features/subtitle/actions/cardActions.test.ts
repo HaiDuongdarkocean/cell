@@ -1,44 +1,35 @@
-import { handleClusterQuickAdd } from './cardActions';
-import { sendMessage } from '@/shared/lib/chrome-apis';
+import { buildSubtitleQueue, handleCardCreatorAction } from './cardActions';
 import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
 import { showProgressToast, type ProgressToastHandle } from '@/features/subtitle/ui/subtitleUI';
 import type { SubtitleActionContext } from './subtitleActionContext';
 import type { Settings } from '@/entities/media';
 
-jest.mock('@/shared/lib/chrome-apis', () => ({ sendMessage: jest.fn() }));
 jest.mock('@/features/dictionary/services/wordStatusClient', () => ({ getWordStatuses: jest.fn() }));
 jest.mock('@/features/cardCreator/media/screenshot', () => ({ captureScreenshot: jest.fn() }));
 jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({ captureSentenceAudio: jest.fn() }));
-jest.mock('@/features/cardCreator/service/cardCreatorPrefetch', () => ({ prefetchAnkiConnectData: jest.fn() }));
-jest.mock('@/features/cardCreator/service/quickAddNote', () => ({ quickAddNote: jest.fn() }));
-jest.mock('@/features/cardCreator/service/cardCreatorService', () => ({ testConnection: jest.fn() }));
-jest.mock('@/features/cardCreator/state/cardDraft', () => ({
-  ...jest.requireActual('@/features/cardCreator/state/cardDraft'),
-  DraftAutosaver: jest.fn().mockImplementation(() => ({
-    load: jest.fn(async () => ({
-      deck: 'Default',
-      noteType: 'Basic',
-      fieldMapping: { Front: 'targetWord', Back: 'definitions' },
-      tags: '',
-    })),
-  })),
-}));
+jest.mock('@/features/cardCreator/service/cardCreatorPrefetch', () => ({ prefetchAnkiConnectData: jest.fn(async () => ({})) }));
 jest.mock('@/features/subtitle/ui/subtitleUI', () => ({ showProgressToast: jest.fn() }));
 
-const mockSendMessage = jest.mocked(sendMessage);
 const mockGetWordStatuses = jest.mocked(getWordStatuses);
 const mockCaptureScreenshot = jest.mocked(captureScreenshot);
 const mockCaptureSentenceAudio = jest.mocked(captureSentenceAudio);
-const mockQuickAddNote = jest.mocked(quickAddNote);
-const mockTestConnection = jest.mocked(testConnection);
 const mockShowProgressToast = jest.mocked(showProgressToast);
 
 function makeChip(): jest.Mocked<ProgressToastHandle> {
   return { update: jest.fn(), finish: jest.fn(), dismiss: jest.fn() };
+}
+
+function makeWebTextCtrl() {
+  return {
+    updateCardCreatorSettings: jest.fn(),
+    sendToCard: jest.fn(),
+    isCardCreatorOpen: jest.fn().mockReturnValue(false),
+    handleLookup: jest.fn(),
+    cancelLookup: jest.fn(),
+    configureVideo: jest.fn(),
+  };
 }
 
 function makeCtx(overrides: Partial<SubtitleActionContext> = {}): SubtitleActionContext {
@@ -46,7 +37,7 @@ function makeCtx(overrides: Partial<SubtitleActionContext> = {}): SubtitleAction
   return {
     video,
     container: document.createElement('div'),
-    webTextCtrl: undefined,
+    webTextCtrl: makeWebTextCtrl() as unknown as NonNullable<SubtitleActionContext['webTextCtrl']>,
     getTargetCues: () => [{ index: 0, start: 1000, end: 3000, text: 'hello world' }],
     getNativeCues: () => [],
     getCurrentTargetText: () => 'hello world',
@@ -66,54 +57,88 @@ function makeCtx(overrides: Partial<SubtitleActionContext> = {}): SubtitleAction
   };
 }
 
-describe('handleClusterQuickAdd', () => {
+describe('buildSubtitleQueue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetWordStatuses.mockResolvedValue(new Map([['can', 'unknown'], ['stop', 'unknown'], ['it', 'known']]));
+  });
+
+  it('returns queue items with empty definitions and does not lookup', async () => {
+    const queue = await buildSubtitleQueue('can stop it', 'en');
+
+    expect(queue).toEqual([
+      { term: 'can', definitions: '', status: 'unknown' },
+      { term: 'stop', definitions: '', status: 'unknown' },
+    ]);
+  });
+
+  it('filters out known words', async () => {
+    mockGetWordStatuses.mockResolvedValue(new Map([['hello', 'known'], ['world', 'known']]));
+
+    const queue = await buildSubtitleQueue('hello world', 'en');
+
+    expect(queue).toEqual([]);
+  });
+});
+
+describe('handleCardCreatorAction', () => {
   let chip: jest.Mocked<ProgressToastHandle>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     chip = makeChip();
     mockShowProgressToast.mockReturnValue(chip);
-    mockTestConnection.mockResolvedValue({ ok: true, value: 6 });
     mockGetWordStatuses.mockResolvedValue(new Map([['hello', 'unknown'], ['world', 'known']]));
     mockCaptureScreenshot.mockResolvedValue({ kind: 'image' } as never);
     mockCaptureSentenceAudio.mockResolvedValue({ ok: true, file: { kind: 'audio' } } as never);
-    mockSendMessage.mockResolvedValue({ success: true, data: [] } as never);
-    mockQuickAddNote.mockResolvedValue({ ok: true, noteId: 42 });
   });
 
-  it('finishes with the Anki-not-open state when the preflight connection fails', async () => {
-    mockTestConnection.mockResolvedValue({ ok: false, error: 'Network error: Failed to fetch' });
+  it('opens the queue for quick-update with initialAction quick-add', async () => {
+    const ctx = makeCtx();
 
-    await handleClusterQuickAdd(makeCtx());
+    await handleCardCreatorAction(ctx, 'quick-update');
 
-    expect(chip.finish).toHaveBeenCalledWith(expect.stringMatching(/anki isn't open/i), 'error');
-    expect(mockQuickAddNote).not.toHaveBeenCalled();
+    expect(ctx.webTextCtrl!.updateCardCreatorSettings).toHaveBeenCalled();
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+        initialMedia: expect.arrayContaining([expect.objectContaining({ kind: 'image' })]),
+      }),
+      'quick-add',
+    );
   });
 
-  it('reports recording then adding then success for the happy path', async () => {
-    await handleClusterQuickAdd(makeCtx());
+  it('opens the queue for edit-card with initialAction edit-card', async () => {
+    const ctx = makeCtx();
 
-    expect(mockShowProgressToast).toHaveBeenCalledWith(expect.stringMatching(/collecting/i), expect.any(HTMLElement));
-    expect(chip.update).toHaveBeenCalledWith(expect.stringMatching(/recording/i));
-    expect(chip.update).toHaveBeenCalledWith(expect.stringMatching(/adding card 1 of 1/i));
-    expect(mockQuickAddNote).toHaveBeenCalledTimes(1);
-    expect(chip.finish).toHaveBeenCalledWith(expect.stringMatching(/added 1 card/i), 'success');
+    await handleCardCreatorAction(ctx, 'edit-card');
+
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+      }),
+      'edit-card',
+    );
   });
 
-  it('maps AnkiConnect network failures from quickAddNote to the Anki-not-open state', async () => {
-    mockQuickAddNote.mockResolvedValue({ ok: false, error: 'Network error: Failed to fetch' });
+  it('opens the queue for update-current with initialAction quick-update', async () => {
+    const ctx = makeCtx();
 
-    await handleClusterQuickAdd(makeCtx());
+    await handleCardCreatorAction(ctx, 'update-current');
 
-    expect(chip.finish).toHaveBeenCalledWith(expect.stringMatching(/anki isn't open/i), 'error');
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+      }),
+      'quick-update',
+    );
   });
 
-  it('finishes with an info state when every word is already known', async () => {
-    mockGetWordStatuses.mockResolvedValue(new Map([['hello', 'known'], ['world', 'known']]));
+  it('dismisses the progress chip after opening the queue', async () => {
+    const ctx = makeCtx();
 
-    await handleClusterQuickAdd(makeCtx());
+    await handleCardCreatorAction(ctx, 'edit-card');
 
-    expect(chip.finish).toHaveBeenCalledWith(expect.stringMatching(/no unknown or tracking/i), 'info');
-    expect(mockQuickAddNote).not.toHaveBeenCalled();
+    expect(chip.dismiss).toHaveBeenCalled();
   });
 });

@@ -24,6 +24,9 @@ export interface CardCreatorPanelProps {
   readonly context?: DictionaryPanelPrefill | null;
   /** Called after a successful Add or Update, e.g. to close the panel. */
   readonly onAfterSubmit?: () => void;
+  /** Called when the user selects a queue item so the parent can drive
+   *  a Dictionary lookup for that term. */
+  readonly onQueueTermSelect?: (term: string) => void;
 }
 
 function buildOpenContext(
@@ -80,6 +83,8 @@ interface CardCreatorPanelCoreProps {
   readonly context?: DictionaryPanelPrefill | null;
   /** Called after a successful Add or Update. */
   readonly onAfterSubmit?: () => void;
+  /** Called when the user selects a queue item. */
+  readonly onQueueTermSelect?: (term: string) => void;
   /** Whether the panel is in mobile (sheet) layout. */
   readonly isMobile?: boolean;
   /** Called when settings change. */
@@ -92,6 +97,7 @@ function CardCreatorPanelCore({
   targetLang,
   context,
   onAfterSubmit,
+  onQueueTermSelect,
   isMobile = false,
   onSettingsChange,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
@@ -104,16 +110,20 @@ function CardCreatorPanelCore({
   const cardCreatorSettings = settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator;
   const state = useCardCreatorState(cardCreatorSettings, openContext, initialAction, {
     onSubmitSuccess: onAfterSubmit,
+    onQueueTermSelect,
   });
   const { loadStatus, submitting, submit } = state;
 
   // Quick Add from the dictionary header: auto-submit the prefilled card as soon
   // as the form data is loaded. This mirrors the popup dictionary Quick Add
   // behavior (bypass dialog, add note directly).
+  // Guard: a queue-only context (no definitions, no lookup result) must not
+  // auto-submit — the user first has to pick a queue term and look it up.
   const quickAddContextRef = useRef<DictionaryPanelPrefill | null>(null);
   useEffect(() => {
     if (initialAction !== 'quick-add' || !context || context === quickAddContextRef.current) return;
     if (loadStatus === 'idle' || submitting) return;
+    if (!context.definitions?.length && !context.lookupResult) return;
     quickAddContextRef.current = context;
     void submit('add');
   }, [initialAction, context, loadStatus, submitting, submit]);
@@ -166,6 +176,7 @@ export function CardCreatorPanel({
   targetLang,
   context,
   onAfterSubmit,
+  onQueueTermSelect,
 }: CardCreatorPanelProps): React.JSX.Element {
   const isMobile = useIsMobile(BREAKPOINTS.expanded);
   const [appSettings, setAppSettings] = useState<Settings | null>(null);
@@ -214,6 +225,7 @@ export function CardCreatorPanel({
       targetLang={targetLang}
       context={context}
       onAfterSubmit={onAfterSubmit}
+      onQueueTermSelect={onQueueTermSelect}
       isMobile={isMobile}
       onSettingsChange={handleSettingsChange}
     />

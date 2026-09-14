@@ -6,25 +6,19 @@
  * it takes explicit dependencies (video, sendMessage, etc.) rather than
  * closing over controller state.
  */
-import { sendMessage } from '@/shared/lib/chrome-apis';
-import { MESSAGE_TYPES } from '@/shared/config/messages';
+
 import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
 import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
-import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { t } from '@/shared/i18n';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import type { LookupResult } from '@/entities/dictionary';
+
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import type { SubtitleActionContext } from './subtitleActionContext';
-
-const ANKI_UNREACHABLE_RE = /network error|timed out|unreachable|failed to fetch/i;
 
 /** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
  *  timeout. Used before screenshot capture — the user may have just seeked
@@ -65,7 +59,8 @@ export function tokenizeSubtitleWords(text: string): string[] {
 }
 
 /** Build a Card Creator queue from the current subtitle line: tokenize →
- *  filter unknown/tracking → lookup each in dictionary → return queue items.
+ *  filter unknown/tracking → return queue items without dictionary lookup.
+ *  Lookup is deferred until the user selects a term in the queue.
  *  Used by edit-card action for the I+N review flow. */
 export async function buildSubtitleQueue(targetText: string, sourceLang: string): Promise<CardCreatorQueueItem[]> {
   const words = tokenizeSubtitleWords(targetText);
@@ -76,46 +71,21 @@ export async function buildSubtitleQueue(targetText: string, sourceLang: string)
     return s === 'unknown' || s === 'tracking';
   });
   if (learnWords.length === 0) return [];
-  // Look up each word in the dictionary (parallel for speed).
-  const results = await Promise.all(learnWords.map(async (term) => {
-    try {
-      const response = await sendMessage({
-        type: MESSAGE_TYPES.LOOKUP_REQUEST,
-        payload: {
-          requestId: `queue-${Date.now()}-${term}`,
-          request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-        },
-      }) as { success: boolean; data?: LookupResult[] };
-      const definitions = response.success && response.data && response.data.length > 0
-        ? response.data.flatMap((r) => r.definitions).map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text)).join('\n')
-        : '';
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions, status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    } catch {
-      const status = statusMap.get(term) ?? 'unknown';
-      return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
-    }
-  }));
-  return results;
+  return learnWords.map((term) => {
+    const status = statusMap.get(term) ?? 'unknown';
+    return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
+  });
 }
 
 /** ADR-026: Handle Card Creator action (quick-update, edit-card, or update-current).
- *  quick-update → batch quick-add all unknown/tracking words in the current
- *    subtitle line directly to Anki (no dialog). I+1 = 1 word → 1 card,
- *    I+N = N words → N cards.
- *  edit-card → open the Card Creator dialog pre-filled.
- *  update-current → open dialog with initialAction='quick-update' (focus Update). */
+ *  quick-update → open the integrated Card Creator queue with initialAction='quick-add'
+ *    so the user picks a term, looks it up, and the card is added directly.
+ *  edit-card → open the queue with initialAction='edit-card' (neutral, edit form).
+ *  update-current → open the queue with initialAction='quick-update' (focus Update). */
 export async function handleCardCreatorAction(ctx: SubtitleActionContext, action: CardCreatorAction): Promise<void> {
-  if (action === 'quick-update') {
-    await handleClusterQuickAdd(ctx);
-    return;
-  }
-  // edit-card + update-current need webTextCtrl to open the Card Creator dialog.
   if (!ctx.webTextCtrl) return;
-  // edit-card + update-current: open dialog (flow below).
-  // ADR-027: update-current → initialAction='quick-update' (focus Update button).
-  // edit-card → initialAction='edit-card' (neutral).
-  const initialAction = action === 'update-current' ? 'quick-update' : 'edit-card';
+  const initialAction: 'quick-add' | 'quick-update' | 'edit-card' =
+    action === 'quick-update' ? 'quick-add' : (action === 'update-current' ? 'quick-update' : 'edit-card');
   // Load settings fresh (URL/deck/noteType/lang may have changed since init).
   const settings = await ctx.loadSettingsOrToast(ctx.container);
   if (!settings) return;
@@ -179,160 +149,4 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   chip.dismiss();
 }
 
-/** Batch quick-add: find all unknown/tracking words in the current subtitle
- *  line, look up each in the dictionary, and add a card for each directly to
- *  Anki (no dialog). I+1 = 1 unknown word → 1 card. I+N = N unknown words →
- *  N cards. Media (screenshot + sentence audio) is captured once and shared
- *  across all cards in the same sentence. */
-export async function handleClusterQuickAdd(ctx: SubtitleActionContext): Promise<void> {
-  const targetText = ctx.getCurrentTargetText();
-  if (!targetText) {
-    ctx.showToast(t('dict.toast.noActiveSubtitle'), { variant: 'info' });
-    return;
-  }
-  const nativeText = ctx.getCurrentNativeText() ?? '';
 
-  const chip = showProgressToast(t('dict.toast.quickAddCollecting'), ctx.container);
-
-  // Load settings + draft config.
-  const settings = await ctx.loadSettingsOrToast(ctx.container);
-  if (!settings) {
-    chip.dismiss();
-    return;
-  }
-  const cc = settings.cardCreator;
-
-  const conn = await testConnection(cc.ankiConnectUrl);
-  if (!conn.ok) {
-    chip.finish(t('dict.toast.ankiNotRunning'), 'error');
-    return;
-  }
-
-  const autosaver = new DraftAutosaver();
-  const restored = await autosaver.load();
-  const deck = restored?.deck ?? cc.defaultDeck;
-  const noteType = restored?.noteType ?? cc.defaultNoteType;
-  const fieldMapping = restored?.fieldMapping ?? {};
-  const tags = restored?.tags ?? cc.defaultTags;
-  if (!deck || !noteType) {
-    chip.finish(t('dict.toast.quickAddNeedDeck'), 'error');
-    return;
-  }
-  if (Object.keys(fieldMapping).length === 0) {
-    chip.finish(t('dict.toast.quickAddNeedMapping'), 'error');
-    return;
-  }
-
-  const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
-
-  // Tokenize the subtitle into unique lowercase word terms.
-  const words = tokenizeSubtitleWords(targetText);
-  if (words.length === 0) {
-    chip.finish(t('dict.toast.noWordsInSubtitle'), 'info');
-    return;
-  }
-
-  // Get word statuses and filter to unknown/tracking.
-  const statusMap = await getWordStatuses(sourceLang, words);
-  const learnWords = words.filter((w) => {
-    const s = statusMap.get(w);
-    return s === 'unknown' || s === 'tracking';
-  });
-  if (learnWords.length === 0) {
-    chip.finish(t('dict.toast.noLearnWords'), 'info');
-    return;
-  }
-
-  // Capture media once (shared across all cards).
-  const images: MediaFile[] = [];
-  const sentenceAudios: MediaFile[] = [];
-  if (ctx.video && ctx.video.videoWidth > 0) {
-    await waitForVideoReady(ctx.video);
-    try {
-      const screenshot = await captureScreenshot(ctx.video);
-      images.push(screenshot);
-    } catch { /* non-fatal */ }
-    try {
-      const cues = ctx.getTargetCues();
-      const currentMs = ctx.video.currentTime * 1000;
-      const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-      if (matchingCue) {
-        chip.update(t('dict.toast.recording'));
-        const audioR = await captureSentenceAudio(ctx.video, { start: matchingCue.start, end: matchingCue.end });
-        if (audioR.ok) sentenceAudios.push(audioR.file);
-      }
-    } catch { /* non-fatal */ }
-  }
-
-  // Look up each word + add a card.
-  let added = 0;
-  let skipped = 0;
-  let index = 0;
-  const errors: string[] = [];
-  for (const term of learnWords) {
-    index++;
-    chip.update(t('dict.toast.quickAddAddingOf', [String(index), String(learnWords.length)]));
-    // Dictionary lookup via background service worker.
-    let definitions = '';
-    try {
-      const response = await sendMessage({
-        type: MESSAGE_TYPES.LOOKUP_REQUEST,
-        payload: {
-          requestId: `cluster-qa-${Date.now()}-${term}`,
-          request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
-        },
-      }) as { success: boolean; data?: LookupResult[] };
-      if (response.success && response.data && response.data.length > 0) {
-        definitions = response.data
-          .flatMap((r) => r.definitions)
-          .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-          .join('\n');
-      }
-    } catch {
-      // Lookup failure is non-fatal — card is added with empty definitions.
-    }
-
-    const result = await quickAddNote(
-      cc.ankiConnectUrl,
-      deck,
-      noteType,
-      fieldMapping,
-      tags,
-      {
-        targetWord: term,
-        sentence: targetText,
-        sentenceTranslation: nativeText,
-        definitions,
-        note: '',
-        moreExample: '',
-      },
-      { images, sentenceAudios, wordAudios: [] },
-      (msg) => errors.push(`${term}: ${msg}`),
-    );
-
-    if (result.ok && result.noteId !== null) {
-      added++;
-    } else if (result.ok && result.noteId === null) {
-      skipped++;
-    } else if (!result.ok) {
-      errors.push(`${term}: ${result.error}`);
-    }
-  }
-
-  if (added > 0) {
-    chip.finish(
-      skipped > 0
-        ? t('dict.toast.cardsAddedSkipped', [String(added), deck, String(skipped)])
-        : t('dict.toast.cardsAddedTo', [String(added), deck]),
-      'success',
-    );
-  } else if (skipped > 0) {
-    chip.finish(t('dict.toast.allDuplicates', [String(skipped)]), 'warning');
-  } else {
-    const errMsg = errors.join('; ');
-    chip.finish(
-      ANKI_UNREACHABLE_RE.test(errMsg) ? t('dict.toast.ankiNotRunning') : t('dict.toast.quickAddFailed', [errMsg]),
-      'error',
-    );
-  }
-}

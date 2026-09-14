@@ -24,10 +24,12 @@ docs/           # Tài liệu dự án
 │   ├── 088-foundation-motion.md                 # WHY: 120-300ms, purpose-driven easing, reduced-motion
 │   ├── 089-foundation-iconography.md            # WHY: 24×24 1.5px round stroke, currentColor, semantic naming
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
-│   └── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
+│   ├── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
+│   └── 103-queue-lazy-dictionary-lookup.md      # WHY: mở Queue trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
 ├── audits/                             # Audit reports (design system, tech debt, UI/UX)
 │   ├── 20260913_src-features-entrypoints-shared.md  # Tech-debt audit: 14 items scored — top: SW-state fragility 4.20, layer boundaries 4.05, production debug seams 4.05, god files 4.00; roadmap quick-wins/pay-down/watch
 ├── specs/
+│   ├── queue-lazy-lookup.md            # Spec: Queue lazy Dictionary → Card Creator/Quick Add flow
 │   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 │   ├── subtitle-search.md              # Subtitle search (SubDL + OpenSubtitles) + multi-key management — đã qua adversarial review
@@ -62,6 +64,7 @@ docs/           # Tài liệu dự án
 ├── loop-result.md                     # Loop process log for agentic redesign tasks
 ├── intent/                            # Confirmed user intent (interview-me / elicitation output)
 │   ├── liquid-glass-buttons.md        # Confirmed intent: themed shared Button/IconButton + subtitle overlay actions only
+│   ├── queue-lazy-lookup.md           # Confirmed intent: Queue mở trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
 │   └── reader.md                      # Reader feature intent
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   ├── learning-algorithms-summary.md # Learning algorithms summary

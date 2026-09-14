@@ -182,24 +182,39 @@ export function createSubtitleTokenizeController(
     }
   }
 
+  function forceUnbindStaleTokens(element: Element | null, text: string): void {
+    if (!element) return;
+    const rendered = Array.from(element.querySelectorAll('[data-cell-block-id]'));
+    if (rendered.length === 0) return;
+    for (const node of rendered) {
+      node.remove();
+    }
+    element.appendChild(document.createTextNode(text));
+  }
+
   function clearCurrentBlocks(): void {
     unbindLineElement(getLineElements().target, currentTargetBlock);
     currentTargetBlock = null;
   }
 
   function bindLine(
-    element: Element | null,
-    text: string,
+    getElement: () => Element | null,
     cueIndex: number,
     cache: Map<number, PreparedCue>,
     cues: readonly SrtCue[],
     isActive: () => boolean,
     setCurrent: (block: TokenBlock | null) => void,
   ): void {
-    if (!element || cueIndex < 0 || !stateStore.getState().enabled) {
+    if (cueIndex < 0 || !stateStore.getState().enabled) {
       setCurrent(null);
       return;
     }
+    const element = getElement();
+    if (!element) {
+      setCurrent(null);
+      return;
+    }
+    const text = cues[cueIndex]?.text ?? '';
     const prepared = cache.get(cueIndex);
     const block = createBlock(element, text, prepared?.tokens);
     if (block) {
@@ -214,7 +229,7 @@ export function createSubtitleTokenizeController(
       // tokenization entirely in hidden/occluded tabs.
       void prepareCue(cache, cues, cueIndex).then(() => {
         if (stateStore.getState().enabled && isActive()) {
-          bindLine(element, text, cueIndex, cache, cues, isActive, setCurrent);
+          bindLine(getElement, cueIndex, cache, cues, isActive, setCurrent);
         }
       });
     }
@@ -335,9 +350,9 @@ export function createSubtitleTokenizeController(
       const targetText = targetCues[activeTargetIndex]?.text ?? '';
 
       unbindLineElement(target, currentTargetBlock);
+      forceUnbindStaleTokens(target, targetText);
       bindLine(
-        target,
-        targetText,
+        () => getLineElements().target,
         activeTargetIndex,
         targetCache,
         targetCues,
