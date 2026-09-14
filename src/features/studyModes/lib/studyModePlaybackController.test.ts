@@ -198,23 +198,27 @@ describe('StudyModePlaybackController', () => {
     expect(ctrl.enterCue(cue2, 1)).toContainEqual({ type: 'pause' });
   });
 
-  it('listen-check preset pauses after a blind listen, then reviews the cue with subtitles', () => {
+  it('listen-check preset reveals subtitles at the end after one blind listen', () => {
     const listenCheck = PRESET_LOOKUP.get('listen-check');
     expect(listenCheck).toBeDefined();
     const cue = makeCue(1, 1000, 5000, 'hi');
     const ctrl = new StudyModePlaybackController(listenCheck!, advancedOff, [cue]);
 
-    expect(ctrl.enterCue(cue, 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'none' });
+    expect(ctrl.enterCue(cue, 0)).toEqual([
+      { type: 'setSubtitle', subtitle: 'none' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
 
     const end = ctrl.onTimeUpdate(5000);
-    expect(end).toContainEqual({ type: 'pause' });
+    expect(end).toEqual([
+      { type: 'setSubtitle', subtitle: 'both' },
+      { type: 'setSpeed', speed: 1 },
+      { type: 'pause' },
+    ]);
+    expect(ctrl.heldCueIndex).toBe(0);
 
-    const review = ctrl.continue();
-    expect(review).toContainEqual({ type: 'seek', timeMs: 1000 });
-    expect(review).toContainEqual({ type: 'setSubtitle', subtitle: 'both' });
-
-    expect(ctrl.onTimeUpdate(5000)).toContainEqual({ type: 'pause' });
-    expect(ctrl.continue()).toContainEqual({ type: 'play' });
+    const resume = ctrl.continue();
+    expect(resume).toContainEqual({ type: 'play' });
     expect(ctrl.hasActiveCue).toBe(false);
   });
 

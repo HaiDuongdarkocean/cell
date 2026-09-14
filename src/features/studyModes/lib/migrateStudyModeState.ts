@@ -30,7 +30,8 @@ function isValidStep(step: unknown): step is StudyStep {
     PAUSE_VALUES.has(step.pause as string) &&
     REPEAT_VALUES.has(step.repeat as number) &&
     SPEED_VALUES.has(step.speed as number) &&
-    AFTER_VALUES.has(step.after as string)
+    AFTER_VALUES.has(step.after as string) &&
+    (step.seek === undefined || typeof step.seek === 'boolean')
   );
 }
 

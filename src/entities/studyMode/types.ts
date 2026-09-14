@@ -14,6 +14,7 @@ export interface StudyStep {
   repeat: RepeatCount;
   speed: PlaybackSpeed;
   after: AfterCue;
+  seek?: boolean;
 }
 
 export interface StudyMode {

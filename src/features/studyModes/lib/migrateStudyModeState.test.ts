@@ -46,4 +46,34 @@ describe('migrateStudyModeState', () => {
     expect(state.customModes).toHaveLength(1);
     expect(state.customModes[0]?.id).toBe('custom-ok');
   });
+
+  it('keeps steps with a valid seek flag and drops invalid seek values', () => {
+    const raw = {
+      version: 1,
+      activeModeId: 'normal',
+      customModes: [
+        {
+          id: 'custom-seek-ok',
+          type: 'custom',
+          icon: 'play',
+          title: 'Seek ok',
+          description: '',
+          steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue', seek: false }],
+        },
+        {
+          id: 'custom-seek-bad',
+          type: 'custom',
+          icon: 'play',
+          title: 'Seek bad',
+          description: '',
+          steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue', seek: 'no' }],
+        },
+      ],
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
+    };
+    const state = migrateStudyModeState(raw);
+    expect(state.customModes).toHaveLength(1);
+    expect(state.customModes[0]?.id).toBe('custom-seek-ok');
+    expect(state.customModes[0]?.steps[0].seek).toBe(false);
+  });
 });

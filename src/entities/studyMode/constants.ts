@@ -32,10 +32,10 @@ export const PRESETS: readonly StudyMode[] = [
     type: 'preset',
     icon: 'eyeOff',
     title: 'Listen-Check',
-    description: 'Hide subtitles while playing, pause to recall, then replay with subtitles.',
+    description: 'Hide subtitles while playing, then reveal them at the end.',
     steps: [
-      { subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'continue' },
-      { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait' },
+      { subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+      { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
     ],
   },
   {

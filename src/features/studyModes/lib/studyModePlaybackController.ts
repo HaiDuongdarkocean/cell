@@ -142,7 +142,23 @@ export class StudyModePlaybackController {
     if (this.state.type === 'pausedEnd' || this.state.type === 'waiting') {
       const target = this.state.continueTarget;
       if (target === 'nextStep') {
-        return this.advanceStep();
+        const actions: PlaybackAction[] = [];
+        this.stepIndex += 1;
+        const step = this.currentStep();
+        if (!step) {
+          this.activeCueIndex = -1;
+          this.state = { type: 'idle' };
+          return [{ type: 'play' }];
+        }
+        this.repeatRemaining = step.repeat;
+        if (step.seek !== false) {
+          actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+          actions.push(...this.applyStepEntry(step));
+          return actions;
+        }
+        actions.push(...this.applyStepEntry(step));
+        while (this.processCurrentStepAtEnd(actions));
+        return actions;
       }
       this.activeCueIndex = -1;
       this.state = { type: 'idle' };
@@ -172,23 +188,36 @@ export class StudyModePlaybackController {
   }
 
   private handleStepEnd(): PlaybackAction[] {
+    const actions: PlaybackAction[] = [];
+    while (this.processCurrentStepAtEnd(actions));
+    return actions;
+  }
+
+  private processCurrentStepAtEnd(actions: PlaybackAction[]): boolean {
+    if (this.state.type !== 'playing') return false;
     const step = this.currentStep();
-    if (!step) return [];
+    if (!step) return false;
 
     if (this.repeatRemaining > 1) {
       this.repeatRemaining -= 1;
-      return [{ type: 'seek', timeMs: this.cueStartMs() }, ...this.reapplyStep(step)];
+      if (step.seek !== false) {
+        actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+      }
+      actions.push(...this.reapplyStep(step));
+      return false;
     }
 
-    if (step.after === 'loop') {
-      if (this.loopCount < MAX_LOOPS) {
-        this.loopCount += 1;
-        this.stepIndex = 0;
-        const firstStep = this.currentStep();
-        if (!firstStep) return [];
-        this.repeatRemaining = firstStep.repeat;
-        return [{ type: 'seek', timeMs: this.cueStartMs() }, ...this.applyStepEntry(firstStep)];
+    if (step.after === 'loop' && this.loopCount < MAX_LOOPS) {
+      this.loopCount += 1;
+      this.stepIndex = 0;
+      const firstStep = this.currentStep();
+      if (!firstStep) return false;
+      this.repeatRemaining = firstStep.repeat;
+      if (firstStep.seek !== false) {
+        actions.push({ type: 'seek', timeMs: this.cueStartMs() });
       }
+      actions.push(...this.applyStepEntry(firstStep));
+      return false;
     }
 
     const isLastStep = this.stepIndex >= this.mode.steps.length - 1;
@@ -197,28 +226,31 @@ export class StudyModePlaybackController {
       this.state = step.pause === 'end'
         ? { type: 'pausedEnd', continueTarget: isLastStep ? 'nextCue' : 'nextStep' }
         : { type: 'waiting', continueTarget: isLastStep ? 'nextCue' : 'nextStep' };
-      return [{ type: 'pause' }];
+      actions.push({ type: 'pause' });
+      return false;
     }
 
     if (isLastStep) {
       this.activeCueIndex = -1;
       this.state = { type: 'idle' };
-      return [];
+      return false;
     }
 
-    return this.advanceStep();
-  }
-
-  private advanceStep(): PlaybackAction[] {
     this.stepIndex += 1;
-    const step = this.currentStep();
-    if (!step) {
+    const nextStep = this.currentStep();
+    if (!nextStep) {
       this.activeCueIndex = -1;
       this.state = { type: 'idle' };
-      return [];
+      return false;
     }
-    this.repeatRemaining = step.repeat;
-    return [{ type: 'seek', timeMs: this.cueStartMs() }, ...this.applyStepEntry(step)];
+    this.repeatRemaining = nextStep.repeat;
+    if (nextStep.seek !== false) {
+      actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+      actions.push(...this.applyStepEntry(nextStep));
+      return false;
+    }
+    actions.push(...this.applyStepEntry(nextStep));
+    return true;
   }
 
   private reapplyStep(step: StudyStep): PlaybackAction[] {

@@ -762,8 +762,8 @@ describe('ReactSubtitleController', () => {
       title: 'Listen-Check',
       description: '',
       steps: [
-        { subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'continue' },
-        { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait' },
+        { subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+        { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
       ],
     };
     const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };

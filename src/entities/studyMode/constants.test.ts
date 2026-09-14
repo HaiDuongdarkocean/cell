@@ -17,4 +17,24 @@ describe('StudyMode presets', () => {
     expect(cloze?.steps[0].repeat).toBe(1);
     expect(cloze?.steps[0].subtitle).toBe('none');
   });
+
+  it('defaults listen-check to one blind play then reveal subtitles at the end without replaying', () => {
+    const listenCheck = PRESET_LOOKUP.get('listen-check');
+    expect(listenCheck).toBeDefined();
+    expect(listenCheck?.steps[0]).toEqual({
+      subtitle: 'none',
+      pause: 'none',
+      repeat: 1,
+      speed: 1,
+      after: 'continue',
+    });
+    expect(listenCheck?.steps[1]).toEqual({
+      subtitle: 'both',
+      pause: 'end',
+      repeat: 1,
+      speed: 1,
+      after: 'wait',
+      seek: false,
+    });
+  });
 });
