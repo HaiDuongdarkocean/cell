@@ -1,0 +1,32 @@
+.practiceOptions {
+  flex: none;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.row {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chipRow {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+
+.eyebrow.text {
+  color: var(--color-text-secondary);
+}
+
+.speedSelect {
+  min-width: var(--space-20);
+  width: var(--space-24);
+}

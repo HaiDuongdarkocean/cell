@@ -18,6 +18,8 @@ interface ChipBaseProps {
   /** Chip label. */
   children: ReactNode;
   className?: string;
+  /** Disable the ripple effect on the interactive button. Default: true. */
+  ripple?: boolean;
 }
 
 type ChipAsButton = ChipBaseProps & {
@@ -45,6 +47,7 @@ export function Chip({
   leadingIcon,
   children,
   className,
+  ripple = true,
   ...rest
 }: ChipProps): React.JSX.Element {
   const cls = [styles.chip, styles[variant], color ? styles[color] : '', styles[size], selected ? styles.selected : '', className ?? '']
@@ -57,7 +60,7 @@ export function Chip({
     const { as: _as, ...buttonRest } = rest;
     void _as;
     return (
-      <Button variant="secondary" className={cls} aria-pressed={selected} {...buttonRest}>
+      <Button variant="secondary" className={cls} aria-pressed={selected} ripple={ripple} {...buttonRest}>
         {icon}
         <span className={styles.label}>{children}</span>
       </Button>

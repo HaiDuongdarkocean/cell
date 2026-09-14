@@ -77,7 +77,6 @@ function SubtitlePanelImpl({
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
   const [activeTab, setActiveTab] = useState<PanelTab>(cues.length > 0 ? 'subtitles' : 'playlist');
-  const [translationEnabled, setTranslationEnabled] = useState(true);
 
   const handlePreviousCue = (cue: BilingualCue): void => {
     if (onPreviousCue) {
@@ -123,7 +122,7 @@ function SubtitlePanelImpl({
         cues={cues}
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
-        translationEnabled={translationEnabled}
+        translationEnabled={true}
         isPlaying={isPlaying}
         onSeek={onSeek}
         onPrevious={handlePreviousCue}
@@ -160,10 +159,8 @@ function SubtitlePanelImpl({
       {onPracticeModeChange && (
         <PracticeOptions
           mode={practiceMode}
-          translationEnabled={translationEnabled}
           playbackSpeed={playbackSpeed}
           onModeChange={onPracticeModeChange}
-          onTranslationChange={setTranslationEnabled}
           onPlaybackSpeedChange={onPlaybackSpeedChange ?? noop}
         />
       )}

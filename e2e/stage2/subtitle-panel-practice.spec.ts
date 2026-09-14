@@ -10,7 +10,6 @@ const FEEDBACK = '[data-cell-id="practice-feedback"]';
 const MODE_OFF = '[data-cell-id="practice-mode-off"]';
 const MODE_DICTATION = '[data-cell-id="practice-mode-dictation"]';
 const MODE_CLOZE = '[data-cell-id="practice-mode-cloze"]';
-const TRANSLATION = '[data-cell-id="practice-translation"]';
 const SPEED = '[data-cell-id="practice-speed"]';
 
 const CUE2_START_S = 20.2;
@@ -158,7 +157,6 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       '[data-cell-id="practice-mode-off"]',
       '[data-cell-id="practice-mode-dictation"]',
       '[data-cell-id="practice-mode-cloze"]',
-      '[data-cell-id="practice-translation"]',
       '[data-cell-id="practice-speed"]',
     ];
     for (const selector of criticalSelectors) {
@@ -180,7 +178,6 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       'practice-mode-off',
       'practice-mode-dictation',
       'practice-mode-cloze',
-      'practice-translation',
       'practice-previous',
       'practice-replay',
       'practice-next',
@@ -354,7 +351,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('edge: mode persists, cue change resets, auto-translate and speed apply', async ({
+  test('edge: mode persists, cue change resets, and speed apply', async ({
     streamFlixPage,
   }) => {
     const pageErrors: string[] = [];
@@ -375,21 +372,6 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await input.fill('still no matter where i go');
     await expect(streamFlixPage.locator(FEEDBACK)).toContainText('100%');
-
-    await expect(streamFlixPage.locator(TRANSLATION)).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
-    await streamFlixPage.locator(TRANSLATION).click();
-    await expect(streamFlixPage.locator(TRANSLATION)).toHaveAttribute(
-      'aria-checked',
-      'false',
-    );
-    await streamFlixPage.locator(TRANSLATION).click();
-    await expect(streamFlixPage.locator(TRANSLATION)).toHaveAttribute(
-      'aria-checked',
-      'true',
-    );
 
     await selectSpeed(streamFlixPage, '1.5x');
     await expect

@@ -15,10 +15,8 @@ const noop = (): void => undefined;
 function renderOptions(overrides: Partial<Parameters<typeof PracticeOptions>[0]> = {}) {
   const props = {
     mode: 'off' as const,
-    translationEnabled: false,
     playbackSpeed: 1 as const,
     onModeChange: noop,
-    onTranslationChange: noop,
     onPlaybackSpeedChange: noop,
     ...overrides,
   };
@@ -68,14 +66,9 @@ describe('PracticeOptions', () => {
     expect(onModeChange).toHaveBeenCalledWith('off');
   });
 
-  it('exposes Auto-translate switch and Speed select', () => {
-    const onTranslationChange = jest.fn();
+  it('exposes a Speed select', () => {
     const onPlaybackSpeedChange = jest.fn();
-    renderOptions({ onTranslationChange, onPlaybackSpeedChange });
-    const toggle = screen.getByRole('switch', { name: 'Auto-translate' });
-    expect(screen.getByTestId('practice-translation')).toBe(toggle);
-    fireEvent.click(toggle);
-    expect(onTranslationChange).toHaveBeenCalledWith(true);
+    renderOptions({ onPlaybackSpeedChange });
     const speed = screen.getByTestId('practice-speed');
     fireEvent.click(speed.querySelector('button')!);
     fireEvent.click(screen.getByRole('option', { name: '1.5x' }));

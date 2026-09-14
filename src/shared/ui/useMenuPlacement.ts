@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useState, type RefObject, type CSSProperties } from 'react';
+import { getFixedContainingBlock } from '@/shared/lib/dom/getFixedContainingBlock';
 
 export type MenuAlign = 'left' | 'right' | 'auto';
 
@@ -36,11 +37,6 @@ const GAP_FALLBACK = 4; // var(--space-1)
 const SPACE_5_FALLBACK = 20; // var(--space-5)
 const SPACE_8_FALLBACK = 32; // var(--space-8)
 
-function getViewportSize(win: Window): { width: number; height: number } {
-  const el = win.document.documentElement;
-  return { width: el.clientWidth, height: el.clientHeight };
-}
-
 function readTokenLengthPx(element: HTMLElement | null, token: string, fallback: number): number {
   if (!element) return fallback;
   const raw = getComputedStyle(element).getPropertyValue(token);
@@ -52,12 +48,53 @@ function hasLayout(rect: DOMRect): boolean {
   return rect.width > 0 || rect.height > 0;
 }
 
+interface Bounds {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+function getContainingBlockBounds(element: HTMLElement, win: Window): Bounds {
+  const containingBlock = getFixedContainingBlock(element);
+  if (!containingBlock) {
+    const doc = win.document.documentElement;
+    return {
+      top: 0,
+      right: doc.clientWidth,
+      bottom: doc.clientHeight,
+      left: 0,
+      width: doc.clientWidth,
+      height: doc.clientHeight,
+    };
+  }
+
+  const rect = containingBlock.getBoundingClientRect();
+  const top = rect.top + containingBlock.clientTop;
+  const left = rect.left + containingBlock.clientLeft;
+  return {
+    top,
+    right: left + containingBlock.clientWidth,
+    bottom: top + containingBlock.clientHeight,
+    left,
+    width: containingBlock.clientWidth,
+    height: containingBlock.clientHeight,
+  };
+}
+
 /**
  * Compute responsive placement for a dropdown menu.
  *
- * - Picks `top` vs `bottom` based on which side has more viewport space.
+ * - Picks `top` vs `bottom` based on which side has more space in the menu's
+ *   fixed-position containing block (usually the viewport, but may be a
+ *   transformed/ancestor in shadow or light DOM).
  * - Picks `left` vs `right` based on `menuAlign` and whether the menu fits.
  * - Returns pixel caps for width/height so the menu never grows off-screen.
+ * - Offsets are expressed relative to the actual containing block's padding box,
+ *   so the menu stays anchored to the trigger even when a transformed ancestor
+ *   (e.g. Split View panel) becomes the containing block.
  *
  * ponytail: placement only recomputes on open and window resize. Nested scroll
  * containers and anchor mutation between open/close are not tracked.
@@ -94,26 +131,26 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     }
 
     const win = trigger.ownerDocument?.defaultView ?? window;
-    const { width: vw, height: vh } = getViewportSize(win);
+    const bounds = getContainingBlockBounds(menu, win);
     const gap = readTokenLengthPx(menu, '--space-1', GAP_FALLBACK);
     const space5 = readTokenLengthPx(menu, '--space-5', SPACE_5_FALLBACK);
     const viewportMargin = readTokenLengthPx(menu, '--space-8', SPACE_8_FALLBACK);
 
-    const spaceBelow = Math.max(0, vh - triggerRect.bottom - gap);
-    const spaceAbove = Math.max(0, triggerRect.top - gap);
+    const spaceBelow = Math.max(0, bounds.bottom - triggerRect.bottom - gap);
+    const spaceAbove = Math.max(0, triggerRect.top - bounds.top - gap);
     const vpos: 'bottom' | 'top' = spaceBelow >= spaceAbove ? 'bottom' : 'top';
     const verticalSpace = vpos === 'bottom' ? spaceBelow : spaceAbove;
 
-    const spaceRight = Math.max(0, vw - triggerRect.right - gap);
-    const spaceLeft = Math.max(0, triggerRect.left - gap);
+    const spaceRight = Math.max(0, bounds.right - triggerRect.right - gap);
+    const spaceLeft = Math.max(0, triggerRect.left - bounds.left - gap);
     const menuWidth = menuRect.width || 0;
 
     // For left align, the menu grows from trigger.left toward the right edge,
-    // so its right edge must stay within the viewport minus the side margin.
-    const leftAvailable = vw - triggerRect.left - viewportMargin;
+    // so its right edge must stay within the containing block minus the side margin.
+    const leftAvailable = bounds.right - triggerRect.left - viewportMargin;
     // For right align, the menu grows left from trigger.right, so its left edge
-    // must stay beyond the left viewport edge plus the side margin.
-    const rightAvailable = triggerRect.right - viewportMargin;
+    // must stay beyond the left edge plus the side margin.
+    const rightAvailable = triggerRect.right - bounds.left - viewportMargin;
 
     let align: 'left' | 'right';
     if (menuAlign === 'left') {
@@ -131,12 +168,12 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
 
     const horizontalSpace = align === 'left' ? leftAvailable : rightAvailable;
 
-    // Menu max size: keep within available viewport space, and allow tall menus
-    // (e.g. 10+ options) while still capping at a reasonable fraction of the
-    // viewport so the user can see the surrounding context.
+    // Menu max size: keep within available containing-block space, and allow tall menus
+    // (e.g. 10+ options) while still capping at a reasonable fraction so the user can
+    // see the surrounding context.
     const defaultMaxWidth = space5 * 16;
     const defaultMaxHeight = space5 * 22;
-    const maxViewportFraction = Math.floor(vh * 0.7);
+    const maxViewportFraction = Math.floor(bounds.height * 0.7);
 
     let maxHeight = Math.min(verticalSpace, maxViewportFraction, defaultMaxHeight);
     if (menuMaxHeight !== undefined) {
@@ -145,9 +182,9 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
 
     const maxWidth = Math.max(Math.min(horizontalSpace, defaultMaxWidth), 0);
 
-    // Build a fixed-position style so the menu is placed relative to the
-    // viewport and can escape clipping/overflow ancestors (dialogs, bottom
-    // sheets, scroll containers). The menu is rendered via a portal.
+    // Build a fixed-position style relative to the actual containing block so the
+    // menu can escape clipping/overflow ancestors (dialogs, bottom sheets, scroll
+    // containers) without jumping when a transformed ancestor establishes the block.
     const style: CSSProperties = {
       minWidth: Math.round(triggerRect.width),
       maxWidth: maxWidth === Number.MAX_SAFE_INTEGER ? undefined : Math.round(maxWidth),
@@ -155,15 +192,15 @@ export function useMenuPlacement(options: UseMenuPlacementOptions): UseMenuPlace
     };
 
     if (vpos === 'bottom') {
-      style.top = Math.round(triggerRect.bottom + gap);
+      style.top = Math.round(triggerRect.bottom + gap - bounds.top);
     } else {
-      style.bottom = Math.round(vh - triggerRect.top + gap);
+      style.bottom = Math.round(bounds.bottom - triggerRect.top + gap);
     }
 
     if (align === 'left') {
-      style.left = Math.round(triggerRect.left);
+      style.left = Math.round(triggerRect.left - bounds.left);
     } else {
-      style.right = Math.round(vw - triggerRect.right);
+      style.right = Math.round(bounds.right - triggerRect.right);
     }
 
     setResult({

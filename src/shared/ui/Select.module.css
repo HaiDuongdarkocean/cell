@@ -170,7 +170,7 @@
   z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
-  width: auto;
+  width: max-content;
   max-height: min(calc(var(--space-5) * 22), 70vh);
   background: var(--color-surface-elevated);
   border: none;

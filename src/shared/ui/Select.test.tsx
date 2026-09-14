@@ -197,4 +197,50 @@ describe('Select', () => {
       expect(screen.getByPlaceholderText('Search...')).toHaveValue('');
     });
   });
+
+  it('positions a fixed menu relative to a transformed shadow-host ancestor', () => {
+    const host = document.createElement('div');
+    host.style.transform = 'translateX(100px)';
+    Object.defineProperty(host, 'clientTop', { value: 0, configurable: true });
+    Object.defineProperty(host, 'clientLeft', { value: 0, configurable: true });
+    Object.defineProperty(host, 'clientWidth', { value: 300, configurable: true });
+    Object.defineProperty(host, 'clientHeight', { value: 400, configurable: true });
+    host.getBoundingClientRect = jest.fn(() => new DOMRect(100, 50, 300, 400));
+    document.body.appendChild(host);
+
+    const shadowRoot = host.attachShadow({ mode: 'open' });
+    const shadowDiv = document.createElement('div');
+    shadowRoot.appendChild(shadowDiv);
+
+    const { getByRole } = render(
+      <Select
+        data-cell-id="regression-select"
+        options={[
+          { value: '0.5', label: '0.5x' },
+          { value: '1', label: '1x' },
+          { value: '1.5', label: '1.5x' },
+        ]}
+        value="1"
+        menuAlign="left"
+      />,
+      { container: shadowDiv, baseElement: shadowDiv },
+    );
+
+    const trigger = getByRole('button');
+    trigger.getBoundingClientRect = jest.fn(() => new DOMRect(150, 100, 100, 30));
+
+    fireEvent.click(trigger);
+
+    const listbox = getByRole('listbox');
+    const menu = listbox.parentElement as HTMLDivElement;
+    expect(menu).toBeTruthy();
+    menu.getBoundingClientRect = jest.fn(() => new DOMRect(0, 0, 120, 200));
+
+    fireEvent.resize(window);
+
+    expect(menu.style.top).toBe('84px');
+    expect(menu.style.left).toBe('50px');
+
+    host.remove();
+  });
 });
