@@ -1420,6 +1420,70 @@ describe('createWebTextDictionaryController', () => {
     hitbox.remove();
     act(() => { ctrl.destroy() });
   });
+
+  it('keeps the popup open when the user clicks a word in a non-tokenized lookup region', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult({ term: 'over' })] } as unknown as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const token1 = document.createElement('span');
+    token1.className = 'js-cell-token';
+    token1.dataset.cellTerm = 'over';
+    token1.dataset.cellStart = '0';
+    token1.dataset.cellEnd = '4';
+    token1.dataset.cellBlockId = 'b1';
+    token1.textContent = 'over';
+    document.body.appendChild(token1);
+
+    const line = document.createElement('div');
+    line.setAttribute('data-allow-lookup', 'true');
+    line.textContent = 'over all the noise';
+    document.body.appendChild(line);
+    const lineText = line.firstChild as Text;
+
+    const docWithCaret = document as Document & { caretRangeFromPoint?: (x: number, y: number) => Range | null };
+    const originalCaret = docWithCaret.caretRangeFromPoint;
+    const caretOnAll = document.createRange();
+    caretOnAll.setStart(lineText, 6);
+    caretOnAll.collapse(true);
+    docWithCaret.caretRangeFromPoint = () => caretOnAll;
+
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'over' }), 'req-over', token1.getBoundingClientRect(), token1) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    expect(mockVideo.play).not.toHaveBeenCalled();
+
+    const caretOnWhitespace = document.createRange();
+    caretOnWhitespace.setStart(lineText, 4);
+    caretOnWhitespace.collapse(true);
+    docWithCaret.caretRangeFromPoint = () => caretOnWhitespace;
+
+    act(() => { line.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, composed: true, clientX: 30, clientY: 10 })); });
+    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    docWithCaret.caretRangeFromPoint = originalCaret;
+    token1.remove();
+    line.remove();
+    act(() => { ctrl.destroy() });
+  });
 });
 
 describe('nested popup stack', () => {

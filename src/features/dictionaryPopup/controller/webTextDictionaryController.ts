@@ -36,6 +36,7 @@ import {
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import {
   extractWordAtOffset,
+  resolveWordAtPoint,
   WORD_CHAR_RE,
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
@@ -675,13 +676,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   const LOOKUP_TRIGGER_SELECTOR = '.js-cell-token, .cell-ocr-hitbox';
+  const LOOKUP_TEXT_SELECTOR = '[data-allow-lookup]';
 
-  /** A pointerdown on a subtitle token or OCR hitbox is a re-lookup, not a
-   *  dismissal — the popup should stay open and move to the new word. */
   function isReanchorPointerDown(e: PointerEvent): boolean {
-    return e.composedPath().some(
-      (el) => el instanceof Element && el.matches(LOOKUP_TRIGGER_SELECTOR),
-    );
+    const path = e.composedPath();
+    if (path.some((el) => el instanceof Element && el.matches(LOOKUP_TRIGGER_SELECTOR))) {
+      return true;
+    }
+    if (!path.some((el) => el instanceof Element && el.matches(LOOKUP_TEXT_SELECTOR))) {
+      return false;
+    }
+    return resolveWordAtPoint(e.clientX, e.clientY) !== null;
   }
 
   function destroyLevel(level: PopupLevel): void {
