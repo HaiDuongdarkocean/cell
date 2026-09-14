@@ -128,39 +128,19 @@ export const buildDictationProgress = (expected: string, actual: string): Dictat
     } else if (state === 'active' && typed.length === 0) {
       hiddenTailLength = expectedNormalized.length;
     } else {
-      let matchLen = 0;
-      while (
-        matchLen < expectedNormalized.length &&
-        matchLen < typed.length &&
-        expectedNormalized[matchLen] === typed[matchLen]
-      ) {
-        matchLen += 1;
-      }
-      const hasMistake = matchLen < typed.length && matchLen < expectedNormalized.length;
-      const extraChars = typed.length > expectedNormalized.length ? typed.slice(expectedNormalized.length) : '';
       const showFull = state === 'completed';
-      if (hasMistake || showFull) {
-        const visibleCount = showFull ? expectedNormalized.length : matchLen + 1;
-        for (let j = 0; j < visibleCount; j += 1) {
-          const displayChar = span.text[j] ?? expectedNormalized[j];
-          if (j < matchLen) {
-            visibleChars.push({ char: displayChar, state: 'correct' });
-          } else if (j === matchLen && hasMistake) {
-            visibleChars.push({ char: displayChar, state: 'incorrect' });
-          } else {
-            visibleChars.push({ char: displayChar, state: 'missing' });
-          }
+      const visibleCount = showFull ? expectedNormalized.length : Math.min(typed.length, expectedNormalized.length);
+      for (let j = 0; j < visibleCount; j += 1) {
+        const displayChar = span.text[j] ?? expectedNormalized[j];
+        if (j < typed.length && typed[j] === expectedNormalized[j]) {
+          visibleChars.push({ char: displayChar, state: 'correct' });
+        } else if (j < typed.length) {
+          visibleChars.push({ char: displayChar, state: 'incorrect' });
+        } else {
+          visibleChars.push({ char: displayChar, state: 'missing' });
         }
-        hiddenTailLength = showFull ? 0 : Math.max(0, expectedNormalized.length - matchLen - 1);
-      } else {
-        for (let j = 0; j < matchLen; j += 1) {
-          visibleChars.push({ char: span.text[j] ?? expectedNormalized[j], state: 'correct' });
-        }
-        hiddenTailLength = expectedNormalized.length - matchLen;
       }
-      for (let j = 0; j < extraChars.length; j += 1) {
-        visibleChars.push({ char: extraChars[j], state: 'extra' });
-      }
+      hiddenTailLength = expectedNormalized.length - visibleCount;
     }
     words.push({
       text: span.text,

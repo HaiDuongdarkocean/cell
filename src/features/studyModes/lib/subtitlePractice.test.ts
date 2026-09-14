@@ -246,6 +246,26 @@ describe('buildDictationProgress', () => {
     expect(progress.words[0].hiddenTailLength).toBe(5);
   });
 
+  it('reveals each wrong typed character as the expected character in red', () => {
+    const progress = buildDictationProgress('relaxing', 'ss');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'r', state: 'incorrect' },
+      { char: 'e', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(6);
+  });
+
+  it('keeps revealing expected characters after a wrong position', () => {
+    const progress = buildDictationProgress('relaxing', 'rex');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'r', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(5);
+  });
+
   it('shows the previous suggestion word with a hidden tail when a character is wrong', () => {
     const progress = buildDictationProgress(expected, 'telle');
     expect(progress.currentIndex).toBe(0);
@@ -312,7 +332,22 @@ describe('buildDictationProgress', () => {
     expect(progress.words[0].visibleChars).toBeNull();
   });
 
-  it('renders extra typed characters after the expected word', () => {
+  it('caps visible chars at the expected word length and ignores extras', () => {
+    const progress = buildDictationProgress('relaxing', 'ssssssss');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'r', state: 'incorrect' },
+      { char: 'e', state: 'incorrect' },
+      { char: 'l', state: 'incorrect' },
+      { char: 'a', state: 'incorrect' },
+      { char: 'x', state: 'incorrect' },
+      { char: 'i', state: 'incorrect' },
+      { char: 'n', state: 'incorrect' },
+      { char: 'g', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(0);
+  });
+
+  it('ignores typed characters beyond the expected word length', () => {
     const progress = buildDictationProgress('Telling', 'tellingx');
     expect(progress.words[0].visibleChars).toEqual([
       { char: 'T', state: 'correct' },
@@ -322,7 +357,6 @@ describe('buildDictationProgress', () => {
       { char: 'i', state: 'correct' },
       { char: 'n', state: 'correct' },
       { char: 'g', state: 'correct' },
-      { char: 'x', state: 'extra' },
     ]);
     expect(progress.words[0].hiddenTailLength).toBe(0);
   });
