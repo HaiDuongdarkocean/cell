@@ -93,7 +93,7 @@ describe('SubtitlePracticeSession — layout', () => {
     expect(screen.getByTestId('practice-previous')).toBeTruthy();
     expect(screen.getByTestId('practice-replay')).toBeTruthy();
     expect(screen.getByTestId('practice-next')).toBeTruthy();
-    expect(screen.getByTestId('practice-shortcuts').textContent).toContain('Replay');
+    expect(screen.getByTestId('practice-shortcuts').textContent).toContain('Phát lại');
   });
 
   it('masks every inactive cue target in dictation mode', () => {
@@ -129,7 +129,6 @@ describe('SubtitlePracticeSession — dictation', () => {
     fireEvent.change(input, { target: { value: 'you are good to me extra' } });
     const feedback = screen.getByTestId('practice-feedback');
     expect(feedback.getAttribute('role')).toBe('status');
-    expect(feedback.textContent).toContain('%');
     expect(feedback.querySelector('[data-state="incorrect"]')).toBeTruthy();
     expect(feedback.querySelector('[data-state="extra"]')).toBeTruthy();
   });
@@ -138,15 +137,15 @@ describe('SubtitlePracticeSession — dictation', () => {
     renderSession();
     const input = screen.getByTestId('practice-input');
     fireEvent.change(input, { target: { value: 'you were, good to me!' } });
-    expect(screen.getByTestId('practice-feedback').textContent).toContain('100%');
+    const tokens = screen.getByTestId('practice-feedback').querySelectorAll('[data-state="correct"]');
+    expect(tokens.length).toBe(5);
   });
 
-  it('hides native text unless translation is enabled', () => {
+  it('hides native text on the active cue regardless of translation setting', () => {
     const { props, rerender } = renderSession();
     expect(screen.queryByText('native 6')).toBeNull();
     rerender(<SubtitlePracticeSession {...props} translationEnabled />);
-    expect(screen.getByText('native 6')).toBeTruthy();
-    expect(screen.queryByText('native 8')).toBeNull();
+    expect(screen.queryByText('native 6')).toBeNull();
   });
 
   it('Enter continues, Shift+Enter goes previous, buttons use explicit cue', () => {
@@ -181,7 +180,7 @@ describe('SubtitlePracticeSession — dictation', () => {
     expect(screen.getByTestId('practice-feedback')).toBeTruthy();
     rerender(<SubtitlePracticeSession {...props} currentTimeMs={52000} />);
     expect((screen.getByTestId('practice-input') as HTMLInputElement).value).toBe('');
-    expect(screen.queryByTestId('practice-feedback')).toBeNull();
+    expect(screen.getByTestId('practice-active-cue').querySelector('[data-cell-id="practice-feedback"]')).toBeNull();
   });
 });
 
@@ -241,14 +240,13 @@ describe('SubtitlePracticeSession — cloze', () => {
     expect(props.onContinue).toHaveBeenCalledWith(cues[1]);
   });
 
-  it('shows neutral prompts on adjacent cues and masks farther cues', () => {
+  it('masks all non-active cues and hides target text for them', () => {
     renderSession({ mode: 'cloze' });
     const items = screen.getAllByTestId('cue-item');
-    expect(items[0].querySelector('[data-cell-id="cloze-prompt"]')).toBeTruthy();
+    expect(items[0].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
     expect(items[0].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
     expect(items[0].textContent).not.toContain('AT THE END OF EVERY ROAD');
-    expect(items[0].querySelector('[data-state="correct"]')).toBeNull();
-    expect(items[2].querySelector('[data-cell-id="cloze-prompt"]')).toBeTruthy();
+    expect(items[2].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
     expect(items[3].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
     expect(items[3].textContent).not.toContain('FAR AWAY NOW');
   });

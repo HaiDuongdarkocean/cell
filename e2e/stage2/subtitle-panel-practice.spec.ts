@@ -244,9 +244,9 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await input.fill('Lyin’ isn’t better… than silence!');
 
-    const feedback = streamFlixPage.locator(FEEDBACK);
+    const feedback = streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`);
     await expect(feedback).toBeVisible();
-    await expect(feedback).toContainText('100%');
+    await expect(feedback).toContainText('100 percent');
 
     await input.press('Enter');
     await expect
@@ -320,7 +320,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     const input = streamFlixPage.locator(INPUT);
     for (let i = 0; i < 10; i++) {
       await input.fill(`completely wrong answer ${i}`);
-      await expect(streamFlixPage.locator(FEEDBACK)).not.toContainText('100%');
+      await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).not.toContainText('100 percent');
     }
 
     await streamFlixPage.locator('[data-cell-id="practice-replay"]').click();
@@ -364,14 +364,14 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await expect(input).toBeVisible();
 
     await input.fill('partial draft');
-    await expect(streamFlixPage.locator(FEEDBACK)).toBeVisible();
+    await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toBeVisible();
 
     await seek(streamFlixPage, 38.5);
-    await expect(streamFlixPage.locator(FEEDBACK)).toHaveCount(0);
+    await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toHaveCount(0);
     await expect(input).toHaveValue('');
 
     await input.fill('still no matter where i go');
-    await expect(streamFlixPage.locator(FEEDBACK)).toContainText('100%');
+    await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toContainText('100 percent');
 
     await selectSpeed(streamFlixPage, '1.5x');
     await expect

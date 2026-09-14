@@ -1,0 +1,40 @@
+.pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  flex: none;
+}
+
+.speedCircle {
+  min-block-size: var(--touch-target);
+  min-inline-size: var(--touch-target);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepButton {
+  min-block-size: var(--touch-target);
+  min-inline-size: var(--touch-target);
+}
+
+.value {
+  min-block-size: var(--touch-target);
+  padding-inline: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.popover {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-popover);
+  z-index: var(--z-popover);
+}
+
+.speedOption {
+  flex: none;
+}

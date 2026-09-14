@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { BilingualCue } from '@/entities/media';
-import { Button, Icon, Input } from '@/shared/ui';
+import { Button, Icon, Input, Kbd } from '@/shared/ui';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import { createClozeExercise, type SubtitlePracticeMode } from '../lib/subtitlePractice';
 import {
   ClozeActiveCue,
-  ClozePromptCue,
   DictationActiveCue,
   MaskedCueContent,
 } from './PracticeCueContent';
@@ -32,6 +31,11 @@ export interface SubtitlePracticeSessionProps {
   readonly onPlayPause: () => void;
 }
 
+function cueKey(cue: BilingualCue | null, mode: SubtitlePracticeMode): string {
+  if (!cue) return `${mode}:none`;
+  return `${mode}:${cue.index}:${cue.start}:${cue.targetText}`;
+}
+
 export function SubtitlePracticeSession({
   mode,
   cues,
@@ -46,21 +50,39 @@ export function SubtitlePracticeSession({
 }: SubtitlePracticeSessionProps): React.JSX.Element {
   const [draft, setDraft] = useState('');
   const [clozeDraft, setClozeDraft] = useState('');
+  const [visited, setVisited] = useState<Set<string>>(new Set());
+  const [attempts, setAttempts] = useState<Map<string, string>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
 
   const effectiveMs = currentTimeMs + offsetMs;
   const activeIndex = cues.findIndex((c) => c.start <= effectiveMs && c.end > effectiveMs);
   const activeCue = activeIndex >= 0 ? cues[activeIndex] : null;
 
-  const resetKey = activeCue
-    ? `${mode}:${activeCue.index}:${activeCue.start}:${activeCue.targetText}`
-    : `${mode}:none`;
+  const resetKey = cueKey(activeCue, mode);
   const lastKeyRef = useRef(resetKey);
+  const lastActiveCueRef = useRef(activeCue);
+  const lastModeRef = useRef(mode);
 
   const exercise = useMemo(
     () => (mode === 'cloze' && activeCue ? createClozeExercise(activeCue) : null),
     [mode, activeCue],
   );
+
+  useEffect(() => {
+    const prevCue = lastActiveCueRef.current;
+    const prevMode = lastModeRef.current;
+    const prevKey = cueKey(prevCue, prevMode);
+    const nextKey = resetKey;
+
+    if (prevKey !== nextKey && prevCue !== null) {
+      const attempt = prevMode === 'dictation' ? draft : clozeDraft;
+      setVisited((prev) => new Set(prev).add(prevKey));
+      setAttempts((prev) => new Map(prev).set(prevKey, attempt));
+    }
+
+    lastActiveCueRef.current = activeCue;
+    lastModeRef.current = mode;
+  }, [resetKey, activeCue, mode, draft, clozeDraft]);
 
   useEffect(() => {
     if (lastKeyRef.current === resetKey) return;
@@ -112,22 +134,23 @@ export function SubtitlePracticeSession({
 
   const renderCueContent = (
     cue: BilingualCue,
-    index: number,
+    _index: number,
     isCurrent: boolean,
   ): React.ReactNode => {
+    const key = cueKey(cue, mode);
     if (isCurrent) {
       return mode === 'dictation' ? (
-        <DictationActiveCue cue={cue} draft={draft} translationEnabled={translationEnabled} />
+        <DictationActiveCue cue={cue} draft={draft} showTranslation={false} />
       ) : (
-        <ClozeActiveCue cue={cue} clozeDraft={clozeDraft} translationEnabled={translationEnabled} />
+        <ClozeActiveCue cue={cue} clozeDraft={clozeDraft} showTranslation={false} />
       );
     }
-    if (mode === 'cloze' && (index === activeIndex - 1 || index === activeIndex + 1)) {
-      return (
-        <ClozePromptCue
-          cue={cue}
-          nativeText={index === activeIndex - 1 && translationEnabled ? cue.nativeText : undefined}
-        />
+    if (visited.has(key)) {
+      const attempt = attempts.get(key) ?? '';
+      return mode === 'dictation' ? (
+        <DictationActiveCue cue={cue} draft={attempt} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
+      ) : (
+        <ClozeActiveCue cue={cue} clozeDraft={attempt} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
       );
     }
     return <MaskedCueContent />;
@@ -149,10 +172,10 @@ export function SubtitlePracticeSession({
       />
       <div className={styles.footer} data-cell-id="practice-footer">
         <div className={styles.shortcuts} data-cell-id="practice-shortcuts">
-          <span>Ctrl/⌘+R Replay</span>
-          <span>Enter Next</span>
-          <span>Shift+Enter Previous</span>
-          <span>Shift+Space Play/Pause</span>
+          <span><Kbd>Ctrl/⌘+R</Kbd> Phát lại</span>
+          <span><Kbd>Enter</Kbd> Câu tiếp</span>
+          <span><Kbd>Shift+Enter</Kbd> Câu trước</span>
+          <span><Kbd>Shift+Space</Kbd> Tạm dừng</span>
         </div>
         <div className={styles.inputRow}>
           <Button

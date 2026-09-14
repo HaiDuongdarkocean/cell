@@ -86,15 +86,12 @@
 .token-incorrect,
 .token-missing {
   color: var(--color-destructive);
+  text-decoration: underline;
 }
 
 .token-extra {
   color: var(--color-text-secondary);
   text-decoration: line-through;
-}
-
-.tokenNote {
-  color: var(--color-text-secondary);
 }
 
 .nativeText {

@@ -12,8 +12,10 @@ import { memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
+import type { StudyMode } from '@/entities/studyMode';
 import { CueList, type CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
+import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import { ChevronRight } from 'lucide-react';
 
@@ -37,6 +39,12 @@ export interface SubtitlePanelProps {
   playlistContent?: ReactNode;
   /** Video filename shown in the panel header (local-player only). */
   filename?: string;
+  /** v2 action bar: active study mode id. */
+  activeModeId?: string;
+  /** v2 action bar: user-created study modes. */
+  customModes?: readonly StudyMode[];
+  /** v2 action bar: called when the user selects a study mode. */
+  onStudyModeChange?: (modeId: string) => void;
   practiceMode?: SubtitlePracticeMode;
   onPracticeModeChange?: (mode: SubtitlePracticeMode) => void;
   isPlaying?: boolean;
@@ -46,6 +54,8 @@ export interface SubtitlePanelProps {
   onPreviousCue?: (cue: BilingualCue) => void;
   onReplayCue?: (cue: BilingualCue) => void;
   onContinueCue?: (cue: BilingualCue) => void;
+  /** Whether to show the native translation under cues. Defaults to true. */
+  translationEnabled?: boolean;
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
 }
@@ -62,6 +72,9 @@ function SubtitlePanelImpl({
   onClose,
   playlistContent,
   filename,
+  activeModeId,
+  customModes = [],
+  onStudyModeChange,
   practiceMode = 'off',
   onPracticeModeChange,
   isPlaying = false,
@@ -71,6 +84,7 @@ function SubtitlePanelImpl({
   onPreviousCue,
   onReplayCue,
   onContinueCue,
+  translationEnabled = true,
   tokenize,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
@@ -114,6 +128,7 @@ function SubtitlePanelImpl({
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
         onSeek={onSeek}
+        showNative={translationEnabled}
         tokenize={tokenize}
       />
     ) : (
@@ -122,7 +137,7 @@ function SubtitlePanelImpl({
         cues={cues}
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
-        translationEnabled={true}
+        translationEnabled={translationEnabled}
         isPlaying={isPlaying}
         onSeek={onSeek}
         onPrevious={handlePreviousCue}
@@ -156,14 +171,22 @@ function SubtitlePanelImpl({
         )}
         <span className={styles.title}>{filename ?? 'Subtitles'}</span>
       </div>
-      {onPracticeModeChange && (
+      {onStudyModeChange ? (
+        <StudyModeActionBar
+          activeModeId={activeModeId ?? (practiceMode === 'off' ? 'normal' : practiceMode)}
+          customModes={customModes}
+          playbackSpeed={playbackSpeed}
+          onModeChange={onStudyModeChange}
+          onSpeedChange={onPlaybackSpeedChange ?? noop}
+        />
+      ) : onPracticeModeChange ? (
         <PracticeOptions
           mode={practiceMode}
           playbackSpeed={playbackSpeed}
           onModeChange={onPracticeModeChange}
           onPlaybackSpeedChange={onPlaybackSpeedChange ?? noop}
         />
-      )}
+      ) : null}
 
       {hasPlaylist ? (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PanelTab)}>
