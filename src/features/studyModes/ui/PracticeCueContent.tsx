@@ -30,18 +30,20 @@ export function MaskedCueContent(): React.JSX.Element {
 export function DictationActiveCue({
   cue,
   draft,
+  result: providedResult,
   showTranslation,
   dataCellId = 'practice-active-cue',
 }: {
   readonly cue: BilingualCue;
   readonly draft: string;
+  readonly result?: PracticeResult | null;
   readonly showTranslation: boolean;
   readonly dataCellId?: string;
 }): React.JSX.Element {
   const expectedTokens = useMemo(() => tokenizePracticeText(cue.targetText), [cue.targetText]);
   const result = useMemo(
-    () => (draft.trim().length === 0 ? null : evaluateDictation(cue.targetText, draft)),
-    [cue.targetText, draft],
+    () => providedResult ?? (draft.trim().length === 0 ? null : evaluateDictation(cue.targetText, draft)),
+    [providedResult, cue.targetText, draft],
   );
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>

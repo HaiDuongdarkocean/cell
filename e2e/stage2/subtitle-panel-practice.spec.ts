@@ -7,10 +7,10 @@ const FOOTER = '[data-cell-id="practice-footer"]';
 const INPUT = '[data-cell-id="practice-input"]';
 const CLOZE_BLANK = '[data-cell-id="cloze-blank"]';
 const FEEDBACK = '[data-cell-id="practice-feedback"]';
-const MODE_OFF = '[data-cell-id="practice-mode-off"]';
-const MODE_DICTATION = '[data-cell-id="practice-mode-dictation"]';
-const MODE_CLOZE = '[data-cell-id="practice-mode-cloze"]';
-const SPEED = '[data-cell-id="practice-speed"]';
+const MODE_OFF = '[data-cell-id="study-mode-normal"]';
+const MODE_DICTATION = '[data-cell-id="study-mode-dictation"]';
+const MODE_CLOZE = '[data-cell-id="study-mode-cloze"]';
+const SPEED_VALUE = '[data-cell-id="speed-value"], [data-cell-id="speed-value-circle"]';
 
 const CUE2_START_S = 20.2;
 const CUE2_NEXT_START_S = 29.266;
@@ -54,7 +54,7 @@ async function enterPlayerMode(page: Page): Promise<void> {
 }
 
 async function selectSpeed(page: Page, label: string): Promise<void> {
-  await page.locator(SPEED).getByRole('button').click();
+  await page.locator(SPEED_VALUE).click();
   const listbox = page.getByRole('listbox');
   await expect(listbox).toBeVisible();
   await page.getByRole('option', { name: label }).dispatchEvent('click');
@@ -134,8 +134,11 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
     if (panel.scrollWidth > panel.clientWidth + 1) violations.push('panel has horizontal overflow');
     const descendants: Element[] = [];
     collectDeep(panel, descendants);
+    const isScrollTrackContent = (element: Element): boolean =>
+      element.closest('[data-cell-id="study-mode-scroll-track"]') !== null;
     for (const element of descendants) {
       if (!isRendered(element)) continue;
+      if (isScrollTrackContent(element)) continue;
       const rect = element.getBoundingClientRect();
       if (rect.right > panelRect.right + 1 || rect.left < panelRect.left - 1) {
         violations.push(`horizontal escape: ${elementName(element)}`);
@@ -146,7 +149,7 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       }
     }
     const criticalSelectors = [
-      '[data-cell-id="practice-options"]',
+      '[data-cell-id="study-mode-action-bar"]',
       '[data-cell-id="cue-list-scroll"]',
       '[data-cell-id="practice-active-cue"]',
       '[data-cell-id="practice-footer"]',
@@ -154,10 +157,7 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       '[data-cell-id="practice-previous"]',
       '[data-cell-id="practice-replay"]',
       '[data-cell-id="practice-next"]',
-      '[data-cell-id="practice-mode-off"]',
-      '[data-cell-id="practice-mode-dictation"]',
-      '[data-cell-id="practice-mode-cloze"]',
-      '[data-cell-id="practice-speed"]',
+      '[data-cell-id="speed-pill"], [data-cell-id="speed-value-circle"]',
     ];
     for (const selector of criticalSelectors) {
       const element = findDeep(panel, selector);
@@ -168,16 +168,16 @@ async function checkPanelGeometry(page: Page, minControlHeight: number, label = 
       return element && isRendered(element) ? element.getBoundingClientRect() : null;
     };
     const header = rectOf('[data-cell-id="subtitle-panel-header"]');
-    const options = rectOf('[data-cell-id="practice-options"]');
+    const actionBar = rectOf('[data-cell-id="study-mode-action-bar"]');
     const list = rectOf('[data-cell-id="cue-list-scroll"]');
     const footer = rectOf('[data-cell-id="practice-footer"]');
-    if (header && options && header.bottom > options.top + 1) violations.push('header overlaps options');
-    if (options && list && options.bottom > list.top + 1) violations.push('options overlaps list');
+    if (header && actionBar && header.bottom > actionBar.top + 1) violations.push('header overlaps action bar');
+    if (actionBar && list && actionBar.bottom > list.top + 1) violations.push('action bar overlaps list');
     if (list && footer && list.bottom > footer.top + 1) violations.push('list overlaps footer');
     const controls = [
-      'practice-mode-off',
-      'practice-mode-dictation',
-      'practice-mode-cloze',
+      'study-mode-dictation',
+      'study-mode-cloze',
+      'study-mode-normal',
       'practice-previous',
       'practice-replay',
       'practice-next',
@@ -228,7 +228,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
     ).toBeVisible();
     await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-      'aria-checked',
+      'aria-selected',
       'true',
     );
     const input = streamFlixPage.locator(INPUT);
@@ -309,7 +309,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
         streamFlixPage.locator(`${PRACTICE}[data-practice-mode="cloze"]`),
       ).toBeVisible();
       await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-        'aria-checked',
+        'aria-selected',
         'false',
       );
       await streamFlixPage.locator(MODE_OFF).click();
@@ -391,13 +391,38 @@ test.describe('Stage 2: Subtitle panel practice', () => {
 
     await enterPlayerMode(streamFlixPage);
     await expect(streamFlixPage.locator(MODE_DICTATION)).toHaveAttribute(
-      'aria-checked',
+      'aria-selected',
       'true',
     );
     await seek(streamFlixPage, CUE2_START_S + 0.3);
     await expect(
       streamFlixPage.locator(`${PRACTICE}[data-practice-mode="dictation"]`),
     ).toBeVisible();
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('history row shows typed feedback and translation after leaving a cue', async ({
+    streamFlixPage,
+  }) => {
+    const pageErrors: string[] = [];
+    streamFlixPage.on('pageerror', (e) => pageErrors.push(e.message));
+
+    await enterPlayerMode(streamFlixPage);
+    await seek(streamFlixPage, CUE2_START_S + 0.3);
+    await streamFlixPage.locator(MODE_DICTATION).click();
+
+    const input = streamFlixPage.locator(INPUT);
+    await input.fill('Lyin isn better than silence');
+    await input.press('Enter');
+    await expect
+      .poll(() => videoTime(streamFlixPage))
+      .toBeGreaterThanOrEqual(CUE2_NEXT_START_S - 0.5);
+
+    await seek(streamFlixPage, CUE2_NEXT_START_S + 0.3);
+    const historyCue = streamFlixPage.locator('[data-cell-id="practice-history-cue"]').first();
+    await expect(historyCue).toBeVisible();
+    await expect(historyCue.locator('[data-state]')).not.toHaveCount(0);
+    await expect(historyCue.locator('[data-cell-id="cue-native-text"]')).toBeVisible();
     expect(pageErrors).toEqual([]);
   });
 

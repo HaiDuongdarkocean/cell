@@ -6,6 +6,8 @@ import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { SpeedPill } from './SpeedPill';
 import styles from './StudyModeActionBar.module.css';
 
+const NARROW_ACTION_BAR_PX = 360;
+
 export interface StudyModeActionBarProps {
   readonly activeModeId: string;
   readonly customModes: readonly StudyMode[];
@@ -23,8 +25,15 @@ export function StudyModeActionBar({
 }: StudyModeActionBarProps): React.JSX.Element {
   const modes = [...PRESETS, ...customModes];
   const scrollRef = useRef<HTMLDivElement>(null);
+  const actionBarRef = useRef<HTMLDivElement>(null);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
+  const [focusId, setFocusId] = useState(activeModeId);
+
+  useEffect(() => {
+    setFocusId(activeModeId);
+  }, [activeModeId]);
 
   const updateOverflow = (): void => {
     const el = scrollRef.current;
@@ -46,6 +55,20 @@ export function StudyModeActionBar({
     };
   }, [modes.length]);
 
+  useEffect(() => {
+    const el = actionBarRef.current;
+    if (!el) return;
+    const update = (): void => { setIsNarrow(el.clientWidth < NARROW_ACTION_BAR_PX); };
+    update();
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setIsNarrow(entry.contentRect.width < NARROW_ACTION_BAR_PX);
+      }
+    });
+    observer.observe(el);
+    return () => { observer.disconnect(); };
+  }, []);
+
   const scrollBy = (direction: -1 | 1): void => {
     const el = scrollRef.current;
     if (!el) return;
@@ -53,9 +76,41 @@ export function StudyModeActionBar({
     el.scrollBy({ left: amount, behavior: 'smooth' });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const tabs = scrollRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    if (!tabs || tabs.length === 0) return;
+    const focused = document.activeElement;
+    const idx = Array.from(tabs).findIndex((tab) => tab === focused);
+    if (idx < 0) return;
+    const next = e.key === 'ArrowRight'
+      ? (idx + 1) % tabs.length
+      : (idx - 1 + tabs.length) % tabs.length;
+    const nextTab = tabs[next];
+    if (nextTab) {
+      nextTab.focus();
+      setFocusId(nextTab.dataset.cellId?.replace('study-mode-', '') ?? activeModeId);
+    }
+    e.preventDefault();
+  };
+
+  const handleBlur = (): void => {
+    window.setTimeout(() => {
+      if (!scrollRef.current?.contains(document.activeElement)) {
+        setFocusId(activeModeId);
+      }
+    }, 0);
+  };
+
   return (
-    <HStack align="center" className={styles.actionBar} data-cell-id="study-mode-action-bar" gap="1">
-      <SpeedPill speed={playbackSpeed} onChange={onSpeedChange} />
+    <HStack
+      ref={actionBarRef}
+      align="center"
+      className={styles.actionBar}
+      data-cell-id="study-mode-action-bar"
+      gap="1"
+    >
+      <SpeedPill speed={playbackSpeed} onChange={onSpeedChange} compact={isNarrow} />
       <div className={styles.scrollWrap}>
         {showLeft && (
           <Button
@@ -91,6 +146,9 @@ export function StudyModeActionBar({
           data-cell-id="study-mode-scroll-track"
           role="tablist"
           aria-label="Study modes"
+          aria-orientation="horizontal"
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
         >
           {modes.map((mode) => (
             <Button
@@ -103,9 +161,11 @@ export function StudyModeActionBar({
               aria-label={mode.title}
               aria-selected={activeModeId === mode.id}
               role="tab"
+              tabIndex={focusId === mode.id ? 0 : -1}
               className={styles.modeButton}
               data-cell-id={`study-mode-${mode.id}`}
               onClick={() => onModeChange(mode.id)}
+              onFocus={() => setFocusId(mode.id)}
             >
               <Icon name={mode.icon} size="md" />
             </Button>

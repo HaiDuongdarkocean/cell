@@ -15,6 +15,7 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { ListItem } from './ListItem';
 export { NavItem } from './NavItem';
 export { Drawer } from './Drawer';
+export { Popover } from './Popover';
 export { FormGroup } from './FormGroup';
 export { Header } from './Header';
 export { Input } from './Input';

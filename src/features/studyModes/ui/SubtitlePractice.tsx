@@ -3,7 +3,8 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Button, Icon, Input, Kbd } from '@/shared/ui';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
-import { createClozeExercise, type SubtitlePracticeMode } from '../lib/subtitlePractice';
+import { createClozeExercise, evaluateDictation, evaluateCloze, tokenizePracticeText, type SubtitlePracticeMode } from '../lib/subtitlePractice';
+import type { PracticeResult } from '../lib/subtitlePractice';
 import {
   ClozeActiveCue,
   DictationActiveCue,
@@ -51,7 +52,7 @@ export function SubtitlePracticeSession({
   const [draft, setDraft] = useState('');
   const [clozeDraft, setClozeDraft] = useState('');
   const [visited, setVisited] = useState<Set<string>>(new Set());
-  const [attempts, setAttempts] = useState<Map<string, string>>(new Map());
+  const [attempts, setAttempts] = useState<Map<string, { draft: string; result: PracticeResult | null }>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
 
   const effectiveMs = currentTimeMs + offsetMs;
@@ -75,9 +76,22 @@ export function SubtitlePracticeSession({
     const nextKey = resetKey;
 
     if (prevKey !== nextKey && prevCue !== null) {
-      const attempt = prevMode === 'dictation' ? draft : clozeDraft;
+      const attemptDraft = prevMode === 'dictation' ? draft : clozeDraft;
+      let result: PracticeResult | null = null;
+      if (prevMode === 'dictation') {
+        result = evaluateDictation(prevCue.targetText, attemptDraft);
+      } else if (prevMode === 'cloze') {
+        const exercise = createClozeExercise(prevCue);
+        const answers = Object.fromEntries(
+          exercise.blanks.map((blank, i) => {
+            const typed = tokenizePracticeText(attemptDraft)[i] ?? '';
+            return [blank.id, typed];
+          }),
+        );
+        result = evaluateCloze(exercise, answers);
+      }
       setVisited((prev) => new Set(prev).add(prevKey));
-      setAttempts((prev) => new Map(prev).set(prevKey, attempt));
+      setAttempts((prev) => new Map(prev).set(prevKey, { draft: attemptDraft, result }));
     }
 
     lastActiveCueRef.current = activeCue;
@@ -146,11 +160,11 @@ export function SubtitlePracticeSession({
       );
     }
     if (visited.has(key)) {
-      const attempt = attempts.get(key) ?? '';
+      const attempt = attempts.get(key) ?? { draft: '', result: null };
       return mode === 'dictation' ? (
-        <DictationActiveCue cue={cue} draft={attempt} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
+        <DictationActiveCue cue={cue} draft={attempt.draft} result={attempt.result} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
       ) : (
-        <ClozeActiveCue cue={cue} clozeDraft={attempt} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
+        <ClozeActiveCue cue={cue} clozeDraft={attempt.draft} showTranslation={translationEnabled} dataCellId="practice-history-cue" />
       );
     }
     return <MaskedCueContent />;

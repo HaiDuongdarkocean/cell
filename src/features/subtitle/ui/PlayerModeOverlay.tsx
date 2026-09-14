@@ -11,6 +11,7 @@ import { SubtitlePanel } from './SubtitlePanel';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
+import type { StudyMode } from '@/entities/studyMode';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
@@ -82,6 +83,9 @@ export interface PlayerModeOverlayProps {
   offsetMs?: number;
   /** Seek video to timeMs when user clicks a cue in the list. */
   onSeek?: (timeMs: number) => void;
+  activeModeId?: string;
+  customModes?: readonly StudyMode[];
+  onStudyModeChange?: (modeId: string) => void;
   practiceMode?: SubtitlePracticeMode;
   onPracticeModeChange?: (mode: SubtitlePracticeMode) => void;
   playbackSpeed?: PlaybackSpeed;
@@ -125,6 +129,9 @@ function PlayerModeOverlayInner({
   currentTimeMs,
   offsetMs,
   onSeek,
+  activeModeId,
+  customModes,
+  onStudyModeChange,
   practiceMode,
   onPracticeModeChange,
   playbackSpeed,
@@ -497,6 +504,9 @@ function PlayerModeOverlayInner({
               currentTimeMs={currentTimeMs ?? 0}
               offsetMs={offsetMs}
               onSeek={onSeek}
+              activeModeId={activeModeId}
+              customModes={customModes}
+              onStudyModeChange={onStudyModeChange}
               practiceMode={practiceMode}
               onPracticeModeChange={onPracticeModeChange}
               isPlaying={isPlaying}

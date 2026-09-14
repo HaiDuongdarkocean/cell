@@ -17,6 +17,7 @@ import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
 import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
+import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes/studyModeStore';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';
@@ -128,6 +129,17 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [managerExiting, setManagerExiting] = useState(false);
     const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isMobile = useIsMobile(BREAKPOINTS.medium);
+    const activeModeId = useStudyModeStore((s) => s.activeModeId);
+    const customModes = useStudyModeStore((s) => s.customModes);
+    const setActiveModeId = useStudyModeStore((s) => s.setActiveModeId);
+
+    useEffect(() => {
+      void loadStudyModeState();
+    }, []);
+
+    const handleStudyModeChange = useCallback((modeId: string): void => {
+      setActiveModeId(modeId);
+    }, [setActiveModeId]);
     // Desktop: trigger slide-out animation, then unmount after 280ms.
     // Mobile: unmount immediately (Sheet handles its own exit animation).
     const closeManager = useCallback(() => {
@@ -288,6 +300,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           currentTimeMs={currentTimeMs}
           offsetMs={offsetMs}
           onSeek={onSeek}
+          activeModeId={activeModeId}
+          customModes={customModes}
+          onStudyModeChange={handleStudyModeChange}
           practiceMode={practiceMode}
           onPracticeModeChange={handlePracticeModeChange}
           playbackSpeed={playbackSpeed}
@@ -389,6 +404,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onClose={handleToggleSplitView}
             playlistContent={playlistContent}
             filename={filename}
+            activeModeId={activeModeId}
+            customModes={customModes}
+            onStudyModeChange={handleStudyModeChange}
             practiceMode={practiceMode}
             onPracticeModeChange={handlePracticeModeChange}
             isPlaying={isPlaying}

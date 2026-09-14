@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Icon, Portal } from '@/shared/ui';
+import { Button, Icon, Popover } from '@/shared/ui';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import styles from './SpeedPill.module.css';
 
@@ -19,21 +19,13 @@ function nextSpeed(current: PlaybackSpeed, direction: 1 | -1): PlaybackSpeed {
   return SPEEDS[next];
 }
 
+function speedOptionId(speed: PlaybackSpeed): string {
+  return `speed-option-${speed}`;
+}
+
 export function SpeedPill({ speed, onChange, compact = false }: SpeedPillProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const valueRef = useRef<HTMLButtonElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
-
-  const openList = (): void => {
-    const rect = valueRef.current?.getBoundingClientRect();
-    if (rect) {
-      setPosition({
-        left: rect.left + window.scrollX,
-        top: rect.bottom + window.scrollY,
-      });
-    }
-    setIsOpen(true);
-  };
 
   const selectSpeed = (next: PlaybackSpeed): void => {
     setIsOpen(false);
@@ -49,6 +41,28 @@ export function SpeedPill({ speed, onChange, compact = false }: SpeedPillProps):
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [isOpen]);
 
+  const SpeedList = (): React.JSX.Element => (
+    <>
+      {SPEEDS.map((s) => (
+        <Button
+          key={s}
+          id={speedOptionId(s)}
+          size="sm"
+          variant={s === speed ? 'primary' : 'secondary'}
+          shape="pill"
+          ripple={false}
+          role="option"
+          aria-selected={s === speed}
+          className={styles.speedOption}
+          data-cell-id={speedOptionId(s)}
+          onClick={() => selectSpeed(s)}
+        >
+          {s}x
+        </Button>
+      ))}
+    </>
+  );
+
   if (compact) {
     return (
       <>
@@ -61,37 +75,20 @@ export function SpeedPill({ speed, onChange, compact = false }: SpeedPillProps):
           className={styles.speedCircle}
           aria-label={`Playback speed is ${speed}x. Open speed list.`}
           data-cell-id="speed-value-circle"
-          onClick={openList}
+          onClick={() => setIsOpen((v) => !v)}
         >
           {speed}x
         </Button>
-        {isOpen && position && (
-          <Portal>
-            <div
-              className={styles.popover}
-              style={{ left: position.left, top: position.top }}
-              role="listbox"
-              aria-label="Playback speed"
-            >
-              {SPEEDS.map((s) => (
-                <Button
-                  key={s}
-                  size="sm"
-                  variant={s === speed ? 'primary' : 'secondary'}
-                  shape="pill"
-                  ripple={false}
-                  role="option"
-                  aria-selected={s === speed}
-                  className={styles.speedOption}
-                  data-cell-id={`speed-option-${s}`}
-                  onClick={() => selectSpeed(s)}
-                >
-                  {s}x
-                </Button>
-              ))}
-            </div>
-          </Portal>
-        )}
+        <Popover
+          open={isOpen}
+          triggerRef={valueRef}
+          role="listbox"
+          aria-label="Playback speed"
+          aria-activedescendant={speedOptionId(speed)}
+          className={styles.popover}
+        >
+          <SpeedList />
+        </Popover>
       </>
     );
   }
@@ -119,7 +116,7 @@ export function SpeedPill({ speed, onChange, compact = false }: SpeedPillProps):
         className={styles.value}
         aria-label={`Current playback speed is ${speed}x. Open speed list.`}
         data-cell-id="speed-value"
-        onClick={openList}
+        onClick={() => setIsOpen((v) => !v)}
       >
         {speed}x
       </Button>
@@ -135,33 +132,16 @@ export function SpeedPill({ speed, onChange, compact = false }: SpeedPillProps):
       >
         <Icon name="plus" size="sm" />
       </Button>
-      {isOpen && position && (
-        <Portal>
-          <div
-            className={styles.popover}
-            style={{ left: position.left, top: position.top }}
-            role="listbox"
-            aria-label="Playback speed"
-          >
-            {SPEEDS.map((s) => (
-              <Button
-                key={s}
-                size="sm"
-                variant={s === speed ? 'primary' : 'secondary'}
-                shape="pill"
-                ripple={false}
-                role="option"
-                aria-selected={s === speed}
-                className={styles.speedOption}
-                data-cell-id={`speed-option-${s}`}
-                onClick={() => selectSpeed(s)}
-              >
-                {s}x
-              </Button>
-            ))}
-          </div>
-        </Portal>
-      )}
+      <Popover
+        open={isOpen}
+        triggerRef={valueRef}
+        role="listbox"
+        aria-label="Playback speed"
+        aria-activedescendant={speedOptionId(speed)}
+        className={styles.popover}
+      >
+        <SpeedList />
+      </Popover>
     </div>
   );
 }
