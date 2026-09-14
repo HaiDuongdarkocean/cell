@@ -39,6 +39,8 @@ export function DictationActiveCue({
       <div className={styles.guides} aria-label="Type what you hear" data-cell-id="practice-active-cue-content">
         {progress.words.map((word, i) => {
           const isHidden = word.visibleChars === null;
+          const tailText = isHidden ? word.text : word.text.slice(word.visibleChars?.length ?? 0);
+          const hasTail = tailText.length > 0;
           return (
             <span
               key={i}
@@ -52,7 +54,8 @@ export function DictationActiveCue({
                   className={`${styles.guide} ${word.state === 'active' ? styles.guideCurrent : ''}`}
                   data-guide
                   data-current={word.state === 'active' ? 'true' : 'false'}
-                  style={{ ['--blank-width' as string]: `${word.hiddenTailLength}ch` }}
+                  data-expected={word.text}
+                  aria-hidden="true"
                 />
               ) : (
                 <>
@@ -66,12 +69,13 @@ export function DictationActiveCue({
                       {char.char}
                     </span>
                   ))}
-                  {word.hiddenTailLength > 0 && (
+                  {hasTail && (
                     <span
-                      className={styles.guide}
+                      className={`${styles.guide} ${word.state === 'active' ? styles.guideCurrent : ''}`}
                       data-guide
                       data-tail
-                      style={{ ['--blank-width' as string]: `${word.hiddenTailLength}ch` }}
+                      data-expected={tailText}
+                      aria-hidden="true"
                     />
                   )}
                 </>

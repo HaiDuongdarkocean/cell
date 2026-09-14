@@ -37,10 +37,13 @@
 
 .guide {
   display: inline-block;
-  inline-size: var(--blank-width, var(--space-8));
-  min-inline-size: var(--space-4);
-  height: 1em;
+  vertical-align: baseline;
   border-bottom: var(--border-width-hairline) dotted var(--color-text-secondary);
+}
+
+.guide::before {
+  content: attr(data-expected);
+  visibility: hidden;
 }
 
 .guideCurrent {

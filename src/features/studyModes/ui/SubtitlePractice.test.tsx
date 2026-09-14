@@ -137,6 +137,35 @@ describe('SubtitlePracticeSession — dictation', () => {
     expect(active.querySelectorAll('[data-guide]')).toHaveLength(5);
   });
 
+  it('reserves each word slot with the full expected word width without revealing the answer', () => {
+    renderSession();
+    const active = screen.getByTestId('practice-active-cue');
+    const guides = active.querySelectorAll('[data-guide]');
+    const expectedWords = ['YOU', 'WERE', 'GOOD', 'TO', 'ME'];
+    expect(guides).toHaveLength(expectedWords.length);
+    for (let i = 0; i < guides.length; i += 1) {
+      expect((guides[i] as HTMLElement).getAttribute('data-expected')).toBe(expectedWords[i]);
+      expect((guides[i] as HTMLElement).getAttribute('aria-hidden')).toBe('true');
+      expect(guides[i].textContent).toBe('');
+    }
+    expect(active.textContent).not.toContain('YOU');
+    expect(active.textContent).not.toContain('WERE');
+    expect(active.textContent).not.toContain('GOOD');
+  });
+
+  it('keeps the tail guide sized to the remaining hidden suffix while revealing correct chars', () => {
+    renderSession();
+    const input = screen.getByTestId('practice-input');
+    fireEvent.change(input, { target: { value: 'y' } });
+    const active = screen.getByTestId('practice-active-cue');
+    const tail = active.querySelector('[data-guide][data-tail]');
+    expect(tail).toBeTruthy();
+    expect((tail as HTMLElement).getAttribute('data-expected')).toBe('OU');
+    expect((tail as HTMLElement).getAttribute('aria-hidden')).toBe('true');
+    expect(active.textContent).not.toContain('OU');
+    expect(active.querySelector('[data-state="correct"]')?.textContent).toBe('Y');
+  });
+
   it('shows live positional feedback while typing without Enter', () => {
     renderSession();
     const input = screen.getByTestId('practice-input');
