@@ -73,6 +73,7 @@ export class ReactSubtitleController {
   private searchApiKeys: readonly SubtitleApiKey[] = [];
   private panelCues: BilingualCue[] = [];
   private onApiKeysChangeCallback: ((keys: SubtitleApiKey[]) => void) | null = null;
+  private practiceMode: SubtitlePracticeMode = 'off';
 
   /** Style/manager state lives in a dedicated controller. */
   private styleController: SubtitleStyleController | undefined;
@@ -555,7 +556,8 @@ export class ReactSubtitleController {
   applyStudyMode(activeMode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     if (this.destroyed) return;
     const wasActive = this.studyMode.isActive;
-    this.mount.setPracticeMode(practiceModeFromStudyModeId(activeMode.id));
+    this.practiceMode = practiceModeFromStudyModeId(activeMode.id);
+    this.mount.setPracticeMode(this.practiceMode);
     this.studyMode.applyStudyMode(activeMode, advanced, this.engine.getTargetCues(), this.getOffsetMs());
     this.mount.setRemoveBracketed(advanced.removeBracketed);
     this.engine.setHeldCue(this.studyMode.heldCueIndex);
@@ -572,11 +574,15 @@ export class ReactSubtitleController {
       this.video.playbackRate = baseline.playbackRate;
       this.mount.setPlaybackSpeed(baseline.playbackRate as PlaybackSpeed);
       this.applySubtitleHidden(baseline.targetHidden, baseline.nativeHidden);
+      this.mount.setPanelBlurred(false);
     }
 
     // Apply first step immediately if a cue is currently active.
     this.syncStudyMode();
     this.syncHeldCue();
+    if (!this.studyMode.isActive) {
+      this.mount.setPanelBlurred(false);
+    }
   }
 
   /** Drive the study-mode state machine on every time update. */
@@ -616,6 +622,8 @@ export class ReactSubtitleController {
           const targetHidden = action.subtitle === 'none' || action.subtitle === 'native';
           const nativeHidden = action.subtitle === 'none' || action.subtitle === 'target';
           this.applySubtitleHidden(targetHidden, nativeHidden);
+          const shouldBlurPanel = this.practiceMode === 'off' && (targetHidden || nativeHidden);
+          this.mount.setPanelBlurred(shouldBlurPanel);
           break;
         }
         case 'setSpeed':

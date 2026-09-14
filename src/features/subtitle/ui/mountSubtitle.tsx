@@ -91,6 +91,7 @@ export interface MountSubtitleResult {
   setTokenize: (tokenize: CueListTokenize | null) => void;
   /** Update current video time (ms) for CueList highlight. */
   setCurrentTimeMs: (timeMs: number) => void;
+  setPanelBlurred: (blurred: boolean) => void;
   /** Toggle whether bracketed content is stripped from the overlay. */
   setRemoveBracketed: (enabled: boolean) => void;
   togglePlayerMode: () => void;
@@ -247,6 +248,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setCues: (cues) => controllerRef?.setCues(cues),
     setTokenize: (tokenize) => controllerRef?.setTokenize(tokenize),
     setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
+    setPanelBlurred: (blurred) => controllerRef?.setPanelBlurred(blurred),
     setRemoveBracketed: (enabled) => controllerRef?.setRemoveBracketed(enabled),
     togglePlayerMode: () => controllerRef?.togglePlayerMode(),
     toggleSplitView: () => controllerRef?.toggleSplitView(),

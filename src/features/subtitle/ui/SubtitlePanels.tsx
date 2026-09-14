@@ -168,6 +168,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [tokenize, setTokenize] = useState(initialTokenize);
     const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
     const [practiceMode, setPracticeMode] = useState<SubtitlePracticeMode>(initialPracticeMode);
+    const [panelBlurred, setPanelBlurred] = useState(false);
     const lastInitialPracticeModeRef = useRef(initialPracticeMode);
     useEffect(() => {
       if (initialPracticeMode !== lastInitialPracticeModeRef.current) {
@@ -251,6 +252,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setOcrEnabled: (enabled: boolean) => { setOcrEnabledState(enabled); },
         setPracticeMode: (mode: SubtitlePracticeMode) => { setPracticeMode(mode); },
         setPlaybackSpeed: (speed: PlaybackSpeed) => { setPlaybackSpeed(speed); },
+        setPanelBlurred: (blurred: boolean) => { setPanelBlurred(blurred); },
       }),
       [addToast, clearToasts, handleTogglePlayerMode, handleToggleSplitView, setSplitViewOpen],
     );
@@ -311,6 +313,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onReplayCue={onReplayCue}
           onContinueCue={onContinueCue}
           tokenize={tokenize}
+          panelBlurred={panelBlurred}
         />
       );
     }
@@ -417,6 +420,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onReplayCue={onReplayCue}
             onContinueCue={onContinueCue}
             tokenize={tokenize}
+            panelBlurred={panelBlurred}
           />,
           splitViewPortalTarget,
         )}

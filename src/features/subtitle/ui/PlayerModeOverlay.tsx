@@ -95,6 +95,7 @@ export interface PlayerModeOverlayProps {
   onContinueCue?: (cue: BilingualCue) => void;
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
+  panelBlurred?: boolean;
 }
 
 function PlayerModeOverlayInner({
@@ -140,6 +141,7 @@ function PlayerModeOverlayInner({
   onReplayCue,
   onContinueCue,
   tokenize,
+  panelBlurred,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
@@ -517,6 +519,7 @@ function PlayerModeOverlayInner({
               onReplayCue={onReplayCue}
               onContinueCue={onContinueCue}
               tokenize={tokenize}
+              panelBlurred={panelBlurred}
             />
           )}
         </div>

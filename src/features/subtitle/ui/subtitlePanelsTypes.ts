@@ -136,6 +136,7 @@ export interface SubtitlePanelsRef {
   setOcrEnabled: (enabled: boolean) => void;
   setPracticeMode: (mode: SubtitlePracticeMode) => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
+  setPanelBlurred: (blurred: boolean) => void;
 }
 
 export interface SubtitlePanelsProps {

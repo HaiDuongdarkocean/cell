@@ -88,6 +88,7 @@ function createFakeMount(): MountSubtitleResult {
     setCues: jest.fn(),
     setTokenize: jest.fn(),
     setCurrentTimeMs: jest.fn(),
+    setPanelBlurred: jest.fn(),
     setRemoveBracketed: jest.fn(),
     togglePlayerMode: jest.fn(),
     toggleSplitView: jest.fn(),
@@ -801,5 +802,102 @@ describe('ReactSubtitleController', () => {
     video.dispatchEvent(new Event('timeupdate'));
 
     expect(video.currentTime).toBeCloseTo((2000 - 500 + 80) / 1000);
+  });
+
+  it('blurs the subtitle panel when a non-practice study mode hides subtitles', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const listenMode: StudyMode = {
+      id: 'listen',
+      type: 'preset',
+      icon: 'volumeHigh',
+      title: 'Listen',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(listenMode, advanced);
+
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(true);
+  });
+
+  it('does not blur the subtitle panel in dictation even when subtitles are hidden', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const dictationMode: StudyMode = {
+      id: 'dictation',
+      type: 'preset',
+      icon: 'pencil',
+      title: 'Dictation',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(dictationMode, advanced);
+
+    expect(fakeMount.setPanelBlurred).not.toHaveBeenLastCalledWith(true);
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(false);
+  });
+
+  it('clears panel blur when switching back to normal mode', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const listenMode: StudyMode = {
+      id: 'listen',
+      type: 'preset',
+      icon: 'volumeHigh',
+      title: 'Listen',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const normalMode: StudyMode = {
+      id: 'normal',
+      type: 'preset',
+      icon: 'play',
+      title: 'Normal',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(listenMode, advanced);
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(true);
+
+    controller.applyStudyMode(normalMode, advanced);
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(false);
+  });
+
+  it('unblurs the panel when a multi-step mode reveals subtitles at the cue end', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const listenCheckMode: StudyMode = {
+      id: 'listen-check',
+      type: 'preset',
+      icon: 'eyeOff',
+      title: 'Listen-Check',
+      description: '',
+      steps: [
+        { subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+        { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
+      ],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(listenCheckMode, advanced);
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(true);
+
+    fakeMount.setPanelBlurred.mockClear();
+
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
+    video.currentTime = 5;
+    video.dispatchEvent(new Event('timeupdate'));
+
+    expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(false);
   });
 });

@@ -58,6 +58,7 @@ export interface SubtitlePanelProps {
   translationEnabled?: boolean;
   /** Tokenize cue target text into clickable word tokens. */
   tokenize?: CueListTokenize | null;
+  panelBlurred?: boolean;
 }
 
 type PanelTab = 'subtitles' | 'playlist';
@@ -86,6 +87,7 @@ function SubtitlePanelImpl({
   onContinueCue,
   translationEnabled = true,
   tokenize,
+  panelBlurred = false,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
@@ -200,8 +202,18 @@ function SubtitlePanelImpl({
           </Tabs.List>
 
           <Tabs.Content value="subtitles" className={styles.tabContent}>
-            <div className={styles.cueListWrap}>
+            <div
+              className={styles.cueListWrap}
+              data-panel-blurred={panelBlurred ? 'true' : 'false'}
+            >
               {subtitleContent}
+              {panelBlurred && cues.length > 0 && (
+                <div
+                  className={styles.blurOverlay}
+                  data-cell-id="subtitle-panel-blur-overlay"
+                  aria-hidden="true"
+                />
+              )}
             </div>
           </Tabs.Content>
 
@@ -210,8 +222,18 @@ function SubtitlePanelImpl({
           </Tabs.Content>
         </Tabs>
       ) : (
-        <div className={styles.cueListWrap}>
+        <div
+          className={styles.cueListWrap}
+          data-panel-blurred={panelBlurred ? 'true' : 'false'}
+        >
           {subtitleContent}
+          {panelBlurred && cues.length > 0 && (
+            <div
+              className={styles.blurOverlay}
+              data-cell-id="subtitle-panel-blur-overlay"
+              aria-hidden="true"
+            />
+          )}
         </div>
       )}
     </div>
