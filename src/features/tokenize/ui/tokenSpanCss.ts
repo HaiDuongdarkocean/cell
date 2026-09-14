@@ -48,7 +48,7 @@ const CELL_TOKEN_MAP: Record<string, string> = {
  *  `--overlay-text-rgb` token (injected via STATIC_TOKENS_NEEDED). */
 const OVERLAY_TEXT_RGBA = 'rgba(var(--overlay-text-rgb), 0.45)';
 
-function buildVariables(): string {
+function buildVariables(rootSelector = ':root'): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)
     .map(([cellName, designName]) => `  ${cellName}: ${DEFAULT_LIGHT_TOKENS[designName]};`)
     .join('\n');
@@ -64,13 +64,13 @@ function buildVariables(): string {
   const staticDecls = STATIC_TOKENS_NEEDED.map((name) => `  ${name}: ${STATIC_TOKENS[name]};`).join('\n');
 
   return `
-:root {
+${rootSelector} {
 ${lightDecls}
 ${staticDecls}
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  ${rootSelector} {
 ${darkDecls}
 ${staticDecls}
   }
@@ -287,6 +287,8 @@ export function injectTokenSpanStyle(): void {
  *  so frequency/status rules use bare class selectors instead. */
 export function buildTokenSpanCssForShadow(): string {
   return `
+${buildVariables(':host')}
+
 .js-cell-token {
   display: inline !important;
   vertical-align: baseline !important;

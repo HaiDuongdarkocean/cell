@@ -52,6 +52,36 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
     expect(css).toContain('html body .js-cell-token.js-cell-token--status-off');
   });
 
+  describe('buildTokenSpanCssForShadow — self-contained variables', () => {
+    const shadowCss = buildTokenSpanCssForShadow();
+
+    it.each([
+      '--cell-token-status-unknown',
+      '--cell-token-status-tracking',
+      '--cell-token-status-known',
+      '--cell-token-status-ignore',
+      '--cell-token-freq-core-bg',
+      '--cell-token-freq-core-fg',
+      '--cell-token-freq-common-bg',
+      '--cell-token-freq-common-fg',
+      '--cell-token-freq-general-bg',
+      '--cell-token-freq-general-fg',
+      '--cell-token-freq-advanced-bg',
+      '--cell-token-freq-advanced-fg',
+      '--cell-token-freq-rare-bg',
+      '--cell-token-freq-rare-fg',
+      '--cell-token-freq-border',
+    ])('declares %s inside the shadow sheet', (name) => {
+      expect(shadowCss).toContain(`${name}:`);
+    });
+
+    it('scopes declarations to :host and [data-theme] so fullscreen reparenting cannot break them', () => {
+      expect(shadowCss).toMatch(/:host\s*\{[^}]*--cell-token-status-unknown:/);
+      expect(shadowCss).toMatch(/\[data-theme="dark"\]\s*\{[^}]*--cell-token-status-unknown:/);
+      expect(shadowCss).toMatch(/\[data-theme="light"\]\s*\{[^}]*--cell-token-status-unknown:/);
+    });
+  });
+
   it.each(['unknown', 'tracking', 'known', 'ignore'])('keeps the %s status underline visible in light and shadow DOM', (status) => {
     for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
       expect(source).toMatch(new RegExp(`status-${status}[^}]*box-shadow:\\s*inset 0 calc\\(var\\(--border-width-status\\)`));
