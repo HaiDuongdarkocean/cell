@@ -17,6 +17,19 @@ export interface PracticeResult {
   readonly feedback: readonly PracticeTokenFeedback[];
 }
 
+export interface WordProgress {
+  readonly text: string;
+  readonly typed: string;
+  readonly state: 'pending' | 'active' | 'completed';
+  readonly visibleChars: readonly { readonly char: string; readonly state: PracticeTokenState }[] | null;
+  readonly hiddenTailLength: number;
+}
+
+export interface DictationProgress {
+  readonly words: readonly WordProgress[];
+  readonly currentIndex: number;
+}
+
 export interface ClozeTextPart {
   readonly type: 'text';
   readonly text: string;
@@ -96,6 +109,69 @@ interface TokenSpan {
   readonly end: number;
   readonly text: string;
 }
+
+export const buildDictationProgress = (expected: string, actual: string): DictationProgress => {
+  const spans = collectTokenSpans(expected);
+  const typedTokens = tokenizePracticeText(actual);
+  const currentIndex = actual.trim().length === 0 ? 0 : actual.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  const clampedCurrent = Math.min(currentIndex, spans.length);
+  const words: WordProgress[] = [];
+  for (let i = 0; i < spans.length; i += 1) {
+    const span = spans[i];
+    const typed = typedTokens[i] ?? '';
+    const expectedNormalized = normalizeForTokens(span.text);
+    const state = i < clampedCurrent ? 'completed' : i === clampedCurrent ? 'active' : 'pending';
+    const visibleChars: { char: string; state: PracticeTokenState }[] = [];
+    let hiddenTailLength = 0;
+    if (state === 'pending') {
+      hiddenTailLength = expectedNormalized.length;
+    } else if (state === 'active' && typed.length === 0) {
+      hiddenTailLength = expectedNormalized.length;
+    } else {
+      let matchLen = 0;
+      while (
+        matchLen < expectedNormalized.length &&
+        matchLen < typed.length &&
+        expectedNormalized[matchLen] === typed[matchLen]
+      ) {
+        matchLen += 1;
+      }
+      const hasMistake = matchLen < typed.length && matchLen < expectedNormalized.length;
+      const extraChars = typed.length > expectedNormalized.length ? typed.slice(expectedNormalized.length) : '';
+      const showFull = state === 'completed';
+      if (hasMistake || showFull) {
+        const visibleCount = showFull ? expectedNormalized.length : matchLen + 1;
+        for (let j = 0; j < visibleCount; j += 1) {
+          const displayChar = span.text[j] ?? expectedNormalized[j];
+          if (j < matchLen) {
+            visibleChars.push({ char: displayChar, state: 'correct' });
+          } else if (j === matchLen && hasMistake) {
+            visibleChars.push({ char: displayChar, state: 'incorrect' });
+          } else {
+            visibleChars.push({ char: displayChar, state: 'missing' });
+          }
+        }
+        hiddenTailLength = showFull ? 0 : Math.max(0, expectedNormalized.length - matchLen - 1);
+      } else {
+        for (let j = 0; j < matchLen; j += 1) {
+          visibleChars.push({ char: span.text[j] ?? expectedNormalized[j], state: 'correct' });
+        }
+        hiddenTailLength = expectedNormalized.length - matchLen;
+      }
+      for (let j = 0; j < extraChars.length; j += 1) {
+        visibleChars.push({ char: extraChars[j], state: 'extra' });
+      }
+    }
+    words.push({
+      text: span.text,
+      typed,
+      state,
+      visibleChars: visibleChars.length > 0 ? visibleChars : null,
+      hiddenTailLength,
+    });
+  }
+  return { words, currentIndex: clampedCurrent };
+};
 
 function hashSeed(value: string): number {
   let hash = 0x811c9dc5;

@@ -43,6 +43,7 @@ export function SubtitlePracticeSession({
   currentTimeMs,
   offsetMs = 0,
   translationEnabled,
+  isPlaying,
   onSeek,
   onPrevious,
   onReplay,
@@ -56,7 +57,16 @@ export function SubtitlePracticeSession({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const effectiveMs = currentTimeMs + offsetMs;
-  const activeIndex = cues.findIndex((c) => c.start <= effectiveMs && c.end > effectiveMs);
+  const activeIndex = useMemo(() => {
+    const byTime = cues.findIndex((c) => c.start <= effectiveMs && c.end > effectiveMs);
+    if (byTime >= 0) return byTime;
+    if (!isPlaying) {
+      for (let i = cues.length - 1; i >= 0; i -= 1) {
+        if (cues[i].end <= effectiveMs) return i;
+      }
+    }
+    return -1;
+  }, [cues, effectiveMs, isPlaying]);
   const activeCue = activeIndex >= 0 ? cues[activeIndex] : null;
 
   const resetKey = cueKey(activeCue, mode);
@@ -199,7 +209,7 @@ export function SubtitlePracticeSession({
     <div className={styles.session} data-cell-id="subtitle-practice" data-practice-mode={mode}>
       <CueList
         cues={cues}
-        currentTimeMs={currentTimeMs}
+        currentTimeMs={activeCue ? activeCue.start - offsetMs : currentTimeMs}
         offsetMs={offsetMs}
         onSeek={onSeek}
         renderCueContent={renderCueContent}

@@ -113,6 +113,20 @@ describe('SubtitlePracticeSession — layout', () => {
     expect(input.disabled).toBe(true);
     expect(screen.queryByTestId('practice-active-cue')).toBeNull();
   });
+
+  it('keeps the input enabled by holding the last cue when the video is paused at its end', () => {
+    renderSession({ currentTimeMs: 49133, isPlaying: false });
+    const input = screen.getByTestId('practice-input') as HTMLInputElement;
+    expect(input.disabled).toBe(false);
+    expect(screen.getByTestId('practice-active-cue')).toBeTruthy();
+  });
+
+  it('keeps the input enabled while the video is playing inside the active cue', () => {
+    renderSession({ currentTimeMs: 48000, isPlaying: true });
+    const input = screen.getByTestId('practice-input') as HTMLInputElement;
+    expect(input.disabled).toBe(false);
+    expect(screen.getByTestId('practice-active-cue')).toBeTruthy();
+  });
 });
 
 describe('SubtitlePracticeSession — dictation', () => {
@@ -127,18 +141,21 @@ describe('SubtitlePracticeSession — dictation', () => {
     renderSession();
     const input = screen.getByTestId('practice-input');
     fireEvent.change(input, { target: { value: 'you are good to me extra' } });
-    const feedback = screen.getByTestId('practice-feedback');
-    expect(feedback.getAttribute('role')).toBe('status');
-    expect(feedback.querySelector('[data-state="incorrect"]')).toBeTruthy();
-    expect(feedback.querySelector('[data-state="extra"]')).toBeTruthy();
+    const cue = screen.getByTestId('practice-active-cue');
+    expect(cue.querySelector('[data-state="incorrect"]')).toBeTruthy();
+    expect(cue.querySelector('[data-word-state]')).toBeTruthy();
+    expect(cue.querySelector('[data-cell-id="practice-active-cue-content"]')?.textContent).not.toContain('extra');
   });
 
   it('shows 100% live feedback for a normalized-correct answer', () => {
     renderSession();
     const input = screen.getByTestId('practice-input');
     fireEvent.change(input, { target: { value: 'you were, good to me!' } });
-    const tokens = screen.getByTestId('practice-feedback').querySelectorAll('[data-state="correct"]');
-    expect(tokens.length).toBe(5);
+    const cue = screen.getByTestId('practice-active-cue');
+    const correctChars = cue.querySelectorAll('[data-state="correct"]');
+    expect(correctChars.length).toBeGreaterThan(0);
+    expect(cue.querySelector('[data-state="incorrect"], [data-state="missing"]')).toBeNull();
+    expect(cue.querySelectorAll('[data-cell-id="dictation-word"]').length).toBe(5);
   });
 
   it('hides native text on the active cue regardless of translation setting', () => {

@@ -1,4 +1,5 @@
 import {
+  buildDictationProgress,
   createClozeExercise,
   evaluateCloze,
   evaluateDictation,
@@ -204,5 +205,125 @@ describe('evaluateCloze', () => {
     expect(result.feedback[0].state).toBe('incorrect');
     expect(result.feedback[0].expected).toBe(ex.blanks[0].answer);
     expect(result.feedback[1].state).toBe('missing');
+  });
+});
+
+describe('buildDictationProgress', () => {
+  const expected = "Telling myself I won't go there.";
+
+  it('hides every word behind a pending guide before typing', () => {
+    const progress = buildDictationProgress(expected, '');
+    expect(progress.words).toHaveLength(6);
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].state).toBe('active');
+    expect(progress.words[0].visibleChars).toBeNull();
+    expect(progress.words[0].hiddenTailLength).toBe(7);
+    expect(progress.words.slice(1).every((w) => w.state === 'pending' && w.visibleChars === null)).toBe(true);
+  });
+
+  it('shows the correctly typed prefix and hides the rest while typing', () => {
+    const progress = buildDictationProgress(expected, 'tell');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].typed).toBe('tell');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'T', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'l', state: 'correct' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(3);
+    expect(progress.words.slice(1).every((w) => w.state === 'pending')).toBe(true);
+  });
+
+  it('suggests the expected next character in red and hides the rest when wrong', () => {
+    const progress = buildDictationProgress('relaxing', 'res');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'r', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(5);
+  });
+
+  it('shows the previous suggestion word with a hidden tail when a character is wrong', () => {
+    const progress = buildDictationProgress(expected, 'telle');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'T', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'i', state: 'incorrect' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(2);
+  });
+
+  it('commits the current word and shows the missing suffix in red on a trailing space', () => {
+    const progress = buildDictationProgress(expected, 'tell ');
+    expect(progress.currentIndex).toBe(1);
+    expect(progress.words[0].state).toBe('completed');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'T', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'i', state: 'missing' },
+      { char: 'n', state: 'missing' },
+      { char: 'g', state: 'missing' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(0);
+    expect(progress.words[1].state).toBe('active');
+    expect(progress.words[1].visibleChars).toBeNull();
+    expect(progress.words[1].hiddenTailLength).toBe(6);
+  });
+
+  it('keeps completed words visible while the user types the next word', () => {
+    const progress = buildDictationProgress(expected, 'tell myself');
+    expect(progress.currentIndex).toBe(1);
+    expect(progress.words[0].state).toBe('completed');
+    expect(progress.words[1].state).toBe('active');
+    expect(progress.words[1].visibleChars).toEqual([
+      { char: 'm', state: 'correct' },
+      { char: 'y', state: 'correct' },
+      { char: 's', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'f', state: 'correct' },
+    ]);
+    expect(progress.words[1].hiddenTailLength).toBe(0);
+    expect(progress.words[2].state).toBe('pending');
+  });
+
+  it('advances the active index when the final word is complete and a space is typed', () => {
+    const progress = buildDictationProgress(expected, 'tell myself I ');
+    expect(progress.currentIndex).toBe(3);
+    expect(progress.words[0].state).toBe('completed');
+    expect(progress.words[1].state).toBe('completed');
+    expect(progress.words[2].state).toBe('completed');
+    expect(progress.words[3].state).toBe('active');
+    expect(progress.words[3].visibleChars).toBeNull();
+  });
+
+  it('keeps the active word hidden until the first character is typed', () => {
+    const progress = buildDictationProgress(expected, ' ');
+    expect(progress.currentIndex).toBe(0);
+    expect(progress.words[0].state).toBe('active');
+    expect(progress.words[0].visibleChars).toBeNull();
+  });
+
+  it('renders extra typed characters after the expected word', () => {
+    const progress = buildDictationProgress('Telling', 'tellingx');
+    expect(progress.words[0].visibleChars).toEqual([
+      { char: 'T', state: 'correct' },
+      { char: 'e', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'l', state: 'correct' },
+      { char: 'i', state: 'correct' },
+      { char: 'n', state: 'correct' },
+      { char: 'g', state: 'correct' },
+      { char: 'x', state: 'extra' },
+    ]);
+    expect(progress.words[0].hiddenTailLength).toBe(0);
   });
 });

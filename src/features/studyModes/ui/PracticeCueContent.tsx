@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Text, VisuallyHidden } from '@/shared/ui';
 import {
+  buildDictationProgress,
   createClozeExercise,
   evaluateDictation,
   normalizePracticeToken,
@@ -10,18 +11,6 @@ import {
   type PracticeTokenState,
 } from '../lib/subtitlePractice';
 import styles from './SubtitlePractice.module.css';
-
-function FeedbackTokens({ result }: { readonly result: PracticeResult }): React.JSX.Element {
-  return (
-    <div className={styles.feedbackTokens} aria-hidden="true">
-      {result.feedback.map((f, i) => (
-        <span key={i} className={styles[`token-${f.state}`]} data-state={f.state}>
-          {f.text}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 export function MaskedCueContent(): React.JSX.Element {
   return <div className={styles.maskedTarget} data-cell-id="cue-masked-target" aria-hidden="true" />;
@@ -40,27 +29,64 @@ export function DictationActiveCue({
   readonly showTranslation: boolean;
   readonly dataCellId?: string;
 }): React.JSX.Element {
-  const expectedTokens = useMemo(() => tokenizePracticeText(cue.targetText), [cue.targetText]);
+  const progress = useMemo(() => buildDictationProgress(cue.targetText, draft), [cue.targetText, draft]);
   const result = useMemo(
     () => providedResult ?? (draft.trim().length === 0 ? null : evaluateDictation(cue.targetText, draft)),
     [providedResult, cue.targetText, draft],
   );
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
+      <div className={styles.guides} aria-label="Type what you hear" data-cell-id="practice-active-cue-content">
+        {progress.words.map((word, i) => {
+          const isHidden = word.visibleChars === null;
+          return (
+            <span
+              key={i}
+              className={styles.word}
+              data-cell-id="dictation-word"
+              data-word-state={word.state}
+              data-word-index={i}
+            >
+              {isHidden ? (
+                <span
+                  className={`${styles.guide} ${word.state === 'active' ? styles.guideCurrent : ''}`}
+                  data-guide
+                  data-current={word.state === 'active' ? 'true' : 'false'}
+                  style={{ ['--blank-width' as string]: `${word.hiddenTailLength}ch` }}
+                />
+              ) : (
+                <>
+                  {word.visibleChars?.map((char, j) => (
+                    <span
+                      key={j}
+                      className={styles[`token-${char.state}`]}
+                      data-cell-id="dictation-char"
+                      data-state={char.state}
+                    >
+                      {char.char}
+                    </span>
+                  ))}
+                  {word.hiddenTailLength > 0 && (
+                    <span
+                      className={styles.guide}
+                      data-guide
+                      data-tail
+                      style={{ ['--blank-width' as string]: `${word.hiddenTailLength}ch` }}
+                    />
+                  )}
+                </>
+              )}
+            </span>
+          );
+        })}
+      </div>
       {result ? (
         <div className={styles.feedback} data-cell-id="practice-feedback" role="status" aria-live="polite">
           <VisuallyHidden as="div">
             {`${result.correctCount} of ${result.totalCount} correct, ${result.score} percent`}
           </VisuallyHidden>
-          <FeedbackTokens result={result} />
         </div>
-      ) : (
-        <div className={styles.guides} aria-label="Type what you hear">
-          {expectedTokens.map((_token, i) => (
-            <span key={i} className={styles.guide} data-guide aria-hidden="true" />
-          ))}
-        </div>
-      )}
+      ) : null}
       {showTranslation && cue.nativeText ? (
         <div className={styles.nativeText} data-cell-id="cue-native-text">{cue.nativeText}</div>
       ) : null}
