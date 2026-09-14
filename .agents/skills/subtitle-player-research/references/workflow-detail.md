@@ -10,7 +10,7 @@ Guard: ambiguous episode or test mode → ask one focused question.
 
 ## 1. Start the browser
 
-1. Use `testing-extension-browser` (stealth-chrome-devtools) for anti-bot sites.
+1. Use `testing-extension-browser` (Playwright persistent Chromium with packed .crx + clone profile) for anti-bot sites.
 2. Use `cell-profile` only when explicitly requested; otherwise a disposable profile.
 3. Enable network body capture before navigation when supported.
 4. Navigate, wait for settlement, capture one screenshot/state snapshot.

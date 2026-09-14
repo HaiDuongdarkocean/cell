@@ -179,8 +179,8 @@ npm run typecheck
 npm run test:unit
 ```
 
-For browser-facing changes, use `browser-testing-with-devtools` and `stealth-chrome-devtools` with
-`cell-profile`; verify extension inventory and panel counts.
+For browser-facing changes, use `testing-extension-browser` Playwright persistent Chromium with
+`cell-profile` clone; verify extension inventory and panel counts.
 
 ## Project structure
 

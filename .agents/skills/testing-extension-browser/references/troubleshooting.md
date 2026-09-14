@@ -8,9 +8,9 @@
 | No Cell in `chrome://extensions` | External Extensions JSON missing or .crx path wrong | Re-run setup; check `<clone>/Default/External Extensions/<id>.json` |
 | `Pack failed` | `openssl` not in PATH or `dist/` missing | `npm run build`; verify `openssl version` |
 | `extensions.settings` empty after launch | Chrome strips hand-written `location=4` unpacked entries | Use .crx + External Extensions (the setup script) |
-| Spawn fails (profile locked) | Previous MCP instance didn't close | `close_instance` old instance, wait 3s, retry |
-| Marker not found | Content script didn't inject | Check `fetchPatched: true` via `execute_script` |
-| `execute_script` returns null | Async code — MCP doesn't await | Sync IIFE, not `async` |
+| Spawn fails (profile locked) | Previous Playwright context didn't close | `context.close()` old context, wait 3s, retry |
+| Marker not found | Content script didn't inject | Check `fetchPatched: true` via `page.evaluate` |
+| `page.evaluate` returns null | Async code — Playwright serializes the result; promises are awaited, but page functions must return | Sync IIFE, or return a Promise from `page.evaluate` |
 | `chrome.storage` undefined | Page world has no `chrome.runtime` | Inspect DOM attributes instead |
 | Click on shadow element no effect | Event not `composed: true` | Add `composed: true` to MouseEvent |
 | `caretRangeFromPoint` non-text | Doesn't pierce shadow DOM | `shadowRoot.elementFromPoint` |
@@ -35,10 +35,10 @@
 
 - Launching without building first
 - `--load-extension` (Chrome 137+ blocks it completely)
-- MCP `execute_cdp_command` to load extension (no Extensions CDP domain)
-- `Stop-Process` on Chrome (no cleanup → clone leak)
+- `execute_cdp_command` to load extension (no Extensions CDP domain)
+- `Stop-Process` / `taskkill` on Chrome (no cleanup → clone leak)
 - Editing `dist/` directly (edit `src/` then build)
-- Second MCP instance on the same clone (profile lock)
+- Second Playwright context on the same clone (profile lock)
 - CDP `loadUnpacked` + close + spawn handoff (session-only — extension lost)
 - Pre-installing unpacked via Preferences `location=4` (stripped on launch)
 - Copying `dist/` elsewhere (load from the SSOT path)
@@ -56,14 +56,14 @@
 | Cell key | `<repo-root>\cell-key.pem` (auto-generated first run) |
 | uBlock ext | `<repo-root>\data\extension\uBOLite` |
 | uBlock .crx | `<repo-root>\ublock.crx` |
-| Master profile | `C:\stealth-mcp-browser-sessions\master` |
-| Clones | `C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>` |
-| Python | 3.11 via `uv run` (3.14 has a nodriver encoding bug) |
+| Master profile | `C:\cell-browser-sessions\master` |
+| Clones | `C:\cell-browser-sessions\sessions\cell-<uuid>` |
+| Python | 3.11+ (chỉ dùng cho `setup-cell-profile.py` pack .crx) |
 
 ## Setup check
 
 ```
-Test-Path "C:\stealth-mcp-browser-sessions\master\Local State","<repo-root>\dist\manifest.json","<repo-root>\data\extension\uBOLite\manifest.json"
+Test-Path "C:\cell-browser-sessions\master\Local State","<repo-root>\dist\manifest.json","<repo-root>\data\extension\uBOLite\manifest.json"
 ```
 
 All true → go to Step 1. Any false → read `SETUP.md`, run the one-time step.

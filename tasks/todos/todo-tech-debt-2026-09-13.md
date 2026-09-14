@@ -53,7 +53,7 @@
 
 - [x] 4 gates xanh trên mọi checkpoint: typecheck · 479 suites/5647 tests · lint · build
 - [x] `npm run test:e2e:full` — 36–38 pass; 2 fail là environmental flakes (themoviebox ad-redirect `nn125.com`; `:49` overlay-click timing flake — pass 4/5 runs kể cả cùng ordering). Đã reproduce bằng debug spec: `popupHost: true`.
-- [ ] Real Chrome MV3 session qua `testing-extension-browser` (MCP stealth-chrome-devtools không có trong session này — cần verify tay hoặc session có MCP)
+- [ ] Real Chrome MV3 session qua `testing-extension-browser` Playwright persistent Chromium
 
 ## Phase 7 — Residuals đã xử ✅
 
@@ -70,4 +70,4 @@
 
 - [ ] T13 phần còn lại: bỏ string-patching dần (upstream patch hoặc CSP-safe builds), unify vite configs, gỡ `cardCreatorTest`/`mockup-*` khỏi FULL_INPUT, cân nhắc opencv cv-only build (10.3MB chunk — hiện đã lazy)
 - [ ] Chunk-boundary tuning: `content-script.ts` entry 33→67KB sau DAG refactor (module hoist — total dist không đổi); `subtitle` chunk hấp thụ `mountCardCreatorDialog` (1.36MB)
-- [ ] Real Chrome MV3 session qua `testing-extension-browser` trước khi merge
+- [ ] Real Chrome MV3 session qua `testing-extension-browser` Playwright persistent Chromium trước khi merge

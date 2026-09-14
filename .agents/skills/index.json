@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated": "2026-09-13T02:12:33.201Z",
+  "generated": "2026-09-14T02:12:02.212Z",
   "count": 46,
   "skills": [
     {
@@ -210,7 +210,7 @@
     },
     {
       "name": "testing-extension-browser",
-      "description": "Stealth-Chrome interactive testing for the Cell extension via nodriver + CDP. Use for ad-hoc real-browser verification.",
+      "description": "Real-Chrome Playwright verification for the Cell extension via packed .crx + cloned profile. Use for ad-hoc real-browser verification.",
       "path": ".agents/skills/testing-extension-browser/SKILL.md"
     },
     {

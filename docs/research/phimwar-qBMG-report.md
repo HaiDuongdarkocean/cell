@@ -1,7 +1,7 @@
 # Research Report — `https://phimwar.com/watch/qBMG`
 
 > Research-only. No `src/` files were modified during this investigation.
-> Conducted with a persistent Chrome profile (`C:\stealth-mcp-browser-sessions\cell-phimwar`).
+> Conducted with a persistent Chrome profile (`C:\cell-browser-sessions\cell-phimwar`).
 
 ---
 

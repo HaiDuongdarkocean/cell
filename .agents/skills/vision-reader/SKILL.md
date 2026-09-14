@@ -32,7 +32,7 @@ Bridges a blind coding model to a vision model. The main agent captures an image
 | `vision-reader` subagent profile exists | `.devin/agents/vision-reader.md` present |
 | Subagent model has vision | `model: gpt-5.6-luna-medium` pinned in the profile |
 | Image on disk as PNG/JPG | `read` tool renders it to the subagent |
-| Browser screenshots need an MCP instance | stealth-chrome-devtools `spawn_browser` → save `instance_id` |
+| Browser screenshots need a Playwright context | `chromium.launchPersistentContext(...)` or `browser.newContext()` → save `page` |
 
 If the profile is missing, stop and tell the user — the skill cannot function without it.
 
@@ -44,7 +44,7 @@ If the profile is missing, stop and tell the user — the skill cannot function 
 
 | Source | How to get it | When |
 |---|---|---|
-| Browser screenshot | MCP `take_screenshot(instance_id, file_path=<abs path>)` | Verifying a live page after a code change |
+| Browser screenshot | Playwright `page.screenshot({ path: <abs path> })` | Verifying a live page after a code change |
 | Arbitrary file on disk | User-provided path, mockup, error screenshot | Matching a design, diagnosing a pasted screenshot |
 
 **Guard:** The image must be a real file on disk with an absolute path. The subagent's only tool is `read`; it cannot take screenshots itself.
@@ -59,12 +59,12 @@ If the profile is missing, stop and tell the user — the skill cannot function 
 
 **Actions:**
 
-1. Ensure a browser instance is live (`spawn_browser` → save `instance_id`, or reuse one from `testing-extension-browser`).
+1. Ensure a Playwright context/page is live (`chromium.launchPersistentContext(...)` or reuse one from `testing-extension-browser`).
 2. Navigate to the target URL; wait for the element under test to render.
-3. Call `take_screenshot` with an explicit `file_path`:
+3. Call `page.screenshot` with an explicit `path`:
    - Use a temp dir already gitignored (e.g. `_tmp_test_screenshots/<task>.png`).
-   - `full_page: false` unless the issue spans below the fold.
-   - `format: "png"` (jpeg loses text sharpness the vision model needs).
+   - `fullPage: false` unless the issue spans below the fold.
+   - Playwright defaults to PNG (jpeg loses text sharpness the vision model needs).
 4. Record the absolute path returned.
 
 **Guard:** Confirm the call returned a path, not just base64. A missing `file_path` arg means the subagent has nothing to read.
@@ -122,7 +122,7 @@ FOCUS:
 **Actions:**
 
 - Delete the temp screenshot file you created (only files you created this session).
-- `close_instance` any browser you spawned for this check (not ones owned by `testing-extension-browser`).
+- `context.close()` any Playwright context you spawned for this check (not ones owned by `testing-extension-browser`).
 
 **Guard:** Never delete user-provided files or files you did not create.
 
@@ -131,11 +131,11 @@ FOCUS:
 | Anti-pattern | Why it fails | Do instead |
 |---|---|---|
 | Spawn subagent without `file_path`, pass base64 in the prompt | The subagent's only tool is `read`; it cannot decode base64 from text | Always save to disk first, pass the path |
-| Send a `take_screenshot` base64 result to the subagent | Same — `read` needs a file path | Use `take_screenshot(file_path=...)` |
+| Send a `page.screenshot` base64 result to the subagent | Same — `read` needs a file path | Use `page.screenshot({ path: ... })` |
 | Ask the subagent to suggest CSS or code | It sees pixels, not your codebase | You map deviations → code causes |
 | Vague `expected` ("should look good") | Report has nothing to compare against | Name regions + the one invariant |
 | Skip cleanup, leak temp PNGs | Disk fills over a long session | Delete screenshots you created |
-| Use this for DOM structure | Wastes a vision call on text data | Use `query_elements` / `take_snapshot` |
+| Use this for DOM structure | Wastes a vision call on text data | Use `page.locator(...).count()` / `page.evaluate` |
 
 ## Verification
 
@@ -145,7 +145,7 @@ Before treating the subagent's report as ground truth:
 - [ ] The report has the `VISION REPORT` header and at least one `REGIONS` entry (or an explicit `ERROR`).
 - [ ] `DEVIATIONS` entries each have a severity — if not, the subagent drifted from schema; re-spawn with a tighter prompt.
 - [ ] You mapped every `blocker`/`major` deviation to a concrete code location before acting.
-- [ ] Temp screenshot you created is deleted; browser instance you spawned is closed.
+- [ ] Temp screenshot you created is deleted; Playwright context you spawned is closed.
 
 ## Router boomerang
 

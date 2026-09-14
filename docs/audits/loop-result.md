@@ -56,7 +56,7 @@
 - Build `npx vite build --config vite.showcase.config.ts` succeeds.
 - Output artifact at `dist/design-system-showcase/design-system-showcase.html` with root-relative `/assets/` references.
 - `http-server dist/design-system-showcase -p 8123` serves the page.
-- `stealth-chrome-devtools` spawned browser navigates to page and loads.
+- Playwright persistent Chromium context with packed .crx navigates to page and loads.
 
 ## Remaining / In Progress
 

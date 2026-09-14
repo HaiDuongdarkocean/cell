@@ -40,36 +40,50 @@ Guard: script prints `[OK] Packed cell.crx` → `[OK] Cloned master → <clone>`
 
 Loop back: `Pack failed` → `dist/` missing or `openssl` not in PATH → back to Step 1. `cell-key.pem` missing → auto-generated once; the .crx ID derives from the key (stable across re-packs).
 
-## Step 3: Connect (MCP)
+## Step 3: Connect (Playwright)
 
-`stealth-chrome-devtools spawn_browser` with `user_data_dir = <CLONE_PATH>` and `headless = false`. Save the returned `instance_id` — every later call uses it.
+```ts
+import { chromium } from '@playwright/test';
 
-Guard: `state: "ready"`; then navigate `chrome://extensions/` and confirm Cell is listed, or check `fetchPatched: true` via `execute_script`.
+const context = await chromium.launchPersistentContext(CLONE_PATH, {
+  headless: false,
+  executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+});
+const page = await context.newPage();
+```
 
-Loop back: profile locked → `close_instance` on the old instance, wait 3s, retry. Cell not listed → re-run Step 2.
+Guard: `launchPersistentContext` resolves; then navigate `chrome://extensions/` and confirm Cell is listed, or check `fetchPatched: true` via `page.evaluate`.
 
-## Step 4: Navigate (MCP)
+Loop back: profile locked → `context.close()` on the old context, wait 3s, retry. Cell not listed → re-run Step 2.
 
-| Action | MCP tool |
-|---|---|
-| Navigate | `navigate` |
-| Click | `click_element` |
-| Execute JS | `execute_script` |
-| Query elements | `query_elements` |
-| Screenshot | `take_screenshot` |
+## Step 4: Navigate (Playwright)
+
+```ts
+await page.goto('https://...');
+await page.locator('[data-cell-id="orbital-badge"]').click();
+const result = await page.evaluate(() => ({
+  fetchPatched: !!document.documentElement.getAttribute('data-cell-fetch-patched'),
+  subtitleRoot: !!document.getElementById('cell-subtitle-root'),
+}));
+await page.screenshot({ path: 'tmp/real-chrome/screenshot.png' });
+```
 
 ### Video playback
 
 Autoplay policy blocks `video.play()` from script — click play first:
 
-```
-click_element selector=".art-control-playAndPause"
+```ts
+await page.locator('.art-control-playAndPause').click();
 ```
 
 Then seek:
 
-```js
-(() => { const v = document.querySelector('video'); v.currentTime = 190; return { time: v.currentTime }; })()
+```ts
+await page.evaluate(() => {
+  const v = document.querySelector('video');
+  if (v) v.currentTime = 190;
+  return { time: v?.currentTime };
+});
 ```
 
 ### Shadow DOM inspection
@@ -119,9 +133,10 @@ Loop back: verify fails → capture evidence (DOM snapshot, element count) → i
 
 ## Step 7: Cleanup
 
-```
-mcp close_instance(instance_id)
-Remove-Item C:\stealth-mcp-browser-sessions\sessions\cell-* -Recurse -Force -ErrorAction SilentlyContinue
+```ts
+await context.close();
+// Remove the clone unless you need to inspect it
+fs.rmSync(CLONE_PATH, { recursive: true, force: true });
 ```
 
 ## Evidence capture template
@@ -148,8 +163,8 @@ Do not re-launch until the board has more facts than guesses.
 
 1. `npx vite build`
 2. `python .agents\skills\testing-extension-browser\script\setup-cell-profile.py --rebuild` → `CLONE_PATH=...`
-3. `spawn_browser(user_data_dir=<CLONE_PATH>, headless=false)` → `state: "ready"`
-4. `navigate(url=...)` → `click_element selector=".art-control-playAndPause"` → `execute_script: video.currentTime = 190`
-5. `execute_script: dispatch mouseup composed:true at target span coords`
-6. `execute_script: #cell-universal-panel-host shadow → totalEls > 2 = PASS`
-7. `close_instance` → `Remove-Item sessions\cell-* -Recurse -Force`
+3. `const context = await chromium.launchPersistentContext(CLONE_PATH, { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });`
+4. `await page.goto(url)` → `await page.locator('.art-control-playAndPause').click()` → `await page.evaluate(() => { const v = document.querySelector('video'); if (v) v.currentTime = 190; })`
+5. `await page.evaluate(() => { /* dispatch mouseup composed:true at target span coords */ })`
+6. `await page.evaluate(() => { const panel = document.querySelector('#cell-universal-panel-host'); const allEls = panel?.shadowRoot?.querySelectorAll('*'); return { totalEls: allEls?.length }; })` → `totalEls > 2 = PASS`
+7. `await context.close();` → `fs.rmSync(CLONE_PATH, { recursive: true, force: true })`

@@ -85,8 +85,8 @@ e2e/            # Playwright E2E specs (chi tiết trong 2-architechture-system.
 .agents/        # Agent skills
   skills/         # 39 skills (Define→Plan→Build→Verify→Review→Ship) + router using-agent-skills + orchestrator autonomous-pipeline — interview-me đã gộp elicitation mode
                   # index.json = catalog SSOT, regen bằng `node scripts/update-skill-index.mjs` (cover cả .devin/skills/)
-                 # testing-extension-browser/: SSOT profile + CDP Extensions.loadUnpacked + script/test-cell-browser.py
-                 #   (Chrome 137+ blocks --load-extension; dùng nodriver + CDP loadUnpacked mỗi session; anti-bot bypass)
+                 # testing-extension-browser/: SSOT profile + packed .crx + Playwright persistent Chromium
+                 #   (Chrome 137+ blocks --load-extension; dùng clone profile + warm-up launch trên Playwright Chromium)
 .devin/        # Agent config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/) + 7 skills trong .devin/skills/
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 tasks/          # Active plan & task checklist (current sprint)
@@ -198,7 +198,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 **2026-08-13**: Thêm spec `subtitle-appearance-in-manager.md` + ADR `subtitle-appearance-in-manager.md`: di chuyển subtitle appearance customization (Target/Native style, Block position/scale/opacity, NavCluster) từ Settings Dialog sang Subtitle Manager Panel. 4 components moved từ `settings/ui/` sang `subtitle/ui/appearance/`. `appearanceShadowCss.ts` manifest tạo SSOT cho shadow CSS.
 **2026-08-11**: Khôi phục `docs/adr/` với ADR mới `native-fullscreen-iframe-player-mode.md`: child-iframe Player Mode dùng native Fullscreen API, project player vào Cell `videoStage` slot trong cùng child document, xóa `iframePlayerModeBridge.ts`, thêm `iframeContext.ts`.
-**2026-08-05**: Thêm skill `testing-extension-browser` — 1 workflow duy nhất: nodriver spawn (anti-bot) + CDP `Extensions.loadUnpacked` (Chrome 137+ blocks `--load-extension`) + load 2 ext (Cell + uBlock) + navigate + reload. Script Python `script/test-cell-browser.py` chạy qua `uv run --python 3.11 --with nodriver`.
+**2026-08-05**: Thêm skill `testing-extension-browser` — workflow: pack `.crx`, clone master profile, Playwright persistent Chromium với `--load-extension` + warm-up launch. Driver CDP cũ đã được thay thế bằng `scripts/real-chrome-verify.mjs`.
 **2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.
 **2026-08-03**: `content-script.ts` `PageScanner` chạy trong iframe có `<video>` (moviepire.ru → vidnest.fun `Nest` provider) để bắt `<track>` subtitle URLs.
 

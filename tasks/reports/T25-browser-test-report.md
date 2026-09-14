@@ -1,7 +1,7 @@
 # T25 Browser Test Report — Orca OCR Layer
 
 **Date**: 2026-08-21
-**Browser**: Chrome 151 (stealth-chrome-devtools MCP)
+**Browser**: Chrome 151 (legacy DevTools automation at the time; now superseded by Playwright persistent Chromium)
 **Mock site**: http://127.0.0.1:4325/index.html (HardSub Test — OCR Mock Player)
 **Video**: apologize.mp4 (4.6MB, 640×360, 188s duration)
 
@@ -43,7 +43,7 @@
 
 ### Case 7: Extension OCR settings panel — PENDING
 - **Test**: Navigate to real site with extension content script → open Manager Panel → OCR tab → toggle ON/OFF
-- **Blocker**: stealth-chrome-devtools MCP cannot navigate to chrome-extension:// URLs (no Extensions CDP domain)
+- **Blocker**: Playwright persistent Chromium cannot navigate to chrome-extension:// URLs from a non-extension page (no Extensions CDP domain)
 - **Status**: ⏳ PENDING — requires manual browser test or different MCP
 
 ### Case 8: Per-origin persistence + SPA nav — PENDING

@@ -464,7 +464,7 @@ OCR Settings Panel:
 - `regionSelector.test.ts`: split halves render, divider drag updates ratio (UI real-time, persist on mouseup), render update (no node recreation — same contract as handles test)
 - `ocrRunner` (engine map): same-model streams share 1 instance; LRU evicts least-recently-used beyond cap; low-RAM cap = 1
 
-### Browser tests (stealth-chrome-devtools MCP)
+### Browser tests (Playwright persistent Chromium)
 
 1. Toggle split trong Settings Panel → verify 2 regions + divider trên video (view mode)
 2. Drag divider → verify ratio syncs to settings slider + persist sau mouseup (reload → ratio giữ nguyên)

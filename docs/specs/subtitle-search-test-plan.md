@@ -1,14 +1,14 @@
 # Subtitle Search — Browser Test Plan (MCP)
 
-> Test trên Chrome thật via `testing-extension-browser` skill + stealth-chrome-devtools MCP.
+> Test trên Chrome thật via `testing-extension-browser` skill + Playwright persistent Chromium.
 > Mỗi test case có AC mapping, steps, expected result, pass/fail criteria.
 > **Anh duyệt trước khi em execute.**
 
 ## Prerequisites
 
 1. **Build extension:** `npm run build` (production) hoặc `npx vite build --mode development`
-2. **Launch Chrome + load extension:** `uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --keep-profile`
-3. **MCP connect:** `spawn_browser(user_data_dir=<clone path>, headless=false)`
+2. **Pack + clone profile:** `python .agents/skills/testing-extension-browser/script/setup-cell-profile.py --rebuild` → `CLONE_PATH=...`
+3. **Playwright connect:** `const context = await chromium.launchPersistentContext(CLONE_PATH, { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });`
 4. **Test URLs:**
    - Movie: `https://themoviebox.xyz/movies/oh-boy-was-i-wrong-about-her-KZp0CGxDxI2?id=2281575019673174328&type=/movie/detail&detailSe=&detailEp=&lang=en`
    - TV: `https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851&page=0&pageSize=100`
@@ -409,5 +409,5 @@
 - **API keys:** Anh cần cung cấp SubDL + OpenSubtitles API keys để test full flow. Không có key = chỉ test được Phase B (no key state) + Phase I (build).
 - **Phase H3** (rate-limited) khó test tự động — cần real 429. Có thể skip hoặc mock.
 - **Phase F1/F3** (network error/timeout) cần block domain — có thể dùng Chrome DevTools Network throttling.
-- **MCP tools:** Dùng `stealth-chrome-devtools` (primary) hoặc `chrome-devtools` (fallback).
+- **Playwright tools:** Dùng `chromium.launchPersistentContext` với clone profile (primary); `chrome-devtools` MCP fallback cho trace.
 - **Test data:** "Inception" cho movie, "Perfect Crown" cho TV (kisskh.co).

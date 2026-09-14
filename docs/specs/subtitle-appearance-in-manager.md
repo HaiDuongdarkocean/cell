@@ -253,7 +253,7 @@ export const appearanceShadowCss = [
 - `SubtitlePreview.test.tsx`: moved from `settings/ui/` — existing tests still pass
 - `reactSubtitleController.test.ts` (if exists): test debounced persist + merge logic
 
-**Browser verify (stealth-chrome-devtools):**
+**Browser verify (Playwright persistent Chromium):**
 - Open Manager → click "Customize appearance" → verify all 4 sections render
 - Change font size slider → verify subtitle on video updates realtime (after 300ms debounce)
 - Click "Back to subtitles" → verify tracks view restored

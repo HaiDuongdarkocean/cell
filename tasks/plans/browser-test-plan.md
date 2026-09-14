@@ -1,7 +1,7 @@
 # Browser Test Plan — Local Video Player P1
 
 > Based on spec `docs/specs/local-video-player.md` user stories #1-6 (P1 scope).
-> Uses `/testing-extension-browser` skill: nodriver launch → MCP stealth-chrome-devtools.
+> Uses `/testing-extension-browser` skill: pack .crx + clone profile → Playwright persistent Chromium.
 
 ## Test Contracts (Given/When/Then)
 

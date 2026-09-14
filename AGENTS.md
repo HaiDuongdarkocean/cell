@@ -30,7 +30,7 @@
 
 ## Environment quirks
 
-- Chrome 137+ block `--load-extension` → script nodriver trong skill `testing-extension-browser` + MCP `stealth-chrome-devtools` (PRIMARY; `chrome-devtools` fallback cho trace/a11y). Test sites: xem section Test sites trong skill đó.
+- Chrome 137+ block `--load-extension` trên Google Chrome; Windows cũng block `external_crx`. Skill `testing-extension-browser` pack `.crx` + clone profile; Playwright persistent Chromium/Chrome-for-Testing với `--load-extension` + warm-up để launch, navigate, verify. `chrome-devtools` MCP fallback cho trace/a11y.
 - `browser_preview` proxy hỏng trên Windows → đưa user URL dev server gốc.
 - `npm run mock` serve tất cả mock sites (KHÔNG `--youtube` — kill các site khác); `mock:stream` deprecated → `npm run dev` + entry URL trực tiếp.
 - `import.meta.env.DEV` luôn false trong build — dev-seed check `MODE === 'development'` (`src/shared/lib/env/devMode.ts`).

@@ -169,7 +169,7 @@ export interface OcrResult {
 
 - **Unit tests** (Jest): pure logic — `scriptRunSegmenter`, `ocrCache`, `subtitleRegionDetector`, `drmGuard`, `frameSampler` (luma-diff + text dedup), `languageRouter`
 - **Integration tests** (Jest): `paddleOcrEngine` với mock ONNX Runtime, `videoOcrController` với mock rVFC
-- **Browser tests** (stealth-chrome-devtools MCP): load extension thật, test OCR trên mock video, verify hitboxes + click → dictionary
+- **Browser tests** (Playwright persistent Chromium): load extension thật, test OCR trên mock video, verify hitboxes + click → dictionary
 - **Spike test** (M0): WebGPU + WASM multithread trong offscreen document, frame capture trên 3 site thật (DRM + tainted canvas)
 - Coverage: pure logic 100%, UI component smoke test, engine integration test với mock
 

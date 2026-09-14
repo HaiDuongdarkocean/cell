@@ -211,7 +211,7 @@ dist/design-system-showcase/             # generated, ignored, disposable
 | Token contrast | Pure contrast module dùng chung | Fix threshold/alpha compositing và reuse build/runtime |
 | Icon integrity | `scripts/check-icons.js` (regex parser + CLI paths + Jest fixtures) | Verify file↔catalog 1:1, semantic tags, duplicate SVG — implemented |
 | Extension E2E | Playwright bundled Chromium + persistent context | Official deterministic path cho CI |
-| Chrome/Edge/Brave thực | Existing nodriver + DevTools MCP | Exploratory/manual smoke test, không phải merge gate |
+| Chrome/Edge/Brave thực | Playwright persistent real Chromium/Chrome-for-Testing + packed .crx/registry policy | Exploratory/manual smoke test, không phải merge gate |
 | Performance/a11y diagnosis | Chrome DevTools MCP | Dùng khi cần trace, computed accessibility tree, runtime debug |
 
 ### 8.2 Điều không làm

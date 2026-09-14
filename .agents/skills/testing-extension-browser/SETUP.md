@@ -5,19 +5,20 @@ Chạy file này CHỈ khi guard trong SKILL.md FAIL. Không chạy nếu đã s
 ## Guard — kiểm tra trước
 
 ```
-uv --version
+npm --version
+node scripts/real-chrome-verify.mjs --help
 Test-Path "<repo-root>\dist\manifest.json"
-Test-Path "C:\stealth-mcp-browser-sessions\master\Local State"
-Test-Path "<repo-root>\data\extension\uBOLite\manifest.json"
-uv run --python 3.11 --with nodriver python -c "import nodriver; print('OK')"
+Test-Path "C:\cell-browser-sessions\master\Local State"
 ```
 
 Tất cả PASS → dừng, không cần setup. Chỉ chạy bước nào FAIL.
 
-## Bước 1: Cài uv (nếu `uv --version` FAIL)
+## Bước 1: Cài Node.js + npm (nếu `npm --version` FAIL)
+
+Tải từ https://nodejs.org/ hoặc dùng winget:
 
 ```
-winget install astral-sh.uv
+winget install OpenJS.NodeJS
 ```
 
 ## Bước 2: Build extension Cell (nếu `dist\manifest.json` FAIL)
@@ -32,26 +33,27 @@ npm run build
 Mở Chrome với master profile, login các site cần test (YouTube, Google, streamduck...), rồi Ctrl+C để đóng:
 
 ```
-uv run --python 3.11 --with nodriver python -c "import asyncio,nodriver as uc
-async def m():
-    b=await uc.start(uc.Config(user_data_dir=r'C:\stealth-mcp-browser-sessions\master',browser_executable_path=r'C:\Program Files\Google\Chrome\Application\chrome.exe'))
-    print('Master open. Ctrl+C to close.',flush=True)
-    await asyncio.Event().wait()
-uc.loop().run_until_complete(m())"
+npx playwright install chromium
+node -e "const { chromium } = require('@playwright/test'); (async () => { const ctx = await chromium.launchPersistentContext('C:\\cell-browser-sessions\\master', { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' }); const p = await ctx.newPage(); console.log('Master open. Ctrl+C to close.'); })();"
 ```
 
-## Bước 4: Verify uBOLite (nếu `uBOLite\manifest.json` FAIL)
+## Bước 4: Chuẩn bị .crx (nếu `cell.crx` FAIL)
 
-uBOLite phải có sẵn trong repo tại `data/extension/uBOLite/`. Nếu thiếu, check git hoặc download từ https://github.com/gorhill/uBlock/releases.
+```
+python .agents/skills/testing-extension-browser/script/setup-cell-profile.py
+```
+
+Script sẽ pack `dist/` thành `cell.crx`, clone master, và in `CLONE_PATH`.
 
 ## Prerequisites
 
-- Chrome installed tại `C:\Program Files\Google\Chrome\Application\chrome.exe`
-- Node.js + npm (để `npm run build`)
-- Python 3.11 (uv tự tải nếu thiếu — `uv run --python 3.11` tự download)
-- nodriver (uv tự cài — `--with nodriver`)
+- Node.js + npm
+- Playwright (`npm install` đã cài; `npx playwright install chromium` để tải binary)
+- Chrome/Chromium bất kỳ được hỗ trợ (merge gate dùng Playwright bundled Chromium/Chrome-for-Testing)
+- Python 3.11+ (chỉ để chạy `setup-cell-profile.py` pack .crx)
 
 ## Không cần
 
-- stealth-chrome-devtools MCP server (script dùng nodriver trực tiếp, không qua MCP)
-- pip install (uv quản lý packages)
+- `uv` (workflow mới dùng Node.js + Playwright).
+- DevTools MCP chỉ là fallback cho trace/a11y, không phải merge gate.
+- Google Chrome registry/policy để cài local .crx trên Windows (bị block từ Chrome 33).

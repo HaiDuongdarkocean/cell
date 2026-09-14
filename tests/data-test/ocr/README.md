@@ -43,7 +43,7 @@ Screenshots từ sites thật — cho spike T0 + browser test T25.
 | `moviepire-en-01.png` | moviepire.ru | Real hard-sub English frame |
 | `netflix-drm-01.png` | netflix.com | DRM black frame (Widevine) |
 
-**Collect**: browser test stealth-chrome-devtools — navigate site, screenshot video frame.
+**Collect**: Playwright persistent Chromium with packed .crx — navigate site, screenshot video frame.
 
 ## Tier 4: Mock Hard-Sub Video Page
 

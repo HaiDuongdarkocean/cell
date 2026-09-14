@@ -1,16 +1,10 @@
 """setup-cell-profile.py — Pack Cell .crx + clone master + write External Extensions JSON.
 
 Workflow: pack .crx (one-time per build) → clone master → write External Extensions
-JSON → print clone path. Then MCP spawn_browser(user_data_dir=<clone>) auto-loads
-Cell. No nodriver, no debugging port — MCP stealth handles anti-bot.
-
-Chrome 151 root cause (verified):
-  - CDP loadUnpacked: session-only (close = lost, NOT persisted to Preferences)
-  - --load-extension flag: completely blocked (doesn't load at all)
-  - Preferences location=4 (unpacked): stripped on launch
-  - MCP execute_cdp_command: no Extensions domain
-  - External Extensions JSON + packed .crx: WORKS ✓ (Chrome installs .crx on
-    launch from the JSON, extension persists across spawns)
+JSON → print clone path. On Linux/macOS, real Chrome can install from External
+Extensions; on Windows, `external_crx` is blocked since Chrome 33, so the
+merge-gate verification uses Playwright bundled Chromium with `--load-extension`
+and a warm-up launch (first open/close primes the clone).
 
 Usage:
   python setup-cell-profile.py                    # pack if .crx missing, clone, setup
@@ -18,9 +12,11 @@ Usage:
   python setup-cell-profile.py --no-ublock        # skip uBlock
   python setup-cell-profile.py --keep-profile     # don't auto-cleanup clone on exit
 
-After this prints CLONE_PATH=..., use MCP:
-  spawn_browser(user_data_dir="<CLONE_PATH>", headless=false)
-  navigate(url="https://...")
+After this prints CLONE_PATH=..., use Playwright:
+  const context = await chromium.launchPersistentContext(
+      CLONE_PATH, { headless: false, executablePath: CHROME_EXE });
+  const page = await context.newPage();
+  await page.goto("https://...");
 """
 from __future__ import annotations
 
@@ -36,7 +32,7 @@ from pathlib import Path
 
 # --- SSOT config ---
 CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-SESSION_ROOT = Path(r"C:\stealth-mcp-browser-sessions")
+SESSION_ROOT = Path(r"C:\cell-browser-sessions")
 MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -151,7 +147,7 @@ def read_version(ext_dir: Path) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Pack Cell .crx + setup clone profile for MCP spawn.")
+    parser = argparse.ArgumentParser(description="Pack Cell .crx + setup clone profile for Playwright.")
     parser.add_argument("--rebuild", action="store_true", help="Force re-pack .crx (after code change + npm run build)")
     parser.add_argument("--no-ublock", action="store_true", help="Skip uBlock")
     parser.add_argument("--keep-profile", action="store_true", help="Don't auto-cleanup clone on exit (for debugging)")
@@ -194,13 +190,14 @@ def main() -> int:
     if ublock_id:
         write_external_extensions(clone_dir, ublock_id, UBLOCK_CRX, ublock_version)
 
-    # --- 5. Print clone path for MCP ---
+    # --- 5. Print clone path for Playwright --
     print()
     print(f"CLONE_PATH={clone_dir}")
     print()
-    print("Next: MCP spawn_browser + navigate.")
-    print(f'  spawn_browser(user_data_dir="{clone_dir}", headless=false)')
-    print(f'  navigate(url="https://...")')
+    print("Next: Playwright persistent Chromium context.")
+    print(f'  const context = await chromium.launchPersistentContext("{clone_dir}", {{ headless: false, executablePath: CHROME_EXE }});')
+    print(f'  const page = await context.newPage();')
+    print(f'  await page.goto("https://...");')
     return 0
 
 

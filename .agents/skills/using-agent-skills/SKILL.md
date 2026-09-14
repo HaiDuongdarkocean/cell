@@ -219,7 +219,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | pre-commit-gate | Deterministic local checks (lint, typecheck, test, build, debt smell) before commit |
 | Verify | testing-with-playwright | Playwright E2E — fixtures + actors + stage2 specs, Cell + uBOLite loaded in Chromium |
-| Verify | testing-extension-browser | Interactive stealth-Chrome session (nodriver + MCP) cho ad-hoc verify |
+| Verify | testing-extension-browser | Interactive real-Chrome Playwright session (packed .crx + clone profile) cho ad-hoc verify |
 | Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Verify | learning-and-apply (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |

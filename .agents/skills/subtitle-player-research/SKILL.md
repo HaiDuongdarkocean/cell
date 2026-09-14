@@ -47,7 +47,7 @@ Never label a site supported without E4. Otherwise write: `player-side verified;
 | Step | Done when |
 |---|---|
 | 0. Scope | User-supplied URL preserved (never silently swap episode); test mode (player-side vs extension) recorded; detection path read (`subtitleDetector.ts`, `urls.ts`, `networkInterceptor.ts`, `offscreenFetch.ts`) |
-| 1. Browser | Stealth MCP profile spawned; network body capture on before navigation; blockers recorded (ask once for the exact user action) |
+| 1. Browser | Playwright persistent Chromium profile spawned; network body capture on before navigation; blockers recorded (ask once for the exact user action) |
 | 2. Topology | Every frame's URL/origin/iframe-boundary/video/player-controls recorded; a parent can read `iframe.src` but not `contentDocument` — don't confuse them |
 | 3. Activate | Clicked only observed controls; subtitle control opened; languages/variants/auto-captions recorded. No visible control ≠ no subtitles |
 | 4. List source | One signal family identified with exact URL/initiator/frame/method/body source (signal table in detail ref) |
