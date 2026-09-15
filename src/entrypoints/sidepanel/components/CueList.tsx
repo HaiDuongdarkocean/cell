@@ -227,21 +227,6 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-current={isCurrent ? 'true' : 'false'}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
-            <button
-              type="button"
-              data-cell-id="cue-timestamp"
-              data-cue-index={cue.index}
-              data-no-lookup
-              onClick={() => onSeek(cue.start)}
-              aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
-              className={styles.timestamp}
-            >
-              {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
-                  list shows the VIDEO time at which this cue will display
-                  (matches overlay + highlight). onSeek still sends raw
-                  cue.start; SEEK_TO handler subtracts offset. */}
-              {formatTimestamp(cue.start - offsetMs, hasHours)}
-            </button>
             {customContent !== undefined ? (
               customContent
             ) : (
@@ -264,6 +249,23 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 )}
               </div>
             )}
+            <div className={styles.actions} data-cell-id="cue-actions">
+              <button
+                type="button"
+                data-cell-id="cue-timestamp"
+                data-cue-index={cue.index}
+                data-no-lookup
+                onClick={() => onSeek(cue.start)}
+                aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
+                className={styles.timestamp}
+              >
+                {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
+                    list shows the VIDEO time at which this cue will display
+                    (matches overlay + highlight). onSeek still sends raw
+                    cue.start; SEEK_TO handler subtracts offset. */}
+                {formatTimestamp(cue.start - offsetMs, hasHours)}
+              </button>
+            </div>
           </div>
         );
       })}
