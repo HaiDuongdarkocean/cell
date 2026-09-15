@@ -27,6 +27,8 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
   const cues = new Map<number, PreparedCue>();
   const termToCues = new Map<string, Set<number>>();
   const resolvedTerms = new Set<string>();
+  const termStatusCache = new Map<string, WordStatus>();
+  const termFrequencyCache = new Map<string, TokenFrequencyBand>();
   const listeners = new Set<(cueIndex: number) => void>();
 
   function emit(cueIndex: number): void {
@@ -74,8 +76,8 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
     prepare(cueIndex: number, text: string): void {
       const tokens = tokenizeTextBlock(text, langCode).map((token) => ({
         ...token,
-        status: 'unknown' as Token['status'],
-        frequencyBand: 'none' as Token['frequencyBand'],
+        status: (termStatusCache.get(token.term) ?? 'unknown') as Token['status'],
+        frequencyBand: (termFrequencyCache.get(token.term) ?? 'none') as Token['frequencyBand'],
       }));
       const termSet = buildTermIndex(tokens);
       removeFromTermIndex(cueIndex, cues.get(cueIndex)?.termSet ?? new Set());
@@ -104,16 +106,18 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       let changed = false;
       const tokens = cue.tokens.map((token) => {
         if (token.isSeparator) return token;
-        const status = statuses.get(token.term) ?? 'unknown';
-        const frequencyBand = frequencies.get(token.term) ?? 'none';
+        const status = statuses.get(token.term) ?? termStatusCache.get(token.term) ?? 'unknown';
+        const frequencyBand = frequencies.get(token.term) ?? termFrequencyCache.get(token.term) ?? 'none';
         if (status !== token.status || frequencyBand !== token.frequencyBand) {
           changed = true;
         }
+        if (!token.isSeparator) {
+          termStatusCache.set(token.term, status);
+          termFrequencyCache.set(token.term, frequencyBand);
+          resolvedTerms.add(token.term);
+        }
         return { ...token, status, frequencyBand };
       });
-      for (const token of tokens) {
-        if (!token.isSeparator) resolvedTerms.add(token.term);
-      }
       const allResolved = tokens.every(
         (token) => token.isSeparator || resolvedTerms.has(token.term),
       );
@@ -122,6 +126,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
     },
 
     applyStatus(term: string, status: WordStatus): boolean {
+      termStatusCache.set(term, status);
       const cueSet = termToCues.get(term);
       if (!cueSet || cueSet.size === 0) return false;
 
@@ -155,6 +160,8 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       cues.clear();
       termToCues.clear();
       resolvedTerms.clear();
+      termStatusCache.clear();
+      termFrequencyCache.clear();
     },
   };
 }

@@ -164,14 +164,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     };
   }
 
-  // Subtitle tokenize controller — injects token spans into subtitle line elements.
-  // Independent from web tokenize: toggled via `subtitleUrls` in TokenizeSettings.
   let subtitleTokenizeCtrl: SubtitleTokenizeController | null = null;
 
-  // Hook cue updates → re-render subtitle token spans when active index changes.
-  // Deferred via requestAnimationFrame: React re-renders SubtitleBlock on cue
-  // change (useCuesStore update), which overwrites token spans with plain text.
-  // Waiting one frame ensures the controller injects AFTER React commits.
   let lastFedTargetCues: readonly SrtCue[] = [];
   let lastFedNativeCues: readonly SrtCue[] = [];
   blockController.onCuesUpdated = () => {
@@ -183,11 +177,11 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
       lastFedNativeCues = nativeCues;
       subtitleTokenizeCtrl.setCues(targetCues, nativeCues);
     }
-    const { target, native } = blockController.getActiveIndices();
     let fired = false;
     const fire = (): void => {
       if (fired) return;
       fired = true;
+      const { target, native } = blockController.getActiveIndices();
       subtitleTokenizeCtrl?.render(target, native);
     };
     requestAnimationFrame(fire);
@@ -207,8 +201,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
       const url = window.location.href;
       const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
       if (enabled) {
-        // Create controller lazily — needs blockController ready for getLineElements.
-        // Dynamic import breaks subtitle→tokenize→dictionaryPopup→subtitle cycle (TDZ).
         if (!subtitleTokenizeCtrl) {
           const { createSubtitleTokenizeController } = await import('@/features/tokenize/controller/subtitleTokenizeController');
           subtitleTokenizeCtrl = createSubtitleTokenizeController({
@@ -228,7 +220,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
           });
         }
         subtitleTokenizeCtrl.enable();
-        // Feed current cues + render active line.
         const targetCues = blockController.getTargetCues();
         const nativeCues = blockController.getNativeCues();
         lastFedTargetCues = targetCues;

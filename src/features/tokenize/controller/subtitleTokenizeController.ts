@@ -68,7 +68,9 @@ export function createSubtitleTokenizeController(
 ): SubtitleTokenizeController {
   const { langCode, getLineElements, onOpenDictionary, windowSize = DEFAULT_WINDOW } = options;
   const scheduler = new TokenizeScheduler();
-  const stateStore: TokenizeStateStore = createTokenizeStateStore({ initialEnabled: false });
+  const stateStore: TokenizeStateStore = createTokenizeStateStore({
+    initialEnabled: false,
+  });
   const videoTokenMap: VideoTokenMap = createVideoTokenMap(langCode);
   const preloader: VideoTokenPreloader = createVideoTokenPreloader({
     langCode,
@@ -81,9 +83,10 @@ export function createSubtitleTokenizeController(
   let currentTargetBlock: TokenBlock | null = null;
 
   function getDisplayOptions(): TokenSpanBindOptions {
+    const state = stateStore.getState();
     return {
-      showStatus: stateStore.getState().showStatus,
-      showFrequency: stateStore.getState().showFrequency,
+      showStatus: state.showStatus,
+      showFrequency: state.showFrequency,
       onTokenEnter: (term) => stateStore.setHoveredTerm(term),
       onTokenLeave: (term) => {
         if (stateStore.getState().hoveredTerm === term) {

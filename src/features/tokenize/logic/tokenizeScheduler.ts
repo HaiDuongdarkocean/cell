@@ -18,6 +18,7 @@ export class TokenizeScheduler {
   private queue: ScheduledTask[] = [];
   private running = false;
   private scheduledFrameId: number | undefined;
+  private scheduledFrameKind: 'fast' | 'idle' | undefined;
   private nextId = 0;
 
   /** Add a task with a priority. Lower priority runs first. */
@@ -33,9 +34,20 @@ export class TokenizeScheduler {
     };
   }
 
-  /** Start processing the queue if not already running. */
+  /** Start processing the queue. Re-schedule a fast frame if a viewport/prepare
+   *  task arrives while an idle frame is still pending. */
   start(): void {
-    if (this.running) return;
+    if (this.running) {
+      if (
+        this.scheduledFrameKind === 'idle' &&
+        this.queue.length > 0 &&
+        this.queue[0]!.priority < PRIORITY_BUFFER
+      ) {
+        this.cancelFrame();
+        this.scheduleFrame();
+      }
+      return;
+    }
     this.running = true;
     this.scheduleFrame();
   }
@@ -43,11 +55,16 @@ export class TokenizeScheduler {
   /** Stop scheduling new frames. Current frame finishes. */
   stop(): void {
     this.running = false;
+    this.cancelFrame();
+  }
+
+  private cancelFrame(): void {
     if (this.scheduledFrameId !== undefined) {
       cancelAnimationFrameSafe(this.scheduledFrameId);
       cancelIdleCallbackSafe(this.scheduledFrameId);
       clearTimeout(this.scheduledFrameId);
       this.scheduledFrameId = undefined;
+      this.scheduledFrameKind = undefined;
     }
   }
 
@@ -68,6 +85,7 @@ export class TokenizeScheduler {
 
   private scheduleFrame(): void {
     if (!this.running) return;
+    this.cancelFrame();
     if (this.queue.length === 0) {
       this.running = false;
       return;
@@ -83,18 +101,21 @@ export class TokenizeScheduler {
       // tied to a display frame. This keeps the UI responsive (one frame per
       // ~16ms budget) and avoids starving timers the way a setTimeout(0) loop
       // can on a long queue of synchronous DOM binds.
+      this.scheduledFrameKind = 'fast';
       this.scheduledFrameId = window.requestAnimationFrame(() => {
         const start = performance.now();
         const fastBudget = 16; // ms per viewport/prepare chunk
         void this.runLoop({ timeRemaining: () => fastBudget - (performance.now() - start) }, PRIORITY_BUFFER);
       });
     } else if (typeof requestIdleCallback === 'function') {
+      this.scheduledFrameKind = 'idle';
       this.scheduledFrameId = requestIdleCallback((deadline) => {
         void this.runLoop({ timeRemaining: () => deadline.timeRemaining() }, Number.MAX_SAFE_INTEGER);
       });
     } else {
       const start = performance.now();
       const budget = 50; // ms fallback budget per chunk (idle-but-responsive)
+      this.scheduledFrameKind = 'idle';
       this.scheduledFrameId = window.setTimeout(() => {
         void this.runLoop({ timeRemaining: () => budget - (performance.now() - start) }, Number.MAX_SAFE_INTEGER);
       }, 1);
