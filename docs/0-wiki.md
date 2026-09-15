@@ -25,10 +25,12 @@ docs/           # Tài liệu dự án
 │   ├── 089-foundation-iconography.md            # WHY: 24×24 1.5px round stroke, currentColor, semantic naming
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
 │   ├── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
-│   └── 103-queue-lazy-dictionary-lookup.md      # WHY: mở Queue trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
+│   ├── 103-queue-lazy-dictionary-lookup.md      # WHY: mở Queue trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
+│   └── 104-pre-tokenize-subtitle-and-cross-tab-sync.md # WHY: pre-tokenize toàn bộ subtitle theo tầng ưu tiên; cross-tab word status sync qua background broadcast; không lưu toàn bộ token map
 ├── audits/                             # Audit reports (design system, tech debt, UI/UX)
 │   ├── 20260913_src-features-entrypoints-shared.md  # Tech-debt audit: 14 items scored — top: SW-state fragility 4.20, layer boundaries 4.05, production debug seams 4.05, god files 4.00; roadmap quick-wins/pay-down/watch
 ├── specs/
+│   ├── pre-tokenize-subtitle.md        # Spec: pre-tokenize toàn bộ subtitle + cross-tab word status sync
 │   ├── queue-lazy-lookup.md            # Spec: Queue lazy Dictionary → Card Creator/Quick Add flow
 │   ├── liquid-glass-buttons.md         # Spec: themed liquid-glass Button/IconButton + subtitle action normalization; V4 approval gate before production
 │   ├── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
@@ -198,6 +200,8 @@ tasks/          # Active plan & task checklist (current sprint)
 **2026-08-22**: Thêm ADR `081-ocr-region-overlay-resilience-and-tokens.md`: region selector render() chuyển sang update-node (handles bound lúc tạo — fix resize chết sau move drag), OCR auto-restore trên SPA qua `shared/lib/dom/videoReady.ts` + MutationObserver, overlay CSS class-based chạy bằng token `--overlay-ocr-region-*`, 5 icon mới (crop/move/moveVertical/moveHorizontal/scanText). `2-architechture-system.md` cập nhật 4 row + 2 function index
 
 **2026-08-23**: Fix "OCR scan sai vùng" — region selector overlay (shell-space) ≠ crop region (intrinsic-space) khi video letterbox/control-bar. Thêm `features/ocr/pipeline/regionMapping.ts` (O(1) affine transform shell↔intrinsic, 5 object-fit + object-position, 42 unit tests). RegionSelector public API chuyển sang intrinsic-space (SSOT), internal CSS giữ shell-space, convert ở boundary. Thêm mock-youtube-hardsub page (canvas burn EN+VI hardsub, ?ar=4:3/16:9/21:9, port 4326). Debug hook mở rộng nhận splitEnabled/splitRatio/customRegion. `2-architechture-system.md` cập nhật 2 row (regionMapping + regionSelector)
+
+**2026-08-24**: Pre-tokenize toàn bộ subtitle + cross-tab word status sync. Thêm `videoTokenMap.ts`, `videoTokenPreloader.ts`, `wordStatusCrossTab.ts`; mở rộng `subtitleTokenizeController` dùng `VideoTokenMap` + `VideoTokenPreloader`; `wordStatus.ts` broadcast `WORD_STATUS_CHANGED` sau khi persist. Message contract: `messages.ts`, `types.ts`, `dictionarySchemas.ts`, `registry.ts`. ADR `104-pre-tokenize-subtitle-and-cross-tab-sync.md`, spec `docs/specs/pre-tokenize-subtitle.md`, plan `tasks/plan-pre-tokenize-subtitle.md`.
 
 **2026-08-13**: Thêm spec `subtitle-appearance-in-manager.md` + ADR `subtitle-appearance-in-manager.md`: di chuyển subtitle appearance customization (Target/Native style, Block position/scale/opacity, NavCluster) từ Settings Dialog sang Subtitle Manager Panel. 4 components moved từ `settings/ui/` sang `subtitle/ui/appearance/`. `appearanceShadowCss.ts` manifest tạo SSOT cho shadow CSS.
 **2026-08-11**: Khôi phục `docs/adr/` với ADR mới `native-fullscreen-iframe-player-mode.md`: child-iframe Player Mode dùng native Fullscreen API, project player vào Cell `videoStage` slot trong cùng child document, xóa `iframePlayerModeBridge.ts`, thêm `iframeContext.ts`.
