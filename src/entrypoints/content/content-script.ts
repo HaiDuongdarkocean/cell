@@ -38,10 +38,15 @@ import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { injectShadowCss } from '@/shared/lib/shadowRoot/injectShadowCss';
 import { hostManagerSheetShadowCss } from '@/features/subtitle/ui/hostManagerSheetShadowCss';
 import type { SerializedManagerState, ManagerAction } from '@/features/subtitle/logic/iframeManagerBridgeTypes';
+import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 
 // Top-frame coordinator for Player Mode when the actual video is inside a
 // cross-origin iframe. Child frames request the host container via postMessage.
 installIframePlayerModeBridge();
+
+// Relay cross-tab word status changes into the local event bus so all tabs
+// sharing a video stay in sync.
+startWordStatusCrossTabRelay();
 
 // ponytail: lazy-import dep preloads resolve against the host page and always
 // 404 in content-script context; swallowing the error lets the real

@@ -177,6 +177,13 @@ export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({
   status: WordStatusSchema,
 });
 
+export const WordStatusChangedPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  term: z.string().min(1).max(200),
+  status: WordStatusSchema,
+});
+
 // === Frequency lookup (spec §9.4 B — FREQUENCY_GET) ===
 
 export const FrequencyEntrySchema = z.object({

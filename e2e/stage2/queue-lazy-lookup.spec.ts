@@ -14,7 +14,7 @@ async function waitForServiceWorker(context) {
 async function setTestStorage(context, url: string): Promise<void> {
   const sw = await waitForServiceWorker(context);
   const pageKey = url;
-  const stored = await sw.evaluate(async (args) => {
+  await sw.evaluate(async (args) => {
     const { pageKey } = args;
     await chrome.storage.local.set({
       settings: { schemaVersion: 0 },

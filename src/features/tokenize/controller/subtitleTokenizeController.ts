@@ -2,16 +2,15 @@ import type { SrtCue } from '@/entities/media';
 import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/features/tokenize/types';
 import type { WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
-import { TokenizeScheduler, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
-import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
+import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
+import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import {
   emitWordStatusChanged,
   onWordStatusChanged,
 } from '@/features/dictionary/services/wordStatusEvents';
-import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
-import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
+import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
+import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
 import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 import { isEditableEvent } from '@/shared/lib/dom/isEditable';
 
@@ -23,11 +22,6 @@ const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '3': 'known',
   '4': 'ignore',
 };
-
-interface PreparedCue {
-  text: string;
-  tokens?: Token[];
-}
 
 export interface SubtitleTokenizeController extends TokenizeController {
   /** Set the current cue lists. Resets cache and prepares the active window. */
@@ -75,10 +69,14 @@ export function createSubtitleTokenizeController(
   const { langCode, getLineElements, onOpenDictionary, windowSize = DEFAULT_WINDOW } = options;
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({ initialEnabled: false });
-  const targetCache = new Map<number, PreparedCue>();
-  const statusOverrides = new Map<string, WordStatus>();
+  const videoTokenMap: VideoTokenMap = createVideoTokenMap(langCode);
+  const preloader: VideoTokenPreloader = createVideoTokenPreloader({
+    langCode,
+    map: videoTokenMap,
+    scheduler,
+    bufferSize: windowSize,
+  });
   let targetCues: readonly SrtCue[] = [];
-  let frequencyBandOptions: Promise<FrequencyBandOptions> | null = null;
   let lastTargetIndex = -1;
   let currentTargetBlock: TokenBlock | null = null;
 
@@ -97,84 +95,19 @@ export function createSubtitleTokenizeController(
     };
   }
 
-  function setTokenStatus(tokens: readonly Token[] | undefined, term: string, status: WordStatus): boolean {
-    let changed = false;
-    if (!tokens) return false;
-    for (const token of tokens) {
-      if (!token.isSeparator && token.term === term && token.status !== status) {
-        token.status = status;
-        changed = true;
-      }
-    }
-    return changed;
-  }
-
-  function setTokenStatuses(tokens: readonly Token[] | undefined, terms: ReadonlySet<string>, status: WordStatus): boolean {
-    let changed = false;
-    if (!tokens) return false;
-    for (const token of tokens) {
-      if (!token.isSeparator && terms.has(token.term) && token.status !== status) {
-        token.status = status;
-        changed = true;
-      }
-    }
-    return changed;
-  }
-
-  function applyStatusOverrides(tokens: readonly Token[] | undefined): void {
-    if (!tokens) return;
-    for (const token of tokens) {
-      const status = statusOverrides.get(token.term);
-      if (!token.isSeparator && status) token.status = status;
-    }
-  }
-
   const unsubscribeWordStatus = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
     if (eventLangCode !== langCode) return;
-    statusOverrides.set(term, status);
-    const rebindCurrent = currentTargetBlock && setTokenStatus(currentTargetBlock.tokens, term, status);
-    for (const prepared of targetCache.values()) {
-      setTokenStatus(prepared.tokens, term, status);
-    }
-    if (rebindCurrent && currentTargetBlock) {
-      unbindTokenBlock(currentTargetBlock);
-      bindTokenBlock(currentTargetBlock, getDisplayOptions());
-    }
+    videoTokenMap.applyStatus(term, status);
   });
 
-  async function prepareCue(
-    cache: Map<number, PreparedCue>,
-    cues: readonly SrtCue[],
-    index: number,
-  ): Promise<void> {
-    if (index < 0 || index >= cues.length) return;
-    const existing = cache.get(index);
-    if (existing?.tokens) return;
-    const text = cues[index]?.text ?? '';
-    if (!text.trim()) {
-      cache.set(index, { text, tokens: [] });
-      return;
-    }
-    const tokens = tokenizeTextBlock(text, langCode);
-    const terms = [...new Set(tokens.filter((t) => !t.isSeparator).map((t) => t.term))];
-    if (terms.length > 0) {
-      try {
-        const [statusMap, freqMaps, bandOpts] = await Promise.all([
-          getWordStatuses(langCode, terms),
-          getFrequencyEntries(langCode, terms),
-          frequencyBandOptions ??= loadFrequencyBandOptions(langCode)
-            .catch(() => ({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] })),
-        ]);
-        await resolveTokenMetadata(
-          tokens,
-          (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-          (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [], bandOpts)),
-        );
-      } catch { /* metadata is decorative — bind without status/frequency */ }
-      applyStatusOverrides(tokens);
-    }
-    cache.set(index, { text, tokens });
-  }
+  const unsubscribeMapUpdate = videoTokenMap.onUpdate((cueIndex: number) => {
+    if (cueIndex !== lastTargetIndex) return;
+    bindLine(
+      () => getLineElements().target,
+      cueIndex,
+      () => lastTargetIndex === cueIndex,
+    );
+  });
 
   function unbindLineElement(element: Element | null, block: TokenBlock | null): void {
     if (element && block) {
@@ -200,52 +133,28 @@ export function createSubtitleTokenizeController(
   function bindLine(
     getElement: () => Element | null,
     cueIndex: number,
-    cache: Map<number, PreparedCue>,
-    cues: readonly SrtCue[],
     isActive: () => boolean,
-    setCurrent: (block: TokenBlock | null) => void,
   ): void {
-    if (cueIndex < 0 || !stateStore.getState().enabled) {
-      setCurrent(null);
-      return;
-    }
+    if (cueIndex < 0 || !stateStore.getState().enabled) return;
     const element = getElement();
-    if (!element) {
-      setCurrent(null);
-      return;
-    }
-    const text = cues[cueIndex]?.text ?? '';
-    const prepared = cache.get(cueIndex);
-    const block = createBlock(element, text, prepared?.tokens);
-    if (block) {
-      bindTokenBlock(block, getDisplayOptions());
-      setCurrent(block);
+    if (!element) return;
+    const text = targetCues[cueIndex]?.text ?? '';
+    const prepared = videoTokenMap.get(cueIndex);
+    if (prepared) {
+      unbindLineElement(element, currentTargetBlock);
+      forceUnbindStaleTokens(element, text);
+      const block = createBlock(element, text, prepared.tokens as Token[]);
+      if (block) {
+        bindTokenBlock(block, getDisplayOptions());
+        currentTargetBlock = block;
+      }
       return;
     }
     if (element.querySelector('[data-cell-block-id]')) return;
-    setCurrent(null);
     if (!prepared) {
-      // Not prepared yet; prepare inline — rAF-gated scheduling would stall
-      // tokenization entirely in hidden/occluded tabs.
-      void prepareCue(cache, cues, cueIndex).then(() => {
-        if (stateStore.getState().enabled && isActive()) {
-          bindLine(getElement, cueIndex, cache, cues, isActive, setCurrent);
-        }
-      });
-    }
-  }
-
-  function prepareWindow(cache: Map<number, PreparedCue>, cues: readonly SrtCue[], active: number): void {
-    const start = Math.max(0, active - windowSize);
-    const end = Math.min(cues.length - 1, active + windowSize);
-    for (let i = start; i <= end; i++) {
-      scheduler.schedule(() => prepareCue(cache, cues, i), PRIORITY_IDLE);
-    }
-    // Evict cues outside the window to bound memory.
-    for (const key of cache.keys()) {
-      if (key < start || key > end) {
-        cache.delete(key);
-      }
+      // Not prepared yet; prepare inline so the viewport cue binds immediately.
+      videoTokenMap.prepare(cueIndex, text);
+      bindLine(getElement, cueIndex, isActive);
     }
   }
 
@@ -254,20 +163,8 @@ export function createSubtitleTokenizeController(
 
     void Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
 
-    const termSet = new Set(terms);
-    const currentChanged = currentTargetBlock
-      ? setTokenStatuses(currentTargetBlock.tokens, termSet, status)
-      : false;
-    for (const prepared of targetCache.values()) {
-      setTokenStatuses(prepared.tokens, termSet, status);
-    }
     for (const term of terms) {
-      statusOverrides.set(term, status);
       emitWordStatusChanged({ langCode, term, status });
-    }
-    if (currentChanged && currentTargetBlock) {
-      unbindTokenBlock(currentTargetBlock);
-      bindTokenBlock(currentTargetBlock, getDisplayOptions());
     }
   }
 
@@ -275,9 +172,6 @@ export function createSubtitleTokenizeController(
     const status = STATUS_BY_KEY[key];
     if (!status) return false;
     const state = stateStore.getState();
-    // Priority: Ctrl+Click selection > hovered token > native text selection.
-    // Native selection lets the user select a passage and batch-change the
-    // status of every token inside it (spec: select đoạn + 1/2/3/4).
     let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
     let usedNativeSelection = false;
     if (terms.length === 0) {
@@ -329,7 +223,7 @@ export function createSubtitleTokenizeController(
 
     setCues(nextTargetCues, _nextNativeCues) {
       targetCues = nextTargetCues;
-      targetCache.clear();
+      preloader.setCues(targetCues);
       clearCurrentBlocks();
       lastTargetIndex = -1;
     },
@@ -354,12 +248,9 @@ export function createSubtitleTokenizeController(
       bindLine(
         () => getLineElements().target,
         activeTargetIndex,
-        targetCache,
-        targetCues,
         () => lastTargetIndex === activeTargetIndex,
-        (block) => { currentTargetBlock = block; },
       );
-      prepareWindow(targetCache, targetCues, activeTargetIndex);
+      preloader.setActiveIndex(activeTargetIndex);
     },
 
     getState() {
@@ -370,9 +261,11 @@ export function createSubtitleTokenizeController(
     destroy() {
       document.removeEventListener('keydown', handleKeydown);
       unsubscribeWordStatus();
+      unsubscribeMapUpdate();
+      preloader.destroy();
       scheduler.stop();
       clearCurrentBlocks();
-      targetCache.clear();
+      videoTokenMap.clear();
     },
   };
 }

@@ -22,6 +22,7 @@ import type {
   KeyQuotaInfo,
 } from '@/entities/subtitle/searchTypes';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
+import type { WordStatus } from '@/entities/dictionary';
 
 // === Message Types ===
 
@@ -83,6 +84,7 @@ export type MessageType =
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
+  | 'WORD_STATUS_CHANGED'
   | 'FREQUENCY_GET'
   | 'LOOKUP_REQUEST'
   | 'LOOKUP_RESULT'
@@ -666,6 +668,14 @@ export interface WordStatusSetPayload {
   readonly term: string;
   readonly langCode: string;
   readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
+}
+
+/** Background → content: a word status changed in another tab or was just persisted. */
+export interface WordStatusChangedPayload {
+  readonly tabId: number;
+  readonly langCode: string;
+  readonly term: string;
+  readonly status: WordStatus;
 }
 
 // === Typed Message Helpers ===

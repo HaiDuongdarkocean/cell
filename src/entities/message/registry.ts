@@ -64,6 +64,7 @@ import {
   TtsFetchAudioPayloadSchema,
   TtsSpeakLocalPayloadSchema,
   TtsSpeakPayloadSchema,
+  WordStatusChangedPayloadSchema,
   WordStatusGetPayloadSchema,
   WordStatusesGetPayloadSchema,
   WordStatusSetPayloadSchema,
@@ -436,6 +437,12 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.WORD_STATUS_SET,
     schema: WordStatusSetPayloadSchema,
     direction: 'cs->bg',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_CHANGED]: {
+    type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
+    schema: WordStatusChangedPayloadSchema,
+    direction: 'bg->cs',
     owner: 'background/handlers/wordStatus',
   },
   [MESSAGE_TYPES.FREQUENCY_GET]: {

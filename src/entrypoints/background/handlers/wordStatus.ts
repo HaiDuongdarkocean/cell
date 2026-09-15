@@ -19,6 +19,28 @@ import {
   setWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
 import type { WordStatus } from '@/entities/dictionary';
+import {
+  queryTabs,
+  sendMessageToAllFramesInTab,
+} from '@/shared/lib/chrome-apis/tabs';
+
+/** Broadcast a status change to content scripts in all other tabs. */
+async function broadcastWordStatusChanged(
+  sourceTabId: number,
+  langCode: string,
+  term: string,
+  status: WordStatus,
+): Promise<void> {
+  const tabs = await queryTabs({});
+  const message = {
+    type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
+    payload: { tabId: sourceTabId, langCode, term, status },
+  };
+  const targets = tabs.filter((tab) => tab.id !== undefined && tab.id !== sourceTabId);
+  await Promise.allSettled(
+    targets.map((tab) => sendMessageToAllFramesInTab(tab.id!, message)),
+  );
+}
 
 /** Register word status GET/SET handlers. */
 export function registerWordStatusHandlers(ctx: BackgroundContext): void {
@@ -31,9 +53,12 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
       };
     }
 
-    const { term, langCode, status } = parsed.data;
+    const { term, langCode, status, tabId } = parsed.data;
     try {
       await setWordStatus(langCode, term, status);
+      if (tabId !== undefined) {
+        void broadcastWordStatusChanged(tabId, langCode, term, status);
+      }
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
