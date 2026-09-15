@@ -400,7 +400,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
 
         {splitViewOpen && splitViewPortalTarget && onSeek && createPortal(
           <SubtitlePanel
-            cues={[...cues]}
+            cues={cues as BilingualCue[]}
             currentTimeMs={currentTimeMs}
             offsetMs={offsetMs}
             onSeek={onSeek}

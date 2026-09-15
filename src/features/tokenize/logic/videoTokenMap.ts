@@ -101,15 +101,16 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
       const cue = cues.get(cueIndex);
       if (!cue) return;
 
-      const tokens = cue.tokens.map((token) =>
-        token.isSeparator
-          ? token
-          : {
-              ...token,
-              status: statuses.get(token.term) ?? 'unknown',
-              frequencyBand: frequencies.get(token.term) ?? 'none',
-            },
-      );
+      let changed = false;
+      const tokens = cue.tokens.map((token) => {
+        if (token.isSeparator) return token;
+        const status = statuses.get(token.term) ?? 'unknown';
+        const frequencyBand = frequencies.get(token.term) ?? 'none';
+        if (status !== token.status || frequencyBand !== token.frequencyBand) {
+          changed = true;
+        }
+        return { ...token, status, frequencyBand };
+      });
       for (const token of tokens) {
         if (!token.isSeparator) resolvedTerms.add(token.term);
       }
@@ -117,7 +118,7 @@ export function createVideoTokenMap(langCode: string): VideoTokenMap {
         (token) => token.isSeparator || resolvedTerms.has(token.term),
       );
       cues.set(cueIndex, { ...cue, tokens, metadataResolved: allResolved });
-      emit(cueIndex);
+      if (changed) emit(cueIndex);
     },
 
     applyStatus(term: string, status: WordStatus): boolean {

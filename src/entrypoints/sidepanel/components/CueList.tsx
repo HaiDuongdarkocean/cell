@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { WordStatus } from '@/entities/dictionary';
@@ -14,6 +14,24 @@ import {
 import styles from './CueList.module.css';
 
 const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
+
+function cuesAreEqual(a: readonly BilingualCue[], b: readonly BilingualCue[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ac = a[i];
+    const bc = b[i];
+    if (
+      ac.index !== bc.index ||
+      ac.start !== bc.start ||
+      ac.end !== bc.end ||
+      ac.targetText !== bc.targetText
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export interface CueListTokenize {
   langCode: string;
@@ -47,10 +65,12 @@ const CueTokenText = memo(function CueTokenText({
   text,
   tokens,
   onTokenClick,
+  resolving = false,
 }: {
   text: string;
   tokens: readonly Token[];
   onTokenClick: (term: string, element: HTMLElement, contextSentence: string) => void;
+  resolving?: boolean;
 }) {
   const children: React.ReactNode[] = [];
   let lastEnd = 0;
@@ -69,6 +89,7 @@ const CueTokenText = memo(function CueTokenText({
         className={[
           'js-cell-token',
           'js-cell-token--word',
+          resolving ? 'js-cell-token--resolving' : '',
           `js-cell-token--status-${token.status ?? 'unknown'}`,
           token.frequencyBand && token.frequencyBand !== 'none'
             ? `js-cell-token--frequency-${token.frequencyBand}`
@@ -103,13 +124,25 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const highlightedRef = useRef<number | null>(null);
   const statusOverridesRef = useRef(new Map<string, Map<string, WordStatus>>());
   const [tokenMap, setTokenMap] = useState<CueListTokenMap>(EMPTY_TOKEN_MAP);
+  const [resolving, setResolving] = useState(false);
 
   const tokenizeLangCode = tokenize?.langCode;
+  const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
+  const lastLangCodeRef = useRef<string | null>(null);
   useEffect(() => {
     if (!tokenizeLangCode) {
       setTokenMap(EMPTY_TOKEN_MAP);
       return;
     }
+    if (
+      lastCuesRef.current !== null &&
+      cuesAreEqual(cues, lastCuesRef.current) &&
+      tokenizeLangCode === lastLangCodeRef.current
+    ) {
+      return;
+    }
+    lastCuesRef.current = cues;
+    lastLangCodeRef.current = tokenizeLangCode;
     const statusOverrides = statusOverridesRef.current;
     let overrides = statusOverrides.get(tokenizeLangCode);
     if (!overrides) {
@@ -126,9 +159,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       overrides,
     );
     setTokenMap(immediate);
+    setResolving(true);
     let active = true;
     void resolveCueListTokenMetadata(immediate, tokenizeLangCode).then((resolved) => {
       if (!active) return;
+      setResolving(false);
       setTokenMap(applyCueListTokenStatuses(resolved, overrides));
     });
     return () => {
@@ -194,21 +229,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     return () => observer.disconnect();
   }, [currentIndex, effectiveMs]);
 
-  useLayoutEffect(() => {
-    if (currentIndex < 0) return;
-    const el = itemRefs.current[currentIndex];
-    const list = listRef.current;
-    if (!el || !list) return;
-    const cueRect = el.getBoundingClientRect();
-    const listRect = list.getBoundingClientRect();
-    if (cueRect.top < listRect.top || cueRect.bottom > listRect.bottom) {
-      const top = cueRect.top - listRect.top + list.scrollTop;
-      const targetScroll = el.offsetHeight >= list.clientHeight
-        ? top
-        : top - (list.clientHeight - el.offsetHeight) / 2;
-      list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
-    }
-  });
+
 
   return (
     <div ref={listRef} className={styles.list} role="list" data-cell-id="cue-list-scroll">
@@ -237,6 +258,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                       text={cue.targetText}
                       tokens={tokenMap.get(cue.index) ?? []}
                       onTokenClick={tokenize.onTokenClick}
+                      resolving={resolving}
                     />
                   ) : (
                     cue.targetText

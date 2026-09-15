@@ -129,13 +129,6 @@ ${buildVariables()}
      over the inset status underline. Default follows the text color; frequency
      bands override it to the pill background so the halo is invisible. */
   --cell-token-guard: currentColor;
-  transition: background-color var(--duration-100) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .js-cell-token {
-    transition: none !important;
-  }
 }
 
 .js-cell-token--word {
@@ -154,6 +147,18 @@ ${buildVariables()}
    so it follows multi-line fragments via box-decoration-break. */
 .js-cell-token-status {
   display: none !important;
+}
+
+/* Resolving: tokens are clickable word spans but status/frequency visuals are
+   suppressed until metadata resolves, preventing the whole panel from flashing
+   as colors pop in. */
+html body .js-cell-token.js-cell-token--resolving {
+  background-color: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: none !important;
 }
 
 .js-cell-token--separator {
@@ -310,13 +315,6 @@ ${buildVariables(':host')}
   box-decoration-break: clone !important;
   -webkit-text-fill-color: currentColor !important;
   --cell-token-guard: currentColor;
-  transition: background-color var(--duration-100) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .js-cell-token {
-    transition: none !important;
-  }
 }
 
 .js-cell-token--word {
@@ -328,6 +326,16 @@ ${buildVariables(':host')}
 
 .js-cell-token-status {
   display: none !important;
+}
+
+/* Resolving: suppress status/frequency visuals while metadata is loading. */
+.js-cell-token.js-cell-token--resolving {
+  background-color: transparent !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  transition: none !important;
 }
 
 .js-cell-token--separator {
