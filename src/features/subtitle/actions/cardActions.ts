@@ -11,7 +11,7 @@ import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCrea
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { useCardCreatorStore } from '@/stores/cardCreatorStore';
+import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
 import { t } from '@/shared/i18n';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';

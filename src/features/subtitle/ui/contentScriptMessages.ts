@@ -1,6 +1,6 @@
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '../cuesStore';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import {
@@ -17,6 +17,12 @@ import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload } from '@/entities/message';
+
+declare const __CELL_DEBUG__: string;
+
+function cellDebug(): boolean {
+  return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+}
 
 export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
   onRuntimeMessage: (msg: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => boolean | void;
@@ -151,7 +157,9 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
     const m = msg as { type?: string; payload?: unknown };
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = m.payload as AutoLoadSubtitlesPayload;
-      try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+      if (cellDebug()) {
+        try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'msg-received', hasTarget: !!payload?.target, hasNative: !!payload?.native, targetUrl: payload?.target?.url?.slice(0, 60), nativeUrl: payload?.native?.url?.slice(0, 60), t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+      }
 
       // Skip duplicate payloads to avoid re-loading the same subtitle and
       // restarting translate prefill (e.g. when PAGE_SCAN_RESULT or network
@@ -170,7 +178,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           href: location.href,
           target: payload?.target?.url,
           native: payload?.native?.url,
-        }, '*');
+        }, window.location.origin);
       } catch {
         // cross-origin parent may be unavailable in some embed contexts.
       }
@@ -222,14 +230,6 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         ctx.refreshPanel('target');
         ctx.refreshPanel('native');
       }
-      // ADR-021: clear translate prefill on SPA nav (URL changed)
-      if (ctx.getLastAutoLoadUrl() !== undefined && ctx.getLastAutoLoadUrl() !== currentUrl) {
-        ctx.getTranslatePrefill()?.clear();
-        ctx.setTranslatePrefill(null);
-        ctx.clearTranslatedNativeState();
-        syncController.activeNativeSource = 'auto';
-        ctx.updateGenerateNativeEnabled();
-      }
       void (async () => {
         const currentSettings = await loadSettings();
         await handleAutoLoadSubtitles(payload, {
@@ -247,7 +247,9 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
         },
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
-          try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          if (cellDebug()) {
+            try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'rendered', t: targetCues.length, n: nativeCues.length, time: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          }
           ctx.setBilingualCues(mergeCuesForPanel(targetCues, nativeCues));
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
           // (4↔6 nút transition when subtitles become available).
@@ -263,7 +265,9 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           broadcastCues(ctx.getBilingualCues());
         },
         onLoadStatus: (role, status) => {
-          try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          if (cellDebug()) {
+            try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'status', role, state: status.state, err: status.errorType, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+          }
           useCuesStore.getState().setLoadStatus(role, status);
         },
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,

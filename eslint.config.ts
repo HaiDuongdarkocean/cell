@@ -276,7 +276,10 @@ export default tseslint.config(
 
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', '.agents/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    // playwright-launch.mjs declares its globals via `/* global */` (it needs
+    // document/location inside page.evaluate); node globals would collide.
+    ignores: ['.agents/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

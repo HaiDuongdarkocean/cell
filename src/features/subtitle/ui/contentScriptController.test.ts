@@ -123,7 +123,7 @@ jest.mock('@/features/subtitle', () => ({
   parseSubtitle: jest.fn().mockReturnValue({ success: true, cues: [] }),
 }));
 
-jest.mock('@/stores/cuesStore', () => ({
+jest.mock('../cuesStore', () => ({
   useCuesStore: {
     getState: jest.fn().mockReturnValue({
       setLoadStatus: jest.fn(),

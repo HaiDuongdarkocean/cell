@@ -1,8 +1,10 @@
 import { formatFromContent } from '@/shared/lib/parsers/subtitleFormat';
+import { LruCache } from '@/shared/lib/lruCache';
 
 const MAX_BODY_CHARS = 500_000;
+export const MAX_ENTRIES = 50;
 
-const cache = new Map<string, string>();
+const cache = new LruCache<string, string>(MAX_ENTRIES);
 
 /**
  * Cache a subtitle response body in the content script.

@@ -12,8 +12,7 @@ import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { SettingsDialog } from './SettingsDialog';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, USE_LEGACY_SETTINGS } from '@/shared/config/config';
-import { mountSettingsDialogLegacy } from './mountSettingsDialogLegacy';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/media';
 
 
@@ -43,10 +42,6 @@ const SHADOW_CSS = allModuleCss;
 export function mountSettingsDialog(
   options: SettingsDialogMountOptions,
 ): SettingsDialogMountController {
-  if (USE_LEGACY_SETTINGS) {
-    return mountSettingsDialogLegacy(options);
-  }
-
   const mount = mountReactShadow(createElement('div'), {
     parent: document.body,
     position: 'fixed',

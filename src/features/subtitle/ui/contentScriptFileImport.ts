@@ -1,4 +1,4 @@
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '../cuesStore';
 import {
   parseAndDetectFiles,
   assignImportRole,

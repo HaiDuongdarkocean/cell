@@ -99,7 +99,7 @@ export function extractTermsFromSelection(
         ? (ancestor as Element)
         : ancestor.parentElement;
 
-    let scoped = container
+    const scoped = container
       ? Array.from(container.querySelectorAll(TOKEN_SELECTOR))
       : [];
     if (container?.matches(TOKEN_SELECTOR)) scoped.unshift(container);

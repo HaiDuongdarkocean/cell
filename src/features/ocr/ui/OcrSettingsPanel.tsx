@@ -23,6 +23,7 @@ import {
   type PaddleOcrLangEntry,
 } from '@/features/ocr/engine/paddleOcrLanguages';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { ENGINE_KEY_FOR_LANG } from '@/features/ocr/engine/paddleOcrLanguages';
@@ -98,7 +99,7 @@ export function OcrSettingsPanel({
     if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area !== 'local') return;
-      if (changes.__ocrRegionResult?.newValue || changes.ocrSettings?.newValue) {
+      if (changes[STORAGE_KEYS.OCR_REGION_RESULT]?.newValue || changes.ocrSettings?.newValue) {
         // Reload on region Apply/Cancel AND on divider-drag ratio commits
         // (written by the OCR session) so the slider stays in live sync.
         void (async () => {

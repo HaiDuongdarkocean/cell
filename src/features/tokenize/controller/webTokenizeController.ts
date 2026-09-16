@@ -21,8 +21,7 @@ import {
 } from '@/features/dictionary/services/wordStatusEvents';
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
-import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
-import { isEditableEvent } from '@/shared/lib/dom/isEditable';
+import { createStatusKeyControls } from '@/features/tokenize/logic/statusKeyControls';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -67,12 +66,7 @@ const HYDRATION_QUIET_MS = 500;
 const MAX_ACTIVATION_DELAY_MS = 3000;
 const MAX_MUTATION_SCAN_DELAY_MS = 1500;
 
-const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
-  '1': 'unknown',
-  '2': 'tracking',
-  '3': 'known',
-  '4': 'ignore',
-};
+declare const __CELL_DEBUG__: string;
 
 export interface WebTokenizeControllerOptions {
   /** Current page URL used for per-URL enable state. */
@@ -361,16 +355,18 @@ export async function createWebTokenizeController(
     for (const block of blocks) {
       if (block.element.isConnected) observeBlock(block);
     }
-    const tagDistribution: Record<string, number> = {};
-    for (const block of scanned) {
-      const tag = block.element.tagName;
-      tagDistribution[tag] = (tagDistribution[tag] ?? 0) + 1;
+    if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+      const tagDistribution: Record<string, number> = {};
+      for (const block of scanned) {
+        const tag = block.element.tagName;
+        tagDistribution[tag] = (tagDistribution[tag] ?? 0) + 1;
+      }
+      (window as unknown as Record<string, unknown>).__CELL_SCAN_INFO = {
+        scanned: scanned.length,
+        blocks: blocks.length,
+        tags: tagDistribution,
+      };
     }
-    (window as unknown as Record<string, unknown>).__CELL_SCAN_INFO = {
-      scanned: scanned.length,
-      blocks: blocks.length,
-      tags: tagDistribution,
-    };
   }
 
   /**
@@ -806,41 +802,11 @@ export async function createWebTokenizeController(
     return root instanceof ShadowRoot ? [root] : [];
   }
 
-  function applyStatusKey(key: string): boolean {
-    const status = STATUS_BY_KEY[key];
-    if (!status) return false;
-    const state = stateStore.getState();
-    // Priority: Ctrl+Click selection > native text selection > hovered token.
-    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
-    let usedNativeSelection = false;
-    if (terms.length === 0) {
-      terms = extractTermsFromSelection(window.getSelection(), getShadowRoots());
-      usedNativeSelection = terms.length > 0;
-    }
-    if (terms.length === 0 && state.hoveredTerm) {
-      terms = [state.hoveredTerm];
-    }
-    if (terms.length === 0) return false;
-    applyStatusToTerms(terms, status);
-    if (state.selectedTerms.size > 0) stateStore.clearSelection();
-    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
-    return true;
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (isEditableEvent(e)) return;
-    if (e.key === 'Escape') {
-      stateStore.clearSelection();
-      stateStore.setHoveredTerm(null);
-      return;
-    }
-    if (!applyStatusKey(e.key)) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-  }
-
-  // ADR-034: window capture so the host page cannot override 1-4 status shortcuts.
-  window.addEventListener('keydown', handleKeydown, true);
+  const statusKeyControls = createStatusKeyControls({
+    stateStore,
+    getShadowRoots,
+    applyStatusToTerms,
+  });
 
   function unbindAll(): void {
     for (const block of blocks) {
@@ -878,13 +844,13 @@ export async function createWebTokenizeController(
     /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
     pickDictionaryTerm: () => pickDictionaryTerm(stateStore.getState()),
 
-    handleStatusKey: applyStatusKey,
+    handleStatusKey: statusKeyControls.handleStatusKey,
 
     applyStatusForTerm,
     getStatusForTerm,
 
     destroy: () => {
-      window.removeEventListener('keydown', handleKeydown, true);
+      statusKeyControls.destroy();
       unsubscribe();
       unsubscribeWordStatus();
       scheduler.stop();
