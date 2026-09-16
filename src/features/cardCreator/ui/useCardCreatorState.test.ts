@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { useCardCreatorStore } from '@/stores/cardCreatorStore';
+import { useCardCreatorStore } from '../state/cardCreatorStore';
 import { useCardCreatorState } from './useCardCreatorState';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import type { CardCreatorSettings } from '@/entities/settings';
