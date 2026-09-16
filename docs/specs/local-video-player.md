@@ -830,7 +830,7 @@ Schema migration v21 → v22 in `settingsStore.ts`. New "Local Player" section i
 | `parseBilingualSrt` | `features/subtitle/logic/subtitleBilingualParser.ts` | Bilingual SRT parser |
 | `SubtitleCueEngine` | `features/subtitle/ui/subtitleCueEngine.ts` | Cue/time/repeat engine (works with any HTMLVideoElement) |
 | `NavCluster` | `features/subtitle/ui/NavCluster.tsx` | 6-button nav cluster |
-| `CueList` | `entrypoints/sidepanel/components/CueList.tsx` | Subtitle list + seek-on-click |
+| `CueList` | `features/subtitle/ui/CueList.tsx` | Subtitle list + seek-on-click |
 | `SubtitleBlock` | `features/subtitle/ui/SubtitleBlock.tsx` | Subtitle render (props mode) |
 | `SubtitlePanel` | `features/subtitle/ui/SubtitlePanel.tsx` | Panel wrapper for CueList |
 | `SubtitleHint` | `features/subtitle/ui/SubtitleHint.tsx` | Drag-drop hint |
