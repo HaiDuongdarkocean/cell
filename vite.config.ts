@@ -148,13 +148,8 @@ const FULL_INPUT = {
   // and emitted as loadable chrome-extension:// pages.
   offscreen: resolve(import.meta.dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
   sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
-  cardCreatorTest: resolve(import.meta.dirname, 'src/entrypoints/test/cardCreatorTest.html'),
   localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
   reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
-  mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
-  mockupAudio: resolve(import.meta.dirname, 'src/entrypoints/mockup-audio/index.html'),
-  mockupDictionaryPopup: resolve(import.meta.dirname, 'src/entrypoints/mockup-dictionary-popup/index.html'),
-  mockupResources: resolve(import.meta.dirname, 'src/entrypoints/mockup-resources/index.html'),
   launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
   srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
 };
