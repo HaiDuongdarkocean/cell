@@ -1,5 +1,5 @@
-import { CardCreatorDialogContent } from './CardCreatorDialogContent';
-import { useMockCardCreator } from '@/entrypoints/design-system-showcase/mockProviders';
+import { CardCreatorDialogContent } from '@/features/cardCreator/ui/CardCreatorDialogContent';
+import { useMockCardCreator } from '../mockProviders';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {

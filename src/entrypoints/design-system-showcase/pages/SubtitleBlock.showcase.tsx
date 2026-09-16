@@ -1,5 +1,5 @@
-﻿import { SubtitleBlock } from './SubtitleBlock';
-import { mockTargetCues, mockNativeCues } from '@/entrypoints/design-system-showcase/mockCues';
+﻿import { SubtitleBlock } from '@/features/subtitle/ui/SubtitleBlock';
+import { mockTargetCues, mockNativeCues } from '../mockCues';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { ReactElement } from 'react';
 

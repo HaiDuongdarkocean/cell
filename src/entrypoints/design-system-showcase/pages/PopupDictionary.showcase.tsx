@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, type ReactElement } from 'react';
-import { PopupDictionary } from './PopupDictionary';
+import { PopupDictionary } from '@/features/dictionaryPopup/ui/PopupDictionary';
 import { Button } from '@/shared/ui/Button';
-import type { PopupAnchor } from './usePopupPosition';
-import { getMockLookupResult } from '@/entrypoints/design-system-showcase/mockDictionary';
+import { logger } from '@/shared/lib/logger';
+import type { PopupAnchor } from '@/features/dictionaryPopup/ui/usePopupPosition';
+import { getMockLookupResult } from '../mockDictionary';
 
 const MOCK_RESULT = getMockLookupResult(undefined, 'serendipity');
 
@@ -50,8 +51,8 @@ export function Showcase(): ReactElement {
           initialSize={{ width: 420, maxHeight: 360 }}
           initialResult={MOCK_RESULT}
           onClose={() => setIsOpen(false)}
-          onSendToCard={(prefill) => { console.log('[PopupDictionary] Send to Card:', prefill.term); }}
-          onQuickAdd={(prefill) => { console.log('[PopupDictionary] Quick Add:', prefill.term); }}
+          onSendToCard={(prefill) => { logger.debug('[PopupDictionary] Send to Card:', prefill.term); }}
+          onQuickAdd={(prefill) => { logger.debug('[PopupDictionary] Quick Add:', prefill.term); }}
         />
       )}
     </div>
