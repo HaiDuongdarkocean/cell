@@ -12,6 +12,7 @@ import {
   OcrRegionCommandPayloadSchema,
 } from '@/entities/message/schema';
 import type { OcrBackend, OcrResult } from '@/features/ocr/engine/types';
+import { logger } from '@/shared/lib/logger';
 
 /** OCR init result from offscreen. */
 export interface OcrInitResult {
@@ -37,14 +38,14 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid OCR_INIT payload: ${parsed.error.message}` };
     }
     try {
-      console.log('[OCR_BG] OCR_INIT received, ensuring offscreen...');
+      logger.debug('[OCR_BG] OCR_INIT received, ensuring offscreen...');
       await Promise.race([
         ctx.offscreenManager.ensureOffscreenReady(),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('ensureOffscreenReady timeout (10s)')), 10000)),
       ]);
-      console.log('[OCR_BG] offscreen ready, sending OCR_INIT');
+      logger.debug('[OCR_BG] offscreen ready, sending OCR_INIT');
       const payload = parsed.data;
-      console.log('[OCR_BG] sending OCR_INIT to offscreen', payload);
+      logger.debug('[OCR_BG] sending OCR_INIT to offscreen', payload);
       // Use _OFFSCREEN_OCR_INIT type to avoid loopback — background handler only
       // listens for OCR_INIT, not _OFFSCREEN_OCR_INIT. The offscreen listener
       // (ffmpegRunner.ts) handles both types.
@@ -56,7 +57,7 @@ export function registerOcrHandlers(ctx: BackgroundContext): void {
         }),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_INIT timeout (30s) — offscreen did not respond, possible CSP/WASM init failure')), 30000)),
       ]);
-      console.log('[OCR_BG] offscreen response:', JSON.stringify(response));
+      logger.debug('[OCR_BG] offscreen response:', JSON.stringify(response));
       if (response?.status === 'ready') {
         return { success: true, data: { status: 'ready', backend: response.backend } };
       }

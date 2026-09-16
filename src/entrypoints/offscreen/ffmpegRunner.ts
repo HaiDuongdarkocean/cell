@@ -12,6 +12,7 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { logger } from '@/shared/lib/logger';
 import { transmuxTsToFmp4 } from '@/features/transmux';
 import { executeParallelConversion } from '@/features/transmux';
 import { readSegmentRanges } from '@/features/transmux';
@@ -333,7 +334,7 @@ export async function startMessageListener(): Promise<void> {
     const request = message as MessageRequest;
     const type = request.type as string;
 
-    console.log('[OFFSCREEN-LISTENER] received:', type);
+    logger.debug('[OFFSCREEN-LISTENER] received:', type);
 
     if (
       type === MESSAGE_TYPES.OCR_INIT ||

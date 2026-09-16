@@ -25,6 +25,7 @@ import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { logger } from '@/shared/lib/logger';
 
 declare const __CELL_DEBUG__: string;
 
@@ -346,7 +347,7 @@ export class OcrSession {
 
       if (result.status === 'ocr' && this.video) {
         const hitboxes = createHitboxes(result.results, result.scriptRuns);
-        if (cellDebug()) console.log(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
+        if (cellDebug()) logger.debug(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
         this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
 
         // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
