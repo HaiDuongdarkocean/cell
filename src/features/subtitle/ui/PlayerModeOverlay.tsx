@@ -10,7 +10,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitlePanel } from './SubtitlePanel';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
-import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
+import type { CueListTokenize } from './CueList';
 import type { StudyMode } from '@/entities/studyMode';
 import type { ICON_CATALOG } from '@/shared/icons';
 import { SubtitleBlock } from './SubtitleBlock';

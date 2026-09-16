@@ -3,7 +3,7 @@ import { SubtitlePanels } from '@/features/subtitle/ui/SubtitlePanels';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelsTypes';
 import { getMockCues, getMockCueActiveIndex } from '../mockCues';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import styles from './SubtitleOverlayPage.module.css';
 
 const TARGET_ITEMS: SubtitlePanelItem[] = [

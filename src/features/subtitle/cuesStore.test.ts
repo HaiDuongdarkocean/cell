@@ -50,7 +50,8 @@ describe('cuesStore', () => {
     unsubscribe();
   });
 
-  it('listens to cell:cues:updated event', () => {
+  it('listens to cell:cues:updated event while subscribed', () => {
+    const unsubscribe = useCuesStore.subscribe(() => {});
     const targetCues = [makeCue(0, 'target 0')];
     const nativeCues = [makeCue(0, 'native 0')];
     document.dispatchEvent(
@@ -63,6 +64,7 @@ describe('cuesStore', () => {
     expect(state.nativeCues).toEqual(nativeCues);
     expect(state.targetActiveIndex).toBe(0);
     expect(state.nativeActiveIndex).toBe(0);
+    unsubscribe();
   });
 
   it('setCues transitions loading→loaded (preserves languageLabel + source)', () => {

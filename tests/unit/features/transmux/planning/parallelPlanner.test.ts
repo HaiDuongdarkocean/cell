@@ -1,5 +1,5 @@
 import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
-import type { SegmentRange, Settings } from '@/types/media';
+import type { SegmentRange, Settings } from '@/entities/media';
 import {
   PARALLEL_LARGE_FILE_BYTES,
 } from '@/shared/config/config';

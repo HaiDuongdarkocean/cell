@@ -1,5 +1,5 @@
 import { analyzeParallelSafety } from '@/features/transmux/execution/parallelSafetyAnalyzer';
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 import { MIN_PARALLEL_WORKERS } from '@/shared/config/config';
 
 function makeRange(index: number, size: number, startByte: number): SegmentRange {

@@ -9,13 +9,13 @@ import type {
   DetectedSubtitle,
   DownloadItem,
   DownloadProgress,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   MessageRequest,
   MessageResponse,
   DetectedMediaUpdatePayload,
   DownloadProgressUpdatePayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 // --- chrome runtime mock -------------------------------------------------
 

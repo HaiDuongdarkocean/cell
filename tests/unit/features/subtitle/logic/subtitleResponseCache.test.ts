@@ -3,6 +3,7 @@ import {
   getCachedSubtitleBody,
   waitForCachedSubtitleBody,
   clearSubtitleBodyCache,
+  MAX_ENTRIES,
 } from '@/features/subtitle/logic/subtitleResponseCache';
 
 describe('subtitleResponseCache', () => {
@@ -25,6 +26,26 @@ describe('subtitleResponseCache', () => {
     const body = 'WEBVTT\n' + 'x'.repeat(600_000);
     cacheSubtitleBody('https://example.com/subtitle?v=big', body);
     expect(getCachedSubtitleBody('https://example.com/subtitle?v=big')).toBeUndefined();
+  });
+
+  it('evicts the oldest entry once MAX_ENTRIES is exceeded', () => {
+    const body = 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n';
+    for (let i = 0; i < MAX_ENTRIES + 1; i++) {
+      cacheSubtitleBody(`https://example.com/sub-${i}`, body);
+    }
+    expect(getCachedSubtitleBody('https://example.com/sub-0')).toBeUndefined();
+    expect(getCachedSubtitleBody(`https://example.com/sub-${MAX_ENTRIES}`)).toBe(body);
+  });
+
+  it('a cache hit refreshes recency so the entry survives eviction', () => {
+    const body = 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n';
+    for (let i = 0; i < MAX_ENTRIES; i++) {
+      cacheSubtitleBody(`https://example.com/sub-${i}`, body);
+    }
+    getCachedSubtitleBody('https://example.com/sub-0');
+    cacheSubtitleBody('https://example.com/sub-new', body);
+    expect(getCachedSubtitleBody('https://example.com/sub-0')).toBe(body);
+    expect(getCachedSubtitleBody('https://example.com/sub-1')).toBeUndefined();
   });
 
   it('clears all entries', () => {

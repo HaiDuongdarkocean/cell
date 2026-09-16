@@ -6,8 +6,8 @@
 // (content-script read-only qua themeStorage).
 
 import { create } from 'zustand';
-import { loadThemeMode, loadThemeConfig, saveThemeMode, saveThemeConfig, DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
-import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { loadThemeMode, loadThemeConfig, saveThemeMode, saveThemeConfig, DEFAULT_THEME_MODE } from './themeStorage';
+import { DEFAULT_THEME_CONFIG } from './themeConfig';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { getPresetColors } from '@/shared/lib/tokens';
 import type { ThemeMode, ThemeConfig, PresetName } from '@/entities/theme';

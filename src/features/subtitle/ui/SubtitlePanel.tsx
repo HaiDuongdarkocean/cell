@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { StudyMode } from '@/entities/studyMode';
-import { CueList, type CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
 import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';

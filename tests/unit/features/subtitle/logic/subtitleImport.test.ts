@@ -1,6 +1,6 @@
 import { createImportButton, handleFileSelect, assignImportRole, parseAndDetectFiles } from '@/features/subtitle/logic/subtitleImport';
 import type { ParsedFile } from '@/features/subtitle/logic/subtitleImport';
-import type { OverlayConfig } from '@/types/subtitle';
+import type { OverlayConfig } from '@/entities/subtitle';
 
 describe('subtitleImport', () => {
   let video: HTMLVideoElement;

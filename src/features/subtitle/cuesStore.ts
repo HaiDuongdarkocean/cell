@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { SrtCue } from '@/entities/media/types';
-import { CELL_CUES_UPDATED, type CuesUpdatedEvent } from '@/features/subtitle/events';
+import { CELL_CUES_UPDATED, type CuesUpdatedEvent } from './events';
 
 export type LoadState = 'idle' | 'loading' | 'loaded' | 'error' | 'none' | 'translating';
 
@@ -86,12 +86,28 @@ export const useCuesStore = create<CuesState>()(
   })),
 );
 
-if (typeof document !== 'undefined') {
-  document.addEventListener(CELL_CUES_UPDATED, (event) => {
-    const { targetCues, nativeCues, targetActiveIndex, nativeActiveIndex } = (
-      event as CuesUpdatedEvent
-    ).detail;
-    useCuesStore.getState().setCues(targetCues, nativeCues);
-    useCuesStore.getState().setActiveIndex(targetActiveIndex, nativeActiveIndex);
-  });
-}
+const handleCuesUpdated = (event: Event): void => {
+  const { targetCues, nativeCues, targetActiveIndex, nativeActiveIndex } = (
+    event as CuesUpdatedEvent
+  ).detail;
+  useCuesStore.getState().setCues(targetCues, nativeCues);
+  useCuesStore.getState().setActiveIndex(targetActiveIndex, nativeActiveIndex);
+};
+
+let cueSubscriberCount = 0;
+const baseSubscribe = useCuesStore.subscribe;
+
+useCuesStore.subscribe = ((...args: unknown[]) => {
+  if (cueSubscriberCount === 0 && typeof document !== 'undefined') {
+    document.addEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
+  }
+  cueSubscriberCount += 1;
+  const unsubscribe = (baseSubscribe as (...fnArgs: unknown[]) => () => void)(...args);
+  return () => {
+    unsubscribe();
+    cueSubscriberCount -= 1;
+    if (cueSubscriberCount === 0 && typeof document !== 'undefined') {
+      document.removeEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
+    }
+  };
+}) as typeof useCuesStore.subscribe;

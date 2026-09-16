@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { SubtitleBlock } from '@/features/subtitle/ui/SubtitleBlock';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import { mockTargetCues, mockNativeCues } from './mockCues';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 

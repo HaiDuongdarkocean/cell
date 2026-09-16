@@ -8,7 +8,7 @@
 // Content-script KHÔNG dùng ThemeProvider (isolated world) — dùng themeTokens.ts.
 
 import { useEffect, useRef, type ReactNode } from 'react';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import { applyTheme, resolveMode, registerSystemModeListener } from '@/features/theme/logic/themeManager';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';

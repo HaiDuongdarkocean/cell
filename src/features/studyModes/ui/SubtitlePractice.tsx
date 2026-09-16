@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Button, Icon, Input, Kbd } from '@/shared/ui';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList } from '@/features/subtitle/ui/CueList';
 import { createClozeExercise, evaluateDictation, evaluateCloze, tokenizePracticeText, type SubtitlePracticeMode } from '../lib/subtitlePractice';
 import type { PracticeResult } from '../lib/subtitlePractice';
 import {

@@ -1,6 +1,6 @@
-import { useThemeStore } from '@/stores/themeStore';
-import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
-import { DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
+import { useThemeStore } from './themeStore';
+import { DEFAULT_THEME_CONFIG } from './themeConfig';
+import { DEFAULT_THEME_MODE } from './themeStorage';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeMode, ThemeConfig } from '@/entities/theme';
 

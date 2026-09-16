@@ -11,7 +11,7 @@ import type { ToastVariant } from './SubtitleToast';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
-import type { CueListTokenize } from '@/entrypoints/sidepanel/components/CueList';
+import type { CueListTokenize } from './CueList';
 import type { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';

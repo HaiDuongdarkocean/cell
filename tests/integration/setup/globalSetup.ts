@@ -13,7 +13,7 @@
 import { execSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 
 const CACHE_DIR = join(__dirname, '..', '.cache');
 const TS_PATH = join(CACHE_DIR, 'input.ts');

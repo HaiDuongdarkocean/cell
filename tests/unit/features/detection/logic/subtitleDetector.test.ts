@@ -1,5 +1,5 @@
 import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
-import type { NetworkRequest } from '@/types/media';
+import type { NetworkRequest } from '@/entities/media';
 
 function makeRequest(url: string, tabId = 1): NetworkRequest {
   return {

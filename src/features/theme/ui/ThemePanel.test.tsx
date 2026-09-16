@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 
 // Mock chrome.storage cho themeStore (ThemePanel dùng useThemeStore).

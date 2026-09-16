@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, type ReactElement } from 'react';
 import { SubtitlePanels } from '@/features/subtitle/ui/SubtitlePanels';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitlePanelsTypes';
 import { getMockCues, getMockBilingualCues } from '../mockCues';

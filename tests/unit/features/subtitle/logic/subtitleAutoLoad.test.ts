@@ -8,7 +8,7 @@ import {
 } from '@/features/subtitle/logic/subtitleAutoLoad';
 import { clearSubtitleBodyCache } from '@/features/subtitle/logic/subtitleResponseCache';
 import { gzipSync, zipSync } from 'fflate';
-import type { SubtitleForOverlayResult } from '@/types/message';
+import type { SubtitleForOverlayResult } from '@/entities/message';
 
 // Mock parseSubtitle: default to real implementation, override per-test for
 // edge cases (e.g. AC4 empty file → success:true, cues:[]).
