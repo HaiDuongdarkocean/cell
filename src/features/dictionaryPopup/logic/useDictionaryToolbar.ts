@@ -55,6 +55,9 @@ export interface UseDictionaryToolbarOptions {
   readonly initialTranslation?: string;
   /** Whether the translation checkbox was selected in the popup clone. */
   readonly initialTranslationSelected?: boolean;
+  /** Preload all media/translation for the integrated panel so Send to Card works
+   *  without the user manually opening each tab. */
+  readonly preloadMedia?: boolean;
 }
 
 export interface UseDictionaryToolbarReturn {
@@ -121,6 +124,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
     initialImageSelection,
     initialTranslation,
     initialTranslationSelected,
+    preloadMedia,
   } = options;
 
   const [activeTab, setActiveTab] = useState<PopupTab | null>(defaultActiveTab ?? null);
@@ -358,9 +362,11 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
   // the callback, re-trigger the effect, and start another fetch.
   const fetchAudioRef = useRef<() => Promise<readonly AudioItem[]>>(fetchAudio);
   const fetchImagesRef = useRef<() => Promise<readonly ImageItem[]>>(fetchImages);
+  const translateRef = useRef<() => Promise<string>>(translate);
   useEffect(() => {
     fetchAudioRef.current = fetchAudio;
     fetchImagesRef.current = fetchImages;
+    translateRef.current = translate;
   });
 
   // Lazy-load tab data when a tab becomes active.
@@ -375,6 +381,15 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
       void fetchImagesRef.current();
     }
   }, [activeTab, result?.term, result?.langCode]);
+
+  // Preload audio, image and translation in the integrated panel so the user
+  // can press Send to Card immediately without opening every tab.
+  useEffect(() => {
+    if (!preloadMedia || !result) return;
+    void fetchAudioRef.current();
+    void fetchImagesRef.current();
+    void translateRef.current();
+  }, [preloadMedia, result?.term, result?.langCode]);
 
   const selectedAudioCount = useMemo(
     () => audioItems.filter((item) => audioSelection.get(item.id) === true).length,

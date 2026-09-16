@@ -96,10 +96,10 @@ describe('SubtitlePracticeSession — layout', () => {
     expect(screen.getByTestId('practice-shortcuts').textContent).toContain('Phát lại');
   });
 
-  it('masks every inactive cue target in dictation mode', () => {
+  it('renders a preview for every inactive cue target in dictation mode', () => {
     renderSession();
-    const masked = screen.getAllByTestId('cue-masked-target');
-    expect(masked.length).toBe(3);
+    const previews = screen.getAllByTestId('practice-preview-cue');
+    expect(previews.length).toBe(3);
     expect(screen.queryByText('AT THE END OF EVERY ROAD')).toBeNull();
     expect(screen.queryByText('FAR AWAY NOW')).toBeNull();
     for (const item of screen.getAllByTestId('cue-item')) {
@@ -339,14 +339,14 @@ describe('SubtitlePracticeSession — cloze', () => {
     expect(props.onContinue).toHaveBeenCalledWith(cues[1]);
   });
 
-  it('masks all non-active cues and hides target text for them', () => {
+  it('renders a preview for non-active cloze cues and hides target text for them', () => {
     renderSession({ mode: 'cloze' });
     const items = screen.getAllByTestId('cue-item');
-    expect(items[0].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
+    expect(items[0].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
     expect(items[0].querySelector('[data-cell-id="cue-target-text"]')).toBeNull();
     expect(items[0].textContent).not.toContain('AT THE END OF EVERY ROAD');
-    expect(items[2].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
-    expect(items[3].querySelector('[data-cell-id="cue-masked-target"]')).toBeTruthy();
+    expect(items[2].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
+    expect(items[3].querySelector('[data-cell-id="practice-preview-cue"]')).toBeTruthy();
     expect(items[3].textContent).not.toContain('FAR AWAY NOW');
   });
 

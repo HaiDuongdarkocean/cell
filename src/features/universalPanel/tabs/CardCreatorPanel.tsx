@@ -13,6 +13,7 @@ import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/c
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import type { AudioItem, ImageItem } from '@/entities/dictionary';
 import styles from './CardCreatorPanel.module.css';
 
 export interface CardCreatorPanelProps {
@@ -27,6 +28,26 @@ export interface CardCreatorPanelProps {
   /** Called when the user selects a queue item so the parent can drive
    *  a Dictionary lookup for that term. */
   readonly onQueueTermSelect?: (term: string) => void;
+}
+
+function selectedAudioItems(context: DictionaryPanelPrefill): readonly AudioItem[] {
+  const wordItems = (context.audioItems ?? []).filter((item) => item.kind === 'word');
+  const selectedIds = new Set(context.selectedAudioIds ?? []);
+  if (selectedIds.size > 0) {
+    return wordItems.filter((item) => selectedIds.has(item.id));
+  }
+  const defaults = wordItems.filter((item) => item.defaultSelected);
+  return defaults.length > 0 ? defaults : wordItems.slice(0, 1);
+}
+
+function selectedImageItems(context: DictionaryPanelPrefill): readonly ImageItem[] {
+  const items = context.imageItems ?? [];
+  const selectedIds = new Set(context.selectedImageIds ?? []);
+  if (selectedIds.size > 0) {
+    return items.filter((item) => selectedIds.has(item.id));
+  }
+  const defaults = items.filter((item) => item.defaultSelected);
+  return defaults.length > 0 ? defaults : items.slice(0, 1);
 }
 
 function buildOpenContext(
@@ -49,6 +70,8 @@ function buildOpenContext(
           wordAudioUrls: context.wordAudioUrls,
           sentenceAudioUrls: context.sentenceAudioUrls,
           imageUrls: context.imageUrls,
+          wordAudioItems: selectedAudioItems(context),
+          imageItems: selectedImageItems(context),
         }
       : undefined,
     queue: context?.queue,

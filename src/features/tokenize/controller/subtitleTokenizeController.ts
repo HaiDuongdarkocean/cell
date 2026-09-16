@@ -3,7 +3,7 @@ import type { Token, TokenBlock, TokenizeController, TokenizeState } from '@/fea
 import type { WordStatus } from '@/entities/dictionary';
 import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { TokenizeScheduler } from '@/features/tokenize/logic/tokenizeScheduler';
-import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
+import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import {
   emitWordStatusChanged,
@@ -105,6 +105,12 @@ export function createSubtitleTokenizeController(
 
   const unsubscribeMapUpdate = videoTokenMap.onUpdate((cueIndex: number) => {
     if (cueIndex !== lastTargetIndex) return;
+    const prepared = videoTokenMap.get(cueIndex);
+    const bound = currentTargetBlock;
+    if (prepared && bound?.isBound && bound.element === getLineElements().target) {
+      bound.tokens = prepared.tokens as Token[];
+      if (restyleTokenBlock(bound, getDisplayOptions())) return;
+    }
     bindLine(
       () => getLineElements().target,
       cueIndex,
@@ -171,15 +177,28 @@ export function createSubtitleTokenizeController(
     }
   }
 
+  function getShadowRoots(): ShadowRoot[] {
+    const { target, native } = getLineElements();
+    const roots = new Set<ShadowRoot>();
+    for (const el of [target, native]) {
+      const root = el?.getRootNode();
+      if (root instanceof ShadowRoot) roots.add(root);
+    }
+    return [...roots];
+  }
+
   function applyStatusKey(key: string): boolean {
     const status = STATUS_BY_KEY[key];
     if (!status) return false;
     const state = stateStore.getState();
-    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
     let usedNativeSelection = false;
     if (terms.length === 0) {
-      terms = extractTermsFromSelection(window.getSelection());
+      terms = extractTermsFromSelection(window.getSelection(), getShadowRoots());
       usedNativeSelection = terms.length > 0;
+    }
+    if (terms.length === 0 && state.hoveredTerm) {
+      terms = [state.hoveredTerm];
     }
     if (terms.length === 0) return false;
     applyStatusToTerms(terms, status);
@@ -200,7 +219,8 @@ export function createSubtitleTokenizeController(
     e.stopImmediatePropagation();
   }
 
-  document.addEventListener('keydown', handleKeydown);
+  // ADR-034: window capture so the host page cannot override 1-4 status shortcuts.
+  window.addEventListener('keydown', handleKeydown, true);
 
   return {
     enable() {
@@ -240,13 +260,24 @@ export function createSubtitleTokenizeController(
     },
 
     render(activeTargetIndex, _activeNativeIndex) {
-      lastTargetIndex = activeTargetIndex;
       const { target } = getLineElements();
+      const targetText = targetCues[activeTargetIndex]?.text ?? '';
+      const bound = currentTargetBlock;
+      lastTargetIndex = activeTargetIndex;
       if (!stateStore.getState().enabled) return;
 
-      const targetText = targetCues[activeTargetIndex]?.text ?? '';
+      if (
+        bound &&
+        bound.isBound &&
+        bound.element === target &&
+        bound.originalText === targetText &&
+        restyleTokenBlock(bound, getDisplayOptions())
+      ) {
+        preloader.setActiveIndex(activeTargetIndex);
+        return;
+      }
 
-      unbindLineElement(target, currentTargetBlock);
+      unbindLineElement(target, bound);
       forceUnbindStaleTokens(target, targetText);
       bindLine(
         () => getLineElements().target,
@@ -262,7 +293,7 @@ export function createSubtitleTokenizeController(
     },
 
     destroy() {
-      document.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('keydown', handleKeydown, true);
       unsubscribeWordStatus();
       unsubscribeMapUpdate();
       preloader.destroy();

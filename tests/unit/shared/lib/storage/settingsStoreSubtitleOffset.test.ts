@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 29 (V29 adds cardCreator.fieldMappings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(29);
+  it('CURRENT_SCHEMA_VERSION is 30 (V30 switches cardCreator mediaUpdateMode to skip)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(30);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

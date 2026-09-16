@@ -399,6 +399,7 @@ export function DictionaryPanelView({
                   onOpenSettings={onOpenSettings}
                   defaultActiveTab={defaultActiveTab}
                   selectionSnapshot={matchesSnapshot ? selectionSnapshot : undefined}
+                  preloadMedia={variant === 'integrated'}
                 />
               );
             })}

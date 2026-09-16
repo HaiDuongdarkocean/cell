@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { PreviewBlock } from './PreviewBlock';
 
 function countOccurrences(sentence: string, target: string): number {
@@ -10,11 +10,26 @@ function countOccurrences(sentence: string, target: string): number {
   return matches?.length ?? 0;
 }
 
+function findTokenByTerm(container: HTMLElement, term: string): HTMLElement | null {
+  return container.querySelector(`[data-cell-term="${term}"]`) as HTMLElement | null;
+}
+
 describe('PreviewBlock', () => {
   it('renders target word and sentence', () => {
     const { container } = render(<PreviewBlock targetWord="study" sentence="I like to study." />);
     expect(container.querySelector('[class*="cc-preview__target"]')).toHaveTextContent('study');
     expect(container.querySelector('[class*="cc-preview__sentence"]')).toHaveTextContent('I like to study.');
+  });
+
+  it('tokenizes the sentence into word spans', () => {
+    const { container } = render(<PreviewBlock targetWord="study" sentence="I like to study." />);
+    const sentence = container.querySelector('[class*="cc-preview__sentence"]')!;
+    const tokens = sentence.querySelectorAll('[data-cell-term]');
+    expect(tokens.length).toBe(4);
+    expect(tokens[0]).toHaveAttribute('data-cell-term', 'i');
+    expect(tokens[1]).toHaveAttribute('data-cell-term', 'like');
+    expect(tokens[2]).toHaveAttribute('data-cell-term', 'to');
+    expect(tokens[3]).toHaveAttribute('data-cell-term', 'study');
   });
 
   it('wraps all occurrences of target word in <strong>', () => {
@@ -23,21 +38,48 @@ describe('PreviewBlock', () => {
     const { container } = render(<PreviewBlock targetWord={target} sentence={sentence} />);
     const strongs = container.querySelectorAll('strong');
     expect(strongs.length).toBe(countOccurrences(sentence, target));
-    strongs.forEach((strong) => expect(strong.textContent).toBe(target));
+    strongs.forEach((strong) => expect(strong.textContent?.toLowerCase()).toBe(target));
   });
 
-  it('is case-sensitive when highlighting', () => {
+  it('highlights the target word regardless of case', () => {
     const sentence = 'I like to Study, but study is hard.';
     const { container } = render(<PreviewBlock targetWord="study" sentence={sentence} />);
     const strongs = container.querySelectorAll('strong');
-    expect(strongs.length).toBe(1);
-    expect(strongs[0].textContent).toBe('study');
+    expect(strongs.length).toBe(2);
+    expect(strongs[0]?.textContent?.toLowerCase()).toBe('study');
+    expect(strongs[1]?.textContent?.toLowerCase()).toBe('study');
+  });
+
+  it('highlights multi-word target phrases', () => {
+    const sentence = 'I like to study hard because study hard is fun.';
+    const { container } = render(<PreviewBlock targetWord="study hard" sentence={sentence} />);
+    const strongs = container.querySelectorAll('strong');
+    expect(strongs.length).toBe(2);
+    strongs.forEach((strong) => expect(strong.textContent?.toLowerCase()).toBe('study hard'));
   });
 
   it('renders sentence without highlights when target word is empty', () => {
     const { container } = render(<PreviewBlock targetWord="" sentence="I like to study." />);
     expect(container.querySelectorAll('strong').length).toBe(0);
     expect(container.textContent).toContain('I like to study.');
+  });
+
+  it('calls onTokenClick with the term and sentence when a token is clicked', () => {
+    const onTokenClick = jest.fn();
+    const { container } = render(
+      <PreviewBlock targetWord="study" sentence="I like to study." onTokenClick={onTokenClick} />,
+    );
+    const token = findTokenByTerm(container, 'study');
+    expect(token).not.toBeNull();
+    fireEvent.click(token!);
+    expect(onTokenClick).toHaveBeenCalledWith('study', 'I like to study.');
+  });
+
+  it('does not call onTokenClick when it is not provided', () => {
+    const { container } = render(<PreviewBlock targetWord="study" sentence="I like to study." />);
+    const token = findTokenByTerm(container, 'study');
+    expect(token).not.toBeNull();
+    expect(() => fireEvent.click(token!)).not.toThrow();
   });
 
   it('has Preview region and aria-label', () => {

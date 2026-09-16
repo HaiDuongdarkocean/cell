@@ -19,15 +19,25 @@
 
 .popover {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-radius: var(--radius-pill);
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--radius-none);
 }
 
-.speedOption {
-  flex: none;
+.speedList {
+  composes: themed from '@/shared/ui/Scrollable.module.css';
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  max-height: inherit;
+  overflow-y: auto;
+}
+
+.speedItem {
+  border-radius: var(--radius-none);
+  font-variant-numeric: tabular-nums;
 }
 
 @container actionBar (max-width: 400px) {

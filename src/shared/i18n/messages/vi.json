@@ -200,6 +200,7 @@
   "cardCreator.tagInput.placeholder": "Thêm nhãn…",
   "cardCreator.action.generateAll": "Tạo tất cả",
   "cardCreator.action.generateFor": "Tạo $1",
+  "cardCreator.action.create": "Tạo",
   "cardCreator.action.translate": "Dịch",
   "cardCreator.action.clear": "Xóa trắng",
   "cardCreator.action.add": "Thêm",

@@ -17,6 +17,10 @@
   .item:hover {
     background: var(--color-surface-hover);
   }
+  .active:hover {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+  }
 }
 
 .item:focus-visible {

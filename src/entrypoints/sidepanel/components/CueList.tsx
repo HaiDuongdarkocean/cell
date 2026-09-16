@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { WordStatus } from '@/entities/dictionary';
@@ -126,6 +126,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const [tokenMap, setTokenMap] = useState<CueListTokenMap>(EMPTY_TOKEN_MAP);
   const [resolving, setResolving] = useState(false);
 
+  const visibleCues = useMemo(
+    () => cues.filter((c) => c.targetText.trim().length > 0),
+    [cues],
+  );
+
   const tokenizeLangCode = tokenize?.langCode;
   const lastCuesRef = useRef<readonly BilingualCue[] | null>(null);
   const lastLangCodeRef = useRef<string | null>(null);
@@ -136,12 +141,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     }
     if (
       lastCuesRef.current !== null &&
-      cuesAreEqual(cues, lastCuesRef.current) &&
+      cuesAreEqual(visibleCues, lastCuesRef.current) &&
       tokenizeLangCode === lastLangCodeRef.current
     ) {
       return;
     }
-    lastCuesRef.current = cues;
+    lastCuesRef.current = visibleCues;
     lastLangCodeRef.current = tokenizeLangCode;
     const statusOverrides = statusOverridesRef.current;
     let overrides = statusOverrides.get(tokenizeLangCode);
@@ -155,7 +160,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       setTokenMap((current) => applyCueListTokenStatus(current, detail.term, detail.status));
     });
     const immediate = applyCueListTokenStatuses(
-      createCueListTokenMap(cues, tokenizeLangCode),
+      createCueListTokenMap(visibleCues, tokenizeLangCode),
       overrides,
     );
     setTokenMap(immediate);
@@ -170,12 +175,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       active = false;
       unsubscribe();
     };
-  }, [cues, tokenizeLangCode]);
+  }, [visibleCues, tokenizeLangCode]);
 
   // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
   // Edge case: offset shift could push an earlier cue's display ≥ 1h while last
   // is < 1h — rare; upgrade path: track max displayed time explicitly.
-  const lastEnd = cues.length > 0 ? cues[cues.length - 1].end : 0;
+  const lastEnd = visibleCues.length > 0 ? visibleCues[visibleCues.length - 1].end : 0;
   const hasHours = lastEnd - offsetMs >= 3_600_000;
 
   // ADR-019 sync: highlight cue at effective time so the highlighted cue
@@ -187,7 +192,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   // visible from start inclusive to end exclusive). Closed interval [start,end]
   // would match both cues and findIndex returns the earlier one → replay-cue
   // "jumps back to previous cue" bug.
-  const currentIndex = cues.findIndex(
+  const currentIndex = visibleCues.findIndex(
     (c) => c.start <= effectiveMs && c.end > effectiveMs,
   );
 
@@ -233,7 +238,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
   return (
     <div ref={listRef} className={styles.list} role="list" data-cell-id="cue-list-scroll">
-      {cues.map((cue, i) => {
+      {visibleCues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         const customContent = renderCueContent?.(cue, i, isCurrent);
         return (

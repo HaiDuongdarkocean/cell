@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 29;
+export const CURRENT_SCHEMA_VERSION = 30;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -470,6 +470,14 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // Existing users get an empty map; nested merge fills the new field.
   28: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 29 } as Record<string, unknown>;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  29: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 30 } as Record<string, unknown>;
+    const cardCreator = merged.cardCreator as Record<string, unknown> | undefined;
+    if (cardCreator && cardCreator.mediaUpdateMode === 'overwrite') {
+      cardCreator.mediaUpdateMode = 'skip';
+    }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

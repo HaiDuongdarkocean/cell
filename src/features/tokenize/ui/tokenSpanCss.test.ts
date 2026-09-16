@@ -103,4 +103,14 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       expect(source).not.toMatch(new RegExp(`status-${status},[^}]*background-color:\\s*transparent`));
     }
   });
+
+  it.each(['host', 'shadow'])('emits self-contained --cell-token-* values in %s CSS (no unresolved var(--color-text))', (variant) => {
+    const source = variant === 'host' ? buildTokenSpanCss() : buildTokenSpanCssForShadow();
+    const values = [...source.matchAll(/--cell-token-[\w-]+:\s*([^;]+);/g)].map((match) => match[1]);
+    expect(values.length).toBeGreaterThan(0);
+    for (const value of values) {
+      expect(value).not.toContain('var(--color-text)');
+    }
+    expect(source).toMatch(/color-mix\([^)]*#F1F1F1[^)]*\)/);
+  });
 });

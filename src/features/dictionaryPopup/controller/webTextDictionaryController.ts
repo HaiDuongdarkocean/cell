@@ -88,8 +88,10 @@ export interface WebTextDictionaryControllerDeps {
   readonly nativeLanguage?: string;
   readonly hasVideo: boolean;
   readonly video?: HTMLVideoElement;
-  /** Callback to get current target cues for sentence audio capture (subtitle path). */
+  /** Callbacks to get current target/native cues for sentence audio capture and
+   *  translation (subtitle path). */
   readonly getTargetCues?: () => readonly CueRange[];
+  readonly getNativeCues?: () => readonly CueRange[];
   /** Called when the user cycles the word status inside the popup. The popup
    *  already persists the new status via its own WORD_STATUS_SET message; this
    *  callback lets external systems (tokenize controller) update their cached
@@ -111,6 +113,7 @@ export interface WebTextDictionaryVideoConfig {
   readonly hasVideo: boolean;
   readonly video?: HTMLVideoElement;
   readonly getTargetCues?: () => readonly CueRange[];
+  readonly getNativeCues?: () => readonly CueRange[];
 }
 
 export interface WebTextDictionaryController {
@@ -213,6 +216,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let hasVideo = deps.hasVideo;
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
+  let getNativeCues: (() => readonly CueRange[]) | undefined = deps.getNativeCues;
 
   let popupDictWasPlaying = false;
 
@@ -641,6 +645,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     hasVideo = config.hasVideo;
     video = config.video;
     getTargetCues = config.getTargetCues;
+    getNativeCues = config.getNativeCues;
   }
 
   // Sheet mode (mobile/narrow viewport): the popup is a bottom sheet that
@@ -1067,32 +1072,31 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       return;
     }
 
-    const hasQueue = (context.queue?.length ?? 0) > 0;
     const sentence = context.prefill?.sentence ?? context.cue?.targetText ?? '';
     const translation =
       context.prefill?.sentenceTranslation ??
       context.cue?.nativeText ??
       selection?.translation ??
       '';
-    // When a queue is present, the panel starts with an empty Dictionary state
-    // and the user picks a term to look up. No term or definitions are resolved
-    // yet, so the integrated Dictionary must not pre-fill a single word.
-    const definitionsText = hasQueue
-      ? ''
-      : (context.prefill?.definitions ?? '');
-    const term = hasQueue
-      ? undefined
-      : (context.prefill?.targetWord ?? context.cue?.targetText ?? '');
+
+    // Prefer the explicit popup prefill (target word + definitions) even when a
+    // queue is present, so the integrated Dictionary starts with the user's
+    // selected term rather than empty. If no prefill term exists, leave the
+    // dictionary empty and let the queue drive term selection.
+    const prefillTerm = context.prefill?.targetWord;
+    const prefillDefinitions = context.prefill?.definitions;
+    const term = prefillTerm;
+    const definitionsText = prefillDefinitions ?? '';
 
     const contextDefinitions: { readonly pos?: string; readonly text: string }[] = definitionsText
       ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
       : [];
     const definitions = contextDefinitions.length > 0
       ? contextDefinitions
-      : (hasQueue ? [] : (selection?.definitions ?? []));
+      : (selection?.definitions ?? []);
 
     const rawDefinitions: string[] =
-      selection?.rawDefinitions && selection.rawDefinitions.length > 0 && !hasQueue
+      selection?.rawDefinitions && selection.rawDefinitions.length > 0
         ? [...selection.rawDefinitions]
         : definitionsText
           ? definitionsText.split('\n').filter((line) => line.trim())
@@ -1180,12 +1184,16 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       })();
 
     if (target) {
+      const nativeCues = getNativeCues?.() ?? [];
+      const nativeCue = nativeCues.find(
+        (c) => c.start <= target.end && c.end >= target.start,
+      );
       result.cue = {
         index: target.index ?? 0,
         start: target.start,
         end: target.end,
         targetText: target.text ?? '',
-        nativeText: '',
+        nativeText: nativeCue?.text ?? '',
       };
       onRecordingStart?.();
       try {
@@ -1222,6 +1230,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // Missing media is fetched in the background and pushed into the open
     // dialog via addMediaFiles / updateTextField — so the user sees the dialog
     // right away instead of waiting for network calls to complete.
+    const selectedWordAudios = (prefill.audioItems ?? []).filter(
+      (item) => item.kind === 'word' && (prefill.selectedAudioIds ?? []).includes(item.id),
+    );
+    const selectedImages = (prefill.imageItems ?? []).filter(
+      (item) => (prefill.selectedImageIds ?? []).includes(item.id),
+    );
     openCardCreator({
       video: captureVideo,
       sourceLang,
@@ -1234,6 +1248,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         wordAudioUrls: prefill.wordAudioUrls,
         sentenceAudioUrls: captureVideo ? [] : prefill.sentenceAudioUrls,
         imageUrls: prefill.imageUrls,
+        wordAudioItems: selectedWordAudios,
+        imageItems: selectedImages,
       },
     }, action);
 
@@ -1529,7 +1545,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           const media = await collectCardCreatorMedia(prefill, sourceLang, fromSubtitle, undefined, () => {
             chip.update(t('dict.toast.recording'));
           }, lookupCue);
-          const sentenceTranslation = prefill.translation ?? (await translationTask);
+          const sentenceTranslation =
+            media.cue?.nativeText ||
+            prefill.translation ||
+            (await translationTask);
 
           // Build a lazy queue from the subtitle cue / context sentence. The
           // queue is shown first; the user selects a term before any lookup.
@@ -1538,6 +1557,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             : prefill.contextSentence;
           const queue = queueText ? await buildSubtitleQueue(queueText, sourceLang) : [];
 
+          const selectedWordAudios = (prefill.audioItems ?? []).filter(
+            (item) => item.kind === 'word' && (prefill.selectedAudioIds ?? []).includes(item.id),
+          );
+          const selectedImages = (prefill.imageItems ?? []).filter(
+            (item) => (prefill.selectedImageIds ?? []).includes(item.id),
+          );
           const context: CardCreatorOpenContext = {
             video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
             sourceLang,
@@ -1552,6 +1577,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               wordAudioUrls: media.wordAudioUrls,
               sentenceAudioUrls: media.sentenceAudioUrls,
               imageUrls: media.imageUrls,
+              wordAudioItems: selectedWordAudios,
+              imageItems: selectedImages,
             },
             queue,
           };
@@ -1702,11 +1729,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       });
     }
     const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
-    console.log('[DEBUG syncOrbitalBadge]', { enabled: dp.enabled, hasBadge: !!orbitalBadge, sameDimensions, size: trigger.size, scale: trigger.pointerScale });
     if (orbitalBadge && sameDimensions) {
       orbitalBadge.setPreset(trigger.position);
     } else {
-      console.log('[DEBUG syncOrbitalBadge] destroying + re-mounting badge');
       orbitalBadge?.destroy();
       orbitalBadge = mountOrbitalBadge({
         badgeSize: trigger.size,

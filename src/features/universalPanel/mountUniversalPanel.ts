@@ -9,6 +9,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { UniversalPanel } from './UniversalPanel';
@@ -22,6 +23,7 @@ import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { resolveProfile, type Settings } from '@/entities/settings';
 import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
+import { useCardCreatorStore } from '@/stores/cardCreatorStore';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
@@ -54,7 +56,7 @@ const PANEL_HOST_ID = 'cell-universal-panel-host';
 const HOST_CLASS_NAME = 'js-cell-universal-panel-host';
 const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
-const SHADOW_CSS = allModuleCss;
+const SHADOW_CSS = [...allModuleCss, buildTokenSpanCssForShadow()];
 
 async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
@@ -179,8 +181,23 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       prefill: pendingCardCreatorContext,
       onOpenSettings: () => { void openSettingsSection(mountController, 'resources'); },
       onAfterSubmit: () => {
-        // Clear the sent context before closing so the next open starts clean.
+        const store = useCardCreatorStore.getState();
+        const { queueItems, queueActiveIndex } = store;
+        const remaining = queueItems.filter((_, i) => i !== queueActiveIndex);
+
+        if (remaining.length > 0) {
+          store.reset();
+          store.setQueueItems(remaining);
+          store.setQueueSidebarOpen(true);
+          pendingCardCreatorContext = null;
+          pendingSearchTerm = null;
+          render();
+          return;
+        }
+
+        store.reset();
         pendingCardCreatorContext = null;
+        pendingSearchTerm = null;
         mountController.close();
       },
     }) as ReactElement;

@@ -518,7 +518,11 @@ describe('createWebTokenizeController', () => {
     expect(hello).not.toBeNull();
     expect(world).not.toBeNull();
 
-    // Native selection spanning both tokens (no Ctrl+Click, no hover).
+    // After a drag selection the pointer still hovers the final token; the
+    // native range must win over hoveredTerm.
+    world.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    // Native selection spanning both tokens (no Ctrl+Click).
     const range = document.createRange();
     range.setStartBefore(hello);
     range.setEndAfter(world);

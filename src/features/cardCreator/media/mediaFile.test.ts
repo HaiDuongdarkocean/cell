@@ -3,6 +3,8 @@ import {
   buildAnkiFieldRef,
   joinAnkiFieldRefs,
   generateMediaFilename,
+  mediaFromAudioItem,
+  mediaFromImageItem,
   type MediaFile,
 } from './mediaFile';
 
@@ -77,6 +79,116 @@ describe('mediaFile', () => {
       const a = generateMediaFilename('sentence', 'mp3');
       const b = generateMediaFilename('sentence', 'mp3');
       expect(a).not.toBe(b);
+    });
+  });
+
+  describe('mediaFromAudioItem', () => {
+    it('builds a wav file from raw audio bytes', async () => {
+      const bytes = new Uint8Array([0x52, 0x49, 0x46, 0x46]);
+      const file = await mediaFromAudioItem({
+        id: 'audio-1',
+        kind: 'word',
+        source: 'community',
+        label: 'Forvo',
+        state: 'idle',
+        audioBytes: bytes,
+        defaultSelected: true,
+      });
+      expect(file).not.toBeNull();
+      expect(file!.kind).toBe('audio');
+      expect(file!.mimeType).toBe('audio/wav');
+      expect(file!.sourceUrl).toBe('audio-bytes://audio-1');
+      expect(new Uint8Array(file!.data)).toEqual(bytes);
+    });
+
+    it('returns null when there are no bytes and no url', async () => {
+      const file = await mediaFromAudioItem({
+        id: 'audio-2',
+        kind: 'word',
+        source: 'community',
+        label: 'Forvo',
+        state: 'idle',
+        defaultSelected: true,
+      });
+      expect(file).toBeNull();
+    });
+
+    it('builds a file from a data URL without fetching', async () => {
+      const dataUrl = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+      const file = await mediaFromAudioItem({
+        id: 'audio-3',
+        kind: 'word',
+        source: 'community',
+        label: 'Forvo',
+        state: 'idle',
+        url: dataUrl,
+        defaultSelected: true,
+      });
+      expect(file).not.toBeNull();
+      expect(file!.kind).toBe('audio');
+      expect(file!.mimeType).toBe('audio/wav');
+      expect(file!.sourceUrl).toBe(dataUrl);
+    });
+
+    it('falls back to null when the url cannot be fetched', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+      });
+      const file = await mediaFromAudioItem({
+        id: 'audio-4',
+        kind: 'word',
+        source: 'community',
+        label: 'Forvo',
+        state: 'idle',
+        url: 'http://example.com/audio.mp3',
+        defaultSelected: true,
+      });
+      expect(file).toBeNull();
+      global.fetch = originalFetch;
+    });
+  });
+
+  describe('mediaFromImageItem', () => {
+    it('returns null when src is empty', async () => {
+      const file = await mediaFromImageItem({
+        id: 'img-1',
+        alt: '',
+        src: '',
+        defaultSelected: true,
+      });
+      expect(file).toBeNull();
+    });
+
+    it('builds a file from a data URL without fetching', async () => {
+      const dataUrl = 'data:image/png;base64,iVBORw0KGgo=';
+      const file = await mediaFromImageItem({
+        id: 'img-2',
+        alt: 'screenshot',
+        src: dataUrl,
+        defaultSelected: true,
+      });
+      expect(file).not.toBeNull();
+      expect(file!.kind).toBe('image');
+      expect(file!.mimeType).toBe('image/png');
+      expect(file!.sourceUrl).toBe(dataUrl);
+    });
+
+    it('falls back to null when the url cannot be fetched', async () => {
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+      });
+      const file = await mediaFromImageItem({
+        id: 'img-3',
+        alt: 'screenshot',
+        src: 'http://example.com/image.png',
+        defaultSelected: true,
+      });
+      expect(file).toBeNull();
+      global.fetch = originalFetch;
     });
   });
 });

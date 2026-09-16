@@ -123,4 +123,54 @@ test.describe('status underline', () => {
     }
     await video.evaluate((v: HTMLVideoElement) => v.pause());
   });
+
+  test('native text selection outranks the hovered token on web tokens', async ({ cellContext, streamFlixPage }) => {
+    await writeTokenizeSettings(cellContext);
+    await streamFlixPage.reload({ waitUntil: 'networkidle' });
+    await expect(streamFlixPage.locator('#player-wrapper video').first()).toBeVisible({ timeout: 30_000 });
+    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="the"]').count()).toBeGreaterThan(0);
+    await expect.poll(async () => streamFlixPage.locator('.js-cell-token[data-cell-term="first"]').count()).toBeGreaterThan(0);
+
+    const description = streamFlixPage.locator('.js-cell-token[data-cell-term="humanity"]').first();
+    await description.scrollIntoViewIfNeeded();
+
+    const dragBounds = await streamFlixPage.evaluate(() => {
+      const tokens = Array.from(document.querySelectorAll('.js-cell-token[data-cell-term]'))
+        .filter((el) => !el.closest('#cell-subtitle-root'));
+      const first = tokens.find((el) => el.getAttribute('data-cell-term') === 'humanity');
+      const last = tokens.find((el) => el.getAttribute('data-cell-term') === 'first');
+      const hovered = tokens.find((el) => el.getAttribute('data-cell-term') === 'gates');
+      if (!first || !last || !hovered) return null;
+      if ((first.compareDocumentPosition(last) & Node.DOCUMENT_POSITION_FOLLOWING) === 0) {
+        return null;
+      }
+      hovered.dispatchEvent(new MouseEvent('mouseenter'));
+      const a = first.getBoundingClientRect();
+      const b = last.getBoundingClientRect();
+      return {
+        from: { x: a.left + 1, y: a.top + a.height / 2 },
+        to: { x: b.left + b.width * 0.6, y: b.top + b.height / 2 },
+      };
+    });
+    if (!dragBounds) throw new Error('token bounds not found');
+    await streamFlixPage.mouse.move(dragBounds.from.x, dragBounds.from.y);
+    await streamFlixPage.mouse.down();
+    await streamFlixPage.mouse.move(dragBounds.to.x, dragBounds.to.y, { steps: 12 });
+    await streamFlixPage.mouse.up();
+    await expect.poll(async () => streamFlixPage.evaluate(() => window.getSelection()?.toString() ?? ''), { timeout: 10_000 }).toMatch(/humanity/i);
+    await expect.poll(async () => streamFlixPage.evaluate(() => window.getSelection()?.toString() ?? '')).not.toContain('gates');
+
+    await streamFlixPage.keyboard.press('2');
+
+    for (const term of ['humanity', 'first']) {
+      await expect.poll(
+        async () => (await tokenState(streamFlixPage, 'web', term))?.className ?? '',
+        { timeout: 30_000 },
+      ).toContain('js-cell-token--status-tracking');
+      expectStatusUnderline(await tokenState(streamFlixPage, 'web', term), 'tracking');
+    }
+    await expect.poll(
+      async () => (await tokenState(streamFlixPage, 'web', 'gates'))?.className ?? '',
+    ).not.toContain('js-cell-token--status-tracking');
+  });
 });

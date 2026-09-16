@@ -1,4 +1,4 @@
-import type { LookupRequest } from '@/entities/dictionary';
+import type { LookupRequest, PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { CardCreatorOpenContext } from '@/features/cardCreator/types';
 
@@ -26,11 +26,13 @@ export interface DictionaryBridge {
     hasVideo: boolean;
     video?: HTMLVideoElement;
     getTargetCues?: () => readonly DictionaryCueRange[];
+    getNativeCues?: () => readonly DictionaryCueRange[];
   }): void;
   updateCardCreatorSettings(settings: CardCreatorSettings): void;
   sendToCard(
     context: CardCreatorOpenContext,
     action?: 'quick-add' | 'quick-update' | 'edit-card',
+    selection?: PopupCardCreatorPrefill,
   ): void;
   isCardCreatorOpen(): boolean;
 }

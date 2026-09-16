@@ -14,3 +14,9 @@
   background: color-mix(in srgb, var(--universal-panel-tokenize-capsule-bg) 96%, var(--color-text) 4%);
   box-shadow: var(--shadow-sm);
 }
+
+/* Halves fill the pill without their own rounded corners, so the capsule
+   keeps a clean rounded outline and the split seam stays sharp. */
+.capsule .half {
+  border-radius: var(--radius-none);
+}

@@ -128,14 +128,15 @@ export function CardCreatorDialogContent({
       key={`generate-${key}`}
       variant="ghost"
       size="sm"
-      shape="circle"
       onClick={() => void generateField(key)}
       disabled={capturingMedia || submitting}
       aria-label={t('cardCreator.action.generateFor', [label])}
       title={t('cardCreator.action.generateFor', [label])}
+      leadingIcon={<Icon name="zap" size="sm" />}
+      collapseLabel
       data-cell-id={`${dataId}-generate`}
     >
-      <Icon name="zap" size="sm" />
+      {t('cardCreator.action.create')}
     </Button>
   );
 
@@ -210,7 +211,8 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => void generateAll()}
             disabled={!draft.fields.targetWord.trim() || capturingMedia || submitting}
-            trailingIcon={<Icon name="zap" size="sm" />}
+            leadingIcon={<Icon name="zap" size="sm" />}
+            collapseLabel
             data-cell-id="cc-generate-all"
           >
             {t('cardCreator.action.generateAll')}
@@ -247,6 +249,8 @@ export function CardCreatorDialogContent({
       <PreviewBlock
         targetWord={draft.fields.targetWord}
         sentence={draft.fields.sentence}
+        langCode={state.sourceLang}
+        onTokenClick={state.lookupTerm}
         dataId="cc-preview"
       />
 
@@ -423,7 +427,7 @@ export function CardCreatorDialogContent({
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => setConfirmOpen(true)}
             disabled={submitting}
@@ -432,7 +436,7 @@ export function CardCreatorDialogContent({
             {t('cardCreator.action.clear')}
           </Button>
           <Button
-            variant="secondary"
+            variant="primarySubtle"
             size="sm"
             onClick={() => { void submit('add'); }}
             disabled={submitting}

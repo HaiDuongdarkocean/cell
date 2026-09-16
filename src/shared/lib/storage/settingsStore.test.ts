@@ -118,6 +118,40 @@ describe('loadSettings migration', () => {
     });
   });
 
+  it('migrates v29 cardCreator overwrite to skip', async () => {
+    const v29Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 29,
+      cardCreator: { ...DEFAULT_CARD_CREATOR_SETTINGS, mediaUpdateMode: 'overwrite' },
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v29Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(settings.cardCreator.mediaUpdateMode).toBe('skip');
+  });
+
+  it('preserves v29 cardCreator append mode during migration', async () => {
+    const v29Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 29,
+      cardCreator: { ...DEFAULT_CARD_CREATOR_SETTINGS, mediaUpdateMode: 'append' },
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v29Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(settings.cardCreator.mediaUpdateMode).toBe('append');
+  });
+
   it('resets undefined nested objects to their defaults', async () => {
     const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
     stored.cardCreator = undefined;

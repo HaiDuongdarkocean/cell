@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 29 (V29 adds cardCreator.fieldMappings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(29);
+  it('CURRENT_SCHEMA_VERSION is 30 (V30 switches cardCreator mediaUpdateMode to skip)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(30);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {

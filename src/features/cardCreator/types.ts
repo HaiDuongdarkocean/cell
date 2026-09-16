@@ -1,4 +1,5 @@
 import type { BilingualCue, MediaFile } from '@/entities/media';
+import type { AudioItem, ImageItem } from '@/entities/dictionary';
 import type { CardCreatorQueueItem } from '@/entities/cardCreator';
 
 export type { CardCreatorQueueItem };
@@ -24,6 +25,10 @@ export interface CardCreatorPrefill {
   readonly sentenceAudioUrls?: readonly string[];
   /** Image URLs (Google Images) selected in the popup — fetched + stored as MediaFile. */
   readonly imageUrls?: readonly string[];
+  /** Full selected AudioItem objects (espeak/Forvo with audioBytes, not just URLs). */
+  readonly wordAudioItems?: readonly AudioItem[];
+  /** Full selected ImageItem objects. */
+  readonly imageItems?: readonly ImageItem[];
 }
 
 /** Context for opening the card creator (video + cue + languages + prefill).
@@ -45,6 +50,10 @@ export interface CardCreatorOpenContext {
   /** Send to Card queue (I+N review flow). When present with ≥2 items, the
    *  dialog opens with a right sidebar. N=1 → no sidebar. */
   readonly queue?: readonly CardCreatorQueueItem[];
+  /** True while media capture is still in flight — the dialog/panel opens
+   *  immediately and a follow-up context fills media + queue when ready.
+   *  Keeps submit disabled (capturingMedia) until then. */
+  readonly mediaPending?: boolean;
 }
 
 /** Toast notification. */

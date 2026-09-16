@@ -172,6 +172,8 @@ function useMockCardCreatorState(): CardCreatorState {
       queueItems: queue,
       queueActiveIndex: queue.length > 0 ? 0 : -1,
       queueSidebarOpen: queue.length >= 2,
+      sourceLang: 'en',
+      lookupTerm: () => {},
       selectQueueItem: () => {},
       deleteQueueItem: () => {},
       undoDeleteQueueItem: () => {},

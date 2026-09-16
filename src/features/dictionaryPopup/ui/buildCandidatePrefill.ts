@@ -20,20 +20,22 @@ export function buildPrefill(
     : result.definitions;
 
   const selectedAudios = audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected);
-  const selectedWordAudios = selectedAudios.filter((item) => item.kind === 'word' && item.url);
+  const selectedWordAudios = selectedAudios.filter((item) => item.kind === 'word' && (item.url || item.audioBytes));
   const wordAudios = selectedWordAudios.length > 0
     ? selectedWordAudios
-    : audioItems.filter((item) => item.kind === 'word' && item.url).slice(0, 1);
-  const selectedSentenceAudios = selectedAudios.filter((item) => item.kind === 'sentence' && item.url);
+    : audioItems.filter((item) => item.kind === 'word' && (item.url || item.audioBytes)).slice(0, 1);
+  const selectedSentenceAudios = selectedAudios.filter((item) => item.kind === 'sentence' && (item.url || item.audioBytes));
   const sentenceAudios = selectedSentenceAudios.length > 0
     ? selectedSentenceAudios
-    : audioItems.filter((item) => item.kind === 'sentence' && item.url).slice(0, 1);
-  const wordAudioUrls = wordAudios.map((item) => item.url!);
-  const sentenceAudioUrls = sentenceAudios.map((item) => item.url!);
+    : audioItems.filter((item) => item.kind === 'sentence' && (item.url || item.audioBytes)).slice(0, 1);
+  const wordAudioUrls = wordAudios.map((item) => item.url ?? `audio-bytes://${item.id}`);
+  const sentenceAudioUrls = sentenceAudios.map((item) => item.url ?? `audio-bytes://${item.id}`);
 
   const selectedImages = imageItems.filter((item) => imageSelection.get(item.id) ?? item.defaultSelected);
   const fallbackImages = selectedImages.length > 0 ? selectedImages : imageItems.slice(0, 1);
   const imageUrls = fallbackImages.map((item) => item.src);
+
+  const effectiveAudios = [...wordAudios, ...sentenceAudios];
 
   return {
     term: result.term,
@@ -51,12 +53,9 @@ export function buildPrefill(
     lookupResult: result,
     audioItems,
     imageItems,
-    // Selection snapshot for the integrated Dictionary clone (Task 4):
-    // definitions mirror the user's explicit ticks; audio/image mirror the
-    // effective selection (explicit toggle wins, else the item's default).
-    selectedDefinitionIds: selectedDefinitions.map((d) => d.id),
-    selectedAudioIds: selectedAudios.map((item) => item.id),
-    selectedImageIds: selectedImages.map((item) => item.id),
+    selectedDefinitionIds: defs.map((d) => d.id),
+    selectedAudioIds: effectiveAudios.map((item) => item.id),
+    selectedImageIds: fallbackImages.map((item) => item.id),
     translationSelected,
   };
 }

@@ -48,7 +48,7 @@
 .word {
   display: inline-block;
   overflow-wrap: anywhere;
-  border-bottom: var(--border-width-hairline) dotted var(--color-text-secondary);
+  border-bottom: var(--border-width-medium) solid var(--color-text-secondary);
 }
 
 .wordCurrent {

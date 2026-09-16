@@ -99,7 +99,19 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
           alt: e.altKey,
         });
     if (!action) {
-      if (blockController.isPlayerModeActive && !isEditableEvent(e) && ctx.handleSubtitleStatusKey(key)) {
+      // Status shortcuts 1-4: route through the tokenize controllers. They are
+      // handled here on window capture so the host page (e.g. YouTube seeking
+      // on digit keys) cannot override them.
+      if (!isEditableEvent(e) && ctx.handleSubtitleStatusKey(e.key)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (
+        !blockController.isPlayerModeActive &&
+        !isEditableEvent(e) &&
+        ctx.handleWebStatusKey?.(e.key)
+      ) {
         e.preventDefault();
         e.stopImmediatePropagation();
         return;

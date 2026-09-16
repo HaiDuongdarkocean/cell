@@ -8,7 +8,7 @@
 //   Split View + Playlist (local-player):
 //     <SubtitlePanel ... playlistContent={<LibraryView .../>} onOpenFile={...} onOpenFolder={...} />
 
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -90,17 +90,21 @@ function SubtitlePanelImpl({
   panelBlurred = false,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
+  const visibleCues = useMemo(
+    () => cues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
+    [cues],
+  );
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
-  const [activeTab, setActiveTab] = useState<PanelTab>(cues.length > 0 ? 'subtitles' : 'playlist');
+  const [activeTab, setActiveTab] = useState<PanelTab>(visibleCues.length > 0 ? 'subtitles' : 'playlist');
 
   const handlePreviousCue = (cue: BilingualCue): void => {
     if (onPreviousCue) {
       onPreviousCue(cue);
       return;
     }
-    const i = cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    if (i > 0) onSeek(cues[i - 1].start);
+    const i = visibleCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    if (i > 0) onSeek(visibleCues[i - 1].start);
   };
 
   const handleReplayCue = (cue: BilingualCue): void => {
@@ -116,17 +120,17 @@ function SubtitlePanelImpl({
       onContinueCue(cue);
       return;
     }
-    const i = cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    const next = i >= 0 ? cues[i + 1] : undefined;
+    const i = visibleCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const next = i >= 0 ? visibleCues[i + 1] : undefined;
     if (next) onSeek(next.start);
   };
 
   // Empty cue list → EmptyState instead of a blank area (same copy as the
   // side panel). flex:1 fills cueListWrap so content centers vertically.
-  const subtitleContent = cues.length > 0 ? (
+  const subtitleContent = visibleCues.length > 0 ? (
     practiceMode === 'off' ? (
       <CueList
-        cues={cues}
+        cues={visibleCues}
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
         onSeek={onSeek}
@@ -136,7 +140,7 @@ function SubtitlePanelImpl({
     ) : (
       <SubtitlePracticeSession
         mode={practiceMode}
-        cues={cues}
+        cues={visibleCues}
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
         translationEnabled={translationEnabled}
@@ -207,7 +211,7 @@ function SubtitlePanelImpl({
               data-panel-blurred={panelBlurred ? 'true' : 'false'}
             >
               {subtitleContent}
-              {panelBlurred && cues.length > 0 && (
+              {panelBlurred && visibleCues.length > 0 && (
                 <div
                   className={styles.blurOverlay}
                   data-cell-id="subtitle-panel-blur-overlay"
@@ -227,7 +231,7 @@ function SubtitlePanelImpl({
           data-panel-blurred={panelBlurred ? 'true' : 'false'}
         >
           {subtitleContent}
-          {panelBlurred && cues.length > 0 && (
+          {panelBlurred && visibleCues.length > 0 && (
             <div
               className={styles.blurOverlay}
               data-cell-id="subtitle-panel-blur-overlay"

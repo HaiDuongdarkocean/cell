@@ -42,7 +42,11 @@ import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Subtit
 import type { SubtitlePanelItem } from '@/features/subtitle';
 // === Subtitle Overlay Integration ===
 
-export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): () => void {
+export function init(
+  video: HTMLVideoElement,
+  webTextCtrl?: DictionaryBridge,
+  handleWebStatusKey?: (key: string) => boolean,
+): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
@@ -369,6 +373,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
         hasVideo: true,
         video,
         getTargetCues: () => blockController.getTargetCues(),
+        getNativeCues: () => blockController.getNativeCues(),
       });
       if (dpSettings?.enabled) {
         blockController.enableDictionaryPopup(
@@ -472,6 +477,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
           hasVideo: true,
           video,
           getTargetCues: () => blockController.getTargetCues(),
+          getNativeCues: () => blockController.getNativeCues(),
         });
         if (newSettings.dictionaryPopup.enabled) {
           blockController.enableDictionaryPopup(
@@ -649,6 +655,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: DictionaryBridge): (
     handleCardCreatorAction,
     handleGenerateNative,
     handleSubtitleStatusKey: (key) => subtitleTokenizeCtrl?.handleStatusKey(key) ?? false,
+    handleWebStatusKey,
     syncSubtitleTokenize,
   };
 

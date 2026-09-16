@@ -43,6 +43,7 @@ function TokenizeHalf({ active, disabled = false, icon, label, onClick, testId }
       onPointerDown={(e): void => { e.currentTarget.blur(); }}
       data-pressed={String(active)}
       data-cell-id={testId}
+      className={styles.half}
       leadingIcon={<Icon name={icon} size="sm" />}
     />
   );

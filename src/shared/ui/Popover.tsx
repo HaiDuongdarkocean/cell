@@ -11,6 +11,8 @@ export interface PopoverProps {
   readonly role?: string;
   readonly 'aria-label'?: string;
   readonly 'aria-activedescendant'?: string;
+  /** Pixel cap for the menu height (useful for keeping long lists scrollable). */
+  readonly menuMaxHeight?: number;
 }
 
 function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFragment {
@@ -37,11 +39,13 @@ export function Popover({
   role,
   'aria-label': ariaLabel,
   'aria-activedescendant': ariaActiveDescendant,
+  menuMaxHeight,
 }: PopoverProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
   const { style } = useMenuPlacement({
     isOpen: open,
     menuAlign: 'left',
+    menuMaxHeight,
     triggerRef,
     menuRef,
   });

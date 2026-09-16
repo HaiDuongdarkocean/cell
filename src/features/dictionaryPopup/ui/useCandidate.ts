@@ -36,6 +36,8 @@ export interface UseCandidateOptions {
   readonly initialAudioItems?: readonly AudioItem[];
   /** Pre-loaded image items for this candidate (popup clone). */
   readonly initialImageItems?: readonly ImageItem[];
+  /** Preload media/translation for the integrated panel. */
+  readonly preloadMedia?: boolean;
 }
 
 export interface UseCandidateReturn {
@@ -88,6 +90,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     selectionSnapshot,
     initialAudioItems,
     initialImageItems,
+    preloadMedia,
   } = options;
 
   // The snapshot prop is typed as PopupSelectionSnapshot for callers, but the
@@ -150,6 +153,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     initialImageSelection,
     initialTranslation,
     initialTranslationSelected,
+    preloadMedia,
   });
 
   const selectedDefinitions = useMemo(

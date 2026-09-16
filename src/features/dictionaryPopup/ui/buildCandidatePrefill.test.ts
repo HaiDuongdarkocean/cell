@@ -200,12 +200,12 @@ describe('buildPrefill', () => {
     );
 
     expect(prefill.selectedDefinitionIds).toEqual(['2']);
-    expect(prefill.selectedAudioIds).toEqual(['audio-word-2']);
+    expect(prefill.selectedAudioIds).toEqual(['audio-word-2', 'audio-sentence-1']);
     expect(prefill.selectedImageIds).toEqual(['image-2']);
     expect(prefill.translationSelected).toBe(true);
   });
 
-  it('snapshots effective audio/image selection but only explicitly picked definitions', () => {
+  it('snapshots effective audio/image/definition selection including fallbacks', () => {
     const result = makeResult();
     const audios = [
       makeAudio({ id: 'audio-word-1', kind: 'word', url: 'https://example.com/word.mp3', defaultSelected: true }),
@@ -225,11 +225,9 @@ describe('buildPrefill', () => {
       new Map(),
     );
 
-    // No explicit toggles → audio/image fall back to the item's defaultSelected
-    // hint; definitions stay empty because only explicit ticks are mirrored.
     expect(prefill.selectedAudioIds).toEqual(['audio-word-1']);
     expect(prefill.selectedImageIds).toEqual(['image-1']);
-    expect(prefill.selectedDefinitionIds).toEqual([]);
+    expect(prefill.selectedDefinitionIds).toEqual(result.definitions.map((d) => d.id));
     expect(prefill.translationSelected).toBe(false);
   });
 

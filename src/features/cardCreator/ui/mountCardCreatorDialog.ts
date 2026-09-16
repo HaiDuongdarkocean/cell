@@ -8,6 +8,7 @@
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { CardCreatorDialog } from './CardCreatorDialog';
@@ -46,7 +47,7 @@ export interface CardCreatorMountController {
   unmount: () => void;
 }
 
-const SHADOW_CSS = allModuleCss;
+const SHADOW_CSS = [...allModuleCss, buildTokenSpanCssForShadow()];
 
 /**
  * Mount the Card Creator dialog into a fixed full-viewport shadow host.

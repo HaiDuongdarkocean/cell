@@ -30,6 +30,29 @@ function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
   return span;
 }
 
+function applyTokenClasses(span: HTMLElement, token: Token, options: TokenSpanBindOptions): void {
+  for (const cls of [...span.classList]) {
+    if (cls.startsWith(`${TOKEN_CLASS}--status-`) || cls.startsWith(`${TOKEN_CLASS}--frequency-`)) {
+      span.classList.remove(cls);
+    }
+  }
+  if (token.status) {
+    span.classList.add(`${TOKEN_CLASS}--status-${token.status}`);
+  }
+  if (token.frequencyBand && token.frequencyBand !== 'none') {
+    span.classList.add(`${TOKEN_CLASS}--frequency-${token.frequencyBand}`);
+  }
+  if (!options.showStatus) {
+    span.classList.add(`${TOKEN_CLASS}--status-off`);
+  }
+  // The showFrequency toggle controls the frequency layer for all tokens;
+  // known/ignore words still keep their status styling, but frequency can be
+  // shown when the user wants 100% frequency coverage.
+  if (!options.showFrequency) {
+    span.classList.add(`${TOKEN_CLASS}--frequency-off`);
+  }
+}
+
 function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBindOptions): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = TOKEN_CLASS;
@@ -67,24 +90,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
     });
   }
 
-  if (token.status) {
-    span.classList.add(`js-cell-token--status-${token.status}`);
-  }
-
-  if (token.frequencyBand && token.frequencyBand !== 'none') {
-    span.classList.add(`js-cell-token--frequency-${token.frequencyBand}`);
-  }
-
-  if (!options.showStatus) {
-    span.classList.add('js-cell-token--status-off');
-  }
-
-  // The showFrequency toggle controls the frequency layer for all tokens;
-  // known/ignore words still keep their status styling, but frequency can be
-  // shown when the user wants 100% frequency coverage.
-  if (!options.showFrequency) {
-    span.classList.add('js-cell-token--frequency-off');
-  }
+  applyTokenClasses(span, token, options);
 
   span.classList.add(WORD_CLASS);
 
@@ -142,6 +148,34 @@ export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions)
 
   parent.replaceChild(fragment, sourceNode);
   block.isBound = true;
+}
+
+/** Restyle a bound block in place: recompute status/frequency classes on the
+ *  rendered word spans without replacing DOM nodes, so an active text
+ *  selection over the tokens survives status/metadata updates. Returns false
+ *  when the rendered spans are missing or no longer match the block's tokens
+ *  (caller should fall back to unbind + bind). */
+export function restyleTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): boolean {
+  if (!block.isBound || !block.tokens) return false;
+  const tokens = [...block.tokens]
+    .sort((a, b) => a.start - b.start)
+    .filter((token) => !token.isSeparator);
+  const spans = Array.from(
+    block.element.querySelectorAll<HTMLElement>(`.${TOKEN_CLASS}[data-cell-block-id="${block.id}"]`),
+  ).filter((el) => !el.classList.contains(SEPARATOR_CLASS));
+  if (spans.length !== tokens.length) return false;
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]!;
+    const token = tokens[i]!;
+    if (
+      span.getAttribute('data-cell-start') !== String(token.start) ||
+      span.getAttribute('data-cell-end') !== String(token.end)
+    ) {
+      return false;
+    }
+    applyTokenClasses(span, token, options);
+  }
+  return true;
 }
 
 /** Unbind a block: restore the original source node. */

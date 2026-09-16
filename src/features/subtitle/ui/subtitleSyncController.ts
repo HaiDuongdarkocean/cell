@@ -115,11 +115,18 @@ export class SubtitleSyncController {
 
   // === Auto source ===
 
-  setAutoMatches(target: SubtitleForOverlayResult[], native: SubtitleForOverlayResult[]): void {
-    this.targetMatches = target;
-    this.nativeMatches = native;
+  private sortAutoMatches(matches: SubtitleForOverlayResult[]): SubtitleForOverlayResult[] {
+    return [...matches].sort((a, b) => Number(!!a.isAsr) - Number(!!b.isAsr));
+  }
 
-    this.autoTargetItems = target.map((m, i) => ({
+  setAutoMatches(target: SubtitleForOverlayResult[], native: SubtitleForOverlayResult[]): void {
+    const sortedTarget = this.sortAutoMatches(target);
+    const sortedNative = this.sortAutoMatches(native);
+
+    this.targetMatches = sortedTarget;
+    this.nativeMatches = sortedNative;
+
+    this.autoTargetItems = sortedTarget.map((m, i) => ({
       id: `auto-target-${i}`,
       name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
       format: m.format,
@@ -129,7 +136,7 @@ export class SubtitleSyncController {
       isAsr: m.isAsr,
     }));
 
-    this.autoNativeItems = native.map((m, i) => ({
+    this.autoNativeItems = sortedNative.map((m, i) => ({
       id: `auto-native-${i}`,
       name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
       format: m.format,

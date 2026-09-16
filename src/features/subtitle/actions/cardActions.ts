@@ -14,8 +14,21 @@ import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { showProgressToast } from '@/features/subtitle/ui/subtitleUI';
 import { t } from '@/shared/i18n';
-import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-
+import { sendMessage } from '@/shared/lib/chrome-apis';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { buildPrefill } from '@/features/dictionaryPopup/ui/buildCandidatePrefill';
+import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
+import type {
+  AudioItem,
+  FetchCommunityAudioResponse,
+  FetchImagesResponse,
+  ImageItem,
+  LookupResult,
+  PopupCardCreatorPrefill,
+  TtsFetchAudioResponse,
+} from '@/entities/dictionary';
+import type { MessageResponse } from '@/entities/message';
+import type { CardCreatorPrefill, CardCreatorQueueItem } from '@/features/cardCreator/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import type { SubtitleActionContext } from './subtitleActionContext';
@@ -75,6 +88,174 @@ export async function buildSubtitleQueue(targetText: string, sourceLang: string)
     const status = statusMap.get(term) ?? 'unknown';
     return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
   });
+}
+
+async function translateSentence(
+  text: string,
+  sourceLang: string,
+  targetLang: string,
+): Promise<string | undefined> {
+  try {
+    const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
+      type: MESSAGE_TYPES.TRANSLATE,
+      payload: { tabId: 0, text, sl: sourceLang, tl: targetLang },
+    });
+    if (res?.success && res.data?.translated?.length) {
+      return res.data.translated.join(' ');
+    }
+  } catch { /* non-fatal */ }
+  return undefined;
+}
+
+async function fetchWordAudioItems(term: string, langCode: string): Promise<readonly AudioItem[]> {
+  try {
+    const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+      type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+      payload: { tabId: 0, term, langCode, kind: 'word' },
+    });
+    if (res?.success && res.data?.items) {
+      const wordItems = res.data.items.filter((a) => (a.url || a.audioBytes) && a.kind === 'word');
+      if (wordItems.length > 0) return wordItems;
+    }
+  } catch { /* non-fatal */ }
+
+  try {
+    const ttsRes = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+      type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+      payload: { tabId: 0, text: term, langCode },
+    });
+    if (ttsRes?.success && ttsRes.data?.url) {
+      return [{
+        id: `tts-auto-${term}-${langCode}`,
+        kind: 'word',
+        source: 'cloud-tts',
+        label: 'TTS',
+        state: 'idle',
+        url: ttsRes.data.url,
+        defaultSelected: true,
+      }];
+    }
+  } catch { /* non-fatal */ }
+
+  return [];
+}
+
+async function fetchImageItems(term: string, langCode: string): Promise<readonly ImageItem[]> {
+  try {
+    const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
+      type: MESSAGE_TYPES.FETCH_IMAGES,
+      payload: { tabId: 0, term, langCode, maxResults: 8 },
+    });
+    if (res?.success && res.data?.items) {
+      return res.data.items;
+    }
+  } catch { /* non-fatal */ }
+  return [];
+}
+
+async function lookupSingleWord(
+  term: string,
+  sourceLang: string,
+  targetText: string,
+): Promise<LookupResult | null> {
+  const requestId = `auto-${term}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    const res = await sendMessage<MessageResponse<LookupResult[]>>({
+      type: MESSAGE_TYPES.LOOKUP_REQUEST,
+      payload: {
+        requestId,
+        request: {
+          term,
+          langCode: sourceLang,
+          contextSentence: targetText,
+          cursorOffset: 0,
+          fallback: true,
+        },
+      },
+    });
+    if (res?.success && res.data && res.data.length > 0) {
+      return res.data[0]!;
+    }
+  } catch { /* non-fatal */ }
+  return null;
+}
+
+interface SingleWordContext {
+  readonly queue: readonly CardCreatorQueueItem[];
+  readonly prefill: CardCreatorPrefill;
+  readonly selection: PopupCardCreatorPrefill;
+}
+
+function fallbackLookupResult(term: string, langCode: string): LookupResult {
+  return {
+    term,
+    langCode,
+    reading: '',
+    readingKind: 'none',
+    frequency: null,
+    status: 'unknown',
+    partsOfSpeech: [],
+    definitions: [],
+    rawDefinitions: [],
+    detectedPhrase: null,
+    matchSource: 'fallback',
+  };
+}
+
+async function buildSingleWordContext(
+  term: string,
+  targetText: string,
+  nativeText: string | undefined,
+  sourceLang: string,
+  targetLang: string,
+): Promise<SingleWordContext> {
+  const result = await lookupSingleWord(term, sourceLang, targetText);
+  const safeResult = result ?? fallbackLookupResult(term, sourceLang);
+
+  const [audioItems, imageItems, translation] = await Promise.all([
+    fetchWordAudioItems(safeResult.term, safeResult.langCode),
+    fetchImageItems(safeResult.term, safeResult.langCode),
+    nativeText ? Promise.resolve(nativeText) : translateSentence(targetText, sourceLang, targetLang),
+  ]);
+
+  const translationText = nativeText || translation || '';
+  const popupPrefill = buildPrefill(
+    safeResult,
+    safeResult.definitions,
+    targetText,
+    translationText,
+    audioItems,
+    new Map<string, boolean>(),
+    imageItems,
+    new Map<string, boolean>(),
+    !!translationText,
+  );
+
+  const definitionsText = formatDefinitions(popupPrefill.definitions);
+  const wordAudioItems = (popupPrefill.audioItems ?? []).filter(
+    (item) => item.kind === 'word' && (popupPrefill.selectedAudioIds ?? []).includes(item.id),
+  );
+  const imageItemsSelected = (popupPrefill.imageItems ?? []).filter(
+    (item) => popupPrefill.selectedImageIds?.includes(item.id),
+  );
+  const prefill: CardCreatorPrefill = {
+    targetWord: popupPrefill.term,
+    definitions: definitionsText,
+    sentence: popupPrefill.contextSentence,
+    sentenceTranslation: popupPrefill.translation,
+    wordAudioUrls: popupPrefill.wordAudioUrls,
+    imageUrls: popupPrefill.imageUrls,
+    wordAudioItems,
+    imageItems: imageItemsSelected,
+  };
+
+  const queue: CardCreatorQueueItem[] = [{
+    term: popupPrefill.term,
+    definitions: definitionsText,
+    status: safeResult.status === 'tracking' ? 'tracking' : 'unknown',
+  }];
+
+  return { queue, prefill, selection: popupPrefill };
 }
 
 /** ADR-026: Handle Card Creator action (quick-update, edit-card, or update-current).
@@ -145,8 +326,27 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   const targetText = cardCtx.cue?.targetText ?? '';
   const queue = await buildSubtitleQueue(targetText, sourceLang);
 
+  // If there is exactly one unknown/tracking word, perform the dictionary
+  // lookup in advance so the Card Creator can be pre-filled without forcing
+  // the user to open the integrated Dictionary and select the term.
+  if (queue.length === 1) {
+    const nativeText = cardCtx.cue?.nativeText;
+    const singleWordCtx = await buildSingleWordContext(
+      queue[0].term,
+      targetText,
+      nativeText,
+      sourceLang,
+      targetLang,
+    );
+    ctx.webTextCtrl.sendToCard(
+      { ...cardCtx, initialMedia, queue: singleWordCtx.queue, prefill: singleWordCtx.prefill },
+      initialAction,
+      singleWordCtx.selection,
+    );
+    chip.dismiss();
+    return;
+  }
+
   ctx.webTextCtrl.sendToCard({ ...cardCtx, initialMedia, queue }, initialAction);
   chip.dismiss();
 }
-
-

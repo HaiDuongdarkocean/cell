@@ -30,6 +30,28 @@ jest.mock('../media/mediaFile', () => ({
     data: new ArrayBuffer(0),
     sourceUrl: url,
   })),
+  mediaFromAudioItem: jest.fn(async (item: { id: string; audioBytes?: Uint8Array; url?: string }) =>
+    item.audioBytes
+      ? {
+          kind: 'audio',
+          filename: 'cell-audio.wav',
+          mimeType: 'audio/wav',
+          data: item.audioBytes.buffer,
+          sourceUrl: `audio-bytes://${item.id}`,
+        }
+      : null,
+  ),
+  mediaFromImageItem: jest.fn(async (item: { src: string }) =>
+    item.src
+      ? {
+          kind: 'image',
+          filename: 'cell-image.png',
+          mimeType: 'image/png',
+          data: new ArrayBuffer(0),
+          sourceUrl: item.src,
+        }
+      : null,
+  ),
 }));
 
 jest.mock('../media/translation', () => ({
@@ -296,7 +318,7 @@ describe('useCardCreatorState queue select', () => {
     expect(useCardCreatorStore.getState().draft.fields.targetWord).toBe('car');
     expect(useCardCreatorStore.getState().draft.fields.definitions).toBe('');
     expect(onQueueTermSelect).toHaveBeenCalledWith('car');
-    expect(lookupMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(lookupMock).toHaveBeenCalledWith('car', 'en', ''));
   });
 
   it('keeps shared cue media when switching queue items', async () => {
@@ -335,10 +357,10 @@ describe('useCardCreatorState queue select', () => {
 
     expect(useCardCreatorStore.getState().queueActiveIndex).toBe(0);
     expect(onQueueTermSelect).toHaveBeenLastCalledWith('apple');
-    expect(lookupMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(lookupMock).toHaveBeenLastCalledWith('apple', 'en', ''));
   });
 
-  it('submit auto-advance notifies the parent with the next queue term', async () => {
+  it('submit does not auto-advance; queue stays on the active term for manual pick', async () => {
     const onQueueTermSelect = jest.fn();
     const { result } = renderHook(() => useCardCreatorState(settings, queueContext, undefined, {
       onQueueTermSelect,
@@ -349,8 +371,70 @@ describe('useCardCreatorState queue select', () => {
       await result.current.submit('add');
     });
 
-    expect(useCardCreatorStore.getState().queueActiveIndex).toBe(1);
-    expect(onQueueTermSelect).toHaveBeenCalledWith('car');
+    expect(useCardCreatorStore.getState().queueActiveIndex).toBe(0);
+    expect(onQueueTermSelect).not.toHaveBeenCalledWith('car');
+  });
+
+  it('prefills a single queue item from a popup/subtitle single-word lookup', async () => {
+    const singleWordCtx: CardCreatorOpenContext = {
+      sourceLang: 'en',
+      targetLang: 'vi',
+      queue: [{ term: 'stanford', definitions: '', status: 'unknown' }],
+      prefill: {
+        targetWord: 'stanford',
+        definitions: '',
+        sentence: 'This is stanford.',
+        sentenceTranslation: 'Đây là stanford.',
+        wordAudioUrls: ['https://audio/stanford.mp3'],
+        imageUrls: ['https://img/stanford.png'],
+      },
+    };
+    const { result } = renderHook(() => useCardCreatorState(settings, singleWordCtx));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    const fields = useCardCreatorStore.getState().draft.fields;
+    expect(fields.targetWord).toBe('stanford');
+    expect(fields.sentence).toBe('This is stanford.');
+    expect(fields.sentenceTranslation).toBe('Đây là stanford.');
+    expect(mediaSourceUrls(fields.wordAudios)).toEqual(['https://audio/stanford.mp3']);
+    expect(mediaSourceUrls(fields.images)).toEqual(['https://img/stanford.png']);
+  });
+
+  it('converts AudioItem and ImageItem objects into MediaFile entries', async () => {
+    const singleWordCtx: CardCreatorOpenContext = {
+      sourceLang: 'en',
+      targetLang: 'vi',
+      queue: [{ term: 'stanford', definitions: '', status: 'unknown' }],
+      prefill: {
+        targetWord: 'stanford',
+        definitions: '',
+        sentence: 'This is stanford.',
+        sentenceTranslation: 'Đây là stanford.',
+        wordAudioUrls: ['audio-bytes://a-stanford'],
+        imageUrls: ['https://img/stanford.png'],
+        wordAudioItems: [{
+          id: 'a-stanford',
+          kind: 'word',
+          source: 'community',
+          label: 'Forvo',
+          state: 'idle',
+          audioBytes: new Uint8Array([0x52, 0x49, 0x46, 0x46]),
+          defaultSelected: true,
+        }],
+        imageItems: [{
+          id: 'i-stanford',
+          alt: 'stanford',
+          src: 'https://img/stanford.png',
+          defaultSelected: true,
+        }],
+      },
+    };
+    const { result } = renderHook(() => useCardCreatorState(settings, singleWordCtx));
+    await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+    const fields = useCardCreatorStore.getState().draft.fields;
+    await waitFor(() => expect(mediaSourceUrls(fields.wordAudios)).toEqual(['audio-bytes://a-stanford']));
+    await waitFor(() => expect(mediaSourceUrls(fields.images)).toEqual(['https://img/stanford.png']));
   });
 });
 

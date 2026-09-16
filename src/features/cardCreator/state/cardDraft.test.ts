@@ -201,7 +201,7 @@ describe('cardDraft', () => {
       expect(draft.fields.targetWord).toBe('');
       expect(draft.fields.sentence).toBe('');
       expect(draft.tags).toBe('');
-      expect(draft.mediaUpdateMode).toBe('overwrite');
+      expect(draft.mediaUpdateMode).toBe('skip');
       expect(draft.fields.images).toEqual([]);
     });
   });
@@ -352,7 +352,7 @@ describe('cardDraft', () => {
       expect(plan.wordAudios.orderedUrls).toEqual(['a.mp3']);
     });
 
-    it('diff/merges audio URLs', () => {
+    it('diff/merges word audio URLs but keeps sentence audio single', () => {
       const draft: CardDraft = {
         ...makeDraft(),
         mediaUpdateMode: 'append',
@@ -370,8 +370,31 @@ describe('cardDraft', () => {
       const { media: plan } = mergePrefillIntoDraft(draft, prefill);
       expect(plan.wordAudios.orderedUrls).toEqual(['b.mp3', 'c.mp3']);
       expect(mediaUrlsToFetch(plan.wordAudios)).toEqual(['c.mp3']);
-      expect(plan.sentenceAudios.orderedUrls).toEqual(['s2.mp3']);
-      expect(mediaUrlsToFetch(plan.sentenceAudios)).toEqual(['s2.mp3']);
+      // Sentence audio is a single slot: an existing audio is protected and a
+      // new one is not appended.
+      expect(plan.sentenceAudios.orderedUrls).toEqual(['s1.mp3']);
+      expect(mediaUrlsToFetch(plan.sentenceAudios)).toEqual([]);
+    });
+
+    it('protects a recorded sentence audio from being overwritten or appended', () => {
+      const recorded = unmappedMedia('audio');
+      const draft: CardDraft = {
+        ...makeDraft(),
+        mediaUpdateMode: 'append',
+        fields: {
+          ...makeDraft().fields,
+          sentenceAudios: [recorded],
+        },
+      };
+      const prefill = {
+        targetWord: 'hello',
+        sentenceAudioUrls: ['s2.mp3'],
+      };
+      const { media: plan } = mergePrefillIntoDraft(draft, prefill);
+      expect(plan.sentenceAudios.orderedUrls).toEqual([]);
+      expect(mediaUrlsToFetch(plan.sentenceAudios)).toEqual([]);
+      expect(plan.sentenceAudios.unmapped).toEqual([recorded]);
+      expect(buildMergedMediaArray(plan.sentenceAudios, {})).toEqual([recorded]);
     });
 
     it('is idempotent for identical inputs', () => {

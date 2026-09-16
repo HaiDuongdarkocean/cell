@@ -19,7 +19,7 @@
   bottom: var(--space-1);
   width: var(--ink-w, 0px);
   height: var(--space-0-5);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-none);
   background: var(--color-primary);
 }
 
@@ -39,6 +39,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   border-bottom: var(--space-0-5) solid transparent;
+  border-radius: var(--radius-none);
   padding-bottom: var(--space-0-5);
   transition: color var(--duration-fast) var(--ease-in-out),
     border-color var(--duration-fast) var(--ease-in-out);
@@ -51,7 +52,7 @@
 .list .tab:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--color-border-focus);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-none);
 }
 
 /* Active tab only changes text color — the underline is the container's

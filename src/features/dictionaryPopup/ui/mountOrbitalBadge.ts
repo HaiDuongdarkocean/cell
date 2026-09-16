@@ -144,12 +144,10 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   // If already in fullscreen when mount is called, attach to fullscreen element.
   if (document.fullscreenElement && document.fullscreenElement !== mount.host.parentElement) {
-    console.log('[DEBUG orbital] mount while fullscreen, moving host');
     document.fullscreenElement.appendChild(mount.host);
   }
 
   const destroy = (): void => {
-    console.log('[DEBUG orbital] destroy, host connected:', mount.host.isConnected);
     document.removeEventListener('pointerdown', onDocPointerDown, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);

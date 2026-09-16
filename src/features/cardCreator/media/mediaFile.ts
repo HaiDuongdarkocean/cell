@@ -9,6 +9,7 @@
  */
 
 import type { MediaFile, MediaKind } from '@/entities/media';
+import type { AudioItem, ImageItem } from '@/entities/dictionary';
 
 export type { MediaFile, MediaKind };
 
@@ -64,6 +65,7 @@ const MIME_TO_EXT: Record<string, string> = {
   'audio/mpeg': 'mp3',
   'audio/mp3': 'mp3',
   'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
   'audio/ogg': 'ogg',
   'audio/webm': 'webm',
   'audio/aac': 'aac',
@@ -96,11 +98,33 @@ function withTimeout<T>(p: Promise<T>): Promise<T> {
  *  (Forvo, Google Images) into MediaFile entries for the Card Creator draft.
  *  Throws on fetch failure or non-ok response — caller handles (skip item).
  *  ponytail: best-effort — caller wraps in try/catch and skips on failure. */
+/** Parse a data: or blob: URL into a MediaFile without a network round-trip.
+ *  Blob URLs cannot be fetched cross-context; this returns null so the caller
+ *  can fall back to the source bytes if available. */
+function mediaFromDataOrBlobUrl(url: string, kind: MediaKind): MediaFile | null {
+  if (url.startsWith('data:')) {
+    const mimeType = url.slice(5, url.indexOf(';'));
+    const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+    const prefix = kind === 'image' ? 'img' : 'audio';
+    return {
+      kind,
+      filename: generateMediaFilename(prefix, ext),
+      mimeType,
+      data: dataUrlToArrayBuffer(url),
+      sourceUrl: url,
+    };
+  }
+  return null;
+}
+
 export async function fetchUrlAsMediaFile(
   url: string,
   kind: MediaKind,
   fetchFn: (input: string, init?: RequestInit) => Promise<Response> = fetch,
 ): Promise<MediaFile> {
+  const dataFile = mediaFromDataOrBlobUrl(url, kind);
+  if (dataFile) return dataFile;
+
   const response = await fetchFn(url, { signal: timeoutSignal() });
   if (!response.ok) {
     throw new Error(`Media fetch failed: ${response.status} ${url}`);
@@ -160,11 +184,44 @@ async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<Me
 
 /** Fetch a media URL as a MediaFile. Tries content-script fetch first (fast,
  *  works for same-origin + permissive CSP), falls back to background fetch
- *  (bypasses strict CSP via FETCH_MEDIA_URL message). */
+ *  (bypasses strict CSP via FETCH_MEDIA_URL message).
+ *  data: URLs are parsed locally, avoiding CSP/fetch issues. */
 export async function fetchMediaFile(url: string, kind: MediaKind): Promise<MediaFile> {
+  const dataFile = mediaFromDataOrBlobUrl(url, kind);
+  if (dataFile) return dataFile;
+
   try {
     return await fetchUrlAsMediaFile(url, kind);
   } catch {
     return fetchMediaViaBackground(url, kind);
   }
+}
+
+/** Build a MediaFile from an AudioItem, using audioBytes or url. */
+export async function mediaFromAudioItem(item: AudioItem): Promise<MediaFile | null> {
+  if (item.audioBytes?.length) {
+    const ext = 'wav';
+    const sourceUrl = `audio-bytes://${item.id}`;
+    const data = new ArrayBuffer(item.audioBytes.length);
+    new Uint8Array(data).set(item.audioBytes);
+    return {
+      kind: 'audio',
+      filename: generateMediaFilename('audio', ext),
+      mimeType: 'audio/wav',
+      data,
+      sourceUrl,
+    };
+  }
+  if (!item.url) return null;
+  const dataFile = mediaFromDataOrBlobUrl(item.url, 'audio');
+  if (dataFile) return dataFile;
+  return fetchMediaFile(item.url, 'audio').catch(() => null);
+}
+
+/** Build a MediaFile from an ImageItem, using its src URL. */
+export async function mediaFromImageItem(item: ImageItem): Promise<MediaFile | null> {
+  if (!item.src) return null;
+  const dataFile = mediaFromDataOrBlobUrl(item.src, 'image');
+  if (dataFile) return dataFile;
+  return fetchMediaFile(item.src, 'image').catch(() => null);
 }

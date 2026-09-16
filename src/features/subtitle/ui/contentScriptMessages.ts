@@ -275,6 +275,26 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           // Inline load status: native language label for the translating state.
           const nativeLabel = isoCodeToLabel(tl);
           const label = nativeLabel ? nativeLabel.charAt(0).toUpperCase() + nativeLabel.slice(1) : tl;
+          // Snapshot target info and create the translated manager entry upfront
+          // so the native tab shows the translation as a selectable track.
+          const snapshot = syncController.getGenerateNativeSnapshot();
+          const translatedItem: import('./subtitlePanelModel').SubtitlePanelItem = {
+            id: 'translated-native',
+            name: `${label} (translated)`,
+            format: snapshot.targetFormat,
+            size: snapshot.targetSize,
+            source: 'translated',
+            role: 'native',
+            index: 0,
+          };
+          syncController.setTranslatedNativeSlot({
+            replacedSource: snapshot.replacedSource,
+            replacedIndex: snapshot.replacedIndex,
+            item: translatedItem,
+            cues: [],
+            runId: Date.now(),
+          });
+          ctx.refreshPanel('native');
           // Clear any previous prefill (SPA nav or re-trigger)
           ctx.getTranslatePrefill()?.clear();
           const translatePrefill = new BackgroundPrefillController({
@@ -286,6 +306,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
               // Update panel + nav cluster with bilingual cues
               ctx.setBilingualCues(mergeCuesForPanel(targetCues, translatedCues));
               syncController.latestTargetCues = targetCues;
+              syncController.setTranslatedNativeCues(translatedCues);
               // updateCues(targetCues, translatedCues);
               broadcastCues(ctx.getBilingualCues());
               useCuesStore.getState().setLoadStatus('native', { state: 'translating', languageLabel: label, source: 'translated', progress: { current: ctx.getTranslatePrefill()?.cacheSize ?? 0, total: targetCues.length } });

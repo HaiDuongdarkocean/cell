@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, Icon, Popover } from '@/shared/ui';
+import { Button, Icon, ListItem, Popover } from '@/shared/ui';
 import { PLAYBACK_SPEEDS, type PlaybackSpeed } from '@/entities/studyMode/types';
 import styles from './SpeedPill.module.css';
 
@@ -9,6 +9,7 @@ export interface SpeedPillProps {
 }
 
 const SPEEDS: readonly PlaybackSpeed[] = [...PLAYBACK_SPEEDS];
+const MENU_MAX_HEIGHT = 292;
 
 function formatSpeed(speed: PlaybackSpeed): string {
   return `${String(speed)}x`;
@@ -49,25 +50,23 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
   }, [isOpen]);
 
   const SpeedList = (): React.JSX.Element => (
-    <>
+    <div className={styles.speedList} data-cell-id="speed-list" data-no-lookup role="presentation">
       {SPEEDS.map((s) => (
-        <Button
+        <ListItem
           key={s}
           id={speedOptionId(s)}
-          size="sm"
-          variant={s === speed ? 'primary' : 'secondary'}
-          shape="pill"
-          ripple={false}
           role="option"
           aria-selected={s === speed}
-          className={styles.speedOption}
+          active={s === speed}
+          className={styles.speedItem}
           data-cell-id={speedOptionId(s)}
+          trailing={s === speed ? <Icon name="check" size="sm" /> : undefined}
           onClick={() => selectSpeed(s)}
         >
           {formatSpeed(s)}
-        </Button>
+        </ListItem>
       ))}
-    </>
+    </div>
   );
 
   const value = (
@@ -87,7 +86,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
   );
 
   return (
-    <div className={styles.pill} data-cell-id="speed-pill">
+    <div className={styles.pill} data-cell-id="speed-pill" data-no-lookup>
       <Button
         size="sm"
         variant="secondary"
@@ -120,6 +119,7 @@ export function SpeedPill({ speed, onChange }: SpeedPillProps): React.JSX.Elemen
         aria-label="Playback speed"
         aria-activedescendant={speedOptionId(speed)}
         className={styles.popover}
+        menuMaxHeight={MENU_MAX_HEIGHT}
       >
         <SpeedList />
       </Popover>

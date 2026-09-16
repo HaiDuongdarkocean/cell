@@ -145,6 +145,42 @@ describe('createSubtitleTokenizeController', () => {
     controller.destroy();
   });
 
+  it('applies status to every token inside a native selection even while the pointer hovers the last token', async () => {
+    const { target, cues, controller } = setup();
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    const world = target.querySelector('[data-cell-term="world"]') as HTMLElement | null;
+    expect(hello).not.toBeNull();
+    expect(world).not.toBeNull();
+
+    world!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    const range = document.createRange();
+    range.setStartBefore(hello!);
+    range.setEndAfter(world!);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('2')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'tracking');
+
+    window.getSelection()?.removeAllRanges();
+    controller.destroy();
+  });
+
   it('applies status through handleStatusKey for player-mode keyboard routing', async () => {
     const { target, cues, controller } = setup();
 

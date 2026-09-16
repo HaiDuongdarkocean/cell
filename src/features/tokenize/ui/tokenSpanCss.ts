@@ -1,4 +1,4 @@
-import { DEFAULT_LIGHT_TOKENS, DEFAULT_DARK_TOKENS, STATIC_TOKENS } from '@/shared/lib/tokens';
+import { DEFAULT_LIGHT_TOKENS, DEFAULT_DARK_TOKENS, STATIC_TOKENS, type TokenRecord } from '@/shared/lib/tokens';
 
 const TOKEN_STYLE_ID = 'cell-token-span-style';
 
@@ -48,12 +48,17 @@ const CELL_TOKEN_MAP: Record<string, string> = {
  *  `--overlay-text-rgb` token (injected via STATIC_TOKENS_NEEDED). */
 const OVERLAY_TEXT_RGBA = 'rgba(var(--overlay-text-rgb), 0.45)';
 
+function resolveMappedTokenValue(tokens: TokenRecord, designName: string): string {
+  const value = tokens[designName] ?? '';
+  return value.replace(/var\((--[\w-]+)\)/g, (reference, dependency: string) => tokens[dependency] ?? reference);
+}
+
 function buildVariables(rootSelector = ':root'): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)
-    .map(([cellName, designName]) => `  ${cellName}: ${DEFAULT_LIGHT_TOKENS[designName]};`)
+    .map(([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_LIGHT_TOKENS, designName)};`)
     .join('\n');
   const darkDecls = Object.entries(CELL_TOKEN_MAP)
-    .map(([cellName, designName]) => `  ${cellName}: ${DEFAULT_DARK_TOKENS[designName]};`)
+    .map(([cellName, designName]) => `  ${cellName}: ${resolveMappedTokenValue(DEFAULT_DARK_TOKENS, designName)};`)
     .join('\n');
   // Static tokens (spacing/radius/shadow/border-width/motion) are theme-
   // independent; inject once into :root so var() resolves on host pages where

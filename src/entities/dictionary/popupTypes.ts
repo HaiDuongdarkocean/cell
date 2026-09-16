@@ -363,4 +363,8 @@ export interface DictionaryPanelPrefill extends Omit<PopupCardCreatorPrefill, 't
   readonly queue?: readonly CardCreatorQueueItem[];
   /** Hint for initial focus/state. */
   readonly initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+  /** True while media capture is still in flight — forwarded to
+   *  CardCreatorOpenContext.mediaPending so submit stays disabled until the
+   *  follow-up context lands. */
+  readonly mediaPending?: boolean;
 }

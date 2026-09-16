@@ -634,7 +634,11 @@ function finishVideoInit(video: HTMLVideoElement): void {
   currentPendingVideo = null;
   currentOverlayCleanup?.();
   currentVideo = video;
-  currentOverlayCleanup = initContentScriptController(video, ensureWebTextCtrl());
+  currentOverlayCleanup = initContentScriptController(
+    video,
+    ensureWebTextCtrl(),
+    (key) => webTokenizeCtrl?.handleStatusKey?.(key) ?? false,
+  );
   runPageScan();
 }
 

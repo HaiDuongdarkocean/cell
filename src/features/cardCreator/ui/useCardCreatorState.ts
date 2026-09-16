@@ -38,7 +38,13 @@ import {
   type MediaMergePlan,
 } from '../state/cardDraft';
 import { t, type MessageKey } from '@/shared/i18n';
-import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
+import {
+  fetchMediaFile,
+  mediaFromAudioItem,
+  mediaFromImageItem,
+  type MediaFile,
+  type MediaKind,
+} from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
@@ -155,8 +161,12 @@ export interface CardCreatorState {
   /** Whether the queue sidebar is open (toggle state). Defaults to true when
    *  N ≥ 2, false when N ≤ 1. Persists across auto-advance. */
   queueSidebarOpen: boolean;
+  /** Source language of the current card content. */
+  sourceLang: string;
   /** Select a queue item by index (switches prefill). */
   selectQueueItem: (index: number) => void;
+  /** Lookup a term in the integrated Dictionary (no-op in standalone dialog mode). */
+  lookupTerm: (term: string) => void;
   /** Delete a queue item by index. Shows undo toast for 3s. */
   deleteQueueItem: (index: number) => void;
   /** Undo the last queue item deletion (within 3s window). */
@@ -210,6 +220,17 @@ export interface UseCardCreatorStateOptions {
   /** Called when the user selects a queue item so the parent can drive
    *  a Dictionary lookup for that term. Only used in integrated panel mode. */
   onQueueTermSelect?: (term: string) => void;
+}
+
+function isSameOpenContextSession(a: OpenContext, b: OpenContext): boolean {
+  return (
+    a.video === b.video &&
+    a.cue === b.cue &&
+    a.sourceLang === b.sourceLang &&
+    a.targetLang === b.targetLang &&
+    a.initialMedia === b.initialMedia &&
+    a.queue === b.queue
+  );
 }
 
 export function useCardCreatorState(
@@ -405,25 +426,21 @@ export function useCardCreatorState(
     const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
     const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
     const prefill = ctx.prefill;
-    // Initialize queue from context. N ≥ 1 uses the first item as prefill;
-    // the sidebar is only shown when N ≥ 2.
+    // Initialize queue from context. N ≥ 1 uses the first item as prefill when
+    // no prefill target word is provided; the sidebar is only shown when N ≥ 2.
     const ctxQueue = ctx.queue;
     if (ctxQueue && ctxQueue.length >= 1) {
       store.setQueueItems(ctxQueue);
       store.setQueueSidebarOpen(ctxQueue.length >= 2);
-      // Prefer the queue item matching the resolved prefill term. When the user
-      // selects a queue item, the parent drives a Dictionary lookup and then
-      // pushes a prefill back with that term; we want the queue to stay aligned.
-      const activeIndex = Math.max(
-        0,
-        ctxQueue.findIndex(
-          (item) => item.term.toLowerCase() === prefill?.targetWord?.toLowerCase(),
-        ) ?? 0,
-      );
+      const prefillTerm = prefill?.targetWord?.trim() ?? '';
+      const matchIndex = prefillTerm
+        ? ctxQueue.findIndex((item) => item.term.toLowerCase() === prefillTerm.toLowerCase())
+        : -1;
+      const activeIndex = matchIndex >= 0 ? matchIndex : 0;
       const activeItem = ctxQueue[activeIndex]!;
       store.setQueueActiveIndex(activeIndex);
-      const usePrefillDefinitions =
-        activeItem.term.toLowerCase() === prefill?.targetWord?.toLowerCase();
+      if (activeItem.term) onQueueTermSelectRef.current?.(activeItem.term);
+      const usePrefillDefinitions = activeItem.term.toLowerCase() === prefillTerm.toLowerCase();
       store.setDraft({
         noteType: restoredDraft?.noteType ?? defaultNoteType,
         deck: restoredDraft?.deck ?? defaultDeck,
@@ -468,49 +485,49 @@ export function useCardCreatorState(
     }
 
     // Fetch prefill media URLs (word audio, sentence audio + images from popup
-    // dictionary) asynchronously and append to the correct draft fields. Best-effort
-    // — failures are skipped (toast warning), the dialog still opens with text fields.
-    // Runs after setDraft so the form renders immediately.
-    const hasMedia = (prefill?.wordAudioUrls?.length ?? 0) > 0
+    // dictionary) asynchronously and merge them into the draft using the user's
+    // chosen `mediaUpdateMode`. Best-effort — failures are skipped (toast warning),
+    // the dialog still opens with text fields. Runs after setDraft so the form
+    // renders immediately.
+    const hasMedia = (prefill?.wordAudioItems?.length ?? 0) > 0
+      || (prefill?.imageItems?.length ?? 0) > 0
+      || (prefill?.wordAudioUrls?.length ?? 0) > 0
       || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
       || (prefill?.imageUrls?.length ?? 0) > 0;
     if (hasMedia) {
       void (async () => {
-        const fetchedWordAudios: MediaFile[] = [];
-        const fetchedSentenceAudios: MediaFile[] = [];
-        const fetchedImages: MediaFile[] = [];
-        for (const audioUrl of prefill?.wordAudioUrls ?? []) {
-          try {
-            fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-          } catch {
-            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
-          }
-        }
-        for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
-          try {
-            fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-          } catch {
-            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
-          }
-        }
-        for (const imageUrl of prefill?.imageUrls ?? []) {
-          try {
-            fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
-          } catch {
-            useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
-          }
-        }
-        if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
+        const [preloadedWordAudios, preloadedImages] = await Promise.all([
+          Promise.all((prefill?.wordAudioItems ?? []).map(mediaFromAudioItem)).then((files) =>
+            files.filter((f): f is MediaFile => f !== null)),
+          Promise.all((prefill?.imageItems ?? []).map(mediaFromImageItem)).then((files) =>
+            files.filter((f): f is MediaFile => f !== null)),
+        ]);
+        if (preloadedWordAudios.length > 0 || preloadedImages.length > 0) {
           useCardCreatorStore.getState().setDraft((prev) => ({
             ...prev,
             fields: {
               ...prev.fields,
-              wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
-              sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
-              images: [...prev.fields.images, ...fetchedImages],
+              images: [...prev.fields.images, ...preloadedImages],
+              wordAudios: [...prev.fields.wordAudios, ...preloadedWordAudios],
             },
           }));
         }
+
+        const { media } = mergePrefillIntoDraft(useCardCreatorStore.getState().draft, prefill ?? {});
+        const [fetchedImages, fetchedWordAudios, fetchedSentenceAudios] = await Promise.all([
+          fetchMissingMedia(media.images, 'images'),
+          fetchMissingMedia(media.wordAudios, 'wordAudios'),
+          fetchMissingMedia(media.sentenceAudios, 'sentenceAudios'),
+        ]);
+        useCardCreatorStore.getState().setDraft((prev) => ({
+          ...prev,
+          fields: {
+            ...prev.fields,
+            images: buildMergedMediaArray(media.images, fetchedImages),
+            wordAudios: buildMergedMediaArray(media.wordAudios, fetchedWordAudios),
+            sentenceAudios: buildMergedMediaArray(media.sentenceAudios, fetchedSentenceAudios),
+          },
+        }));
       })();
     }
 
@@ -525,7 +542,7 @@ export function useCardCreatorState(
     if (!prefill) return;
 
     const store = useCardCreatorStore.getState();
-    const { draft: merged, media } = mergePrefillIntoDraft(store.draft, prefill);
+    const { draft: merged } = mergePrefillIntoDraft(store.draft, prefill);
 
     // Update text fields first so the form reflects the new selection quickly.
     store.setDraft((prev) => ({
@@ -543,18 +560,36 @@ export function useCardCreatorState(
 
     store.setCapturingMedia(true);
     try {
+      const [preloadedWordAudios, preloadedImages] = await Promise.all([
+        Promise.all((prefill?.wordAudioItems ?? []).map(mediaFromAudioItem)).then((files) =>
+          files.filter((f): f is MediaFile => f !== null)),
+        Promise.all((prefill?.imageItems ?? []).map(mediaFromImageItem)).then((files) =>
+          files.filter((f): f is MediaFile => f !== null)),
+      ]);
+      if (preloadedWordAudios.length > 0 || preloadedImages.length > 0) {
+        store.setDraft((prev) => ({
+          ...prev,
+          fields: {
+            ...prev.fields,
+            images: [...prev.fields.images, ...preloadedImages],
+            wordAudios: [...prev.fields.wordAudios, ...preloadedWordAudios],
+          },
+        }));
+      }
+
+      const { media: mergedMedia } = mergePrefillIntoDraft(useCardCreatorStore.getState().draft, prefill);
       const [fetchedImages, fetchedWordAudios, fetchedSentenceAudios] = await Promise.all([
-        fetchMissingMedia(media.images, 'images'),
-        fetchMissingMedia(media.wordAudios, 'wordAudios'),
-        fetchMissingMedia(media.sentenceAudios, 'sentenceAudios'),
+        fetchMissingMedia(mergedMedia.images, 'images'),
+        fetchMissingMedia(mergedMedia.wordAudios, 'wordAudios'),
+        fetchMissingMedia(mergedMedia.sentenceAudios, 'sentenceAudios'),
       ]);
       store.setDraft((prev) => ({
         ...prev,
         fields: {
           ...prev.fields,
-          images: buildMergedMediaArray(media.images, fetchedImages),
-          wordAudios: buildMergedMediaArray(media.wordAudios, fetchedWordAudios),
-          sentenceAudios: buildMergedMediaArray(media.sentenceAudios, fetchedSentenceAudios),
+          images: buildMergedMediaArray(mergedMedia.images, fetchedImages),
+          wordAudios: buildMergedMediaArray(mergedMedia.wordAudios, fetchedWordAudios),
+          sentenceAudios: buildMergedMediaArray(mergedMedia.sentenceAudios, fetchedSentenceAudios),
         },
       }));
     } finally {
@@ -568,27 +603,30 @@ export function useCardCreatorState(
   // but we only want to load once per openContext (re-loading resets the draft
   // + would clear auto-captured media).
   //
-  // When `sendToCard` is called again for the same term while the panel is
-  // already open, merge the new prefill into the existing draft instead of
+  // When `sendToCard` is called again for the same cue/session while the panel
+  // is already open, merge the new prefill into the existing draft instead of
   // resetting (ADR-065 diff/merge for repeated sends).
   const loadedForRef = useRef<OpenContext | null>(null);
   useEffect(() => {
     if (!openContext) return;
-    if (loadedForRef.current === openContext) return;
-    loadedForRef.current = openContext;
+    const previous = loadedForRef.current;
+    const isSameSession = previous && isSameOpenContextSession(previous, openContext);
+    const hasPrefillTerm = !!openContext.prefill?.targetWord?.trim();
 
-    const currentDraft = useCardCreatorStore.getState().draft;
-    const isResend =
-      loadStatus === 'ready' &&
-      !openContext.queue?.length &&
-      !!openContext.prefill?.targetWord &&
-      openContext.prefill.targetWord === currentDraft.fields.targetWord;
-
-    if (isResend) {
-      void mergePrefill(openContext);
+    if (isSameSession) {
+      const store = useCardCreatorStore.getState();
+      if (
+        loadedForRef.current !== openContext &&
+        store.loadStatus === 'ready' &&
+        hasPrefillTerm
+      ) {
+        void mergePrefill(openContext);
+      }
+      loadedForRef.current = openContext;
       return;
     }
 
+    loadedForRef.current = openContext;
     const autosaver = autosaverRef.current;
     void autosaver.load().then((restored) => {
       useCardCreatorStore.getState().reset();
@@ -596,7 +634,7 @@ export function useCardCreatorState(
       loadedSettingsKeyRef.current = null;
       void loadData(restored ?? null);
     });
-  }, [openContext, loadData, initialAction, loadStatus, draft.fields.targetWord, mergePrefill]);
+  }, [openContext, loadData, initialAction, mergePrefill]);
 
   useEffect(() => {
     if (!openContext || loadedForRef.current !== openContext) return;
@@ -1180,14 +1218,21 @@ export function useCardCreatorState(
     }
   }, [resolveGenerateSource, updateField]);
 
-  /** Queue item click: switch the active queue item and notify the parent
-   *  so the integrated Dictionary can lookup the term. Definitions and media
-   *  are filled later when the user presses Send to Card in the Dictionary. */
+  /** Queue item click: switch the active queue item, notify the parent so the
+   *  integrated Dictionary shows the term, then run the generate flow so the
+   *  card gets the term's dictionary data + term-bound media. */
   const selectQueueItem = useCallback((index: number) => {
     selectQueueItemStore(index);
     const term = useCardCreatorStore.getState().queueItems[index]?.term;
     if (term) onQueueTermSelectRef.current?.(term);
-  }, [selectQueueItemStore]);
+    void generateAll();
+  }, [selectQueueItemStore, generateAll]);
+
+  /** Look up a term in the integrated Dictionary without changing the queue.
+   *  Used by tokenized sentence preview in the integrated panel. */
+  const lookupTerm = useCallback((term: string) => {
+    if (term.trim()) onQueueTermSelectRef.current?.(term.trim());
+  }, []);
 
   /** Retry the caller once after a schema refresh if the error looks like a
    *  missing deck or note type. */
@@ -1269,25 +1314,6 @@ export function useCardCreatorState(
             await autosaverRef.current.clear();
             success = true;
           }
-          // Queue auto-next: advance to next item or signal queue exhausted.
-          // In integrated mode, the parent Dictionary pane drives the lookup;
-          // in standalone mode, the dialog generates resources itself.
-          const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
-          if (queueItems.length > 0 && queueActiveIndex >= 0) {
-            const nextIndex = queueActiveIndex + 1;
-            if (nextIndex < queueItems.length) {
-              store.selectQueueItem(nextIndex);
-              const nextTerm = queueItems[nextIndex]?.term;
-              if (nextTerm && onQueueTermSelectRef.current) {
-                onQueueTermSelectRef.current(nextTerm);
-              } else {
-                void generateAll();
-              }
-            } else {
-              store.setQueueItems([]);
-              store.setQueueActiveIndex(-1);
-            }
-          }
         } else {
           // Update existing note. Re-query the freshest recent note id +
           // info right before updating — the cached recentNoteId may be
@@ -1336,18 +1362,6 @@ export function useCardCreatorState(
           store.pushToast('success', t('cardCreator.toast.update.success', [updateNoteId]));
           await autosaverRef.current.clear();
           success = true;
-          // Queue auto-next (same as Add path).
-          const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
-          if (queueItems.length > 0 && queueActiveIndex >= 0) {
-            const nextIndex = queueActiveIndex + 1;
-            if (nextIndex < queueItems.length) {
-              store.selectQueueItem(nextIndex);
-              void generateAll();
-            } else {
-              store.setQueueItems([]);
-              store.setQueueActiveIndex(-1);
-            }
-          }
         }
         if (success) {
           onSubmitSuccessRef.current?.();
@@ -1363,7 +1377,7 @@ export function useCardCreatorState(
         useCardCreatorStore.getState().setSubmitting(false);
       }
     },
-    [ankiConnectUrl, buildAnkiFieldsCb, generateAll, refreshRecentNote, runWithSchemaRetry],
+    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote, runWithSchemaRetry],
   );
 
   return {
@@ -1382,7 +1396,9 @@ export function useCardCreatorState(
     queueItems,
     queueActiveIndex,
     queueSidebarOpen,
+    sourceLang: openContext?.sourceLang ?? 'en',
     selectQueueItem,
+    lookupTerm,
     deleteQueueItem,
     undoDeleteQueueItem,
     toggleQueueSidebar,

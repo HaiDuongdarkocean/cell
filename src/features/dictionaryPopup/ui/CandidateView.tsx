@@ -77,6 +77,8 @@ export interface CandidateViewProps {
   readonly defaultActiveTab?: PopupTab | null;
   /** Optional popup selection snapshot used to clone checked state. */
   readonly selectionSnapshot?: PopupSelectionSnapshot;
+  /** Preload media/translation in the integrated panel. */
+  readonly preloadMedia?: boolean;
 }
 
 export function CandidateView({
@@ -91,6 +93,7 @@ export function CandidateView({
   onOpenSettings,
   defaultActiveTab,
   selectionSnapshot,
+  preloadMedia,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -102,6 +105,7 @@ export function CandidateView({
     onStatusChange,
     defaultActiveTab,
     selectionSnapshot,
+    preloadMedia,
   });
 
   const { pronunciation } = usePronunciation({

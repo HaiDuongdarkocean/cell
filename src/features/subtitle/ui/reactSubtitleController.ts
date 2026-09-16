@@ -452,7 +452,9 @@ export class ReactSubtitleController {
     this.engine.onTimeUpdate();
     this.syncFromEngine();
     // Sync CueList in Player Mode with merged bilingual cues.
-    this.panelCues = mergeCuesForPanel(targetCues, nativeCues);
+    this.panelCues = mergeCuesForPanel(targetCues, nativeCues).filter(
+      (c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0,
+    );
     this.mount.setCues(this.panelCues);
     this.studyMode.setCues(this.engine.getTargetCues(), this.getOffsetMs());
     this.syncStudyMode();

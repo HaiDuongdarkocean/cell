@@ -198,7 +198,7 @@ export function createEmptyDraft(noteType: string, deck: string): CardDraft {
     },
     fieldMapping: {},
     tags: '',
-    mediaUpdateMode: 'overwrite',
+    mediaUpdateMode: 'skip',
   };
 }
 
@@ -271,11 +271,15 @@ function mergeTextField(current: string, next: string | undefined, mode: MediaUp
   return next && next !== current ? next : current;
 }
 
-/** Build a merge plan for one media collection. */
+/** Build a merge plan for one media collection.
+ *  `isSingle` treats the collection as a single-value slot: in `append`/`skip`
+ *  it protects an existing user-captured item (e.g. a recorded sentence audio)
+ *  and does not add new URLs. */
 function buildMediaMergePlan(
   current: readonly MediaFile[],
   nextUrls: readonly string[] | undefined,
   mode: MediaUpdateMode,
+  isSingle = false,
 ): MediaMergePlan {
   const ordered = nextUrls ?? [];
   const bySourceUrl: Record<string, MediaFile> = {};
@@ -292,6 +296,12 @@ function buildMediaMergePlan(
   }
 
   if (mode === 'skip' && current.length > 0) {
+    return { keptByUrl: bySourceUrl, orderedUrls: currentSourceUrls, unmapped };
+  }
+
+  // Sentence audio is a single-value slot: protect any existing audio
+  // (especially a user recording with no sourceUrl) from being appended to.
+  if (isSingle && (mode === 'append' || mode === 'skip') && current.length > 0) {
     return { keptByUrl: bySourceUrl, orderedUrls: currentSourceUrls, unmapped };
   }
 
@@ -334,7 +344,7 @@ export function mergePrefillIntoDraft(draft: CardDraft, prefill: CardCreatorPref
     media: {
       images: buildMediaMergePlan(fields.images, prefill.imageUrls, mediaUpdateMode),
       wordAudios: buildMediaMergePlan(fields.wordAudios, prefill.wordAudioUrls, mediaUpdateMode),
-      sentenceAudios: buildMediaMergePlan(fields.sentenceAudios, prefill.sentenceAudioUrls, mediaUpdateMode),
+      sentenceAudios: buildMediaMergePlan(fields.sentenceAudios, prefill.sentenceAudioUrls, mediaUpdateMode, true),
     },
   };
 }

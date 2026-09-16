@@ -3,6 +3,8 @@ import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { showProgressToast, type ProgressToastHandle } from '@/features/subtitle/ui/subtitleUI';
+import { sendMessage } from '@/shared/lib/chrome-apis';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { SubtitleActionContext } from './subtitleActionContext';
 import type { Settings } from '@/entities/media';
 
@@ -11,11 +13,13 @@ jest.mock('@/features/cardCreator/media/screenshot', () => ({ captureScreenshot:
 jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({ captureSentenceAudio: jest.fn() }));
 jest.mock('@/features/cardCreator/service/cardCreatorPrefetch', () => ({ prefetchAnkiConnectData: jest.fn(async () => ({})) }));
 jest.mock('@/features/subtitle/ui/subtitleUI', () => ({ showProgressToast: jest.fn() }));
+jest.mock('@/shared/lib/chrome-apis', () => ({ sendMessage: jest.fn() }));
 
 const mockGetWordStatuses = jest.mocked(getWordStatuses);
 const mockCaptureScreenshot = jest.mocked(captureScreenshot);
 const mockCaptureSentenceAudio = jest.mocked(captureSentenceAudio);
 const mockShowProgressToast = jest.mocked(showProgressToast);
+const mockSendMessage = jest.mocked(sendMessage);
 
 function makeChip(): jest.Mocked<ProgressToastHandle> {
   return { update: jest.fn(), finish: jest.fn(), dismiss: jest.fn() };
@@ -57,6 +61,45 @@ function makeCtx(overrides: Partial<SubtitleActionContext> = {}): SubtitleAction
   };
 }
 
+function makeLookupResult(term: string) {
+  return {
+    term,
+    langCode: 'en',
+    reading: '',
+    readingKind: 'ipa',
+    frequency: null,
+    status: 'unknown',
+    partsOfSpeech: [],
+    definitions: [{ id: 'd1', pos: 'v', text: 'say hello' }],
+    rawDefinitions: ['say hello'],
+    detectedPhrase: null,
+    matchSource: 'fallback',
+  };
+}
+
+function makeSingleWordSendMessageMock() {
+  return jest.fn(async (message: unknown) => {
+    const msg = message as { type: string; payload?: { request?: { term?: string } } };
+    if (msg.type === MESSAGE_TYPES.LOOKUP_REQUEST) {
+      return { success: true, data: [makeLookupResult(msg.payload?.request?.term ?? 'hello')] };
+    }
+    if (msg.type === MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO) {
+      return { success: true, data: { items: [{ id: 'a1', kind: 'word', source: 'community', label: 'Forvo', state: 'idle', url: 'http://audio/hello.mp3', defaultSelected: false }] } };
+    }
+    if (msg.type === MESSAGE_TYPES.FETCH_IMAGES) {
+      return { success: true, data: { items: [{ id: 'i1', src: 'http://img/hello.png', alt: 'hello', defaultSelected: false }] } };
+    }
+    if (msg.type === MESSAGE_TYPES.TRANSLATE) {
+      return { success: true, data: { translated: ['xin chào'] } };
+    }
+    return { success: false };
+  });
+}
+
+function makeNativeCues() {
+  return [{ index: 0, start: 1000, end: 3000, text: 'xin chào thế giới' }];
+}
+
 describe('buildSubtitleQueue', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -91,6 +134,7 @@ describe('handleCardCreatorAction', () => {
     mockGetWordStatuses.mockResolvedValue(new Map([['hello', 'unknown'], ['world', 'known']]));
     mockCaptureScreenshot.mockResolvedValue({ kind: 'image' } as never);
     mockCaptureSentenceAudio.mockResolvedValue({ ok: true, file: { kind: 'audio' } } as never);
+    mockSendMessage.mockResolvedValue({ success: false });
   });
 
   it('opens the queue for quick-update with initialAction quick-add', async () => {
@@ -102,9 +146,11 @@ describe('handleCardCreatorAction', () => {
     expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
       expect.objectContaining({
         queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+        prefill: expect.objectContaining({ targetWord: 'hello' }),
         initialMedia: expect.arrayContaining([expect.objectContaining({ kind: 'image' })]),
       }),
       'quick-add',
+      expect.anything(),
     );
   });
 
@@ -116,8 +162,10 @@ describe('handleCardCreatorAction', () => {
     expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
       expect.objectContaining({
         queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+        prefill: expect.objectContaining({ targetWord: 'hello' }),
       }),
       'edit-card',
+      expect.anything(),
     );
   });
 
@@ -129,8 +177,10 @@ describe('handleCardCreatorAction', () => {
     expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
       expect.objectContaining({
         queue: expect.arrayContaining([expect.objectContaining({ term: 'hello', definitions: '' })]),
+        prefill: expect.objectContaining({ targetWord: 'hello' }),
       }),
       'quick-update',
+      expect.anything(),
     );
   });
 
@@ -140,5 +190,62 @@ describe('handleCardCreatorAction', () => {
     await handleCardCreatorAction(ctx, 'edit-card');
 
     expect(chip.dismiss).toHaveBeenCalled();
+  });
+
+  it('looks up a single unknown word and pre-fills Card Creator data', async () => {
+    const ctx = makeCtx({ getNativeCues: makeNativeCues });
+    mockSendMessage.mockImplementation(makeSingleWordSendMessageMock());
+
+    await handleCardCreatorAction(ctx, 'edit-card');
+
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: MESSAGE_TYPES.LOOKUP_REQUEST,
+      payload: expect.objectContaining({
+        request: expect.objectContaining({ term: 'hello' }),
+      }),
+    }));
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queue: expect.arrayContaining([expect.objectContaining({ term: 'hello' })]),
+        prefill: expect.objectContaining({
+          targetWord: 'hello',
+          definitions: expect.stringContaining('say hello'),
+          wordAudioItems: expect.arrayContaining([expect.objectContaining({ id: 'a1', url: 'http://audio/hello.mp3' })]),
+          imageItems: expect.arrayContaining([expect.objectContaining({ id: 'i1', src: 'http://img/hello.png' })]),
+        }),
+      }),
+      'edit-card',
+      expect.objectContaining({
+        term: 'hello',
+        wordAudioUrls: expect.arrayContaining(['http://audio/hello.mp3']),
+        imageUrls: expect.arrayContaining(['http://img/hello.png']),
+      }),
+    );
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prefill: expect.objectContaining({
+          sentenceTranslation: 'xin chào thế giới',
+        }),
+      }),
+      'edit-card',
+      expect.anything(),
+    );
+  });
+
+  it('translates the sentence when no native cue is available', async () => {
+    const ctx = makeCtx();
+    mockSendMessage.mockImplementation(makeSingleWordSendMessageMock());
+
+    await handleCardCreatorAction(ctx, 'edit-card');
+
+    expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prefill: expect.objectContaining({
+          sentenceTranslation: 'xin chào',
+        }),
+      }),
+      'edit-card',
+      expect.anything(),
+    );
   });
 });

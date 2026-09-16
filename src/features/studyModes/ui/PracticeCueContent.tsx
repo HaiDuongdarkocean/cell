@@ -24,6 +24,7 @@ interface PracticeWordProps {
   readonly wordIndex?: number;
   readonly blankId?: string;
   readonly className?: string;
+  readonly showCurrent?: boolean;
 }
 
 const wordDataState = (word: WordProgress): PracticeTokenState | '' => {
@@ -39,11 +40,12 @@ export function PracticeWord({
   wordIndex,
   blankId,
   className = '',
+  showCurrent = true,
 }: PracticeWordProps): React.JSX.Element {
   const isHidden = word.visibleChars === null;
   const tailText = isHidden ? word.text : word.text.slice(word.visibleChars?.length ?? 0);
   const hasTail = tailText.length > 0;
-  const baseClass = `${styles.word} ${className} ${word.state === 'active' ? styles.wordCurrent : ''}`.trim();
+  const baseClass = `${styles.word} ${className} ${showCurrent && word.state === 'active' ? styles.wordCurrent : ''}`.trim();
   return (
     <span
       className={baseClass}
@@ -90,6 +92,7 @@ export function DictationActiveCue({
     () => providedResult ?? (draft.trim().length === 0 ? null : evaluateDictation(cue.targetText, draft)),
     [providedResult, cue.targetText, draft],
   );
+  const showCurrent = dataCellId === 'practice-active-cue';
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
       <div className={styles.guides} aria-label="Type what you hear" data-cell-id="practice-active-cue-content">
@@ -100,6 +103,7 @@ export function DictationActiveCue({
             cellId="dictation-word"
             charCellId="dictation-char"
             wordIndex={i}
+            showCurrent={showCurrent}
           />
         ))}
       </div>
@@ -137,6 +141,7 @@ export function ClozeActiveCue({
       </div>
     );
   }
+  const showCurrent = dataCellId === 'practice-active-cue';
   const blankById = new Map(exercise.blanks.map((b, i) => [b.id, i]));
   return (
     <div className={styles.activeCue} data-cell-id={dataCellId} data-allow-lookup>
@@ -156,6 +161,7 @@ export function ClozeActiveCue({
               charCellId="cloze-char"
               blankId={part.id}
               className={styles.blank}
+              showCurrent={showCurrent}
             />
           );
         })}

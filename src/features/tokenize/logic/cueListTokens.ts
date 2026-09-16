@@ -1,13 +1,16 @@
 import type { BilingualCue } from '@/entities/media';
 import type { WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
-import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import {
   entriesToBand,
   loadFrequencyBandOptions,
 } from '@/features/tokenize/utils/frequencyBand';
+import {
+  applyTokenListStatus,
+  createTokenList,
+} from '@/features/tokenize/logic/tokenListMetadata';
 
 export type CueListTokenMap = ReadonlyMap<number, readonly Token[]>;
 
@@ -17,12 +20,7 @@ export function createCueListTokenMap(
 ): CueListTokenMap {
   const map = new Map<number, readonly Token[]>();
   for (const cue of cues) {
-    const tokens = tokenizeTextBlock(cue.targetText, langCode).map((token) => ({
-      ...token,
-      status: 'unknown' as const,
-      frequencyBand: 'none' as const,
-    }));
-    map.set(cue.index, tokens);
+    map.set(cue.index, createTokenList(cue.targetText, langCode));
   }
   return map;
 }
@@ -35,11 +33,8 @@ export function applyCueListTokenStatus(
   let changed = false;
   const resolved = new Map<number, readonly Token[]>();
   for (const [cueIndex, tokens] of tokenMap) {
-    const nextTokens = tokens.map((token) => {
-      if (token.isSeparator || token.term !== term || token.status === status) return token;
-      changed = true;
-      return { ...token, status };
-    });
+    const nextTokens = applyTokenListStatus(tokens, term, status);
+    if (nextTokens !== tokens) changed = true;
     resolved.set(cueIndex, nextTokens);
   }
   return changed ? resolved : tokenMap;

@@ -246,17 +246,34 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
   const latestSearchedTerm = latestSearchRef.current;
 
-  // Re-apply when the caller supplies a new pre-fetched result or changes the
-  // initial term. This lets a content-script controller feed results and
-  // candidates into the same mounted component instead of re-mounting.
+  const lastAppliedResultRef = useRef<LookupResult | undefined>(undefined);
+  const lastApplyFnRef = useRef(applyResult);
+
   useEffect(() => {
     if (isLoadingProp) return;
-    if (initialResult) {
-      applyResult([initialResult, ...initialCandidates], initialResult.term, initialContextSentence);
+
+    const applyFnChanged = applyResult !== lastApplyFnRef.current;
+    lastApplyFnRef.current = applyResult;
+
+    if (applyFnChanged) {
+      lastAppliedResultRef.current = undefined;
+    }
+
+    const targetTerm = initialTerm?.trim() ?? '';
+    const resultTerm = initialResult?.term?.trim().toLowerCase() ?? '';
+    const isFreshResult = initialResult !== undefined && lastAppliedResultRef.current !== initialResult;
+    const isMatchingTerm = !targetTerm || resultTerm === targetTerm.toLowerCase();
+
+    if (initialResult && (isFreshResult || isMatchingTerm)) {
+      if (lastAppliedResultRef.current !== initialResult) {
+        applyResult([initialResult, ...initialCandidates], initialResult.term, initialContextSentence);
+        lastAppliedResultRef.current = initialResult;
+      }
       return;
     }
-    if (initialTerm?.trim()) {
-      search(initialTerm.trim(), initialContextSentence, initialCursorOffset);
+
+    if (targetTerm) {
+      search(targetTerm, initialContextSentence, initialCursorOffset);
     }
     return () => { cancelInFlight(); };
     // Only react to meaningful external seed changes, not to every new object

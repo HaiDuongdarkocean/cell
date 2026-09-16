@@ -152,7 +152,15 @@ const buildWordProgress = (expected: string, typed: string, state: WordProgress[
 export const buildDictationProgress = (expected: string, actual: string): DictationProgress => {
   const spans = collectTokenSpans(expected);
   const typedTokens = tokenizePracticeText(actual);
-  const currentIndex = actual.trim().length === 0 ? 0 : actual.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  let currentIndex = actual.trim().length === 0 ? 0 : actual.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  if (
+    currentIndex === typedTokens.length - 1 &&
+    typedTokens.length === spans.length &&
+    typedTokens.length > 0 &&
+    typedTokens[typedTokens.length - 1] === normalizeForTokens(spans[spans.length - 1].text)
+  ) {
+    currentIndex = spans.length;
+  }
   const clampedCurrent = Math.min(currentIndex, spans.length);
   const words = spans.map((span, i) => {
     const state = i < clampedCurrent ? 'completed' : i === clampedCurrent ? 'active' : 'pending';
@@ -164,7 +172,15 @@ export const buildDictationProgress = (expected: string, actual: string): Dictat
 
 export const buildClozeProgress = (exercise: ClozeExercise, draft: string): ClozeProgress => {
   const typedTokens = tokenizePracticeText(draft);
-  const currentIndex = draft.trim().length === 0 ? 0 : draft.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  let currentIndex = draft.trim().length === 0 ? 0 : draft.endsWith(' ') ? typedTokens.length : typedTokens.length - 1;
+  if (
+    currentIndex === typedTokens.length - 1 &&
+    typedTokens.length === exercise.blanks.length &&
+    typedTokens.length > 0 &&
+    typedTokens[typedTokens.length - 1] === normalizeForTokens(exercise.blanks[exercise.blanks.length - 1].answer)
+  ) {
+    currentIndex = exercise.blanks.length;
+  }
   const clampedCurrent = Math.min(currentIndex, exercise.blanks.length);
   const words = exercise.blanks.map((blank, i) => {
     const state = i < clampedCurrent ? 'completed' : i === clampedCurrent ? 'active' : 'pending';

@@ -38,16 +38,18 @@ export function DictionaryTab({
   onOpenSettings,
 }: DictionaryTabProps): React.JSX.Element {
   const [prefill, setPrefill] = useState<DictionaryPanelPrefill | null>(externalPrefill ?? null);
+  const [cardCreatorContext, setCardCreatorContext] = useState<DictionaryPanelPrefill | null>(externalPrefill ?? null);
   const [searchTerm, setSearchTerm] = useState<string | undefined>(externalPrefill?.term ?? initialTerm);
 
   useEffect(() => {
     const next = externalPrefill ?? null;
     setPrefill(next);
+    setCardCreatorContext(next);
     setSearchTerm(next?.term ?? initialTerm);
   }, [externalPrefill, initialTerm]);
 
   const handlePanelSendToCard = useCallback((next: PopupCardCreatorPrefill): void => {
-    setPrefill((prev) => ({
+    setCardCreatorContext((prev) => ({
       ...(prev ?? {}),
       ...next,
       term: next.term,
@@ -55,7 +57,7 @@ export function DictionaryTab({
   }, []);
 
   const handlePanelQuickAdd = useCallback((next: PopupCardCreatorPrefill): void => {
-    setPrefill((prev) => ({
+    setCardCreatorContext((prev) => ({
       ...(prev ?? {}),
       ...next,
       term: next.term,
@@ -92,7 +94,7 @@ export function DictionaryTab({
         <CardCreatorPanel
           sourceLang={sourceLang}
           targetLang={targetLang}
-          context={prefill}
+          context={cardCreatorContext}
           onAfterSubmit={onAfterSubmit}
           onQueueTermSelect={handleQueueTermSelect}
         />

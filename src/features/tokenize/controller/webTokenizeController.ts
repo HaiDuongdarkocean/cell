@@ -4,7 +4,7 @@ import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
-import { bindTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
+import { bindTokenBlock, restyleTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import {
@@ -99,6 +99,8 @@ export interface WebTokenizeController extends TokenizeController {
   readonly toggleShowFrequency: () => void;
   /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
   readonly pickDictionaryTerm: () => string | null;
+  /** Apply a 1-4 keyboard status shortcut when the user has a token selected or hovered. */
+  readonly handleStatusKey: (key: string) => boolean;
   /** Apply a status change to all cached tokens matching `term` without persisting.
    *  Used by the popup dictionary status cycle so token blocks rebind with the new
    *  status instead of reverting to the stale cached value on the next rebind. */
@@ -673,6 +675,7 @@ export async function createWebTokenizeController(
   }
 
   function rebindBlock(block: TokenBlock): void {
+    if (restyleTokenBlock(block, getDisplayOptions())) return;
     unbindTokenBlock(block);
     bindTokenBlock(block, getDisplayOptions());
   }
@@ -733,14 +736,13 @@ export async function createWebTokenizeController(
     }
   }
 
-  async function applyStatusToTerms(terms: readonly string[], status: WordStatus): Promise<void> {
+  function applyStatusToTerms(terms: readonly string[], status: WordStatus): void {
     statusVersionCounter++;
     const version = statusVersionCounter;
     for (const term of terms) {
       termStatusVersion.set(term, version);
       localStatusOverrides.set(term, { status, version });
     }
-    await Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
     const termSet = new Set(terms);
     for (const block of blocks) {
       if (!block.tokens) continue;
@@ -759,6 +761,7 @@ export async function createWebTokenizeController(
       emitWordStatusChanged({ langCode, term, status });
       options.onStatusChange?.(term, langCode, status);
     }
+    void Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
   }
 
   /** Apply a status change to all cached tokens matching `term` without persisting.
@@ -798,6 +801,32 @@ export async function createWebTokenizeController(
     if (eventLangCode === langCode) applyStatusForTerm(term, status);
   });
 
+  function getShadowRoots(): ShadowRoot[] {
+    const root = options.root?.getRootNode();
+    return root instanceof ShadowRoot ? [root] : [];
+  }
+
+  function applyStatusKey(key: string): boolean {
+    const status = STATUS_BY_KEY[key];
+    if (!status) return false;
+    const state = stateStore.getState();
+    // Priority: Ctrl+Click selection > native text selection > hovered token.
+    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
+    let usedNativeSelection = false;
+    if (terms.length === 0) {
+      terms = extractTermsFromSelection(window.getSelection(), getShadowRoots());
+      usedNativeSelection = terms.length > 0;
+    }
+    if (terms.length === 0 && state.hoveredTerm) {
+      terms = [state.hoveredTerm];
+    }
+    if (terms.length === 0) return false;
+    applyStatusToTerms(terms, status);
+    if (state.selectedTerms.size > 0) stateStore.clearSelection();
+    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
+    return true;
+  }
+
   function handleKeydown(e: KeyboardEvent): void {
     if (isEditableEvent(e)) return;
     if (e.key === 'Escape') {
@@ -805,24 +834,13 @@ export async function createWebTokenizeController(
       stateStore.setHoveredTerm(null);
       return;
     }
-    const status = STATUS_BY_KEY[e.key];
-    if (!status) return;
-    const state = stateStore.getState();
-    // Priority: Ctrl+Click selection > hovered token > native text selection.
-    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
-    let usedNativeSelection = false;
-    if (terms.length === 0) {
-      terms = extractTermsFromSelection(window.getSelection());
-      usedNativeSelection = terms.length > 0;
-    }
-    if (terms.length === 0) return;
+    if (!applyStatusKey(e.key)) return;
     e.preventDefault();
-    void applyStatusToTerms(terms, status);
-    if (state.selectedTerms.size > 0) stateStore.clearSelection();
-    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
+    e.stopImmediatePropagation();
   }
 
-  document.addEventListener('keydown', handleKeydown);
+  // ADR-034: window capture so the host page cannot override 1-4 status shortcuts.
+  window.addEventListener('keydown', handleKeydown, true);
 
   function unbindAll(): void {
     for (const block of blocks) {
@@ -860,11 +878,13 @@ export async function createWebTokenizeController(
     /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
     pickDictionaryTerm: () => pickDictionaryTerm(stateStore.getState()),
 
+    handleStatusKey: applyStatusKey,
+
     applyStatusForTerm,
     getStatusForTerm,
 
     destroy: () => {
-      document.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('keydown', handleKeydown, true);
       unsubscribe();
       unsubscribeWordStatus();
       scheduler.stop();

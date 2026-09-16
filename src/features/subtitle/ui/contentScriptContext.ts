@@ -38,5 +38,6 @@ export interface ContentScriptContext {
   handleCardCreatorAction(action: CardCreatorAction): Promise<void>;
   handleGenerateNative(): Promise<void>;
   handleSubtitleStatusKey(key: string): boolean;
+  handleWebStatusKey?(key: string): boolean;
   syncSubtitleTokenize(): Promise<void>;
 }
