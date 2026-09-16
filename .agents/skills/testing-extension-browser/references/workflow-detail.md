@@ -63,8 +63,8 @@ What it does under the hood (do not re-implement per script):
 
 ```ts
 chromium.launchPersistentContext(CLONE_PATH, {
-  headless: false,
-  executablePath: CHROME_EXE,                    // Playwright Chromium / Chrome for Testing
+  headless: true,
+  channel: 'chromium',                           // new headless — required for --load-extension
   ignoreDefaultArgs: ['--disable-extensions'],
   args: [
     '--disable-blink-features=AutomationControlled',
@@ -73,6 +73,8 @@ chromium.launchPersistentContext(CLONE_PATH, {
   ],
 });
 ```
+
+Default is headless — no window pops during load/test. Pass `{ headless: false }` to `launchCellContext` only when a visible window is genuinely needed (it then uses `executablePath: CHROME_EXE`).
 
 On Windows the External Extensions JSON from Step 2 installs nothing (`external_crx` blocked) — uBlock exists ONLY because it is passed to `--load-extension`.
 

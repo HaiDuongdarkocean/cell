@@ -57,11 +57,11 @@ export function cellExtensionArgs() {
   ];
 }
 
-export async function launchCellContext(clonePath, { headless = false } = {}) {
+export async function launchCellContext(clonePath, { headless = true } = {}) {
   const { chromium } = await import('@playwright/test');
   return chromium.launchPersistentContext(clonePath, {
     headless,
-    executablePath: CHROME_EXE,
+    ...(headless ? { channel: 'chromium' } : { executablePath: CHROME_EXE }),
     ignoreDefaultArgs: ['--disable-extensions'],
     args: cellExtensionArgs(),
   });
