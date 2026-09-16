@@ -1,4 +1,5 @@
 import { initContentScriptController } from '@/features/subtitle';
+import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { isVideoReady } from '@/shared/lib/dom/videoReady';
 import { findLargestPlayableVideo, hasVideo } from '@/shared/lib/dom/videoFinder';
 import { runPageScan } from './mediaScan';
@@ -65,6 +66,7 @@ function finishVideoInit(video: HTMLVideoElement): void {
     video,
     ensureWebTextCtrl(),
     handleTokenizeStatusKey,
+    createCardCreatorActionPorts(),
   );
   runPageScan();
 }

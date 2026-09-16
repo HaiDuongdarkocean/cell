@@ -17,7 +17,7 @@ import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { ClusterRightToolbar } from './ClusterRightToolbar';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
-import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { buildClusterCssVars } from './subtitleUI';

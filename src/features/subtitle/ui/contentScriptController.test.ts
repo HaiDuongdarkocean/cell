@@ -10,7 +10,7 @@ import {
 } from '@/shared/config/config';
 import { init } from './contentScriptController';
 import { ReactSubtitleController } from './reactSubtitleController';
-import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
 import {
   sendMessage,
@@ -37,7 +37,7 @@ import type { AutoLoadDeps } from '@/features/subtitle/logic/subtitleAutoLoad';
 
 jest.mock('./reactSubtitleController');
 
-jest.mock('@/features/subtitle/logic/findPlayerContainer', () => ({
+jest.mock('@/shared/lib/dom/findPlayerContainer', () => ({
   findVideoContainer: jest.fn(),
 }));
 

@@ -150,6 +150,7 @@ function SubtitlePanelImpl({
         onReplay={handleReplayCue}
         onContinue={handleContinueCue}
         onPlayPause={onPlayPause ?? noop}
+        CueListComponent={CueList}
       />
     )
   ) : (

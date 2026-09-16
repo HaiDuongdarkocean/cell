@@ -6,11 +6,33 @@
  * This is the SSOT contract between the action layer and its consumers.
  */
 import type { DictionaryBridge } from '../logic/dictionaryBridge';
-import type { SrtCue, Settings } from '@/entities/media';
+import type { MediaFile, SrtCue, Settings } from '@/entities/media';
+import type { CardCreatorOpenContext } from '@/entities/cardCreator';
 import type { ToastVariant } from '@/features/subtitle/ui/SubtitleToast';
 
 export interface ShowToastOptions {
   variant?: ToastVariant;
+}
+
+/** Port to the cardCreator feature — wired by the composition root
+ *  (content-script featureInit / local-player) so the subtitle feature never
+ *  imports cardCreator directly. */
+export interface CardCreatorPorts {
+  readonly buildContext: (
+    video: HTMLVideoElement,
+    targetCues: readonly { start: number; end: number; text: string; index: number }[],
+    nativeCues: readonly { start: number; end: number; text: string; index: number }[],
+    offsetMs: number,
+    sourceLang: string,
+    targetLang: string,
+  ) => CardCreatorOpenContext | null;
+  readonly captureScreenshot: (video: HTMLVideoElement) => Promise<MediaFile>;
+  readonly captureSentenceAudio: (
+    video: HTMLVideoElement,
+    cue: { start: number; end: number },
+  ) => Promise<{ ok: true; file: MediaFile } | { ok: false; reason: string; error?: string }>;
+  readonly prefetchAnkiConnectData: (url: string) => Promise<unknown>;
+  readonly setCapturingMedia: (capturing: boolean) => void;
 }
 
 export interface SubtitleActionContext {
@@ -34,4 +56,6 @@ export interface SubtitleActionContext {
   readonly showToast: (message: string, options?: ShowToastOptions) => void;
   /** Load settings or show an error toast if storage fails. */
   readonly loadSettingsOrToast: (container: HTMLElement) => Promise<Settings | undefined>;
+  /** cardCreator feature ports — injected by the composition root. */
+  readonly cardCreator?: CardCreatorPorts;
 }

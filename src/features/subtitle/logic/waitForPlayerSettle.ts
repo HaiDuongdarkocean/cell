@@ -1,4 +1,4 @@
-import { findPlayerContainer } from './findPlayerContainer';
+import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 
 export const SETTLE_FRAMES = 2;
 export const SETTLE_MAX_WAIT_MS = 2000;

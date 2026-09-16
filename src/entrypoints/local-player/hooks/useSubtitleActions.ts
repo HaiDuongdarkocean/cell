@@ -8,12 +8,14 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { logger } from '@/shared/lib/logger';
 import {
   DEFAULT_CARD_CREATOR_SETTINGS,
   DEFAULT_DICTIONARY_POPUP_SETTINGS,
 } from '@/shared/config/config';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { handleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
 import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
@@ -109,7 +111,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         // ponytail: simple console toast for now — local-player doesn't have
         // the subtitle toast system. Can be upgraded to a real toast later.
         const variant = options?.variant ?? 'info';
-        console.log(`[local-player] ${variant}: ${message}`);
+        logger.info(`[local-player] ${variant}: ${message}`);
       },
       loadSettingsOrToast: async (_container: HTMLElement) => {
         try {
@@ -119,6 +121,7 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
           return undefined;
         }
       },
+      cardCreator: createCardCreatorActionPorts(),
     };
   }, [videoRef, offsetMs]);
 

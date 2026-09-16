@@ -6,7 +6,7 @@
 import type { OcrResultItem } from '@/features/ocr/engine/types';
 import type { ScriptRun } from '../language/scriptRunSegmenter';
 import { routeScript } from '../language/languageRouter';
-import { findFarthestSameSizeContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findFarthestSameSizeContainer } from '@/shared/lib/dom/findPlayerContainer';
 
 /** Base styling shared by every OCR hitbox — injected inline to avoid a stylesheet
  *  in foreign documents (content-script injected CSS must use literal values, not var()). */

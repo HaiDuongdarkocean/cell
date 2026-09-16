@@ -1,16 +1,7 @@
 import { handleCardCreatorAction } from './cardActions';
-import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
-import type { SubtitleActionContext } from './subtitleActionContext';
+import type { CardCreatorPorts, SubtitleActionContext } from './subtitleActionContext';
 import type { Settings } from '@/entities/media';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
-
-jest.mock('@/features/cardCreator/media/screenshot', () => ({ captureScreenshot: jest.fn() }));
-jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({ captureSentenceAudio: jest.fn() }));
-jest.mock('@/features/cardCreator/service/cardCreatorPrefetch', () => ({ prefetchAnkiConnectData: jest.fn(async () => ({})) }));
-
-const mockCaptureScreenshot = jest.mocked(captureScreenshot);
-const mockCaptureSentenceAudio = jest.mocked(captureSentenceAudio);
 
 function makeWebTextCtrl() {
   return {
@@ -20,6 +11,21 @@ function makeWebTextCtrl() {
     handleLookup: jest.fn(),
     cancelLookup: jest.fn(),
     configureVideo: jest.fn(),
+  };
+}
+
+function makeCardCreatorPorts(overrides: Partial<CardCreatorPorts> = {}): CardCreatorPorts {
+  return {
+    buildContext: jest.fn(() => ({
+      sourceLang: 'en',
+      targetLang: 'vi',
+      cue: { index: 0, start: 1000, end: 3000, targetText: 'hello world', nativeText: '' },
+    })),
+    captureScreenshot: jest.fn(async () => ({ kind: 'image' }) as never),
+    captureSentenceAudio: jest.fn(async () => ({ ok: true, file: { kind: 'audio' } }) as never),
+    prefetchAnkiConnectData: jest.fn(async () => ({})),
+    setCapturingMedia: jest.fn(),
+    ...overrides,
   };
 }
 
@@ -44,17 +50,12 @@ function makeCtx(overrides: Partial<SubtitleActionContext> = {}): SubtitleAction
       },
       subtitleOverlayTargetLanguage: 'en',
     }) as unknown as Settings),
+    cardCreator: makeCardCreatorPorts(),
     ...overrides,
   };
 }
 
 describe('handleCardCreatorAction', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockCaptureScreenshot.mockResolvedValue({ kind: 'image' } as never);
-    mockCaptureSentenceAudio.mockResolvedValue({ ok: true, file: { kind: 'audio' } } as never);
-  });
-
   it.each<[CardCreatorAction, 'quick-add' | 'quick-update' | 'edit-card']>([
     ['quick-update', 'quick-add'],
     ['edit-card', 'edit-card'],
@@ -112,5 +113,13 @@ describe('handleCardCreatorAction', () => {
     await handleCardCreatorAction(ctx, 'edit-card');
 
     expect(ctx.webTextCtrl!.sendToCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('no-ops when cardCreator ports are not wired', async () => {
+    const ctx = makeCtx({ cardCreator: undefined });
+
+    await handleCardCreatorAction(ctx, 'edit-card');
+
+    expect(ctx.webTextCtrl!.sendToCard).not.toHaveBeenCalled();
   });
 });

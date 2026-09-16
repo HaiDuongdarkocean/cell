@@ -1,6 +1,6 @@
 import type { LookupRequest, PopupCardCreatorPrefill } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
-import type { CardCreatorOpenContext } from '@/features/cardCreator/types';
+import type { CardCreatorOpenContext } from '@/entities/cardCreator';
 
 export interface DictionaryCueRange {
   readonly index?: number;

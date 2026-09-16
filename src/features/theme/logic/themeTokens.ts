@@ -23,7 +23,6 @@ import {
   formatComponentTokens,
   formatStaticTokens,
 } from '@/shared/lib/tokens';
-import navClusterModuleCss from '@/features/subtitle/ui/NavCluster.module.css?inline';
 import type { ThemeMode, ThemeConfig, ResolvedMode } from '@/entities/theme';
 
 /** ID of the injected `<style>` element holding theme tokens. Exported so
@@ -39,8 +38,10 @@ const STYLE_ID = THEME_STYLE_ID;
  *  reference color vars, and CSS custom properties resolve where they are
  *  DECLARED, not where they are used, so the component block must be
  *  re-declared in each theme selector to re-resolve against the theme's core
- *  colors (critical for Shadow DOM). */
-function buildStyleContent(config: ThemeConfig): string {
+ *  colors (critical for Shadow DOM). `extraCss` lets the consuming feature
+ *  append its own stylesheets (e.g. NavCluster module CSS) to the injected
+ *  block without the theme layer importing feature code. */
+function buildStyleContent(config: ThemeConfig, extraCss: readonly string[] = []): string {
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
   const preset = config.preset ?? 'dawn';
@@ -105,7 +106,7 @@ ${componentTokens}
   opacity: 1;
 }
 
-${navClusterModuleCss}
+${extraCss.join('\n')}
 `;
 }
 
@@ -181,14 +182,17 @@ export function findThemeCarrier(): HTMLElement {
  * on container. Returns a cleanup function that removes the style + storage listener.
  *
  * @param container - Video wrapper (panel/chip/toast parent)
+ * @param extraCss - Additional stylesheets appended to the injected block
+ *   (e.g. a feature's module CSS needed in light DOM). Re-applied on every
+ *   theme-config rebuild.
  * @returns cleanup function
  */
-export function injectThemeTokens(container: HTMLElement): () => void {
+export function injectThemeTokens(container: HTMLElement, extraCss: readonly string[] = []): () => void {
   // Inject <style> once (idempotent — skip if already present)
   if (!document.getElementById(STYLE_ID)) {
     const style = document.createElement('style');
     style.id = STYLE_ID;
-    style.textContent = buildStyleContent(DEFAULT_THEME_CONFIG);
+    style.textContent = buildStyleContent(DEFAULT_THEME_CONFIG, extraCss);
     document.head.appendChild(style);
   }
 
@@ -206,7 +210,7 @@ export function injectThemeTokens(container: HTMLElement): () => void {
     container.setAttribute('data-preset', config.preset ?? 'dawn');
     // Re-inject <style> with custom palette (if config != default).
     const style = document.getElementById(STYLE_ID);
-    if (style) style.textContent = buildStyleContent(config);
+    if (style) style.textContent = buildStyleContent(config, extraCss);
   };
 
   // Load themeMode + themeConfig from storage.

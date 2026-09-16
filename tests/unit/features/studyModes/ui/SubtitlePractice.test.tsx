@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PracticeOptions, SubtitlePracticeSession } from './SubtitlePractice';
-import { createClozeExercise } from '../lib/subtitlePractice';
+import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
+import { createClozeExercise } from '@/features/studyModes/lib/subtitlePractice';
+import { CueList } from '@/features/subtitle/ui/CueList';
 import type { BilingualCue } from '@/entities/media';
 
 const cues: BilingualCue[] = [
@@ -35,6 +36,7 @@ function renderSession(overrides: Partial<Parameters<typeof SubtitlePracticeSess
     onReplay: jest.fn(),
     onContinue: jest.fn(),
     onPlayPause: jest.fn(),
+    CueListComponent: CueList,
     ...overrides,
   };
   const utils = render(<SubtitlePracticeSession {...props} />);

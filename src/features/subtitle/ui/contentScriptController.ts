@@ -1,9 +1,10 @@
 import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
 import { injectThemeTokens } from '@/features/theme/logic/themeTokens';
+import navClusterModuleCss from './NavCluster.module.css?inline';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import {
@@ -27,7 +28,7 @@ import type { TokenizeSettings } from '@/features/tokenize/types';
 import type { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { handleCardCreatorAction as sharedHandleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
-import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
+import type { CardCreatorPorts, SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
 import { loadOverlaySettings, loadShortcuts } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import { createContentScriptKeyboardHandlers } from './contentScriptKeyboard';
@@ -47,6 +48,7 @@ export function init(
   video: HTMLVideoElement,
   webTextCtrl?: DictionaryBridge,
   handleWebStatusKey?: (key: string) => boolean,
+  cardCreatorPorts?: CardCreatorPorts,
 ): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
@@ -55,7 +57,7 @@ export function init(
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
-  injectThemeTokens(container);
+  injectThemeTokens(container, [navClusterModuleCss]);
 
   // ADR-025: live style/overlay settings. The block controller is created
   // synchronously so cue messages can be handled before storage finishes loading.
@@ -166,6 +168,7 @@ export function init(
       getOffsetMs: () => offsetController?.getOffsetMs() ?? 0,
       showToast: (message, options) => { showToast(message, container, options); },
       loadSettingsOrToast: (c) => loadSettingsOrToast(c),
+      cardCreator: cardCreatorPorts,
     };
   }
 

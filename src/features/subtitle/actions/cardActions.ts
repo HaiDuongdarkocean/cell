@@ -7,13 +7,8 @@
  * closing over controller state.
  */
 
-import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
-import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
-import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
-import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
 import { t } from '@/shared/i18n';
-import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
+import type { MediaFile } from '@/entities/media';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import type { SubtitleActionContext } from './subtitleActionContext';
 
@@ -46,7 +41,8 @@ export async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 200
  *  update-current → open with initialAction='quick-update' (focus Update).
  *  No queue/prefill — the user picks the term in the integrated Dictionary. */
 export async function handleCardCreatorAction(ctx: SubtitleActionContext, action: CardCreatorAction): Promise<void> {
-  if (!ctx.webTextCtrl) return;
+  const ports = ctx.cardCreator;
+  if (!ctx.webTextCtrl || !ports) return;
   const initialAction: 'quick-add' | 'quick-update' | 'edit-card' =
     action === 'quick-update' ? 'quick-add' : (action === 'update-current' ? 'quick-update' : 'edit-card');
   // Load settings fresh (URL/deck/noteType/lang may have changed since init).
@@ -58,7 +54,7 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   // network round-trip overlaps with media capture (screenshot + sentence
   // audio, 2-5s). When the dialog mounts and loadData runs, it reuses the
   // cached promise — resolving instantly if capture finished first.
-  void prefetchAnkiConnectData(settings.cardCreator.ankiConnectUrl).catch(() => {
+  void ports.prefetchAnkiConnectData(settings.cardCreator.ankiConnectUrl).catch(() => {
     // Prefetch failure is non-fatal — loadData will retry with a fresh
     // promise and surface the error via toast.
   });
@@ -66,7 +62,7 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
   // Build context from current subtitle state + actual subtitle languages.
   const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
   const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
-  const cardCtx = buildCardCreatorContext(
+  const cardCtx = ports.buildContext(
     ctx.video,
     ctx.getTargetCues(),
     ctx.getNativeCues(),
@@ -92,19 +88,19 @@ export async function handleCardCreatorAction(ctx: SubtitleActionContext, action
     // cue.end — the panel renders above the video without disturbing playback.
     await waitForVideoReady(ctx.video);
     try {
-      initialMedia.push(await captureScreenshot(ctx.video));
+      initialMedia.push(await ports.captureScreenshot(ctx.video));
     } catch {
       // Screenshot failure is non-fatal — the user can re-capture manually.
     }
     try {
       const cue = cardCtx.cue!;
-      const audioR = await captureSentenceAudio(ctx.video, { start: cue.start, end: cue.end });
+      const audioR = await ports.captureSentenceAudio(ctx.video, { start: cue.start, end: cue.end });
       if (audioR.ok) initialMedia.push(audioR.file);
     } catch {
       // Audio failure is non-fatal — screenshot + text fields still work.
     }
   } finally {
-    useCardCreatorStore.getState().setCapturingMedia(false);
+    ports.setCapturingMedia(false);
   }
 
   // The user may have closed the panel during capture — respect the close.
