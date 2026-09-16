@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/Button';
 import { Spinner } from '@/shared/ui/Spinner';
 import checkStyles from './DictionaryCheckable.module.css';
 import candStyles from './CandidateView.module.css';
-import audioStyles from './AudioPanel.module.css';
+import audioStyles from './PronunciationAudioPanel.module.css';
 import imgStyles from './ImagePanel.module.css';
 import transStyles from './TranslatePanel.module.css';
 import styles from './DictionaryCheckable.showcase.module.css';
@@ -84,7 +84,7 @@ function DefRow({ state, examples = [] }: { state: BoxState; examples?: string[]
   );
 }
 
-/** Audio row — checked modifier lives on the box (markup mirrors AudioPanel). */
+/** Audio row — checked modifier lives on the box (markup mirrors PronunciationAudioPanel). */
 function AudioRow({ state }: { state: BoxState }): ReactElement {
   const [selected, setSelected] = useState(state === 'checked');
   const disabled = state === 'disabled';

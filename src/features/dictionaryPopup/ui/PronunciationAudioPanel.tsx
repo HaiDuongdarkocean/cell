@@ -5,11 +5,11 @@ import { InkTabs } from '@/shared/ui/InkTabs';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { useAudioItemUrlMap } from '@/features/pronunciation/hooks/useAudioItemUrl';
 import checkStyles from './DictionaryCheckable.module.css';
-import styles from './AudioPanel.module.css';
+import styles from './PronunciationAudioPanel.module.css';
 import type { AudioItem } from '@/entities/dictionary';
 import { t } from '@/shared/i18n';
 
-export interface AudioPanelProps {
+export interface PronunciationAudioPanelProps {
   readonly items: readonly AudioItem[];
   readonly loading: boolean;
   readonly selection: Map<string, boolean>;
@@ -23,7 +23,7 @@ export interface AudioPanelProps {
 const TTS_WORD_ID = '__tts_word__';
 const TTS_SENTENCE_ID = '__tts_sentence__';
 
-export function AudioPanel({
+export function PronunciationAudioPanel({
   items,
   loading,
   selection,
@@ -32,7 +32,7 @@ export function AudioPanel({
   onTtsSentence,
   term,
   sentence,
-}: AudioPanelProps): React.JSX.Element {
+}: PronunciationAudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
   const { getUrl } = useAudioItemUrlMap(items);

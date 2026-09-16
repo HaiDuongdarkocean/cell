@@ -12,7 +12,7 @@ import type { AudioEngineKind } from '@/features/pronunciation/types';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
 import { t } from '@/shared/i18n';
 import { useCandidate } from './useCandidate';
-import { AudioPanel } from './AudioPanel';
+import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import { ImagePanel } from './ImagePanel';
 import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
@@ -246,7 +246,7 @@ export function CandidateView({
            its entrance — panels animate in instead of teleporting. */}
         <div key={panel.activeTab ?? 'none'} className={styles.cellTabContent}>
         {panel.activeTab === 'audio' && (
-          <AudioPanel
+          <PronunciationAudioPanel
             items={panel.audioItems}
             loading={panel.audioLoading}
             selection={panel.audioSelection}

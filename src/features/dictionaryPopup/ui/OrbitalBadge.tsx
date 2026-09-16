@@ -5,7 +5,7 @@ import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOr
 import { useOrbitalSnap } from '@/features/dictionaryPopup/badgePointer/useOrbitalSnap';
 import { getNearestEdge, getEdgeCenter, type ViewportRect, type CollapsedEdge } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
 import { useOrbitalGesture } from '@/features/dictionaryPopup/badgePointer/useOrbitalGesture';
-import { loadOrbitalBadgePosition, saveOrbitalBadgePosition, type OrbitalBadgePosition } from '@/stores/orbitalBadgeStore';
+import { loadOrbitalBadgePosition, saveOrbitalBadgePosition, type OrbitalBadgePosition } from '@/features/dictionaryPopup/badgePointer/orbitalBadgeStore';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import styles from './OrbitalBadge.module.css';
 import { t } from '@/shared/i18n';

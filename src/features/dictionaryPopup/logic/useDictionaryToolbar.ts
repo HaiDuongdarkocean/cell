@@ -384,12 +384,13 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
   // Preload audio, image and translation in the integrated panel so the user
   // can press Send to Card immediately without opening every tab.
+  const hasResult = result !== null;
   useEffect(() => {
-    if (!preloadMedia || !result) return;
+    if (!preloadMedia || !hasResult) return;
     void fetchAudioRef.current();
     void fetchImagesRef.current();
     void translateRef.current();
-  }, [preloadMedia, result?.term, result?.langCode]);
+  }, [preloadMedia, hasResult, result?.term, result?.langCode]);
 
   const selectedAudioCount = useMemo(
     () => audioItems.filter((item) => audioSelection.get(item.id) === true).length,

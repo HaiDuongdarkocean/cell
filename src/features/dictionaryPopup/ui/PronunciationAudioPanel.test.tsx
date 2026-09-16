@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { AudioPanel } from './AudioPanel';
+import { PronunciationAudioPanel } from './PronunciationAudioPanel';
 import type { AudioItem } from '@/entities/dictionary';
 
 function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: string, selected = false): AudioItem {
@@ -27,10 +27,10 @@ const baseProps = {
   sentence: 'hello world',
 };
 
-describe('AudioPanel', () => {
+describe('PronunciationAudioPanel', () => {
   it('renders a skeleton while loading', () => {
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[]}
         loading
@@ -43,7 +43,7 @@ describe('AudioPanel', () => {
 
   it('renders TTS fallback item when no real audio items', () => {
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[]}
       />,
@@ -58,7 +58,7 @@ describe('AudioPanel', () => {
   it('triggers onTtsWord when clicking play on TTS word fallback item', () => {
     const onTtsWord = jest.fn();
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[]}
         onTtsWord={onTtsWord}
@@ -74,7 +74,7 @@ describe('AudioPanel', () => {
   it('triggers onTtsSentence when clicking play on TTS sentence fallback item', () => {
     const onTtsSentence = jest.fn();
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[]}
         onTtsSentence={onTtsSentence}
@@ -92,7 +92,7 @@ describe('AudioPanel', () => {
     const onToggle = jest.fn();
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[item]}
         selection={selection([['a1', false]])}
@@ -110,7 +110,7 @@ describe('AudioPanel', () => {
   it('renders the label as plain text — the row itself is the checkbox host', () => {
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[item]}
         selection={selection([['a1', true]])}
@@ -128,7 +128,7 @@ describe('AudioPanel', () => {
     const onToggle = jest.fn();
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[item]}
         selection={selection([['a1', false]])}
@@ -145,7 +145,7 @@ describe('AudioPanel', () => {
     const onToggle = jest.fn();
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[item]}
         selection={selection([['a1', false]])}
@@ -162,7 +162,7 @@ describe('AudioPanel', () => {
     const onToggle = jest.fn();
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[item]}
         selection={selection([['a1', false]])}
@@ -185,7 +185,7 @@ describe('AudioPanel', () => {
     const sentence = makeAudio('s1', 'sentence', 'Sentence', 'https://audio/s1');
 
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[word, sentence]}
       />,
@@ -201,7 +201,7 @@ describe('AudioPanel', () => {
   it('shows TTS fallback when switching to a group with no items', () => {
     const word = makeAudio('w1', 'word', 'Word', 'https://audio/w1');
     render(
-      <AudioPanel
+      <PronunciationAudioPanel
         {...baseProps}
         items={[word]}
       />,

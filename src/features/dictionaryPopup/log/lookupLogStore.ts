@@ -7,9 +7,10 @@
 // isDevMode trước khi import hàm save). Export/clear qua DevTools console.
 
 import { isDevMode } from '@/shared/lib/env/devMode';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { LookupLogEntry } from '@/features/dictionary/logic/lookupLogTypes';
 
-const STORAGE_KEY = 'lookupLog';
+const STORAGE_KEY = STORAGE_KEYS.LOOKUP_LOG;
 const MAX_ENTRIES = 500;
 
 /** Append 1 entry vào ring buffer. Fire-and-forget — caller dùng void. */
@@ -25,6 +26,7 @@ export async function saveLookupLog(entry: LookupLogEntry): Promise<void> {
 
 /** Đọc toàn bộ log (cho export). */
 export async function readLookupLog(): Promise<LookupLogEntry[]> {
+  if (!isDevMode) return [];
   if (typeof chrome === 'undefined' || !chrome.storage?.local) return [];
   const existing = await chrome.storage.local.get(STORAGE_KEY);
   return (existing[STORAGE_KEY] as LookupLogEntry[] | undefined) ?? [];
@@ -32,6 +34,7 @@ export async function readLookupLog(): Promise<LookupLogEntry[]> {
 
 /** Xóa toàn bộ log. */
 export async function clearLookupLog(): Promise<void> {
+  if (!isDevMode) return;
   if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
   await chrome.storage.local.remove(STORAGE_KEY);
 }
