@@ -220,12 +220,14 @@ html body .js-cell-token.js-cell-token--status-tracking {
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-known {
+html body .js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
+html body .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-known),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-html body .js-cell-token.js-cell-token--status-ignore {
+html body .js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off),
+html body .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-ignore),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
@@ -242,23 +244,18 @@ html body .js-cell-token.js-cell-token--status-ignore {
   text-shadow: var(--shadow-sm) !important;
 }
 
-/* known/ignore hide frequency by default while keeping the status underline.
-   Frequency reappears for unknown/tracking. Quadruple-specificity (html body
-   ancestor) so host !important color/box-shadow rules don't fight back. */
-html body .js-cell-token.js-cell-token--status-known,
-html body .js-cell-token.js-cell-token--status-ignore {
+/* known/ignore render as plain text by default — no status underline, no
+   frequency pill. Both layers reveal on hover or while the token's dictionary
+   popup is open (.js-cell-token--popup-open). status-off keeps the underline
+   hidden even then; frequency-off (global layer toggle) keeps the pill hidden. */
+html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
+html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
-}
-html body .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
-html body .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   text-shadow: var(--shadow-sm) !important;
 }
-
-/* Ignore is rendered the same as known: no frequency pill by default while the
-   status underline stays visible. No extra de-emphasis styling is applied. */
 
 /* Global layer toggles (applied per token).
    Quadruple-specificity (html body ancestor) so host box-shadow:none!important
@@ -386,12 +383,14 @@ ${buildVariables(':host')}
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-tracking),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-known {
+.js-cell-token.js-cell-token--status-known:hover:not(.js-cell-token--status-off),
+.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-known),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
-.js-cell-token.js-cell-token--status-ignore {
+.js-cell-token.js-cell-token--status-ignore:hover:not(.js-cell-token--status-off),
+.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open:not(.js-cell-token--status-off) {
   box-shadow:
     inset 0 calc(var(--border-width-status) * -1) 0 0 var(--cell-token-status-ignore),
     inset 0 calc(var(--border-width-status) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
@@ -406,15 +405,12 @@ ${buildVariables(':host')}
   text-shadow: var(--shadow-sm) !important;
 }
 
-.js-cell-token.js-cell-token--status-known,
-.js-cell-token.js-cell-token--status-ignore {
+.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
+.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
   -webkit-text-fill-color: currentColor !important;
-}
-.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
-.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   text-shadow: var(--shadow-sm) !important;
 }
 

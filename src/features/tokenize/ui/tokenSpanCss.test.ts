@@ -88,4 +88,19 @@ describe('buildTokenSpanCss — static token injection (status bar visibility)',
       expect(source).not.toMatch(new RegExp(`status-${status}[^}]*box-shadow:\\s*var\\(--shadow-sm\\)`));
     }
   });
+
+  it.each(['known', 'ignore'])('gates the %s status underline behind hover or popup-open', (status) => {
+    for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
+      expect(source).toMatch(new RegExp(`status-${status}:hover:not\\(\\.js-cell-token--status-off\\)[^}]*box-shadow:\\s*inset 0 calc`));
+      expect(source).toMatch(new RegExp(`status-${status}\\.js-cell-token--popup-open:not\\(\\.js-cell-token--status-off\\)[^}]*box-shadow:\\s*inset 0 calc`));
+      expect(source).not.toMatch(new RegExp(`status-${status}\\s*\\{[^}]*box-shadow`));
+    }
+  });
+
+  it.each(['known', 'ignore'])('hides the %s frequency pill until hover or popup-open', (status) => {
+    for (const source of [buildTokenSpanCss(), buildTokenSpanCssForShadow()]) {
+      expect(source).toMatch(new RegExp(`status-${status}:not\\(:hover\\):not\\(\\.js-cell-token--popup-open\\)[^}]*background-color:\\s*transparent`));
+      expect(source).not.toMatch(new RegExp(`status-${status},[^}]*background-color:\\s*transparent`));
+    }
+  });
 });

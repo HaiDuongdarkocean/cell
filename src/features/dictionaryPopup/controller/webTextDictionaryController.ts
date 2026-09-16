@@ -621,11 +621,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       token.classList.remove(`js-cell-token--status-${s}`);
     }
     token.classList.add(`js-cell-token--status-${status}`);
-    if (status === 'known' || status === 'ignore') {
-      token.classList.add('js-cell-token--frequency-off');
-    } else {
-      token.classList.remove('js-cell-token--frequency-off');
-    }
   }
 
   function pauseVideoIfNeeded(): void {
