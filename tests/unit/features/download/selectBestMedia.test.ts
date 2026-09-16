@@ -7,7 +7,7 @@ import type {
   DetectedSubtitle,
   Settings,
   VideoVariant,
-} from '@/types/media';
+} from '@/entities/media';
 
 type SelectSettings = Pick<
   Settings,

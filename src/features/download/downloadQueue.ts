@@ -8,8 +8,13 @@ import {
 /**
  * Function that processes a single download item. Resolves on success and
  * rejects on failure. The queue calls `updateProgress` to track progress.
+ * The `signal` aborts when the item is cancelled, paused, or removed — the
+ * executor should stop in-flight work and reject promptly.
  */
-export type DownloadExecutor = (item: DownloadItem) => Promise<void>;
+export type DownloadExecutor = (
+  item: DownloadItem,
+  signal: AbortSignal,
+) => Promise<void>;
 
 type ProgressListener = (progress: DownloadProgress) => void;
 
@@ -23,6 +28,7 @@ export class DownloadQueue {
   private activeCount = 0;
   private executor: DownloadExecutor | null = null;
   private listeners: Set<ProgressListener> = new Set();
+  private controllers: Map<string, AbortController> = new Map();
 
   constructor(maxConcurrent?: number) {
     this.maxConcurrent = this.clampConcurrent(
@@ -50,27 +56,38 @@ export class DownloadQueue {
     this.processNext();
   }
 
-  /** Cancel a download by id. */
+  /**
+   * Cancel a download by id. Capacity is released when the executor's promise
+   * settles (single decrement in processNext's settle handler) — the abort
+   * signal asks the executor to stop in-flight work immediately.
+   */
   cancel(id: string): void {
     const item = this.items.get(id);
     if (!item) return;
 
-    if (item.status === 'downloading') {
-      this.activeCount = Math.max(0, this.activeCount - 1);
-    }
     this.items.set(id, { ...item, status: 'cancelled' });
+    this.controllers.get(id)?.abort();
     this.processNext();
   }
 
-  /** Pause a download by id. */
+  /**
+   * Pause a download by id. Like cancel(), the abort signal stops in-flight
+   * work, but the settle handler leaves the item 'paused' so resume() can
+   * re-queue it.
+   */
   pause(id: string): void {
     const item = this.items.get(id);
     if (!item) return;
-
-    if (item.status === 'downloading') {
-      this.activeCount = Math.max(0, this.activeCount - 1);
+    if (
+      item.status !== 'queued' &&
+      item.status !== 'downloading' &&
+      item.status !== 'converting'
+    ) {
+      return;
     }
+
     this.items.set(id, { ...item, status: 'paused' });
+    this.controllers.get(id)?.abort();
   }
 
   /** Resume a paused download. */
@@ -109,10 +126,11 @@ export class DownloadQueue {
   /**
    * Remove a download item from the queue entirely. Used for cleaning up
    * completed or errored downloads from the UI. No-op if the item doesn't
-   * exist. Does NOT cancel an active download — use `cancel()` first if the
-   * item is still running.
+   * exist. An active download is aborted so its in-flight work stops — use
+   * `cancel()` first if the item should also be marked 'cancelled'.
    */
   remove(id: string): void {
+    this.controllers.get(id)?.abort();
     this.items.delete(id);
   }
 
@@ -120,10 +138,13 @@ export class DownloadQueue {
    * Restore a previously-saved download item as-is, preserving its status
    * and progress. Used to restore state from session storage after a
    * service worker restart. Unlike {@link add}, this does NOT reset status
-   * to 'queued' or progress to 0, and does NOT trigger processing.
+   * to 'queued' or progress to 0. Restored 'queued' items are dispatched
+   * normally (no-op when no executor is registered yet — setExecutor calls
+   * processNext itself).
    */
   restore(item: DownloadItem): void {
     this.items.set(item.id, item);
+    this.processNext();
   }
 
   /** Get all download items. */
@@ -159,6 +180,7 @@ export class DownloadQueue {
   updateProgress(progress: DownloadProgress): void {
     const item = this.items.get(progress.itemId);
     if (!item) return;
+    if (item.status === 'cancelled' || item.status === 'paused') return;
 
     this.items.set(progress.itemId, {
       ...item,
@@ -215,11 +237,18 @@ export class DownloadQueue {
 
       const itemSnapshot = this.items.get(next.id)!;
       const executor = this.executor;
+      const controller = new AbortController();
+      this.controllers.set(next.id, controller);
 
-      executor(itemSnapshot)
+      executor(itemSnapshot, controller.signal)
         .then(() => {
           const current = this.items.get(next.id);
-          if (current && current.status !== 'cancelled') {
+          if (
+            current &&
+            current.status !== 'cancelled' &&
+            current.status !== 'paused' &&
+            current.status !== 'queued'
+          ) {
             this.items.set(next.id, {
               ...current,
               status: 'done',
@@ -227,13 +256,19 @@ export class DownloadQueue {
               completedAt: Date.now(),
             });
           }
+          this.controllers.delete(next.id);
           this.activeCount = Math.max(0, this.activeCount - 1);
           this.processNext();
         })
         .catch((err: unknown) => {
           const current = this.items.get(next.id);
           const errorMsg = err instanceof Error ? err.message : String(err);
-          if (current && current.status !== 'cancelled') {
+          if (
+            current &&
+            current.status !== 'cancelled' &&
+            current.status !== 'paused' &&
+            current.status !== 'queued'
+          ) {
             this.items.set(next.id, {
               ...current,
               status: 'error',
@@ -247,6 +282,7 @@ export class DownloadQueue {
               error: errorMsg,
             });
           }
+          this.controllers.delete(next.id);
           this.activeCount = Math.max(0, this.activeCount - 1);
           this.processNext();
         });
@@ -256,7 +292,9 @@ export class DownloadQueue {
   /** Find the next item with status "queued" (insertion order preserved). */
   private findNextQueued(): DownloadItem | undefined {
     for (const item of this.items.values()) {
-      if (item.status === 'queued') return item;
+      if (item.status === 'queued' && !this.controllers.has(item.id)) {
+        return item;
+      }
     }
     return undefined;
   }

@@ -384,7 +384,11 @@ export async function loadSessionMedia(ctx: BackgroundContext): Promise<void> {
   }
 }
 
-export function clearSessionMedia(_ctx: BackgroundContext, tabId: number): void {
+export function clearSessionMedia(ctx: BackgroundContext, tabId: number): void {
+  const retryable = ctx.downloadQueue
+    .getByTab(tabId)
+    .some((item) => item.status !== 'done' && item.status !== 'cancelled');
+  if (retryable) return;
   void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
     const all = data[STORAGE_KEYS.SESSION_MEDIA] as
       | Record<string, unknown>
@@ -397,26 +401,60 @@ export function clearSessionMedia(_ctx: BackgroundContext, tabId: number): void 
   }).catch((err: unknown) => console.warn('[background] Failed to clear session media:', err));
 }
 
+interface SessionDownloadsStore {
+  items: Record<string, DownloadItem[]>;
+  auto: Record<string, { url: string; enqueuedIds: string[] }>;
+}
+
+function readSessionDownloadsStore(raw: unknown): SessionDownloadsStore {
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  if (obj.items !== undefined || obj.auto !== undefined) {
+    return {
+      items: (obj.items as SessionDownloadsStore['items'] | undefined) ?? {},
+      auto: (obj.auto as SessionDownloadsStore['auto'] | undefined) ?? {},
+    };
+  }
+  return { items: obj as unknown as SessionDownloadsStore['items'], auto: {} };
+}
+
 export function saveSessionDownloads(ctx: BackgroundContext, tabId: number): void {
   void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
-    const all = (data[STORAGE_KEYS.SESSION_DOWNLOADS] as
-      | Record<string, DownloadItem[]>
-      | undefined) ?? {};
-    all[String(tabId)] = ctx.downloadQueue.getByTab(tabId);
+    const store = readSessionDownloadsStore(data[STORAGE_KEYS.SESSION_DOWNLOADS]);
+    store.items[String(tabId)] = ctx.downloadQueue.getByTab(tabId);
     void setSessionStorage({
-      [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
+      [STORAGE_KEYS.SESSION_DOWNLOADS]: store,
     });
   }).catch((err: unknown) => console.warn('[background] Failed to save session downloads:', err));
+}
+
+export function saveSessionAutoDownloadedTabs(ctx: BackgroundContext): void {
+  void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
+    const store = readSessionDownloadsStore(data[STORAGE_KEYS.SESSION_DOWNLOADS]);
+    const auto: SessionDownloadsStore['auto'] = {};
+    for (const [tabId, entry] of ctx.autoDownloadedTabs) {
+      auto[String(tabId)] = { url: entry.url, enqueuedIds: [...entry.enqueuedIds] };
+    }
+    store.auto = auto;
+    void setSessionStorage({
+      [STORAGE_KEYS.SESSION_DOWNLOADS]: store,
+    });
+  }).catch((err: unknown) => console.warn('[background] Failed to save session auto-downloads:', err));
 }
 
 export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void> {
   try {
     const data = await getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS);
-    const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
-      | Record<string, DownloadItem[]>
-      | undefined;
-    if (!all) return;
-    for (const [, items] of Object.entries(all)) {
+    const store = readSessionDownloadsStore(data[STORAGE_KEYS.SESSION_DOWNLOADS]);
+    for (const [tabIdKey, entry] of Object.entries(store.auto)) {
+      const tabId = Number(tabIdKey);
+      if (Number.isInteger(tabId)) {
+        ctx.autoDownloadedTabs.set(tabId, {
+          url: entry.url,
+          enqueuedIds: new Set(entry.enqueuedIds),
+        });
+      }
+    }
+    for (const [, items] of Object.entries(store.items)) {
       for (const item of items) {
         if (item.status === 'downloading' || item.status === 'converting') {
           ctx.downloadQueue.restore({
@@ -440,13 +478,13 @@ export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void
 
 export function clearSessionDownloads(_ctx: BackgroundContext, tabId: number): void {
   void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
-    const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
-      | Record<string, unknown>
-      | undefined;
-    if (!all) return;
-    delete all[String(tabId)];
+    const raw = data[STORAGE_KEYS.SESSION_DOWNLOADS];
+    if (!raw) return;
+    const store = readSessionDownloadsStore(raw);
+    delete store.items[String(tabId)];
+    delete store.auto[String(tabId)];
     void setSessionStorage({
-      [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
+      [STORAGE_KEYS.SESSION_DOWNLOADS]: store,
     });
   });
 }
@@ -679,6 +717,7 @@ export async function resolveStremioSubtitleListing(
 
 /** Auto-download entry point fired when media is detected for a tab. */
 export async function maybeAutoDownload(ctx: BackgroundContext, tabId: number): Promise<void> {
+  await ctx.sessionReady;
   let tabUrl: string | undefined;
   try {
     const tab = await getTab(tabId);
@@ -699,11 +738,15 @@ export async function maybeAutoDownload(ctx: BackgroundContext, tabId: number): 
   if (state && state.url === tabUrl) {
     const newIds = await tryAutoDownload(tabId, tabUrl, deps, state.enqueuedIds);
     for (const id of newIds) state.enqueuedIds.add(id);
+    if (newIds.length > 0) {
+      saveSessionAutoDownloadedTabs(ctx);
+    }
     return;
   }
 
   const newIds = await tryAutoDownload(tabId, tabUrl, deps);
   if (newIds.length > 0) {
     ctx.autoDownloadedTabs.set(tabId, { url: tabUrl, enqueuedIds: new Set(newIds) });
+    saveSessionAutoDownloadedTabs(ctx);
   }
 }

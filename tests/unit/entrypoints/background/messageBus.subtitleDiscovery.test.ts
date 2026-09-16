@@ -1,6 +1,6 @@
 import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { MessageRequest, MessageResponse } from '@/types/message';
+import type { MessageRequest, MessageResponse } from '@/entities/message';
 
 describe('MessageBus subtitle discovery injection', () => {
   it('injects tabId and frameId into SUBTITLE_DISCOVERY_SIGNAL from sender', async () => {

@@ -15,7 +15,7 @@ import type {
   DownloadItem,
   Settings,
   WhitelistEntry,
-} from '@/types/media';
+} from '@/entities/media';
 
 import { tryAutoDownload, type AutoDownloadDeps } from '@/features/download/autoDownload';
 import { normalizeUrl } from '@/features/whitelist/whitelist';

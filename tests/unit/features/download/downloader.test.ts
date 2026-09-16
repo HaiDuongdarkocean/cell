@@ -4,7 +4,7 @@ import {
   type ConvertCallback,
   type ConvertResult,
 } from '@/features/download/downloader';
-import type { DetectedVideo, DetectedSubtitle, DownloadProgress, SegmentRange } from '@/types/media';
+import type { DetectedVideo, DetectedSubtitle, DownloadProgress, SegmentRange } from '@/entities/media';
 import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/shared/config/config';
 
 // Mock OPFS helpers so we can control whether the streaming path is used.
@@ -1825,6 +1825,94 @@ describe('Downloader', () => {
 
       // 1 segment written
       expect(mockWriter.write).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ============================================================
+  // T10: External AbortSignal stops in-flight work
+  // ============================================================
+  describe('external AbortSignal', () => {
+    it('fetchSegment aborts the in-flight fetch and does not retry', async () => {
+      const controller = new AbortController();
+      fetchMock.mockImplementation(
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('The operation was aborted.', 'AbortError'));
+            });
+          }),
+      );
+
+      const promise = downloader.fetchSegment(
+        'https://example.com/seg.ts',
+        undefined,
+        controller.signal,
+      );
+      controller.abort();
+      await expect(promise).rejects.toThrow(/cancel/i);
+      // No retries after an external abort.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('downloadVideo stops mid-download when the signal aborts', async () => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+      const controller = new AbortController();
+
+      const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+      fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+        if (url.endsWith('seg0.ts')) {
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('The operation was aborted.', 'AbortError'));
+            });
+          });
+        }
+        return makeResponse(makeTextBlob('seg'));
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/shared/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      mockWriter.write.mockClear();
+      mockWriter.close.mockClear();
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      const promise = downloader.downloadVideo(makeM3u8Video(), 'dl-abort', controller.signal);
+      controller.abort();
+      await expect(promise).rejects.toThrow(/cancel|abort/i);
+
+      (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+    });
+  });
+
+  // ============================================================
+  // T11: pending filename is keyed per download URL
+  // ============================================================
+  describe('pending filename association', () => {
+    it('associates each filename with its own download URL', async () => {
+      await Promise.all([
+        downloader.saveBlob(makeTextBlob('content-a'), 'first.mp4'),
+        downloader.saveBlob(makeTextBlob('content-b'), 'second.mp4'),
+      ]);
+
+      expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(2);
+      const urlA = chromeDownloadsDownloadMock.mock.calls[0][0].url;
+      const urlB = chromeDownloadsDownloadMock.mock.calls[1][0].url;
+
+      // Simulate onDeterminingFilename firing out of order for the second
+      // download first — each download must still get its own filename.
+      expect(downloader.consumePendingFilename(urlB)).toBe('second.mp4');
+      expect(downloader.consumePendingFilename(urlA)).toBe('first.mp4');
+      // Consumed entries are gone.
+      expect(downloader.consumePendingFilename(urlA)).toBeNull();
+      expect(downloader.consumePendingFilename('data:other')).toBeNull();
     });
   });
 });

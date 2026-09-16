@@ -5,13 +5,13 @@ import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import { CURRENT_SCHEMA_VERSION } from '@/shared/lib/storage/settingsStore';
-import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
+import type { DownloadItem, Settings, WhitelistEntry } from '@/entities/media';
 import type {
   MessageRequest,
   MessageResponse,
   DetectedMediaUpdatePayload,
   DownloadListResponse,
-} from '@/types/message';
+} from '@/entities/message';
 
 // Mock OPFS so cleanupOrphanedDownloads doesn't fail in jsdom.
 jest.mock('@/shared/lib/storage/opfsStorage', () => ({
@@ -187,6 +187,7 @@ interface MockDownloader {
   pause: jest.Mock;
   resume: jest.Mock;
   retry: jest.Mock;
+  consumePendingFilename: jest.Mock;
 }
 
 function createMockDownloader(): MockDownloader {
@@ -204,6 +205,7 @@ function createMockDownloader(): MockDownloader {
     pause: jest.fn(),
     resume: jest.fn(),
     retry: jest.fn(),
+    consumePendingFilename: jest.fn().mockReturnValue(null),
   };
 }
 
@@ -2683,20 +2685,120 @@ https://cdn.example.com/low.m3u8`;
     const executorCalls = mockQueue.setExecutor.mock.calls;
     const executor = executorCalls[executorCalls.length - 1][0] as (
       item: DownloadItem,
+      signal: AbortSignal,
     ) => Promise<void>;
     const restored = mockQueue.restore.mock.calls
       .map((call) => call[0] as DownloadItem)
       .find((item) => item.id === 'dl-queued');
     expect(restored).toBeDefined();
 
-    await executor(restored as DownloadItem);
+    await executor(restored as DownloadItem, new AbortController().signal);
 
     expect(mockDownloader.downloadVideo).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'vid-1' }),
       'dl-queued',
+      expect.any(AbortSignal),
     );
 
     freshService.stop();
+  });
+
+  it('session restore rehydrates auto-download dedup state so restarts do not re-enqueue', async () => {
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_DOWNLOADS) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_DOWNLOADS]: {
+            items: {},
+            auto: {
+              '123': {
+                url: 'https://example.com/page',
+                enqueuedIds: ['vid-1', 'sub-1'],
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const freshService = new BackgroundService({
+      networkInterceptor: new NetworkInterceptor(),
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+    await freshService.init();
+
+    const restored = freshService.autoDownloadedTabs.get(123);
+    expect(restored?.url).toBe('https://example.com/page');
+    expect(restored?.enqueuedIds).toEqual(new Set(['vid-1', 'sub-1']));
+
+    freshService.stop();
+  });
+
+  it('navigation keeps session media while a retriable download remains for the tab', async () => {
+    mockQueue.add({
+      id: 'dl-err',
+      mediaType: 'video',
+      url: 'https://example.com/video.m3u8',
+      title: 'Retriable',
+      tabId: 123,
+      status: 'error',
+      progress: 40,
+    });
+
+    mockChrome.storage.session.get.mockClear();
+    mockChrome.storage.session.set.mockClear();
+
+    const onUpdated = mockChrome.tabs.onUpdated.addListener.mock.calls[0][0] as (
+      tabId: number,
+      changeInfo: { status?: string },
+      tab: unknown,
+    ) => void;
+    onUpdated(123, { status: 'loading' }, {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const mediaReads = mockChrome.storage.session.get.mock.calls.filter(
+      (call) => call[0] === STORAGE_KEYS.SESSION_MEDIA,
+    );
+    const mediaWrites = mockChrome.storage.session.set.mock.calls.filter(
+      (call) => STORAGE_KEYS.SESSION_MEDIA in (call[0] as Record<string, unknown>),
+    );
+    expect(mediaReads).toHaveLength(0);
+    expect(mediaWrites).toHaveLength(0);
+  });
+
+  it('navigation clears session media once no retriable downloads remain', async () => {
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_MEDIA) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_MEDIA]: {
+            '123': { videos: [], subtitles: [] },
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+    mockChrome.storage.session.set.mockClear();
+
+    const onUpdated = mockChrome.tabs.onUpdated.addListener.mock.calls[0][0] as (
+      tabId: number,
+      changeInfo: { status?: string },
+      tab: unknown,
+    ) => void;
+    onUpdated(123, { status: 'loading' }, {});
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const mediaWrites = mockChrome.storage.session.set.mock.calls.filter(
+      (call) => STORAGE_KEYS.SESSION_MEDIA in (call[0] as Record<string, unknown>),
+    );
+    expect(mediaWrites).toHaveLength(1);
+    expect(
+      (mediaWrites[0][0] as Record<string, Record<string, unknown>>)[
+        STORAGE_KEYS.SESSION_MEDIA
+      ],
+    ).toEqual({});
   });
 
   it('queue executor falls back to interceptor media on mediaMap miss', async () => {
@@ -2708,22 +2810,27 @@ https://cdn.example.com/low.m3u8`;
     const executorCalls = mockQueue.setExecutor.mock.calls;
     const executor = executorCalls[executorCalls.length - 1][0] as (
       item: DownloadItem,
+      signal: AbortSignal,
     ) => Promise<void>;
 
-    await executor({
-      id: 'dl-orphan',
-      mediaType: 'video',
-      url: video.url,
-      title: video.title,
-      tabId: video.tabId,
-      status: 'downloading',
-      progress: 0,
-      videoId: video.id,
-    });
+    await executor(
+      {
+        id: 'dl-orphan',
+        mediaType: 'video',
+        url: video.url,
+        title: video.title,
+        tabId: video.tabId,
+        status: 'downloading',
+        progress: 0,
+        videoId: video.id,
+      },
+      new AbortController().signal,
+    );
 
     expect(mockDownloader.downloadVideo).toHaveBeenCalledWith(
       expect.objectContaining({ id: video.id }),
       'dl-orphan',
+      expect.any(AbortSignal),
     );
   });
 
@@ -2736,22 +2843,27 @@ https://cdn.example.com/low.m3u8`;
     const executorCalls = mockQueue.setExecutor.mock.calls;
     const executor = executorCalls[executorCalls.length - 1][0] as (
       item: DownloadItem,
+      signal: AbortSignal,
     ) => Promise<void>;
 
-    await executor({
-      id: 'dl-sub-orphan',
-      mediaType: 'subtitle',
-      url: subtitle.url,
-      title: 'restored',
-      tabId: subtitle.tabId,
-      status: 'downloading',
-      progress: 0,
-    });
+    await executor(
+      {
+        id: 'dl-sub-orphan',
+        mediaType: 'subtitle',
+        url: subtitle.url,
+        title: 'restored',
+        tabId: subtitle.tabId,
+        status: 'downloading',
+        progress: 0,
+      },
+      new AbortController().signal,
+    );
 
     expect(mockDownloader.downloadSubtitle).toHaveBeenCalledWith(
       expect.objectContaining({ id: subtitle.id }),
       'dl-sub-orphan',
       undefined,
+      expect.any(AbortSignal),
     );
   });
 
@@ -2759,19 +2871,23 @@ https://cdn.example.com/low.m3u8`;
     const executorCalls = mockQueue.setExecutor.mock.calls;
     const executor = executorCalls[executorCalls.length - 1][0] as (
       item: DownloadItem,
+      signal: AbortSignal,
     ) => Promise<void>;
 
     await expect(
-      executor({
-        id: 'dl-missing',
-        mediaType: 'video',
-        url: 'https://example.com/missing.mp4',
-        title: 'Missing',
-        tabId: 123,
-        status: 'downloading',
-        progress: 0,
-        videoId: 'vid-missing',
-      }),
+      executor(
+        {
+          id: 'dl-missing',
+          mediaType: 'video',
+          url: 'https://example.com/missing.mp4',
+          title: 'Missing',
+          tabId: 123,
+          status: 'downloading',
+          progress: 0,
+          videoId: 'vid-missing',
+        },
+        new AbortController().signal,
+      ),
     ).rejects.toThrow('No media found for download dl-missing');
   });
 

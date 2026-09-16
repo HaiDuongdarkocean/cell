@@ -19,7 +19,6 @@ import type {
   HlsEncryption,
   M3u8Playlist,
   SegmentRange,
-  TsSegment,
 } from '@/entities/media';
 import {
   MAX_RETRY,
@@ -35,7 +34,6 @@ import {
   createOpfsWriter,
   readFile as opfsReadFile,
   deleteDownloadSubdir,
-  isOpfsAvailable,
   isQuotaExceededError,
   writeJsonFile,
 } from '@/shared/lib/storage/opfsStorage';
@@ -185,7 +183,7 @@ export class Downloader {
   private readonly keyCache = new Map<string, CryptoKey>();
 
   /**
-   * The filename the next extension-initiated download should use.
+   * Filenames for extension-initiated downloads, keyed by the download URL.
    *
    * Edge (and some Chrome versions) ignore the `filename` parameter of
    * `chrome.downloads.download` when the URL is a `data:` URL — there is no
@@ -195,22 +193,25 @@ export class Downloader {
    * filename in that case (see Chrome docs:
    * https://developer.chrome.com/docs/extensions/reference/api/downloads#event-onDeterminingFilename).
    *
-   * `saveBlob` sets this before calling `chrome.downloads.download`; the
-   * background service worker registers a single `onDeterminingFilename`
-   * listener that reads it and calls `suggest({ filename })` for downloads
-   * initiated by this extension. The field is cleared after the download
-   * starts so subsequent non-extension downloads are unaffected.
+   * `saveBlob` records the desired filename under the exact URL it passes to
+   * `chrome.downloads.download`; the background service worker registers a
+   * single `onDeterminingFilename` listener that consumes the entry keyed by
+   * `downloadItem.url` and calls `suggest({ filename })`. Keying by URL keeps
+   * overlapping downloads from cross-assigning filenames, and entries are
+   * consumed on first use so subsequent non-extension downloads are unaffected.
    */
-  private pendingFilename: string | null = null;
+  private readonly pendingFilenames = new Map<string, string>();
 
-  /** Get the pending filename (used by the onDeterminingFilename listener). */
-  getPendingFilename(): string | null {
-    return this.pendingFilename;
-  }
-
-  /** Clear the pending filename (called by the listener after suggesting). */
-  clearPendingFilename(): void {
-    this.pendingFilename = null;
+  /**
+   * Consume the pending filename registered for `url` (used by the
+   * onDeterminingFilename listener). Returns null when no extension-initiated
+   * download with that URL is pending.
+   */
+  consumePendingFilename(url: string): string | null {
+    const filename = this.pendingFilenames.get(url);
+    if (filename === undefined) return null;
+    this.pendingFilenames.delete(url);
+    return filename;
   }
 
   constructor() {}
@@ -272,13 +273,17 @@ export class Downloader {
    * For m3u8: parse playlist → fetch all .ts segments → merge → convert to
    * mp4 (if convertCallback set) → save. For mp4: fetch directly → save.
    */
-  async downloadVideo(video: DetectedVideo, downloadId: string): Promise<void> {
-    this.throwIfCancelled(downloadId);
+  async downloadVideo(
+    video: DetectedVideo,
+    downloadId: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    this.throwIfCancelled(downloadId, signal);
 
     if (video.format === 'm3u8') {
-      await this.downloadM3u8Video(video, downloadId);
+      await this.downloadM3u8Video(video, downloadId, signal);
     } else if (video.format === 'mp4') {
-      await this.downloadMp4Video(video, downloadId);
+      await this.downloadMp4Video(video, downloadId, signal);
     } else {
       throw new Error(`Unsupported video format: ${video.format}`);
     }
@@ -298,8 +303,9 @@ export class Downloader {
     subtitle: DetectedSubtitle,
     downloadId: string,
     videoContext?: { videoTitle?: string; videoTabUrl?: string },
+    signal?: AbortSignal,
   ): Promise<void> {
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
     this.reportProgress(downloadId, 'downloading', 0);
 
     // Prefer the request `initiator` (iframe player origin) as the Referer —
@@ -359,7 +365,10 @@ export class Downloader {
       }
       let response: Response;
       try {
-        response = await fetch(subtitle.url, { credentials: 'same-origin' });
+        response = await fetch(subtitle.url, {
+          credentials: 'same-origin',
+          signal,
+        });
       } finally {
         if (ruleId !== undefined) {
           void removeRefererRule(ruleId).catch(() => {});
@@ -388,7 +397,7 @@ export class Downloader {
       throw new Error('Subtitle content unavailable');
     }
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
     this.reportProgress(downloadId, 'converting', 50);
 
     // Decrypt HUBPHIM-style payloads and sniff the real format. Trust content
@@ -423,7 +432,7 @@ export class Downloader {
     // slip through the upstream converters.
     srtContent = normalizeSrt(srtContent);
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
 
     const blob = new Blob([srtContent], { type: 'application/x-subrip' });
     // Resolve the base name: use the linked video's title/URL when available
@@ -490,11 +499,20 @@ export class Downloader {
    * Retries up to MAX_RETRY times on network/abort error. Each attempt is
    * aborted after SEGMENT_TIMEOUT_MS.
    */
-  async fetchSegment(url: string, tabUrl?: string): Promise<Blob> {
+  async fetchSegment(
+    url: string,
+    tabUrl?: string,
+    signal?: AbortSignal,
+  ): Promise<Blob> {
     let lastError: unknown = null;
 
     for (let attempt = 0; attempt < MAX_RETRY; attempt++) {
+      if (signal?.aborted) {
+        throw new Error('Download cancelled');
+      }
       const controller = new AbortController();
+      const onExternalAbort = () => controller.abort();
+      signal?.addEventListener('abort', onExternalAbort, { once: true });
       const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
       try {
         // Use `credentials: 'same-origin'` for ALL cross-origin CDN fetches.
@@ -519,9 +537,13 @@ export class Downloader {
         }
         return blob;
       } catch (err: unknown) {
+        if (signal?.aborted) {
+          throw new Error('Download cancelled');
+        }
         lastError = err;
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', onExternalAbort);
       }
     }
 
@@ -542,6 +564,7 @@ export class Downloader {
     keyUri: string,
     tabUrl?: string,
     cacheKey?: string,
+    signal?: AbortSignal,
   ): Promise<CryptoKey> {
     const cacheMap = this.keyCache;
     const ck = cacheKey ?? keyUri;
@@ -551,6 +574,7 @@ export class Downloader {
     const response = await fetch(keyUri, {
       credentials: 'same-origin',
       headers: buildFetchHeaders(tabUrl),
+      signal,
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch AES-128 key: ${response.status}`);
@@ -615,14 +639,20 @@ export class Downloader {
     url: string,
     tabUrl: string | undefined,
     byteRange?: ByteRange,
+    signal?: AbortSignal,
   ): Promise<Blob> {
     if (!byteRange) {
-      return this.fetchSegment(url, tabUrl);
+      return this.fetchSegment(url, tabUrl, signal);
     }
 
+    if (signal?.aborted) {
+      throw new Error('Download cancelled');
+    }
     const start = byteRange.offset ?? 0;
     const end = start + byteRange.length - 1;
     const controller = new AbortController();
+    const onExternalAbort = () => controller.abort();
+    signal?.addEventListener('abort', onExternalAbort, { once: true });
     const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
 
     try {
@@ -644,37 +674,8 @@ export class Downloader {
       return blob;
     } finally {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', onExternalAbort);
     }
-  }
-
-  /**
-   * Fetch all .ts segments from an m3u8 media playlist.
-   *
-   * Calls `onSegmentProgress(current, total)` after each segment is fetched.
-   */
-  async fetchAllSegments(
-    playlistUrl: string,
-    onSegmentProgress: (current: number, total: number) => void,
-    tabUrl?: string,
-  ): Promise<Blob[]> {
-    const response = await fetch(playlistUrl, {
-      credentials: 'same-origin',
-      headers: buildFetchHeaders(tabUrl),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch playlist: ${response.status}`);
-    }
-    const content = await response.text();
-    const playlist = parseM3u8(content, playlistUrl);
-
-    const segments = playlist.segments;
-    const blobs: Blob[] = [];
-    for (let i = 0; i < segments.length; i++) {
-      const blob = await this.fetchSegment(segments[i].url, tabUrl);
-      blobs.push(blob);
-      onSegmentProgress(i + 1, segments.length);
-    }
-    return blobs;
   }
 
   /**
@@ -687,10 +688,11 @@ export class Downloader {
    */
   async saveBlob(blob: Blob, filename: string): Promise<void> {
     const url = await blobToDataUrl(blob);
-    // Set pendingFilename BEFORE calling chrome.downloads.download so the
-    // onDeterminingFilename listener (registered in background init) can
-    // force Edge to use it. Edge ignores the `filename` param for data: URLs.
-    this.pendingFilename = filename;
+    // Register the filename under this exact URL BEFORE calling
+    // chrome.downloads.download so the onDeterminingFilename listener
+    // (registered in background init) can force Edge to use it — Edge ignores
+    // the `filename` param for data: URLs.
+    this.pendingFilenames.set(url, filename);
     try {
       const downloadId = await chromeDownload({
         url,
@@ -702,7 +704,7 @@ export class Downloader {
         console.warn('[downloader] Failed to verify download filename:', err),
       );
     } catch (err) {
-      this.pendingFilename = null;
+      this.pendingFilenames.delete(url);
       console.error(`[downloader] saveBlob FAILED for filename="${filename}":`, err);
       throw err;
     }
@@ -713,19 +715,21 @@ export class Downloader {
   private async downloadMp4Video(
     video: DetectedVideo,
     downloadId: string,
+    signal?: AbortSignal,
   ): Promise<void> {
     this.reportProgress(downloadId, 'downloading', 0);
 
     const response = await fetch(video.url, {
       credentials: 'same-origin',
       headers: buildFetchHeaders(video.tabUrl),
+      signal,
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch video: ${response.status}`);
     }
     const blob = await response.blob();
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
     this.reportProgress(downloadId, 'converting', 50);
 
     const filename = generateFileName(
@@ -734,13 +738,14 @@ export class Downloader {
     );
     await this.saveBlob(blob, filename);
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
     this.reportProgress(downloadId, 'done', 100);
   }
 
   private async downloadM3u8Video(
     video: DetectedVideo,
     downloadId: string,
+    signal?: AbortSignal,
   ): Promise<void> {
     this.reportProgress(downloadId, 'downloading', 0);
 
@@ -750,6 +755,7 @@ export class Downloader {
     const response = await fetch(video.url, {
       credentials: 'same-origin',
       headers: videoHeaders,
+      signal,
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch playlist: ${response.status}`);
@@ -766,10 +772,11 @@ export class Downloader {
         throw new Error('Master playlist has no variants');
       }
       const variantUrl = playlist.variants[0].url;
-      this.throwIfCancelled(downloadId);
+      this.throwIfCancelled(downloadId, signal);
       const variantResponse = await fetch(variantUrl, {
         credentials: 'same-origin',
         headers: videoHeaders,
+        signal,
       });
       if (!variantResponse.ok) {
         throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`);
@@ -791,16 +798,9 @@ export class Downloader {
       );
     }
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
 
-    const opfsAvailable = isOpfsAvailable();
-
-    if (opfsAvailable) {
-      await this.downloadM3u8Streaming(video, downloadId, playlist);
-    } else {
-      // Fallback: legacy in-memory flow for browsers without OPFS.
-      await this.downloadM3u8Legacy(video, downloadId, playlist.segments);
-    }
+    await this.downloadM3u8Streaming(video, downloadId, playlist, signal);
   }
 
   /**
@@ -812,6 +812,7 @@ export class Downloader {
     video: DetectedVideo,
     downloadId: string,
     playlist: M3u8Playlist,
+    signal?: AbortSignal,
   ): Promise<void> {
     const segments = playlist.segments;
     const dirHandle = await ensureDownloadSubdir(downloadId);
@@ -823,11 +824,12 @@ export class Downloader {
     // Each segment will be decrypted after fetch and before OPFS write.
     let aesKey: CryptoKey | undefined;
     if (playlist.encryption && playlist.encryption.method === 'AES-128') {
-      this.throwIfCancelled(downloadId);
+      this.throwIfCancelled(downloadId, signal);
       aesKey = await this.fetchKey(
         playlist.encryption.keyUri,
         video.tabUrl,
         downloadId,
+        signal,
       );
     }
 
@@ -840,11 +842,12 @@ export class Downloader {
     const outputMimeType = isFmp4 ? 'video/mp4' : 'video/mp2t';
 
     if (isFmp4 && playlist.initSegment) {
-      this.throwIfCancelled(downloadId);
+      this.throwIfCancelled(downloadId, signal);
       const initBlob = await this.fetchSegmentWithRange(
         playlist.initSegment.uri,
         video.tabUrl,
         playlist.initSegment.byteRange,
+        signal,
       );
       // Write init segment to OPFS first (before any .m4s segments)
       const initWriter = await createOpfsWriter(dirHandle, opfsFilename);
@@ -883,19 +886,19 @@ export class Downloader {
     const writer = await createOpfsWriter(dirHandle, opfsFilename);
     try {
       for (let start = 0; start < effectiveTotal; start += this.segmentConcurrency) {
-        this.throwIfCancelled(downloadId);
+        this.throwIfCancelled(downloadId, signal);
 
         const batch = contentSegments.slice(start, start + this.segmentConcurrency);
 
         const blobs = await Promise.all(
           batch.map((segment) =>
-            this.fetchSegmentWithRange(segment.url, video.tabUrl, segment.byteRange),
+            this.fetchSegmentWithRange(segment.url, video.tabUrl, segment.byteRange, signal),
           ),
         );
 
         // Write in original playlist order.
         for (let j = 0; j < blobs.length; j++) {
-          this.throwIfCancelled(downloadId);
+          this.throwIfCancelled(downloadId, signal);
           let blob = blobs[j];
           const segmentIndex = start + j;
 
@@ -970,7 +973,7 @@ export class Downloader {
       );
     }
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
 
     // Determine whether to attempt conversion based on mode + size.
     const shouldConvert = this.shouldAttemptConversion(totalBytes);
@@ -991,7 +994,7 @@ export class Downloader {
         resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
         'mp4',
       );
-      this.throwIfCancelled(downloadId);
+      this.throwIfCancelled(downloadId, signal);
       await this.saveOpfsFile(
         downloadId,
         opfsFilename,
@@ -1009,7 +1012,7 @@ export class Downloader {
         );
         this.reportProgress(downloadId, 'converting', 98, undefined, undefined, totalBytes, totalBytes);
 
-        this.throwIfCancelled(downloadId);
+        this.throwIfCancelled(downloadId, signal);
         await this.saveOpfsFile(
           downloadId,
           result.outputName,
@@ -1027,7 +1030,7 @@ export class Downloader {
           resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
           'ts',
         );
-        this.throwIfCancelled(downloadId);
+        this.throwIfCancelled(downloadId, signal);
         await this.saveOpfsFile(
           downloadId,
           opfsFilename,
@@ -1041,7 +1044,7 @@ export class Downloader {
         resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
         'ts',
       );
-      this.throwIfCancelled(downloadId);
+      this.throwIfCancelled(downloadId, signal);
       await this.saveOpfsFile(
         downloadId,
         opfsFilename,
@@ -1050,7 +1053,7 @@ export class Downloader {
       );
     }
 
-    this.throwIfCancelled(downloadId);
+    this.throwIfCancelled(downloadId, signal);
 
     // Phase 3: Cleanup OPFS temp files.
     await deleteDownloadSubdir(downloadId).catch((err: unknown) => {
@@ -1095,41 +1098,6 @@ export class Downloader {
   }
 
   /**
-   * Legacy in-memory flow for browsers without OPFS support.
-   * Fetches all segments into memory, merges, and saves.
-   */
-  private async downloadM3u8Legacy(
-    video: DetectedVideo,
-    downloadId: string,
-    segments: TsSegment[],
-  ): Promise<void> {
-    const totalSegments = segments.length;
-    const blobs: Blob[] = [];
-    let legacyTotalBytes = 0;
-    for (let i = 0; i < totalSegments; i++) {
-      this.throwIfCancelled(downloadId);
-      const blob = await this.fetchSegment(segments[i].url, video.tabUrl);
-      blobs.push(blob);
-      legacyTotalBytes += blob.size;
-      const pct = Math.floor(((i + 1) / totalSegments) * 80);
-      this.reportProgress(downloadId, 'downloading', pct, i + 1, totalSegments, legacyTotalBytes, legacyTotalBytes);
-    }
-
-    this.throwIfCancelled(downloadId);
-
-    // Merge all segments into a single Blob (in-memory).
-    const merged = new Blob(blobs, { type: 'video/mp2t' });
-    const filename = generateFileName(
-      resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
-      'ts',
-    );
-    await this.saveBlob(merged, filename);
-
-    this.throwIfCancelled(downloadId);
-    this.reportProgress(downloadId, 'done', 100);
-  }
-
-  /**
    * Determine whether to attempt TS→MP4 conversion based on the current
    * `convertMode` setting and the total downloaded size.
    *
@@ -1149,8 +1117,8 @@ export class Downloader {
     }
   }
 
-  private throwIfCancelled(downloadId: string): void {
-    if (this.cancelledIds.has(downloadId)) {
+  private throwIfCancelled(downloadId: string, signal?: AbortSignal): void {
+    if (this.cancelledIds.has(downloadId) || signal?.aborted) {
       throw new Error('Download cancelled');
     }
   }

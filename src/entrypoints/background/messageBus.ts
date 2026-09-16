@@ -44,7 +44,7 @@ export class MessageBus {
               error: `Invalid ${type} payload: ${parsed.error.message}`,
             };
           }
-          return handler(request);
+          return handler({ ...request, payload: parsed.data });
         }
       : handler;
     this.handlers.set(type, wrapped);
