@@ -785,7 +785,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     pointer?: WebTriggerPointer,
     isResponseUpdate = false,
   ): void {
-    pauseVideoIfNeeded();
     // A new lookup is taking over — cancel any pending delayed dismiss.
     cancelPendingDismiss();
     // Compute line rect from the level's highlight target for line-aware
@@ -883,6 +882,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // A new lookup is starting — cancel any pending delayed dismiss so the
     // popup doesn't vanish mid-interaction.
     cancelPendingDismiss();
+    pauseVideoIfNeeded();
 
     // Route the lookup to its level: page/subtitle text → level 1 (index 0),
     // content inside popup level N → level N+1. Deeper levels are pruned; the

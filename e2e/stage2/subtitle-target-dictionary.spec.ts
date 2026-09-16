@@ -69,5 +69,6 @@ test.describe('Stage 2: Dictionary lookup on subtitle target text', () => {
 
     const popup = streamFlixPage.locator('.js-cell-popup-host');
     await expect(popup).toBeAttached({ timeout: 10_000 });
+    expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
   });
 });

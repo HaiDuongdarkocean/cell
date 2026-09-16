@@ -1314,6 +1314,41 @@ describe('createWebTextDictionaryController', () => {
     jest.useRealTimers();
   });
 
+  it('pauses video as soon as the popup shell mounts, before lookup data arrives', async () => {
+    let resolveLookup: ((value: unknown) => void) | undefined;
+    mockSendMessage.mockReturnValueOnce(new Promise((resolve) => { resolveLookup = resolve; }) as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-video-early', new DOMRect(0, 0, 0, 0), range) });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveLookup!({ success: true, data: [makeResult()] });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    act(() => { ctrl.destroy() });
+  });
+
   it('keeps the popup open and reuses it when the user clicks another subtitle token', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult({ term: 'over' })] } as unknown as never);
 
