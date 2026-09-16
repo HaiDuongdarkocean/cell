@@ -125,6 +125,17 @@ export default tseslint.config(
       }],
     },
   },
+  {
+    files: ['src/features/**/*.ts', 'src/features/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/entrypoints', '@/entrypoints/*', '@/entrypoints/**', '**/entrypoints/**'],
+          message: 'FSD boundary: features/ must not import from entrypoints/. Move the shared piece down or the consumer up.',
+        }],
+      }],
+    },
+  },
 
   // Feature DAG: dictionaryPopup is the lookup orchestration hub — lower
   // features must not import it back (contracts live in entities/dictionary,
