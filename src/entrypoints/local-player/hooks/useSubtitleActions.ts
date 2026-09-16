@@ -18,7 +18,7 @@ import { handleCardCreatorAction } from '@/features/subtitle/actions/cardActions
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
 import type { SubtitleActionContext } from '@/features/subtitle/actions/subtitleActionContext';
 import type { CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media';
 
 export interface SubtitleActionHandlers {
