@@ -1,5 +1,15 @@
-export * from './types';
-export * from './UniversalPanelController';
+export type {
+  DictionaryPanelPrefill,
+  UniversalPanelController,
+  UniversalPanelTab,
+} from './types';
+export {
+  createUniversalPanelController,
+  type CreateUniversalPanelControllerOptions,
+  type UniversalPanelControllerHandle,
+  type UniversalPanelControllerHost,
+  type UniversalPanelMountController,
+} from './UniversalPanelController';
 export { UniversalPanel, type UniversalPanelProps } from './UniversalPanel';
 export { mountUniversalPanel, type UniversalPanelMountOptions } from './mountUniversalPanel';
 export { SettingsTab } from './tabs/SettingsTab';

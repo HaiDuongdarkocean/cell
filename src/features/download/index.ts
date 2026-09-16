@@ -7,7 +7,14 @@
  * - selectBestMedia, QUALITY_RANK — auto-select best media per prefs
  * - autoDownload — whitelist-driven auto-download orchestration
  */
-export * from './downloader';
-export * from './downloadQueue';
-export * from './selectBestMedia';
-export * from './autoDownload';
+export {
+  buildFetchHeaders,
+  Downloader,
+  type ConvertCallback,
+  type ConvertResult,
+  type ProgressCallback,
+  type SaveOpfsFileCallback,
+} from './downloader';
+export { DownloadQueue, type DownloadExecutor } from './downloadQueue';
+export { QUALITY_RANK, selectBestMedia } from './selectBestMedia';
+export { tryAutoDownload, type AutoDownloadDeps } from './autoDownload';
