@@ -9,11 +9,12 @@ description: Real-Chrome Playwright verification for the Cell extension via pack
 
 **Two-phase workflow: `setup-cell-profile.py` packs the extension + clones the profile; Playwright persistent Chromium with that clone launches, navigates, and tests.**
 
-Three principles:
+Four principles:
 
-1. **Build before launch.** The script loads from `dist/`, not `src/` — a stale build is the most common false failure.
-2. **Clone, don't share.** Each run clones from master — parallel agents never collide on the profile lock.
-3. **Contract before click.** Define "pass" as a concrete DOM state before interacting. "It works" is not a contract.
+1. **Environment prep is always step 1.** `script/launch-cell-context.mjs` owns build→pack+clone→warm-up→launch — test scripts `import { prepareCellEnvironment, warmUpCellContext, launchCellContext }` instead of writing a new launcher.
+2. **uBlock rides with Cell.** Both are loaded via `--load-extension=<dist>,<uBOLite>` — never rely on External Extensions JSON on Windows.
+3. **Clone, don't share.** Each run clones from master — parallel agents never collide on the profile lock.
+4. **Contract before click.** Define "pass" as a concrete DOM state before interacting. "It works" is not a contract.
 
 ## When to Use
 
@@ -33,9 +34,9 @@ Each arrow has a guard — do not advance until it passes.
 |---|---|
 | 0. Contract | Given/When/Then names concrete DOM element, count, text, or class + ALL preconditions |
 | 1. Build | Build exits 0 + `dist/manifest.json` exists (+ `dist/seed/` when dictionary seed needed → `npx vite build --mode development`) |
-| 2. Pack + Clone | `setup-cell-profile.py` prints `CLONE_PATH=C:\cell-browser-sessions\sessions\cell-<uuid>` |
-| 3. Warm-up | First `launchPersistentContext` open/close primes the clone so the extension is fully installed on the next launch. |
-| 4. Connect | `chromium.launchPersistentContext(CLONE_PATH, { headless: false })` resolves + Cell listed in `chrome://extensions` (or `fetchPatched: true`) |
+| 2. Pack + Clone | `prepareCellEnvironment()` (wraps `setup-cell-profile.py`) prints `CLONE_PATH=C:\cell-browser-sessions\sessions\cell-<uuid>` |
+| 3. Warm-up | `warmUpCellContext(CLONE_PATH)` — first open/close primes the clone so the extension is fully installed on the next launch. |
+| 4. Connect | `launchCellContext(CLONE_PATH)` resolves + Cell listed in `chrome://extensions` (or `fetchPatched: true`) |
 | 4. Navigate | `page.goto(url)` resolves + target element visible |
 | 5. Trigger | `page.evaluate(...)` / `locator.click()` succeeds + target has non-empty text |
 | 6. Verify | Contract's "Then" passes with DOM evidence — repeated 2–3× |
@@ -44,6 +45,8 @@ Each arrow has a guard — do not advance until it passes.
 ## Hard-won rules (do not relearn the hard way)
 
 - **Google Chrome 137+ blocks `--load-extension` and `external_crx` on Windows.** The deterministic merge-gate path is **Playwright bundled Chromium/Chrome for Testing** with a cloned profile and `--load-extension` (after a warm-up launch). Packed `.crx` + External Extensions JSON is for Linux/macOS real Chrome; Windows requires the Web Store or registry. After each `npm run build`, re-pack with `--rebuild`.
+- **uBlock is ALWAYS loaded alongside Cell via `--load-extension=dist,data/extension/uBOLite`** (comma-separated, same flag + same `--disable-extensions-except` list). The External Extensions JSON written by `setup-cell-profile.py` does NOT install anything on Windows — the uBlock .crx packs fine yet silently never loads. `data/extension/uBOLite` + `ublock-key.pem` are gitignored — copy them from the main repo into a fresh worktree before setup.
+- **Never hand-roll a launcher.** `script/launch-cell-context.mjs` exposes `prepareCellEnvironment({rebuild})`, `warmUpCellContext(clonePath)`, `launchCellContext(clonePath)` — new test scripts import these and start at navigate/trigger/verify.
 - **Autoplay blocks `video.play()` from script** — click the play button first, then seek via `page.evaluate`.
 - **Shadow DOM:** `page.evaluate` CAN reach open `shadowRoot`s; `caretRangeFromPoint` CANNOT (use `shadowRoot.elementFromPoint`); events need `composed: true` dispatched on `document`.
 - **`page.evaluate` does not await promises in the page** — use sync IIFEs, or `page.evaluate` with an async arrow and wait for the returned Promise.
@@ -60,6 +63,7 @@ Forbidden unless justified with evidence:
 
 - Launching without building first; editing `dist/` directly; copying `dist/` elsewhere
 - `--load-extension` on **Google Chrome** 137+ or `external_crx` on Windows; CDP `loadUnpacked` is session-only; Preferences `location=4` gets stripped. Use Playwright Chromium + warm-up.
+- Writing a new Playwright launcher instead of importing `script/launch-cell-context.mjs`; loading Cell alone without uBlock
 - Killing the Chrome process with `Stop-Process` / `taskkill` (skips `context.close()` → clone leak)
 - Declaring pass after one successful test — repeat ≥2×
 - Treating DOM text as user-visible behavior — check rendered rect, opacity, display

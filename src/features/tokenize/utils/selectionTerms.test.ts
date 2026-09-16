@@ -75,6 +75,46 @@ describe('extractTermsFromSelection', () => {
     expect(extractTermsFromSelection(sel)).toEqual(['hello']);
   });
 
+  it('extracts terms from a range inside a supplied shadow root', () => {
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const cue = document.createElement('span');
+    cue.appendChild(makeToken('alpha'));
+    cue.appendChild(document.createTextNode(' '));
+    cue.appendChild(makeToken('beta'));
+    shadow.appendChild(cue);
+    document.body.appendChild(host);
+
+    const range = document.createRange();
+    range.selectNodeContents(cue);
+    const shadowSelection = {
+      isCollapsed: false,
+      rangeCount: 1,
+      getRangeAt: () => range,
+    } as unknown as Selection;
+
+    expect(extractTermsFromSelection(shadowSelection, [shadow]).sort()).toEqual(['alpha', 'beta']);
+  });
+
+  it('ignores a range inside a shadow root that was not supplied', () => {
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({ mode: 'open' });
+    const cue = document.createElement('span');
+    cue.appendChild(makeToken('alpha'));
+    shadow.appendChild(cue);
+    document.body.appendChild(host);
+
+    const range = document.createRange();
+    range.selectNodeContents(cue);
+    const shadowSelection = {
+      isCollapsed: false,
+      rangeCount: 1,
+      getRangeAt: () => range,
+    } as unknown as Selection;
+
+    expect(extractTermsFromSelection(shadowSelection)).toEqual([]);
+  });
+
   it('scopes the query to the common ancestor', () => {
     const container = document.createElement('div');
     const p1 = document.createElement('p');

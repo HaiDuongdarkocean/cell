@@ -34,23 +34,49 @@ Guard: exit 0 + `dist/manifest.json` exists (+ `dist/seed/` when dev build neede
 python .agents\skills\testing-extension-browser\script\setup-cell-profile.py
 ```
 
-Flags: `--rebuild` (re-pack .crx after `npm run build`) · `--no-ublock` · `--keep-profile`
+Flags: `--rebuild` (re-pack .crx after `npm run build`) · `--no-ublock` (skip — almost never wanted) · `--keep-profile`
 
-Guard: script prints `[OK] Packed cell.crx` → `[OK] Cloned master → <clone>` → `[OK] External Extensions JSON` → `CLONE_PATH=...`.
+From a test script, use the shared helper instead of spawning python by hand:
 
-Loop back: `Pack failed` → `dist/` missing or `openssl` not in PATH → back to Step 1. `cell-key.pem` missing → auto-generated once; the .crx ID derives from the key (stable across re-packs).
+```js
+import { prepareCellEnvironment } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
+const CLONE_PATH = await prepareCellEnvironment({ rebuild: true });
+```
+
+Guard: script prints `[OK] Packed cell.crx` → `[OK] Packed ublock.crx` → `[OK] Cloned master → <clone>` → `CLONE_PATH=...`.
+
+Loop back: `Pack failed` → `dist/` missing or `openssl` not in PATH → back to Step 1. `cell-key.pem`/`ublock-key.pem` missing → auto-generated once; copy them from the main repo to keep stable extension IDs across worktrees. `data/extension/uBOLite` is gitignored — copy it into fresh worktrees or uBlock will not pack.
 
 ## Step 3: Connect (Playwright)
 
-```ts
-import { chromium } from '@playwright/test';
+Always go through the shared launcher — it loads Cell AND uBlock together and primes the clone:
 
-const context = await chromium.launchPersistentContext(CLONE_PATH, {
-  headless: false,
-  executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-});
+```ts
+import { warmUpCellContext, launchCellContext } from '../.agents/skills/testing-extension-browser/script/launch-cell-context.mjs';
+
+await warmUpCellContext(CLONE_PATH);              // primes the clone
+const context = await launchCellContext(CLONE_PATH);
 const page = await context.newPage();
 ```
+
+What it does under the hood (do not re-implement per script):
+
+```ts
+chromium.launchPersistentContext(CLONE_PATH, {
+  headless: true,
+  channel: 'chromium',                           // new headless — required for --load-extension
+  ignoreDefaultArgs: ['--disable-extensions'],
+  args: [
+    '--disable-blink-features=AutomationControlled',
+    `--disable-extensions-except=${DIST},${UBOLITE}`,
+    `--load-extension=${DIST},${UBOLITE}`,        // comma-separated — uBlock only loads this way
+  ],
+});
+```
+
+Default is headless — no window pops during load/test. Pass `{ headless: false }` to `launchCellContext` only when a visible window is genuinely needed (it then uses `executablePath: CHROME_EXE`).
+
+On Windows the External Extensions JSON from Step 2 installs nothing (`external_crx` blocked) — uBlock exists ONLY because it is passed to `--load-extension`.
 
 Guard: `launchPersistentContext` resolves; then navigate `chrome://extensions/` and confirm Cell is listed, or check `fetchPatched: true` via `page.evaluate`.
 
@@ -162,8 +188,8 @@ Do not re-launch until the board has more facts than guesses.
 ## Example — dictionary popup on subtitle target
 
 1. `npx vite build`
-2. `python .agents\skills\testing-extension-browser\script\setup-cell-profile.py --rebuild` → `CLONE_PATH=...`
-3. `const context = await chromium.launchPersistentContext(CLONE_PATH, { headless: false, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });`
+2. `const CLONE_PATH = await prepareCellEnvironment({ rebuild: true })` (packs Cell + uBlock, clones master)
+3. `await warmUpCellContext(CLONE_PATH)` → `const context = await launchCellContext(CLONE_PATH)` (loads Cell + uBlock via `--load-extension`)
 4. `await page.goto(url)` → `await page.locator('.art-control-playAndPause').click()` → `await page.evaluate(() => { const v = document.querySelector('video'); if (v) v.currentTime = 190; })`
 5. `await page.evaluate(() => { /* dispatch mouseup composed:true at target span coords */ })`
 6. `await page.evaluate(() => { const panel = document.querySelector('#cell-universal-panel-host'); const allEls = panel?.shadowRoot?.querySelectorAll('*'); return { totalEls: allEls?.length }; })` → `totalEls > 2 = PASS`

@@ -41,6 +41,10 @@ export interface SubtitleTokenizeControllerOptions {
   /** Retrieve the current target and native line elements from the subtitle overlay.
    *  Each element must directly contain a Text node (e.g. a <span> with text content). */
   readonly getLineElements: () => { target: HTMLElement | null; native: HTMLElement | null };
+  /** Additional open shadow roots holding token spans outside the overlay lines
+   *  (e.g. the split-view subtitle panel). Merged into selection extraction so
+   *  1-4 status keys work on selections inside those surfaces. */
+  readonly getExtraShadowRoots?: () => readonly ShadowRoot[];
   /** Called when the user clicks a token to open the Popup Dictionary. */
   readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
   /** Number of cues before/after the active cue to keep prepared. */
@@ -66,7 +70,7 @@ function createBlock(element: Element, text: string, tokens: Token[] | undefined
 export function createSubtitleTokenizeController(
   options: SubtitleTokenizeControllerOptions,
 ): SubtitleTokenizeController {
-  const { langCode, getLineElements, onOpenDictionary, windowSize = DEFAULT_WINDOW } = options;
+  const { langCode, getLineElements, getExtraShadowRoots, onOpenDictionary, windowSize = DEFAULT_WINDOW } = options;
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({
     initialEnabled: false,
@@ -179,7 +183,7 @@ export function createSubtitleTokenizeController(
 
   function getShadowRoots(): ShadowRoot[] {
     const { target, native } = getLineElements();
-    const roots = new Set<ShadowRoot>();
+    const roots = new Set<ShadowRoot>(getExtraShadowRoots?.() ?? []);
     for (const el of [target, native]) {
       const root = el?.getRootNode();
       if (root instanceof ShadowRoot) roots.add(root);
