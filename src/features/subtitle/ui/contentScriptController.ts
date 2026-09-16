@@ -20,6 +20,7 @@ import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleCon
 import { SubtitleSyncController } from '@/features/subtitle/ui/subtitleSyncController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { SPLIT_VIEW_PANEL_SELECTOR } from '@/features/subtitle/logic/scrollPositionPreserve';
 import type { SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
 import type { LookupRequest } from '@/entities/dictionary';
 import type { TokenizeSettings } from '@/features/tokenize/types';
@@ -210,6 +211,10 @@ export function init(
           subtitleTokenizeCtrl = createSubtitleTokenizeController({
             langCode: settings.subtitleOverlayTargetLanguage,
             getLineElements: () => blockController.getLineElements(),
+            getExtraShadowRoots: () => {
+              const panel = document.querySelector<HTMLElement>(SPLIT_VIEW_PANEL_SELECTOR);
+              return panel?.shadowRoot ? [panel.shadowRoot] : [];
+            },
             onOpenDictionary: (term, element, contextSentence) => {
               if (!sharedWebTextCtrl) return;
               const request: LookupRequest = {

@@ -181,6 +181,57 @@ describe('createSubtitleTokenizeController', () => {
     controller.destroy();
   });
 
+  it('applies status to tokens selected inside an extra shadow root (split-view panel)', async () => {
+    const panelHost = document.createElement('div');
+    panelHost.setAttribute('data-cell-split-view', 'panel');
+    const shadow = panelHost.attachShadow({ mode: 'open' });
+    const cueText = document.createElement('span');
+    const alpha = document.createElement('span');
+    alpha.className = 'js-cell-token';
+    alpha.setAttribute('data-cell-term', 'alpha');
+    alpha.textContent = 'alpha';
+    const beta = document.createElement('span');
+    beta.className = 'js-cell-token';
+    beta.setAttribute('data-cell-term', 'beta');
+    beta.textContent = 'beta';
+    cueText.append(alpha, document.createTextNode(' '), beta);
+    shadow.appendChild(cueText);
+    document.body.appendChild(panelHost);
+
+    const target = document.createElement('div');
+    const native = document.createElement('div');
+    document.body.append(target, native);
+    const controller = createSubtitleTokenizeController({
+      langCode: 'en',
+      getLineElements: () => ({ target, native }),
+      getExtraShadowRoots: () => [shadow],
+      onOpenDictionary: jest.fn(),
+      windowSize: 1,
+    });
+    controller.enable();
+
+    const range = document.createRange();
+    range.selectNodeContents(cueText);
+    const shadowSelection = {
+      isCollapsed: false,
+      rangeCount: 1,
+      getRangeAt: () => range,
+      removeAllRanges: jest.fn(),
+    } as unknown as Selection;
+    const getSelectionSpy = jest.spyOn(window, 'getSelection').mockReturnValue(shadowSelection);
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('3')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'alpha', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'beta', 'known');
+
+    getSelectionSpy.mockRestore();
+    controller.destroy();
+  });
+
   it('applies status through handleStatusKey for player-mode keyboard routing', async () => {
     const { target, cues, controller } = setup();
 
