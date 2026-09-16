@@ -44,7 +44,6 @@ import { createWordHighlight, type HighlightTarget, type WordHighlight } from '@
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 import { formatDefinitions } from '@/features/dictionary/logic/formatDefinitions';
-import { buildSubtitleQueue } from '@/features/subtitle/actions/cardActions';
 import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
@@ -1136,6 +1135,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       initialMedia: context.initialMedia,
       queue: context.queue,
       initialAction: action,
+      mediaPending: context.mediaPending,
       // Popup selection snapshot — cloned by the integrated Dictionary.
       selectedImageIds: selection?.selectedImageIds,
       selectedAudioIds: selection?.selectedAudioIds,
@@ -1550,13 +1550,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             prefill.translation ||
             (await translationTask);
 
-          // Build a lazy queue from the subtitle cue / context sentence. The
-          // queue is shown first; the user selects a term before any lookup.
-          const queueText = fromSubtitle
-            ? (lookupCue?.text ?? media.cue?.targetText ?? prefill.contextSentence)
-            : prefill.contextSentence;
-          const queue = queueText ? await buildSubtitleQueue(queueText, sourceLang) : [];
-
           const selectedWordAudios = (prefill.audioItems ?? []).filter(
             (item) => item.kind === 'word' && (prefill.selectedAudioIds ?? []).includes(item.id),
           );
@@ -1580,7 +1573,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               wordAudioItems: selectedWordAudios,
               imageItems: selectedImages,
             },
-            queue,
           };
 
           sendToCard(context, action, prefill);

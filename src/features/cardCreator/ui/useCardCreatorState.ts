@@ -418,6 +418,7 @@ export function useCardCreatorState(
     const ctx = openContextRef.current;
     if (!ctx) return;
     const store = useCardCreatorStore.getState();
+    store.setCapturingMedia(ctx.mediaPending === true);
 
     // Immediately set draft with cue/prefill data + restored config + defaults
     // so the form renders right away (sentence text, media, tags visible while

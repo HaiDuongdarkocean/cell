@@ -75,6 +75,7 @@ function buildOpenContext(
         }
       : undefined,
     queue: context?.queue,
+    mediaPending: context?.mediaPending,
   };
 }
 
