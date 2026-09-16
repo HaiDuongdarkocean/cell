@@ -21,6 +21,8 @@
 // Ceiling: only `fetch` is patched; `XMLHttpRequest` is not. Sites using XHR
 // for listing fetches will not have their bodies captured.
 
+declare const __CELL_DEBUG__: string;
+
 (() => {
   // Skip only hidden (likely challenge) iframes. Player iframes are normally
   // visible and must be instrumented for deep-frame subtitle discovery.
@@ -62,6 +64,13 @@
 
   const originalFetch = window.fetch;
 
+  function countMiss(key: string): void {
+    if (typeof __CELL_DEBUG__ === 'undefined' || __CELL_DEBUG__ !== 'true') return;
+    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
+    const misses = g.__cellFetchInterceptorMisses ?? (g.__cellFetchInterceptorMisses = {});
+    misses[key] = (misses[key] ?? 0) + 1;
+  }
+
   // Cache the last few signals until the isolated content script is ready.
   // Re-post when we receive `__CELL_CS_READY`.
   const pendingSignals: { type: string; payload: Record<string, unknown> }[] = [];
@@ -75,6 +84,7 @@
         window.postMessage(msg, '*');
       } catch {
         // swallow
+        countMiss('post');
       }
       return;
     }
@@ -93,6 +103,7 @@
         window.postMessage(msg, '*');
       } catch {
         // swallow
+        countMiss('postFlush');
       }
     }
   }
@@ -126,6 +137,7 @@
             : (input as Request).url;
     } catch {
       // ignore
+      countMiss('resolveUrl');
     }
 
     const isSubtitle = SUBTITLE_PATTERN_COMBINED.test(url);
@@ -181,10 +193,12 @@
               }
             } catch {
               // swallow
+              countMiss('readSubtitleBody');
             }
           })();
         } catch {
           // swallow
+          countMiss('cloneSubtitle');
         }
       }
 
@@ -231,10 +245,12 @@
               );
             } catch {
               // swallow
+              countMiss('readListingBody');
             }
           })();
         } catch {
           // swallow
+          countMiss('cloneListing');
         }
       }
 
