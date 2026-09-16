@@ -35,7 +35,7 @@ export function ReaderApp(): React.JSX.Element {
   const cumulativeReadTimeRef = useRef<number>(0);
   const readStartAtRef = useRef<number>(Date.now());
   const isReadPausedRef = useRef<boolean>(false);
-  const [tick, setTick] = useState<number>(0);
+  const [, setTick] = useState<number>(0);
 
   const loadBooks = useCallback(async () => {
     try {
@@ -255,15 +255,12 @@ export function ReaderApp(): React.JSX.Element {
     return () => clearInterval(id);
   }, [selectedBook]);
 
-  // `tick` is the intentional render trigger for the live timer; refs hold
-  // the actual cumulative time so the value recomputes once per second.
-  const readTimeSeconds = useMemo(() => {
-    const elapsed = isReadPausedRef.current
-      ? 0
-      : Date.now() - readStartAtRef.current;
-    return Math.floor((cumulativeReadTimeRef.current + elapsed) / 1000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick]);
+  // Refs hold the actual cumulative time; the 1s interval tick above is the
+  // render trigger so this recomputes once per second.
+  const elapsed = isReadPausedRef.current
+    ? 0
+    : Date.now() - readStartAtRef.current;
+  const readTimeSeconds = Math.floor((cumulativeReadTimeRef.current + elapsed) / 1000);
 
   const progressPercent = useMemo(() => {
     if (!selectedBook || selectedParagraph === null) return 0;

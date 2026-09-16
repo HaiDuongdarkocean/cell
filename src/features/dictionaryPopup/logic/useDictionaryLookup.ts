@@ -248,6 +248,16 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
   const lastAppliedResultRef = useRef<LookupResult | undefined>(undefined);
   const lastApplyFnRef = useRef(applyResult);
+  // Seed objects are mirrored in a ref so the effect below can key on scalar
+  // changes (term, candidate count) without re-firing on every new object
+  // identity the parent passes per render.
+  const seedRef = useRef({ result: initialResult, candidates: initialCandidates, cursorOffset: initialCursorOffset });
+  const initialResultTerm = initialResult?.term;
+  const initialCandidateCount = initialCandidates.length;
+
+  useEffect(() => {
+    seedRef.current = { result: initialResult, candidates: initialCandidates, cursorOffset: initialCursorOffset };
+  });
 
   useEffect(() => {
     if (isLoadingProp) return;
@@ -259,27 +269,25 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
       lastAppliedResultRef.current = undefined;
     }
 
+    const seed = seedRef.current;
     const targetTerm = initialTerm?.trim() ?? '';
-    const resultTerm = initialResult?.term?.trim().toLowerCase() ?? '';
-    const isFreshResult = initialResult !== undefined && lastAppliedResultRef.current !== initialResult;
+    const resultTerm = initialResultTerm?.trim().toLowerCase() ?? '';
+    const isFreshResult = seed.result !== undefined && lastAppliedResultRef.current !== seed.result;
     const isMatchingTerm = !targetTerm || resultTerm === targetTerm.toLowerCase();
 
-    if (initialResult && (isFreshResult || isMatchingTerm)) {
-      if (lastAppliedResultRef.current !== initialResult) {
-        applyResult([initialResult, ...initialCandidates], initialResult.term, initialContextSentence);
-        lastAppliedResultRef.current = initialResult;
+    if (seed.result && (isFreshResult || isMatchingTerm)) {
+      if (lastAppliedResultRef.current !== seed.result) {
+        applyResult([seed.result, ...seed.candidates], seed.result.term, initialContextSentence);
+        lastAppliedResultRef.current = seed.result;
       }
       return;
     }
 
     if (targetTerm) {
-      search(targetTerm, initialContextSentence, initialCursorOffset);
+      search(targetTerm, initialContextSentence, seed.cursorOffset);
     }
     return () => { cancelInFlight(); };
-    // Only react to meaningful external seed changes, not to every new object
-    // identity on re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingProp, initialResult?.term, initialCandidates.length, initialTerm, initialContextSentence, search, applyResult]);
+  }, [isLoadingProp, initialResultTerm, initialCandidateCount, initialTerm, initialContextSentence, search, applyResult]);
 
   // Sync an externally-driven status (e.g. keyboard shortcut) to the active
   // result without persisting — the external source already owns persistence.

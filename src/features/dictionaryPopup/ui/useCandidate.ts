@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '@/features/dictionary/services/wordStatusStore';
@@ -99,17 +99,23 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const fullSnapshot = selectionSnapshot as (PopupSelectionSnapshot & Partial<PopupCardCreatorPrefill>) | undefined;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
+  const selectedDefinitionIds = fullSnapshot?.selectedDefinitionIds;
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(
-    () => initDefinitionSelection(candidate, fullSnapshot?.selectedDefinitionIds),
+    () => initDefinitionSelection(candidate, selectedDefinitionIds),
   );
 
   // Re-initialize definition selection when the candidate identity (term + lang)
   // or the incoming selection snapshot changes. This keeps the integrated
   // Dictionary in sync without wiping user toggles on a simple status cycle.
+  const selectionKeyRef = useRef(
+    JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null]),
+  );
   useEffect(() => {
-    setDefinitionSelection(initDefinitionSelection(candidate, fullSnapshot?.selectedDefinitionIds));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candidate.term, candidate.langCode, fullSnapshot?.selectedDefinitionIds]);
+    const key = JSON.stringify([candidate.langCode, candidate.term, selectedDefinitionIds ?? null]);
+    if (selectionKeyRef.current === key) return;
+    selectionKeyRef.current = key;
+    setDefinitionSelection(initDefinitionSelection(candidate, selectedDefinitionIds));
+  }, [candidate, selectedDefinitionIds]);
 
   const effectiveAudioItems = initialAudioItems ?? fullSnapshot?.audioItems;
   const effectiveImageItems = initialImageItems ?? fullSnapshot?.imageItems;
