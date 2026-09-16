@@ -84,6 +84,9 @@ export class ReactSubtitleController {
   /** Player state captured when a study mode takes over; restored when the
    *  mode deactivates (back to 'normal'). */
   private studyBaseline: { playbackRate: number; targetHidden: boolean; nativeHidden: boolean } | null = null;
+  /** Speed the user picked via SpeedPill / side panel. Once set it wins over
+   *  study-mode per-step setSpeed actions so a cue transition can't reset it. */
+  private userSpeed: PlaybackSpeed | null = null;
 
   /** Called when the user selects a subtitle track from the manager panel. */
   public onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -188,7 +191,7 @@ export class ReactSubtitleController {
       offsetMs: this.offsetMs,
       onSeek: (timeMs: number) => this.handleCueSeek(timeMs),
       onPracticeModeChange: (mode: SubtitlePracticeMode) => { void setSubtitlePracticeMode(mode); },
-      onPlaybackSpeedChange: (speed: PlaybackSpeed) => { this.video.playbackRate = speed; },
+      onPlaybackSpeedChange: (speed: PlaybackSpeed) => this.setUserPlaybackSpeed(speed),
       onPreviousCue: (cue: BilingualCue) => this.handlePreviousCue(cue),
       onReplayCue: (cue: BilingualCue) => this.handleReplayCue(cue),
       onContinueCue: (cue: BilingualCue) => this.handleContinueCue(cue),
@@ -552,6 +555,15 @@ export class ReactSubtitleController {
     this.mount.setManager(this.buildManagerState());
   }
 
+  /** Record + apply a user-picked playback speed (SpeedPill, side panel).
+   *  Sticky for the controller's lifetime: subsequent study-mode per-step
+   *  setSpeed actions apply this instead of the configured step speed. */
+  setUserPlaybackSpeed(speed: PlaybackSpeed): void {
+    this.userSpeed = speed;
+    this.video.playbackRate = speed;
+    this.mount.setPlaybackSpeed(speed);
+  }
+
   /** Apply a study mode to the current playback.
    *  Drives the study-mode playback state machine for per-cue step sequencing.
    *  removeBracketed is applied to overlay rendering. */
@@ -573,8 +585,9 @@ export class ReactSubtitleController {
     } else if (wasActive && !this.studyMode.isActive && this.studyBaseline) {
       const baseline = this.studyBaseline;
       this.studyBaseline = null;
-      this.video.playbackRate = baseline.playbackRate;
-      this.mount.setPlaybackSpeed(baseline.playbackRate as PlaybackSpeed);
+      const speed = this.userSpeed ?? baseline.playbackRate;
+      this.video.playbackRate = speed;
+      this.mount.setPlaybackSpeed(speed as PlaybackSpeed);
       this.applySubtitleHidden(baseline.targetHidden, baseline.nativeHidden);
       this.mount.setPanelBlurred(false);
     }
@@ -628,10 +641,14 @@ export class ReactSubtitleController {
           this.mount.setPanelBlurred(shouldBlurPanel);
           break;
         }
-        case 'setSpeed':
-          this.video.playbackRate = action.speed;
-          this.mount.setPlaybackSpeed(action.speed as PlaybackSpeed);
+        case 'setSpeed': {
+          const speed = action.transient === true
+            ? Math.max(action.speed, this.userSpeed ?? action.speed)
+            : this.userSpeed ?? action.speed;
+          this.video.playbackRate = speed;
+          this.mount.setPlaybackSpeed(speed as PlaybackSpeed);
           break;
+        }
         case 'seek':
           seekToCue(this.video, { start: action.timeMs }, this.getOffsetMs());
           break;

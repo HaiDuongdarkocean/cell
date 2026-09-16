@@ -3,7 +3,7 @@ import type { StudyMode, StudyModeAdvancedSettings, StudyStep, SubtitleVisibilit
 
 export type PlaybackAction =
   | { type: 'setSubtitle'; subtitle: SubtitleVisibility }
-  | { type: 'setSpeed'; speed: number }
+  | { type: 'setSpeed'; speed: number; transient?: boolean }
   | { type: 'seek'; timeMs: number }
   | { type: 'pause' }
   | { type: 'play' };
@@ -274,7 +274,7 @@ export class StudyModePlaybackController {
 
     const multiplier = this.parseSkipMultiplier(this.advanced.skipNoDialogue);
     if (multiplier > 0) {
-      return [{ type: 'setSpeed', speed: multiplier }];
+      return [{ type: 'setSpeed', speed: multiplier, transient: true }];
     }
 
     return [];

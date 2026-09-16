@@ -143,7 +143,7 @@ describe('StudyModePlaybackController', () => {
     const cues = [makeCue(1, 0, 1000, 'a'), makeCue(2, 5000, 8000, 'b')];
     const ctrl = new StudyModePlaybackController(hybridMode, advanced2X, cues);
     const actions = ctrl.onTimeUpdate(2500);
-    expect(actions).toEqual([{ type: 'setSpeed', speed: 2 }]);
+    expect(actions).toEqual([{ type: 'setSpeed', speed: 2, transient: true }]);
   });
 
   it('emits raw cue start in seek actions when offsetMs is set', () => {
@@ -176,9 +176,9 @@ describe('StudyModePlaybackController', () => {
       makeCue(3, 12000, 15000, 'c'),
     ];
     const ctrl = new StudyModePlaybackController(hybridMode, advanced2X, cues);
-    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'setSpeed', speed: 2 }]);
+    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'setSpeed', speed: 2, transient: true }]);
     expect(ctrl.onTimeUpdate(2600)).toEqual([]);
-    expect(ctrl.onTimeUpdate(10000)).toEqual([{ type: 'setSpeed', speed: 2 }]);
+    expect(ctrl.onTimeUpdate(10000)).toEqual([{ type: 'setSpeed', speed: 2, transient: true }]);
   });
 
   it('read preset pauses at cue start only — resuming runs to next cue without an end pause', () => {

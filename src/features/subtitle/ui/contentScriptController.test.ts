@@ -167,6 +167,7 @@ interface MockController {
   getTargetStyle: jest.Mock;
   getNativeStyle: jest.Mock;
   isStudyModeActive: jest.Mock;
+  setUserPlaybackSpeed: jest.Mock;
   isPlayerModeActive: boolean;
   onCuesUpdated?: () => void;
   onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -251,6 +252,7 @@ function createMockController(): MockController {
     getTargetStyle: jest.fn().mockReturnValue({ visible: true }),
     getNativeStyle: jest.fn().mockReturnValue({ visible: true }),
     isStudyModeActive: jest.fn().mockReturnValue(false),
+    setUserPlaybackSpeed: jest.fn(),
     isPlayerModeActive: false,
   };
 }
@@ -807,7 +809,7 @@ describe('contentScriptController', () => {
       {},
       jest.fn(),
     );
-    expect(video.playbackRate).toBe(1.5);
+    expect(blockController.setUserPlaybackSpeed).toHaveBeenCalledWith(1.5);
 
     void onRuntimeMessage(
       {
@@ -817,7 +819,7 @@ describe('contentScriptController', () => {
       {},
       jest.fn(),
     );
-    expect(video.playbackRate).toBe(1.5);
+    expect(blockController.setUserPlaybackSpeed).toHaveBeenCalledTimes(1);
 
     cleanup!();
     cleanupCalled = true;

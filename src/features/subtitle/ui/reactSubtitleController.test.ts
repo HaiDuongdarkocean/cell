@@ -661,6 +661,113 @@ describe('ReactSubtitleController', () => {
     expect(fakeMount.setPlaybackSpeed).toHaveBeenLastCalledWith(1.25);
   });
 
+  it('manual playback speed survives cue transitions while a study mode is active', () => {
+    const cues: SrtCue[] = [
+      { index: 1, start: 0, end: 5000, text: 'One' },
+      { index: 2, start: 5000, end: 10000, text: 'Two' },
+    ];
+    controller.loadCues(cues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
+
+    const studyMode: StudyMode = {
+      id: 'listen',
+      type: 'preset',
+      icon: 'volumeHigh',
+      title: 'Listen',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    controller.applyStudyMode(studyMode, advanced);
+    expect(video.playbackRate).toBe(1);
+
+    const mountOptions = mockMountSubtitle.mock.calls[0][0];
+    mountOptions.onPlaybackSpeedChange?.(10);
+    expect(video.playbackRate).toBe(10);
+
+    // Finish cue 1's step chain, then cross into cue 2 — the mode re-emits
+    // setSpeed(step.speed) on entry but the user's manual speed must win.
+    video.currentTime = 5.5;
+    video.dispatchEvent(new Event('timeupdate'));
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 1, native: -1 });
+    video.currentTime = 6;
+    video.dispatchEvent(new Event('timeupdate'));
+
+    expect(video.playbackRate).toBe(10);
+    expect(fakeMount.setPlaybackSpeed).toHaveBeenLastCalledWith(10);
+  });
+
+  it('restores the manual speed instead of the pre-mode baseline when the study mode deactivates', () => {
+    controller.loadCues([targetCue]);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    video.playbackRate = 1.25;
+
+    const studyMode: StudyMode = {
+      id: 'shadowing',
+      type: 'custom',
+      icon: 'bookOpen',
+      title: 'Shadowing',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 0.5, after: 'continue' }],
+    };
+    const normalMode: StudyMode = {
+      id: 'normal',
+      type: 'preset',
+      icon: 'play',
+      title: 'Normal',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+
+    controller.applyStudyMode(studyMode, advanced);
+    expect(video.playbackRate).toBe(0.5);
+
+    const mountOptions = mockMountSubtitle.mock.calls[0][0];
+    mountOptions.onPlaybackSpeedChange?.(2);
+
+    controller.applyStudyMode(normalMode, advanced);
+    expect(video.playbackRate).toBe(2);
+    expect(fakeMount.setPlaybackSpeed).toHaveBeenLastCalledWith(2);
+  });
+
+  it('silence-skip fast-forward still applies when it exceeds the manual speed', () => {
+    const cues: SrtCue[] = [
+      { index: 1, start: 0, end: 5000, text: 'One' },
+      { index: 2, start: 8000, end: 12000, text: 'Two' },
+    ];
+    controller.loadCues(cues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
+
+    const studyMode: StudyMode = {
+      id: 'listen',
+      type: 'preset',
+      icon: 'volumeHigh',
+      title: 'Listen',
+      description: '',
+      steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: '4X', removeBracketed: false };
+    controller.applyStudyMode(studyMode, advanced);
+
+    const mountOptions = mockMountSubtitle.mock.calls[0][0];
+    mountOptions.onPlaybackSpeedChange?.(2);
+    expect(video.playbackRate).toBe(2);
+
+    // Finish cue 1's step chain, then play into the silence gap — the
+    // transient skip speed (4x) exceeds the manual speed so it applies.
+    video.currentTime = 5.5;
+    video.dispatchEvent(new Event('timeupdate'));
+    fakeEngine.getActiveIndices.mockReturnValue({ target: -1, native: -1 });
+    video.currentTime = 6;
+    video.dispatchEvent(new Event('timeupdate'));
+
+    expect(video.playbackRate).toBe(4);
+    expect(fakeMount.setPlaybackSpeed).toHaveBeenLastCalledWith(4);
+  });
+
   it('keeps engine visibility when a settings update lands while study mode is active', () => {
     controller.loadCues([targetCue]);
     fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });

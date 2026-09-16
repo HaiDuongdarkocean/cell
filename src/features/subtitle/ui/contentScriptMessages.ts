@@ -54,7 +54,11 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
     if (m?.type === MESSAGE_TYPES.SET_PLAYBACK_RATE) {
       const rate = (m.payload as { rate?: number })?.rate;
       if (rate === 0.5 || rate === 0.75 || rate === 1 || rate === 1.25 || rate === 1.5) {
-        video.playbackRate = rate;
+        if (blockController) {
+          blockController.setUserPlaybackSpeed(rate);
+        } else {
+          video.playbackRate = rate;
+        }
       }
     }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
