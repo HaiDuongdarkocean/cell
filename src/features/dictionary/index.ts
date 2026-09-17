@@ -1,3 +1,3 @@
-export { getWordStatuses, setWordStatus } from './services/wordStatusClient';
+export { getWordStatuses, setWordStatus, listWordStatuses, cycleWordStatus, deleteWordStatus, normalizeLangCode } from './services/wordStatusClient';
 export { getFrequencyEntries } from './services/frequencyClient';
-export { onWordStatusChanged, emitWordStatusChanged } from './services/wordStatusEvents';
+export { onWordStatusChanged, emitWordStatusChanged, onWordStatusRemoved, emitWordStatusRemoved } from './services/wordStatusEvents';

@@ -8,10 +8,11 @@ jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
 
 jest.mock('./wordStatusEvents', () => ({
   emitWordStatusChanged: jest.fn(),
+  emitWordStatusRemoved: jest.fn(),
 }));
 
 import { onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis/runtime';
-import { emitWordStatusChanged } from './wordStatusEvents';
+import { emitWordStatusChanged, emitWordStatusRemoved } from './wordStatusEvents';
 
 describe('startWordStatusCrossTabRelay', () => {
   let registeredListener: (message: unknown) => boolean;
@@ -54,6 +55,20 @@ describe('startWordStatusCrossTabRelay', () => {
       payload: { tabId: 'two', langCode: 'en', term: 'call', status: 'known' },
     });
 
+    expect(emitWordStatusChanged).not.toHaveBeenCalled();
+  });
+
+  it('emits local removed event when WORD_STATUS_DELETED arrives', () => {
+    startWordStatusCrossTabRelay();
+    registeredListener({
+      type: MESSAGE_TYPES.WORD_STATUS_DELETED,
+      payload: { tabId: 2, langCode: 'en', term: 'call' },
+    });
+
+    expect(emitWordStatusRemoved).toHaveBeenCalledWith({
+      langCode: 'en',
+      term: 'call',
+    });
     expect(emitWordStatusChanged).not.toHaveBeenCalled();
   });
 

@@ -6,6 +6,9 @@ jest.mock('@/features/dictionary/services/wordStatusStore', () => ({
   setWordStatus: jest.fn(),
   getWordStatus: jest.fn(),
   getWordStatuses: jest.fn(),
+  getAllWordStatuses: jest.fn(),
+  cycleWordStatus: jest.fn(),
+  deleteWordStatus: jest.fn(),
 }));
 
 const mockTabsQuery = jest.fn();
@@ -104,5 +107,106 @@ describe('WORD_STATUS_SET', () => {
 
     expect(mockTabsQuery).not.toHaveBeenCalled();
     expect(mockTabsSendMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('WORD_STATUS_LIST', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns all stored entries for the lang', async () => {
+    (wordStatusStore.getAllWordStatuses as jest.Mock).mockResolvedValue([
+      { term: 'call', status: 'known', updatedAt: 100 },
+      { term: 'pen', status: 'tracking', updatedAt: 200 },
+    ]);
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_LIST);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en' } });
+
+    expect(response).toEqual({
+      success: true,
+      data: {
+        entries: [
+          { term: 'call', status: 'known', updatedAt: 100 },
+          { term: 'pen', status: 'tracking', updatedAt: 200 },
+        ],
+      },
+    });
+    expect(wordStatusStore.getAllWordStatuses).toHaveBeenCalledWith('en');
+  });
+
+  it('rejects a non-2-char langCode', async () => {
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_LIST);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'zh-hans' } });
+
+    expect(response).toEqual(expect.objectContaining({ success: false }));
+    expect(wordStatusStore.getAllWordStatuses).not.toHaveBeenCalled();
+  });
+});
+
+describe('WORD_STATUS_CYCLE', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+  });
+
+  it('cycles atomically in background and broadcasts CHANGED to other tabs', async () => {
+    (wordStatusStore.cycleWordStatus as jest.Mock).mockResolvedValue('known');
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_CYCLE);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', term: 'call' } });
+
+    expect(response).toEqual({ success: true, data: { status: 'known' } });
+    expect(wordStatusStore.cycleWordStatus).toHaveBeenCalledWith('en', 'call');
+    await flushPromises();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
+        payload: { tabId: 1, langCode: 'en', term: 'call', status: 'known' },
+      }),
+      { frameId: 0 },
+    );
+  });
+});
+
+describe('WORD_STATUS_DELETE', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTabsQuery.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    mockGetAllFrames.mockResolvedValue([{ frameId: 0 }]);
+  });
+
+  it('deletes the row and broadcasts DELETED to other tabs', async () => {
+    (wordStatusStore.deleteWordStatus as jest.Mock).mockResolvedValue(undefined);
+
+    const ctx = createMockCtx();
+    registerWordStatusHandlers(ctx as unknown as Parameters<typeof registerWordStatusHandlers>[0]);
+
+    const handler = ctx.handlers.get(MESSAGE_TYPES.WORD_STATUS_DELETE);
+    const response = await handler?.({ payload: { tabId: 1, langCode: 'en', term: 'call' } });
+
+    expect(response).toEqual({ success: true });
+    expect(wordStatusStore.deleteWordStatus).toHaveBeenCalledWith('en', 'call');
+    await flushPromises();
+    expect(mockTabsSendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.WORD_STATUS_DELETED,
+        payload: { tabId: 1, langCode: 'en', term: 'call' },
+      }),
+      { frameId: 0 },
+    );
   });
 });

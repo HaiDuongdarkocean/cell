@@ -9,6 +9,13 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import type { MessageResponse } from '@/entities/message';
 import type { WordStatus } from '@/entities/dictionary';
+import type { WordStatusEntry } from './wordStatusStore';
+
+/** Normalize any incoming lang code to the base-2 form the schemas require. */
+export function normalizeLangCode(langCode: string): string {
+  const base = langCode.split('-')[0]?.toLowerCase() ?? '';
+  return base.length === 2 ? base : 'en';
+}
 
 /**
  * Get statuses for many terms from the background word-status store.
@@ -22,7 +29,7 @@ export async function getWordStatuses(
 
   const response = await sendMessage<MessageResponse<{ statuses: Record<string, WordStatus> }>>({
     type: MESSAGE_TYPES.WORD_STATUSES_GET,
-    payload: { tabId: -1, langCode, terms },
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), terms },
   });
 
   if (!response?.success || !response.data) {
@@ -42,10 +49,50 @@ export async function setWordStatus(
 ): Promise<void> {
   const response = await sendMessage<MessageResponse>({
     type: MESSAGE_TYPES.WORD_STATUS_SET,
-    payload: { tabId: -1, langCode, term, status },
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term, status },
   });
 
   if (!response?.success) {
     throw new Error(response?.error ?? 'Failed to set word status');
+  }
+}
+
+/** List every stored word-status entry for a lang. */
+export async function listWordStatuses(langCode: string): Promise<WordStatusEntry[]> {
+  const response = await sendMessage<MessageResponse<{ entries: WordStatusEntry[] }>>({
+    type: MESSAGE_TYPES.WORD_STATUS_LIST,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode) },
+  });
+
+  if (!response?.success || !response.data) {
+    return [];
+  }
+
+  return response.data.entries;
+}
+
+/** Cycle a term's status atomically in the background; returns the new status. */
+export async function cycleWordStatus(langCode: string, term: string): Promise<WordStatus> {
+  const response = await sendMessage<MessageResponse<{ status: WordStatus }>>({
+    type: MESSAGE_TYPES.WORD_STATUS_CYCLE,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+  });
+
+  if (!response?.success || !response.data) {
+    throw new Error(response?.error ?? 'Failed to cycle word status');
+  }
+
+  return response.data.status;
+}
+
+/** Delete a term's status row (unmark). */
+export async function deleteWordStatus(langCode: string, term: string): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_DELETE,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? 'Failed to delete word status');
   }
 }
