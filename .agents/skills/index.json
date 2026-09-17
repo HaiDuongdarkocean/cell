@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated": "2026-09-17T04:50:07.828Z",
+  "generated": "2026-09-17T15:57:14.770Z",
   "count": 48,
   "skills": [
     {
@@ -115,7 +115,7 @@
     },
     {
       "name": "idea-pick-off",
-      "description": "Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. Use when asked to start the next backlog feature, \"làm item #N\", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).",
+      "description": "Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. `all` mode loops the pipeline across every unblocked item until the backlog is drained. Use when asked to start the next backlog feature, \"làm item #N\", \"làm hết backlog\", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).",
       "path": ".agents/skills/idea-pick-off/SKILL.md"
     },
     {
