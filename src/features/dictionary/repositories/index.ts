@@ -1,4 +1,52 @@
-export * from './baseRepository';
-export * from './resourceRepository';
-export * from './frequencyRepository';
-export * from './dictionaryRepository';
+export {
+  awaitTx,
+  clearAllStores,
+  closeAllDBs,
+  closeDB,
+  DB_SCHEMA_VERSION,
+  deleteDB,
+  getDB,
+  getDbName,
+  getStore,
+  INDEXES,
+  reverseString,
+  STORES,
+} from './baseRepository';
+export {
+  addResource,
+  countResources,
+  deleteAllResources,
+  deleteResource,
+  findResourceBySignature,
+  getAllResources,
+  getResource,
+  reorderResources,
+  setResourceEnabled,
+  setResourceProfiles,
+  updateResource,
+} from './resourceRepository';
+export {
+  addFrequencyEntry,
+  bulkInsertFrequencyEntries,
+  countFrequencyByResource,
+  deleteFrequencyByResource,
+  findFrequencyByPrefix,
+  findFrequencyByResource,
+  findFrequencyBySuffix,
+  findFrequencyByTerm,
+  findFrequencyByTerms,
+  findFrequencyEntry,
+  sampleFrequencyEntries,
+} from './frequencyRepository';
+export {
+  addDictionaryEntry,
+  bulkInsertDictionaryEntries,
+  countDictionaryByResource,
+  deleteDictionaryByResource,
+  findDictionaryByPrefix,
+  findDictionaryByResource,
+  findDictionaryBySuffix,
+  findDictionaryByTerm,
+  findDictionaryEntry,
+  sampleDictionaryEntries,
+} from './dictionaryRepository';

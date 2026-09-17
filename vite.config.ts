@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import manifest from './public/manifest.json' with { type: 'json' };
 
@@ -91,6 +92,37 @@ function wrapHoverRules(css: string): string {
   return out;
 }
 
+/**
+ * CSP patch for PaddleOCR.js / ONNX Runtime Web, run inside the build so the
+ * `new Function()` rewrites and their fail-loud gates cannot be skipped
+ * independently of `vite build` (previously only wired via `postbuild`,
+ * which a bare `vite build` invocation bypasses).
+ *
+ * The script stays the single implementation — invoked as a child process so
+ * it also keeps working standalone. `npm run postbuild` re-runs it on the
+ * already-patched dist; the script detects already-applied replacements and
+ * counts them toward the required-patch gate, so the double-run is a safe
+ * verification pass. Skipped for fast/mock builds, which do not emit the
+ * OCR/opencv/ORT chunks the patch targets.
+ */
+function patchOcrCsp(): Plugin {
+  return {
+    name: 'patch-ocr-csp',
+    apply: 'build',
+    closeBundle() {
+      const result = spawnSync(
+        process.execPath,
+        [resolve(import.meta.dirname, 'scripts', 'patch-ocr-csp.mjs')],
+        { cwd: import.meta.dirname, stdio: 'inherit' },
+      );
+      if (result.error) throw result.error;
+      if (result.status !== 0) {
+        throw new Error(`[patch-ocr-csp] post-build CSP patch failed (exit ${result.status})`);
+      }
+    },
+  };
+}
+
 function autoSeedAssets(mode: string): Plugin {
   // Production builds should not ship test seed files (~42.7MB).
   // Dev builds (`npx vite build --mode development`) keep seeds so the
@@ -148,13 +180,8 @@ const FULL_INPUT = {
   // and emitted as loadable chrome-extension:// pages.
   offscreen: resolve(import.meta.dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
   sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
-  cardCreatorTest: resolve(import.meta.dirname, 'src/entrypoints/test/cardCreatorTest.html'),
   localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
   reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
-  mockupLanguageProfile: resolve(import.meta.dirname, 'src/entrypoints/mockup-language-profile/index.html'),
-  mockupAudio: resolve(import.meta.dirname, 'src/entrypoints/mockup-audio/index.html'),
-  mockupDictionaryPopup: resolve(import.meta.dirname, 'src/entrypoints/mockup-dictionary-popup/index.html'),
-  mockupResources: resolve(import.meta.dirname, 'src/entrypoints/mockup-resources/index.html'),
   launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
   srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
 };
@@ -181,6 +208,7 @@ export default defineConfig(({ mode }) => {
       ...(isExtension ? [crx({ manifest })] : []),
       hoverOnlyOnHoverDevices(),
       autoSeedAssets(mode),
+      ...(isExtension && !isFast ? [patchOcrCsp()] : []),
     ],
   // Rolldown (Vite 8) changed default CJS interop. React is CJS and has no
   // `__esModule` / default export, so `import React from 'react'` used by

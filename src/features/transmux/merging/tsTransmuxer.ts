@@ -47,7 +47,7 @@ export async function transmuxTsToFmp4(
   }
 
   const transmuxer = new Transmuxer();
-  let processedBytes = 0;
+  let processedBytes: number;
   let initSegmentWritten = false;
   let bytesWritten = 0;
 

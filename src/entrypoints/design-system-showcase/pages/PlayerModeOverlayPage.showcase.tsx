@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { PlayerModeOverlay } from '@/features/subtitle/ui/PlayerModeOverlay';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import { getMockCues, getMockBilingualCues, getMockCueActiveIndex } from '../mockCues';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import styles from './PlayerModeOverlayPage.module.css';
 
 const MOCK_CUES = getMockBilingualCues();

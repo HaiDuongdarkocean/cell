@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeConfig } from '@/entities/theme';

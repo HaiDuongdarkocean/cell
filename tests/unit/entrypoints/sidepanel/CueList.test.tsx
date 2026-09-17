@@ -1,7 +1,7 @@
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList } from '@/features/subtitle/ui/CueList';
 import { emitWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
-import type { BilingualCue } from '@/types/media';
+import type { BilingualCue } from '@/entities/media';
 
 // jsdom does not implement scrollIntoView or layout (offsetTop/scrollHeight) —
 // mock scrollIntoView (legacy) and stub layout props for the manual scrollTop

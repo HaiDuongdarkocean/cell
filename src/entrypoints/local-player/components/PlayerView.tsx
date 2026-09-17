@@ -12,7 +12,7 @@ import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subti
 import type { ICON_CATALOG } from '@/shared/icons';
 import type { SubtitleActionHandlers } from '@/entrypoints/local-player/hooks/useSubtitleActions';
 import type { SubtitlePanelsRef, ManagerState } from '@/features/subtitle/ui/subtitlePanelsTypes';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { BilingualCue, KeyboardShortcut, SrtCue } from '@/entities/media';
 import {
   DEFAULT_NAV_CLUSTER_SETTINGS,

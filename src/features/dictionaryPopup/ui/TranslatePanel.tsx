@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Icon } from '@/shared/ui/Icon';
 import { Button } from '@/shared/ui/Button';
 import { EmptyState } from '@/shared/ui/EmptyState';
@@ -32,13 +32,15 @@ export function TranslatePanel({
   onToggle,
   onTranslate,
 }: TranslatePanelProps): React.JSX.Element {
-  // Auto-translate when panel opens with no translation and no error yet
+  // Auto-translate once when panel opens with no translation and no error yet
+  const autoTranslateFiredRef = useRef(false);
   useEffect(() => {
+    if (autoTranslateFiredRef.current) return;
     if (!translation && !error && !loading) {
+      autoTranslateFiredRef.current = true;
       onTranslate();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [translation, error, loading, onTranslate]);
 
   if (loading && !translation) {
     return (

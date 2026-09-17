@@ -4,7 +4,6 @@
  *
  * Uses `mountReactShadow` for CSS isolation, token/component CSS injection,
  * `ShadowThemeProvider` for theme, and automatic fullscreen re-parenting.
- * Falls back to the legacy light-DOM createRoot path via USE_LEGACY_UNIVERSAL_PANEL.
  */
 import { createElement, type ReactElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
@@ -19,11 +18,10 @@ import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { resolveProfile, type Settings } from '@/entities/settings';
-import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
-import { useCardCreatorStore } from '@/stores/cardCreatorStore';
+import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
@@ -79,10 +77,6 @@ function persistTab(tab: UniversalPanelTab): Promise<void> {
  * open/close/switch-tab/unmount it.
  */
 export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): UniversalPanelMountController {
-  if (USE_LEGACY_UNIVERSAL_PANEL) {
-    return mountUniversalPanelLegacy(options);
-  }
-
   const mount = mountReactShadow(createElement('div'), {
     parent: document.body,
     position: 'fixed',

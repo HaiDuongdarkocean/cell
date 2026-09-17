@@ -1,5 +1,5 @@
 import { resolveMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
-import type { DetectedVideo, DetectedSubtitle } from '@/types/media';
+import type { DetectedVideo, DetectedSubtitle } from '@/entities/media';
 
 describe('resolveMediaDisplayTitle', () => {
   const kisskhPageUrl = 'https://kisskh.co/Drama/A-Good-Girl-s-Guide-to-Murder---Season-2/Episode-1?id=13070';

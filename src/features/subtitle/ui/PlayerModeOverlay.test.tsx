@@ -12,7 +12,7 @@ jest.mock('./NavCluster', () => ({
   NavCluster: () => <div data-cell-id="nav-cluster" />,
 }));
 
-jest.mock('@/entrypoints/sidepanel/components/CueList', () => ({
+jest.mock('./CueList', () => ({
   CueList: () => <div data-cell-id="cue-list" />,
 }));
 

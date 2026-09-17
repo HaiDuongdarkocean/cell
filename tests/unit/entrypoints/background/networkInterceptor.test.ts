@@ -1,5 +1,5 @@
 import { NetworkInterceptor } from '@/entrypoints/background/networkInterceptor';
-import type { DetectedVideo, DetectedSubtitle } from '@/types/media';
+import type { DetectedVideo, DetectedSubtitle } from '@/entities/media';
 
 /**
  * Minimal mock for chrome.webRequest.onBeforeRequest with addListener /

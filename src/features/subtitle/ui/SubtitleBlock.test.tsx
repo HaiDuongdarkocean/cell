@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { act } from 'react';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '../cuesStore';
 import { SubtitleBlock } from './SubtitleBlock';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SrtCue } from '@/entities/media/types';

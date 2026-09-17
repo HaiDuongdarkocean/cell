@@ -13,7 +13,7 @@ import '@/shared/styles/document.css';
 import { CardCreatorDialog } from '@/features/cardCreator/ui/CardCreatorDialog';
 import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBottomSheet';
 import { CardCreatorSettingsPanel } from '@/features/cardCreator/ui/CardCreatorSettingsPanel';
-import { useCardCreatorStore } from '@/stores/cardCreatorStore';
+import { useCardCreatorStore } from '@/features/cardCreator/state/cardCreatorStore';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import type { CardCreatorOpenContext, CardCreatorPrefill } from '@/features/cardCreator/types';

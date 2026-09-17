@@ -1,6 +1,6 @@
 import { transmuxTsToFmp4ParallelExperimental, findFirstMoofOffset } from '@/features/transmux/merging/parallelTransmuxer';
 import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 
 // --- OPFS mock (same pattern as opfsStorage.test.ts) ---
 

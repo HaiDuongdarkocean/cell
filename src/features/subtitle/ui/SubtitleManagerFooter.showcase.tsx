@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SubtitleManagerFooter } from './SubtitleManagerFooter';
+import { logger } from '@/shared/lib/logger';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -15,11 +16,11 @@ export function Showcase(): ReactElement {
             Track list + offset stepper (placeholder)
           </div>
           <SubtitleManagerFooter
-            onSearch={() => console.log('search')}
-            onCustomize={() => console.log('customize')}
+            onSearch={() => logger.debug('search')}
+            onCustomize={() => logger.debug('customize')}
             onHideBoth={() => setBothHidden((v) => !v)}
             bothHidden={bothHidden}
-            onGenerateNative={() => console.log('generate')}
+            onGenerateNative={() => logger.debug('generate')}
             generateNativeDisabled={generateDisabled}
           />
         </div>
@@ -32,8 +33,8 @@ export function Showcase(): ReactElement {
             Minimal footer (2 slots)
           </div>
           <SubtitleManagerFooter
-            onSearch={() => console.log('search')}
-            onGenerateNative={() => console.log('generate')}
+            onSearch={() => logger.debug('search')}
+            onGenerateNative={() => logger.debug('generate')}
             generateNativeDisabled={false}
           />
         </div>

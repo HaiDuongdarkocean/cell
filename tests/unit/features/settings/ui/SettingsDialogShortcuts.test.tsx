@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
 import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { Settings } from '@/types/media';
+import type { Settings } from '@/entities/media';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {

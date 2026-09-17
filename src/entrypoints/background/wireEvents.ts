@@ -27,6 +27,7 @@ import {
   saveSessionDownloads,
   clearSessionMedia,
   clearSessionDownloads,
+  saveSessionAutoDownloadedTabs,
   loadSettings,
   maybeAutoDownload,
   pushAutoLoadSubtitles,
@@ -161,10 +162,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       if (downloadItem.byExtensionId !== getExtensionId()) {
         return;
       }
-      const desired = ctx.downloader.getPendingFilename();
+      const desired = ctx.downloader.consumePendingFilename(downloadItem.url);
       if (desired) {
         suggest({ filename: desired, conflictAction: 'uniquify' });
-        ctx.downloader.clearPendingFilename();
       }
     },
   );
@@ -273,7 +273,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   );
 
   // 7. Queue executor: dispatch each item to the downloader
-  ctx.downloadQueue.setExecutor(async (item: DownloadItem) => {
+  ctx.downloadQueue.setExecutor(async (item: DownloadItem, signal: AbortSignal) => {
     const media =
       ctx.mediaMap.get(item.id) ?? findMediaForDownloadItem(ctx, item);
     if (!media) {
@@ -285,6 +285,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         await ctx.downloader.downloadVideo(
           media as DetectedVideo,
           item.id,
+          signal,
         );
       } else {
         const subtitle = media as DetectedSubtitle;
@@ -297,6 +298,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
           subtitle,
           item.id,
           videoContext,
+          signal,
         );
       }
     } catch (err: unknown) {
@@ -321,6 +323,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     // they are caught by webNavigation.onHistoryStateUpdated below.
     if (changeInfo.status === 'loading') {
       ctx.autoDownloadedTabs.delete(tabId);
+      saveSessionAutoDownloadedTabs(ctx);
       ctx.networkInterceptor.clearTab(tabId);
       clearSessionMedia(ctx, tabId);
       ctx.lastCuesByTab.delete(tabId);
@@ -339,6 +342,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     // Only handle top-frame navigations (frameId === 0).
     if (details.frameId !== 0) return;
     ctx.autoDownloadedTabs.delete(details.tabId);
+    saveSessionAutoDownloadedTabs(ctx);
     ctx.networkInterceptor.clearTab(details.tabId);
     clearSessionMedia(ctx, details.tabId);
     ctx.lastCuesByTab.delete(details.tabId);
@@ -355,6 +359,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     clearSessionDownloads(ctx, tabId);
     updateBadgeForTab(ctx, tabId);
     ctx.autoDownloadedTabs.delete(tabId);
+    saveSessionAutoDownloadedTabs(ctx);
     ctx.lastCuesByTab.delete(tabId);
   };
 

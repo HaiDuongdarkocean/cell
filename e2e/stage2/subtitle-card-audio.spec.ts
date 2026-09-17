@@ -148,7 +148,7 @@ async function pointForWord(locator: Locator, wordReSource: string): Promise<{ x
   return locator.evaluate((el, source) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const re = new RegExp(source, 'i');
-    let node: Text | null = null;
+    let node: Text | null;
     while ((node = walker.nextNode() as Text | null)) {
       const match = re.exec(node.textContent ?? '');
       if (!match) continue;

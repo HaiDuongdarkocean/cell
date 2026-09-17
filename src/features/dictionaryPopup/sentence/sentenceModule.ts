@@ -323,7 +323,7 @@ function resolveShadowTextNode(x: number, y: number): Range | null {
       const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT);
       let bestRange: Range | null = null;
       let bestDist = Infinity;
-      let text: Text | null = null;
+      let text: Text | null;
       while ((text = walker.nextNode() as Text | null)) {
         const len = text.textContent?.length ?? 0;
         if (len === 0) continue;

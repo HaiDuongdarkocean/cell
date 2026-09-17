@@ -16,7 +16,7 @@ import { checkIcon, xIcon, cropIcon, moveVerticalIcon, rotateCcwIcon, chevronLef
 import type { CustomRegion } from '@/features/ocr/persistence/ocrStateTypes';
 import type { SplitHalf } from '@/features/ocr/pipeline/splitRegion';
 import { computeSplitHalves } from '@/features/ocr/pipeline/splitRegion';
-import { findVideoContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { mapShellToIntrinsic, mapIntrinsicToShell, readVideoGeometry, computeContentRect } from '@/features/ocr/pipeline/regionMapping';
 
 export type RegionSelectorMode = 'view' | 'select' | 'edit';

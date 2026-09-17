@@ -1,5 +1,5 @@
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
-import type { SrtSubtitle } from '@/types/media';
+import type { SrtSubtitle } from '@/entities/media';
 
 describe('parseSrt', () => {
   test('parses valid SRT with multiple cues', () => {

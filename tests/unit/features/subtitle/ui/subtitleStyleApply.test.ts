@@ -3,7 +3,7 @@ import {
   sanitizeFontFamily,
   hexToRgba,
 } from '@/features/subtitle/ui/subtitleUI';
-import type { TextShadowConfig } from '@/types/subtitle';
+import type { TextShadowConfig } from '@/entities/subtitle';
 
 // === buildTextShadow ===
 

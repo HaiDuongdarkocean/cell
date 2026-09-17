@@ -1,236 +1,70 @@
-/**
- * useCardCreatorState — state management hook for the Card Creator dialog.
- *
- * Handles:
- *  - Loading decks + note types + fields from AnkiConnect on open.
- *  - Auto-mapping fields when note type changes.
- *  - Finding the newest note for Update mode.
- *  - Draft autosave (debounced 500ms) + restore on reopen.
- *  - Add/Update actions with media upload + field mapping.
- *  - Toast feedback (success/error).
- *
- * State is owned by the global useCardCreatorStore Zustand store; this hook
- * keeps the async + UI-coupled logic and exposes the same CardCreatorState
- * shape to consumers.
- */
 import { useCallback, useEffect, useRef } from 'react';
 import type { CardCreatorSettings } from '@/entities/settings';
-import { useCardCreatorStore, type LoadStatus } from '@/stores/cardCreatorStore';
-import {
-  findRecentNote,
-  getNoteInfo,
-  addNote,
-  updateNote,
-  addNoteTags,
-} from '../service/cardCreatorService';
-import { buildAnkiFields } from '../service/buildAnkiFields';
-import { prefetchAnkiConnectData, onAnkiSchemaRefreshed } from '../service/cardCreatorPrefetch';
-import { getModelFields, refreshAnkiSchemaCache } from '../service/ankiSchemaCache';
-import { autoMapFields, type FieldMapping } from '../service/fieldMapping';
-import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
-import { lookupDictionaryResources } from '../service/dictionaryGenerate';
-import {
-  DraftAutosaver,
-  type CardDraft,
-  mergePrefillIntoDraft,
-  mediaUrlsToFetch,
-  buildMergedMediaArray,
-  type MediaMergePlan,
-} from '../state/cardDraft';
-import { t, type MessageKey } from '@/shared/i18n';
-import {
-  fetchMediaFile,
-  mediaFromAudioItem,
-  mediaFromImageItem,
-  type MediaFile,
-  type MediaKind,
-} from '../media/mediaFile';
-import { captureScreenshot } from '../media/screenshot';
-import { captureSentenceAudio } from '../media/sentenceAudio';
-import { translateSentence } from '../media/translation';
+import { useCardCreatorStore, type LoadStatus } from '../state/cardCreatorStore';
+import type { CardDraft } from '../state/cardDraft';
+import type { MediaListKind, TextFieldKey } from '../state/mediaListKinds';
+import type { MediaFile } from '../media/mediaFile';
+import { useAnkiSchema } from './useAnkiSchema';
+import { useDraftOps } from './useDraftOps';
+import { useMediaLists } from './useMediaLists';
+import { useGenerateActions } from './useGenerateActions';
+import { useSubmitNote } from './useSubmitNote';
 import type {
   CardCreatorAction,
   CardCreatorOpenContext,
-  CardCreatorPrefill,
   CardCreatorQueueItem,
   Toast,
 } from '../types';
 
 export type OpenContext = CardCreatorOpenContext;
 
-/** Field keys that can be generated individually. */
-type GenerateFieldKey = keyof CardDraft['fields'];
+export type { LoadStatus } from '../state/cardCreatorStore';
 
-/** i18n key for each field's human-readable label. */
-const fieldLabelMap = {
-  targetWord: 'cardCreator.field.targetWord',
-  sentence: 'cardCreator.field.sentence',
-  sentenceTranslation: 'cardCreator.field.sentenceTranslation',
-  definitions: 'cardCreator.field.definitions',
-  images: 'cardCreator.field.image',
-  sentenceAudios: 'cardCreator.field.sentenceAudio',
-  wordAudios: 'cardCreator.field.wordAudio',
-  note: 'cardCreator.field.note',
-  moreExample: 'cardCreator.field.moreExample',
-} as const satisfies Record<GenerateFieldKey, MessageKey>;
-
-const mediaUrlMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'imageUrls' | 'sentenceAudioUrls' | 'wordAudioUrls'> = {
-  images: 'imageUrls',
-  sentenceAudios: 'sentenceAudioUrls',
-  wordAudios: 'wordAudioUrls',
-};
-
-const mediaKindMap: Record<'images' | 'sentenceAudios' | 'wordAudios', MediaKind> = {
-  images: 'image',
-  sentenceAudios: 'audio',
-  wordAudios: 'audio',
-};
-
-const mediaFetchKeyMap: Record<'images' | 'sentenceAudios' | 'wordAudios', 'cardCreator.toast.fetch.image' | 'cardCreator.toast.fetch.sentenceAudio' | 'cardCreator.toast.fetch.wordAudio'> = {
-  images: 'cardCreator.toast.fetch.image',
-  sentenceAudios: 'cardCreator.toast.fetch.sentenceAudio',
-  wordAudios: 'cardCreator.toast.fetch.wordAudio',
-};
-
-/** Serializes cardCreator.fieldMappings writes — loadSettings→saveSettings is
- *  a read-modify-write across two awaits; without a queue, concurrent calls
- *  (e.g. updateMapping + auto-map persist) can clobber each other. */
-let fieldMappingWriteQueue: Promise<void> = Promise.resolve();
-
-const SETTINGS_RELOAD_DEBOUNCE_MS = 300;
-
-function isMissingSchemaError(error: string): boolean {
-  const lower = error.toLowerCase();
-  return lower.includes('deck') || lower.includes('model') || lower.includes('note type') || lower.includes('not found') || lower.includes('does not exist');
-}
-
-/** Fetch the URLs in a merge plan that are not already present as MediaFiles.
- *  Returns a map of source URL → fetched MediaFile. */
-async function fetchMissingMedia(
-  plan: MediaMergePlan,
-  kind: 'images' | 'sentenceAudios' | 'wordAudios',
-): Promise<Record<string, MediaFile>> {
-  const urls = mediaUrlsToFetch(plan);
-  if (urls.length === 0) return {};
-  const result: Record<string, MediaFile> = {};
-  const mediaKind = mediaKindMap[kind];
-  const fetchKey = mediaFetchKeyMap[kind];
-  for (const url of urls) {
-    try {
-      result[url] = await fetchMediaFile(url, mediaKind);
-    } catch {
-      useCardCreatorStore.getState().pushToast('warning', t(fetchKey, [url]));
-    }
-  }
-  return result;
-}
-
-/** Re-export LoadStatus from the store (single source of truth). */
-export type { LoadStatus } from '@/stores/cardCreatorStore';
-
-/** Hook return type. */
 export interface CardCreatorState {
-  /** Draft state (note type, deck, fields, mapping, tags, mode). */
   draft: CardDraft;
-  /** Available decks from AnkiConnect. */
   decks: readonly string[];
-  /** Available note types from AnkiConnect. */
   noteTypes: readonly string[];
-  /** Available Anki field names for the current note type. */
   availableFields: readonly string[];
-  /** Newest note id in the selected deck + note type, or null if none. */
   recentNoteId: number | null;
-  /** Recent note info (fields + tags) or null. */
   recentNoteInfo: { fields: Record<string, string>; tags: string[] } | null;
-  /** Load status for the AnkiConnect data. */
   loadStatus: LoadStatus;
-  /** Error message if loadStatus === 'error'. */
   loadError: string;
-  /** Whether an Add/Update action is in progress. */
   submitting: boolean;
-  /** Active toasts. */
   toasts: readonly Toast[];
-  /** Whether a media capture is in progress (disables add buttons). */
   capturingMedia: boolean;
-  /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' = focus Update button, 'edit-card' = neutral). */
   initialAction?: CardCreatorAction;
-  /** Queue items (I+N review flow). Empty when no queue (N=1 or popup path). */
   queueItems: readonly CardCreatorQueueItem[];
-  /** Active queue item index. -1 when no queue. */
   queueActiveIndex: number;
-  /** Whether the queue sidebar is open (toggle state). Defaults to true when
-   *  N ≥ 2, false when N ≤ 1. Persists across auto-advance. */
   queueSidebarOpen: boolean;
-  /** Source language of the current card content. */
   sourceLang: string;
-  /** Select a queue item by index (switches prefill). */
   selectQueueItem: (index: number) => void;
-  /** Lookup a term in the integrated Dictionary (no-op in standalone dialog mode). */
   lookupTerm: (term: string) => void;
-  /** Delete a queue item by index. Shows undo toast for 3s. */
   deleteQueueItem: (index: number) => void;
-  /** Undo the last queue item deletion (within 3s window). */
   undoDeleteQueueItem: () => void;
-  /** Toggle the queue sidebar open/closed. */
   toggleQueueSidebar: () => void;
-  /** Update the draft (triggers autosave). */
   updateDraft: (partial: Partial<CardDraft>) => void;
-  /** Update a single text field in the draft. */
-  updateField: (key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void;
-  /** Update the field mapping for a source key. */
+  updateField: (key: TextFieldKey, value: string) => void;
   updateMapping: (sourceKey: keyof CardDraft['fieldMapping'], ankiField: string) => void;
-  /** Change the note type (re-maps fields + re-checks recent note). */
   changeNoteType: (noteType: string) => void;
-  /** Change the deck (re-checks recent note — scoped to deck). */
   changeDeck: (deck: string) => void;
-  /** Add a screenshot to the images list. */
   addScreenshot: () => Promise<void>;
-  /** Add sentence audio for the current cue. */
   addSentenceAudio: () => Promise<void>;
-  /** Add a media file from disk (file picker). Kind determines which list +
-   *  how the file is validated (image vs audio accept filter). */
-  addFileFromDisk: (kind: 'images' | 'sentenceAudios' | 'wordAudios') => Promise<void>;
-  /** Add one or more MediaFiles to the given list. Used by drag-and-drop. */
-  addFiles: (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount?: number) => void;
-  /** Remove a media file by kind + index. */
-  removeMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', index: number) => void;
-  /** Reorder a media file within its list (move from index to index). */
-  reorderMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => void;
-  /** Translate the current sentence. */
+  addFileFromDisk: (kind: MediaListKind) => Promise<void>;
+  addFiles: (kind: MediaListKind, files: readonly MediaFile[], invalidCount?: number) => void;
+  removeMedia: (kind: MediaListKind, index: number) => void;
+  reorderMedia: (kind: MediaListKind, fromIndex: number, toIndex: number) => void;
   translateSentenceField: () => Promise<void>;
-  /** Generate resources for a single field (prefill text, cue text, or media URLs). */
   generateField: (key: keyof CardDraft['fields']) => Promise<void>;
-  /** Fill all empty generatable fields (definitions + media) for the current
-   *  target word — prefill when it matches, else a live dictionary lookup. */
   generateAll: () => Promise<void>;
-  /** Submit: Add (create new) or Update (existing note). */
   submit: (mode: 'add' | 'update') => Promise<void>;
   reload: () => void;
-  /** Dismiss a toast by id. */
   dismissToast: (id: number) => void;
-  /** Clear all card field data (text, media, tags) while keeping note type,
-   *  deck, and field mapping selections. */
   clear: () => void;
 }
 
 export interface UseCardCreatorStateOptions {
-  /** Called when Add or Update completes successfully.
-   *  Useful for closing the containing panel. */
   onSubmitSuccess?: () => void;
-  /** Called when the user selects a queue item so the parent can drive
-   *  a Dictionary lookup for that term. Only used in integrated panel mode. */
   onQueueTermSelect?: (term: string) => void;
-}
-
-function isSameOpenContextSession(a: OpenContext, b: OpenContext): boolean {
-  return (
-    a.video === b.video &&
-    a.cue === b.cue &&
-    a.sourceLang === b.sourceLang &&
-    a.targetLang === b.targetLang &&
-    a.initialMedia === b.initialMedia &&
-    a.queue === b.queue
-  );
 }
 
 export function useCardCreatorState(
@@ -239,14 +73,6 @@ export function useCardCreatorState(
   initialAction?: CardCreatorAction,
   options?: UseCardCreatorStateOptions,
 ): CardCreatorState {
-  const {
-    ankiConnectUrl,
-    defaultNoteType,
-    defaultDeck,
-    defaultTags,
-    mediaUpdateMode: defaultMediaUpdateMode,
-  } = settings;
-
   const draft = useCardCreatorStore((s) => s.draft);
   const decks = useCardCreatorStore((s) => s.decks);
   const noteTypes = useCardCreatorStore((s) => s.noteTypes);
@@ -263,965 +89,57 @@ export function useCardCreatorState(
   const queueSidebarOpen = useCardCreatorStore((s) => s.queueSidebarOpen);
   const storeInitialAction = useCardCreatorStore((s) => s.initialAction);
 
-  // Queue actions are owned by the store; pass them through unchanged.
   const selectQueueItemStore = useCardCreatorStore((s) => s.selectQueueItem);
   const deleteQueueItem = useCardCreatorStore((s) => s.deleteQueueItem);
   const undoDeleteQueueItem = useCardCreatorStore((s) => s.undoDeleteQueueItem);
   const toggleQueueSidebar = useCardCreatorStore((s) => s.toggleQueueSidebar);
   const dismissToast = useCardCreatorStore((s) => s.dismissToast);
 
-  const autosaverRef = useRef(new DraftAutosaver());
-  const onSubmitSuccessRef = useRef(options?.onSubmitSuccess);
   const onQueueTermSelectRef = useRef(options?.onQueueTermSelect);
-  useEffect(() => { onSubmitSuccessRef.current = options?.onSubmitSuccess; }, [options?.onSubmitSuccess]);
   useEffect(() => { onQueueTermSelectRef.current = options?.onQueueTermSelect; }, [options?.onQueueTermSelect]);
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
 
-  // Latest saved per-note-type field mappings (schema v29). Ref because the
-  // async callbacks below must read the current value, not a stale closure.
-  const fieldMappingsRef = useRef(settings.fieldMappings);
-  fieldMappingsRef.current = settings.fieldMappings;
+  const {
+    refreshRecentNote,
+    persistFieldMapping,
+    clearSavedDraft,
+    changeNoteType,
+    changeDeck,
+    reload,
+  } = useAnkiSchema({
+    settings,
+    openContext,
+    initialAction,
+    openContextRef,
+    onQueueTermSelectRef,
+  });
 
-  const settingsRef = useRef(settings);
-  settingsRef.current = settings;
-  const loadedSettingsKeyRef = useRef<string | null>(null);
-  const loadGenerationRef = useRef(0);
+  const { updateDraft, updateField, updateMapping, clear } = useDraftOps({
+    persistFieldMapping,
+  });
 
-  /** Persist a note type's field mapping into settings (cardCreator slice).
-   *  Writes are serialized through a module-level queue — read-modify-write
-   *  across two awaits would otherwise lose concurrent updates. */
-  const persistFieldMapping = useCallback((noteType: string, mapping: FieldMapping) => {
-    if (!noteType) return;
-    fieldMappingWriteQueue = fieldMappingWriteQueue.then(async () => {
-      const s = await loadSettings();
-      await saveSettings({
-        cardCreator: {
-          ...s.cardCreator,
-          fieldMappings: { ...(s.cardCreator.fieldMappings ?? {}), [noteType]: mapping },
-        },
-      });
-    }).catch(() => { /* best-effort persist */ });
-  }, []);
+  const {
+    addScreenshot,
+    addSentenceAudio,
+    addFileFromDisk,
+    addFiles,
+    removeMedia,
+    reorderMedia,
+  } = useMediaLists({ openContextRef });
 
-  // Sync the prop-level initialAction into the store.
-  useEffect(() => {
-    useCardCreatorStore.getState().setInitialAction(initialAction);
-  }, [initialAction]);
+  const { translateSentenceField, generateField, generateAll } = useGenerateActions({
+    openContextRef,
+    updateField,
+  });
 
-  /** Re-check whether a recent note exists for the given deck + note type.
-   *  ADR-026: called on initial load AND on note type change — the recent note
-   *  is scoped to the selected note type, so switching note types must
-   *  re-query AnkiConnect. Updates recentNoteId + recentNoteInfo, which
-   *  drives the "No recent card" alert + the Update button's enabled state.
-   *  Returns the fresh { id, info } so callers (e.g. submit update) can use
-   *  the latest value without waiting for state to flush (avoids stale
-   *  closure — see persist-config-clear-content principle). */
-  const refreshRecentNote = useCallback(
-    async (deck: string, noteType: string): Promise<{ id: number | null; info: { fields: Record<string, string>; tags: string[] } | null }> => {
-      const recentR = await findRecentNote(ankiConnectUrl, deck, noteType);
-      let recentId: number | null = null;
-      let recentInfo: { fields: Record<string, string>; tags: string[] } | null = null;
-      if (recentR.ok && recentR.value !== null) {
-        recentId = recentR.value;
-        const infoR = await getNoteInfo(ankiConnectUrl, recentR.value);
-        if (infoR.ok && infoR.value) {
-          recentInfo = { fields: infoR.value.fields, tags: infoR.value.tags };
-        }
-      }
-      const store = useCardCreatorStore.getState();
-      store.setRecentNoteId(recentId);
-      store.setRecentNoteInfo(recentInfo);
-      return { id: recentId, info: recentInfo };
-    },
-    [ankiConnectUrl],
-  );
+  const { submit } = useSubmitNote({
+    ankiConnectUrl: settings.ankiConnectUrl,
+    onSubmitSuccess: options?.onSubmitSuccess,
+    refreshRecentNote,
+    clearSavedDraft,
+  });
 
-  const loadAnkiData = useCallback(
-    async (
-      restored: Pick<CardDraft, 'noteType' | 'deck' | 'fieldMapping'> | null,
-    ): Promise<void> => {
-      const store = useCardCreatorStore.getState();
-      loadedSettingsKeyRef.current = JSON.stringify(settings);
-      const generation = ++loadGenerationRef.current;
-      store.setLoadStatus('loading');
-      store.setLoadError('');
-
-      try {
-        const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(ankiConnectUrl);
-        if (generation !== loadGenerationRef.current) return;
-        store.setDecks(fetchedDecks);
-        store.setNoteTypes(fetchedModels);
-
-        const restoredNoteType = restored?.noteType ?? '';
-        const chosenNoteType =
-          fetchedModels.includes(restoredNoteType)
-            ? restoredNoteType
-            : fetchedModels.includes(defaultNoteType)
-              ? defaultNoteType
-              : fetchedModels[0] ?? '';
-        const restoredDeck = restored?.deck ?? '';
-        const chosenDeck =
-          fetchedDecks.includes(restoredDeck)
-            ? restoredDeck
-            : fetchedDecks.includes(defaultDeck)
-              ? defaultDeck
-              : fetchedDecks[0] ?? '';
-
-        store.setDraft((prev) => ({
-          ...prev,
-          noteType: chosenNoteType,
-          deck: chosenDeck,
-        }));
-        store.setLoadStatus('destination-ready');
-
-        const fields = chosenNoteType
-          ? (await getModelFields(ankiConnectUrl, chosenNoteType)) ?? []
-          : [];
-        if (generation !== loadGenerationRef.current) return;
-        store.setAvailableFields(fields);
-
-        const savedMapping = fieldMappingsRef.current?.[chosenNoteType];
-        const useRestoredMapping =
-          !savedMapping &&
-          restored !== null &&
-          restored.noteType === chosenNoteType;
-        const mapping =
-          savedMapping ??
-          (useRestoredMapping ? restored!.fieldMapping : autoMapFields(fields));
-
-        if (!savedMapping) {
-          persistFieldMapping(chosenNoteType, mapping);
-        }
-
-        await refreshRecentNote(chosenDeck, chosenNoteType);
-        if (generation !== loadGenerationRef.current) return;
-
-        if (useCardCreatorStore.getState().draft.noteType === chosenNoteType) {
-          store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
-        }
-        store.setLoadStatus('ready');
-      } catch (err) {
-        if (generation !== loadGenerationRef.current) return;
-        const msg = err instanceof Error ? err.message : String(err);
-        store.setLoadError(msg);
-        store.setLoadStatus('error');
-        useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.ankiLoadError', [msg]));
-      }
-    },
-    [ankiConnectUrl, defaultNoteType, defaultDeck, settings, refreshRecentNote, persistFieldMapping],
-  );
-  const loadAnkiDataRef = useRef(loadAnkiData);
-  loadAnkiDataRef.current = loadAnkiData;
-
-  const loadData = useCallback(async (restoredDraft: CardDraft | null) => {
-    const ctx = openContextRef.current;
-    if (!ctx) return;
-    const store = useCardCreatorStore.getState();
-    store.setCapturingMedia(ctx.mediaPending === true);
-
-    // Immediately set draft with cue/prefill data + restored config + defaults
-    // so the form renders right away (sentence text, media, tags visible while
-    // AnkiConnect data loads in the background). Prefill (popup dictionary)
-    // takes precedence over cue (subtitle) for text fields.
-    const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
-    const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
-    const prefill = ctx.prefill;
-    // Initialize queue from context. N ≥ 1 uses the first item as prefill when
-    // no prefill target word is provided; the sidebar is only shown when N ≥ 2.
-    const ctxQueue = ctx.queue;
-    if (ctxQueue && ctxQueue.length >= 1) {
-      store.setQueueItems(ctxQueue);
-      store.setQueueSidebarOpen(ctxQueue.length >= 2);
-      const prefillTerm = prefill?.targetWord?.trim() ?? '';
-      const matchIndex = prefillTerm
-        ? ctxQueue.findIndex((item) => item.term.toLowerCase() === prefillTerm.toLowerCase())
-        : -1;
-      const activeIndex = matchIndex >= 0 ? matchIndex : 0;
-      const activeItem = ctxQueue[activeIndex]!;
-      store.setQueueActiveIndex(activeIndex);
-      if (activeItem.term) onQueueTermSelectRef.current?.(activeItem.term);
-      const usePrefillDefinitions = activeItem.term.toLowerCase() === prefillTerm.toLowerCase();
-      store.setDraft({
-        noteType: restoredDraft?.noteType ?? defaultNoteType,
-        deck: restoredDraft?.deck ?? defaultDeck,
-        fields: {
-          targetWord: activeItem.term,
-          sentence: ctx.cue?.targetText ?? prefill?.sentence ?? '',
-          sentenceTranslation: ctx.cue?.nativeText ?? prefill?.sentenceTranslation ?? '',
-          definitions: usePrefillDefinitions ? (prefill?.definitions ?? '') : activeItem.definitions,
-          images: initialImages,
-          sentenceAudios: initialAudios,
-          wordAudios: [],
-          note: prefill?.note ?? '',
-          moreExample: prefill?.moreExample ?? '',
-        },
-        fieldMapping: restoredDraft?.fieldMapping ?? {},
-        tags: restoredDraft?.tags ?? defaultTags,
-        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? defaultMediaUpdateMode,
-      });
-    } else {
-      // No queue → normal flow.
-      store.setQueueItems([]);
-      store.setQueueActiveIndex(-1);
-      store.setQueueSidebarOpen(false);
-      store.setDraft({
-        noteType: restoredDraft?.noteType ?? defaultNoteType,
-        deck: restoredDraft?.deck ?? defaultDeck,
-        fields: {
-          targetWord: prefill?.targetWord ?? '',
-          sentence: prefill?.sentence ?? ctx.cue?.targetText ?? '',
-          sentenceTranslation: prefill?.sentenceTranslation ?? ctx.cue?.nativeText ?? '',
-          definitions: prefill?.definitions ?? '',
-          images: initialImages,
-          sentenceAudios: initialAudios,
-          wordAudios: [],
-          note: prefill?.note ?? '',
-          moreExample: prefill?.moreExample ?? '',
-        },
-        fieldMapping: restoredDraft?.fieldMapping ?? {},
-        tags: restoredDraft?.tags ?? defaultTags,
-        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? defaultMediaUpdateMode,
-      });
-    }
-
-    // Fetch prefill media URLs (word audio, sentence audio + images from popup
-    // dictionary) asynchronously and merge them into the draft using the user's
-    // chosen `mediaUpdateMode`. Best-effort — failures are skipped (toast warning),
-    // the dialog still opens with text fields. Runs after setDraft so the form
-    // renders immediately.
-    const hasMedia = (prefill?.wordAudioItems?.length ?? 0) > 0
-      || (prefill?.imageItems?.length ?? 0) > 0
-      || (prefill?.wordAudioUrls?.length ?? 0) > 0
-      || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
-      || (prefill?.imageUrls?.length ?? 0) > 0;
-    if (hasMedia) {
-      void (async () => {
-        const [preloadedWordAudios, preloadedImages] = await Promise.all([
-          Promise.all((prefill?.wordAudioItems ?? []).map(mediaFromAudioItem)).then((files) =>
-            files.filter((f): f is MediaFile => f !== null)),
-          Promise.all((prefill?.imageItems ?? []).map(mediaFromImageItem)).then((files) =>
-            files.filter((f): f is MediaFile => f !== null)),
-        ]);
-        if (preloadedWordAudios.length > 0 || preloadedImages.length > 0) {
-          useCardCreatorStore.getState().setDraft((prev) => ({
-            ...prev,
-            fields: {
-              ...prev.fields,
-              images: [...prev.fields.images, ...preloadedImages],
-              wordAudios: [...prev.fields.wordAudios, ...preloadedWordAudios],
-            },
-          }));
-        }
-
-        const { media } = mergePrefillIntoDraft(useCardCreatorStore.getState().draft, prefill ?? {});
-        const [fetchedImages, fetchedWordAudios, fetchedSentenceAudios] = await Promise.all([
-          fetchMissingMedia(media.images, 'images'),
-          fetchMissingMedia(media.wordAudios, 'wordAudios'),
-          fetchMissingMedia(media.sentenceAudios, 'sentenceAudios'),
-        ]);
-        useCardCreatorStore.getState().setDraft((prev) => ({
-          ...prev,
-          fields: {
-            ...prev.fields,
-            images: buildMergedMediaArray(media.images, fetchedImages),
-            wordAudios: buildMergedMediaArray(media.wordAudios, fetchedWordAudios),
-            sentenceAudios: buildMergedMediaArray(media.sentenceAudios, fetchedSentenceAudios),
-          },
-        }));
-      })();
-    }
-
-    await loadAnkiData(restoredDraft);
-  }, [defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, loadAnkiData]);
-
-  /** Merge a new prefill into the current draft (resend from dictionary).
-   *  Diff/merges collections + text fields according to `mediaUpdateMode` and
-   *  fetches any new media URLs without re-querying AnkiConnect. */
-  const mergePrefill = useCallback(async (ctx: OpenContext) => {
-    const prefill = ctx.prefill;
-    if (!prefill) return;
-
-    const store = useCardCreatorStore.getState();
-    const { draft: merged } = mergePrefillIntoDraft(store.draft, prefill);
-
-    // Update text fields first so the form reflects the new selection quickly.
-    store.setDraft((prev) => ({
-      ...prev,
-      fields: {
-        ...prev.fields,
-        targetWord: merged.fields.targetWord,
-        sentence: merged.fields.sentence,
-        sentenceTranslation: merged.fields.sentenceTranslation,
-        definitions: merged.fields.definitions,
-        note: merged.fields.note,
-        moreExample: merged.fields.moreExample,
-      },
-    }));
-
-    store.setCapturingMedia(true);
-    try {
-      const [preloadedWordAudios, preloadedImages] = await Promise.all([
-        Promise.all((prefill?.wordAudioItems ?? []).map(mediaFromAudioItem)).then((files) =>
-          files.filter((f): f is MediaFile => f !== null)),
-        Promise.all((prefill?.imageItems ?? []).map(mediaFromImageItem)).then((files) =>
-          files.filter((f): f is MediaFile => f !== null)),
-      ]);
-      if (preloadedWordAudios.length > 0 || preloadedImages.length > 0) {
-        store.setDraft((prev) => ({
-          ...prev,
-          fields: {
-            ...prev.fields,
-            images: [...prev.fields.images, ...preloadedImages],
-            wordAudios: [...prev.fields.wordAudios, ...preloadedWordAudios],
-          },
-        }));
-      }
-
-      const { media: mergedMedia } = mergePrefillIntoDraft(useCardCreatorStore.getState().draft, prefill);
-      const [fetchedImages, fetchedWordAudios, fetchedSentenceAudios] = await Promise.all([
-        fetchMissingMedia(mergedMedia.images, 'images'),
-        fetchMissingMedia(mergedMedia.wordAudios, 'wordAudios'),
-        fetchMissingMedia(mergedMedia.sentenceAudios, 'sentenceAudios'),
-      ]);
-      store.setDraft((prev) => ({
-        ...prev,
-        fields: {
-          ...prev.fields,
-          images: buildMergedMediaArray(mergedMedia.images, fetchedImages),
-          wordAudios: buildMergedMediaArray(mergedMedia.wordAudios, fetchedWordAudios),
-          sentenceAudios: buildMergedMediaArray(mergedMedia.sentenceAudios, fetchedSentenceAudios),
-        },
-      }));
-    } finally {
-      store.setCapturingMedia(false);
-    }
-  }, []);
-
-  // Load data when dialog opens. Pass the restored draft to loadData so it can
-  // preserve the user's note type/deck/field selections (ADR-026).
-  // Guard with a ref: loadData may get a new reference when settings changes,
-  // but we only want to load once per openContext (re-loading resets the draft
-  // + would clear auto-captured media).
-  //
-  // When `sendToCard` is called again for the same cue/session while the panel
-  // is already open, merge the new prefill into the existing draft instead of
-  // resetting (ADR-065 diff/merge for repeated sends).
-  const loadedForRef = useRef<OpenContext | null>(null);
-  useEffect(() => {
-    if (!openContext) return;
-    const previous = loadedForRef.current;
-    const isSameSession = previous && isSameOpenContextSession(previous, openContext);
-    const hasPrefillTerm = !!openContext.prefill?.targetWord?.trim();
-
-    if (isSameSession) {
-      const store = useCardCreatorStore.getState();
-      if (
-        loadedForRef.current !== openContext &&
-        store.loadStatus === 'ready' &&
-        hasPrefillTerm
-      ) {
-        void mergePrefill(openContext);
-      }
-      loadedForRef.current = openContext;
-      return;
-    }
-
-    loadedForRef.current = openContext;
-    const autosaver = autosaverRef.current;
-    void autosaver.load().then((restored) => {
-      useCardCreatorStore.getState().reset();
-      useCardCreatorStore.getState().setInitialAction(initialAction);
-      loadedSettingsKeyRef.current = null;
-      void loadData(restored ?? null);
-    });
-  }, [openContext, loadData, initialAction, mergePrefill]);
-
-  useEffect(() => {
-    if (!openContext || loadedForRef.current !== openContext) return;
-    if (loadedSettingsKeyRef.current === null) return;
-    if (loadedSettingsKeyRef.current === JSON.stringify(settings)) return;
-    const timer = setTimeout(() => {
-      const { noteType, deck, fieldMapping } = useCardCreatorStore.getState().draft;
-      void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
-    }, SETTINGS_RELOAD_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [settings, openContext]);
-
-  const reload = useCallback(() => {
-    const ctx = openContextRef.current;
-    if (!ctx || loadedForRef.current !== ctx) return;
-    const store = useCardCreatorStore.getState();
-    if (
-      store.loadStatus !== 'error' &&
-      JSON.stringify(settingsRef.current) === loadedSettingsKeyRef.current
-    ) {
-      return;
-    }
-    const { noteType, deck, fieldMapping } = store.draft;
-    void loadAnkiDataRef.current({ noteType, deck, fieldMapping });
-  }, []);
-
-  // Autosave on draft change (debounced). Save as soon as the user
-  // makes any selection — not only when fully 'ready' — so config
-  // (noteType, deck, fieldMapping, tags, mediaUpdateMode) survives
-  // even if the dialog closes before AnkiConnect finishes loading.
-  useEffect(() => {
-    if (loadStatus === 'idle') return;
-    autosaverRef.current.schedule(draft);
-  }, [draft, loadStatus]);
-
-  // Flush pending autosave on unmount so the user's noteType/deck/fieldMapping
-  // selections survive the unmount. Then reset the store to its initial state
-  // (mirrors the local-state lifetime the hook had before the Zustand move).
-  useEffect(() => {
-    const autosaver = autosaverRef.current;
-    return () => {
-      void autosaver.flush();
-      useCardCreatorStore.getState().reset();
-    };
-  }, []);
-
-  // When the saved schema refresh (or a settings edit) yields new decks/note
-  // types while the dialog is open, push them into the store so the dropdowns
-  // reflect the fresh data without blocking the user.
-  useEffect(() => {
-    if (!openContext) return;
-    return onAnkiSchemaRefreshed(({ decks, models }) => {
-      const store = useCardCreatorStore.getState();
-      store.setDecks(decks);
-      store.setNoteTypes(models);
-    });
-  }, [openContext]);
-
-  /** Update draft (triggers autosave via effect). */
-  const updateDraft = useCallback((partial: Partial<CardDraft>) => {
-    useCardCreatorStore.getState().setDraft((prev) => ({ ...prev, ...partial }));
-  }, []);
-
-  /** Update a single text field. */
-  const updateField = useCallback(
-    (key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => {
-      useCardCreatorStore.getState().setDraft((prev) => ({
-        ...prev,
-        fields: { ...prev.fields, [key]: value },
-      }));
-    },
-    [],
-  );
-
-  /** Update field mapping for the current note type and persist to settings. */
-  const updateMapping = useCallback(
-    (sourceKey: keyof CardDraft['fieldMapping'], ankiField: string) => {
-      const store = useCardCreatorStore.getState();
-      const noteType = store.draft.noteType;
-      store.setDraft((prev) => ({
-        ...prev,
-        fieldMapping: { ...prev.fieldMapping, [sourceKey]: ankiField },
-      }));
-      const updated = { ...store.draft.fieldMapping, [sourceKey]: ankiField };
-      persistFieldMapping(noteType, updated);
-    },
-    [persistFieldMapping],
-  );
-
-  /** Change note type → cache-first field lookup, saved mapping fallback,
-   *  auto-map when missing, and persist. `findRecentNote` stays live. */
-  const changeNoteType = useCallback(
-    async (noteType: string) => {
-      const store = useCardCreatorStore.getState();
-      store.setDraft((prev) => ({ ...prev, noteType }));
-
-      const fields = await getModelFields(ankiConnectUrl, noteType);
-      if (fields) {
-        store.setAvailableFields(fields);
-        const savedMapping = fieldMappingsRef.current?.[noteType];
-        const mapping = savedMapping ?? autoMapFields(fields);
-        store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
-        if (!savedMapping) {
-          persistFieldMapping(noteType, mapping);
-        }
-      }
-
-      const deck = useCardCreatorStore.getState().draft.deck;
-      await refreshRecentNote(deck, noteType);
-      // Mark ready so alerts + autosave are active (loadData phase 2 may have
-      // been interrupted by this change — ensure we end in a ready state).
-      store.setLoadStatus('ready');
-    },
-    [ankiConnectUrl, refreshRecentNote, persistFieldMapping],
-  );
-
-  /** Change deck → re-check recent note (recent note is scoped to deck). */
-  const changeDeck = useCallback(
-    async (deck: string) => {
-      const store = useCardCreatorStore.getState();
-      store.setDraft((prev) => ({ ...prev, deck }));
-      const noteType = useCardCreatorStore.getState().draft.noteType;
-      await refreshRecentNote(deck, noteType);
-      store.setLoadStatus('ready');
-    },
-    [refreshRecentNote],
-  );
-
-  /** Add a screenshot. */
-  const addScreenshot = useCallback(async () => {
-    const ctx = openContextRef.current;
-    if (!ctx?.video) return;
-    const store = useCardCreatorStore.getState();
-    store.setCapturingMedia(true);
-    try {
-      const file = await captureScreenshot(ctx.video);
-      store.setDraft((prev) => ({
-        ...prev,
-        fields: { ...prev.fields, images: [...prev.fields.images, file] },
-      }));
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.screenshotFailed', [msg]));
-    } finally {
-      store.setCapturingMedia(false);
-    }
-  }, []);
-
-  /** Add sentence audio for the current cue. */
-  const addSentenceAudio = useCallback(async () => {
-    const ctx = openContextRef.current;
-    if (!ctx?.video || !ctx.cue) return;
-    const store = useCardCreatorStore.getState();
-    store.setCapturingMedia(true);
-    try {
-      const result = await captureSentenceAudio(ctx.video, {
-        start: ctx.cue.start,
-        end: ctx.cue.end,
-      });
-      if (result.ok) {
-        store.setDraft((prev) => ({
-          ...prev,
-          fields: { ...prev.fields, sentenceAudios: [...prev.fields.sentenceAudios, result.file] },
-        }));
-      } else if (result.reason === 'unsupported') {
-        store.pushToast('warning', t('cardCreator.toast.audioCapture.unsupported'));
-      } else if (result.reason === 'hidden') {
-        store.pushToast('warning', t('cardCreator.toast.audioCapture.hidden'));
-      } else {
-        store.pushToast('error', t('cardCreator.toast.audioCapture.failed', [result.error ?? 'unknown']));
-      }
-    } finally {
-      store.setCapturingMedia(false);
-    }
-  }, []);
-
-  /** Add one or more MediaFiles to the given draft list. */
-  const addFiles = useCallback(
-    (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount = 0) => {
-      if (files.length === 0 && invalidCount === 0) return;
-      const store = useCardCreatorStore.getState();
-      if (files.length > 0) {
-        store.setDraft((prev) => ({
-          ...prev,
-          fields: { ...prev.fields, [kind]: [...prev.fields[kind], ...files] },
-        }));
-      }
-      if (invalidCount > 0) {
-        store.pushToast(
-          'warning',
-          kind === 'images'
-            ? t('cardCreator.toast.addFiles.invalid.image', [invalidCount])
-            : t('cardCreator.toast.addFiles.invalid.audio', [invalidCount]),
-        );
-      }
-    },
-    [],
-  );
-
-  /** Add a media file from disk via the browser file picker.
-   *  ADR-026: the "+ Add ..." buttons in each MediaList open a file picker so
-   *  the user can attach their own image/audio files (e.g. a word audio from
-   *  Yomitan, a custom screenshot). This is distinct from the auto-capture
-   *  that runs before the dialog opens (screenshot of current frame + sentence
-   *  audio for the current cue). */
-  const addFileFromDisk = useCallback(
-    async (kind: 'images' | 'sentenceAudios' | 'wordAudios'): Promise<void> => {
-      const accept = kind === 'images' ? 'image/*' : 'audio/*';
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = accept;
-      input.multiple = true;
-      // Some browsers require the input to be in the DOM for click() to open
-      // the file picker. Append it hidden, then remove after the picker closes.
-      input.style.display = 'none';
-      document.body.appendChild(input);
-      const picked = new Promise<MediaFile[]>((resolve) => {
-        input.onchange = () => {
-          const files = Array.from(input.files ?? []);
-          void Promise.all(
-            files.map(async (f) => {
-              const data = await f.arrayBuffer();
-              const mediaKind: MediaKind = kind === 'images' ? 'image' : 'audio';
-              // Use the user's filename (Anki will store it as-is, with the
-              // Android random-suffix caveat handled in storeMediaFile).
-              return {
-                kind: mediaKind,
-                filename: f.name,
-                mimeType: f.type || (mediaKind === 'image' ? 'image/png' : 'audio/webm'),
-                data,
-              } satisfies MediaFile;
-            }),
-          ).then(resolve);
-        };
-        // If the user cancels the picker, the 'cancel' event fires — resolve
-        // with [] so the await doesn't hang.
-        input.addEventListener('cancel', () => resolve([]));
-      });
-      input.click();
-      try {
-        const mediaFiles = await picked;
-        addFiles(kind, mediaFiles);
-      } finally {
-        input.remove();
-      }
-    },
-    [addFiles],
-  );
-
-  /** Remove a media file. */
-  const removeMedia = useCallback(
-    (kind: 'images' | 'sentenceAudios' | 'wordAudios', index: number) => {
-      useCardCreatorStore.getState().setDraft((prev) => ({
-        ...prev,
-        fields: {
-          ...prev.fields,
-          [kind]: prev.fields[kind].filter((_, i) => i !== index),
-        },
-      }));
-    },
-    [],
-  );
-
-  /** Reorder a media file within its list (move from index to target index). */
-  const reorderMedia = useCallback(
-    (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => {
-      if (fromIndex === toIndex) return;
-      useCardCreatorStore.getState().setDraft((prev) => {
-        const next = [...prev.fields[kind]];
-        const [moved] = next.splice(fromIndex, 1);
-        next.splice(toIndex, 0, moved);
-        return { ...prev, fields: { ...prev.fields, [kind]: next } };
-      });
-    },
-    [],
-  );
-
-  /** Clear all user-entered card data while preserving note type, deck,
-   *  and field mapping choices. */
-  const clear = useCallback(() => {
-    useCardCreatorStore.getState().setDraft((prev) => ({
-      ...prev,
-      tags: '',
-      fields: {
-        targetWord: '',
-        sentence: '',
-        sentenceTranslation: '',
-        definitions: '',
-        images: [],
-        sentenceAudios: [],
-        wordAudios: [],
-        note: '',
-        moreExample: '',
-      },
-    }));
-  }, []);
-
-  /** Translate the current sentence via Google Translate. */
-  const translateSentenceField = useCallback(async () => {
-    const ctx = openContextRef.current;
-    if (!ctx) return;
-    // If native track already has text, use it.
-    if (ctx.cue?.nativeText.trim()) {
-      updateField('sentenceTranslation', ctx.cue.nativeText);
-      return;
-    }
-    // Else Google Translate the current sentence (from cue or prefill).
-    const sentence = ctx.cue?.targetText ?? ctx.prefill?.sentence ?? '';
-    if (!sentence) {
-      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.translate.noSentence'));
-      return;
-    }
-    const translated = await translateSentence(
-      sentence,
-      ctx.sourceLang,
-      ctx.targetLang,
-    );
-    if (translated) {
-      updateField('sentenceTranslation', translated);
-    } else {
-      useCardCreatorStore.getState().pushToast('warning', t('cardCreator.toast.translate.failed'));
-    }
-  }, [updateField]);
-
-  /** Dictionary resources resolved for the current target word, cached per
-   *  `${lang}:${term}` so generateField + generateAll share one lookup. */
-  const dictionarySourceRef = useRef<{ key: string; source: CardCreatorPrefill } | null>(null);
-
-  /** Resolve the data source for generate actions: the open-context prefill
-   *  when it belongs to the current target word, else a live dictionary
-   *  lookup for the typed word (cached per term). */
-  const resolveGenerateSource = useCallback(async (): Promise<CardCreatorPrefill | undefined> => {
-    const ctx = openContextRef.current;
-    if (!ctx) return undefined;
-    const state = useCardCreatorStore.getState();
-    const targetWord = state.draft.fields.targetWord.trim();
-    const prefill = ctx.prefill;
-    // The context prefill only applies to the term it was built for — when the
-    // draft's target word differs (typed manually, another queue item), its
-    // definitions/media would be stale, so the word is looked up instead.
-    const prefillTerm = prefill?.targetWord?.trim();
-    const prefillUsable = !!prefill && (
-      !targetWord
-      || (!!prefillTerm && prefillTerm.toLowerCase() === targetWord.toLowerCase())
-    );
-    if (prefillUsable) return prefill;
-    if (!targetWord) return undefined;
-    const key = `${ctx.sourceLang}:${targetWord.toLowerCase()}`;
-    if (dictionarySourceRef.current?.key === key) return dictionarySourceRef.current.source;
-    const sentence = state.draft.fields.sentence.trim() || ctx.cue?.targetText?.trim() || '';
-    const source = await lookupDictionaryResources(targetWord, ctx.sourceLang, sentence);
-    if (source) dictionarySourceRef.current = { key, source };
-    return source ?? undefined;
-  }, []);
-
-  /** Generate resources for a single field from prefill/cue data.
-   *  Skips if the field is already filled (so user edits are not overwritten).
-   *  Best-effort: failed media URLs are skipped with a toast. */
-  const generateField = useCallback(async (key: GenerateFieldKey) => {
-    const ctx = openContextRef.current;
-    if (!ctx) return;
-
-    const store = () => useCardCreatorStore.getState();
-    const fieldLabel = t(fieldLabelMap[key]);
-
-    const trySetTextField = (
-      k: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample',
-      value: string,
-    ): void => {
-      const currentValue = (store().draft.fields[k] as string).trim();
-      if (currentValue) {
-        store().pushToast('warning', t('cardCreator.toast.generateField.alreadyFilled', [t(fieldLabelMap[k])]));
-        return;
-      }
-      if (value) {
-        updateField(k, value);
-        store().pushToast('success', t('cardCreator.toast.generateField.success', [t(fieldLabelMap[k])]));
-      } else {
-        store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [t(fieldLabelMap[k])]));
-      }
-    };
-
-    const ensureTargetWord = (): boolean => {
-      const currentTarget = store().draft.fields.targetWord.trim();
-      if (currentTarget) return true;
-      const prefillTarget = ctx.prefill?.targetWord?.trim();
-      if (prefillTarget) {
-        updateField('targetWord', prefillTarget);
-        return true;
-      }
-      store().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
-      return false;
-    };
-
-    if (key === 'targetWord') {
-      trySetTextField('targetWord', ctx.prefill?.targetWord?.trim() ?? '');
-      return;
-    }
-
-    if (!ensureTargetWord()) return;
-
-    const current = store().draft.fields;
-    const prefill = ctx.prefill;
-
-    switch (key) {
-      case 'sentence': {
-        trySetTextField('sentence', prefill?.sentence?.trim() ?? ctx.cue?.targetText?.trim() ?? '');
-        break;
-      }
-      case 'sentenceTranslation': {
-        const prefillValue = prefill?.sentenceTranslation?.trim() ?? ctx.cue?.nativeText?.trim() ?? '';
-        if (prefillValue) {
-          trySetTextField('sentenceTranslation', prefillValue);
-          break;
-        }
-        const sentence = current.sentence.trim() || ctx.cue?.targetText?.trim() || prefill?.sentence?.trim() || '';
-        if (!sentence) {
-          store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [fieldLabel]));
-          break;
-        }
-        const before = store().draft.fields.sentenceTranslation;
-        await translateSentenceField();
-        const after = store().draft.fields.sentenceTranslation;
-        if (after.trim() && after !== before) {
-          store().pushToast('success', t('cardCreator.toast.generateField.success', [fieldLabel]));
-        }
-        break;
-      }
-      case 'definitions':
-      case 'note':
-      case 'moreExample': {
-        const source = await resolveGenerateSource();
-        trySetTextField(key, source?.[key]?.trim() ?? '');
-        break;
-      }
-      case 'images':
-      case 'sentenceAudios':
-      case 'wordAudios': {
-        if (current[key].length > 0) {
-          store().pushToast('warning', t('cardCreator.toast.generateField.alreadyFilled', [fieldLabel]));
-          break;
-        }
-        const source = await resolveGenerateSource();
-        const urlKey = mediaUrlMap[key];
-        const urls = source?.[urlKey] ?? [];
-        if (urls.length === 0) {
-          store().pushToast('warning', t('cardCreator.toast.generateField.noSource', [fieldLabel]));
-          break;
-        }
-        store().setCapturingMedia(true);
-        const kind = mediaKindMap[key];
-        const fetchKey = mediaFetchKeyMap[key];
-        const fetched: MediaFile[] = [];
-        for (const url of urls) {
-          try {
-            fetched.push(await fetchMediaFile(url, kind));
-          } catch {
-            store().pushToast('warning', t(fetchKey, [url]));
-          }
-        }
-        if (fetched.length > 0) {
-          store().setDraft((prev) => ({
-            ...prev,
-            fields: {
-              ...prev.fields,
-              [key]: [...prev.fields[key], ...fetched],
-            },
-          }));
-          store().pushToast('success', t('cardCreator.toast.generateField.success', [fieldLabel]));
-        } else {
-          store().pushToast('warning', t('cardCreator.toast.generateField.failed', [fieldLabel]));
-        }
-        store().setCapturingMedia(false);
-        break;
-      }
-      default:
-        break;
-    }
-  }, [resolveGenerateSource, translateSentenceField, updateField]);
-
-  /** Sequence guard for generateAll — a new generate call (queue item click,
-   *  auto-advance, manual retype) supersedes an in-flight one so a slow lookup
-   *  for term A can never overwrite term B's card. */
-  const generateSeqRef = useRef(0);
-
-  /** Fill every empty generatable field (definitions + media) for the current
-   *  target word — from the open-context prefill when it matches the word,
-   *  else from a live dictionary lookup. Best-effort: failed URLs are
-   *  skipped with a toast; already-filled fields are never overwritten. */
-  const generateAll = useCallback(async () => {
-    const ctx = openContextRef.current;
-    if (!ctx) return;
-    const store = () => useCardCreatorStore.getState();
-    const requestedTerm = store().draft.fields.targetWord.trim();
-    if (!requestedTerm) {
-      store().pushToast('warning', t('cardCreator.toast.generate.noTarget'));
-      return;
-    }
-    const seq = ++generateSeqRef.current;
-    const stillCurrent = () =>
-      seq === generateSeqRef.current &&
-      store().draft.fields.targetWord.trim().toLowerCase() === requestedTerm.toLowerCase();
-    store().setCapturingMedia(true);
-    try {
-      const source = await resolveGenerateSource();
-      // The draft moved on while the lookup was in flight — drop the result.
-      if (!stillCurrent()) return;
-      // A source that resolves but carries no data at all (empty/fallback
-      // entry, no media URLs) means the dictionary effectively has nothing
-      // for this term — report it like a missing entry rather than
-      // "nothing missing".
-      const hasSourceData = !!source && (
-        !!source.definitions?.trim() ||
-        (source.wordAudioUrls?.length ?? 0) > 0 ||
-        (source.sentenceAudioUrls?.length ?? 0) > 0 ||
-        (source.imageUrls?.length ?? 0) > 0
-      );
-      if (!source || !hasSourceData) {
-        store().pushToast('warning', t('cardCreator.toast.generate.notFound', [requestedTerm]));
-        return;
-      }
-      let filled = false;
-      const current = store().draft.fields;
-      if (!current.definitions.trim() && source.definitions?.trim()) {
-        updateField('definitions', source.definitions);
-        filled = true;
-      }
-      const fetchedWordAudios: MediaFile[] = [];
-      const fetchedSentenceAudios: MediaFile[] = [];
-      const fetchedImages: MediaFile[] = [];
-      if (current.wordAudios.length === 0) {
-        for (const audioUrl of source.wordAudioUrls ?? []) {
-          try {
-            fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-          } catch {
-            store().pushToast('warning', t('cardCreator.toast.fetch.wordAudio', [audioUrl]));
-          }
-        }
-      }
-      if (current.sentenceAudios.length === 0) {
-        for (const audioUrl of source.sentenceAudioUrls ?? []) {
-          try {
-            fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
-          } catch {
-            store().pushToast('warning', t('cardCreator.toast.fetch.sentenceAudio', [audioUrl]));
-          }
-        }
-      }
-      if (current.images.length === 0) {
-        for (const imageUrl of source.imageUrls ?? []) {
-          try {
-            fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
-          } catch {
-            store().pushToast('warning', t('cardCreator.toast.fetch.image', [imageUrl]));
-          }
-        }
-      }
-      // Media downloads take seconds — re-check the draft still belongs to
-      // the requested term before attaching them.
-      if (!stillCurrent()) return;
-      if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
-        store().setDraft((prev) => ({
-          ...prev,
-          fields: {
-            ...prev.fields,
-            wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
-            sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
-            images: [...prev.fields.images, ...fetchedImages],
-          },
-        }));
-        filled = true;
-      }
-      store().pushToast(
-        filled ? 'success' : 'warning',
-        t(filled ? 'cardCreator.toast.generate.success' : 'cardCreator.toast.generate.empty'),
-      );
-    } finally {
-      // Only the latest generation owns the flag — a superseded call must not
-      // re-enable the button while the newer one is still running.
-      if (seq === generateSeqRef.current) store().setCapturingMedia(false);
-    }
-  }, [resolveGenerateSource, updateField]);
-
-  /** Queue item click: switch the active queue item, notify the parent so the
-   *  integrated Dictionary shows the term, then run the generate flow so the
-   *  card gets the term's dictionary data + term-bound media. */
   const selectQueueItem = useCallback((index: number) => {
     selectQueueItemStore(index);
     const term = useCardCreatorStore.getState().queueItems[index]?.term;
@@ -1229,157 +147,9 @@ export function useCardCreatorState(
     void generateAll();
   }, [selectQueueItemStore, generateAll]);
 
-  /** Look up a term in the integrated Dictionary without changing the queue.
-   *  Used by tokenized sentence preview in the integrated panel. */
   const lookupTerm = useCallback((term: string) => {
     if (term.trim()) onQueueTermSelectRef.current?.(term.trim());
   }, []);
-
-  /** Retry the caller once after a schema refresh if the error looks like a
-   *  missing deck or note type. */
-  const runWithSchemaRetry = useCallback(
-    async <T>(fn: () => Promise<T>): Promise<T> => {
-      try {
-        return await fn();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (!isMissingSchemaError(msg)) throw err;
-      }
-
-      const refresh = await refreshAnkiSchemaCache(ankiConnectUrl);
-      if (refresh.ok) {
-        const s = useCardCreatorStore.getState();
-        s.setDecks(refresh.value.decks);
-        s.setNoteTypes(refresh.value.models);
-      }
-
-      // Try once more; if it still fails, the original/pre-existing error bubbles.
-      return await fn();
-    },
-    [ankiConnectUrl],
-  );
-
-  /** Build the Anki note fields from the draft (apply mapping + media refs). */
-  const buildAnkiFieldsCb = useCallback(
-    async (): Promise<Record<string, string>> => {
-      const store = useCardCreatorStore.getState();
-      return buildAnkiFields(
-        ankiConnectUrl,
-        store.draft.fieldMapping,
-        {
-          targetWord: store.draft.fields.targetWord,
-          sentence: store.draft.fields.sentence,
-          sentenceTranslation: store.draft.fields.sentenceTranslation,
-          definitions: store.draft.fields.definitions,
-          note: store.draft.fields.note,
-          moreExample: store.draft.fields.moreExample,
-        },
-        {
-          images: store.draft.fields.images,
-          sentenceAudios: store.draft.fields.sentenceAudios,
-          wordAudios: store.draft.fields.wordAudios,
-        },
-        (msg) => useCardCreatorStore.getState().pushToast('error', msg),
-      );
-    },
-    [ankiConnectUrl],
-  );
-
-  /** Submit: Add or Update. */
-  const submit = useCallback(
-    async (mode: 'add' | 'update') => {
-      const store = useCardCreatorStore.getState();
-      if (store.submitting) return;
-      store.setSubmitting(true);
-      try {
-        const fields = await buildAnkiFieldsCb();
-        const draft = store.draft;
-        const tags = draft.tags.split(/\s+/).filter(Boolean);
-        let success = false;
-
-        if (mode === 'add') {
-          const r = await runWithSchemaRetry(async () => {
-            const result = await addNote(ankiConnectUrl, {
-              deckName: draft.deck,
-              modelName: draft.noteType,
-              fields,
-              tags,
-            });
-            if (!result.ok) throw new Error(result.error);
-            return result;
-          });
-          if (r.value === null) {
-            store.pushToast('warning', t('cardCreator.toast.add.duplicate'));
-          } else {
-            store.pushToast('success', t('cardCreator.toast.add.success', [draft.deck, r.value]));
-            await autosaverRef.current.clear();
-            success = true;
-          }
-        } else {
-          // Update existing note. Re-query the freshest recent note id +
-          // info right before updating — the cached recentNoteId may be
-          // stale if the user added a card earlier in this same dialog
-          // session (the new card is now the most recent). See
-          // persist-config-clear-content principle (refresh-then-use,
-          // don't trust cached identity).
-          const fresh = await refreshRecentNote(draft.deck, draft.noteType);
-          const updateNoteId = fresh.id;
-          if (updateNoteId === null) {
-            store.pushToast('error', t('cardCreator.toast.update.noCard', [draft.deck]));
-            return;
-          }
-          // For update, we need existing fields to apply append/skip modes.
-          const existing = fresh.info?.fields ?? {};
-          const updateFields: Record<string, string> = {};
-          for (const [ankiField, newValue] of Object.entries(fields)) {
-            const existingValue = existing[ankiField] ?? '';
-            if (draft.mediaUpdateMode === 'overwrite') {
-              if (newValue) updateFields[ankiField] = newValue;
-            } else if (draft.mediaUpdateMode === 'append') {
-              if (newValue) {
-                updateFields[ankiField] = existingValue ? `${existingValue}<br>${newValue}` : newValue;
-              }
-            } else {
-              // skip: only update if existing is empty.
-              if (!existingValue && newValue) updateFields[ankiField] = newValue;
-            }
-          }
-          if (Object.keys(updateFields).length === 0) {
-            store.pushToast('warning', t('cardCreator.toast.update.skip'));
-            return;
-          }
-          await runWithSchemaRetry(async () => {
-            const result = await updateNote(ankiConnectUrl, updateNoteId, updateFields, 'overwrite', existing);
-            if (!result.ok) throw new Error(result.error);
-            return result;
-          });
-          // Sync tags (desktop only; Android shows warning).
-          if (tags.length > 0) {
-            const tagsR = await addNoteTags(ankiConnectUrl, updateNoteId, tags);
-            if (!tagsR.ok) {
-              store.pushToast('warning', t('cardCreator.toast.update.tagsFailed', [tagsR.error]));
-            }
-          }
-          store.pushToast('success', t('cardCreator.toast.update.success', [updateNoteId]));
-          await autosaverRef.current.clear();
-          success = true;
-        }
-        if (success) {
-          onSubmitSuccessRef.current?.();
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (mode === 'add') {
-          useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.add.error', [msg]));
-        } else {
-          useCardCreatorStore.getState().pushToast('error', t('cardCreator.toast.update.error', [msg]));
-        }
-      } finally {
-        useCardCreatorStore.getState().setSubmitting(false);
-      }
-    },
-    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote, runWithSchemaRetry],
-  );
 
   return {
     draft,

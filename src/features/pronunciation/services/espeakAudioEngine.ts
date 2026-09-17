@@ -125,7 +125,7 @@ export async function synthesizeEspeakWord(text: string): Promise<PronunciationA
 }
 
 /**
- * Synthesize and play a whole word directly. Used by the AudioPanel play
+ * Synthesize and play a whole word directly. Used by the PronunciationAudioPanel play
  * button when the eSpeak item is clicked.
  */
 export async function playEspeakWord(text: string): Promise<void> {

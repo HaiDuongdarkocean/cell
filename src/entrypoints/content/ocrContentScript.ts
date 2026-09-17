@@ -24,8 +24,14 @@ import { DEFAULT_OCR_ORIGIN_STATE } from '@/features/ocr/persistence/ocrStateTyp
 import type { ImageSource } from '@/features/ocr/engine/types';
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import { logger } from '@/shared/lib/logger';
 
 declare const __CELL_DEBUG__: string;
+
+function cellDebug(): boolean {
+  return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+}
 
 /** Session pipeline config = shared pipeline config + split dual-stream fields. */
 interface OcrSessionConfig extends OcrPipelineConfig {
@@ -177,16 +183,16 @@ export class OcrSession {
         await this.initSplitEngines(originState, systemLangs);
       } else {
         const initResult = await this.controller.init(originState.languageMode, 'webgpu');
-        document.body.dataset.ocrInitResult = JSON.stringify(initResult);
+        if (cellDebug()) document.body.dataset.ocrInitResult = JSON.stringify(initResult);
       }
     } catch (e) {
-      document.body.dataset.ocrInitError = String(e);
+      if (cellDebug()) document.body.dataset.ocrInitError = String(e);
       throw e;
     }
 
-    document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
+    if (cellDebug()) document.body.dataset.ocrDebugAttach = `video=${video?.tagName},parent=${video?.parentElement?.tagName}`;
     this.overlay.attach(video);
-    document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
+    if (cellDebug()) document.body.dataset.ocrDebugAfterAttach = `container=${(this.overlay as unknown as { container?: HTMLElement }).container?.tagName}`;
 
     // Attach region selector in view mode (green rectangle showing scan area).
     const initialRegion = originState.customRegion ?? defaultBottomRegion(this.config.subtitleRegionPct, originState.subtitleRegionWidthPct);
@@ -243,7 +249,7 @@ export class OcrSession {
     }
 
     this.loopCount = (this.loopCount ?? 0) + 1;
-    document.body.dataset.ocrLoopCount = String(this.loopCount);
+    if (cellDebug()) document.body.dataset.ocrLoopCount = String(this.loopCount);
 
     try {
       const captureStart = performance.now();
@@ -255,21 +261,23 @@ export class OcrSession {
       const frameTimeMs = this.video.currentTime * 1000;
 
       const region = computeSubtitleRegion(frame.width, frame.height, this.config.subtitleRegionPct, this.config.subtitleRegionWidthPct, this.config.customRegion);
-      document.body.dataset.ocrCropRegion = JSON.stringify(region);
+      if (cellDebug()) document.body.dataset.ocrCropRegion = JSON.stringify(region);
 
       this.processing = true;
       void this.processFrame(frame, frameTimeMs).finally(() => {
         this.processing = false;
-        const totalMs = performance.now() - captureStart;
-        const prev = (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog ?? [];
-        prev.push(totalMs);
-        (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog = prev.slice(-50);
-        document.body.dataset.ocrLatencyMs = totalMs.toFixed(0);
-        document.body.dataset.ocrLatencyAvg = (prev.reduce((a, b) => a + b, 0) / prev.length).toFixed(0);
-        document.body.dataset.ocrLatencyMax = Math.max(...prev).toFixed(0);
+        if (cellDebug()) {
+          const totalMs = performance.now() - captureStart;
+          const prev = (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog ?? [];
+          prev.push(totalMs);
+          (globalThis as { __ocrLatencyLog?: number[] }).__ocrLatencyLog = prev.slice(-50);
+          document.body.dataset.ocrLatencyMs = totalMs.toFixed(0);
+          document.body.dataset.ocrLatencyAvg = (prev.reduce((a, b) => a + b, 0) / prev.length).toFixed(0);
+          document.body.dataset.ocrLatencyMax = Math.max(...prev).toFixed(0);
+        }
       });
     } catch (e) {
-      document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
+      if (cellDebug()) document.body.dataset.ocrLoopError = String(e)?.slice(0, 200);
       this.processing = false;
     }
 
@@ -295,31 +303,33 @@ export class OcrSession {
         this.config,
       );
 
-      const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
-      statuses.push(result.status);
-      document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
-      const lumaDbg = (globalThis as { __ocrLumaDbg?: string[] }).__ocrLumaDbg;
-      if (lumaDbg && lumaDbg.length > 0) {
-        document.body.dataset.ocrLumaDbg = lumaDbg.join(' | ');
-      }
-      const captureDbg = (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg;
-      if (captureDbg) {
-        document.body.dataset.ocrCaptureDbg = captureDbg;
-      }
-      if (result.status === 'ocr') {
-        document.body.dataset.ocrLastResult = JSON.stringify(result.results.map(r => r.text)).slice(0, 200);
-      }
-      const stepTimings = (globalThis as { __ocrStepTimings?: string }).__ocrStepTimings;
-      if (stepTimings) document.body.dataset.ocrStepTimings = stepTimings;
-      const ctrlTimings = (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings;
-      if (ctrlTimings) document.body.dataset.ocrCtrlTimings = ctrlTimings;
-      if (result.status === 'error') {
-        document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+      if (cellDebug()) {
+        const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
+        statuses.push(result.status);
+        document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
+        const lumaDbg = (globalThis as { __ocrLumaDbg?: string[] }).__ocrLumaDbg;
+        if (lumaDbg && lumaDbg.length > 0) {
+          document.body.dataset.ocrLumaDbg = lumaDbg.join(' | ');
+        }
+        const captureDbg = (globalThis as { __ocrCaptureDbg?: string }).__ocrCaptureDbg;
+        if (captureDbg) {
+          document.body.dataset.ocrCaptureDbg = captureDbg;
+        }
+        if (result.status === 'ocr') {
+          document.body.dataset.ocrLastResult = JSON.stringify(result.results.map(r => r.text)).slice(0, 200);
+        }
+        const stepTimings = (globalThis as { __ocrStepTimings?: string }).__ocrStepTimings;
+        if (stepTimings) document.body.dataset.ocrStepTimings = stepTimings;
+        const ctrlTimings = (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings;
+        if (ctrlTimings) document.body.dataset.ocrCtrlTimings = ctrlTimings;
+        if (result.status === 'error') {
+          document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+        }
       }
 
       if (result.status === 'drm_detected') {
         // Stop OCR — DRM-protected content.
-        document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+        if (cellDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
         void this.stop();
         return;
       }
@@ -337,7 +347,7 @@ export class OcrSession {
 
       if (result.status === 'ocr' && this.video) {
         const hitboxes = createHitboxes(result.results, result.scriptRuns);
-        console.log(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
+        if (cellDebug()) logger.debug(`[OCR] t=${(frameTimeMs / 1000).toFixed(2)}s text=${JSON.stringify(result.results.map(r => r.text))} hitboxes=${hitboxes.length}`);
         this.overlay.updateHitboxes(hitboxes, this.video.videoWidth, this.video.videoHeight);
 
         // T16: Wire hitbox clicks → SubtitleTriggerController → dictionary popup.
@@ -352,9 +362,11 @@ export class OcrSession {
       }
     } catch (e) {
       // Dev debug: expose errors via DOM dataset (visible from MAIN world).
-      const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
-      errs.push(String(e));
-      document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
+      if (cellDebug()) {
+        const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
+        errs.push(String(e));
+        document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
+      }
     }
   }
 
@@ -387,12 +399,14 @@ export class OcrSession {
           undefined,
           half,
         );
-        const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
-        statuses.push(result.status);
-        document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
+        if (cellDebug()) {
+          const statuses = (document.body.dataset.ocrPipelineStatuses || '').split(',').filter(Boolean);
+          statuses.push(result.status);
+          document.body.dataset.ocrPipelineStatuses = statuses.slice(-20).join(',');
+        }
         if (result.status === 'drm_detected') {
           // Stop OCR — DRM-protected content (either stream).
-          document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
+          if (cellDebug()) document.body.dataset.ocrDrmDetected = `meanLuma=${result.meanLuma}`;
           await this.stop();
           return;
         }
@@ -406,12 +420,14 @@ export class OcrSession {
           this.markProcessed(frameTimeMs);
           hasUpdate = true;
         } else if (result.status === 'error') {
-          document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
+          if (cellDebug()) document.body.dataset.ocrLastError = (result as { error?: string }).error?.slice(0, 200);
         }
       } catch (e) {
-        const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
-        errs.push(String(e));
-        document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
+        if (cellDebug()) {
+          const errs = (document.body.dataset.ocrErrors || '').split('\n').filter(Boolean);
+          errs.push(String(e));
+          document.body.dataset.ocrErrors = errs.slice(-10).join('\n');
+        }
       }
     }
     if (hasUpdate) this.postOcrTracks();
@@ -425,12 +441,12 @@ export class OcrSession {
     const nativeLang = resolveOcrLang(originState.nativeLangOverride ?? null, systemLangs.native);
     const plan = planSplitEngines(targetLang, nativeLang, deviceMemoryGb());
     const targetInit = await this.controller.init(targetLang, 'webgpu', plan.targetKey);
-    document.body.dataset.ocrInitResult = JSON.stringify(targetInit);
+    if (cellDebug()) document.body.dataset.ocrInitResult = JSON.stringify(targetInit);
     if (plan.dualEngine) {
       const nativeInit = await this.controller.init(nativeLang, 'webgpu', plan.nativeKey);
       if (nativeInit.status !== 'ready') {
         // Graceful: native stream falls back to the target engine (low-memory behavior).
-        document.body.dataset.ocrNativeInitError = nativeInit.error ?? 'unknown';
+        if (cellDebug()) document.body.dataset.ocrNativeInitError = nativeInit.error ?? 'unknown';
         this.splitEngineKeys = { target: plan.targetKey, native: plan.targetKey };
         return;
       }
@@ -622,7 +638,7 @@ export class OcrSession {
     await saveOcrSettings(next);
     this.originState = { ...this.originState, customRegion: region };
     this.pendingRegion = null;
-    void chrome.storage.local.set({ __ocrRegionResult: { applied: true, timestamp: Date.now() } });
+    void chrome.storage.local.set({ [STORAGE_KEYS.OCR_REGION_RESULT]: { applied: true, timestamp: Date.now() } });
   }
 
   /** Handle Cancel from region selector — revert to saved region. */
@@ -634,7 +650,7 @@ export class OcrSession {
     this.regionSelector.updateRegion(savedRegion);
     this.regionSelector.setMode('view');
     this.pendingRegion = null;
-    void chrome.storage.local.set({ __ocrRegionResult: { applied: false, timestamp: Date.now() } });
+    void chrome.storage.local.set({ [STORAGE_KEYS.OCR_REGION_RESULT]: { applied: false, timestamp: Date.now() } });
   }
 
   /** Full shutdown — dispose engine in offscreen document. */

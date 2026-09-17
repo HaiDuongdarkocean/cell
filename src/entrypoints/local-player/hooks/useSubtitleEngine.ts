@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SubtitleCueEngine, type NavClusterIconName } from '@/features/subtitle/ui/subtitleCueEngine';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
@@ -104,6 +104,15 @@ export function useSubtitleEngine(
   const [nativeStyle, setNativeStyle] = useState<OverlayStyleConfig>(DEFAULT_OVERLAY_STYLE_NATIVE);
   const [blockSettings, setBlockSettings] = useState<SubtitleBlockSettings>(DEFAULT_SUBTITLE_BLOCK_SETTINGS);
   const [clusterSettings, setClusterSettings] = useState<NavClusterSettings>(DEFAULT_NAV_CLUSTER_SETTINGS);
+  const settingsRef = useRef({ blockSettings, targetStyle, nativeStyle, clusterSettings });
+
+  // Engine is constructed once per video element; later setting changes are
+  // pushed through engine.updateSettings/updateBlockSettings by the update
+  // callbacks below. The ref mirror lets the creation effect read the latest
+  // values on videoFile re-runs without re-creating the engine per change.
+  useEffect(() => {
+    settingsRef.current = { blockSettings, targetStyle, nativeStyle, clusterSettings };
+  });
 
   // Create engine when video element mounts (re-create on videoFile change
   // because the <video> element is conditionally rendered — same pattern as
@@ -112,6 +121,7 @@ export function useSubtitleEngine(
     const video = videoRef.current;
     if (!video) return;
 
+    const { blockSettings, targetStyle, nativeStyle, clusterSettings } = settingsRef.current;
     const engine = new SubtitleCueEngine(
       video,
       blockSettings,
@@ -132,7 +142,6 @@ export function useSubtitleEngine(
       useCuesStore.getState().setActiveIndex(-1, -1);
       setHasSubtitles(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoRef, videoFile]);
 
   const loadCues = useCallback((targetCues: SrtCue[], nativeCues: SrtCue[]): void => {

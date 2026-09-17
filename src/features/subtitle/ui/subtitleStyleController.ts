@@ -193,7 +193,12 @@ export class SubtitleStyleController {
 
     if (this.clusterPersistTimer) clearTimeout(this.clusterPersistTimer);
     this.clusterPersistTimer = setTimeout(() => {
-      saveSettings({ navClusterSettings: merged } as Partial<Settings>).catch(() => undefined);
+      saveSettings({
+        navClusterEnabled: merged.enabled,
+        navClusterButtonSize: merged.buttonSize,
+        navClusterTextOpacity: merged.textOpacity,
+        navClusterButtonBgOpacity: merged.bgOpacity,
+      }).catch(() => undefined);
       this.clusterPersistTimer = null;
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }

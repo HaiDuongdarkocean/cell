@@ -1,5 +1,5 @@
 import { Button, Icon } from '@/shared/ui';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import type { PresetName } from '@/entities/theme';
 import styles from './LauncherUserBar.module.css';
 

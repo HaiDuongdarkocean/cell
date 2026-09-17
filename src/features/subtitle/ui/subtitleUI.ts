@@ -68,7 +68,7 @@ export function hexToRgba(hex: string, alpha: number): string {
   const pct = Math.round(alpha * 100);
   const fallback = `color-mix(in srgb, var(--color-overlay-background) ${pct}%, transparent)`;
   if (normalized.length !== 3 && normalized.length !== 6) return fallback;
-  let r = 0, g = 0, b = 0;
+  let r: number, g: number, b: number;
   if (normalized.length === 3) {
     r = parseInt(normalized[0] + normalized[0], 16);
     g = parseInt(normalized[1] + normalized[1], 16);

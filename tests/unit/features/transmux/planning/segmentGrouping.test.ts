@@ -1,5 +1,5 @@
 import { groupSegmentsByBytes } from '@/features/transmux/planning/segmentGrouping';
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 
 function makeRange(index: number, size: number, startByte: number): SegmentRange {
   return {

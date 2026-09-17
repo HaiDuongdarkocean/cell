@@ -3,7 +3,7 @@ import type {
   MessageRequest,
   MessageResponse,
   MessageHandler,
-} from '@/types/message';
+} from '@/entities/message';
 
 // --- Mock chrome.runtime ---
 type Listener = (
@@ -186,6 +186,47 @@ describe('MessageBus', () => {
         expect(handler).toHaveBeenCalledWith(request);
         expect(response).toEqual({ success: true, data: 'ok' });
       });
+    });
+
+    it('passes the schema-validated payload (not the raw request) to the handler', async () => {
+      const bus = new MessageBus();
+      const handler: MessageHandler = jest
+        .fn()
+        .mockResolvedValue({ success: true });
+
+      bus.on('DOWNLOAD_VIDEO', handler);
+
+      const response = await bus.handleMessage(
+        {
+          type: 'DOWNLOAD_VIDEO',
+          payload: { videoId: 'v1', unexpected: 'stripped-by-schema' },
+        },
+        { id: '1' },
+      );
+
+      expect(response).toEqual({ success: true });
+      expect(handler).toHaveBeenCalledWith({
+        type: 'DOWNLOAD_VIDEO',
+        payload: { videoId: 'v1' },
+      });
+    });
+
+    it('rejects an invalid payload before invoking the handler', async () => {
+      const bus = new MessageBus();
+      const handler: MessageHandler = jest
+        .fn()
+        .mockResolvedValue({ success: true });
+
+      bus.on('DOWNLOAD_VIDEO', handler);
+
+      const response = await bus.handleMessage(
+        { type: 'DOWNLOAD_VIDEO', payload: {} },
+        { id: '1' },
+      );
+
+      expect(response.success).toBe(false);
+      expect(response.error).toContain('Invalid DOWNLOAD_VIDEO payload');
+      expect(handler).not.toHaveBeenCalled();
     });
 
     it('returns an error response for an unregistered type', () => {

@@ -1,0 +1,348 @@
+{
+  "entries": {
+    "features/audio/ui/AudioPanel.tsx": [
+      "@/features/pronunciation/services/pronunciationAudioOrchestrator"
+    ],
+    "features/audio/ui/SourceDetailPanel.tsx": [
+      "@/features/pronunciation/ui/LocalPronunciationSettingsPanel",
+      "@/features/tts/ui/TtsLanguagePanel",
+      "@/features/tts/ui/TtsVoiceManagerPanel"
+    ],
+    "features/cardCreator/service/dictionaryGenerate.test.ts": [
+      "@/features/pronunciation/services/pronunciationAudioOrchestrator"
+    ],
+    "features/cardCreator/service/dictionaryGenerate.ts": [
+      "@/features/dictionary/logic/formatDefinitions",
+      "@/features/pronunciation/services/pronunciationAudioOrchestrator"
+    ],
+    "features/cardCreator/ui/PreviewBlock.tsx": [
+      "@/features/dictionary/services/wordStatusEvents",
+      "@/features/tokenize/logic/tokenListMetadata",
+      "@/features/tokenize/types"
+    ],
+    "features/cardCreator/ui/mountCardCreatorDialog.ts": [
+      "@/features/theme/ui/ShadowThemeProvider",
+      "@/features/tokenize/ui/tokenSpanCss"
+    ],
+    "features/dictionaryPopup/controller/cardCreatorBridge.ts": [
+      "@/features/cardCreator/media/mediaFile",
+      "@/features/cardCreator/media/screenshot",
+      "@/features/cardCreator/media/sentenceAudio",
+      "@/features/cardCreator/service/cardCreatorPrefetch",
+      "@/features/cardCreator/types",
+      "@/features/cardCreator/ui/mountCardCreatorDialog",
+      "@/features/dictionary/logic/formatDefinitions",
+      "@/features/subtitle/ui/subtitleControllerHelpers",
+      "@/features/subtitle/ui/subtitleUI"
+    ],
+    "features/dictionaryPopup/controller/popupLifecycle.ts": [
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/dictionaryPopup/controller/webTextDictionaryController.test.ts": [
+      "@/features/cardCreator/media/sentenceAudio",
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/dictionaryPopup/controller/webTextDictionaryController.ts": [
+      "@/features/cardCreator/types",
+      "@/features/cardCreator/ui/mountCardCreatorDialog"
+    ],
+    "features/dictionaryPopup/log/lookupLogStore.test.ts": [
+      "@/features/dictionary/logic/lookupLogTypes"
+    ],
+    "features/dictionaryPopup/log/lookupLogStore.ts": [
+      "@/features/dictionary/logic/lookupLogTypes"
+    ],
+    "features/dictionaryPopup/logic/chinesePlugin.fixture.test.ts": [
+      "@/features/dictionary/logic/chineseSegmenter",
+      "@/features/dictionary/repositories/baseRepository",
+      "@/features/dictionary/repositories/dictionaryRepository",
+      "@/features/dictionary/repositories/resourceRepository"
+    ],
+    "features/dictionaryPopup/logic/lookupOrchestrator.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseTemplateParser",
+      "@/features/dictionary/repositories/baseRepository",
+      "@/features/dictionary/repositories/dictionaryRepository",
+      "@/features/dictionary/repositories/frequencyRepository",
+      "@/features/dictionary/repositories/phraseIndexRepository",
+      "@/features/dictionary/repositories/resourceRepository",
+      "@/features/dictionary/services/wordStatusStore"
+    ],
+    "features/dictionaryPopup/logic/lookupOrchestrator.ts": [
+      "@/features/dictionary/logic/lookupLogTypes",
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseMatcher",
+      "@/features/dictionary/repositories/dictionaryRepository",
+      "@/features/dictionary/repositories/frequencyRepository",
+      "@/features/dictionary/repositories/phraseIndexRepository",
+      "@/features/dictionary/repositories/resourceRepository",
+      "@/features/dictionary/services/wordStatusStore"
+    ],
+    "features/dictionaryPopup/logic/lookupOrchestratorBenchmark.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseMatcher",
+      "@/features/dictionary/logic/phraseTemplateParser"
+    ],
+    "features/dictionaryPopup/logic/useDictionaryLookup.ts": [
+      "@/features/dictionary/services/wordStatusStore"
+    ],
+    "features/dictionaryPopup/logic/useDictionaryToolbar.test.ts": [
+      "@/features/cardCreator/media/translation"
+    ],
+    "features/dictionaryPopup/logic/useDictionaryToolbar.ts": [
+      "@/features/cardCreator/media/translation",
+      "@/features/pronunciation/services/pronunciationAudioOrchestrator"
+    ],
+    "features/dictionaryPopup/plugins/chinesePlugin.ts": [
+      "@/features/dictionary/logic/chineseSegmenter"
+    ],
+    "features/dictionaryPopup/plugins/englishPlugin.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseTemplateParser"
+    ],
+    "features/dictionaryPopup/plugins/englishPlugin.ts": [
+      "@/features/dictionary/logic/englishLemma",
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseMatcher"
+    ],
+    "features/dictionaryPopup/plugins/fallbackPlugin.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler"
+    ],
+    "features/dictionaryPopup/trigger/subtitleTriggerController.ts": [
+      "@/features/dictionary/logic/chineseSegmenter",
+      "@/features/dictionary/logic/phraseMatcher",
+      "@/features/ocr/language/scriptRunSegmenter"
+    ],
+    "features/dictionaryPopup/ui/CandidateView.test.tsx": [
+      "@/features/cardCreator/media/translation"
+    ],
+    "features/dictionaryPopup/ui/CandidateView.tsx": [
+      "@/features/dictionary/services/wordStatusStore",
+      "@/features/pronunciation/hooks/useAudioItemUrl",
+      "@/features/pronunciation/hooks/usePronunciation",
+      "@/features/pronunciation/types",
+      "@/features/pronunciation/ui/PronunciationPanel"
+    ],
+    "features/dictionaryPopup/ui/DictionaryPanelView.test.tsx": [
+      "@/features/cardCreator/media/translation"
+    ],
+    "features/dictionaryPopup/ui/DictionaryPanelView.tsx": [
+      "@/features/tokenize/logic/viewportTracker"
+    ],
+    "features/dictionaryPopup/ui/PronunciationAudioPanel.tsx": [
+      "@/features/pronunciation/hooks/useAudioItemUrl"
+    ],
+    "features/dictionaryPopup/ui/mountOrbitalBadge.ts": [
+      "@/features/theme/ui/ShadowThemeProvider"
+    ],
+    "features/dictionaryPopup/ui/mountPopupDictionary.ts": [
+      "@/features/theme/ui/ShadowThemeProvider"
+    ],
+    "features/dictionaryPopup/ui/useCandidate.test.ts": [
+      "@/features/cardCreator/media/translation"
+    ],
+    "features/dictionaryPopup/ui/useCandidate.ts": [
+      "@/features/dictionary/services/wordStatusClient",
+      "@/features/dictionary/services/wordStatusStore"
+    ],
+    "features/dictionaryPopup/ui/wordHighlight.ts": [
+      "@/features/theme/logic/themeTokens"
+    ],
+    "features/dictionaryPopup/worker/lookupWorker.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseTemplateParser"
+    ],
+    "features/dictionaryPopup/worker/lookupWorkerHandler.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseMatcher"
+    ],
+    "features/dictionaryPopup/worker/phraseIndexLoader.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler",
+      "@/features/dictionary/logic/phraseTemplateParser"
+    ],
+    "features/dictionaryPopup/worker/phraseIndexLoader.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler"
+    ],
+    "features/dictionaryPopup/worker/resourcePriority.test.ts": [
+      "@/features/dictionary/logic/phraseIndexCompiler"
+    ],
+    "features/download/autoDownload.ts": [
+      "@/features/whitelist/whitelist"
+    ],
+    "features/reader/logic/sentenceText.ts": [
+      "@/features/tokenize/types"
+    ],
+    "features/reader/ui/TokenizedParagraph.tsx": [
+      "@/features/tokenize/logic/textTokenizer",
+      "@/features/tokenize/types"
+    ],
+    "features/reader/ui/TtsControlBar.tsx": [
+      "@/features/tokenize/logic/textTokenizer",
+      "@/features/tts/services/ttsEngineService"
+    ],
+    "features/settings/ui/SettingsDialogContent.tsx": [
+      "@/features/audio/ui/AudioPanel",
+      "@/features/cardCreator/ui/CardCreatorSettingsPanel",
+      "@/features/dictionary/ui/ResourcesPanel",
+      "@/features/theme/ui/ThemePanel",
+      "@/features/tts/ui/TtsVoiceManagerPanel"
+    ],
+    "features/settings/ui/mountSettingsDialog.ts": [
+      "@/features/theme/ui/ShadowThemeProvider"
+    ],
+    "features/srs/services/audioAssetCache.ts": [
+      "@/features/pronunciation/services/pronunciationAudioOrchestrator"
+    ],
+    "features/subtitle/actions/generateNativeAction.ts": [
+      "@/features/detection/logic/languageDetector",
+      "@/features/translate/logic/translatePrefill"
+    ],
+    "features/subtitle/logic/subtitleImport.ts": [
+      "@/features/detection/logic/languageDetector"
+    ],
+    "features/subtitle/logic/subtitleNaming.ts": [
+      "@/features/detection/logic/languageDetector"
+    ],
+    "features/subtitle/ui/CueList.tsx": [
+      "@/features/dictionary/services/wordStatusEvents",
+      "@/features/tokenize/logic/cueListTokens",
+      "@/features/tokenize/types"
+    ],
+    "features/subtitle/ui/PlayerModeOverlay.tsx": [
+      "@/features/studyModes/lib/subtitlePractice"
+    ],
+    "features/subtitle/ui/SubtitleManagerPanel.tsx": [
+      "@/features/ocr/ui/OcrSettingsPanel"
+    ],
+    "features/subtitle/ui/SubtitlePanel.tsx": [
+      "@/features/studyModes/lib/subtitlePractice",
+      "@/features/studyModes/ui/StudyModeActionBar",
+      "@/features/studyModes/ui/SubtitlePractice"
+    ],
+    "features/subtitle/ui/SubtitlePanels.tsx": [
+      "@/features/studyModes/lib/subtitlePractice",
+      "@/features/studyModes/studyModeStore",
+      "@/features/theme/ui/ShadowThemeProvider"
+    ],
+    "features/subtitle/ui/contentScriptContext.ts": [
+      "@/features/translate/logic/translatePrefill"
+    ],
+    "features/subtitle/ui/contentScriptController.test.ts": [
+      "@/features/studyModes/content/studyModeController",
+      "@/features/tokenize/services/tokenizeSettingsStore"
+    ],
+    "features/subtitle/ui/contentScriptController.ts": [
+      "@/features/studyModes/content/studyModeController",
+      "@/features/theme/logic/themeTokens",
+      "@/features/tokenize/controller/subtitleTokenizeController",
+      "@/features/tokenize/services/tokenizeSettingsStore",
+      "@/features/tokenize/types",
+      "@/features/translate/logic/translatePrefill"
+    ],
+    "features/subtitle/ui/contentScriptKeyboard.ts": [
+      "@/features/translate/logic/translatePrefill"
+    ],
+    "features/subtitle/ui/contentScriptMessages.ts": [
+      "@/features/detection/logic/languageDetector",
+      "@/features/translate/logic/translatePrefill"
+    ],
+    "features/subtitle/ui/contentScriptSelection.ts": [
+      "@/features/detection/logic/languageDetector"
+    ],
+    "features/subtitle/ui/hostManagerSheetShadowCss.ts": [
+      "@/features/tokenize/ui/tokenSpanCss"
+    ],
+    "features/subtitle/ui/mountSubtitle.tsx": [
+      "@/features/studyModes/lib/subtitlePractice",
+      "@/features/theme/ui/ShadowThemeProvider",
+      "@/features/tokenize/ui/tokenSpanCss"
+    ],
+    "features/subtitle/ui/reactSubtitleController.ts": [
+      "@/features/studyModes/lib/practiceModeState",
+      "@/features/studyModes/lib/studyModePlaybackController",
+      "@/features/studyModes/lib/subtitlePractice",
+      "@/features/studyModes/lib/subtitleStudyModeController"
+    ],
+    "features/subtitle/ui/subtitlePanelsTypes.ts": [
+      "@/features/studyModes/lib/subtitlePractice"
+    ],
+    "features/subtitle/ui/subtitlePortals.ts": [
+      "@/features/theme/logic/themeTokens"
+    ],
+    "features/subtitle/ui/subtitleSplitView.ts": [
+      "@/features/theme/logic/themeTokens",
+      "@/features/tokenize/ui/tokenSpanCss"
+    ],
+    "features/tokenize/controller/subtitleTokenizeController.test.ts": [
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/tokenize/controller/subtitleTokenizeController.ts": [
+      "@/features/dictionary/services/wordStatusClient",
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/tokenize/controller/webTokenizeController.test.ts": [
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/tokenize/controller/webTokenizeController.ts": [
+      "@/features/dictionary/services/frequencyClient",
+      "@/features/dictionary/services/wordStatusClient",
+      "@/features/dictionary/services/wordStatusEvents"
+    ],
+    "features/tokenize/logic/cueListTokens.ts": [
+      "@/features/dictionary/services/frequencyClient",
+      "@/features/dictionary/services/wordStatusClient"
+    ],
+    "features/tokenize/logic/textTokenizer.ts": [
+      "@/features/dictionary/logic/chineseSegmenter",
+      "@/features/dictionary/logic/phraseMatcher"
+    ],
+    "features/tokenize/logic/tokenListMetadata.ts": [
+      "@/features/dictionary/services/frequencyClient",
+      "@/features/dictionary/services/wordStatusClient"
+    ],
+    "features/tokenize/logic/videoTokenPreloader.test.ts": [
+      "@/features/dictionary/services/frequencyClient",
+      "@/features/dictionary/services/wordStatusClient"
+    ],
+    "features/tokenize/logic/videoTokenPreloader.ts": [
+      "@/features/dictionary/services/frequencyClient",
+      "@/features/dictionary/services/wordStatusClient"
+    ],
+    "features/tokenize/utils/frequencyBand.ts": [
+      "@/features/dictionary/services/resourceClient"
+    ],
+    "features/universalPanel/UniversalPanel.test.tsx": [
+      "@/features/tokenize/types"
+    ],
+    "features/universalPanel/UniversalPanel.tsx": [
+      "@/features/tokenize/types"
+    ],
+    "features/universalPanel/UniversalPanelHeader.tsx": [
+      "@/features/tokenize/types"
+    ],
+    "features/universalPanel/deepLink.ts": [
+      "@/features/dictionaryPopup/controller/panelBridge"
+    ],
+    "features/universalPanel/mountUniversalPanel.ts": [
+      "@/features/cardCreator/state/cardCreatorStore",
+      "@/features/studyModes/ui/StudyModesTab",
+      "@/features/theme/ui/ShadowThemeProvider",
+      "@/features/tokenize/types",
+      "@/features/tokenize/ui/tokenSpanCss"
+    ],
+    "features/universalPanel/tabs/CardCreatorPanel.tsx": [
+      "@/features/cardCreator/ui/CardCreatorDialogContent",
+      "@/features/cardCreator/ui/useCardCreatorState",
+      "@/features/dictionary/logic/formatDefinitions"
+    ],
+    "features/universalPanel/tabs/DictionaryTab.test.tsx": [
+      "@/features/cardCreator/media/translation"
+    ],
+    "features/universalPanel/tabs/DictionaryTab.tsx": [
+      "@/features/dictionaryPopup/ui/Dictionary"
+    ],
+    "features/universalPanel/tabs/SettingsTab.tsx": [
+      "@/features/settings/ui/SettingsDialogContent"
+    ]
+  }
+}

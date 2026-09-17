@@ -153,10 +153,8 @@ export function Showcase(): ReactElement {
         const testHeight = measureEl.offsetHeight;
         if (testHeight > containerHeight && i > 0) {
           breaks.push(i);
-          currentHeight = 0;
           currentLine = units[i];
         } else {
-          currentHeight = testHeight;
           currentLine = testLine;
         }
       }

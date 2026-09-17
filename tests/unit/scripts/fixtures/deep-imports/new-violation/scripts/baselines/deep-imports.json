@@ -1,0 +1,8 @@
+{
+  "entries": {
+    "features/a/index.mjs": [
+      "@/features/b/inner/deep.mjs",
+      "@/features/b/removed.mjs"
+    ]
+  }
+}

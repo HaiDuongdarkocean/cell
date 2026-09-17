@@ -2,7 +2,7 @@ import { memo, useEffect } from 'react';
 import type { SrtCue } from '@/entities/media/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings } from '@/entities/media';
-import { useCuesStore, type LoadErrorType, type LoadStatus, type SubtitleSource } from '@/stores/cuesStore';
+import { useCuesStore, type LoadErrorType, type LoadStatus, type SubtitleSource } from '../cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import { removeBracketedText } from '../logic/removeBracketed';
 import styles from './SubtitleBlock.module.css';

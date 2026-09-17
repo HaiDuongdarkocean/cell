@@ -183,7 +183,7 @@ async function wordPoint(locator: Locator, word?: string): Promise<{ x: number; 
     };
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const re = new RegExp(args.wordReSource, 'g');
-    let node: Text | null = null;
+    let node: Text | null;
     while ((node = walker.nextNode() as Text | null)) {
       const text = node.textContent ?? '';
       let m: RegExpExecArray | null;

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import { resolveMode } from '@/features/theme/logic/themeManager';
 import { useDetectedMedia } from '@/entrypoints/popup/hooks/useDetectedMedia';
 import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgress';

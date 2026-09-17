@@ -21,4 +21,24 @@ export {
   subtitleDiscoveryPayloadSchema,
   subtitleDiscoveryBridgePayloadSchema,
 } from './schema';
-export * from './types';
+export type {
+  DocumentHtmlSignal,
+  FetchTextResult,
+  FrameSourceSignal,
+  HlsPlaylistSignal,
+  NetworkResponseSignal,
+  PlayerStateSignal,
+  SubtitleCandidate,
+  SubtitleCandidateStatus,
+  SubtitleDiscoveryAdapter,
+  SubtitleDiscoveryContext,
+  SubtitleDiscoveryEnvironment,
+  SubtitleDiscoveryResult,
+  SubtitleInventorySink,
+  SubtitleMetadataHandle,
+  SubtitlePipelineStats,
+  SubtitleReplayContext,
+  SubtitleSignal,
+  SubtitleSignalKind,
+  SubtitleSourceKind,
+} from './types';

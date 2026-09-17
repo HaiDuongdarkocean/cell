@@ -38,7 +38,7 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
     }
 
     // Try Google first; if it fails or returns empty, fall back to MyMemory.
-    let lastError = 'No translation available';
+    let lastError: string;
     try {
       const url = buildTranslateUrl(text, sl, tl);
       const response = await fetchWithTimeout(url, {

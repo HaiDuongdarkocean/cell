@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { Portal } from './Portal';
 import { useMenuPlacement } from './useMenuPlacement';
 import styles from './Popover.module.css';
@@ -49,12 +49,10 @@ export function Popover({
     triggerRef,
     menuRef,
   });
-  const container = useMemo(() => getPortalContainer(triggerRef.current), [triggerRef, open]);
-
   if (!open) return null;
 
   return (
-    <Portal container={container}>
+    <Portal container={getPortalContainer(triggerRef.current)}>
       <div
         ref={menuRef}
         className={`${styles.popover} ${className}`.trim()}

@@ -33,9 +33,14 @@ const TEST_VERBS = new Set([
 
 const FIXTURE_PATH = path.resolve(
   __dirname,
-  '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  process.env.CELL_FIXTURE_FULL === '1'
+    ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
+    : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
 );
-const FIXTURE_EXISTS = fs.existsSync(FIXTURE_PATH);
+const FIXTURE_MISSING = process.env.CELL_FIXTURE_FULL === '1' && !fs.existsSync(FIXTURE_PATH);
+if (FIXTURE_MISSING) {
+  console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+}
 
 function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: PhraseIndexInput[] } {
   const entries = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')) as { term?: string }[];
@@ -64,14 +69,14 @@ function loadFixtureIndex(): { index: PhraseIndex; blob: ArrayBuffer; inputs: Ph
   return { index, blob, inputs };
 }
 
-(FIXTURE_EXISTS ? describe : describe.skip)('phraseMatch benchmark (ADR-037 §11)', () => {
+(FIXTURE_MISSING ? describe.skip : describe)('phraseMatch benchmark (ADR-037 §11)', () => {
   let fixture: { index: PhraseIndex; blob: ArrayBuffer; inputs: PhraseIndexInput[] };
 
   beforeAll(() => {
     fixture = loadFixtureIndex();
   }, 30000);
 
-  it('compiles 34k terms in under 2s', () => {
+  it('compiles the fixture index in under 2s', () => {
     const start = performance.now();
     compilePhraseIndex(fixture.inputs);
     const elapsed = performance.now() - start;

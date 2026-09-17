@@ -7,7 +7,7 @@ import type {
   DetectedSubtitle,
   DownloadItem,
   Settings,
-} from '@/types/media';
+} from '@/entities/media';
 
 // --- Mocks for global chrome.storage.local ---
 

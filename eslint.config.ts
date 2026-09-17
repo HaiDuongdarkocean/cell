@@ -83,7 +83,11 @@ export default tseslint.config(
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,
-      ...reactHooksPlugin.configs.recommended.rules,
+      // react-hooks v7 `recommended` bundles the React Compiler rule set
+      // (refs, set-state-in-effect, purity, immutability...). Keep the
+      // classic v5 pair; adopting the compiler rules is a separate refactor.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
     },
@@ -121,6 +125,17 @@ export default tseslint.config(
         patterns: [{
           group: ['@/features', '@/features/*', '@/features/**', '**/features/**'],
           message: 'FSD boundary: entities/ must not import from features/. Move the contract down into entities/.',
+        }],
+      }],
+    },
+  },
+  {
+    files: ['src/features/**/*.ts', 'src/features/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@/entrypoints', '@/entrypoints/*', '@/entrypoints/**', '**/entrypoints/**'],
+          message: 'FSD boundary: features/ must not import from entrypoints/. Move the shared piece down or the consumer up.',
         }],
       }],
     },
@@ -276,7 +291,10 @@ export default tseslint.config(
 
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'tasks/**/*.mjs', '.agents/**/*.mjs', 'tests/data-test/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
+    // playwright-launch.mjs declares its globals via `/* global */` (it needs
+    // document/location inside page.evaluate); node globals would collide.
+    ignores: ['.agents/skills/continuous-ux-audit-cycle/scripts/playwright-launch.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

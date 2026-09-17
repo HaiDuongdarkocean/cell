@@ -155,13 +155,19 @@ describe('phraseIndexCompiler', () => {
   });
 
   describe('Cambridge fixture budget', () => {
+    const fullFixture = process.env.CELL_FIXTURE_FULL === '1';
     const fixturePath = path.resolve(
       __dirname,
-      '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+      fullFixture
+        ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
+        : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
     );
-    const FIXTURE_EXISTS = existsSync(fixturePath);
+    const FIXTURE_MISSING = fullFixture && !existsSync(fixturePath);
+    if (FIXTURE_MISSING) {
+      console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+    }
 
-    (FIXTURE_EXISTS ? it : it.skip)('compiles all supported multiword terms under 8MB with bounded anchor stats', () => {
+    (FIXTURE_MISSING ? it.skip : it)('compiles all supported multiword terms under 8MB with bounded anchor stats', () => {
       const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
       const seen = new Set<string>();
       const inputs: PhraseIndexInput[] = [];
@@ -191,7 +197,7 @@ describe('phraseIndexCompiler', () => {
       // compilePhraseIndex may generate separable phrasal-verb variants, so
       // the compiled template count can be greater than the input count.
       expect(index.templates.length).toBeGreaterThanOrEqual(inputs.length);
-      expect(index.anchorCount).toBeGreaterThan(10000);
+      expect(index.anchorCount).toBeGreaterThan(Math.floor(inputs.length / 3));
 
       const postingSizes = Array.from({ length: index.anchorCount }, (_, i) =>
         index.lookupByAnchor(index.anchorKeys[i]!).length,

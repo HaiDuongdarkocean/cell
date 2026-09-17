@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { ComponentType, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import { Button, Icon, Input, Kbd } from '@/shared/ui';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import { createClozeExercise, evaluateDictation, evaluateCloze, tokenizePracticeText, type SubtitlePracticeMode } from '../lib/subtitlePractice';
 import type { PracticeResult } from '../lib/subtitlePractice';
 import {
@@ -17,6 +16,18 @@ export type { PracticeOptionsProps } from './PracticeOptions';
 const DICTATION_MAX_LENGTH = 2000;
 const CLOZE_MAX_LENGTH = 600;
 
+/** Cue-list contract the practice session renders through. The concrete
+ *  implementation (subtitle feature's CueList) is injected by the caller so
+ *  studyModes never imports from subtitle. */
+export interface PracticeCueListProps {
+  readonly cues: BilingualCue[];
+  readonly currentTimeMs: number;
+  readonly offsetMs?: number;
+  readonly onSeek: (timeMs: number) => void;
+  readonly renderCueContent?: (cue: BilingualCue, index: number, isCurrent: boolean) => ReactNode | undefined;
+  readonly showNative?: boolean;
+}
+
 export interface SubtitlePracticeSessionProps {
   readonly mode: Exclude<SubtitlePracticeMode, 'off'>;
   readonly cues: BilingualCue[];
@@ -29,6 +40,7 @@ export interface SubtitlePracticeSessionProps {
   readonly onReplay: (cue: BilingualCue) => void;
   readonly onContinue: (cue: BilingualCue) => void;
   readonly onPlayPause: () => void;
+  readonly CueListComponent: ComponentType<PracticeCueListProps>;
 }
 
 function cueKey(cue: BilingualCue | null, mode: SubtitlePracticeMode): string {
@@ -48,6 +60,7 @@ export function SubtitlePracticeSession({
   onReplay,
   onContinue,
   onPlayPause,
+  CueListComponent,
 }: SubtitlePracticeSessionProps): React.JSX.Element {
   const [draft, setDraft] = useState('');
   const [clozeDraft, setClozeDraft] = useState('');
@@ -218,7 +231,7 @@ export function SubtitlePracticeSession({
 
   return (
     <div className={styles.session} data-cell-id="subtitle-practice" data-practice-mode={mode}>
-      <CueList
+      <CueListComponent
         cues={cues}
         currentTimeMs={activeCue ? activeCue.start - offsetMs : currentTimeMs}
         offsetMs={offsetMs}

@@ -97,7 +97,7 @@ export function CardCreatorDialogContent({
     const node = contentRef.current;
     if (!node) return;
     const root = node.getRootNode();
-    let container: HTMLElement | null = null;
+    let container: HTMLElement | null;
     if (root instanceof ShadowRoot) {
       let el: Node = node;
       while (el.parentNode && el.parentNode !== root) {

@@ -29,13 +29,14 @@ import {
   getActiveTabId,
   updateBadgeForTab,
   pushAutoLoadSubtitles,
+  saveSessionAutoDownloadedTabs,
 } from '../helpers';
 import type {
   MessageResponse,
   AutoLoadSubtitlesPayload,
+  DetectedSubtitlesPayload,
 } from '@/entities/message';
 import type { DetectedMediaUpdatePayload } from '@/entities/message';
-import { DetectedSubtitlesPayloadSchema } from '@/entities/message/schema';
 import type { DetectedSubtitle } from '@/entities/media';
 
 /** Register the unified DETECTED_SUBTITLES handler (ADR-028). */
@@ -45,11 +46,7 @@ export function registerDetectionDispatchHandlers(
   ctx.on(
     MESSAGE_TYPES.DETECTED_SUBTITLES,
     async (request): Promise<MessageResponse> => {
-      const parsed = DetectedSubtitlesPayloadSchema.safeParse(request.payload);
-      if (!parsed.success) {
-        return { success: false, error: `Invalid DETECTED_SUBTITLES payload: ${parsed.error.message}` };
-      }
-      const payload = parsed.data;
+      const payload = request.payload as DetectedSubtitlesPayload;
       const tabId = payload.tabId ?? (await getActiveTabId(ctx));
       if (tabId === undefined) {
         return { success: false, error: 'Missing tabId for DETECTED_SUBTITLES' };
@@ -87,6 +84,7 @@ export function registerDetectionDispatchHandlers(
         // the content-script overlay clears its cues. (Clone ADR-020 logic.)
         ctx.networkInterceptor.clearTab(tabId);
         ctx.autoDownloadedTabs.delete(tabId);
+        saveSessionAutoDownloadedTabs(ctx);
         ctx.lastCuesByTab.delete(tabId);
         ctx.messageBus.broadcast({
           type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,

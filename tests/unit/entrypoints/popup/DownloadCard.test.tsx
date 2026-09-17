@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { DownloadCard } from '@/entrypoints/popup/components/media/DownloadCard';
-import type { DownloadItem } from '@/types/media';
+import type { DownloadItem } from '@/entities/media';
 
 function makeDownload(overrides?: Partial<DownloadItem>): DownloadItem {
   return {

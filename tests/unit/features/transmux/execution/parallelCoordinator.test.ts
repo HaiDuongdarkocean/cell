@@ -7,7 +7,7 @@ import { transmuxTsToFmp4ParallelExperimental } from '@/features/transmux/mergin
 import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
 import { ParallelConversionCancelledError } from '@/features/transmux/execution/parallelCancellation';
 import { validateFragmentedMp4 } from '@/features/transmux/merging/mp4Validator';
-import type { Settings, SegmentRange } from '@/types/media';
+import type { Settings, SegmentRange } from '@/entities/media';
 
 // Mock mp4Validator — default returns valid, per-test can override to invalid
 jest.mock('@/features/transmux/merging/mp4Validator', () => ({

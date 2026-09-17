@@ -38,7 +38,7 @@ import type {
 } from '@/entities/message';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
-import type { LoadStatus, LoadErrorType } from '@/stores/cuesStore';
+import type { LoadStatus, LoadErrorType } from '../cuesStore';
 
 /**
  * Decide whether auto-load should trigger.

@@ -21,6 +21,8 @@
 // Ceiling: only `fetch` is patched; `XMLHttpRequest` is not. Sites using XHR
 // for listing fetches will not have their bodies captured.
 
+declare const __CELL_DEBUG__: string;
+
 (() => {
   // Skip only hidden (likely challenge) iframes. Player iframes are normally
   // visible and must be instrumented for deep-frame subtitle discovery.
@@ -62,6 +64,17 @@
 
   const originalFetch = window.fetch;
 
+  function isDebug(): boolean {
+    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+  }
+
+  function countMiss(key: string): void {
+    if (!isDebug()) return;
+    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
+    const misses = g.__cellFetchInterceptorMisses ?? (g.__cellFetchInterceptorMisses = {});
+    misses[key] = (misses[key] ?? 0) + 1;
+  }
+
   // Cache the last few signals until the isolated content script is ready.
   // Re-post when we receive `__CELL_CS_READY`.
   const pendingSignals: { type: string; payload: Record<string, unknown> }[] = [];
@@ -75,6 +88,7 @@
         window.postMessage(msg, '*');
       } catch {
         // swallow
+        countMiss('post');
       }
       return;
     }
@@ -93,13 +107,31 @@
         window.postMessage(msg, '*');
       } catch {
         // swallow
+        countMiss('postFlush');
       }
     }
+  }
+
+  // Diagnostics relay (debug builds only): the isolated content script posts
+  // `__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST` when `__CELL_DEBUG__` is compiled
+  // in; we reply through the same post() channel with the miss counters and
+  // buffer state. The snapshot is counts-only — no URLs or page-private data —
+  // and the reply itself is gated so production builds never emit it.
+  function diagSnapshot(): Record<string, unknown> {
+    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
+    return {
+      misses: { ...(g.__cellFetchInterceptorMisses ?? {}) },
+      pending: pendingSignals.length,
+      ready: contentScriptReady,
+    };
   }
 
   window.addEventListener('message', (e) => {
     if (e.data?.type === '__CELL_CS_READY') {
       flushPending();
+    }
+    if (e.data?.type === '__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST' && isDebug()) {
+      post('__CELL_FETCH_INTERCEPTOR_DIAG', diagSnapshot());
     }
   });
 
@@ -126,6 +158,7 @@
             : (input as Request).url;
     } catch {
       // ignore
+      countMiss('resolveUrl');
     }
 
     const isSubtitle = SUBTITLE_PATTERN_COMBINED.test(url);
@@ -181,10 +214,12 @@
               }
             } catch {
               // swallow
+              countMiss('readSubtitleBody');
             }
           })();
         } catch {
           // swallow
+          countMiss('cloneSubtitle');
         }
       }
 
@@ -231,10 +266,12 @@
               );
             } catch {
               // swallow
+              countMiss('readListingBody');
             }
           })();
         } catch {
           // swallow
+          countMiss('cloneListing');
         }
       }
 

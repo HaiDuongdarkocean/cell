@@ -1,6 +1,6 @@
 import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { DetectedSubtitle, Settings } from '@/types/media';
+import type { DetectedSubtitle, Settings } from '@/entities/media';
 
 describe('findSubtitlesForOverlay', () => {
   const baseSettings: Settings = {

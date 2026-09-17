@@ -1,8 +1,10 @@
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '../cuesStore';
 import { mergeCuesForPanel, broadcastCues } from '@/features/subtitle';
 import { canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
+
+declare const __CELL_DEBUG__: string;
 
 export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext): {
   onVisibilityChange: () => void;
@@ -42,7 +44,9 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
     const lastAutoLoadUrl = ctx.getLastAutoLoadUrl();
     const currentNavUrl = canonicalNavUrl(location.href);
     if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === currentNavUrl) return;
-    try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+    if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+      try { const a = JSON.parse(document.documentElement.getAttribute('data-cell-debug-autoload-arr') ?? '[]'); a.push({ step: 'spaNav-clear', lastAutoLoadUrl, navUrl: currentNavUrl, href: location.href, t: Date.now() }); document.documentElement.setAttribute('data-cell-debug-autoload-arr', JSON.stringify(a.slice(-20))); } catch { /* ignore */ }
+    }
     blockController?.clearCues();
     ctx.getOffsetController()?.loadCues(false);
     syncController.latestTargetCues = [];

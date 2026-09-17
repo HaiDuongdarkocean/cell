@@ -91,7 +91,7 @@ jest.mock('./TrackSelector', () => ({
 
 let mockTargetCues: unknown[] = [];
 
-jest.mock('@/stores/cuesStore', () => ({
+jest.mock('@/features/subtitle/cuesStore', () => ({
   useCuesStore: (selector: (s: { targetCues: unknown[]; nativeCues: unknown[] }) => unknown) =>
     selector({ targetCues: mockTargetCues, nativeCues: [] }),
 }));

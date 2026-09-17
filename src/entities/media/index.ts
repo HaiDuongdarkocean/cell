@@ -1,8 +1,8 @@
 export * from './types';
 
-// Re-export video + settings types so @/entities/media is a drop-in
-// replacement for the former @/types/media barrel (Strangler Fig completion).
-// Callers importing video/settings types via @/types/media now resolve here.
+// Re-export video + settings types so @/entities/media is a single import
+// surface for media-adjacent types (Strangler Fig completion — the former
+// @/types/* shims were deleted 2026-09-16).
 export type {
   VideoFormat,
   VideoQuality,

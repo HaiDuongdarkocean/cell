@@ -1,7 +1,7 @@
 import { ShowcaseGallery } from './ShowcaseGallery';
 import { installMockDictionarySendMessage } from './mockDictionary';
 import { installMockChrome } from './mockChrome';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import styles from './App.module.css';
 
 installMockChrome();

@@ -1,5 +1,5 @@
 import { resolveParallelPolicy } from '@/features/transmux/planning/parallelPolicy';
-import type { Settings } from '@/types/media';
+import type { Settings } from '@/entities/media';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,

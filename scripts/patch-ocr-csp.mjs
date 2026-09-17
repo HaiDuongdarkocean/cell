@@ -183,6 +183,12 @@ for (const file of readdirSync(distAssets)) {
       applied.push(name);
       appliedCount.set(name, appliedCount.get(name) + 1);
       console.log(`  [OK] ${name}: patched in ${file}`);
+    } else if (content.includes(replace)) {
+      // Idempotent re-run: the patchOcrCsp vite plugin already applied this
+      // patch during `vite build` (closeBundle). Count it as applied so the
+      // required-patch gate still passes when `npm run postbuild` repeats the
+      // script on an already-patched dist.
+      appliedCount.set(name, appliedCount.get(name) + 1);
     }
   }
 

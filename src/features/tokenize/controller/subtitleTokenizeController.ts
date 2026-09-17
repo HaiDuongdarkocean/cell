@@ -11,17 +11,9 @@ import {
 } from '@/features/dictionary/services/wordStatusEvents';
 import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
-import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
-import { isEditableEvent } from '@/shared/lib/dom/isEditable';
+import { createStatusKeyControls } from '@/features/tokenize/logic/statusKeyControls';
 
 const DEFAULT_WINDOW = 1;
-
-const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
-  '1': 'unknown',
-  '2': 'tracking',
-  '3': 'known',
-  '4': 'ignore',
-};
 
 export interface SubtitleTokenizeController extends TokenizeController {
   /** Set the current cue lists. Resets cache and prepares the active window. */
@@ -191,40 +183,11 @@ export function createSubtitleTokenizeController(
     return [...roots];
   }
 
-  function applyStatusKey(key: string): boolean {
-    const status = STATUS_BY_KEY[key];
-    if (!status) return false;
-    const state = stateStore.getState();
-    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
-    let usedNativeSelection = false;
-    if (terms.length === 0) {
-      terms = extractTermsFromSelection(window.getSelection(), getShadowRoots());
-      usedNativeSelection = terms.length > 0;
-    }
-    if (terms.length === 0 && state.hoveredTerm) {
-      terms = [state.hoveredTerm];
-    }
-    if (terms.length === 0) return false;
-    applyStatusToTerms(terms, status);
-    if (state.selectedTerms.size > 0) stateStore.clearSelection();
-    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
-    return true;
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (isEditableEvent(e)) return;
-    if (e.key === 'Escape') {
-      stateStore.clearSelection();
-      stateStore.setHoveredTerm(null);
-      return;
-    }
-    if (!applyStatusKey(e.key)) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-  }
-
-  // ADR-034: window capture so the host page cannot override 1-4 status shortcuts.
-  window.addEventListener('keydown', handleKeydown, true);
+  const statusKeyControls = createStatusKeyControls({
+    stateStore,
+    getShadowRoots,
+    applyStatusToTerms,
+  });
 
   return {
     enable() {
@@ -259,9 +222,7 @@ export function createSubtitleTokenizeController(
       this.render(lastTargetIndex, -1);
     },
 
-    handleStatusKey(key) {
-      return applyStatusKey(key);
-    },
+    handleStatusKey: statusKeyControls.handleStatusKey,
 
     render(activeTargetIndex, _activeNativeIndex) {
       const { target } = getLineElements();
@@ -297,7 +258,7 @@ export function createSubtitleTokenizeController(
     },
 
     destroy() {
-      window.removeEventListener('keydown', handleKeydown, true);
+      statusKeyControls.destroy();
       unsubscribeWordStatus();
       unsubscribeMapUpdate();
       preloader.destroy();

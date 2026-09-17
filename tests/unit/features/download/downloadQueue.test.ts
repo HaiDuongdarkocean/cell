@@ -2,7 +2,7 @@ import {
   DownloadQueue,
   type DownloadExecutor,
 } from '@/features/download/downloadQueue';
-import type { DownloadItem, DownloadProgress } from '@/types/media';
+import type { DownloadItem, DownloadProgress } from '@/entities/media';
 import {
   DEFAULT_CONCURRENT_DOWNLOADS,
   MAX_CONCURRENT_DOWNLOADS,
@@ -343,5 +343,112 @@ describe('DownloadQueue', () => {
     queue.remove('remove');
     expect(queue.getById('keep')).toBeDefined();
     expect(queue.getById('remove')).toBeUndefined();
+  });
+
+  // === AbortSignal + pause/cancel semantics ===
+
+  it('passes an AbortSignal to the executor and cancel() aborts in-flight work', () => {
+    const signals: AbortSignal[] = [];
+    const executor: DownloadExecutor = (_item, signal) => {
+      signals.push(signal);
+      return new Promise<void>(() => {});
+    };
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('c1'));
+    expect(signals).toHaveLength(1);
+
+    queue.cancel('c1');
+    expect(signals[0].aborted).toBe(true);
+    expect(queue.getById('c1')?.status).toBe('cancelled');
+  });
+
+  it('cancel() while running does not free capacity until the executor settles', async () => {
+    const { executor, calls, rejectNext } = createControllableExecutor();
+    queue.setExecutor(executor);
+    queue.setMaxConcurrent(2);
+
+    queue.addAll([makeItem('1'), makeItem('2'), makeItem('3')]);
+    expect(calls).toHaveLength(2);
+
+    queue.cancel('1');
+    // Item '3' must NOT start while the cancelled executor is still in flight —
+    // otherwise more than maxConcurrent executors run at once.
+    expect(calls).toHaveLength(2);
+
+    rejectNext(new Error('Download cancelled'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(calls).toHaveLength(3);
+    expect(queue.getById('3')?.status).toBe('downloading');
+    expect(queue.getById('1')?.status).toBe('cancelled');
+  });
+
+  it('pause() aborts the in-flight executor and the item stays resumable', async () => {
+    const signals: AbortSignal[] = [];
+    const runs: string[] = [];
+    const executor: DownloadExecutor = (item, signal) => {
+      signals.push(signal);
+      runs.push(item.id);
+      return new Promise<void>((resolve, reject) => {
+        signal.addEventListener(
+          'abort',
+          () => reject(new Error('Download cancelled')),
+          { once: true },
+        );
+        if (runs.length === 2) resolve();
+      });
+    };
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('p1'));
+    expect(queue.getById('p1')?.status).toBe('downloading');
+
+    queue.pause('p1');
+    expect(signals[0].aborted).toBe(true);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The pause-induced rejection must leave the item paused, not error/done.
+    expect(queue.getById('p1')?.status).toBe('paused');
+
+    queue.resume('p1');
+    expect(runs).toHaveLength(2);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(queue.getById('p1')?.status).toBe('done');
+  });
+
+  it('a paused item whose executor resolves anyway stays paused (not done)', async () => {
+    const { executor, resolveNext } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('p2'));
+    queue.pause('p2');
+    resolveNext();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(queue.getById('p2')?.status).toBe('paused');
+  });
+
+  it('a late progress update cannot un-pause a paused item', () => {
+    const { executor } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('p3'));
+    queue.pause('p3');
+    queue.updateProgress({ itemId: 'p3', status: 'downloading', progress: 50 });
+    expect(queue.getById('p3')?.status).toBe('paused');
+  });
+
+  it('restore() dispatches restored queued items through the executor', () => {
+    const { executor, calls } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.restore({ ...makeItem('r1'), status: 'queued' });
+    expect(calls).toHaveLength(1);
+    expect(queue.getById('r1')?.status).toBe('downloading');
   });
 });

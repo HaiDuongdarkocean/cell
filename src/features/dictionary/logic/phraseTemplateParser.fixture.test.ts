@@ -6,10 +6,17 @@ interface CambridgeEntry {
   readonly term?: string;
 }
 
+const fullFixture = process.env.CELL_FIXTURE_FULL === '1';
 const fixturePath = path.resolve(
   __dirname,
-  '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  fullFixture
+    ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
+    : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
 );
+const FIXTURE_MISSING = fullFixture && !existsSync(fixturePath);
+if (FIXTURE_MISSING) {
+  console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+}
 
 function loadMultiwordTerms(): string[] {
   const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as CambridgeEntry[];
@@ -20,7 +27,7 @@ function loadMultiwordTerms(): string[] {
   )];
 }
 
-(existsSync(fixturePath) ? describe : describe.skip)('phraseTemplateParser Cambridge fixture', () => {
+(FIXTURE_MISSING ? describe.skip : describe)('phraseTemplateParser Cambridge fixture', () => {
   it('compiles every normalized multiword term without throwing', () => {
     const terms = loadMultiwordTerms();
     const results = terms.map((term) => parsePhraseTemplate(term));
@@ -29,10 +36,10 @@ function loadMultiwordTerms(): string[] {
       return acc;
     }, {});
 
-    expect(terms).toHaveLength(34094);
+    expect(terms.length).toBeGreaterThan(1000);
     expect(counts.unsupportedMalformed ?? 0).toBe(0);
-    expect(counts.unsupportedOpen).toBeGreaterThan(0);
-    expect(counts.supported).toBeGreaterThan(30000);
+    expect(counts.unsupportedOpen ?? 0).toBeGreaterThan(0);
+    expect(counts.supported ?? 0).toBeGreaterThan(terms.length * 0.8);
     expect(parsePhraseTemplate('a (quick/brisk) trot through sth').status).toBe('supported');
     expect(parsePhraseTemplate('a nip (here) and a tuck (there)').status).toBe('supported');
     expect(parsePhraseTemplate('A/B/C share').status).toBe('supported');

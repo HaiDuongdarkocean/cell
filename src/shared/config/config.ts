@@ -20,12 +20,6 @@ export const DEFAULT_SELECTED_SUBTITLE_LANGUAGES: string[] = ['all'];
 
 export const DEFAULT_AUTO_SELECT_ENABLED = false;
 
-/** Feature flag: run the legacy light-DOM settings dialog instead of the React shadow-root UI. */
-export const USE_LEGACY_SETTINGS = false;
-
-/** Feature flag: run the legacy light-DOM universal panel instead of the React shadow-root UI. */
-export const USE_LEGACY_UNIVERSAL_PANEL = false;
-
 export const MAX_RETRY = 3;
 export const SEGMENT_TIMEOUT_MS = 30_000; // 30 seconds per segment
 export const DETECTION_TIMEOUT_MS = 30_000; // 30 seconds to wait for media detection
@@ -372,6 +366,9 @@ export const STORAGE_KEYS = {
   STUDY_MODES: 'studyModes',
   /** Cached Anki schema (decks/models/fields-by-model) — spec anki-config-in-settings. */
   ANKI_SCHEMA_CACHE: 'ankiSchemaCache',
+  OCR_REGION_RESULT: '__ocrRegionResult',
+  /** Dev-only dictionary lookup log ring buffer (lookupLogStore). */
+  LOOKUP_LOG: 'lookupLog',
 } as const;
 
 // === Popup Dimensions ===

@@ -1,5 +1,5 @@
 import { useSidePanelStore } from '@/entrypoints/sidepanel/store/sidePanelStore';
-import type { BilingualCue } from '@/types/media';
+import type { BilingualCue } from '@/entities/media';
 
 describe('sidePanelStore', () => {
   beforeEach(() => {

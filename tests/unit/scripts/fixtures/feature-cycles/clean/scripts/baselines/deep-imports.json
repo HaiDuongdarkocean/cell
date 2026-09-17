@@ -1,0 +1,7 @@
+{
+  "entries": {
+    "features/beta/index.mjs": [
+      "@/features/alpha/index.mjs"
+    ]
+  }
+}

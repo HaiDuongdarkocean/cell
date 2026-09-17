@@ -2,7 +2,7 @@
 //
 // Composes ModeCards + PresetSwitcher. Wires themeStore: switchMode, switchPreset.
 
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from '@/features/theme/logic/themeStore';
 import { ModeCards } from './ModeCards';
 import { PresetSwitcher } from './PresetSwitcher';
 import styles from './ThemePanel.module.css';

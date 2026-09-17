@@ -19,13 +19,19 @@ describe('DEBUG IDB roundtrip full Cambridge fixture', () => {
     await clearAllStores('en');
   });
 
+  const fullFixture = process.env.CELL_FIXTURE_FULL === '1';
   const fixturePath = path.resolve(
     __dirname,
-    '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+    fullFixture
+      ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
+      : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
   );
-  const FIXTURE_EXISTS = existsSync(fixturePath);
+  const FIXTURE_MISSING = fullFixture && !existsSync(fixturePath);
+  if (FIXTURE_MISSING) {
+    console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+  }
 
-  (FIXTURE_EXISTS ? it : it.skip)('builds, stores, retrieves and deserializes without throwing', async () => {
+  (FIXTURE_MISSING ? it.skip : it)('builds, stores, retrieves and deserializes without throwing', async () => {
     const entries = JSON.parse(fs.readFileSync(fixturePath, 'utf8')) as { term?: string }[];
     const seen = new Set<string>();
     const inputs: PhraseIndexInput[] = [];

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { resolveSplitViewWrapperHeight } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame } from '@/features/subtitle/logic/iframePlayerModeBridge';
-import { findPlayerContainer } from '@/features/subtitle/logic/findPlayerContainer';
+import { findPlayerContainer } from '@/shared/lib/dom/findPlayerContainer';
 import { waitForPlayerSettle } from '@/features/subtitle/logic/waitForPlayerSettle';
 import { saveScrollPosition, restoreScrollPosition } from '@/features/subtitle/logic/scrollPositionPreserve';
 import {
@@ -15,17 +15,14 @@ import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss'
 import { syncElementTheme, findThemeCarrier } from '@/features/theme/logic/themeTokens';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
-
-declare const __CELL_DEBUG__: string;
+import { logger } from '@/shared/lib/logger';
 
 // --- Split View diagnostic logging ---
 // Structured log with [Cell:SplitView] prefix so it's easy to filter in console.
-// Gated to CELL_E2E=1 builds — dead-code-eliminated in production.
+// Gated to CELL_E2E=1 builds via logger — no-ops in production.
 function svLog(event: string, data?: Record<string, unknown>): void {
-  if (typeof __CELL_DEBUG__ === 'undefined' || __CELL_DEBUG__ !== 'true') return;
   const ts = new Date().toISOString().slice(11, 23);
-  const line = `[Cell:SplitView ${ts}] ${event}`;
-  console.log(line, data ?? '');
+  logger.debug(`[Cell:SplitView ${ts}] ${event}`, data ?? '');
 }
 function rectLog(el: Element | null | undefined): Record<string, number> | null {
   if (!el) return null;

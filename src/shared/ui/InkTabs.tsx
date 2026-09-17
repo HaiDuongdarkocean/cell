@@ -29,7 +29,7 @@ export interface InkTabsProps {
  * InkTabs — text tab row with a single liquid ink-bar underline that flows
  * between tabs (3-phase WAAPI: shrink around the current tab, travel at half
  * width, expand to the destination width). Extracted from the dictionary
- * AudioPanel subtabs; supports N tabs and optional count badges.
+ * PronunciationAudioPanel subtabs; supports N tabs and optional count badges.
  */
 export function InkTabs({ items, value, onValueChange, className, ...rest }: InkTabsProps): React.JSX.Element {
   const listRef = useRef<HTMLDivElement>(null);
@@ -91,7 +91,7 @@ export function InkTabs({ items, value, onValueChange, className, ...rest }: Ink
       const activeIndex = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
       const currentIndex = activeIndex >= 0 ? activeIndex : 0;
 
-      let nextIndex = currentIndex;
+      let nextIndex: number;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         nextIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1;

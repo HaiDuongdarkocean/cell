@@ -1,7 +1,7 @@
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { useCuesStore } from '@/stores/cuesStore';
+import { useCuesStore } from '../cuesStore';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import {
   fetchAndParseSubtitle,

@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { CueList } from '@/entrypoints/sidepanel/components/CueList';
+import { CueList } from '@/features/subtitle/ui/CueList';
 import { getMockBilingualCues } from '../mockCues';
 import styles from './SidePanelPage.module.css';
 

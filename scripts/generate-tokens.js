@@ -199,7 +199,7 @@ function validateContrastPair(label, rawFg, rawBg, mode, tokenMap, backdrop, isL
     fg = resolveColor(rawFg, tokenMap);
     bg = resolveColor(rawBg, tokenMap);
   } catch (err) {
-    throw new Error(`[${mode}] ${label}: ${err.message}`);
+    throw new Error(`[${mode}] ${label}: ${err.message}`, { cause: err });
   }
   const ratio = getContrastRatio(fg, bg, backdrop);
   if (!meetsAA(ratio, isLargeText)) {
