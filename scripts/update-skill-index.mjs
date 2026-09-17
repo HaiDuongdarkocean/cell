@@ -4,6 +4,7 @@ import path from 'path';
 const bases = ['.agents/skills'];
 
 const skills = [];
+const invalid = [];
 for (const base of bases) {
   if (!fs.existsSync(base)) continue;
   const dirs = fs.readdirSync(base, { withFileTypes: true })
@@ -16,8 +17,14 @@ for (const base of bases) {
     if (!fs.existsSync(fp)) continue;
     const text = fs.readFileSync(fp, 'utf8');
     const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
-    if (!m) continue;
+    if (!m) { invalid.push(`${fp}: no frontmatter block`); continue; }
     const lines = m[1].split(/\r?\n/);
+    for (const line of lines) {
+      const kv = line.match(/^(\w[\w-]*):\s*(.*)$/);
+      if (kv && /: /.test(kv[2]) && !/^["'].*["']\s*$/.test(kv[2].trim())) {
+        invalid.push(`${fp}: unquoted ': ' in '${kv[1]}' — loader drops this skill`);
+      }
+    }
     const fields = {};
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -42,6 +49,8 @@ for (const base of bases) {
     }
     if (fields.name) {
       skills.push({ name: fields.name, description: fields.description || '', path: `${base}/${dir}/SKILL.md` });
+    } else {
+      invalid.push(`${fp}: missing 'name' field`);
     }
   }
 }
@@ -55,3 +64,9 @@ const index = {
 
 fs.writeFileSync(path.join('.agents/skills', 'index.json'), JSON.stringify(index, null, 2));
 console.log(`Wrote ${skills.length} skills to .agents/skills/index.json`);
+
+if (invalid.length) {
+  console.error('INVALID frontmatter — skill exists on disk and in index but the loader will drop it:');
+  for (const v of invalid) console.error(`  ${v}`);
+  process.exit(1);
+}

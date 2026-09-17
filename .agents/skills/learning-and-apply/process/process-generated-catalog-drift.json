@@ -4,12 +4,17 @@
   "category": ["process"],
   "tags": ["index", "ssot", "catalog", "drift", "generated-file", "hook"],
   "trigger": "Repo có generated index/catalog/registry mà không có gate regen hoặc hook tự động",
-  "principle": "File generated không bao giờ tự báo lỗi khi stale — không test nào fail khi index lệch disk. Mọi generated catalog cần (1) regen trong cùng commit với thay đổi nguồn, (2) hook/lint so index vs disk, (3) router không hardcode tên entry mà đọc từ catalog.",
+  "principle": "File generated không bao giờ tự báo lỗi khi stale — không test nào fail khi index lệch disk. Mọi generated catalog cần (1) regen trong cùng commit với thay đổi nguồn, (2) hook/lint so index vs disk, (3) router không hardcode tên entry mà đọc từ catalog, (4) validate entry theo đúng rule của consumer thật — parser giả (regex) lỏng hơn parser thật (YAML) thì catalog xanh trong khi loader vẫn drop thầm lặng.",
   "cases": [
     {
       "context": ".agents/skills/index.json ghi 46 skills trong khi disk chỉ 38 — 8 phantom skill (đã xóa folder mà không regen); router using-agent-skills hardcode trỏ tới 3 skill không tồn tại; doc cite references/ không tồn tại",
       "bad": "Xóa/rename skill folder mà quên chạy update-skill-index.mjs; router và doc hardcode tên skill thay vì kiểm catalog",
       "good": "PostToolUse hook trên SKILL.md edit → auto regen index; audit định kỳ: diff index.names vs disk dirs; router chỉ trỏ skill có trên disk"
+    },
+    {
+      "context": "2026-09-17: autonomous-pipeline + audit-ui-ux-then-redesign có ': ' trong description không quote → invalid YAML → CLI loader drop khỏi danh sách invocable 4 ngày. index.json vẫn đủ 48 vì generator parse bằng regex khớp được, loader thật parse YAML thì fail",
+      "bad": "Check catalog chỉ so disk↔index; generator dùng parser riêng lỏng hơn loader — lỗi mà consumer gặp không hiện trong check nào",
+      "good": "Validator trong chính regen script bắt pattern loader sẽ reject (unquoted ': ', thiếu name/frontmatter) → exit 1; verify bằng cách reload skill list thật"
     }
   ],
   "applyFor": ["component inventory", "icon catalog", "route table", "API registry", "file-tree docs"],

@@ -379,21 +379,23 @@ Agent sinh code nhanh → PR voluminous → **con người không review kịp**
 
 | Nguyên lý agentic SDLC | Cell hiện có | Bằng chứng trong repo | Trạng thái |
 |---|---|---|---|
-| **Spec-driven** | `spec-driven-development` + `elicitation` auto-spec (Autonomous Mode) | 37 specs trong `docs/specs/` | ✅ Đã có |
+| **Spec-driven** | `spec-driven-development` + `elicitation` auto-spec (Autonomous Mode) | 37 specs trong `docs/specs/` — nhưng `immersion-playback` commit intent+spec+plan+code trong **1 commit** (b3770b8f) → spec-as-record, chưa chứng minh spec-as-gate | ⚠️ Artifact đầy đủ, ordering chưa chặt |
 | **On the loop** | AGENTS.md gate: typecheck + test:unit + build + browser verify trước commit | `pre-commit-gate` skill; mandate trong AGENTS.md | ✅ Đã có |
-| **Adversarial review** | `doubt-driven-development` + `spec-review-stakeholder` + `pre-commit-gate` Step 1.6 warn | Chỉ **3/37 spec** (~8%) có artifact trong `docs/reviews/` — adoption không tăng sau 4 ngày warn | ⚠️ Soft gate — warn không đủ, cân nhắc hook block |
+| **Adversarial review** | `doubt-driven-development` + `spec-review-stakeholder` + `pre-commit-gate` Step 1.6 warn | Chỉ **3/37 spec** (~8%) có artifact trong `docs/reviews/` — dir không đổi từ 2026-09-12, adoption vẫn 0 sau 5 ngày warn | ⚠️ Soft gate — warn không đủ, cân nhắc hook block |
 | **Verification debt** | Deterministic gate local + CI | `design-system-ci.yml`: typecheck + DS unit + full unit (non-blocking) + lint (non-blocking) + icons + 2 builds + inventory + health report + e2e xvfb | ✅ Đã có (technical) |
 | **Guardrail** | AGENTS.md + Ponytail plugin rule + `design-system-guardian` + check scripts + 2 hooks | `check-icons` + `check-design-system-css` trong CI; `.devin/hooks.v1.json`: PostToolUse regen skill index + UserPromptSubmit ponytail mode-tracker | ✅ Đã có |
 | **Persistent context trong repo** | `docs/` + `tasks/` + `.devin/briefs/` + learning atoms | 27 ADR, 34 intent docs, 2 briefs, plans/todos/reports trong `tasks/`, 115 experience + 1 process atoms | ✅ Đã có |
 | **Elicitation đa kỹ thuật** | `elicitation` 9-step: observation + interview + prototype (`idea-to-interface`) | 34 files `docs/intent/` gồm design-brief + component-mapping | ✅ Đã có (từ 2026-08-29) |
-| **Skill catalog integrity** | `scripts/update-skill-index.mjs` + PostToolUse hook | 48 skills `.agents/skills/` = 48 trong `index.json` — đồng bộ, không còn phantom | ✅ Đã có (2026-09-13) |
+| **Skill catalog integrity** | `scripts/update-skill-index.mjs` + PostToolUse hook | 48 skills `.agents/skills/` = 48 trong `index.json` — đồng bộ disk↔index. **Nhưng audit 2026-09-17 phát hiện layer thứ 3:** 2 skills (`autonomous-pipeline`, `audit-ui-ux-then-redesign`) có `: ` trong description không quote → YAML loader của CLI drop thầm lặng, không invoke được dù index vẫn liệt kê. Index generator parse bằng regex ≠ parser thật của loader → check 2 parser độc lập là check giả | ⚠️ Đã fix frontmatter + thêm validator vào regen script (2026-09-17) |
 | **Eval gate mỗi change** | CI `e2e` job (full Playwright) + full `test:unit`/`lint` non-blocking | Full suite vẫn non-blocking — nợ test OCR/dictionary chưa sạch | ⚠️ Soft gate |
 | **Post-ship business review** | `shipping-and-launch` § Post-Launch Business Review | Human confirm "đúng thứ cần build" vs spec Success Criteria | ✅ Đã có (2026-09-13) — chưa có track record |
 | **Pipeline retrospective** | `learning-and-apply` type `process` + `process/` store | 1 atom: `process-generated-catalog-drift` — 4 ngày không có atom mới | ⚠️ Có cơ chế, chưa thành thói quen |
 | **Stakeholder sign-off** | `elicitation` step 9 = async veto + `shipping-and-launch` post-launch review | Blocking gate chỉ còn 2: intent frame + business outcome | ✅ Đã có (2026-09-13) |
-| **Parallel orchestration** | `autonomous-pipeline` — `subagent_general` lanes + `subagent_explore` verify + git worktree isolation (`../cell-worktrees/`) | Custom subagent profile: `vision-reader` (`.devin/agents/`); built-in `subagent_explore`/`subagent_general` | ✅ Đã có — orchestrator chưa có track record |
+| **Parallel orchestration** | `autonomous-pipeline` — `subagent_general` lanes + `subagent_explore` verify + git worktree isolation (`../cell-worktrees/`) | Custom subagent profile: `vision-reader` (`.devin/agents/`); built-in `subagent_explore`/`subagent_general`/`spec-reviewer`/`spec-reviewer-glm`. **Skill này đã chết 4 ngày** (2026-09-13 → 17): frontmatter YAML invalid → loader drop → router trỏ tới skill không invoke được; fix bằng quote description | ⚠️ Đã hồi sinh 2026-09-17 — vẫn chưa có track record chạy thật |
 
 Cell implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại không nằm ở "thiếu skill" mà ở **thiếu enforcement**: pipeline chạy nhờ agent tự nhớ route (soft), chưa có hook nào ép transition (hard). Xem §10.3.
+
+Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giới catalog↔loader**: mọi check integrity đều so index với disk, nhưng không check nào mô phỏng cái loader thật parse thế nào. `autonomous-pipeline` — mắt xích orchestration duy nhất — đã chết 4 ngày mà không ai biết, đúng pattern của atom `process-generated-catalog-drift` nhưng ở layer sâu hơn: không phải index stale, mà là **parser giả validate cho parser thật**.
 
 ### 10.1. Roadmap cải tiến (theo ROI) — trạng thái sau 2026-09-13
 
@@ -409,6 +411,8 @@ Cell implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại kh
 | 8 | `PreToolUse` hook → warn khi `edit` vào `docs/specs/*` mà không có review artifact mới | Step 1.6 warn adoption vẫn 8% sau 4 ngày — siết lên event-level (vẫn warn, không block, để giữ fail-open semantics) | 🔲 Chưa làm |
 | 9 | `PostCompaction` hook → re-inject AGENTS.md mandate + active plan | Context compaction làm mất mandate — "drift back to over-building" là chế độ hỏng đã biết của ponytail | 🔲 Chưa làm |
 | 10 | `Stop` hook → block khi working tree dirty mà gates chưa chạy | "On the loop" chỉ đúng nếu điểm dừng được kiểm — hiện agent tự quyết khi nào stop | 🔲 Chưa làm — cẩn thận loop, phải có exit condition rõ |
+| 11 | `update-skill-index.mjs` validate frontmatter theo rule loader thật (unquoted `: `, thiếu `name`, thiếu frontmatter) → exit 1 | 2 skill chết thầm lặng 4 ngày chứng minh disk↔index sync không đủ — check phải bắt lỗi mà consumer thật sẽ gặp | ✅ Done (2026-09-17) — regen script tự fail-open qua hook nhưng exit 1 khi chạy tay/CI |
+| 12 | `check-skills` trong CI hoặc pre-commit-gate: chạy `node scripts/update-skill-index.mjs` + `git diff --exit-code .agents/skills/index.json` | Biến "index + frontmatter hợp lệ" thành deterministic gate thay vì chỉ nhờ hook local | 🔲 Chưa làm |
 
 ### 10.2. Rot đã fix trong audit 2026-09-13
 
@@ -417,6 +421,12 @@ Cell implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại kh
 - `using-agent-skills` cite `references/definition-of-done.md` không tồn tại → trỏ về §11.3 runbook; `shipping-and-launch` See Also cite 4 file `references/` phantom → trỏ skill/doc thật.
 - `testing-with-playwright` thiếu frontmatter → không index/trigger được → thêm frontmatter, giờ là canonical route cho browser-verify (`testing-extension-browser` chỉ còn cho interactive/stealth session).
 - Doc này: section 12 đứng trước section 11, TOC thiếu runbook → renumber.
+
+### 10.2b. Rot fix trong audit 2026-09-17
+
+- `autonomous-pipeline` + `audit-ui-ux-then-redesign`: `description` chứa `: ` không quote → invalid YAML → CLI loader drop cả 2 khỏi danh sách invocable. `index.json` vẫn list đủ 48 vì generator parse bằng regex lỏng hơn loader thật. Fix: quote description + validator trong `update-skill-index.mjs` (exit 1 khi frontmatter không load được). Verify live: skill xuất hiện lại trong available_skills ngay trong session fix.
+- `tasks/` hygiene: `plan-immersion-playback.md`, `plan-pre-tokenize-subtitle.md`, `todo-pre-tokenize-subtitle.md` nằm ở root `tasks/` thay vì `plans/`/`todos/` — convention "plan.md/todo.md active + thư mục archive" đang bị bypass bởi per-feature file. Cần quyết: hoặc siết rule, hoặc đổi convention thành "mọi plan theo feature, `plan.md` chỉ là pointer".
+- Spec ordering: `b3770b8f` chứa cả intent + spec + plan + implementation của immersion-playback trong 1 commit → artifacts được tạo đủ nhưng không phải gate tuần tự. Spec-driven row trong §10 được đổi thành ⚠️ theo bằng chứng này.
 
 ### 10.3. Primitives — rules / skills / hooks / subagents / plugins
 
@@ -427,7 +437,7 @@ Cell implement **~90%** nguyên lý agentic SDLC. Khoảng trống còn lại kh
 | **Rule** | Text luôn trong context, mọi turn | Luật bất biến: conventions, boundaries, mandate | `AGENTS.md` (project) + Ponytail plugin `AGENTS.md` |
 | **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 48 skills `.agents/skills/` + 6 `/ponytail:*` |
 | **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 2 hooks (xem bảng event dưới) |
-| **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` custom + `subagent_general`/`subagent_explore` built-in |
+| **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` custom (`.devin/agents/`) + built-in `subagent_general`/`subagent_explore`/`spec-reviewer`/`spec-reviewer-glm` |
 | **Plugin** | Package gồm cả 4 thứ trên | Phân phối workflow qua git | `ponytail` v4.10.0 (`devin plugins install --local`) |
 
 #### Bản đồ wiring hiện tại — cái gì nối cái gì

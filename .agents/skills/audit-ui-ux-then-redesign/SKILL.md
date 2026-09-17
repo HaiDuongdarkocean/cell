@@ -1,6 +1,6 @@
 ---
 name: audit-ui-ux-then-redesign
-description: Question-first UI/UX audit: reframe feedback into the right design question, critique, produce a redesign brief. Use before a redesign.
+description: "Question-first UI/UX audit: reframe feedback into the right design question, critique, produce a redesign brief. Use before a redesign."
 ---
 
 # Audit UI/UX then Redesign

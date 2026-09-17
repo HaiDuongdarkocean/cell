@@ -1,6 +1,6 @@
 ---
 name: autonomous-pipeline
-description: Run a confirmed spec end-to-end: plan, parallel subagent build lanes, fresh-context verify, ship. Use for multi-task features.
+description: "Run a confirmed spec end-to-end: plan, parallel subagent build lanes, fresh-context verify, ship. Use for multi-task features."
 ---
 
 # Autonomous Pipeline
