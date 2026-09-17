@@ -17,8 +17,6 @@ import {
   toggleOverlayState,
   playVideo,
   pauseVideo,
-  seekVideo,
-  SEEK_LANDING_EPS_MS,
   loadSettingsOrToast,
   broadcastCues,
 } from '@/features/subtitle';
@@ -48,20 +46,6 @@ import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Subtit
 
 import type { SubtitlePanelItem } from '@/features/subtitle';
 // === Subtitle Overlay Integration ===
-
-/** Last cue whose (offset-adjusted) start is at or before `nowMs`; -1 when
- *  playback is before the first cue. Used when the active index is -1 in an
- *  inter-cue gap. */
-function lastStartedCueIndex(
-  cues: readonly SrtCue[],
-  nowMs: number,
-  offsetMs: number,
-): number {
-  for (let i = cues.length - 1; i >= 0; i--) {
-    if (cues[i].start - offsetMs <= nowMs) return i;
-  }
-  return -1;
-}
 
 export function init(
   video: HTMLVideoElement,
@@ -179,20 +163,18 @@ export function init(
   });
 
   // Immersion playback: resolve which cues contain a learnable word so the
-  // study-mode state machine can pause on them (pauseOnUnknown) and the
-  // next-unknown-cue shortcut can seek to them.
+  // study-mode state machine can pause on them (pauseOnUnknown). The x/z
+  // vocab-token navigation is DOM-based (token spans in the active cue) and
+  // doesn't need this resolver.
   let unknownResolver: UnknownCueResolver | null = null;
   let unknownResolverCueKey = '';
   let currentAdvanced: StudyModeAdvancedSettings | null = initialStudyMode?.advanced ?? null;
 
   async function syncUnknownResolver(): Promise<void> {
     const wantsProbe = currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF';
-    const wantsNav = shortcuts.some(
-      (s) => s.action === 'next-unknown-cue' || s.action === 'prev-unknown-cue',
-    );
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const cues = blockController.getTargetCues();
-    if ((!wantsProbe && !wantsNav) || !langCode || cues.length === 0) {
+    if (!wantsProbe || !langCode || cues.length === 0) {
       unknownResolver?.destroy();
       unknownResolver = null;
       unknownResolverCueKey = '';
@@ -258,7 +240,7 @@ export function init(
     sharedWebTextCtrl.handleLookup(request, requestId, anchorEl.getBoundingClientRect(), anchorEl);
   };
   blockController.onAutoResume = () => {
-    if (currentAdvanced?.popupCloseOnResume) sharedWebTextCtrl?.dismissLookup();
+    if (currentAdvanced?.popupCloseOnResume) sharedWebTextCtrl?.closePopup();
   };
 
   /** Build SubtitleActionContext from current controller state — shared action
@@ -296,7 +278,7 @@ export function init(
     // spuriously kill a popup showing a word from the still-current cue.
     const activeTarget = blockController.getActiveIndices().target;
     if (!cuesReloaded && lastActiveTargetIndex !== -1 && activeTarget !== lastActiveTargetIndex) {
-      sharedWebTextCtrl?.dismissLookup();
+      sharedWebTextCtrl?.closePopup();
     }
     lastActiveTargetIndex = activeTarget;
 
@@ -793,31 +775,38 @@ export function init(
     handleSubtitleStatusKey: (key) => subtitleTokenizeCtrl?.handleStatusKey(key) ?? false,
     handleWebStatusKey,
     syncSubtitleTokenize,
-    nextUnknownCue: () => {
-      if (!unknownResolver) return;
-      const cues = blockController.getTargetCues();
-      const offsetMs = offsetController?.getOffsetMs() ?? 0;
-      const { target } = blockController.getActiveIndices();
-      // In an inter-cue gap getActiveIndices() returns -1 — fall back to the
-      // last cue that started before now so 'x' doesn't jump backwards.
-      const fromIndex = target >= 0 ? target : lastStartedCueIndex(cues, video.currentTime * 1000, offsetMs);
-      const next = unknownResolver.findNext(fromIndex);
-      const cue = next >= 0 ? cues[next] : undefined;
-      if (!cue) return;
-      seekVideo(video, Math.max(0, (cue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000));
-    },
-    prevUnknownCue: () => {
-      if (!unknownResolver) return;
-      const cues = blockController.getTargetCues();
-      const offsetMs = offsetController?.getOffsetMs() ?? 0;
-      const { target } = blockController.getActiveIndices();
-      const fromIndex = target >= 0 ? target : lastStartedCueIndex(cues, video.currentTime * 1000, offsetMs) + 1;
-      const prev = unknownResolver.findPrev(fromIndex);
-      const cue = prev >= 0 ? cues[prev] : undefined;
-      if (!cue) return;
-      seekVideo(video, Math.max(0, (cue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000));
-    },
+    // x/z step through the vocabulary token spans of the ACTIVE cue, opening
+    // the dictionary popup on each one — same handleLookup path as a manual
+    // click. The current position is derived from the popup-open highlight
+    // class, so nav continues correctly even after a manual click mid-cue.
+    // No token spans (tokenize + dictionary trigger both off) → no-op.
+    nextVocabToken: () => navVocabToken(1),
+    prevVocabToken: () => navVocabToken(-1),
   };
+
+  function navVocabToken(dir: 1 | -1): void {
+    const langCode = currentSettings?.subtitleOverlayTargetLanguage;
+    const { target } = blockController.getLineElements();
+    if (!sharedWebTextCtrl || !langCode || !target) return;
+    const spans = Array.from(target.querySelectorAll<HTMLElement>('[data-cell-term]')).filter(
+      (el) => (el.getAttribute('data-cell-term') ?? '').trim() !== '',
+    );
+    if (spans.length === 0) return;
+    const openIdx = spans.findIndex((el) => el.classList.contains('js-cell-token--popup-open'));
+    const idx = openIdx >= 0 ? openIdx + dir : dir === 1 ? 0 : spans.length - 1;
+    if (idx < 0 || idx >= spans.length) return;
+    const span = spans[idx];
+    const cueIndex = blockController.getActiveIndices().target;
+    const cue = blockController.getTargetCues()[cueIndex];
+    const request: LookupRequest = {
+      term: (span.getAttribute('data-cell-term') ?? '').trim(),
+      langCode,
+      contextSentence: cue?.text ?? '',
+      cursorOffset: Number(span.getAttribute('data-cell-start') ?? 0),
+    };
+    const requestId = `vocabnav-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    sharedWebTextCtrl.handleLookup(request, requestId, span.getBoundingClientRect(), span);
+  }
 
   const processImportedFiles = createProcessImportedFiles(ctx);
   const { onManagerSelect, handleSearchResultSelect } = createSubtitleSelectionHandlers(ctx);
@@ -861,6 +850,9 @@ export function init(
 
   // Wire play/pause → send VIDEO_PLAY_STATE to Side Panel
   video.addEventListener('play', () => {
+    // Playback resuming means the user moved on — close any open lookup popup
+    // (auto-pause popup, x/z vocab nav, or a manual click popup left behind).
+    if (currentAdvanced?.popupCloseOnResume ?? true) sharedWebTextCtrl?.closePopup();
     void sendMessage({
       type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
       payload: { tabId: undefined, isPlaying: true },

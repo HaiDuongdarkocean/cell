@@ -27,6 +27,10 @@ export interface PopupLevel {
   originalHighlightTarget: HighlightTarget | null;
   highlightAnchor: HighlightAnchor | null;
   popupTokenId: PopupTokenId | null;
+  // Direct element ref — the subtitle overlay lives in a shadow root, so
+  // document.querySelector (getTokenById) can't reach these tokens. The ref
+  // keeps clear/status updates working for shadow-DOM tokens.
+  popupTokenEl: HTMLElement | null;
   highlight: WordHighlight;
 }
 
@@ -38,6 +42,7 @@ export function createPopupLevel(): PopupLevel {
     originalHighlightTarget: null,
     highlightAnchor: null,
     popupTokenId: null,
+    popupTokenEl: null,
     highlight: createWordHighlight(),
   };
 }

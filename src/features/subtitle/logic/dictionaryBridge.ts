@@ -18,6 +18,8 @@ export interface DictionaryBridge {
   ): void;
   cancelLookup(requestId: string): void;
   dismissLookup(): void;
+  closePopup(): void;
+  hasOpenPopup(): boolean;
   updateSettings(settings: {
     dictionaryPopup: DictionaryPopupSettings;
     cardCreator: CardCreatorSettings;

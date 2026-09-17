@@ -90,14 +90,17 @@ export function setPopupTokenId(level: PopupLevel, token: HTMLElement): void {
     start: token.getAttribute('data-cell-start') ?? '',
     blockId: token.getAttribute('data-cell-block-id') ?? '',
   };
+  level.popupTokenEl = token;
   token.classList.add(POPUP_OPEN_CLASS);
 }
 
 export function clearPopupTokenId(level: PopupLevel): void {
-  if (level.popupTokenId) {
-    getTokenById(level.popupTokenId)?.classList.remove(POPUP_OPEN_CLASS);
-    level.popupTokenId = null;
-  }
+  // Prefer the stored element ref: subtitle token spans live inside the
+  // overlay's shadow root where document.querySelector can't reach them.
+  const el = level.popupTokenEl ?? (level.popupTokenId ? getTokenById(level.popupTokenId) : null);
+  el?.classList.remove(POPUP_OPEN_CLASS);
+  level.popupTokenId = null;
+  level.popupTokenEl = null;
 }
 
 export function applyTokenStatus(target: HighlightTarget | HTMLElement, status: WordStatus): void {

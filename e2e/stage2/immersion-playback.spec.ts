@@ -12,7 +12,6 @@ const STREAMFLIX_SUBTITLE_KEYS = [
 const DB_SCHEMA_VERSION = 11;
 const CUE2_START_S = 20.2;
 const CUE2_END_S = 25.533;
-const CUE3_START_S = 29.266;
 
 // Cue 2 = "♪ LYIN' ISN'T BETTER THAN SILENCE ♪" (20.2–25.533). With a seeded
 // FREQUENCY resource, ONLY 'silence' carries an entry (rank varies per test) —
@@ -350,19 +349,15 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     await expectPausedAtCueEnd(streamFlixPage);
   });
 
-  test('x/z shortcuts navigate between pausable cues', async ({
+  test('x/z step through the active cue’s vocab tokens, opening the popup on each', async ({
     cellContext,
     streamFlixPage,
   }) => {
-    // Seed pausable words in BOTH cue 2 ('silence') and cue 3 ('feel') so the
-    // test doesn't depend on suite-order IndexedDB leakage: any FREQUENCY
-    // resource disables the unfiltered fallback, and without a cue-3 entry
-    // 'x' would have no pausable target.
+    // x/z = per-token navigation inside the CURRENT cue — each press opens the
+    // dictionary popup on the next/prev token span, exactly like clicking it.
     await seedSettings(cellContext);
-    await seedDictionaryAndFrequency(cellContext, [
-      { term: 'silence', rank: 100 },
-      { term: 'feel', rank: 100 },
-    ]);
+    await seedDictionaryAndFrequency(cellContext, [{ term: 'silence', rank: 100 }]);
+    await writeTokenize(cellContext, true);
     await writeStudyModes(cellContext, 'normal', {
       ...IMMERSION_ADVANCED,
       pauseOnUnknown: 'OFF',
@@ -377,34 +372,35 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     }, CUE2_START_S + 0.4);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
 
+    const openToken = streamFlixPage.locator('.js-cell-token--popup-open');
+
+    // No popup yet → first 'x' opens the dictionary on the FIRST vocab token.
+    await streamFlixPage.keyboard.press('x');
+    await expect(openToken).toHaveCount(1, { timeout: 15_000 });
+    const firstTerm = await openToken.first().getAttribute('data-cell-term');
+    expect(firstTerm).toBeTruthy();
+    await expect(popupHosts(streamFlixPage).first()).toBeAttached({ timeout: 15_000 });
+
+    // 'x' again advances to the NEXT token (popup repositions onto it).
     await streamFlixPage.keyboard.press('x');
     await expect
-      .poll(
-        async () =>
-          video.evaluate(
-            (v: HTMLVideoElement, cue3Start: number) =>
-              Math.abs(v.currentTime - cue3Start) < 1.5,
-            CUE3_START_S,
-          ),
-        { timeout: 15_000 },
-      )
-      .toBe(true);
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .not.toBe(firstTerm);
+    const secondTerm = await openToken.first().getAttribute('data-cell-term');
+    expect(secondTerm).toBeTruthy();
 
-    // Wait for the overlay/engine to settle on cue 3 so findPrev sees the
-    // new active index instead of racing the seek.
-    await expect(targetLine(streamFlixPage)).toContainText(/floatin/i, { timeout: 15_000 });
-
+    // 'z' steps back to the previous token.
     await streamFlixPage.keyboard.press('z');
     await expect
-      .poll(
-        async () =>
-          video.evaluate(
-            (v: HTMLVideoElement, cue2Start: number) =>
-              Math.abs(v.currentTime - cue2Start) < 1.5,
-            CUE2_START_S,
-          ),
-        { timeout: 15_000 },
-      )
-      .toBe(true);
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(firstTerm);
+
+    // Playback resuming closes the popup instantly (no dismiss delay) — Space
+    // must toggle play, not scroll the page.
+    await streamFlixPage.keyboard.press(' ');
+    await expect
+      .poll(async () => video.evaluate((v: HTMLVideoElement) => v.paused), { timeout: 10_000 })
+      .toBe(false);
+    await expect(popupHosts(streamFlixPage)).toHaveCount(0, { timeout: 5_000 });
   });
 });

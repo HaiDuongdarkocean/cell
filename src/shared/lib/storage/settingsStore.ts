@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 31;
+export const CURRENT_SCHEMA_VERSION = 32;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -487,18 +487,41 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // nav bindings.
   30: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 31 } as Record<string, unknown>;
-    const shortcuts = Array.isArray(merged.keyboardShortcuts)
-      ? (merged.keyboardShortcuts as { action: string; key: string }[]).map((sc) =>
-          sc.action === 'next-unknown-cue' && sc.key === 'n' ? { ...sc, key: 'x' } : sc,
+    type StoredShortcut = { action: string; key: string; ctrl?: boolean; shift?: boolean; alt?: boolean };
+    const stored = merged.keyboardShortcuts;
+    const shortcuts: StoredShortcut[] = Array.isArray(stored)
+      ? (stored as StoredShortcut[]).map((sc) =>
+          sc.action === 'next-unknown-cue' && sc.key === 'n' && !sc.ctrl && !sc.shift && !sc.alt
+            ? { ...sc, key: 'x' }
+            : sc,
         )
-      : [];
+      : [...(DEFAULT_SETTINGS.keyboardShortcuts as StoredShortcut[])];
     if (!shortcuts.some((sc) => sc.action === 'next-unknown-cue')) {
-      shortcuts.push({ action: 'next-unknown-cue', key: 'x' });
+      if (!shortcuts.some((sc) => sc.key === 'x' && !sc.ctrl && !sc.shift && !sc.alt)) {
+        shortcuts.push({ action: 'next-unknown-cue', key: 'x' });
+      }
     }
     if (!shortcuts.some((sc) => sc.action === 'prev-unknown-cue')) {
-      shortcuts.push({ action: 'prev-unknown-cue', key: 'z' });
+      if (!shortcuts.some((sc) => sc.key === 'z' && !sc.ctrl && !sc.shift && !sc.alt)) {
+        shortcuts.push({ action: 'prev-unknown-cue', key: 'z' });
+      }
     }
     merged.keyboardShortcuts = shortcuts;
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v31 → v32: x/z navigation changed from cue-jumping to per-token vocab
+  // navigation inside the active cue — rename action ids to match.
+  31: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 32 } as Record<string, unknown>;
+    if (Array.isArray(merged.keyboardShortcuts)) {
+      merged.keyboardShortcuts = (merged.keyboardShortcuts as { action: string }[]).map((sc) =>
+        sc.action === 'next-unknown-cue'
+          ? { ...sc, action: 'next-vocab-token' }
+          : sc.action === 'prev-unknown-cue'
+            ? { ...sc, action: 'prev-vocab-token' }
+            : sc,
+      );
+    }
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };

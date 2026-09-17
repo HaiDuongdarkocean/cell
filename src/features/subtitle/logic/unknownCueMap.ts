@@ -14,8 +14,6 @@ import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
 
 export interface UnknownCueResolver {
   readonly probe: (cueIndex: number) => UnknownCueHit | null;
-  readonly findNext: (fromIndex: number) => number;
-  readonly findPrev: (fromIndex: number) => number;
   readonly applyStatus: (term: string, status: WordStatus) => void;
   readonly destroy: () => void;
 }
@@ -136,24 +134,6 @@ export async function createUnknownCueResolver(
 
   return {
     probe: (cueIndex) => unknownMap.get(cueIndex) ?? null,
-
-    findNext: (fromIndex) => {
-      let best = -1;
-      for (const cueIndex of unknownMap.keys()) {
-        if (cueIndex <= fromIndex) continue;
-        if (best === -1 || cueIndex < best) best = cueIndex;
-      }
-      return best;
-    },
-
-    findPrev: (fromIndex) => {
-      let best = -1;
-      for (const cueIndex of unknownMap.keys()) {
-        if (cueIndex >= fromIndex) continue;
-        if (cueIndex > best) best = cueIndex;
-      }
-      return best;
-    },
 
     applyStatus: (term, status) => {
       const normalized = langCode === 'zh' ? term : term.toLowerCase();

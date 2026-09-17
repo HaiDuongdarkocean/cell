@@ -122,8 +122,8 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // KeyboardEvent.key cho spacebar = ' ' (space char), không phải 'space'.
   { action: 'play-pause', key: ' ' },
   // Immersion playback — seek between cues containing an unknown word.
-  { action: 'next-unknown-cue', key: 'x' },
-  { action: 'prev-unknown-cue', key: 'z' },
+  { action: 'next-vocab-token', key: 'x' },
+  { action: 'prev-vocab-token', key: 'z' },
 ];
 
 // === Default Overlay Style (ADR-013) ===

@@ -79,6 +79,7 @@ export interface PopupLifecycle {
   readonly cancelPendingDismiss: () => void;
   readonly cancelInFlightLookup: () => void;
   readonly closePopup: () => void;
+  readonly hasOpenPopup: () => boolean;
   readonly showHighlight: (target: HighlightTarget) => void;
   readonly clearHighlight: () => void;
   readonly syncStatus: (term: string, status: WordStatus) => void;
@@ -207,7 +208,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
   function handlePopupStatusChange(level: PopupLevel, term: string, langCode: string, status: WordStatus): void {
     emitWordStatusChanged({ term, langCode, status });
     deps.onStatusChange?.(term, langCode, status);
-    const token = level.popupTokenId ? getTokenById(level.popupTokenId) : null;
+    const token = level.popupTokenEl ?? (level.popupTokenId ? getTokenById(level.popupTokenId) : null);
     if (token) {
       applyTokenStatus(token, status);
       token.classList.add(POPUP_OPEN_CLASS);
@@ -529,6 +530,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     cancelPendingDismiss,
     cancelInFlightLookup,
     closePopup,
+    hasOpenPopup: () => popupStack.length > 0,
     showHighlight,
     clearHighlight,
     syncStatus,

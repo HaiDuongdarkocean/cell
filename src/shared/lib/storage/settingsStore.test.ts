@@ -152,7 +152,7 @@ describe('loadSettings migration', () => {
     expect(settings.cardCreator.mediaUpdateMode).toBe('append');
   });
 
-  it('migrates v30 shortcuts: rebinds next-unknown-cue n→x and adds prev-unknown-cue z', async () => {
+  it('migrates v30 shortcuts: rebinds n→x for vocab nav and adds prev-vocab-token z', async () => {
     const v30Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 30,
@@ -170,12 +170,12 @@ describe('loadSettings migration', () => {
 
     expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     const byAction = new Map(settings.keyboardShortcuts.map((sc) => [sc.action, sc.key]));
-    expect(byAction.get('next-unknown-cue')).toBe('x');
-    expect(byAction.get('prev-unknown-cue')).toBe('z');
+    expect(byAction.get('next-vocab-token')).toBe('x');
+    expect(byAction.get('prev-vocab-token')).toBe('z');
     expect(byAction.get('prev-cue')).toBe('a');
   });
 
-  it('keeps a custom next-unknown-cue binding and still adds prev-unknown-cue', async () => {
+  it('keeps a custom vocab-nav binding and still adds prev-vocab-token', async () => {
     const v30Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 30,
@@ -189,8 +189,8 @@ describe('loadSettings migration', () => {
     const settings = await loadSettings();
 
     const byAction = new Map(settings.keyboardShortcuts.map((sc) => [sc.action, sc.key]));
-    expect(byAction.get('next-unknown-cue')).toBe('m');
-    expect(byAction.get('prev-unknown-cue')).toBe('z');
+    expect(byAction.get('next-vocab-token')).toBe('m');
+    expect(byAction.get('prev-vocab-token')).toBe('z');
   });
 
   it('resets undefined nested objects to their defaults', async () => {

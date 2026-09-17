@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 31 (V31 adds immersion x/z vocab-nav bindings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(31);
+  it('CURRENT_SCHEMA_VERSION is 32 (V32 renames cue-nav ids to vocab-token nav)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(32);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {

@@ -77,8 +77,6 @@ describe('createUnknownCueResolver', () => {
     expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
     // xenoglossy rank 15000 > general cap 10000 → cue 2 has no pausable word.
     expect(resolver.probe(2)).toBeNull();
-    expect(resolver.findNext(-1)).toBe(0);
-    expect(resolver.findNext(0)).toBe(-1);
   });
 
   it('terms with no entry in an enabled resource never pause', async () => {
@@ -105,21 +103,7 @@ describe('createUnknownCueResolver', () => {
     expect(resolver.probe(2)).toEqual({ term: 'rare', offset: 0 });
   });
 
-  it('findNext returns the lowest cue index after fromIndex, else -1', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
 
-    expect(resolver.findNext(-1)).toBe(0);
-    expect(resolver.findNext(0)).toBe(2);
-    expect(resolver.findNext(2)).toBe(-1);
-  });
-
-  it('findPrev returns the highest cue index before fromIndex, else -1', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
-
-    expect(resolver.findPrev(3)).toBe(2);
-    expect(resolver.findPrev(2)).toBe(0);
-    expect(resolver.findPrev(0)).toBe(-1);
-  });
 
   it('applyStatus removes a term from the unknown map when marked known', async () => {
     const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
@@ -150,7 +134,5 @@ describe('createUnknownCueResolver', () => {
   it('returns empty maps for empty cue lists', async () => {
     const resolver = await createUnknownCueResolver([], 'en', 'advanced');
     expect(resolver.probe(0)).toBeNull();
-    expect(resolver.findNext(-1)).toBe(-1);
-    expect(resolver.findPrev(3)).toBe(-1);
   });
 });

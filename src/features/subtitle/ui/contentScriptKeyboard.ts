@@ -87,6 +87,18 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
     // with the host the panel must win while it has focus. Skip when focus is in
     // an editable element, and skip Enter/Space on buttons/links so those
     // controls still activate with the keyboard.
+    // While a lookup popup is open, Space means "resume playback" (the video
+    // 'play' listener then closes the popup). Without this, Space landing on a
+    // focusable popup element is skipped as an activation key, no default is
+    // prevented, and the host page scrolls. Enter is left alone so focused
+    // popup controls can still be activated.
+    if (key === ' ' && !isEditableEvent(e) && sharedWebTextCtrl?.hasOpenPopup()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      ctx.togglePlay();
+      return;
+    }
+
     const isActivationKey = key === ' ' || key === 'enter';
     const shouldSkipShortcut =
       isEditableEvent(e) ||
@@ -227,12 +239,12 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
         void ctx.handleCardCreatorAction(action);
         break;
       }
-      case 'next-unknown-cue': {
-        ctx.nextUnknownCue();
+      case 'next-vocab-token': {
+        ctx.nextVocabToken();
         break;
       }
-      case 'prev-unknown-cue': {
-        ctx.prevUnknownCue();
+      case 'prev-vocab-token': {
+        ctx.prevVocabToken();
         break;
       }
       // Generate native subtitle manually (button or shortcut).
@@ -249,6 +261,14 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
   // Same guard as keydown: skip editable targets, only block configured keys.
   const onKeyup = (e: KeyboardEvent) => {
     if (isEditableEvent(e)) return;
+
+    // Match the keydown popup-open Space intercept — block the keyup too so a
+    // host keyup handler (e.g. YouTube's space toggle) can't double-toggle.
+    if (e.key.toLowerCase() === ' ' && sharedWebTextCtrl?.hasOpenPopup()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
 
     const realTarget = e.composedPath()[0] ?? e.target;
     const key = e.key.toLowerCase();

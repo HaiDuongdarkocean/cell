@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 31 (V31 adds immersion x/z vocab-nav bindings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(31);
+  it('CURRENT_SCHEMA_VERSION is 32 (V32 renames cue-nav ids to vocab-token nav)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(32);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {

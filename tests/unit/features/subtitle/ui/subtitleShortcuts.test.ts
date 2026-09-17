@@ -50,14 +50,14 @@ describe('handleShortcutKey', () => {
     expect(action).toBe('play-pause');
   });
 
-  it('returns next-unknown-cue action when key is "x"', () => {
+  it('returns next-vocab-token action when key is "x"', () => {
     const action = handleShortcutKey('x', shortcuts, createDivTarget());
-    expect(action).toBe('next-unknown-cue');
+    expect(action).toBe('next-vocab-token');
   });
 
-  it('returns prev-unknown-cue action when key is "z"', () => {
+  it('returns prev-vocab-token action when key is "z"', () => {
     const action = handleShortcutKey('z', shortcuts, createDivTarget());
-    expect(action).toBe('prev-unknown-cue');
+    expect(action).toBe('prev-vocab-token');
   });
 
   it('returns null when key does not match any shortcut', () => {

@@ -90,6 +90,10 @@ export interface WebTextDictionaryController {
   readonly cancelLookup: (requestId: string) => void;
   /** Hide the popup, clear highlight, and cancel the current lookup. */
   readonly dismissLookup: () => void;
+  /** Close the popup stack immediately (no reposition grace window). */
+  readonly closePopup: () => void;
+  /** Whether a lookup popup is currently open. */
+  readonly hasOpenPopup: () => boolean;
   /** Highlight a token span (subtitle) or a Range (web text). */
   readonly showHighlight: (target: HighlightTarget) => void;
   /** Clear active highlight. */
@@ -255,6 +259,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     handleLookup: lifecycle.handleLookup,
     cancelLookup,
     dismissLookup: lifecycle.dismissLookup,
+    closePopup: lifecycle.closePopup,
+    hasOpenPopup: lifecycle.hasOpenPopup,
     showHighlight: lifecycle.showHighlight,
     clearHighlight: lifecycle.clearHighlight,
     syncStatus: lifecycle.syncStatus,
