@@ -1,6 +1,6 @@
 ---
 name: idea-pick-off
-description: Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. Use when asked to start the next backlog feature, "làm item #N", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).
+description: Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. `all` mode loops the pipeline across every unblocked item until the backlog is drained. Use when asked to start the next backlog feature, "làm item #N", "làm hết backlog", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).
 ---
 
 # Idea Pick-Off — Backlog Top → Shipped
@@ -17,11 +17,12 @@ read backlog → pick top unblocked icebox → claim
   → ship + links (shipped)
 ```
 
-One item per run. The queue order is the contract — never reorder mid-build.
+One item per run by default. `/idea-pick-off all` runs the whole queue — see **Loop mode** below. The queue order is the contract — never reorder mid-build.
 
 ## When to Use
 
 - "Làm item tiếp theo", "pick next idea", "làm #N", "continue roadmap"
+- "làm hết backlog", "idea-pick-off all", "run the whole queue" → Loop mode
 - After `idea-grab` inserts items and user wants the top one built
 - After a wave lands and the next item should start
 
@@ -89,6 +90,37 @@ One item per run. The queue order is the contract — never reorder mid-build.
 
 **Guard:** partial ship (some sub-features deferred) → keep the row `in-progress`, move deferred sub-features into a new icebox row or note under the item — don't fake `shipped`.
 
+## Loop mode (`/idea-pick-off all`)
+
+Runs Steps 1–6 per item, then immediately re-enters Step 1 for the next item, until the queue is drained or a stop condition hits.
+
+```
+loop:
+  pick top unblocked icebox → spec → plan → build → ship → commit
+  → tree clean? → next item
+until: no icebox left · every remaining item blocked · stop condition
+```
+
+**Rules specific to `all`:**
+
+- **Autonomous elicitation.** No interview rounds mid-loop — infer the 8-field frame from `Pain`/`Infra`/`Source` + codebase evidence, document assumptions in the intent doc, and let spec-review-stakeholder be the gate. This is the only case where elicitation skips the user.
+- **No mid-loop questions.** Ask the user only for a hard stop condition (below) that repeats — a single blocked item does not pause the loop.
+- **Blocked item → skip, not stall.** Item blocked by unshipped deps or spec rejected 3 rounds → mark `Status: in-progress` + one-line blocking note in the Spec cell, move to the next unblocked item, list it in the final report.
+- **Gate red that survives a real fix attempt** → stop the whole loop and report — the tree must never accumulate unverified work.
+- **Item isolation.** Each item still gets its own commits grouped by subsystem; tree must be clean before claiming the next item. If the session convention is worktree-per-item, create/merge/remove one per item.
+- **Never reorder.** Loop consumes the queue top-down; skipped items keep their position and stay `in-progress` with a note.
+- **Stop conditions** (any → stop, report): backlog drained · every remaining item blocked · a gate that can't be fixed · 3 consecutive items skipped · user interrupt.
+
+**Loop report (end of run):**
+
+```markdown
+## Pick-off all — <date>
+- Shipped: <slug ×N with commit hashes>
+- Skipped/blocked: <slug — reason>
+- Stopped because: <drained | all blocked | gate red | interrupt>
+- Next top item: <slug or "backlog empty — /idea-grab">
+```
+
 ## Resume rules
 
 | Found status | Resume at |
@@ -103,7 +135,9 @@ One item per run. The queue order is the contract — never reorder mid-build.
 | Don't | Why |
 |---|---|
 | Skip spec and build straight from the Pain line | Pain is a seed, not requirements — elicitation exists for this |
-| Pick multiple items at once | Queue is single-sequence; parallelism is inside the plan, not the backlog |
+| Pick multiple items at once | Queue is single-sequence; `all` mode is sequential items, not parallel — parallelism is inside the plan, not the backlog |
+| Interview the user mid-loop in `all` mode | The loop is autonomous — infer the frame, let spec-review gate it; asking blocks the pipeline |
+| Fake-skip a failing item as `dropped`/`shipped` to keep the loop moving | Skipped = `in-progress` + blocking note; only the user vetoes |
 | Reorder rows mid-build | Breaks the pick contract; reorder only at wave boundaries |
 | Mark shipped without all gates green | Fake completion; the next audit finds it |
 | Rename a slug after spec exists | Breaks intent/spec file links |
@@ -117,6 +151,7 @@ One item per run. The queue order is the contract — never reorder mid-build.
 - [ ] All gates green before commit
 - [ ] `shipped` only when everything in scope landed; partial → deferred sub-features tracked
 - [ ] Wiki changelog + commit done
+- [ ] `all` mode: loop report produced, skipped items carry blocking notes, tree clean at exit
 
 ## Router boomerang
 
