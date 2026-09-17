@@ -299,6 +299,38 @@ describe('CueList', () => {
       expect(hello.className).not.toContain('js-cell-token--status-unknown');
     });
 
+    it('still applies live status updates after an equal-content cues rerender', async () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      await waitFor(() => {
+        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+      });
+
+      rerender(
+        <CueList
+          cues={sampleCues.map((c) => ({ ...c }))}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      act(() => {
+        emitWordStatusChanged({ langCode: 'en', term: 'hello', status: 'known' });
+      });
+
+      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      expect(hello.className).toContain('js-cell-token--status-known');
+    });
+
     it('renders plain text when tokenize is null', () => {
       render(
         <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
@@ -368,6 +400,213 @@ describe('CueList', () => {
       await waitFor(() => {
         expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
       });
+    });
+  });
+
+  describe('cueFilter', () => {
+    it('renders only cues the filter admits', () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueFilter={(i) => i === 2}
+          filterEpoch="i1"
+        />,
+      );
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items).toHaveLength(1);
+      expect(items[0].getAttribute('data-cue-index')).toBe('2');
+    });
+
+    it('renders all cues when cueFilter is undefined', () => {
+      render(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} filterEpoch="all" />,
+      );
+      expect(screen.getAllByTestId('cue-item')).toHaveLength(2);
+    });
+
+    it('resets scrollTop when filterEpoch changes', () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="all"
+        />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      list.scrollTop = 120;
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="i1"
+        />,
+      );
+
+      expect(list.scrollTop).toBe(0);
+    });
+
+    it('does not reset scrollTop when only the cueFilter identity changes', () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="i1"
+        />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      list.scrollTop = 120;
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="i1"
+        />,
+      );
+
+      expect(list.scrollTop).toBe(120);
+    });
+
+    it('highlights nothing when the current cue is filtered out', () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={2000}
+          onSeek={jest.fn()}
+          cueFilter={(i) => i === 2}
+          filterEpoch="i1"
+        />,
+      );
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items).toHaveLength(1);
+      expect(items[0].getAttribute('data-current')).toBe('false');
+    });
+
+    it('keeps onSeek working on filtered cues', () => {
+      const onSeek = jest.fn();
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={onSeek}
+          cueFilter={(i) => i === 2}
+          filterEpoch="i1"
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId('cue-timestamp'));
+      expect(onSeek).toHaveBeenCalledWith(3500);
+    });
+  });
+
+  describe('onTokensResolved meta', () => {
+    it('does not emit while resolution is in flight; first emit carries resolved meta', async () => {
+      const onTokensResolved = jest.fn();
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+          onTokensResolved={onTokensResolved}
+        />,
+      );
+
+      expect(onTokensResolved).not.toHaveBeenCalled();
+      await waitFor(() => expect(onTokensResolved).toHaveBeenCalled());
+      const firstMeta = onTokensResolved.mock.calls[0][1];
+      expect(firstMeta.resolved).toBe(true);
+    });
+
+    it('does not emit the stale token map after the cue set changes', async () => {
+      const onTokensResolved = jest.fn();
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+          onTokensResolved={onTokensResolved}
+        />,
+      );
+
+      await waitFor(() =>
+        expect(onTokensResolved.mock.calls.some((c) => c[1].resolved === true)).toBe(true),
+      );
+      const callsBeforeSwap = onTokensResolved.mock.calls.length;
+
+      const nextCues: BilingualCue[] = [
+        { index: 1, start: 0, end: 1000, targetText: 'alpha bravo', nativeText: '' },
+        { index: 2, start: 1000, end: 2000, targetText: 'charlie delta', nativeText: '' },
+      ];
+      rerender(
+        <CueList
+          cues={nextCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+          onTokensResolved={onTokensResolved}
+        />,
+      );
+      await waitFor(() =>
+        expect(onTokensResolved.mock.calls.length).toBeGreaterThan(callsBeforeSwap),
+      );
+
+      const postSwapCalls = onTokensResolved.mock.calls.slice(callsBeforeSwap);
+      const emittedTerms = postSwapCalls.flatMap((c) =>
+        [...(c[0] as Map<number, { term: string }[]>).values()].flat().map((t) => t.term),
+      );
+      expect(emittedTerms).not.toContain('hello');
+      expect(emittedTerms).not.toContain('world');
+      expect(emittedTerms).toContain('alpha');
+    });
+
+    it('does not refire onTokensResolved when only the filter changes', async () => {
+      const onTokensResolved = jest.fn();
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+          onTokensResolved={onTokensResolved}
+          cueFilter={() => true}
+          filterEpoch="all"
+        />,
+      );
+
+      await waitFor(() =>
+        expect(onTokensResolved.mock.calls.some((c) => c[1].resolved === true)).toBe(true),
+      );
+      const calls = onTokensResolved.mock.calls.length;
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+          onTokensResolved={onTokensResolved}
+          cueFilter={(i) => i === 1}
+          filterEpoch="i1"
+        />,
+      );
+
+      await new Promise((r) => setTimeout(r, 20));
+      expect(onTokensResolved.mock.calls.length).toBe(calls);
     });
   });
 

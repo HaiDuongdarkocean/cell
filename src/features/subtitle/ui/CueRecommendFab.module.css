@@ -1,0 +1,67 @@
+.fab {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: var(--z-overlay-base);
+}
+
+.badge {
+  position: absolute;
+  top: calc(var(--space-1) * -1);
+  right: calc(var(--space-1) * -1);
+  min-width: var(--space-4);
+  height: var(--space-4);
+  padding: var(--space-0) var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--space-4);
+  text-align: center;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--space-24);
+  outline: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  min-height: var(--touch-target);
+  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
+}
+
+.itemHighlighted {
+  background: var(--color-surface-hover);
+}
+
+.itemActive {
+  color: var(--color-primary);
+}
+
+.itemLabel {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+.itemCount {
+  color: var(--color-muted-foreground);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.itemCheck {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}

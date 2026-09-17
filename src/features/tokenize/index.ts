@@ -3,7 +3,10 @@ export {
   createCueListTokenMap,
   resolveCueListTokenMetadata,
   applyCueListTokenStatus,
+  applyCueListTokenStatuses,
   type CueListTokenMap,
+  type ResolveMeta,
+  type ResolvedCueListTokens,
 } from './logic/cueListTokens';
 export {
   DEFAULT_BAND_THRESHOLDS,

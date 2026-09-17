@@ -1,11 +1,15 @@
 import type { BilingualCue } from '@/entities/media';
-import type { WordStatus } from '@/entities/dictionary';
+import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import type { Token } from '@/features/tokenize/types';
 import { getWordStatuses } from '@/features/dictionary/services/wordStatusClient';
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import {
+  DEFAULT_BAND_THRESHOLDS,
   entriesToBand,
   loadFrequencyBandOptions,
+  pickBestFrequencyEntry,
+  type FrequencyBandOptions,
+  type FrequencyBandThresholds,
 } from '@/features/tokenize/utils/frequencyBand';
 import {
   applyTokenListStatus,
@@ -13,6 +17,19 @@ import {
 } from '@/features/tokenize/logic/tokenListMetadata';
 
 export type CueListTokenMap = ReadonlyMap<number, readonly Token[]>;
+
+export interface ResolveMeta {
+  readonly resolved: boolean;
+  readonly failed: boolean;
+  readonly freqUnfiltered: boolean;
+  readonly rankByTerm: ReadonlyMap<string, number | null>;
+  readonly thresholds: FrequencyBandThresholds;
+}
+
+export interface ResolvedCueListTokens {
+  readonly map: CueListTokenMap;
+  readonly meta: ResolveMeta;
+}
 
 export function createCueListTokenMap(
   cues: readonly BilingualCue[],
@@ -59,44 +76,96 @@ export function applyCueListTokenStatuses(
   return changed ? resolved : tokenMap;
 }
 
+const MAX_TERMS_PER_REQUEST = 1000;
+const MAX_TERM_LENGTH = 200;
+
+async function fetchTermsChunked<T>(
+  langCode: string,
+  terms: readonly string[],
+  fetch: (langCode: string, terms: readonly string[]) => Promise<Map<string, T>>,
+): Promise<Map<string, T>> {
+  const merged = new Map<string, T>();
+  for (let i = 0; i < terms.length; i += MAX_TERMS_PER_REQUEST) {
+    const batch = await fetch(langCode, terms.slice(i, i + MAX_TERMS_PER_REQUEST));
+    for (const [term, value] of batch) merged.set(term, value);
+  }
+  return merged;
+}
+
 export async function resolveCueListTokenMetadata(
   tokenMap: CueListTokenMap,
   langCode: string,
-): Promise<CueListTokenMap> {
+): Promise<ResolvedCueListTokens> {
   const terms = new Set<string>();
   for (const tokens of tokenMap.values()) {
     for (const token of tokens) {
       if (!token.isSeparator) terms.add(token.term);
     }
   }
-  if (terms.size === 0) return tokenMap;
-
-  const termList = [...terms];
-  try {
-    const [statusMap, freqMaps, bandOpts] = await Promise.all([
-      getWordStatuses(langCode, termList),
-      getFrequencyEntries(langCode, termList),
-      loadFrequencyBandOptions(langCode),
-    ]);
-
-    const resolved = new Map<number, readonly Token[]>();
-    for (const [cueIndex, tokens] of tokenMap) {
-      resolved.set(
-        cueIndex,
-        tokens.map((token) =>
-          token.isSeparator
-            ? token
-            : {
-                ...token,
-                status: statusMap.get(token.term) ?? 'unknown',
-                frequencyBand:
-                  entriesToBand(freqMaps.get(token.term) ?? [], bandOpts) ?? 'none',
-              },
-        ),
-      );
-    }
-    return resolved;
-  } catch {
-    return tokenMap;
+  const termList = [...terms].filter((t) => t.length > 0 && t.length <= MAX_TERM_LENGTH);
+  if (termList.length === 0) {
+    return {
+      map: tokenMap,
+      meta: {
+        resolved: true,
+        failed: false,
+        freqUnfiltered: false,
+        rankByTerm: new Map(),
+        thresholds: DEFAULT_BAND_THRESHOLDS,
+      },
+    };
   }
+
+  const [statusRes, freqRes, bandRes] = await Promise.allSettled([
+    fetchTermsChunked(langCode, termList, getWordStatuses),
+    fetchTermsChunked(langCode, termList, getFrequencyEntries),
+    loadFrequencyBandOptions(langCode),
+  ]);
+
+  const statusMap =
+    statusRes.status === 'fulfilled' && statusRes.value.size > 0 ? statusRes.value : null;
+  const failed = statusMap === null;
+  const freqMaps =
+    freqRes.status === 'fulfilled' ? freqRes.value : new Map<string, FrequencyEntry[]>();
+  const freqFailed = freqRes.status === 'rejected' || freqMaps.size === 0;
+  const bandOpts: FrequencyBandOptions =
+    bandRes.status === 'fulfilled'
+      ? bandRes.value
+      : { thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] };
+  const freqUnfiltered =
+    bandOpts.resourcePriority.length === 0 || freqFailed || bandRes.status === 'rejected';
+
+  const rankByTerm = new Map<string, number | null>();
+  for (const term of termList) {
+    const entries = freqMaps.get(term) ?? [];
+    const enabled = entries.filter((e) => bandOpts.resourcePriority.includes(e.resourceId));
+    rankByTerm.set(term, pickBestFrequencyEntry(enabled)?.frequency ?? null);
+  }
+
+  const resolved = new Map<number, readonly Token[]>();
+  for (const [cueIndex, tokens] of tokenMap) {
+    resolved.set(
+      cueIndex,
+      tokens.map((token) =>
+        token.isSeparator
+          ? token
+          : {
+              ...token,
+              status: statusMap ? (statusMap.get(token.term) ?? 'unknown') : token.status,
+              frequencyBand: entriesToBand(freqMaps.get(token.term) ?? [], bandOpts),
+            },
+      ),
+    );
+  }
+
+  return {
+    map: resolved,
+    meta: {
+      resolved: true,
+      failed,
+      freqUnfiltered,
+      rankByTerm,
+      thresholds: bandOpts.thresholds,
+    },
+  };
 }

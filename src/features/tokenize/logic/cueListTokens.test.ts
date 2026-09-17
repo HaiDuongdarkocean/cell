@@ -37,12 +37,15 @@ const cues: BilingualCue[] = [
   { index: 2, start: 1000, end: 2000, targetText: 'Hello again', nativeText: '' },
 ];
 
+const ENABLED_BAND_OPTS: FrequencyBandOptions = {
+  thresholds: DEFAULT_BAND_THRESHOLDS,
+  resourcePriority: [1],
+};
+
 beforeEach(() => {
   getWordStatuses.mockReset().mockResolvedValue(new Map<string, WordStatus>());
   getFrequencyEntries.mockReset().mockResolvedValue(new Map<string, FrequencyEntry[]>());
-  loadFrequencyBandOptions
-    .mockReset()
-    .mockResolvedValue({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] });
+  loadFrequencyBandOptions.mockReset().mockResolvedValue(ENABLED_BAND_OPTS);
 });
 
 describe('createCueListTokenMap', () => {
@@ -74,7 +77,7 @@ describe('resolveCueListTokenMetadata', () => {
       ]),
     );
 
-    const resolved = await resolveCueListTokenMetadata(map, 'en');
+    const { map: resolved, meta } = await resolveCueListTokenMetadata(map, 'en');
 
     expect(resolved).not.toBe(map);
     const hello = resolved.get(1)?.find((t) => t.term === 'hello');
@@ -85,10 +88,16 @@ describe('resolveCueListTokenMetadata', () => {
     expect(world?.frequencyBand).toBe('rare');
     const again = resolved.get(2)?.find((t) => t.term === 'again');
     expect(again?.status).toBe('unknown');
+    expect(meta).toMatchObject({ resolved: true, failed: false, freqUnfiltered: false });
+    expect(meta.rankByTerm.get('hello')).toBe(100);
+    expect(meta.rankByTerm.get('world')).toBeNull();
+    expect(meta.thresholds).toEqual(DEFAULT_BAND_THRESHOLDS);
   });
 
   it('issues exactly one bulk status, one bulk frequency, and one band-options request', async () => {
     const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['x', 'unknown']]));
+    getFrequencyEntries.mockResolvedValue(new Map([['x', []]]));
 
     await resolveCueListTokenMetadata(map, 'en');
 
@@ -106,24 +115,136 @@ describe('resolveCueListTokenMetadata', () => {
     expect(loadFrequencyBandOptions).toHaveBeenCalledWith('en');
   });
 
-  it('returns the input map unchanged when metadata loading fails', async () => {
+  it('chunks term requests at 1000 and merges the batches', async () => {
+    const terms = Array.from({ length: 2500 }, (_, i) => `w${i}`);
+    const bigCues: BilingualCue[] = [
+      { index: 1, start: 0, end: 1000, targetText: terms.join(' '), nativeText: '' },
+    ];
+    const map = createCueListTokenMap(bigCues, 'en');
+    getWordStatuses.mockImplementation((_lang, chunk) =>
+      Promise.resolve(new Map(chunk.map((t) => [t, 'known' as WordStatus]))),
+    );
+    getFrequencyEntries.mockImplementation((_lang, chunk) =>
+      Promise.resolve(
+        new Map(chunk.map((t) => [t, [{ resourceId: 1, term: t, reading: '', frequency: 1 }]])),
+      ),
+    );
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(getWordStatuses).toHaveBeenCalledTimes(3);
+    for (const call of getWordStatuses.mock.calls) {
+      expect(call[1].length).toBeLessThanOrEqual(1000);
+    }
+    expect(getFrequencyEntries).toHaveBeenCalledTimes(3);
+    expect(meta.failed).toBe(false);
+    expect(meta.rankByTerm.get('w2499')).toBe(1);
+  });
+
+  it('drops terms over the message length cap instead of sending them', async () => {
+    const map = createCueListTokenMap(
+      [{ index: 1, start: 0, end: 1000, targetText: 'ok ' + 'a'.repeat(300), nativeText: '' }],
+      'en',
+    );
+    getWordStatuses.mockResolvedValue(new Map([['ok', 'known']]));
+
+    await resolveCueListTokenMetadata(map, 'en');
+
+    const sent = getWordStatuses.mock.calls.flatMap((c) => [...c[1]]);
+    expect(sent).toEqual(['ok']);
+  });
+
+  it('marks meta.failed and keeps token statuses when the status fetch rejects', async () => {
     const map = createCueListTokenMap(cues, 'en');
     getWordStatuses.mockRejectedValue(new Error('background unavailable'));
 
-    const resolved = await resolveCueListTokenMetadata(map, 'en');
+    const { map: resolved, meta } = await resolveCueListTokenMetadata(map, 'en');
 
-    expect(resolved).toBe(map);
+    expect(meta.failed).toBe(true);
+    expect(meta.resolved).toBe(true);
+    expect(resolved.get(1)?.find((t) => t.term === 'hello')?.status).toBe('unknown');
+  });
+
+  it('marks meta.failed when the status map comes back empty', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(meta.failed).toBe(true);
+  });
+
+  it('degrades to freqUnfiltered when there are no enabled frequency resources', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    loadFrequencyBandOptions.mockResolvedValue({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] });
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(meta.freqUnfiltered).toBe(true);
+  });
+
+  it('degrades to freqUnfiltered when the frequency fetch fails or returns empty', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    getFrequencyEntries.mockRejectedValue(new Error('freq down'));
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(meta.freqUnfiltered).toBe(true);
+    expect(meta.failed).toBe(false);
+  });
+
+  it('degrades to freqUnfiltered with default thresholds when band options fail', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    getFrequencyEntries.mockResolvedValue(
+      new Map([['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 5 }]]]),
+    );
+    loadFrequencyBandOptions.mockRejectedValue(new Error('settings down'));
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(meta.freqUnfiltered).toBe(true);
+    expect(meta.thresholds).toEqual(DEFAULT_BAND_THRESHOLDS);
+  });
+
+  it('excludes entries from disabled resources in rankByTerm', async () => {
+    const map = createCueListTokenMap(cues, 'en');
+    getWordStatuses.mockResolvedValue(new Map([['hello', 'unknown']]));
+    getFrequencyEntries.mockResolvedValue(
+      new Map([
+        [
+          'hello',
+          [
+            { resourceId: 2, term: 'hello', reading: '', frequency: 50 },
+            { resourceId: 1, term: 'hello', reading: '', frequency: 500 },
+          ],
+        ],
+        ['world', [{ resourceId: 2, term: 'world', reading: '', frequency: 10 }]],
+      ]),
+    );
+
+    const { meta } = await resolveCueListTokenMetadata(map, 'en');
+
+    expect(meta.rankByTerm.get('hello')).toBe(500);
+    expect(meta.rankByTerm.get('world')).toBeNull();
   });
 
   it('makes no client calls when there are no terms', async () => {
     const empty = createCueListTokenMap([], 'en');
-    expect(await resolveCueListTokenMetadata(empty, 'en')).toBe(empty);
+    const emptyResult = await resolveCueListTokenMetadata(empty, 'en');
+    expect(emptyResult.map).toBe(empty);
+    expect(emptyResult.meta).toMatchObject({
+      resolved: true,
+      failed: false,
+      freqUnfiltered: false,
+    });
 
     const separatorOnly = createCueListTokenMap(
       [{ index: 1, start: 0, end: 1000, targetText: '   ', nativeText: '' }],
       'en',
     );
-    expect(await resolveCueListTokenMetadata(separatorOnly, 'en')).toBe(separatorOnly);
+    expect((await resolveCueListTokenMetadata(separatorOnly, 'en')).map).toBe(separatorOnly);
 
     expect(getWordStatuses).not.toHaveBeenCalled();
     expect(getFrequencyEntries).not.toHaveBeenCalled();

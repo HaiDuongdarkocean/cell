@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Portal } from './Portal';
-import { useMenuPlacement } from './useMenuPlacement';
+import { useMenuPlacement, type MenuAlign } from './useMenuPlacement';
 import styles from './Popover.module.css';
 
 export interface PopoverProps {
@@ -13,6 +13,9 @@ export interface PopoverProps {
   readonly 'aria-activedescendant'?: string;
   /** Pixel cap for the menu height (useful for keeping long lists scrollable). */
   readonly menuMaxHeight?: number;
+  /** Preferred horizontal alignment of the menu relative to the trigger.
+   *  Falls back to the opposite side when the menu does not fit. */
+  readonly menuAlign?: MenuAlign;
 }
 
 function getPortalContainer(trigger: HTMLElement | null): Element | DocumentFragment {
@@ -40,11 +43,12 @@ export function Popover({
   'aria-label': ariaLabel,
   'aria-activedescendant': ariaActiveDescendant,
   menuMaxHeight,
+  menuAlign = 'left',
 }: PopoverProps): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
   const { style } = useMenuPlacement({
     isOpen: open,
-    menuAlign: 'left',
+    menuAlign,
     menuMaxHeight,
     triggerRef,
     menuRef,

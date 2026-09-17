@@ -45,7 +45,8 @@ docs/           # Tài liệu dự án
 │   ├── reader-requirements.md          # Reader feature requirements (subagent output)
 │   ├── reader.md                       # Reader technical spec (SSOT)
 │   ├── clipboard-page.md               # Clipboard standalone page spec — orbital entry, CRUD, pagination, token SSOT
-│   └── comprehension-score.md          # Spec: universal comprehension coverage score (media/text) — research-grounded bands, display-only badge/pill trên mọi tokenized surface
+│   ├── comprehension-score.md          # Spec: universal comprehension coverage score (media/text) — research-grounded bands, display-only badge/pill trên mọi tokenized surface
+│   └── cue-recommend-fab.md            # Spec: FAB lọc cue theo độ khó trong subtitle panel — 6 modes (all/i+1/has-unknown/all-known/dense/tracking), badge i+1, persist mode, render-only filtering
 ├── subtitle-manager-css-arc-prompt.md  # Prompt CSS-only tạo arc + fade cho Subtitle Manager mockup
 ├── design-system/                     # Design system reference docs & assets
 │   ├── DESIGN.md                      # Agent-facing SSOT for UI implementation (token map, component map, audit commands)
@@ -71,7 +72,8 @@ docs/           # Tài liệu dự án
 │   ├── liquid-glass-buttons.md        # Confirmed intent: themed shared Button/IconButton + subtitle overlay actions only
 │   ├── queue-lazy-lookup.md           # Confirmed intent: Queue mở trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
 │   ├── reader.md                      # Reader feature intent
-│   └── comprehension-score.md         # Confirmed intent: score % từ đã biết trên mọi tokenized content (media+text), display-only, Krashen comprehensible input
+│   ├── comprehension-score.md         # Confirmed intent: score % từ đã biết trên mọi tokenized content (media+text), display-only, Krashen comprehensible input
+│   └── cue-recommend-fab.md           # Confirmed intent: FAB bottom-right subtitle panel → menu lọc cue theo số từ lạ (strange = unknown+tracking qua freq gate), reuse CueListTokenMap zero-fetch
 ├── knowledge-base/                    # Nguyên lý khái niệm hóa + chi tiết kỹ thuật
 │   ├── learning-algorithms-summary.md # Learning algorithms summary
 │   ├── design-system-learning-map.md  # Design system learning map (foundations → tokens → components → a11y → Apple lens)
@@ -107,6 +109,7 @@ tasks/          # Active plan & task checklist (current sprint)
 └── todo-design-system-v2.md         # Ordered Design System v2 execution checklist
 ```
 
+|||||||||**2026-10-02 (Cue Recommend FAB — backlog #4 shipped)**: `idea-pick-off` pipeline lần 3: spec `docs/specs/cue-recommend-fab.md` + plan `tasks/plan-cue-recommend-fab.md` + intent `docs/intent/cue-recommend-fab.md` (3 review rounds — blocker: filtering `visibleCues` phá tokenize pipeline → tách `filteredCues` render-only). FAB circular bottom-right `cueListWrap` mọi surface (Player Mode/Split View/local/sidepanel, cả 2 nhánh Tabs+non-Tabs) → menu 6 `CueFilterMode` có per-mode count, badge i+1 honest `0`, persist `CUE_FILTER_MODE`, strip + reset khi active, EmptyState overlay zero-match giữ CueList mounted; gates: tokenize off/zh/practice/blur/status-fail → hidden. Pure core `subtitle/logic/cueDifficulty.ts` (strange=unknown+tracking qua freq gate `rankByTerm`+`unknownLevel`, cùng semantics `unknownCueMap`); `resolveCueListTokenMetadata` → `{map,meta:ResolveMeta}` chunked ≤1000 terms + Promise.allSettled (status fail ≠ freq degrade); `CueList` += `cueFilter`/`filterEpoch` + `resolvingRef` guard chống stale-map emit; Popover += `menuAlign:'right'`; barrel mới `features/studyModes/index.ts`. Gates: typecheck+lint+unit 6265+build.||
 |||||||||**2026-09-17 (idea-pick-off — loop mode)**: Skill += `/idea-pick-off all` — chạy pipeline tuần tự qua mọi unblocked item tới khi backlog cạn. Rules: elicitation tự suy luận (không interview giữa loop, spec-review làm gate), item blocked → skip + ghi note `in-progress` không stall, gate đỏ không fix được → dừng cả loop, không reorder, stop conditions + loop report format.||
 |||||||||**2026-09-17 (Idea grab — Krashen CI wave)**: Market scan theo trụ cột Comprehensible Input (i+1, volume, low affective filter, narrow input, meaning-focus) — nguồn Migaku (difficulty rating + adaptive subtitle modes + stats), LingQ (%known sort pain), Dreaming Spanish (hours→level roadmap), asbplayer. User pick 6/10 + 1 item mới từ feedback: `cue-recommend-fab` (FAB lọc cue i+1 trong subtitle panel). Backlog rows 4–10: cue-recommend-fab, cue-difficulty-map, i1-content-queue, immersion-clock, pre-watch-primer, adaptive-subtitles, dense-cue-replay — tất cả `Deps: —` vì infra comprehension-score/wordStatus/unknownCueMap đã shipped.||
 |||||||||**2026-09-17 (Backlog reset)**: `docs/ideas/product-backlog.md` xóa toàn bộ 32 item icebox + wave plan — giữ lại 3 row shipped (#1 immersion-playback, #2 comprehension-score, #3 vocabulary-browser) làm history; schema + pick-off contract giữ nguyên cho pipeline sau này.||

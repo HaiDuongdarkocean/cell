@@ -17,12 +17,24 @@ import type { ComprehensionStats } from '@/entities/comprehension';
 
 
 
-import { computeStats, ComprehensionBadge, type Token, type CueListTokenMap } from '@/features/tokenize';
+import { computeStats, ComprehensionBadge, type Token, type CueListTokenMap, type ResolveMeta, type FrequencyBandThresholds } from '@/features/tokenize';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
 import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
+import { useStudyModeStore } from '@/features/studyModes';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
+import {
+  countByMode,
+  cueDifficultyMap,
+  cueMatchesMode,
+  isCueFilterMode,
+  type CueFilterMode,
+} from '@/features/subtitle/logic/cueDifficulty';
+import { CueRecommendFab, cueFilterModeLabel } from './CueRecommendFab';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { t } from '@/shared/i18n';
 import { ChevronRight } from 'lucide-react';
 
 import { Button, EmptyState, Tabs } from '@/shared/ui';
@@ -71,6 +83,14 @@ type PanelTab = 'subtitles' | 'playlist';
 
 const noop = (): void => undefined;
 
+interface LastGoodResolution {
+  readonly cueSetKey: string;
+  readonly tokenMap: CueListTokenMap;
+  readonly rankByTerm: ReadonlyMap<string, number | null>;
+  readonly thresholds: FrequencyBandThresholds;
+  readonly freqUnfiltered: boolean;
+}
+
 function SubtitlePanelImpl({
   cues,
   currentTimeMs,
@@ -106,15 +126,87 @@ function SubtitlePanelImpl({
   const [mediaStats, setMediaStats] = useState<ComprehensionStats | null>(null);
 
   const scoreSuppressed = Boolean(tokenize?.langCode && languageMatches('zh', tokenize.langCode));
-  const handleTokensResolved = useCallback((map: CueListTokenMap): void => {
+
+  const unknownLevel = useStudyModeStore((s) => s.advanced.unknownLevel);
+  const [filterMode, setFilterMode] = useState<CueFilterMode>('all');
+  const [lastGood, setLastGood] = useState<LastGoodResolution | null>(null);
+
+  const cueSetKey = useMemo(() => {
+    if (!tokenize || visibleCues.length === 0) return null;
+    const first = visibleCues[0];
+    const last = visibleCues[visibleCues.length - 1];
+    return `${visibleCues.length}:${first.start}:${last.end}:${tokenize.langCode}`;
+  }, [visibleCues, tokenize]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStorage<Record<string, unknown>>(STORAGE_KEYS.CUE_FILTER_MODE)
+      .then((data) => {
+        const stored = data[STORAGE_KEYS.CUE_FILTER_MODE];
+        if (!cancelled && isCueFilterMode(stored)) setFilterMode(stored);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleFilterModeChange = useCallback((mode: CueFilterMode): void => {
+    setFilterMode(mode);
+    void setStorage({ [STORAGE_KEYS.CUE_FILTER_MODE]: mode }).catch(() => undefined);
+  }, []);
+
+  const handleTokensResolved = useCallback((map: CueListTokenMap, meta: ResolveMeta): void => {
     if (scoreSuppressed || map.size === 0) {
       setMediaStats(null);
-      return;
+    } else {
+      const tokens: Token[] = [];
+      for (const list of map.values()) tokens.push(...list);
+      setMediaStats(computeStats(tokens, 'media'));
     }
-    const tokens: Token[] = [];
-    for (const list of map.values()) tokens.push(...list);
-    setMediaStats(computeStats(tokens, 'media'));
-  }, [scoreSuppressed]);
+    if (meta.resolved && !meta.failed && cueSetKey !== null) {
+      setLastGood({
+        cueSetKey,
+        tokenMap: map,
+        rankByTerm: meta.rankByTerm,
+        thresholds: meta.thresholds,
+        freqUnfiltered: meta.freqUnfiltered,
+      });
+    }
+  }, [scoreSuppressed, cueSetKey]);
+
+  const difficulties = useMemo(() => {
+    if (!lastGood || lastGood.cueSetKey !== cueSetKey) return null;
+    return cueDifficultyMap(
+      lastGood.tokenMap,
+      lastGood.rankByTerm,
+      lastGood.thresholds,
+      unknownLevel,
+      lastGood.freqUnfiltered,
+    );
+  }, [lastGood, cueSetKey, unknownLevel]);
+
+  const cueCounts = useMemo(
+    () => (difficulties ? countByMode(difficulties) : null),
+    [difficulties],
+  );
+
+  const cueFilterEnabled =
+    Boolean(tokenize) &&
+    !scoreSuppressed &&
+    practiceMode === 'off' &&
+    !panelBlurred &&
+    difficulties !== null &&
+    difficulties.size > 0 &&
+    cueCounts !== null;
+
+  const cueFilter = useMemo(() => {
+    if (!cueFilterEnabled || filterMode === 'all' || !difficulties) return undefined;
+    return (cueIndex: number): boolean => {
+      const d = difficulties.get(cueIndex);
+      return d === undefined ? true : cueMatchesMode(d, filterMode);
+    };
+  }, [cueFilterEnabled, filterMode, difficulties]);
 
   const chipLive = Boolean(tokenize) && visibleCues.length > 0 && practiceMode === 'off' && !scoreSuppressed;
   useEffect(() => {
@@ -160,6 +252,8 @@ function SubtitlePanelImpl({
         showNative={translationEnabled}
         tokenize={tokenize}
         onTokensResolved={tokenize ? handleTokensResolved : undefined}
+        cueFilter={cueFilter}
+        filterEpoch={filterMode}
       />
     ) : (
       <SubtitlePracticeSession
@@ -180,6 +274,63 @@ function SubtitlePanelImpl({
   ) : (
     <EmptyState title="No subtitles loaded" size="compact" style={{ flex: 1 }} />
   );
+
+  const showCueFilterStrip =
+    cueFilterEnabled && cueCounts !== null && difficulties !== null && filterMode !== 'all';
+
+  const cueFilterStrip = showCueFilterStrip ? (
+    <div
+      className={styles.cueFilterStrip}
+      role="status"
+      aria-live="polite"
+      data-cell-id="cue-filter-strip"
+    >
+      <span className={styles.cueFilterStripLabel}>
+        {t('cueFilter.indicator.active', [
+          cueFilterModeLabel(filterMode),
+          cueCounts[filterMode],
+          difficulties.size,
+        ])}
+      </span>
+      <button
+        type="button"
+        className={styles.cueFilterStripReset}
+        onClick={() => handleFilterModeChange('all')}
+        data-cell-id="cue-filter-reset"
+      >
+        {t('cueFilter.indicator.showAll')}
+      </button>
+    </div>
+  ) : null;
+
+  const cueFilterOverlay =
+    showCueFilterStrip && cueCounts[filterMode] === 0 ? (
+      <div className={styles.cueFilterEmpty} data-cell-id="cue-filter-empty">
+        <EmptyState
+          size="compact"
+          title={t('cueFilter.emptyTitle')}
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleFilterModeChange('all')}
+              data-cell-id="cue-filter-empty-reset"
+            >
+              {t('cueFilter.emptyAction')}
+            </Button>
+          }
+        />
+      </div>
+    ) : null;
+
+  const cueFilterFab =
+    cueFilterEnabled && cueCounts !== null ? (
+      <CueRecommendFab
+        mode={filterMode}
+        counts={cueCounts}
+        onModeChange={handleFilterModeChange}
+      />
+    ) : null;
 
   return (
     <div
@@ -235,8 +386,12 @@ function SubtitlePanelImpl({
             <div
               className={styles.cueListWrap}
               data-panel-blurred={panelBlurred ? 'true' : 'false'}
+              data-cue-filter={cueFilterEnabled ? 'true' : 'false'}
             >
+              {cueFilterStrip}
               {subtitleContent}
+              {cueFilterOverlay}
+              {cueFilterFab}
               {panelBlurred && visibleCues.length > 0 && (
                 <div
                   className={styles.blurOverlay}
@@ -255,8 +410,12 @@ function SubtitlePanelImpl({
         <div
           className={styles.cueListWrap}
           data-panel-blurred={panelBlurred ? 'true' : 'false'}
+          data-cue-filter={cueFilterEnabled ? 'true' : 'false'}
         >
+          {cueFilterStrip}
           {subtitleContent}
+          {cueFilterOverlay}
+          {cueFilterFab}
           {panelBlurred && visibleCues.length > 0 && (
             <div
               className={styles.blurOverlay}

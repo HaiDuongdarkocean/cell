@@ -94,6 +94,60 @@
   background: color-mix(in srgb, var(--color-surface) 60%, transparent);
 }
 
+.cueFilterStrip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface-elevated);
+  font-size: var(--font-size-xs);
+  color: var(--color-muted-foreground);
+}
+
+.cueFilterStripLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cueFilterStripReset {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.cueFilterStripReset:hover {
+  background: var(--color-surface-hover);
+}
+
+.cueFilterStripReset:focus-visible {
+  outline: var(--border-width-hairline) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.cueFilterEmpty {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay-base);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+}
+
+.cueListWrap[data-cue-filter='true'] [data-cell-id='cue-list-scroll'] {
+  padding-bottom: calc(var(--touch-target) + var(--space-6));
+}
+
 .panel[data-practice-mode='dictation'] .cueListWrap,
 .panel[data-practice-mode='cloze'] .cueListWrap {
   min-height: calc(var(--touch-target) + var(--space-2) * 2);
