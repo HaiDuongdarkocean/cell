@@ -46,9 +46,9 @@ const repeatMode: StudyMode = {
   ],
 };
 
-const advancedOff = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
-const advancedJump = { skipNoDialogue: 'JUMP', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
-const advanced2X = { skipNoDialogue: '2X', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
+const advancedOff = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true } as const;
+const advancedJump = { skipNoDialogue: 'JUMP', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true } as const;
+const advanced2X = { skipNoDialogue: '2X', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true } as const;
 
 describe('StudyModePlaybackController', () => {
   it('applies first step on enterCue', () => {

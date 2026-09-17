@@ -8,6 +8,8 @@ export {
 export {
   DEFAULT_BAND_THRESHOLDS,
   loadFrequencyBandOptions,
+  pickBestFrequencyEntry,
   type FrequencyBandOptions,
+  type FrequencyBandThresholds,
 } from './utils/frequencyBand';
 export type { Token, TokenBlock, TokenizeController, TokenizeState } from './types';

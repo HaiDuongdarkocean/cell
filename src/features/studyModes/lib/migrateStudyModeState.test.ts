@@ -9,7 +9,7 @@ describe('migrateStudyModeState', () => {
   });
 
   it('returns defaults for old version', () => {
-    const old = { version: 0, activeModeId: 'listen', customModes: [] as const, advanced: { skipNoDialogue: '2X', removeBracketed: true, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } };
+    const old = { version: 0, activeModeId: 'listen', customModes: [] as const, advanced: { skipNoDialogue: '2X', removeBracketed: true, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true } };
     expect(migrateStudyModeState(old)).toEqual(INITIAL_STUDY_MODE_STATE);
   });
 
@@ -18,7 +18,7 @@ describe('migrateStudyModeState', () => {
       version: 1,
       activeModeId: 'custom-1',
       customModes: [],
-      advanced: { skipNoDialogue: 'JUMP', removeBracketed: true, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
+      advanced: { skipNoDialogue: 'JUMP', removeBracketed: true, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
     };
     expect(migrateStudyModeState(state)).toEqual({ ...state, version: 1 });
   });
@@ -40,7 +40,7 @@ describe('migrateStudyModeState', () => {
           steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
         },
       ],
-      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
     };
     const state = migrateStudyModeState(raw);
     expect(state.customModes).toHaveLength(1);
@@ -69,7 +69,7 @@ describe('migrateStudyModeState', () => {
           steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue', seek: 'no' }],
         },
       ],
-      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
     };
     const state = migrateStudyModeState(raw);
     expect(state.customModes).toHaveLength(1);

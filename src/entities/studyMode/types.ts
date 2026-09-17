@@ -27,7 +27,11 @@ export interface StudyMode {
 }
 
 export type PauseOnUnknownPoint = 'OFF' | 'START' | 'END';
-export type UnknownScope = 'FREQ_LIST' | 'ALL';
+/** Max frequency band an unknown/tracking word may reach and still trigger a
+ *  pause — 'advanced' pauses on anything ranked ≤ the advanced threshold,
+ *  unlisted words never pause. Levels follow the user-configurable
+ *  frequency band thresholds (core/common/general/advanced). */
+export type UnknownLevel = 'core' | 'common' | 'general' | 'advanced';
 
 export interface UnknownCueHit {
   readonly term: string;
@@ -38,7 +42,7 @@ export interface StudyModeAdvancedSettings {
   skipNoDialogue: 'OFF' | '2X' | '4X' | '6X' | '8X' | 'JUMP';
   removeBracketed: boolean;
   pauseOnUnknown: PauseOnUnknownPoint;
-  unknownScope: UnknownScope;
+  unknownLevel: UnknownLevel;
   popupOnAutoPause: boolean;
   popupCloseOnResume: boolean;
 }

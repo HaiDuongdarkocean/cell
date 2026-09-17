@@ -8,7 +8,7 @@ import {
 import { PRESET_LOOKUP } from '@/entities/studyMode';
 import type { StudyModeAdvancedSettings } from '@/entities/studyMode';
 
-const ADVANCED: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
+const ADVANCED: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true };
 
 const listenMode = PRESET_LOOKUP.get('listen');
 const dictationMode = PRESET_LOOKUP.get('dictation');
@@ -58,7 +58,7 @@ describe('studyModeController', () => {
     setActiveStudyMode({ activeMode: listenMode, advanced: ADVANCED });
     setActiveStudyMode({
       activeMode: listenMode,
-      advanced: { skipNoDialogue: 'JUMP', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
+      advanced: { skipNoDialogue: 'JUMP', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
     });
 
     expect(cb).toHaveBeenCalledTimes(2);

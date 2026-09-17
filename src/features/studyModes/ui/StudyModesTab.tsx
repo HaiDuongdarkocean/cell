@@ -15,10 +15,12 @@ const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], 
   START: 'Cue start',
   END: 'Cue end',
 };
-const UNKNOWN_SCOPE_OPTIONS: StudyModeAdvancedSettings['unknownScope'][] = ['FREQ_LIST', 'ALL'];
-const UNKNOWN_SCOPE_LABELS: Record<StudyModeAdvancedSettings['unknownScope'], string> = {
-  FREQ_LIST: 'Frequency list',
-  ALL: 'All unknown',
+const UNKNOWN_LEVEL_OPTIONS: StudyModeAdvancedSettings['unknownLevel'][] = ['core', 'common', 'general', 'advanced'];
+const UNKNOWN_LEVEL_LABELS: Record<StudyModeAdvancedSettings['unknownLevel'], string> = {
+  core: 'Top 3k',
+  common: 'Top 5k',
+  general: 'Top 10k',
+  advanced: 'Top 20k',
 };
 
 export function StudyModesTab(): ReactElement {
@@ -307,23 +309,23 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           <>
             <div>
               <Text as="p" className={styles.advancedLabel}>
-                Which unknown words pause playback
+                Pause on words up to frequency level
               </Text>
               <HStack
                 gap="2"
                 className={styles.chipRow}
                 role="group"
-                aria-label="Unknown word scope"
+                aria-label="Unknown word frequency level"
               >
-                {UNKNOWN_SCOPE_OPTIONS.map((option) => (
+                {UNKNOWN_LEVEL_OPTIONS.map((option) => (
                   <Chip
                     key={option}
                     as="button"
-                    selected={advanced.unknownScope === option}
-                    onClick={() => onChange({ ...advanced, unknownScope: option })}
-                    data-cell-id={`unknown-scope-${option}`}
+                    selected={advanced.unknownLevel === option}
+                    onClick={() => onChange({ ...advanced, unknownLevel: option })}
+                    data-cell-id={`unknown-level-${option}`}
                   >
-                    {UNKNOWN_SCOPE_LABELS[option]}
+                    {UNKNOWN_LEVEL_LABELS[option]}
                   </Chip>
                 ))}
               </HStack>

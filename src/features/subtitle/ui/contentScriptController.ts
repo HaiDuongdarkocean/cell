@@ -181,7 +181,7 @@ export function init(
       blockController.setUnknownCueProbe(null);
       return;
     }
-    const key = `${cues.length}:${cues[0]?.start}:${cues[cues.length - 1]?.end}:${langCode}:${currentAdvanced?.unknownScope ?? 'FREQ_LIST'}`;
+    const key = `${cues.length}:${cues[0]?.start}:${cues[cues.length - 1]?.end}:${langCode}:${currentAdvanced?.unknownLevel ?? 'advanced'}`;
     if (unknownResolver && unknownResolverCueKey === key) {
       blockController.setUnknownCueProbe(unknownResolver.probe);
       return;
@@ -192,7 +192,7 @@ export function init(
     const resolver = await createUnknownCueResolver(
       cues,
       langCode,
-      currentAdvanced?.unknownScope ?? 'FREQ_LIST',
+      currentAdvanced?.unknownLevel ?? 'advanced',
     );
     if (blockController.getTargetCues() !== cues) {
       resolver.destroy();
@@ -207,8 +207,12 @@ export function init(
     unknownResolver?.applyStatus(term, status);
   });
 
+  // Business rule: the auto-pause dictionary popup only works on media with
+  // subtitle tokenize enabled (token spans must exist to anchor the word).
+  let subtitleTokenizeActive = false;
+
   blockController.onAutoPause = (term, cueIndex, termOffset) => {
-    if (!currentAdvanced?.popupOnAutoPause || !sharedWebTextCtrl) return;
+    if (!currentAdvanced?.popupOnAutoPause || !sharedWebTextCtrl || !subtitleTokenizeActive) return;
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const { target } = blockController.getLineElements();
     if (!langCode || !target) return;
@@ -287,6 +291,7 @@ export function init(
   async function syncSubtitleTokenize(tokenizeSettings?: TokenizeSettings): Promise<void> {
     const settings = currentSettings;
     if (!settings?.subtitleOverlayTargetLanguage) {
+      subtitleTokenizeActive = false;
       subtitleTokenizeCtrl?.disable();
       blockController.disableTokenize();
       return;
@@ -295,6 +300,7 @@ export function init(
       const ts = tokenizeSettings ?? (await loadTokenizeSettings());
       const url = window.location.href;
       const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
+      subtitleTokenizeActive = enabled;
       if (enabled) {
         if (!subtitleTokenizeCtrl) {
           const { createSubtitleTokenizeController } = await import('@/features/tokenize/controller/subtitleTokenizeController');
@@ -345,6 +351,7 @@ export function init(
         blockController.disableTokenize();
       }
     } catch {
+      subtitleTokenizeActive = false;
       // ponytail: tokenize settings not available — keep subtitle plain
     }
   }
@@ -757,6 +764,16 @@ export function init(
       const next = unknownResolver.findNext(target);
       if (next < 0) return;
       const cue = blockController.getTargetCues()[next];
+      if (!cue) return;
+      const offsetMs = offsetController?.getOffsetMs() ?? 0;
+      video.currentTime = Math.max(0, (cue.start - offsetMs) / 1000);
+    },
+    prevUnknownCue: () => {
+      if (!unknownResolver) return;
+      const { target } = blockController.getActiveIndices();
+      const prev = unknownResolver.findPrev(target);
+      if (prev < 0) return;
+      const cue = blockController.getTargetCues()[prev];
       if (!cue) return;
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
       video.currentTime = Math.max(0, (cue.start - offsetMs) / 1000);

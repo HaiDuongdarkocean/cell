@@ -12,7 +12,7 @@ const IMMERSION_ADVANCED = {
   skipNoDialogue: 'OFF',
   removeBracketed: false,
   pauseOnUnknown: 'END',
-  unknownScope: 'ALL',
+  unknownLevel: 'advanced',
   popupOnAutoPause: false,
   popupCloseOnResume: true,
 };
@@ -21,7 +21,7 @@ const ADVANCED_OFF = {
   skipNoDialogue: 'OFF',
   removeBracketed: false,
   pauseOnUnknown: 'OFF',
-  unknownScope: 'ALL',
+  unknownLevel: 'advanced',
   popupOnAutoPause: false,
   popupCloseOnResume: true,
 };
@@ -110,7 +110,7 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
       .toBe(false);
   });
 
-  test('next-unknown-cue shortcut seeks to the next pausable cue', async ({
+  test('x/z shortcuts navigate between pausable cues', async ({
     cellContext,
     streamFlixPage,
   }) => {
@@ -128,7 +128,7 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
     }, CUE2_START_S + 0.4);
     await expect(targetLine(streamFlixPage)).toContainText(/silence/i, { timeout: 30_000 });
 
-    await streamFlixPage.keyboard.press('n');
+    await streamFlixPage.keyboard.press('x');
     await expect
       .poll(
         async () =>
@@ -136,6 +136,23 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
             (v: HTMLVideoElement, cue3Start: number) =>
               Math.abs(v.currentTime - cue3Start) < 1.5,
             CUE3_START_S,
+          ),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+
+    // Wait for the overlay/engine to settle on cue 3 so findPrev sees the
+    // new active index instead of racing the seek.
+    await expect(targetLine(streamFlixPage)).toContainText(/floatin/i, { timeout: 15_000 });
+
+    await streamFlixPage.keyboard.press('z');
+    await expect
+      .poll(
+        async () =>
+          video.evaluate(
+            (v: HTMLVideoElement, cue2Start: number) =>
+              Math.abs(v.currentTime - cue2Start) < 1.5,
+            CUE2_START_S,
           ),
         { timeout: 15_000 },
       )

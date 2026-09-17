@@ -41,4 +41,5 @@ export interface ContentScriptContext {
   handleWebStatusKey?(key: string): boolean;
   syncSubtitleTokenize(): Promise<void>;
   nextUnknownCue(): void;
+  prevUnknownCue(): void;
 }

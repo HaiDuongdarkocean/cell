@@ -34,6 +34,10 @@ const cues: SrtCue[] = [
   { index: 2, start: 2000, end: 3000, text: 'Rare xenoglossy appears' },
 ];
 
+function entry(resourceId: number, term: string, frequency: number): FrequencyEntry {
+  return { resourceId, term, reading: '', frequency };
+}
+
 beforeEach(() => {
   getWordStatuses.mockReset().mockResolvedValue(
     new Map<string, WordStatus>([
@@ -44,8 +48,10 @@ beforeEach(() => {
   );
   getFrequencyEntries.mockReset().mockResolvedValue(
     new Map<string, FrequencyEntry[]>([
-      ['world', [{ resourceId: 1, term: 'world', reading: '', frequency: 10 }]],
-      ['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 5 }]],
+      ['world', [entry(1, 'world', 10)]],
+      ['hello', [entry(1, 'hello', 5)]],
+      // xenoglossy is a real freq entry but far below every level except 'advanced'.
+      ['xenoglossy', [entry(1, 'xenoglossy', 15000)]],
     ]),
   );
   loadFrequencyBandOptions
@@ -54,34 +60,69 @@ beforeEach(() => {
 });
 
 describe('createUnknownCueResolver', () => {
-  it('probe returns the first unknown-or-tracking term in the active frequency list', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
+  it('probe returns the first unknown-or-tracking term inside the selected level', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
 
-    // cue 0: hello (unknown, freq) and world (unknown, freq) — first wins.
+    // cue 0: hello (rank 5) and world (rank 10) — first wins.
     expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
     // cue 1: all known → null.
     expect(resolver.probe(1)).toBeNull();
-    // cue 2: rare/xenoglossy/appears unknown but no frequency entries → not in list → filtered.
+    // cue 2: 'rare'/'appears' unlisted → never; 'xenoglossy' rank 15000 ≤ 20000 → pausable.
+    expect(resolver.probe(2)).toEqual({ term: 'xenoglossy', offset: 5 });
+  });
+
+  it('a stricter level excludes words ranked beyond its threshold', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'general');
+
+    expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
+    // xenoglossy rank 15000 > general cap 10000 → cue 2 has no pausable word.
+    expect(resolver.probe(2)).toBeNull();
+    expect(resolver.findNext(-1)).toBe(0);
+    expect(resolver.findNext(0)).toBe(-1);
+  });
+
+  it('terms with no entry in an enabled resource never pause', async () => {
+    getFrequencyEntries.mockResolvedValue(
+      new Map<string, FrequencyEntry[]>([
+        ['world', [entry(2, 'world', 10)]],
+        ['hello', [entry(2, 'hello', 5)]],
+      ]),
+    );
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
+    // resourceId 2 is not in resourcePriority [1] → nothing pausable.
+    expect(resolver.probe(0)).toBeNull();
     expect(resolver.probe(2)).toBeNull();
   });
 
-  it('scope ALL pauses on any unknown term, including unlisted ones', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
+  it('without an enabled frequency resource every unknown word pauses', async () => {
+    loadFrequencyBandOptions.mockResolvedValue({
+      thresholds: DEFAULT_BAND_THRESHOLDS,
+      resourcePriority: [],
+    });
+    const resolver = await createUnknownCueResolver(cues, 'en', 'core');
 
     expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
     expect(resolver.probe(2)).toEqual({ term: 'rare', offset: 0 });
   });
 
   it('findNext returns the lowest cue index after fromIndex, else -1', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
 
     expect(resolver.findNext(-1)).toBe(0);
     expect(resolver.findNext(0)).toBe(2);
     expect(resolver.findNext(2)).toBe(-1);
   });
 
+  it('findPrev returns the highest cue index before fromIndex, else -1', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
+
+    expect(resolver.findPrev(3)).toBe(2);
+    expect(resolver.findPrev(2)).toBe(0);
+    expect(resolver.findPrev(0)).toBe(-1);
+  });
+
   it('applyStatus removes a term from the unknown map when marked known', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
     expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
 
     resolver.applyStatus('hello', 'known');
@@ -92,27 +133,14 @@ describe('createUnknownCueResolver', () => {
   });
 
   it('probe offset lands on the pausable token mid-cue, not the cue start', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
-    resolver.applyStatus('rare', 'known');
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
     const hit = resolver.probe(2);
     expect(hit).not.toBeNull();
     expect(cues[2].text.slice(hit!.offset).toLowerCase()).toMatch(new RegExp(`^${hit!.term}`));
   });
 
-  it('FREQ_LIST ignores entries from disabled/non-priority resources', async () => {
-    getFrequencyEntries.mockResolvedValue(
-      new Map<string, FrequencyEntry[]>([
-        ['world', [{ resourceId: 2, term: 'world', reading: '', frequency: 10 }]],
-        ['hello', [{ resourceId: 2, term: 'hello', reading: '', frequency: 5 }]],
-      ]),
-    );
-    const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
-    // resourceId 2 not in resourcePriority [1] → nothing pausable.
-    expect(resolver.probe(0)).toBeNull();
-  });
-
   it('applyStatus matches case-insensitively for non-zh terms', async () => {
-    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
     expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
 
     resolver.applyStatus('Hello', 'known');
@@ -120,8 +148,9 @@ describe('createUnknownCueResolver', () => {
   });
 
   it('returns empty maps for empty cue lists', async () => {
-    const resolver = await createUnknownCueResolver([], 'en', 'ALL');
+    const resolver = await createUnknownCueResolver([], 'en', 'advanced');
     expect(resolver.probe(0)).toBeNull();
     expect(resolver.findNext(-1)).toBe(-1);
+    expect(resolver.findPrev(3)).toBe(-1);
   });
 });

@@ -91,10 +91,11 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, MessageKey> = {
   'quick-update': 'settings.shortcuts.action.quickUpdate',
   'edit-card': 'settings.shortcuts.action.editCard',
   'next-unknown-cue': 'settings.shortcuts.action.nextUnknownCue',
+  'prev-unknown-cue': 'settings.shortcuts.action.prevUnknownCue',
 };
 
 const SHORTCUT_GROUPS: readonly { label: MessageKey; actions: readonly ShortcutAction[] }[] = [
-  { label: 'settings.shortcuts.group.navigation', actions: ['prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'next-unknown-cue'] },
+  { label: 'settings.shortcuts.group.navigation', actions: ['prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'prev-unknown-cue', 'next-unknown-cue'] },
   { label: 'settings.shortcuts.group.toggle', actions: ['toggle-overlay', 'toggle-panel', 'toggle-translate', 'toggle-player-mode'] },
   { label: 'settings.shortcuts.group.generate', actions: ['generate-native'] },
   { label: 'settings.shortcuts.group.cardCreator', actions: ['quick-update', 'edit-card'] },

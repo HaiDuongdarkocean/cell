@@ -32,7 +32,7 @@ const repeatMode: StudyMode = {
   steps: [{ subtitle: 'target', pause: 'none', repeat: 2, speed: 0.75, after: 'continue' }],
 };
 
-const advancedOff: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
+const advancedOff: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true };
 
 describe('SubtitleStudyModeController', () => {
   it('runs the full step chain across a contiguous cue boundary', () => {

@@ -1,27 +1,64 @@
 import type { SrtCue } from '@/entities/media';
-import type { UnknownScope, UnknownCueHit } from '@/entities/studyMode';
-import type { WordStatus } from '@/entities/dictionary';
-import { createTokenList, applyTokenListStatus, loadFrequencyBandOptions, type Token } from '@/features/tokenize';
+import type { UnknownLevel, UnknownCueHit } from '@/entities/studyMode';
+import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
+import {
+  createTokenList,
+  applyTokenListStatus,
+  loadFrequencyBandOptions,
+  pickBestFrequencyEntry,
+  DEFAULT_BAND_THRESHOLDS,
+  type FrequencyBandThresholds,
+  type Token,
+} from '@/features/tokenize';
 import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
 
 export interface UnknownCueResolver {
   readonly probe: (cueIndex: number) => UnknownCueHit | null;
   readonly findNext: (fromIndex: number) => number;
+  readonly findPrev: (fromIndex: number) => number;
   readonly applyStatus: (term: string, status: WordStatus) => void;
   readonly destroy: () => void;
 }
 
 type CueTokens = ReadonlyMap<number, readonly Token[]>;
+type FreqByTerm = ReadonlyMap<string, readonly FrequencyEntry[]>;
+
+const LEVEL_THRESHOLD: Record<UnknownLevel, keyof FrequencyBandThresholds> = {
+  core: 'core',
+  common: 'common',
+  general: 'general',
+  advanced: 'advanced',
+};
+
+interface FreqContext {
+  readonly thresholds: FrequencyBandThresholds;
+  readonly resourcePriority: readonly number[];
+  readonly byTerm: FreqByTerm;
+  /** No enabled frequency resource → levels can't gate; every learnable
+   *  word pauses (graceful fallback so the feature still works for users
+   *  without an imported frequency list). */
+  readonly unfiltered: boolean;
+}
+
+function bestRank(term: string, freq: FreqContext): number | null {
+  const entries = freq.byTerm.get(term);
+  if (!entries || entries.length === 0) return null;
+  const enabled = entries.filter((e) => freq.resourcePriority.includes(e.resourceId));
+  return pickBestFrequencyEntry(enabled)?.frequency ?? null;
+}
 
 function firstPausableToken(
   tokens: readonly Token[],
-  scope: UnknownScope,
-  inFreqList: ReadonlySet<string>,
+  level: UnknownLevel,
+  freq: FreqContext,
 ): Token | null {
+  const maxRank = freq.thresholds[LEVEL_THRESHOLD[level]];
   for (const token of tokens) {
     if (token.isSeparator) continue;
     if (token.status !== 'unknown' && token.status !== 'tracking') continue;
-    if (scope === 'FREQ_LIST' && !inFreqList.has(token.term)) continue;
+    if (freq.unfiltered) return token;
+    const rank = bestRank(token.term, freq);
+    if (rank === null || rank <= 0 || rank > maxRank) continue;
     return token;
   }
   return null;
@@ -29,12 +66,12 @@ function firstPausableToken(
 
 function toUnknownMap(
   tokenMap: CueTokens,
-  scope: UnknownScope,
-  inFreqList: ReadonlySet<string>,
+  level: UnknownLevel,
+  freq: FreqContext,
 ): Map<number, UnknownCueHit> {
   const map = new Map<number, UnknownCueHit>();
   for (const [cueIndex, tokens] of tokenMap) {
-    const token = firstPausableToken(tokens, scope, inFreqList);
+    const token = firstPausableToken(tokens, level, freq);
     if (token !== null) map.set(cueIndex, { term: token.term, offset: token.start });
   }
   return map;
@@ -43,7 +80,7 @@ function toUnknownMap(
 export async function createUnknownCueResolver(
   cues: readonly SrtCue[],
   langCode: string,
-  scope: UnknownScope,
+  level: UnknownLevel,
 ): Promise<UnknownCueResolver> {
   let tokenMap = new Map<number, readonly Token[]>();
   cues.forEach((cue, i) => {
@@ -57,7 +94,12 @@ export async function createUnknownCueResolver(
     }
   }
 
-  let inFreqList: ReadonlySet<string> = new Set();
+  let freq: FreqContext = {
+    thresholds: DEFAULT_BAND_THRESHOLDS,
+    resourcePriority: [],
+    byTerm: new Map(),
+    unfiltered: true,
+  };
   if (terms.size > 0) {
     const termList = [...terms];
     try {
@@ -66,12 +108,12 @@ export async function createUnknownCueResolver(
         getFrequencyEntries(langCode, termList),
         loadFrequencyBandOptions(langCode),
       ]);
-      const activeResources = new Set(bandOptions.resourcePriority);
-      inFreqList = new Set(
-        termList.filter((term) =>
-          (freqMaps.get(term) ?? []).some((entry) => activeResources.has(entry.resourceId)),
-        ),
-      );
+      freq = {
+        byTerm: freqMaps,
+        thresholds: bandOptions.thresholds,
+        resourcePriority: bandOptions.resourcePriority,
+        unfiltered: bandOptions.resourcePriority.length === 0,
+      };
       const resolved = new Map<number, readonly Token[]>();
       for (const [cueIndex, tokens] of tokenMap) {
         resolved.set(
@@ -85,12 +127,12 @@ export async function createUnknownCueResolver(
       }
       tokenMap = resolved;
     } catch {
-      // Metadata unavailable (e.g. no resources) — unknownMap resolves below
-      // from default 'unknown' statuses; FREQ_LIST scope yields no pauses.
+      // Metadata unavailable (e.g. no resources) — tokens stay 'unknown'
+      // and freq.unfiltered remains true, so pauses still work.
     }
   }
 
-  let unknownMap: Map<number, UnknownCueHit> = toUnknownMap(tokenMap, scope, inFreqList);
+  let unknownMap: Map<number, UnknownCueHit> = toUnknownMap(tokenMap, level, freq);
 
   return {
     probe: (cueIndex) => unknownMap.get(cueIndex) ?? null,
@@ -100,6 +142,15 @@ export async function createUnknownCueResolver(
       for (const cueIndex of unknownMap.keys()) {
         if (cueIndex <= fromIndex) continue;
         if (best === -1 || cueIndex < best) best = cueIndex;
+      }
+      return best;
+    },
+
+    findPrev: (fromIndex) => {
+      let best = -1;
+      for (const cueIndex of unknownMap.keys()) {
+        if (cueIndex >= fromIndex) continue;
+        if (cueIndex > best) best = cueIndex;
       }
       return best;
     },
@@ -115,13 +166,13 @@ export async function createUnknownCueResolver(
       }
       if (!changed) return;
       tokenMap = next;
-      unknownMap = toUnknownMap(tokenMap, scope, inFreqList);
+      unknownMap = toUnknownMap(tokenMap, level, freq);
     },
 
     destroy: () => {
       tokenMap = new Map();
       unknownMap = new Map();
-      inFreqList = new Set();
+      freq = { ...freq, byTerm: new Map() };
     },
   };
 }
