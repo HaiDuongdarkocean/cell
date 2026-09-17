@@ -793,8 +793,7 @@ export function init(
     );
     if (spans.length === 0) return;
     const openIdx = spans.findIndex((el) => el.classList.contains('js-cell-token--popup-open'));
-    const idx = openIdx >= 0 ? openIdx + dir : dir === 1 ? 0 : spans.length - 1;
-    if (idx < 0 || idx >= spans.length) return;
+    const idx = openIdx >= 0 ? (openIdx + dir + spans.length) % spans.length : dir === 1 ? 0 : spans.length - 1;
     const span = spans[idx];
     const cueIndex = blockController.getActiveIndices().target;
     const cue = blockController.getTargetCues()[cueIndex];

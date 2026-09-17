@@ -395,6 +395,23 @@ test.describe('Stage 2: Immersion Playback on StreamFlix', () => {
       .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
       .toBe(firstTerm);
 
+    // 'z' on the FIRST token wraps around to the LAST token of the cue.
+    const lastTerm = await streamFlixPage
+      .locator('[data-role="target"]:has(.js-cell-token--popup-open) [data-cell-term]:not([data-cell-term=""])')
+      .last()
+      .getAttribute('data-cell-term');
+    expect(lastTerm).toBeTruthy();
+    await streamFlixPage.keyboard.press('z');
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(lastTerm);
+
+    // 'x' on the LAST token wraps back to the FIRST token.
+    await streamFlixPage.keyboard.press('x');
+    await expect
+      .poll(async () => openToken.first().getAttribute('data-cell-term'), { timeout: 10_000 })
+      .toBe(firstTerm);
+
     // Playback resuming closes the popup instantly (no dismiss delay) — Space
     // must toggle play, not scroll the page.
     await streamFlixPage.keyboard.press(' ');

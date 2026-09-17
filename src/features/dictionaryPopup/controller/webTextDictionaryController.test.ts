@@ -36,6 +36,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
 import { captureSentenceAudio, seekAndWaitReady } from '@/features/cardCreator/media/sentenceAudio';
 import { onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary/services/wordStatusEvents';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
 import type { LookupResult, LookupRequest } from '@/entities/dictionary';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 
@@ -1860,5 +1861,100 @@ describe('nested popup stack', () => {
     expect(popupHosts()).toHaveLength(6);
     expect(popupHosts()[5]).toBe(deepest);
     act(() => { ctrl.destroy() });
+  });
+
+  describe('popup z-index vs universal panel', () => {
+    function panelRange(text: string): Range {
+      const host = document.createElement('div');
+      host.id = UNIVERSAL_PANEL_HOST_ID;
+      const shadow = host.attachShadow({ mode: 'open' });
+      const span = document.createElement('span');
+      span.textContent = text;
+      shadow.appendChild(span);
+      document.body.appendChild(host);
+      const range = document.createRange();
+      range.selectNodeContents(span.firstChild as Text);
+      return range;
+    }
+
+    it('keeps the popup on top when the lookup originates inside the open panel', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      panelController.isOpen.mockReturnValue(true);
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest(), 'r1', new DOMRect(10, 10, 40, 20), panelRange('word')) });
+      await flushLookup();
+
+      expect(popupHosts()).toHaveLength(1);
+      expect(popupHosts()[0]!.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('renders the popup below the panel when the lookup originates outside an open panel', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      panelController.isOpen.mockReturnValue(true);
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest(), 'r1', new DOMRect(10, 10, 40, 20), pageRange('word')) });
+      await flushLookup();
+
+      expect(popupHosts()).toHaveLength(1);
+      expect(popupHosts()[0]!.style.zIndex).toBe('var(--z-overlay-settings)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('keeps the popup on top when the panel is closed', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest(), 'r1', new DOMRect(10, 10, 40, 20), pageRange('word')) });
+      await flushLookup();
+
+      expect(popupHosts()).toHaveLength(1);
+      expect(popupHosts()[0]!.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('keeps a nested popup above the panel when its parent lookup came from the panel', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      panelController.isOpen.mockReturnValue(true);
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), panelRange('a')) });
+      await flushLookup();
+      const lv1 = popupHosts()[0]!;
+      expect(lv1.style.zIndex).toBe('var(--z-overlay-top)');
+
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), rangeInPopup(lv1, 'b')) });
+      await flushLookup();
+
+      expect(popupHosts()).toHaveLength(2);
+      expect(popupHosts()[1]!.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
+
+    it('re-resolves the z-index when the reused root level changes origin', async () => {
+      makeLookupForTerms();
+      const panelController = makePanelController();
+      panelController.isOpen.mockReturnValue(true);
+      const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'a' }), 'r1', new DOMRect(10, 10, 40, 20), pageRange('a')) });
+      await flushLookup();
+      const host = popupHosts()[0]!;
+      expect(host.style.zIndex).toBe('var(--z-overlay-settings)');
+
+      act(() => { ctrl.handleLookup(makeRequest({ term: 'b' }), 'r2', new DOMRect(50, 60, 50, 20), panelRange('b')) });
+      await flushLookup();
+
+      expect(popupHosts()).toHaveLength(1);
+      expect(popupHosts()[0]).toBe(host);
+      expect(host.style.zIndex).toBe('var(--z-overlay-top)');
+      act(() => { ctrl.destroy() });
+    });
   });
 });

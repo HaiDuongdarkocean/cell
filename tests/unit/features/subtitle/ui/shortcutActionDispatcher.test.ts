@@ -54,3 +54,55 @@ describe('navigateCue — replay resumes paused playback', () => {
     expect(nextVideo.play).not.toHaveBeenCalled();
   });
 });
+
+describe('navigateCue — paused anchors at the active cue', () => {
+  // Pause-on-unknown holds cue N while currentTime sits near cue N's end;
+  // anchored nav must resolve relative to cue N, not the drifted position.
+  const HELD_CUES: BilingualCue[] = [
+    { index: 1, start: 0, end: 2000, targetText: 'One', nativeText: '' },
+    { index: 2, start: 2050, end: 4000, targetText: 'Two', nativeText: '' },
+    { index: 3, start: 6000, end: 8000, targetText: 'Three', nativeText: '' },
+  ];
+  const CONTIG_CUES: BilingualCue[] = [
+    { index: 1, start: 0, end: 2000, targetText: 'One', nativeText: '' },
+    { index: 2, start: 2000, end: 4000, targetText: 'Two', nativeText: '' },
+    { index: 3, start: 4000, end: 6000, targetText: 'Three', nativeText: '' },
+  ];
+
+  it('next-cue paused at cue 1 seeks cue 2, not cue 3', () => {
+    const video = makeVideo({ paused: true, currentTime: 2 });
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 0);
+    expect(video.currentTime).toBeCloseTo(2.13);
+  });
+
+  it('next-cue while playing ignores the anchor (effectiveMs unchanged)', () => {
+    const video = makeVideo({ paused: false, currentTime: 2 });
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 0);
+    expect(video.currentTime).toBeCloseTo(6.08);
+  });
+
+  it('next-cue paused with no active cue (-1) keeps effectiveMs behavior', () => {
+    const video = makeVideo({ paused: true, currentTime: 2 });
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, -1);
+    expect(video.currentTime).toBeCloseTo(6.08);
+  });
+
+  it('next-cue paused with a stale out-of-range index keeps effectiveMs behavior', () => {
+    const video = makeVideo({ paused: true, currentTime: 2 });
+    navigateCue('next-cue', video, HELD_CUES, 2000, 0, 99);
+    expect(video.currentTime).toBeCloseTo(6.08);
+  });
+
+  it('prev-cue paused at cue 3 seeks the contiguous previous cue 2', () => {
+    const video = makeVideo({ paused: true, currentTime: 4 });
+    navigateCue('prev-cue', video, CONTIG_CUES, 4000, 0, 2);
+    expect(video.currentTime).toBeCloseTo(2.08);
+  });
+
+  it('replay-cue paused at cue 2 re-seeks cue 2 and resumes', () => {
+    const video = makeVideo({ paused: true, currentTime: 6 });
+    navigateCue('replay-cue', video, CONTIG_CUES, 6000, 0, 1);
+    expect(video.currentTime).toBeCloseTo(2.08);
+    expect(video.play).toHaveBeenCalledTimes(1);
+  });
+});

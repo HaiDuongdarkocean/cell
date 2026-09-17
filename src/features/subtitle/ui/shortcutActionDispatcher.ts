@@ -16,22 +16,29 @@ export function navigateCue(
   cues: BilingualCue[],
   effectiveMs: number,
   offsetMs: number,
+  activeCueIndex = -1,
 ): void {
+  const anchorCue = video.paused && activeCueIndex >= 0 ? cues[activeCueIndex] : undefined;
   switch (action) {
     case 'prev-cue': {
-      const prevCue = [...cues].reverse().find((c) => c.end < effectiveMs);
+      const prevCue = anchorCue
+        ? [...cues].reverse().find((c) => c.end <= anchorCue.start)
+        : [...cues].reverse().find((c) => c.end < effectiveMs);
       if (prevCue) seekToCue(video, prevCue, offsetMs);
       break;
     }
     case 'next-cue': {
-      const nextCue = cues.find((c) => c.start > effectiveMs + 100);
+      const nextCue = anchorCue
+        ? cues.find((c) => c.start > anchorCue.start)
+        : cues.find((c) => c.start > effectiveMs + 100);
       if (nextCue) seekToCue(video, nextCue, offsetMs);
       break;
     }
     case 'replay-cue': {
       // Half-open [start, end) — at boundary t = cue[i].end = cue[i+1].start,
       // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
-      const currentCue = cues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
+      const currentCue = anchorCue
+        ?? cues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
         ?? [...cues].reverse().find((c) => c.start < effectiveMs);
       if (currentCue) {
         seekToCue(video, currentCue, offsetMs);

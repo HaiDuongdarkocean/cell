@@ -11,6 +11,8 @@ import { findActiveMode } from './lib/findActiveMode';
 
 export interface StudyModeStore extends StudyModeState {
   isLoaded: boolean;
+  advancedOpen: boolean;
+  setAdvancedOpen: (open: boolean) => void;
   setActiveModeId: (id: string) => void;
   setAdvanced: (advanced: StudyModeAdvancedSettings) => void;
   createCustomMode: (title: string, steps: StudyStep[]) => StudyMode | null;
@@ -40,6 +42,11 @@ function applyToPlayer(state: StudyModeState): void {
 export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
   ...INITIAL_STUDY_MODE_STATE,
   isLoaded: false,
+  advancedOpen: false,
+
+  setAdvancedOpen: (open) => {
+    set({ advancedOpen: open });
+  },
 
   setActiveModeId: (id) => {
     const state = get();

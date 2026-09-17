@@ -17,6 +17,7 @@ import { DictionaryTab } from './tabs/DictionaryTab';
 import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
+import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
@@ -50,7 +51,6 @@ export interface UniversalPanelMountOptions {
   readonly onClose?: () => void;
 }
 
-const PANEL_HOST_ID = 'cell-universal-panel-host';
 const HOST_CLASS_NAME = 'js-cell-universal-panel-host';
 const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
@@ -85,7 +85,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     css: SHADOW_CSS,
   });
 
-  mount.host.id = PANEL_HOST_ID;
+  mount.host.id = UNIVERSAL_PANEL_HOST_ID;
   mount.host.className = HOST_CLASS_NAME;
   mount.host.style.cssText =
     'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:' +

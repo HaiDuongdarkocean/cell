@@ -81,7 +81,13 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       const offsetMs = ctx.getOffsetController()?.getOffsetMs() ?? 0;
       // ADR-021 D8: sidepanel sends seekTime (calculated at keypress time).
       // Seek directly — no need to find cue from stale video.currentTime.
-      if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
+      // While paused on a held/active cue, anchor navigation at that cue instead —
+      // the panel's seekTime is computed from un-anchored currentTimeMs.
+      if (
+        payload?.seekTime !== undefined &&
+        (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue') &&
+        !(video.paused && blockController.getActiveIndices().target >= 0)
+      ) {
         // ADR-030: route through seekVideo to avoid Netflix M7375.
         seekVideo(video, (payload.seekTime - offsetMs) / 1000);
         if (action === 'replay-cue') resumeIfPaused(video);
@@ -93,7 +99,7 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
           case 'prev-cue':
           case 'next-cue':
           case 'replay-cue': {
-            navigateCue(action as 'prev-cue' | 'next-cue' | 'replay-cue', video, ctx.getBilingualCues(), effectiveMs, offsetMs);
+            navigateCue(action as 'prev-cue' | 'next-cue' | 'replay-cue', video, ctx.getBilingualCues(), effectiveMs, offsetMs, blockController.getActiveIndices().target);
             break;
           }
           case 'toggle-overlay': {

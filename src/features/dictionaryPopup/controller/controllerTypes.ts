@@ -31,6 +31,7 @@ export interface PopupLevel {
   // document.querySelector (getTokenById) can't reach these tokens. The ref
   // keeps clear/status updates working for shadow-DOM tokens.
   popupTokenEl: HTMLElement | null;
+  abovePanel: boolean;
   highlight: WordHighlight;
 }
 
@@ -43,6 +44,7 @@ export function createPopupLevel(): PopupLevel {
     highlightAnchor: null,
     popupTokenId: null,
     popupTokenEl: null,
+    abovePanel: true,
     highlight: createWordHighlight(),
   };
 }

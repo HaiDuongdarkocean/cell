@@ -27,3 +27,16 @@ export const CELL_UI_HOST_SELECTORS =
 export const CELL_UI_POINTER_EVENT_HOST_SELECTORS =
   '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
   '#cell-settings-dialog-host, #cell-card-creator-host, #cell-subtitle-root';
+
+export const UNIVERSAL_PANEL_HOST_ID = 'cell-universal-panel-host';
+
+export function isInsideUniversalPanelHost(node: Node): boolean {
+  let current: Node = node;
+  for (;;) {
+    const root = current.getRootNode();
+    if (!(root instanceof ShadowRoot)) return false;
+    const host = root.host;
+    if (host instanceof HTMLElement && host.id === UNIVERSAL_PANEL_HOST_ID) return true;
+    current = host;
+  }
+}

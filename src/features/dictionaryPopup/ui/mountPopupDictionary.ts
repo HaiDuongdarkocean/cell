@@ -3,12 +3,11 @@ import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { PopupDictionary } from './PopupDictionary';
-import { getMountParent } from './popupGeometry';
+import { getMountParent, POPUP_Z_INDEX } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
 import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/entities/dictionary';
 
 
-const POPUP_Z_INDEX = 'var(--z-overlay-top)';
 const ORBITAL_BADGE_HOST_CLASS = 'js-cell-orbital-badge-host';
 
 export interface MountPopupDictionaryOptions {

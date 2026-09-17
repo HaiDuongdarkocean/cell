@@ -8,7 +8,7 @@ import type {
 } from '@/entities/dictionary';
 import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import type { PopupLineRect } from '../ui/popupGeometry';
-import { POPUP_SHEET_BREAKPOINT_PX } from '../ui/popupGeometry';
+import { POPUP_BELOW_PANEL_Z_INDEX, POPUP_SHEET_BREAKPOINT_PX, POPUP_Z_INDEX } from '../ui/popupGeometry';
 import type { PopupAnchor, PopupSize } from '../ui/usePopupPosition';
 import {
   mountPopupDictionary,
@@ -28,6 +28,7 @@ import {
   getTokenById,
   getTokenElement,
   isInsideStackHostEvent,
+  isLookupFromUniversalPanel,
   isReanchorPointerDown,
   levelIndexForTarget,
   setPopupTokenId,
@@ -166,6 +167,12 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     closeFromLevel(0);
   }
 
+  function applyLevelZIndex(level: PopupLevel): void {
+    if (level.mount) {
+      level.mount.host.style.zIndex = level.abovePanel ? POPUP_Z_INDEX : POPUP_BELOW_PANEL_Z_INDEX;
+    }
+  }
+
   /** Mount a popup for `level`, wiring every popup callback back to that
    *  level so nested lookups / status changes / card actions stay scoped. */
   function mountPopupLevel(level: PopupLevel, options: MountPopupDictionaryOptions): void {
@@ -185,6 +192,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       isReanchorPointerDown,
       onOutsidePointerDown: closePopup,
     });
+    applyLevelZIndex(level);
   }
 
   function handlePopupSizeChange(size: PopupSize, sheetHeight: number): void {
@@ -332,6 +340,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     // target level is reused when it exists.
     const sourceIdx = levelIndexForTarget(popupStack, highlightTarget);
     const targetIdx = isSheetMode() ? 0 : Math.min(sourceIdx + 1, MAX_POPUP_DEPTH - 1);
+    const sourceAbovePanel = sourceIdx >= 0 ? popupStack[sourceIdx]?.abovePanel : undefined;
     if (popupStack.length > targetIdx + 1) closeFromLevel(targetIdx + 1);
 
     let level = popupStack[targetIdx];
@@ -346,6 +355,10 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       level = createPopupLevel();
       popupStack.push(level);
     }
+
+    level.abovePanel = sourceAbovePanel
+      ?? (!(deps.panelController?.isOpen() ?? false) || isLookupFromUniversalPanel(highlightTarget));
+    applyLevelZIndex(level);
 
     level.highlightTarget = highlightTarget;
     level.originalHighlightTarget = highlightTarget;

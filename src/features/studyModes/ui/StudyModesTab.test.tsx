@@ -28,7 +28,7 @@ describe('StudyModesTab', () => {
     storageGet.mockReset().mockResolvedValue({});
     storageSet.mockReset().mockResolvedValue(undefined);
     sendMessage.mockReset().mockResolvedValue(undefined);
-    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true });
+    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: false });
     setActiveStudyMode(null);
   });
 
@@ -57,5 +57,15 @@ describe('StudyModesTab', () => {
       expect(useStudyModeStore.getState().activeModeId).toBe('listen');
     });
     expect(getActiveStudyMode()?.activeMode.id).toBe('listen');
+  });
+
+  it('keeps the Advanced section expanded across unmount and remount', async () => {
+    const first = render(<StudyModesTab />);
+    const toggle = await screen.findByTestId('advanced-toggle');
+    fireEvent.click(toggle);
+    expect(await screen.findByText('Skip when there is no dialogue')).toBeInTheDocument();
+    first.unmount();
+    render(<StudyModesTab />);
+    expect(await screen.findByText('Skip when there is no dialogue')).toBeInTheDocument();
   });
 });

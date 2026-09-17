@@ -6,6 +6,7 @@
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 
 export const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
+export const POPUP_BELOW_PANEL_Z_INDEX = 'var(--z-overlay-settings)';
 
 /** Layout constants — extracted from hardcoded px values (Phase 1 SSOT). */
 export const POPUP_MARGIN_PX = 8; // equals --space-2
