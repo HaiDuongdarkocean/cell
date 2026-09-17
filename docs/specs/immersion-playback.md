@@ -32,7 +32,7 @@ interface StudyModeAdvancedSettings {
 ```
 
 - Giữ `version: 1` — `sanitizeAdvanced` đã fill defaults khi field thiếu; bump version = wipe `customModes` của user (không chấp nhận).
-- "Đáng học" = token `status ∈ {unknown, tracking}`; khi `unknownScope='FREQ_LIST'` chỉ tính token **có ≥1 entry trong frequency resource** (không phải band — `entriesToBand([])` trả 'rare', không phân biệt được); `'ALL'` tính mọi token.
+- "Đáng học" = token `status ∈ {unknown, tracking}`; khi `unknownScope='FREQ_LIST'` chỉ tính token **có ≥1 entry trong một enabled frequency resource** (`loadFrequencyBandOptions().resourcePriority` — không phải band, vì `entriesToBand([])` trả 'rare' không phân biệt được, và không phải mọi resource); `'ALL'` tính mọi token.
 
 ## 3. Kiến trúc
 
@@ -49,10 +49,10 @@ StudyModePlaybackController — pure, thêm hook:
     pauseOnUnknown=END   → cue end pause (như step.pause='end', continue→nextCue)
 ```
 
-- **Probe type**: `type UnknownCueProbe = (cueIndex: number) => string | null` — trả term đầu tiên đáng học, `null` nếu không có.
+- **Probe type**: `type UnknownCueProbe = (cueIndex: number) => UnknownCueHit | null` — trả `{term, offset}` của token đầu tiên đáng học, `null` nếu không có.
 - **Unknown map (không phụ thuộc videoTokenMap ±window)**: khi `pauseOnUnknown !== 'OFF'` hoặc có binding `next-unknown-cue`, composition root resolve toàn bộ cue list 1 lần qua `resolveCueListTokenMetadata` (đã có — bulk tokenize+status+freq), giữ `Map<cueIndex, firstPausableTerm>` in-memory; cập nhật incremental khi `onWordStatusChanged`. videoTokenMap chỉ phục vụ render — không reuse cho probe.
 - **Ưu tiên**: step.pause của mode thắng predicate (dictation/cloze không bị unknown-pause đè). Rule: chỉ apply khi step hiện tại `pause === 'none'`; nếu step đã pause sẵn thì không cộng dồn.
-- **Popup**: khi action `pause` sinh ra *bởi unknown rule* → emit thêm `{ type: 'autoPause', term, cueIndex }` (PlaybackAction mới). Composition root (subtitle feature — đã sở hữu `onOpenDictionary` wiring) map sang `onOpenDictionary(term, element, cue.text)`. `popupCloseOnResume` → đóng popup khi `continue()` phát `play`. studyModes KHÔNG import dictionaryPopup — chỉ emit action, layer sạch.
+- **Popup**: khi action `pause` sinh ra *bởi unknown rule* → emit thêm `{ type: 'autoPause', term, cueIndex, termOffset }` (PlaybackAction mới; `termOffset` = UTF-16 offset của token trong `cue.text`, BẮT BUỘC — worker lookup derive token từ `cursorOffset` trong `contextSentence`, offset 0 = từ đầu cue). Composition root (subtitle feature) map sang `handleLookup({term, langCode, contextSentence: cue.text, cursorOffset: termOffset}, anchor=target line)`. `popupCloseOnResume` → đóng popup khi `continue()` phát `play`. studyModes KHÔNG import dictionaryPopup — chỉ emit action, layer sạch. `UnknownCueHit{term,offset}` sống ở `entities/studyMode` (contract chung, không cần cross-feature edge).
 - **Skip-to-next-unknown**: `findNextUnknownCue(fromIndex): number` scan `Map` đã resolve (O(n)); ShortcutAction mới `'next-unknown-cue'` trong `entities/settings` + default key `'n'` (free: hiện có a/d/s/w/t/g/h/q/e/space) + dispatch trong `contentScriptKeyboard` → seek tới `cues[i].start`.
 
 ## 4. UI (progressive disclosure)

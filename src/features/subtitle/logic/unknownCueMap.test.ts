@@ -50,7 +50,7 @@ beforeEach(() => {
   );
   loadFrequencyBandOptions
     .mockReset()
-    .mockResolvedValue({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [] });
+    .mockResolvedValue({ thresholds: DEFAULT_BAND_THRESHOLDS, resourcePriority: [1] });
 });
 
 describe('createUnknownCueResolver', () => {
@@ -97,6 +97,26 @@ describe('createUnknownCueResolver', () => {
     const hit = resolver.probe(2);
     expect(hit).not.toBeNull();
     expect(cues[2].text.slice(hit!.offset).toLowerCase()).toMatch(new RegExp(`^${hit!.term}`));
+  });
+
+  it('FREQ_LIST ignores entries from disabled/non-priority resources', async () => {
+    getFrequencyEntries.mockResolvedValue(
+      new Map<string, FrequencyEntry[]>([
+        ['world', [{ resourceId: 2, term: 'world', reading: '', frequency: 10 }]],
+        ['hello', [{ resourceId: 2, term: 'hello', reading: '', frequency: 5 }]],
+      ]),
+    );
+    const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
+    // resourceId 2 not in resourcePriority [1] → nothing pausable.
+    expect(resolver.probe(0)).toBeNull();
+  });
+
+  it('applyStatus matches case-insensitively for non-zh terms', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
+    expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
+
+    resolver.applyStatus('Hello', 'known');
+    expect(resolver.probe(0)).toEqual({ term: 'world', offset: 6 });
   });
 
   it('returns empty maps for empty cue lists', async () => {

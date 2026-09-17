@@ -1,7 +1,7 @@
 import type { SrtCue } from '@/entities/media';
 import type { UnknownScope, UnknownCueHit } from '@/entities/studyMode';
 import type { WordStatus } from '@/entities/dictionary';
-import { createTokenList, applyTokenListStatus, type Token } from '@/features/tokenize';
+import { createTokenList, applyTokenListStatus, loadFrequencyBandOptions, type Token } from '@/features/tokenize';
 import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
 
 export interface UnknownCueResolver {
@@ -61,12 +61,16 @@ export async function createUnknownCueResolver(
   if (terms.size > 0) {
     const termList = [...terms];
     try {
-      const [statusMap, freqMaps] = await Promise.all([
+      const [statusMap, freqMaps, bandOptions] = await Promise.all([
         getWordStatuses(langCode, termList),
         getFrequencyEntries(langCode, termList),
+        loadFrequencyBandOptions(langCode),
       ]);
+      const activeResources = new Set(bandOptions.resourcePriority);
       inFreqList = new Set(
-        termList.filter((term) => (freqMaps.get(term)?.length ?? 0) > 0),
+        termList.filter((term) =>
+          (freqMaps.get(term) ?? []).some((entry) => activeResources.has(entry.resourceId)),
+        ),
       );
       const resolved = new Map<number, readonly Token[]>();
       for (const [cueIndex, tokens] of tokenMap) {
@@ -101,10 +105,11 @@ export async function createUnknownCueResolver(
     },
 
     applyStatus: (term, status) => {
+      const normalized = langCode === 'zh' ? term : term.toLowerCase();
       let changed = false;
       const next = new Map<number, readonly Token[]>();
       for (const [cueIndex, tokens] of tokenMap) {
-        const updated = applyTokenListStatus(tokens, term, status);
+        const updated = applyTokenListStatus(tokens, normalized, status);
         if (updated !== tokens) changed = true;
         next.set(cueIndex, updated);
       }
