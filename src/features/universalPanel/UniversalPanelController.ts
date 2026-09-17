@@ -21,6 +21,8 @@ export interface CreateUniversalPanelControllerOptions {
   readonly onTabChange?: (tab: UniversalPanelTab) => void;
   /** Called when the user sends a prefill to the integrated card creator. */
   readonly onSendToCard?: (prefill: DictionaryPanelPrefill) => void;
+  /** Called when a term should be looked up without arming the card creator. */
+  readonly onLookup?: (term: string) => void;
 }
 
 export interface UniversalPanelControllerHandle {
@@ -47,7 +49,7 @@ export function createUniversalPanelController(
     if (persistedLoaded || !options.getPersistedTab) return;
     if (loadPromise) return loadPromise;
     loadPromise = options.getPersistedTab().then((tab) => {
-      if (tab && (tab === 'dictionary' || tab === 'settings' || tab === 'studyModes')) {
+      if (tab && (tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary')) {
         activeTab = tab;
       }
       persistedLoaded = true;
@@ -100,6 +102,11 @@ export function createUniversalPanelController(
     sendToCard: (prefill) => {
       if (unmounted) return Promise.resolve();
       options.onSendToCard?.(prefill);
+      return controller.open('dictionary');
+    },
+    openDictionaryLookup: (term) => {
+      if (unmounted) return Promise.resolve();
+      options.onLookup?.(term);
       return controller.open('dictionary');
     },
     isOpen: () => isOpen,
