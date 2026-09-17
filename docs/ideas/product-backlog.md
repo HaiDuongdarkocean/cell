@@ -34,7 +34,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `immersion-playback` | Quản lý Immersion Playback | Xem passive không chủ động — sub trôi qua kể cả từ chưa biết | M | ★★★★★ | wordStatus×cuesStore, NavCluster | — | asbplayer+migaku | shipped | [spec](../specs/immersion-playback.md) · [plan](../../tasks/plan-immersion-playback.md) |
 | 2 | `comprehension-score` | Quản lý Độ hiểu | Không biết media này "vừa sức" hay quá khó trước khi xem | M | ★★★★★ | tokenize×wordStatus, frequencyClient | — | asbplayer+migaku | icebox | — |
-| 3 | `vocabulary-browser` | Quản lý Từ vựng | wordStatus có data nhưng không xem/quản lý được — từ "biến mất" sau lookup | M | ★★★★★ | wordStatusStore, statusKeyControls | — | asbplayer | icebox | — |
+| 3 | `vocabulary-browser` | Quản lý Từ vựng | wordStatus có data nhưng không xem/quản lý được — từ "biến mất" sau lookup | M | ★★★★★ | wordStatusStore, statusKeyControls | — | asbplayer | shipped | [spec](../specs/vocabulary-browser.md) · [plan](../../tasks/plan-vocabulary-browser.md) · f2687403 + 6be1fd87 |
 | 4 | `download-queue-ui` | Quản lý Download Queue | Queue chạy ngầm — không thấy job nào đang/stuck/fail | M | ★★★★ | downloadQueue (đã fix abort/pause) | — | internal-audit | icebox | — |
 | 5 | `shortcuts-manager` | Quản lý Phím tắt | Hotkey hardcode — conflict với host site không sửa được | M | ★★★★ | subtitleShortcuts, dispatchers | — | asbplayer | icebox | — |
 | 6 | `whitelist-manager` | Quản lý Whitelist | Tắt extension trên 1 site phải đào settings | S | ★★★ | whitelist feature | — | internal-audit | icebox | — |
