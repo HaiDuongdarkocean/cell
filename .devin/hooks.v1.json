@@ -10,5 +10,17 @@
         }
       ]
     }
+  ],
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-ponytail.mjs",
+          "timeout": 5
+        }
+      ]
+    }
   ]
 }
