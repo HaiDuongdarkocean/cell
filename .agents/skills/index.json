@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-09-16T13:18:03.543Z",
-  "count": 46,
+  "generated": "2026-09-17T02:11:28.228Z",
+  "count": 48,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -107,6 +107,16 @@
       "name": "git-workflow-and-versioning",
       "description": "Atomic commits, branch hygiene, versioning. Use when committing, branching, or preparing release history.",
       "path": ".agents/skills/git-workflow-and-versioning/SKILL.md"
+    },
+    {
+      "name": "idea-grab",
+      "description": "Market + internal-gap research cycle that proposes new features and inserts user-picked ones into docs/ideas/product-backlog.md. Use when asked to find/grab feature ideas, run a market scan, or refresh the backlog. Not for picking or building an existing backlog item (→ idea-pick-off).",
+      "path": ".agents/skills/idea-grab/SKILL.md"
+    },
+    {
+      "name": "idea-pick-off",
+      "description": "Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. Use when asked to start the next backlog feature, \"làm item #N\", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).",
+      "path": ".agents/skills/idea-pick-off/SKILL.md"
     },
     {
       "name": "idea-refine",

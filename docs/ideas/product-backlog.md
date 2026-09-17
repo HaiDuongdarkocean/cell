@@ -1,68 +1,74 @@
 # Product Backlog — Tihoka
 
-> Living queue của các nhóm tính năng "Quản lý X". Sort theo **cost tăng dần** (rẻ → đắt); trong cùng cost, value cao đứng trước.
-> Nguồn: audit tính năng 2026-09 (so sánh asbplayer + Migaku) — mọi item đều leverage infra hiện có (`wordStatusStore`, `cuesStore`, `frequencyClient`, `downloadQueue`, `mediaLibraryRepository`, `ApiKeyManager`, `lookupLog`).
+> Living queue các nhóm tính năng "Quản lý X". **Row trên cùng = next pick** — order theo cost tăng dần, value làm tiebreak. Nguồn: audit tính năng 2026-09 (asbplayer + Migaku).
+> Consumed by: `.agents/skills/idea-grab/` (thêm items) + `.agents/skills/idea-pick-off/` (lấy item → pipeline).
 
-## Cơ chế pick-off (lifecycle)
+## Item schema (contract cho pipeline)
 
-```
-icebox → specced → planned → in-progress → shipped
-```
+| Field | Rule |
+|---|---|
+| `#` | Vị trí trong queue — số thứ tự, reorder giữa các wave only |
+| `Slug` | kebab-case, stable — dùng đặt tên `docs/intent/<slug>.md`, `docs/specs/<slug>.md`; KHÔNG đổi sau khi specced |
+| `Nhóm` | Tên hiển thị "Quản lý X" |
+| `Pain` | 1 câu pain/outcome — seed cho elicitation 8-field frame |
+| `Cost` | `S` <1d · `M` 1–3d · `L` >3d · `XL` multi-week |
+| `Value` | ★1–5 |
+| `Infra` | Hạ tầng có sẵn nó leverage (không phải dep) |
+| `Deps` | Item IDs phải `shipped` trước — `-` = không có |
+| `Source` | asbplayer / migaku / internal-audit / user |
+| `Status` | `icebox` → `specced` → `planned` → `in-progress` → `shipped` (+`dropped` kèm lý do) |
+| `Spec` | Link `docs/specs/<slug>.md` khi có |
 
-1. **Pick**: lấy item trên cùng chưa `shipped` và không bị `deps` chặn. Reorder chỉ cho phép giữa các wave (không reorder giữa chừng khi đang build).
-2. **Spec**: `/elicitation` → `docs/intent/<slug>.md` → `docs/specs/<slug>.md` → auto-review (spec-review-stakeholder) → fix ≤3 rounds.
-3. **Plan**: `/planning-and-task-breakdown` → task list vào `tasks/`.
-4. **Build**: implement theo plan — gates bắt buộc: `typecheck + lint + test:unit + build` + real-Chrome smoke nếu đụng runtime wiring; đổi `src/` → update `docs/2-architechture-system.md`.
-5. **Ship**: commit → đổi status item thành `shipped` + link spec/commit trong backlog này → cập nhật `docs/0-wiki.md` changelog line.
-6. **Veto**: Anh yêu có quyền veto/drop bất kỳ item nào bất cứ lúc nào — đổi status thành `dropped` kèm lý do 1 dòng.
+## Cơ chế pick-off (chi tiết: `.agents/skills/idea-pick-off/`)
 
-### Cost key
-`S` < 1 ngày · `M` 1–3 ngày · `L` > 3 ngày · `XL` multi-week
-
-### Status key
-`icebox` chưa spec · `specced` có spec · `planned` có plan · `in-progress` · `shipped` · `dropped`
+1. **Pick**: item trên cùng có `status=icebox` và mọi `Deps` đã `shipped`. Top item bị block → xuống item kế.
+2. **Spec**: `/elicitation` → intent + spec → spec-review-stakeholder → fix ≤3 rounds → `specced`.
+3. **Plan**: `/planning-and-task-breakdown` → `tasks/` → `planned`.
+4. **Build**: gates bắt buộc `typecheck + lint + test:unit + build` + real-Chrome smoke nếu đụng runtime; đổi `src/` → update `docs/2-architechture-system.md` → `in-progress`.
+5. **Ship**: commit → `shipped` + spec/commit link → `docs/0-wiki.md` changelog line.
+6. **Veto**: Anh yêu drop bất cứ lúc nào → `dropped` + 1 dòng lý do.
 
 ## Backlog (rẻ → đắt)
 
-| # | Nhóm | Sub-features chính | Cost | Value | Deps | Status | Spec |
-|---|---|---|---|---|---|---|---|
-| 1 | Quản lý Immersion Playback | pause-on-unknown-word (threshold config), condensed (skip gap >Xs), fast-forward-unsubtitled, auto-pause cuối cue, hotkey toggle | M | ★★★★★ | wordStatus×cuesStore | icebox | — |
-| 2 | Quản lý Độ hiểu | % known badge, per-cue unknown count, difficulty per episode, history | M | ★★★★★ | tokenize×wordStatus | icebox | — |
-| 3 | Quản lý Từ vựng | word browser (search/filter/bulk/export), single-unknown hotkey, word detail panel | M | ★★★★★ | wordStatusStore | icebox | — |
-| 4 | Quản lý Download Queue | queue UI sidepanel: pause/resume/retry/remove, per-job log | M | ★★★★ | downloadQueue (đã fix) | icebox | — |
-| 5 | Quản lý Phím tắt | rebindable hotkeys, conflict detect, per-context scope | M | ★★★★ | subtitleShortcuts | icebox | — |
-| 6 | Quản lý Whitelist | per-domain rules UI trong popup, quick-toggle site | S | ★★★ | whitelist feature | icebox | — |
-| 7 | Quản lý Thẻ đã tạo | mining history ring buffer, filter per video, reopen/re-send | M | ★★★★ | lookupLog pattern | icebox | — |
-| 8 | Quản lý Focus | blur-until-pause, hide native subs, dim page, minimal-UI | S | ★★★ | SubtitleBlock CSS | icebox | — |
-| 9 | Quản lý SRS/Review | due count + daily goal + streak trong sidepanel | S | ★★★ | quotaManager, getSrsStats | icebox | — |
-| 10 | Quản lý Phụ đề | per-video attach history, offset preset per site/series, auto-match rules UI, subtitle health (gap/overlap/CPS) | M | ★★★★ | autoMatch, offsetController | icebox | — |
-| 11 | Quản lý Session | continue watching, restore sau reload, per-tab snapshot | M | ★★★ | bounded caches | icebox | — |
-| 12 | Quản lý OCR regions | saved region per site, presets, re-calibrate | M | ★★★ | regionSelector | icebox | — |
-| 13 | Quản lý Media Library | series grouping, watch progress/resume, recent | M | ★★★ | mediaLibraryRepository | icebox | — |
-| 14 | Quản lý Đề xuất học | "học tiếp theo" = frequency ∩ unknown, per-media vocab list export | M | ★★★★ | frequencyClient×wordStatus | icebox | — |
-| 15 | Quản lý Ngữ cảnh học | immersion minutes per site/show, session tracking, weekly recap | M | ★★★ | — | icebox | — |
-| 16 | Quản lý Lookup & Popup | hover delay, dismiss timing, size preset per site, source priority | M | ★★★ | popupGeometry | icebox | — |
-| 17 | Quản lý Episode & Series | episode progress, per-series vocab tích lũy, watch-next | M | ★★★ | #13 | icebox | — |
-| 18 | Quản lý Subtitle Discovery | provider order UI, fallback chain, manual override attach | M | ★★★ | pickProviderOrder | icebox | — |
-| 19 | Quản lý API Keys & Quota | usage counters, provider health, cooldown view | S | ★★ | ApiKeyManager | icebox | — |
-| 20 | Quản lý Listening | audio snippet re-record, captured-audio speed, pronunciation source priority | M | ★★★ | pronunciation services | icebox | — |
-| 21 | Quản lý Mining Workflow | one-click preset, template per note-type, quick-add rules | M | ★★★★ | cardCreator | icebox | — |
-| 22 | Quản lý Popup Dictionary UI | nested-stack rules, default tab per language, lazy-media prefs | S | ★★ | popup lifecycle | icebox | — |
-| 23 | Quản lý Appearance | per-site/per-track subtitle style, preset share | M | ★★★ | theme system | icebox | — |
-| 24 | Quản lý Diagnostics | dev panel: fetch-interceptor misses, lookupLog export, msg trace | S | ★★ | gated diag infra | icebox | — |
-| 25 | Quản lý Reading Annotation | reading trên từ, pitch accent source, freq badge position | L | ★★★★ | tokenSpan render | icebox | — |
-| 26 | Quản lý Goals & Streaks | daily immersion minutes, cards/day, nudges | M | ★★★ | #15 | icebox | — |
-| 27 | Quản lý Playback Behavior | playback-after-mining, speed step, per-site speed memory | S | ★★★ | NavCluster | icebox | — |
-| 28 | Quản lý Settings Profiles | named profiles, quick-switch, per-site override | L | ★★★ | settingsStore | icebox | — |
-| 29 | Quản lý Dữ liệu | storage usage per feature, export/import all, reset per-feature | M | ★★★ | — | icebox | — |
-| 30 | Quản lý Cache & Performance | OPFS usage, LRU sizes, memory, free-space action | M | ★★ | bounded caches | icebox | — |
-| 31 | Quản lý Privacy | per-site data scope, incognito behavior, local-only view | M | ★★★ | — | icebox | — |
-| 32 | Quản lý Study Modes | preset gallery, per-language defaults, share mode | M | ★★★ | CustomModeBuilder | icebox | — |
-| 33 | Quản lý Performance Profile | per-site perf budget, low-RAM mode, reduced motion | L | ★★★ | — | icebox | — |
-| 34 | Quản lý Sync & Backup | export/import wordStatus+settings+queue, device merge | L | ★★★ | — | icebox | — |
-| 35 | Quản lý AI Generation | provider config, model choice, usage view, result cache | L | ★★★★ | LLM roadmap | icebox | — |
+| # | Slug | Nhóm | Pain | Cost | Value | Infra | Deps | Source | Status | Spec |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | `immersion-playback` | Quản lý Immersion Playback | Xem passive không chủ động — sub trôi qua kể cả từ chưa biết | M | ★★★★★ | wordStatus×cuesStore, NavCluster | — | asbplayer+migaku | icebox | — |
+| 2 | `comprehension-score` | Quản lý Độ hiểu | Không biết media này "vừa sức" hay quá khó trước khi xem | M | ★★★★★ | tokenize×wordStatus, frequencyClient | — | asbplayer+migaku | icebox | — |
+| 3 | `vocabulary-browser` | Quản lý Từ vựng | wordStatus có data nhưng không xem/quản lý được — từ "biến mất" sau lookup | M | ★★★★★ | wordStatusStore, statusKeyControls | — | asbplayer | icebox | — |
+| 4 | `download-queue-ui` | Quản lý Download Queue | Queue chạy ngầm — không thấy job nào đang/stuck/fail | M | ★★★★ | downloadQueue (đã fix abort/pause) | — | internal-audit | icebox | — |
+| 5 | `shortcuts-manager` | Quản lý Phím tắt | Hotkey hardcode — conflict với host site không sửa được | M | ★★★★ | subtitleShortcuts, dispatchers | — | asbplayer | icebox | — |
+| 6 | `whitelist-manager` | Quản lý Whitelist | Tắt extension trên 1 site phải đào settings | S | ★★★ | whitelist feature | — | internal-audit | icebox | — |
+| 7 | `mining-history` | Quản lý Thẻ đã tạo | Card đã mine không tra lại được nguồn/lúc nào | M | ★★★★ | lookupLog ring-buffer pattern | — | asbplayer | icebox | — |
+| 8 | `focus-modes` | Quản lý Focus | Sub hiện sẵn làm đọc trước khi nghe — không luyện listening | S | ★★★ | SubtitleBlock CSS | — | asbplayer | icebox | — |
+| 9 | `srs-review-manager` | Quản lý SRS/Review | Due count/streak không visible — quên review | S | ★★★ | quotaManager, getSrsStats | — | internal-audit | icebox | — |
+| 10 | `subtitle-library` | Quản lý Phụ đề | Sub đã attach + offset settings không nhớ lại cho series | M | ★★★★ | autoMatch, offsetController | — | internal-audit | icebox | — |
+| 11 | `session-manager` | Quản lý Session | Reload = mất context đang xem | M | ★★★ | bounded caches, storage.session | — | internal-audit | icebox | — |
+| 12 | `ocr-region-manager` | Quản lý OCR regions | Mỗi lần vào site phải kéo region lại | M | ★★★ | regionSelector | — | internal-audit | icebox | — |
+| 13 | `media-library` | Quản lý Media Library | Library là flat list — series/progress không có | M | ★★★ | mediaLibraryRepository | — | internal-audit | icebox | — |
+| 14 | `learning-recommendations` | Quản lý Đề xuất học | Không biết nên học từ nào tiếp — tự quyết cảm tính | M | ★★★★ | frequencyClient×wordStatus | — | migaku | icebox | — |
+| 15 | `immersion-analytics` | Quản lý Ngữ cảnh học | Không đo được immersion time — không biết mình tiến bộ | M | ★★★ | — | — | migaku | icebox | — |
+| 16 | `lookup-popup-config` | Quản lý Lookup & Popup | Popup behavior global — site A cần nhanh, site B cần hover delay | M | ★★★ | popupGeometry, popupLifecycle | — | internal-audit | icebox | — |
+| 17 | `episode-series-tracker` | Quản lý Episode & Series | Không biết đã xem tới đâu trong series | M | ★★★ | — | #13 | migaku | icebox | — |
+| 18 | `subtitle-discovery-config` | Quản lý Subtitle Discovery | Provider order/fallback hardcode — không override được | M | ★★★ | pickProviderOrder | — | internal-audit | icebox | — |
+| 19 | `api-key-quota` | Quản lý API Keys & Quota | Key nào rate-limited/dead không thấy — fail mới biết | S | ★★ | ApiKeyManager, lastDownloadAt | — | internal-audit | icebox | — |
+| 20 | `listening-audio` | Quản lý Listening | Audio snippet capture xong không re-record/tune được | M | ★★★ | pronunciation services | — | asbplayer | icebox | — |
+| 21 | `mining-workflow` | Quản lý Mining Workflow | Mỗi card phải map field tay — không có preset per note-type | M | ★★★★ | cardCreator, fieldMappingService | — | asbplayer | icebox | — |
+| 22 | `popup-dictionary-config` | Quản lý Popup Dictionary UI | Default tab/nested-stack behavior không configure được | S | ★★ | popup lifecycle | — | internal-audit | icebox | — |
+| 23 | `appearance-manager` | Quản lý Appearance | Subtitle style global — site tối/sáng cần style khác | M | ★★★ | theme system, appearance panel | — | asbplayer | icebox | — |
+| 24 | `diagnostics-panel` | Quản lý Diagnostics | Detection miss silent — không biết tại sao không detect | S | ★★ | gated diag infra (fetchInterceptor) | — | internal-audit | icebox | — |
+| 25 | `reading-annotation` | Quản lý Reading Annotation | Không có reading/pitch trên từ — phải mở popup mới biết | L | ★★★★ | tokenSpan render | — | asbplayer+migaku | icebox | — |
+| 26 | `goals-streaks` | Quản lý Goals & Streaks | Không có target hàng ngày — dễ bỏ dở | M | ★★★ | — | #15 | migaku | icebox | — |
+| 27 | `playback-behavior` | Quản lý Playback Behavior | Sau khi mine xong video cứ chạy — muốn pause/replay tùy chọn | S | ★★★ | NavCluster, cardCreatorBridge | — | asbplayer | icebox | — |
+| 28 | `settings-profiles` | Quản lý Settings Profiles | Một config cho mọi context — Netflix focus vs casual share chung settings | L | ★★★ | settingsStore | — | asbplayer | icebox | — |
+| 29 | `data-manager` | Quản lý Dữ liệu | Không biết feature nào chiếm bao nhiêu storage, không export all được | M | ★★★ | — | — | internal-audit | icebox | — |
+| 30 | `cache-performance` | Quản lý Cache & Performance | OPFS/LRU usage invisible — đầy mới phát hiện | M | ★★ | bounded caches | — | internal-audit | icebox | — |
+| 31 | `privacy-manager` | Quản lý Privacy | Không có chỗ xem extension lưu gì ở đâu | M | ★★★ | — | — | internal-audit | icebox | — |
+| 32 | `study-modes-manager` | Quản lý Study Modes | Custom modes build được nhưng không share/preset gallery | M | ★★★ | CustomModeBuilder | — | internal-audit | icebox | — |
+| 33 | `performance-profile` | Quản lý Performance Profile | Máy yếu vẫn chạy full OCR/tokenize — lag | L | ★★★ | — | — | internal-audit | icebox | — |
+| 34 | `sync-backup` | Quản lý Sync & Backup | Đổi máy = mất wordStatus/settings/queue | L | ★★★ | — | — | migaku | icebox | — |
+| 35 | `ai-generation` | Quản lý AI Generation | Dictionary tĩnh — không giải thích theo ngữ cảnh | L | ★★★★ | dictionaryGenerate, ApiKeyManager | — | migaku | icebox | — |
 
-## Wave gợi ý (đã xét deps + leverage)
+## Wave gợi ý (deps + leverage đã xét)
 
 | Wave | Items | Ghi chú |
 |---|---|---|
