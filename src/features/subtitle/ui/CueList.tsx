@@ -137,6 +137,9 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const lastLangCodeRef = useRef<string | null>(null);
   useEffect(() => {
     if (!tokenizeLangCode) {
+      lastCuesRef.current = null;
+      lastLangCodeRef.current = null;
+      setResolving(false);
       setTokenMap(EMPTY_TOKEN_MAP);
       return;
     }

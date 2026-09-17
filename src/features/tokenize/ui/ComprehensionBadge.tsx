@@ -29,7 +29,7 @@ export function ComprehensionBadge({ stats, size = 'sm' }: ComprehensionBadgePro
       data-cell-id="comprehension-badge"
       data-band={stats.band}
     >
-      {stats.coverage}%
+      {stats.coverage.toFixed(1)}%
     </Badge>
   );
 }

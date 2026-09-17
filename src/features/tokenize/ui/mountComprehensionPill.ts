@@ -1,4 +1,4 @@
-import { createElement } from 'react';
+import { createElement, Fragment } from 'react';
 import { mountReactShadow, type ShadowMount } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { allModuleCss } from '@/shared/lib/shadowRoot/allModuleCss';
 import { ShadowThemeProvider } from '@/features/theme';
@@ -29,7 +29,7 @@ export function mountComprehensionPill(options: MountComprehensionPillOptions = 
     }
     const onSelect = (kind: ComprehensionKind): void => store.setActive(kind);
     if (!mount) {
-      mount = mountReactShadow(createElement(ComprehensionPill, { state, onSelect }), {
+      mount = mountReactShadow(createElement(Fragment), {
         parent,
         position: 'fixed',
         css: allModuleCss,

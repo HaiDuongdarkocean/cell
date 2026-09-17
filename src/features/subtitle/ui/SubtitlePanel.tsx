@@ -8,7 +8,7 @@
 //   Split View + Playlist (local-player):
 //     <SubtitlePanel ... playlistContent={<LibraryView .../>} onOpenFile={...} onOpenFolder={...} />
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -115,6 +115,11 @@ function SubtitlePanelImpl({
     for (const list of map.values()) tokens.push(...list);
     setMediaStats(computeStats(tokens, 'media'));
   }, [scoreSuppressed]);
+
+  const chipLive = Boolean(tokenize) && visibleCues.length > 0 && practiceMode === 'off' && !scoreSuppressed;
+  useEffect(() => {
+    if (!chipLive) setMediaStats(null);
+  }, [chipLive]);
 
   const handlePreviousCue = (cue: BilingualCue): void => {
     if (onPreviousCue) {

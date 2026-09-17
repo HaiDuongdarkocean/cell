@@ -9,6 +9,7 @@ import { baseLangCode, languageMatches } from '@/shared/config/languageRegistry'
 
 const DEBOUNCE_MS = 400;
 const MAX_DELAY_MS = 1500;
+const MAX_BUFFERED_EVENTS = 1000;
 
 export interface TokenScoreSourceDeps<S> {
   kind: ComprehensionKind;
@@ -49,7 +50,6 @@ export function startTokenScoreSource<S>(deps: TokenScoreSourceDeps<S>): () => v
     }
     const tokens = deps.tokenize(source, lang);
     resolving = true;
-    buffered = [];
     let statuses: Map<string, WordStatus>;
     try {
       statuses = await fetchTermStatuses(
@@ -91,25 +91,21 @@ export function startTokenScoreSource<S>(deps: TokenScoreSourceDeps<S>): () => v
       clearTimeout(timer);
       timer = null;
     }
-    if (overdue) {
-      firstTriggerAt = null;
-      void rebuild();
-      return;
-    }
+    if (overdue) firstTriggerAt = null;
     timer = setTimeout(() => {
       timer = null;
       firstTriggerAt = null;
       void rebuild();
-    }, DEBOUNCE_MS);
+    }, overdue ? 0 : DEBOUNCE_MS);
   }
 
   const offStatus = onWordStatusChanged((e) => {
     if (!languageMatches(lang, e.langCode)) return;
-    if (resolving) {
-      buffered.push(e);
+    if (resolving || !tracker) {
+      if (buffered.length < MAX_BUFFERED_EVENTS) buffered.push(e);
       return;
     }
-    if (tracker?.applyStatus(e.term, e.status)) {
+    if (tracker.applyStatus(e.term, e.status)) {
       store.setStats(kind, tracker.stats(kind));
     }
   });

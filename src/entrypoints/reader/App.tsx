@@ -19,7 +19,7 @@ import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import { ComprehensionBadge } from '@/features/tokenize/ui/ComprehensionBadge';
 import { createBookScoreTracker } from '@/features/reader/logic/bookScore';
-import { emitWordStatusChanged, onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { emitWordStatusChanged, onWordStatusChanged, type WordStatusChangedDetail } from '@/features/dictionary';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import type { ScoreTracker } from '@/features/tokenize/logic/comprehensionScore';
 import type { ComprehensionStats } from '@/entities/comprehension';
@@ -67,15 +67,29 @@ export function ReaderApp(): React.JSX.Element {
     const book = selectedBook;
     const lang = book.languageCode ?? 'en';
     let cancelled = false;
+    let resolving = true;
+    const buffered: WordStatusChangedDetail[] = [];
     bookTrackerRef.current = null;
     setBookStats(null);
     void createBookScoreTracker(book.paragraphs, lang, () => cancelled).then((tracker) => {
+      resolving = false;
       if (cancelled) return;
+      if (tracker) {
+        for (const e of buffered) tracker.applyStatus(e.term, e.status);
+      }
+      buffered.length = 0;
       bookTrackerRef.current = tracker;
       setBookStats(tracker?.stats('text') ?? null);
+    }).catch((err) => {
+      resolving = false;
+      console.warn('[reader] book score resolve failed', err);
     });
     const offStatus = onWordStatusChanged((e) => {
       if (!languageMatches(lang, e.langCode)) return;
+      if (resolving) {
+        buffered.push(e);
+        return;
+      }
       if (bookTrackerRef.current?.applyStatus(e.term, e.status)) {
         setBookStats(bookTrackerRef.current.stats('text'));
       }

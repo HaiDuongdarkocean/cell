@@ -11,12 +11,19 @@ export interface TextScoreSourceDeps {
 }
 
 function blockSignature(blocks: readonly TokenBlock[]): string {
-  if (blocks.length === 0) return '';
+  let live = 0;
   let unprepared = 0;
+  let hash = 0;
   for (const b of blocks) {
+    if (!b.element.isConnected) continue;
+    live++;
     if (!b.tokens) unprepared++;
+    for (let i = 0; i < b.originalText.length; i++) {
+      hash = (hash * 31 + b.originalText.charCodeAt(i)) | 0;
+    }
   }
-  return `${blocks.length}:${unprepared}`;
+  if (live === 0) return '';
+  return `${live}:${unprepared}:${hash}`;
 }
 
 export function startTextScoreSource(deps: TextScoreSourceDeps): () => void {

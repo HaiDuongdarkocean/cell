@@ -30,12 +30,12 @@ describe('ComprehensionPill', () => {
 
   it('shows media stats by default with media icon', () => {
     render(<ComprehensionPill state={state({ media: stats('media', 96) })} />);
-    expect(screen.getByText('96%')).toBeInTheDocument();
+    expect(screen.getByText('96.0%')).toBeInTheDocument();
   });
 
   it('falls back to text when active media is missing', () => {
     render(<ComprehensionPill state={state({ text: stats('text', 99) })} />);
-    expect(screen.getByText('99%')).toBeInTheDocument();
+    expect(screen.getByText('99.0%')).toBeInTheDocument();
   });
 
   it('renders toggle when both stats exist; click selects text', () => {
@@ -48,7 +48,7 @@ describe('ComprehensionPill', () => {
     );
     const radios = screen.getAllByRole('radio');
     expect(radios).toHaveLength(2);
-    expect(screen.getByText('96%')).toBeInTheDocument();
+    expect(screen.getByText('96.0%')).toBeInTheDocument();
     fireEvent.click(radios[1]!);
     expect(onSelect).toHaveBeenCalledWith('text');
   });
@@ -59,14 +59,14 @@ describe('ComprehensionPill', () => {
         state={state({ media: stats('media', 96), text: stats('text', 99), active: 'text' })}
       />,
     );
-    expect(screen.getByText('99%')).toBeInTheDocument();
+    expect(screen.getByText('99.0%')).toBeInTheDocument();
   });
 });
 
 describe('ComprehensionBadge', () => {
   it('renders coverage with band data attribute', () => {
     render(<ComprehensionBadge stats={stats('media', 96)} />);
-    const el = screen.getByText('96%');
+    const el = screen.getByText('96.0%');
     expect(el).toHaveAttribute('data-band', 'comfortable');
   });
 });

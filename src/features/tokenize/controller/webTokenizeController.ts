@@ -508,6 +508,7 @@ export async function createWebTokenizeController(
     const existing = cache.getByElement(parent);
     for (const block of existing) {
       if (block.sourceNodes[0] === textNode) {
+        block.originalText = textNode.textContent ?? '';
         block.tokens = undefined;
         block.isBound = false;
         options.onBlocksChanged?.();
@@ -525,15 +526,18 @@ export async function createWebTokenizeController(
     // does not stay alive via the tracker set until cache eviction.
     viewport.unobserve(node);
     visibleElements.delete(node);
-    const existing = cache.getByElement(node);
+    // Ancestor removals detach descendant blocks without hitting
+    // cache.getByElement(node); sweep any block whose element is gone.
     let removedAny = false;
-    for (const block of existing) {
-      const idx = blocks.indexOf(block);
-      if (idx >= 0) {
-        blocks.splice(idx, 1);
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      const block = blocks[i]!;
+      if (!block.element.isConnected) {
+        blocks.splice(i, 1);
+        cache.delete(block.id);
+        viewport.unobserve(block.element);
+        visibleElements.delete(block.element);
         removedAny = true;
       }
-      cache.delete(block.id);
     }
     if (removedAny) options.onBlocksChanged?.();
   }
@@ -869,6 +873,7 @@ export async function createWebTokenizeController(
     getAllTokens: () => {
       const out: Token[] = [];
       for (const block of blocks) {
+        if (!block.element.isConnected) continue;
         if (!block.tokens) prepareBlock(block);
         if (block.tokens) out.push(...block.tokens);
       }

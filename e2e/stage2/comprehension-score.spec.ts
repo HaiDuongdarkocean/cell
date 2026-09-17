@@ -68,7 +68,7 @@ test.describe('Stage 2: Comprehension score > floating pill on StreamFlix', () =
       }, { timeout: 20_000 })
       .not.toBeNull();
 
-    expect(pill?.badgeText).toMatch(/^\d+%$/);
+    expect(pill?.badgeText).toMatch(/^\d+\.\d%$/);
     expect(pill?.band).toMatch(/^(comfortable|stretch|hard)$/);
     expect(pill?.rect.width).toBeGreaterThan(0);
     expect(pill?.rect.height).toBeGreaterThan(0);
@@ -79,7 +79,7 @@ test.describe('Stage 2: Comprehension score > floating pill on StreamFlix', () =
     });
     await expect
       .poll(async () => (await readPill(streamFlixPage))?.badgeText, { timeout: 15_000 })
-      .toMatch(/^\d+%$/);
+      .toMatch(/^\d+\.\d%$/);
 
     await video.evaluate((v: HTMLVideoElement) => {
       v.pause();

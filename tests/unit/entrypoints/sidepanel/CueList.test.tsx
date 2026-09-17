@@ -336,6 +336,39 @@ describe('CueList', () => {
       expect(hello.querySelector('.js-cell-token-word')?.textContent).toBe('Hello');
       expect(hello.querySelector('.js-cell-token-status')).not.toBeNull();
     });
+
+    it('re-tokenizes after tokenize toggles off then back on', async () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      await waitFor(() => {
+        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+      });
+
+      rerender(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} tokenize={null} />,
+      );
+      expect(target.querySelectorAll('.js-cell-token')).toHaveLength(0);
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+      await waitFor(() => {
+        expect(target.querySelector('[data-cell-term="hello"]')).not.toBeNull();
+      });
+    });
   });
 
   // Regression: auto-scroll must use manual scrollTop on the list container,

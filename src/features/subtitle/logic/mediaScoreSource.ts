@@ -1,8 +1,6 @@
 import { useCuesStore } from '@/features/subtitle/cuesStore';
 import type { SrtCue } from '@/entities/media/types';
 import { createTokenList, startTokenScoreSource, type ComprehensionStore } from '@/features/tokenize';
-
-
 import { baseLangCode } from '@/shared/config/languageRegistry';
 
 export interface MediaScoreSourceDeps {
@@ -15,8 +13,14 @@ export interface MediaScoreSourceDeps {
 function cueKey(cues: readonly SrtCue[]): string {
   if (cues.length === 0) return '';
   let len = 0;
-  for (const c of cues) len += c.text.length;
-  return `${cues.length}:${cues[0]!.start}:${cues[cues.length - 1]!.end}:${len}`;
+  let hash = 0;
+  for (const c of cues) {
+    len += c.text.length;
+    for (let i = 0; i < c.text.length; i++) {
+      hash = (hash * 31 + c.text.charCodeAt(i)) | 0;
+    }
+  }
+  return `${cues.length}:${cues[0]!.start}:${cues[cues.length - 1]!.end}:${len}:${hash}`;
 }
 
 export function startMediaScoreSource(deps: MediaScoreSourceDeps): () => void {
