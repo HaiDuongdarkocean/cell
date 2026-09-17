@@ -2246,6 +2246,24 @@
         "single-writer"
       ],
       "trigger": "A transient UI state (subtitle hidden by a study mode, user toggle) is silently reverted whenever ANY settings write lands, because saveSettings read-modify-write drags the full style objects into changes.settings.newValue and the listener rebuilds visible from a stale flag."
+    },
+    {
+      "type": "experience",
+      "id": "zustand-bound-store-method-override-dead",
+      "title": "Overriding a bound store's exported method does not intercept the library's internal subscription path",
+      "category": [
+        "state",
+        "async"
+      ],
+      "tags": [
+        "zustand",
+        "useSyncExternalStore",
+        "subscribe",
+        "event-listener",
+        "module-init",
+        "race"
+      ],
+      "trigger": "Side-effect lifecycle (document listener, resource acquire) is gated on 'first React subscriber' by monkey-patching/overriding an exported store method"
     }
   ]
 }
