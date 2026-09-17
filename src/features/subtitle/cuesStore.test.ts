@@ -50,10 +50,14 @@ describe('cuesStore', () => {
     unsubscribe();
   });
 
-  it('listens to cell:cues:updated event while subscribed', () => {
-    const unsubscribe = useCuesStore.subscribe(() => {});
+  it('listens to cell:cues:updated event with no store subscribers', () => {
+    // Regression: the listener used to attach on first store.subscribe() call,
+    // but zustand v5 hooks subscribe via the internal api (not the overridden
+    // property), so the listener never attached in production and the block
+    // stayed on "Loading …". The listener must be attached unconditionally.
     const targetCues = [makeCue(0, 'target 0')];
     const nativeCues = [makeCue(0, 'native 0')];
+    useCuesStore.getState().setLoadStatus('target', { state: 'loading', languageLabel: 'EN-US #1' });
     document.dispatchEvent(
       new CustomEvent('cell:cues:updated', {
         detail: { targetCues, nativeCues, targetActiveIndex: 0, nativeActiveIndex: 0 },
@@ -64,7 +68,7 @@ describe('cuesStore', () => {
     expect(state.nativeCues).toEqual(nativeCues);
     expect(state.targetActiveIndex).toBe(0);
     expect(state.nativeActiveIndex).toBe(0);
-    unsubscribe();
+    expect(state.targetLoadStatus.state).toBe('loaded');
   });
 
   it('setCues transitions loading→loaded (preserves languageLabel + source)', () => {

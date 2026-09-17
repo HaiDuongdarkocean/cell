@@ -94,20 +94,6 @@ const handleCuesUpdated = (event: Event): void => {
   useCuesStore.getState().setActiveIndex(targetActiveIndex, nativeActiveIndex);
 };
 
-let cueSubscriberCount = 0;
-const baseSubscribe = useCuesStore.subscribe;
-
-useCuesStore.subscribe = ((...args: unknown[]) => {
-  if (cueSubscriberCount === 0 && typeof document !== 'undefined') {
-    document.addEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
-  }
-  cueSubscriberCount += 1;
-  const unsubscribe = (baseSubscribe as (...fnArgs: unknown[]) => () => void)(...args);
-  return () => {
-    unsubscribe();
-    cueSubscriberCount -= 1;
-    if (cueSubscriberCount === 0 && typeof document !== 'undefined') {
-      document.removeEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
-    }
-  };
-}) as typeof useCuesStore.subscribe;
+if (typeof document !== 'undefined') {
+  document.addEventListener(CELL_CUES_UPDATED, handleCuesUpdated);
+}
