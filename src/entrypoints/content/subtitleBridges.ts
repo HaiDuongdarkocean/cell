@@ -76,6 +76,28 @@ export function installMainWorldBridge(): void {
       });
       return;
     }
+    // Fetch-interceptor diagnostics reply (audit 12 residual). Only requested
+    // under isCellDebug() below; the reply carries miss counters + buffer
+    // state, no page-private data. Mirror to a debug attribute like the other
+    // data-cell-* markers so E2E can read it without DevTools.
+    if (data?.type === '__CELL_FETCH_INTERCEPTOR_DIAG' && isCellDebug()) {
+      const diag = data as {
+        misses?: Record<string, number>;
+        pending?: number;
+        ready?: boolean;
+      };
+      document.documentElement.setAttribute(
+        'data-cell-fetch-interceptor-diag',
+        JSON.stringify({
+          t: Date.now(),
+          misses: diag.misses ?? {},
+          pending: diag.pending ?? 0,
+          ready: diag.ready === true,
+        }),
+      );
+      console.info('[content-script] fetch interceptor diag', diag.misses ?? {});
+      return;
+    }
     // === YouTube MAIN-world bridge (ADR-020) ===
     // youtube-main-world.iife.ts reads `window.ytInitialPlayerResponse` (MAIN
     // world only) and posts caption tracks / InnerTube fallback requests.
@@ -187,4 +209,11 @@ export function installMainWorldBridge(): void {
   // loader delays content script registration past document_start).
   // See learning-and-apply: messaging-receiver-announces-readiness-handshake.
   window.postMessage({ type: '__CELL_CS_READY' }, '*');
+
+  // Debug-only: ask the MAIN-world fetch interceptor to relay its miss
+  // counters. The MAIN world only replies when __CELL_DEBUG__ is compiled in,
+  // so production builds neither request nor answer.
+  if (isCellDebug()) {
+    window.postMessage({ type: '__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST' }, '*');
+  }
 }

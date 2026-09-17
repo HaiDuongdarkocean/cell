@@ -18,6 +18,7 @@
  * Exit:  0 = clean, 1 = new cycles / entrypoint imports / unreadable tree.
  */
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -181,10 +182,24 @@ for (const { file, specifier } of entrypointViolations) {
   console.error(`ENTRYPOINT IMPORT  ${relative(ROOT, file)} → '${specifier}'`);
 }
 
+let failed = false;
 if (entrypointViolations.length > 0 || newCycles.length > 0) {
   console.error(`check-feature-cycles: ${newCycles.length} new cycle(s), ${entrypointViolations.length} entrypoint import(s)`);
-  process.exit(1);
+  failed = true;
+} else {
+  const edgeCount = [...graph.values()].reduce((sum, targets) => sum + targets.size, 0);
+  console.log(`check-feature-cycles: ${graph.size} features, ${edgeCount} cross-feature edges — clean`);
 }
 
-const edgeCount = [...graph.values()].reduce((sum, targets) => sum + targets.size, 0);
-console.log(`check-feature-cycles: ${graph.size} features, ${edgeCount} cross-feature edges — clean`);
+// Deep-import ratchet: same feature graph, separate baseline. The script is
+// standalone (`node scripts/check-deep-imports.mjs`) so it can be tested and
+// re-baselined independently; running it from here keeps `npm run check:cycles`
+// and the prebuild wiring covering both checks without a new npm script.
+const deepResult = spawnSync(
+  process.execPath,
+  [join(ROOT, 'scripts', 'check-deep-imports.mjs'), SRC_ROOT],
+  { stdio: 'inherit' },
+);
+if (deepResult.status !== 0) failed = true;
+
+if (failed) process.exit(1);

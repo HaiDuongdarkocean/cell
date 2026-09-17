@@ -64,8 +64,12 @@ declare const __CELL_DEBUG__: string;
 
   const originalFetch = window.fetch;
 
+  function isDebug(): boolean {
+    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+  }
+
   function countMiss(key: string): void {
-    if (typeof __CELL_DEBUG__ === 'undefined' || __CELL_DEBUG__ !== 'true') return;
+    if (!isDebug()) return;
     const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
     const misses = g.__cellFetchInterceptorMisses ?? (g.__cellFetchInterceptorMisses = {});
     misses[key] = (misses[key] ?? 0) + 1;
@@ -108,9 +112,26 @@ declare const __CELL_DEBUG__: string;
     }
   }
 
+  // Diagnostics relay (debug builds only): the isolated content script posts
+  // `__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST` when `__CELL_DEBUG__` is compiled
+  // in; we reply through the same post() channel with the miss counters and
+  // buffer state. The snapshot is counts-only — no URLs or page-private data —
+  // and the reply itself is gated so production builds never emit it.
+  function diagSnapshot(): Record<string, unknown> {
+    const g = globalThis as { __cellFetchInterceptorMisses?: Record<string, number> };
+    return {
+      misses: { ...(g.__cellFetchInterceptorMisses ?? {}) },
+      pending: pendingSignals.length,
+      ready: contentScriptReady,
+    };
+  }
+
   window.addEventListener('message', (e) => {
     if (e.data?.type === '__CELL_CS_READY') {
       flushPending();
+    }
+    if (e.data?.type === '__CELL_FETCH_INTERCEPTOR_DIAG_REQUEST' && isDebug()) {
+      post('__CELL_FETCH_INTERCEPTOR_DIAG', diagSnapshot());
     }
   });
 
