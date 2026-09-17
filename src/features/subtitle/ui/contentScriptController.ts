@@ -3,6 +3,9 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
+import type { StudyModeAdvancedSettings } from '@/entities/studyMode';
+import { createUnknownCueResolver, type UnknownCueResolver } from '@/features/subtitle/logic/unknownCueMap';
+import { onWordStatusChanged } from '@/features/dictionary';
 import { injectThemeTokens } from '@/features/theme/logic/themeTokens';
 import navClusterModuleCss from './NavCluster.module.css?inline';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -67,6 +70,9 @@ export function init(
   let clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS;
   let settingsLoaded = false;
   let currentSettings: Settings | null = null;
+  // Hoisted above the study-mode subscription: syncUnknownResolver reads this
+  // before the keyboard section initializes it otherwise (TDZ on early events).
+  let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
   // ADR-019: offset controller (subtitle time offset)
   let offsetController: ReactSubtitleController | null = null;
   // Shared web-text dictionary controller (owned by top-level content-script).
@@ -150,8 +156,75 @@ export function init(
     blockController.applyStudyMode(initialStudyMode.activeMode, initialStudyMode.advanced);
   }
   const unsubscribeStudyMode = subscribeToStudyMode((next) => {
-    if (next) blockController.applyStudyMode(next.activeMode, next.advanced);
+    if (!next) return;
+    currentAdvanced = next.advanced;
+    blockController.applyStudyMode(next.activeMode, next.advanced);
+    void syncUnknownResolver();
   });
+
+  // Immersion playback: resolve which cues contain a learnable word so the
+  // study-mode state machine can pause on them (pauseOnUnknown) and the
+  // next-unknown-cue shortcut can seek to them.
+  let unknownResolver: UnknownCueResolver | null = null;
+  let unknownResolverCueKey = '';
+  let currentAdvanced: StudyModeAdvancedSettings | null = initialStudyMode?.advanced ?? null;
+
+  async function syncUnknownResolver(): Promise<void> {
+    const wantsProbe = currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF';
+    const wantsNav = shortcuts.some((s) => s.action === 'next-unknown-cue');
+    const langCode = currentSettings?.subtitleOverlayTargetLanguage;
+    const cues = blockController.getTargetCues();
+    if ((!wantsProbe && !wantsNav) || !langCode || cues.length === 0) {
+      unknownResolver?.destroy();
+      unknownResolver = null;
+      unknownResolverCueKey = '';
+      blockController.setUnknownCueProbe(null);
+      return;
+    }
+    const key = `${cues.length}:${cues[0]?.start}:${cues[cues.length - 1]?.end}:${langCode}:${currentAdvanced?.unknownScope ?? 'FREQ_LIST'}`;
+    if (unknownResolver && unknownResolverCueKey === key) {
+      blockController.setUnknownCueProbe(unknownResolver.probe);
+      return;
+    }
+    unknownResolver?.destroy();
+    unknownResolver = null;
+    unknownResolverCueKey = key;
+    const resolver = await createUnknownCueResolver(
+      cues,
+      langCode,
+      currentAdvanced?.unknownScope ?? 'FREQ_LIST',
+    );
+    if (blockController.getTargetCues() !== cues) {
+      resolver.destroy();
+      return;
+    }
+    unknownResolver = resolver;
+    blockController.setUnknownCueProbe(resolver.probe);
+  }
+
+  const unsubscribeWordStatusForResolver = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {
+    if (eventLangCode !== currentSettings?.subtitleOverlayTargetLanguage) return;
+    unknownResolver?.applyStatus(term, status);
+  });
+
+  blockController.onAutoPause = (term, cueIndex) => {
+    if (!currentAdvanced?.popupOnAutoPause || !sharedWebTextCtrl) return;
+    const langCode = currentSettings?.subtitleOverlayTargetLanguage;
+    const { target } = blockController.getLineElements();
+    if (!langCode || !target) return;
+    const cue = blockController.getTargetCues()[cueIndex];
+    const request: LookupRequest = {
+      term,
+      langCode,
+      contextSentence: cue?.text ?? '',
+      cursorOffset: 0,
+    };
+    const requestId = `autopause-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    sharedWebTextCtrl.handleLookup(request, requestId, target.getBoundingClientRect(), target);
+  };
+  blockController.onAutoResume = () => {
+    if (currentAdvanced?.popupCloseOnResume) sharedWebTextCtrl?.dismissLookup();
+  };
 
   /** Build SubtitleActionContext from current controller state — shared action
    *  functions (cardActions.ts) use this to access video, cues, settings, etc.
@@ -177,14 +250,15 @@ export function init(
   let lastFedTargetCues: readonly SrtCue[] = [];
   let lastFedNativeCues: readonly SrtCue[] = [];
   blockController.onCuesUpdated = () => {
-    if (!subtitleTokenizeCtrl) return;
     const targetCues = blockController.getTargetCues();
     const nativeCues = blockController.getNativeCues();
     if (targetCues !== lastFedTargetCues || nativeCues !== lastFedNativeCues) {
       lastFedTargetCues = targetCues;
       lastFedNativeCues = nativeCues;
-      subtitleTokenizeCtrl.setCues(targetCues, nativeCues);
+      subtitleTokenizeCtrl?.setCues(targetCues, nativeCues);
+      void syncUnknownResolver();
     }
+    if (!subtitleTokenizeCtrl) return;
     let fired = false;
     const fire = (): void => {
       if (fired) return;
@@ -547,7 +621,6 @@ export function init(
   // on close via chrome.runtime.connect port disconnect → background tracks
   // state → content-script queries before toggle.
   let sidePanelOpen = false;
-  let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
 
   // ADR-033: track last seek target so rapid cue-nav (A/S/D pressed before
   // Netflix player.seek() settles) computes next/prev from the INTENDED
@@ -665,6 +738,16 @@ export function init(
     handleSubtitleStatusKey: (key) => subtitleTokenizeCtrl?.handleStatusKey(key) ?? false,
     handleWebStatusKey,
     syncSubtitleTokenize,
+    nextUnknownCue: () => {
+      if (!unknownResolver) return;
+      const { target } = blockController.getActiveIndices();
+      const next = unknownResolver.findNext(target);
+      if (next < 0) return;
+      const cue = blockController.getTargetCues()[next];
+      if (!cue) return;
+      const offsetMs = offsetController?.getOffsetMs() ?? 0;
+      video.currentTime = Math.max(0, (cue.start - offsetMs) / 1000);
+    },
   };
 
   const processImportedFiles = createProcessImportedFiles(ctx);
@@ -777,6 +860,8 @@ export function init(
     if (onStorageChangedCallback) removeOnStorageChangedListener(onStorageChangedCallback);
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
     subtitleTokenizeCtrl?.destroy();
+    unknownResolver?.destroy();
+    unsubscribeWordStatusForResolver();
     blockController?.destroy();
     unsubscribeStudyMode();
   };

@@ -121,6 +121,8 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // Play/pause toggle — default key ' ' (SpaceBar, convention mọi video player).
   // KeyboardEvent.key cho spacebar = ' ' (space char), không phải 'space'.
   { action: 'play-pause', key: ' ' },
+  // Immersion playback — seek to next cue containing an unknown word.
+  { action: 'next-unknown-cue', key: 'n' },
 ];
 
 // === Default Overlay Style (ADR-013) ===

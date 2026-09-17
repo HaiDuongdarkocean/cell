@@ -227,6 +227,10 @@ export function createContentScriptKeyboardHandlers(ctx: ContentScriptContext): 
         void ctx.handleCardCreatorAction(action);
         break;
       }
+      case 'next-unknown-cue': {
+        ctx.nextUnknownCue();
+        break;
+      }
       // Generate native subtitle manually (button or shortcut).
       case 'generate-native': {
         void ctx.handleGenerateNative();

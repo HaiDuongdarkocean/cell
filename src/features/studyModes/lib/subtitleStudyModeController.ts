@@ -1,6 +1,6 @@
 import type { SrtCue } from '@/entities/media';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
-import { StudyModePlaybackController, type PlaybackAction } from './studyModePlaybackController';
+import { StudyModePlaybackController, type PlaybackAction, type UnknownCueProbe } from './studyModePlaybackController';
 
 export interface SubtitleStudyModeTimeState {
   /** Currently active target cue index (from the cue engine). */
@@ -24,6 +24,7 @@ const SEEK_LANDING_TOLERANCE_MS = 300;
  */
 export class SubtitleStudyModeController {
   private playback: StudyModePlaybackController | null = null;
+  private probe: UnknownCueProbe | null = null;
   private lastTargetIndex = -1;
   private offsetMs = 0;
   private internalSeekTargetMs: number | null = null;
@@ -45,9 +46,11 @@ export class SubtitleStudyModeController {
     // 'normal' is pass-through — creating the state machine for it would emit
     // { subtitle: 'both', speed: 1 } on every cue boundary, stomping manual
     // hide/show and the user's playbackRate.
-    this.playback = activeMode.id === 'normal'
+    const passThrough = activeMode.id === 'normal' && advanced.pauseOnUnknown === 'OFF';
+    this.playback = passThrough
       ? null
       : new StudyModePlaybackController(activeMode, advanced, targetCues, offsetMs);
+    this.playback?.setProbe(this.probe);
     this.offsetMs = offsetMs;
     this.lastTargetIndex = -1;
     this.internalSeekTargetMs = null;
@@ -59,6 +62,11 @@ export class SubtitleStudyModeController {
       this.lastTargetIndex = -1;
       this.internalSeekTargetMs = null;
     }
+  }
+
+  setProbe(probe: UnknownCueProbe | null): void {
+    this.probe = probe;
+    this.playback?.setProbe(probe);
   }
 
   clearCues(offsetMs: number): void {

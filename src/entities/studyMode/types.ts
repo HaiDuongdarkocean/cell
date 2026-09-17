@@ -26,9 +26,16 @@ export interface StudyMode {
   steps: StudyStep[];
 }
 
+export type PauseOnUnknownPoint = 'OFF' | 'START' | 'END';
+export type UnknownScope = 'FREQ_LIST' | 'ALL';
+
 export interface StudyModeAdvancedSettings {
   skipNoDialogue: 'OFF' | '2X' | '4X' | '6X' | '8X' | 'JUMP';
   removeBracketed: boolean;
+  pauseOnUnknown: PauseOnUnknownPoint;
+  unknownScope: UnknownScope;
+  popupOnAutoPause: boolean;
+  popupCloseOnResume: boolean;
 }
 
 export interface StudyModeState {

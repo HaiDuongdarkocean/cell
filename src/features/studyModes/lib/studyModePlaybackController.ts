@@ -6,7 +6,13 @@ export type PlaybackAction =
   | { type: 'setSpeed'; speed: number; transient?: boolean }
   | { type: 'seek'; timeMs: number }
   | { type: 'pause' }
-  | { type: 'play' };
+  | { type: 'play' }
+  | { type: 'autoPause'; term: string; cueIndex: number };
+
+/** Returns the first learnable term in a cue, or null. Injected by the
+ *  composition root (subtitle feature) so the controller stays pure and
+ *  feature-agnostic. */
+export type UnknownCueProbe = (cueIndex: number) => string | null;
 
 type ContinueTarget = 'nextStep' | 'nextCue';
 
@@ -40,6 +46,7 @@ export class StudyModePlaybackController {
   private loopCount = 0;
   private silenceHandledIndex = -1;
   private state: PlaybackState = { type: 'idle' };
+  private probe: UnknownCueProbe | null = null;
 
   constructor(
     mode: StudyMode,
@@ -79,6 +86,10 @@ export class StudyModePlaybackController {
     return boundariesChanged;
   }
 
+  setProbe(probe: UnknownCueProbe | null): void {
+    this.probe = probe;
+  }
+
   setMode(mode: StudyMode, advanced: StudyModeAdvancedSettings): void {
     this.mode = mode;
     this.advanced = advanced;
@@ -103,7 +114,14 @@ export class StudyModePlaybackController {
     const step = this.currentStep();
     if (!step) return [];
     this.repeatRemaining = step.repeat;
-    return this.applyStepEntry(step);
+    const actions = this.applyStepEntry(step);
+    const unknownTerm = this.unknownTermAt(index);
+    if (unknownTerm !== null && this.advanced.pauseOnUnknown === 'START' && step.pause === 'none') {
+      this.state = { type: 'pausedStart' };
+      actions.push({ type: 'pause' });
+      actions.push({ type: 'autoPause', term: unknownTerm, cueIndex: index });
+    }
+    return actions;
   }
 
   /** Called on every video time update (time in milliseconds). */
@@ -231,6 +249,18 @@ export class StudyModePlaybackController {
     }
 
     if (isLastStep) {
+      const unknownTerm = this.unknownTermAt(this.activeCueIndex);
+      if (
+        unknownTerm !== null &&
+        this.advanced.pauseOnUnknown === 'END' &&
+        step.pause === 'none' &&
+        step.after === 'continue'
+      ) {
+        this.state = { type: 'pausedEnd', continueTarget: 'nextCue' };
+        actions.push({ type: 'pause' });
+        actions.push({ type: 'autoPause', term: unknownTerm, cueIndex: this.activeCueIndex });
+        return false;
+      }
       this.activeCueIndex = -1;
       this.state = { type: 'idle' };
       return false;
@@ -283,6 +313,11 @@ export class StudyModePlaybackController {
   private parseSkipMultiplier(value: string): number {
     const match = value.match(/^(\d)X$/);
     return match ? Number(match[1]) : 0;
+  }
+
+  private unknownTermAt(index: number): string | null {
+    if (!this.probe || index < 0) return null;
+    return this.probe(index);
   }
 
   private cueStartMs(): number {

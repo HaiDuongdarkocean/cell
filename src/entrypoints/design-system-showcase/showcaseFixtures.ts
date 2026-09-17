@@ -169,7 +169,7 @@ export function getMockStudyModeState(variant: DataVariant = SHOWCASE_DATA): Stu
     version: 1,
     activeModeId: customModes[0]?.id ?? 'normal',
     customModes,
-    advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
+    advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
   };
 }
 

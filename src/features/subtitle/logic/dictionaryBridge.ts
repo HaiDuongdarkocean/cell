@@ -17,6 +17,7 @@ export interface DictionaryBridge {
     highlightTarget: Range | HTMLElement,
   ): void;
   cancelLookup(requestId: string): void;
+  dismissLookup(): void;
   updateSettings(settings: {
     dictionaryPopup: DictionaryPopupSettings;
     cardCreator: CardCreatorSettings;

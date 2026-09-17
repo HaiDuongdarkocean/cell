@@ -46,9 +46,9 @@ const repeatMode: StudyMode = {
   ],
 };
 
-const advancedOff = { skipNoDialogue: 'OFF', removeBracketed: false } as const;
-const advancedJump = { skipNoDialogue: 'JUMP', removeBracketed: false } as const;
-const advanced2X = { skipNoDialogue: '2X', removeBracketed: false } as const;
+const advancedOff = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
+const advancedJump = { skipNoDialogue: 'JUMP', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
+const advanced2X = { skipNoDialogue: '2X', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true } as const;
 
 describe('StudyModePlaybackController', () => {
   it('applies first step on enterCue', () => {
@@ -94,6 +94,70 @@ describe('StudyModePlaybackController', () => {
     const c = ctrl.onTimeUpdate(5000);
     expect(c).toEqual([]);
     expect(ctrl['activeCueIndex']).toBe(-1);
+  });
+
+  it('pauseOnUnknown END: pauses at cue end and emits autoPause with the term', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
+    const normal = PRESET_LOOKUP.get('normal')!;
+    const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
+    ctrl.setProbe((i) => (i === 0 ? 'unknown-term' : null));
+    ctrl.enterCue(cue, 0);
+
+    const end = ctrl.onTimeUpdate(5000);
+    expect(end).toContainEqual({ type: 'pause' });
+    expect(end).toContainEqual({ type: 'autoPause', term: 'unknown-term', cueIndex: 0 });
+
+    const resume = ctrl.continue();
+    expect(resume).toEqual([{ type: 'play' }]);
+    expect(ctrl['activeCueIndex']).toBe(-1);
+  });
+
+  it('pauseOnUnknown END: no pause when cue has no learnable term', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
+    const normal = PRESET_LOOKUP.get('normal')!;
+    const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
+    ctrl.setProbe(() => null);
+    ctrl.enterCue(cue, 0);
+
+    expect(ctrl.onTimeUpdate(5000)).toEqual([]);
+    expect(ctrl['activeCueIndex']).toBe(-1);
+  });
+
+  it('pauseOnUnknown START: pauses on cue entry and emits autoPause', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const advanced = { ...advancedOff, pauseOnUnknown: 'START' as const };
+    const normal = PRESET_LOOKUP.get('normal')!;
+    const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
+    ctrl.setProbe(() => 'term');
+    const actions = ctrl.enterCue(cue, 0);
+
+    expect(actions).toContainEqual({ type: 'pause' });
+    expect(actions).toContainEqual({ type: 'autoPause', term: 'term', cueIndex: 0 });
+    expect(ctrl.continue()).toEqual([{ type: 'play' }]);
+  });
+
+  it('pauseOnUnknown does not double-pause when the step already pauses', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const dictation = PRESET_LOOKUP.get('dictation')!;
+    const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
+    const ctrl = new StudyModePlaybackController(dictation, advanced, [cue]);
+    ctrl.setProbe(() => 'term');
+    ctrl.enterCue(cue, 0);
+
+    const end = ctrl.onTimeUpdate(5000);
+    expect(end.filter((a) => a.type === 'pause')).toHaveLength(1);
+    expect(end.some((a) => a.type === 'autoPause')).toBe(false);
+  });
+
+  it('pauseOnUnknown with no probe set never pauses (fail-open)', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
+    const normal = PRESET_LOOKUP.get('normal')!;
+    const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
+    ctrl.enterCue(cue, 0);
+    expect(ctrl.onTimeUpdate(5000)).toEqual([]);
   });
 
   it('pauses at end and continues to next cue on demand', () => {

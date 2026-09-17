@@ -13,7 +13,7 @@ import {
   SubtitleStudyModeController,
   type SubtitleStudyModeTimeState,
 } from '@/features/studyModes/lib/subtitleStudyModeController';
-import type { PlaybackAction } from '@/features/studyModes/lib/studyModePlaybackController';
+import type { PlaybackAction, UnknownCueProbe } from '@/features/studyModes/lib/studyModePlaybackController';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/entities/dictionary';
@@ -109,6 +109,11 @@ export class ReactSubtitleController {
   public onHideSection?: (role: 'target' | 'native') => void;
   /** Called when the user toggles hide/show for both subtitles in the overlay. */
   public onHideBoth?: () => void;
+  /** Called when the study-mode machine auto-pauses on an unknown word. */
+  public onAutoPause?: (term: string, cueIndex: number) => void;
+  /** Called when playback resumes after an auto-pause (popup-close hook). */
+  public onAutoResume?: () => void;
+  private autoPausePending = false;
 
   /** Whether Player Mode overlay is currently active. */
   public isPlayerModeActive = false;
@@ -620,6 +625,12 @@ export class ReactSubtitleController {
     this.engine.setHeldCue(this.studyMode.heldCueIndex);
   }
 
+  /** Inject the unknown-cue probe used by pauseOnUnknown. Composition root
+   *  (contentScriptController) owns the resolver built from cue tokens. */
+  setUnknownCueProbe(probe: UnknownCueProbe | null): void {
+    this.studyMode.setProbe(probe);
+  }
+
   private applySubtitleHidden(targetHidden: boolean, nativeHidden: boolean): void {
     this.styleController?.setHidden(targetHidden, nativeHidden);
     this.engine.updateSettings({
@@ -655,7 +666,15 @@ export class ReactSubtitleController {
         case 'pause':
           pauseVideo(this.video);
           break;
+        case 'autoPause':
+          this.autoPausePending = true;
+          this.onAutoPause?.(action.term, action.cueIndex);
+          break;
         case 'play':
+          if (this.autoPausePending) {
+            this.autoPausePending = false;
+            this.onAutoResume?.();
+          }
           void playVideo(this.video);
           break;
       }

@@ -8,7 +8,7 @@ export interface ShortcutGroup {
 }
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
-  { label: 'Playback', actions: ['prev-cue', 'next-cue', 'replay-cue', 'play-pause'] },
+  { label: 'Playback', actions: ['prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'next-unknown-cue'] },
   { label: 'Display', actions: ['toggle-overlay', 'toggle-panel', 'toggle-translate', 'toggle-player-mode'] },
   { label: 'Translation', actions: ['generate-native'] },
   { label: 'Flashcards', actions: ['quick-update', 'edit-card'] },
@@ -27,6 +27,7 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   'generate-native': 'Translate to native language',
   'quick-update': 'Quick add words',
   'edit-card': 'Create card from sentence',
+  'next-unknown-cue': 'Skip to unknown word',
 };
 
 /** Map form used by the mockup concepts — easier to look up and mutate than an array. */
@@ -45,6 +46,7 @@ export const DEFAULT_SHORTCUTS: ShortcutMap = {
   'generate-native': { key: 'h' },
   'quick-update': { key: 'q' },
   'edit-card': { key: 'e' },
+  'next-unknown-cue': { key: 'n' },
 };
 
 /** Normalized signature for conflict comparison. */

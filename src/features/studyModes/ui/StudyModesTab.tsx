@@ -9,6 +9,17 @@ import { formatModeDescription } from '../lib/formatStepSummary';
 import styles from './StudyModesTab.module.css';
 
 const SKIP_OPTIONS: StudyModeAdvancedSettings['skipNoDialogue'][] = ['OFF', '2X', '4X', '6X', '8X', 'JUMP'];
+const PAUSE_UNKNOWN_OPTIONS: StudyModeAdvancedSettings['pauseOnUnknown'][] = ['OFF', 'START', 'END'];
+const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], string> = {
+  OFF: 'Off',
+  START: 'Cue start',
+  END: 'Cue end',
+};
+const UNKNOWN_SCOPE_OPTIONS: StudyModeAdvancedSettings['unknownScope'][] = ['FREQ_LIST', 'ALL'];
+const UNKNOWN_SCOPE_LABELS: Record<StudyModeAdvancedSettings['unknownScope'], string> = {
+  FREQ_LIST: 'Frequency list',
+  ALL: 'All unknown',
+};
 
 export function StudyModesTab(): ReactElement {
   useEffect(() => {
@@ -269,6 +280,70 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
           onChange={(e) => onChange({ ...advanced, removeBracketed: e.target.checked })}
           data-cell-id="remove-bracketed-checkbox"
         />
+        <div>
+          <Text as="p" className={styles.advancedLabel}>
+            Pause when a cue has an unknown word
+          </Text>
+          <HStack
+            gap="2"
+            className={styles.chipRow}
+            role="group"
+            aria-label="Pause on unknown word"
+          >
+            {PAUSE_UNKNOWN_OPTIONS.map((option) => (
+              <Chip
+                key={option}
+                as="button"
+                selected={advanced.pauseOnUnknown === option}
+                onClick={() => onChange({ ...advanced, pauseOnUnknown: option })}
+                data-cell-id={`pause-on-unknown-${option}`}
+              >
+                {PAUSE_UNKNOWN_LABELS[option]}
+              </Chip>
+            ))}
+          </HStack>
+        </div>
+        {advanced.pauseOnUnknown !== 'OFF' && (
+          <>
+            <div>
+              <Text as="p" className={styles.advancedLabel}>
+                Which unknown words pause playback
+              </Text>
+              <HStack
+                gap="2"
+                className={styles.chipRow}
+                role="group"
+                aria-label="Unknown word scope"
+              >
+                {UNKNOWN_SCOPE_OPTIONS.map((option) => (
+                  <Chip
+                    key={option}
+                    as="button"
+                    selected={advanced.unknownScope === option}
+                    onClick={() => onChange({ ...advanced, unknownScope: option })}
+                    data-cell-id={`unknown-scope-${option}`}
+                  >
+                    {UNKNOWN_SCOPE_LABELS[option]}
+                  </Chip>
+                ))}
+              </HStack>
+            </div>
+            <Checkbox
+              label="Open dictionary popup when auto-paused"
+              checked={advanced.popupOnAutoPause}
+              onChange={(e) => onChange({ ...advanced, popupOnAutoPause: e.target.checked })}
+              data-cell-id="popup-on-autopause-checkbox"
+            />
+            {advanced.popupOnAutoPause && (
+              <Checkbox
+                label="Close popup when playback resumes"
+                checked={advanced.popupCloseOnResume}
+                onChange={(e) => onChange({ ...advanced, popupCloseOnResume: e.target.checked })}
+                data-cell-id="popup-close-on-resume-checkbox"
+              />
+            )}
+          </>
+        )}
       </VStack>
     </Card>
   );

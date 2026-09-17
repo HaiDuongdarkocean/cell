@@ -31,7 +31,7 @@ describe('studyModeStore', () => {
       version: 1,
       activeModeId: 'normal',
       customModes: [],
-      advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
       isLoaded: true,
     });
     setActiveStudyMode(null);
@@ -89,7 +89,7 @@ describe('studyModeStore', () => {
         version: 1,
         activeModeId: 'listen',
         customModes: [],
-        advanced: { skipNoDialogue: 'JUMP', removeBracketed: true },
+        advanced: { skipNoDialogue: 'JUMP', removeBracketed: true, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
       },
     });
     await loadStudyModeState();
@@ -103,7 +103,7 @@ describe('studyModeStore', () => {
         version: 1,
         activeModeId: 'custom-999',
         customModes: [],
-        advanced: { skipNoDialogue: 'OFF', removeBracketed: false },
+        advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true },
       },
     });
     await loadStudyModeState();

@@ -362,7 +362,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'target', pause: 'none', repeat: 1, speed: 1.5, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: true };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: true, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(studyMode, advanced);
 
@@ -394,7 +394,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: true };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: true, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     fakeMount.setStyles.mockClear();
     fakeEngine.updateSettings.mockClear();
@@ -426,7 +426,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'none', pause: 'end', repeat: 2, speed: 0.75, after: 'wait' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(dictationMode, advanced);
     expect(fakeMount.setPracticeMode).toHaveBeenCalledWith('dictation');
@@ -647,7 +647,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(studyMode, advanced);
     expect(video.playbackRate).toBe(0.5);
@@ -678,7 +678,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(studyMode, advanced);
     expect(video.playbackRate).toBe(1);
 
@@ -719,7 +719,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(studyMode, advanced);
     expect(video.playbackRate).toBe(0.5);
@@ -749,7 +749,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: '4X', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: '4X', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(studyMode, advanced);
 
     const mountOptions = mockMountSubtitle.mock.calls[0][0];
@@ -780,7 +780,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(listenMode, advanced);
     expect(fakeEngine.getTargetStyle().visible).toBe(false);
     expect(fakeEngine.getNativeStyle().visible).toBe(false);
@@ -807,7 +807,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'target', pause: 'none', repeat: 2, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     // Video paused at cue end (e.g. user parked it there before switching mode).
     // applyStudyMode syncs while paused — the step-end must not fire, so the
@@ -841,7 +841,7 @@ describe('ReactSubtitleController', () => {
         { subtitle: 'target', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
       ],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(twoStep, advanced);
 
     controller.setOffsetMs(500);
@@ -874,7 +874,7 @@ describe('ReactSubtitleController', () => {
         { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
       ],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(listenCheck, advanced);
     fakeEngine.setHeldCue.mockClear();
 
@@ -901,7 +901,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'target', pause: 'none', repeat: 2, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
     controller.applyStudyMode(repeatMode, advanced);
 
     Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
@@ -923,7 +923,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(listenMode, advanced);
 
@@ -942,7 +942,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(dictationMode, advanced);
 
@@ -970,7 +970,7 @@ describe('ReactSubtitleController', () => {
       description: '',
       steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(listenMode, advanced);
     expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(true);
@@ -994,7 +994,7 @@ describe('ReactSubtitleController', () => {
         { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
       ],
     };
-    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownScope: 'FREQ_LIST', popupOnAutoPause: false, popupCloseOnResume: true };
 
     controller.applyStudyMode(listenCheckMode, advanced);
     expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(true);

@@ -24,6 +24,7 @@
   "settings.shortcuts.action.togglePlayerMode": "Chế độ toàn màn hình",
   "settings.shortcuts.action.quickUpdate": "Thêm từ nhanh",
   "settings.shortcuts.action.editCard": "Tạo thẻ từ câu",
+  "settings.shortcuts.action.nextUnknownCue": "Nhảy tới từ chưa biết",
   "settings.shortcuts.conflict.title": "Một phím tắt khác đang dùng phím này.",
   "settings.shortcuts.conflict.aria": "Xung đột phím tắt",
   "shortcut.modifier.ctrl": "Ctrl",

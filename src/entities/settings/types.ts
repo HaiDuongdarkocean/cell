@@ -16,7 +16,8 @@ export type ShortcutAction =
   | 'toggle-player-mode'
   | 'quick-update'
   | 'edit-card'
-  | 'play-pause';
+  | 'play-pause'
+  | 'next-unknown-cue';
 
 /** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {

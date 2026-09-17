@@ -155,6 +155,7 @@ interface MockController {
   getCurrentNativeText: jest.Mock;
   getActiveIndices: jest.Mock;
   getLineElements: jest.Mock;
+  setUnknownCueProbe: jest.Mock;
   getOffsetMs: jest.Mock;
   loadBilingualCues: jest.Mock;
   loadCues: jest.Mock;
@@ -240,6 +241,7 @@ function createMockController(): MockController {
     getCurrentNativeText: jest.fn().mockReturnValue(''),
     getActiveIndices: jest.fn().mockReturnValue({ target: -1, native: -1 }),
     getLineElements: jest.fn().mockReturnValue({ target: null, native: null }),
+    setUnknownCueProbe: jest.fn(),
     getOffsetMs: jest.fn().mockReturnValue(0),
     loadBilingualCues: jest.fn(),
     loadCues: jest.fn(),
