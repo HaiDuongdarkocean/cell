@@ -17,10 +17,10 @@ const PAUSE_UNKNOWN_LABELS: Record<StudyModeAdvancedSettings['pauseOnUnknown'], 
 };
 const UNKNOWN_LEVEL_OPTIONS: StudyModeAdvancedSettings['unknownLevel'][] = ['core', 'common', 'general', 'advanced'];
 const UNKNOWN_LEVEL_LABELS: Record<StudyModeAdvancedSettings['unknownLevel'], string> = {
-  core: 'Top 3k',
-  common: 'Top 5k',
-  general: 'Top 10k',
-  advanced: 'Top 20k',
+  core: 'Core',
+  common: 'Common',
+  general: 'General',
+  advanced: 'Advanced',
 };
 
 export function StudyModesTab(): ReactElement {

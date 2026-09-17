@@ -10,7 +10,7 @@ const AFTER_VALUES = new Set(['continue', 'wait', 'loop']);
 const SKIP_VALUES = new Set(['OFF', '2X', '4X', '6X', '8X', 'JUMP']);
 const PAUSE_UNKNOWN_VALUES = new Set(['OFF', 'START', 'END']);
 const UNKNOWN_LEVEL_VALUES = new Set(['core', 'common', 'general', 'advanced']);
-// Legacy field (pre-level scope flag) — FREQ_LIST/ALL both map to 'advanced'.
+// Legacy field (pre-level scope flag) — FREQ_LIST/ALL both map to the default.
 const LEGACY_UNKNOWN_SCOPE_VALUES = new Set(['FREQ_LIST', 'ALL']);
 
 export const INITIAL_STUDY_MODE_STATE: StudyModeState = {
@@ -21,7 +21,7 @@ export const INITIAL_STUDY_MODE_STATE: StudyModeState = {
     skipNoDialogue: 'OFF',
     removeBracketed: false,
     pauseOnUnknown: 'OFF',
-    unknownLevel: 'advanced',
+    unknownLevel: 'common',
     popupOnAutoPause: false,
     popupCloseOnResume: true,
   },
@@ -69,7 +69,7 @@ function sanitizeAdvanced(raw: unknown): StudyModeAdvancedSettings {
     unknownLevel: UNKNOWN_LEVEL_VALUES.has(raw.unknownLevel as string)
       ? (raw.unknownLevel as StudyModeAdvancedSettings['unknownLevel'])
       : LEGACY_UNKNOWN_SCOPE_VALUES.has(raw.unknownScope as string)
-        ? 'advanced'
+        ? 'common'
         : fallback.unknownLevel,
     popupOnAutoPause:
       typeof raw.popupOnAutoPause === 'boolean' ? raw.popupOnAutoPause : fallback.popupOnAutoPause,

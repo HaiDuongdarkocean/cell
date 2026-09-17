@@ -642,6 +642,11 @@ export class ReactSubtitleController {
   }
 
   private applyPlaybackActions(actions: readonly PlaybackAction[]): void {
+    // Settle the held-cue pin BEFORE dispatching: on END pause the state
+    // machine already set heldCueIndex, so this flips the engine's active
+    // index back and emits onCuesUpdated now — before onAutoPause opens the
+    // popup, so the cue-change dismiss can't kill the just-opened popup.
+    this.syncHeldCue();
     for (const action of actions) {
       switch (action.type) {
         case 'setSubtitle': {

@@ -152,6 +152,47 @@ describe('loadSettings migration', () => {
     expect(settings.cardCreator.mediaUpdateMode).toBe('append');
   });
 
+  it('migrates v30 shortcuts: rebinds next-unknown-cue n→x and adds prev-unknown-cue z', async () => {
+    const v30Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 30,
+      keyboardShortcuts: [
+        { action: 'prev-cue', key: 'a' },
+        { action: 'next-unknown-cue', key: 'n' },
+      ],
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v30Settings,
+    });
+
+    const settings = await loadSettings();
+
+    expect(settings.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const byAction = new Map(settings.keyboardShortcuts.map((sc) => [sc.action, sc.key]));
+    expect(byAction.get('next-unknown-cue')).toBe('x');
+    expect(byAction.get('prev-unknown-cue')).toBe('z');
+    expect(byAction.get('prev-cue')).toBe('a');
+  });
+
+  it('keeps a custom next-unknown-cue binding and still adds prev-unknown-cue', async () => {
+    const v30Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 30,
+      keyboardShortcuts: [{ action: 'next-unknown-cue', key: 'm' }],
+    } as Record<string, unknown>;
+
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: v30Settings,
+    });
+
+    const settings = await loadSettings();
+
+    const byAction = new Map(settings.keyboardShortcuts.map((sc) => [sc.action, sc.key]));
+    expect(byAction.get('next-unknown-cue')).toBe('m');
+    expect(byAction.get('prev-unknown-cue')).toBe('z');
+  });
+
   it('resets undefined nested objects to their defaults', async () => {
     const stored = { ...DEFAULT_SETTINGS, schemaVersion: CURRENT_SCHEMA_VERSION } as Record<string, unknown>;
     stored.cardCreator = undefined;

@@ -41,6 +41,9 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
   // Ceiling: nav without URL change (rare on YouTube) → not caught. Upgrade:
   // MutationObserver on <video> src.
   const onSpaNav = (): void => {
+    // Tokenize enablement is per-URL — re-evaluate on every nav, even when the
+    // cue-clearing path below early-returns (e.g. no auto-load ran yet).
+    void ctx.syncSubtitleTokenize();
     const lastAutoLoadUrl = ctx.getLastAutoLoadUrl();
     const currentNavUrl = canonicalNavUrl(location.href);
     if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === currentNavUrl) return;

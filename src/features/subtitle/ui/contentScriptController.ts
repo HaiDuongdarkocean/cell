@@ -17,6 +17,8 @@ import {
   toggleOverlayState,
   playVideo,
   pauseVideo,
+  seekVideo,
+  SEEK_LANDING_EPS_MS,
   loadSettingsOrToast,
   broadcastCues,
 } from '@/features/subtitle';
@@ -46,6 +48,20 @@ import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Subtit
 
 import type { SubtitlePanelItem } from '@/features/subtitle';
 // === Subtitle Overlay Integration ===
+
+/** Last cue whose (offset-adjusted) start is at or before `nowMs`; -1 when
+ *  playback is before the first cue. Used when the active index is -1 in an
+ *  inter-cue gap. */
+function lastStartedCueIndex(
+  cues: readonly SrtCue[],
+  nowMs: number,
+  offsetMs: number,
+): number {
+  for (let i = cues.length - 1; i >= 0; i--) {
+    if (cues[i].start - offsetMs <= nowMs) return i;
+  }
+  return -1;
+}
 
 export function init(
   video: HTMLVideoElement,
@@ -171,7 +187,9 @@ export function init(
 
   async function syncUnknownResolver(): Promise<void> {
     const wantsProbe = currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF';
-    const wantsNav = shortcuts.some((s) => s.action === 'next-unknown-cue');
+    const wantsNav = shortcuts.some(
+      (s) => s.action === 'next-unknown-cue' || s.action === 'prev-unknown-cue',
+    );
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const cues = blockController.getTargetCues();
     if ((!wantsProbe && !wantsNav) || !langCode || cues.length === 0) {
@@ -266,10 +284,23 @@ export function init(
 
   let lastFedTargetCues: readonly SrtCue[] = [];
   let lastFedNativeCues: readonly SrtCue[] = [];
+  let lastActiveTargetIndex = -1;
   blockController.onCuesUpdated = () => {
     const targetCues = blockController.getTargetCues();
     const nativeCues = blockController.getNativeCues();
-    if (targetCues !== lastFedTargetCues || nativeCues !== lastFedNativeCues) {
+    const cuesReloaded = targetCues !== lastFedTargetCues || nativeCues !== lastFedNativeCues;
+
+    // Any active-cue change (a/d/s/x/z nav, seeks, natural progression)
+    // closes an open dictionary popup — it belongs to the previous cue.
+    // Skipped on cue-list reloads: those emit a transient -1 index that would
+    // spuriously kill a popup showing a word from the still-current cue.
+    const activeTarget = blockController.getActiveIndices().target;
+    if (!cuesReloaded && lastActiveTargetIndex !== -1 && activeTarget !== lastActiveTargetIndex) {
+      sharedWebTextCtrl?.dismissLookup();
+    }
+    lastActiveTargetIndex = activeTarget;
+
+    if (cuesReloaded) {
       lastFedTargetCues = targetCues;
       lastFedNativeCues = nativeCues;
       subtitleTokenizeCtrl?.setCues(targetCues, nativeCues);
@@ -296,14 +327,18 @@ export function init(
       blockController.disableTokenize();
       return;
     }
+    const url = window.location.href;
     try {
       const ts = tokenizeSettings ?? (await loadTokenizeSettings());
-      const url = window.location.href;
+      // A newer sync/navigation may have superseded this call — bail instead
+      // of re-applying stale enablement (settings/url read at call time).
+      if (currentSettings !== settings || window.location.href !== url) return;
       const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
       subtitleTokenizeActive = enabled;
       if (enabled) {
         if (!subtitleTokenizeCtrl) {
           const { createSubtitleTokenizeController } = await import('@/features/tokenize/controller/subtitleTokenizeController');
+          if (currentSettings !== settings || window.location.href !== url) return;
           subtitleTokenizeCtrl = createSubtitleTokenizeController({
             langCode: settings.subtitleOverlayTargetLanguage,
             getLineElements: () => blockController.getLineElements(),
@@ -760,23 +795,27 @@ export function init(
     syncSubtitleTokenize,
     nextUnknownCue: () => {
       if (!unknownResolver) return;
-      const { target } = blockController.getActiveIndices();
-      const next = unknownResolver.findNext(target);
-      if (next < 0) return;
-      const cue = blockController.getTargetCues()[next];
-      if (!cue) return;
+      const cues = blockController.getTargetCues();
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
-      video.currentTime = Math.max(0, (cue.start - offsetMs) / 1000);
+      const { target } = blockController.getActiveIndices();
+      // In an inter-cue gap getActiveIndices() returns -1 — fall back to the
+      // last cue that started before now so 'x' doesn't jump backwards.
+      const fromIndex = target >= 0 ? target : lastStartedCueIndex(cues, video.currentTime * 1000, offsetMs);
+      const next = unknownResolver.findNext(fromIndex);
+      const cue = next >= 0 ? cues[next] : undefined;
+      if (!cue) return;
+      seekVideo(video, Math.max(0, (cue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000));
     },
     prevUnknownCue: () => {
       if (!unknownResolver) return;
-      const { target } = blockController.getActiveIndices();
-      const prev = unknownResolver.findPrev(target);
-      if (prev < 0) return;
-      const cue = blockController.getTargetCues()[prev];
-      if (!cue) return;
+      const cues = blockController.getTargetCues();
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
-      video.currentTime = Math.max(0, (cue.start - offsetMs) / 1000);
+      const { target } = blockController.getActiveIndices();
+      const fromIndex = target >= 0 ? target : lastStartedCueIndex(cues, video.currentTime * 1000, offsetMs) + 1;
+      const prev = unknownResolver.findPrev(fromIndex);
+      const cue = prev >= 0 ? cues[prev] : undefined;
+      if (!cue) return;
+      seekVideo(video, Math.max(0, (cue.start - offsetMs + SEEK_LANDING_EPS_MS) / 1000));
     },
   };
 

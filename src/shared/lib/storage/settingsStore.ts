@@ -17,7 +17,7 @@ import { buildProfileName, generateProfileId, resolveSettingsFlatFields } from '
 import type { Settings, NavClusterButtonSize, LanguageProfile } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 30;
+export const CURRENT_SCHEMA_VERSION = 31;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -478,6 +478,27 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (cardCreator && cardCreator.mediaUpdateMode === 'overwrite') {
       cardCreator.mediaUpdateMode = 'skip';
     }
+    return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
+  },
+  // v30 → v31: immersion playback shortcuts shipped without a migration, so
+  // existing users' stored keyboardShortcuts never gained the bindings — and
+  // the default moved from 'n' to 'x'/'z'. Rebind next-unknown-cue 'n'→'x'
+  // when still on the old default (custom remaps kept), append any missing
+  // nav bindings.
+  30: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 31 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts)
+      ? (merged.keyboardShortcuts as { action: string; key: string }[]).map((sc) =>
+          sc.action === 'next-unknown-cue' && sc.key === 'n' ? { ...sc, key: 'x' } : sc,
+        )
+      : [];
+    if (!shortcuts.some((sc) => sc.action === 'next-unknown-cue')) {
+      shortcuts.push({ action: 'next-unknown-cue', key: 'x' });
+    }
+    if (!shortcuts.some((sc) => sc.action === 'prev-unknown-cue')) {
+      shortcuts.push({ action: 'prev-unknown-cue', key: 'z' });
+    }
+    merged.keyboardShortcuts = shortcuts;
     return mergeNestedObjectDefaults(merged, DEFAULT_SETTINGS as unknown as Record<string, unknown>);
   },
 };
