@@ -380,3 +380,7 @@ export function languageMatches(target: string, candidate: string): boolean {
   if (t.startsWith(c + '-')) return true; // target is a subtag of candidate (candidate is broader)
   return false;
 }
+
+export function baseLangCode(code: string): string {
+  return code.toLowerCase().trim().split('-', 1)[0] ?? code;
+}

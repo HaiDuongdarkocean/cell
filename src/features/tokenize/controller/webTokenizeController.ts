@@ -22,7 +22,7 @@ import {
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
 import { createStatusKeyControls } from '@/features/tokenize/logic/statusKeyControls';
-import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
+import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
 // ponytail: cache capacity is tiered by reported device RAM so low-end devices
@@ -80,6 +80,9 @@ export interface WebTokenizeControllerOptions {
   readonly onOpenDictionary?: (term: string, element: HTMLElement, contextSentence: string) => void;
   /** Callback when a word status changes via keyboard shortcut or other action. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Fired when the scanned block list changes (scan, dynamic adds, removals,
+   *  token invalidation). Used by the comprehension text-score source. */
+  readonly onBlocksChanged?: () => void;
 }
 
 export interface WebTokenizeController extends TokenizeController {
@@ -101,6 +104,10 @@ export interface WebTokenizeController extends TokenizeController {
   readonly applyStatusForTerm: (term: string, status: WordStatus) => void;
   /** Get the locally cached word status for a term. */
   readonly getStatusForTerm: (term: string) => WordStatus;
+  /** All scanned text blocks (prepared or not). Read-only view. */
+  readonly getBlocks: () => readonly TokenBlock[];
+  /** Prepare every scanned block (tokenize, no DOM bind) and return all tokens. */
+  readonly getAllTokens: () => Token[];
 }
 
 /**
@@ -420,6 +427,7 @@ export async function createWebTokenizeController(
       bindViewportNow();
       scanAndObserveBlocks();
       updateMutationObservation(true);
+      options.onBlocksChanged?.();
     } else {
       updateMutationObservation(false);
       window.removeEventListener('scroll', onScroll);
@@ -491,6 +499,7 @@ export async function createWebTokenizeController(
       // synchronous getBoundingClientRect for each one forces repeated layout.
       observeBlock(block, eager && added.length <= 50);
     }
+    options.onBlocksChanged?.();
   }
 
   function handleCharacterDataMutation(textNode: Text): void {
@@ -501,6 +510,7 @@ export async function createWebTokenizeController(
       if (block.sourceNodes[0] === textNode) {
         block.tokens = undefined;
         block.isBound = false;
+        options.onBlocksChanged?.();
         if (visibleElements.has(parent)) {
           bindVisibleBlock(block);
         }
@@ -516,11 +526,16 @@ export async function createWebTokenizeController(
     viewport.unobserve(node);
     visibleElements.delete(node);
     const existing = cache.getByElement(node);
+    let removedAny = false;
     for (const block of existing) {
       const idx = blocks.indexOf(block);
-      if (idx >= 0) blocks.splice(idx, 1);
+      if (idx >= 0) {
+        blocks.splice(idx, 1);
+        removedAny = true;
+      }
       cache.delete(block.id);
     }
+    if (removedAny) options.onBlocksChanged?.();
   }
 
   function flushPendingAddedNodes(): void {
@@ -848,6 +863,17 @@ export async function createWebTokenizeController(
 
     applyStatusForTerm,
     getStatusForTerm,
+
+    getBlocks: () => blocks,
+
+    getAllTokens: () => {
+      const out: Token[] = [];
+      for (const block of blocks) {
+        if (!block.tokens) prepareBlock(block);
+        if (block.tokens) out.push(...block.tokens);
+      }
+      return out;
+    },
 
     destroy: () => {
       statusKeyControls.destroy();
