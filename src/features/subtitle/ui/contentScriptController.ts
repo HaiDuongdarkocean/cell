@@ -213,14 +213,27 @@ export function init(
     const { target } = blockController.getLineElements();
     if (!langCode || !target) return;
     const cue = blockController.getTargetCues()[cueIndex];
+    const sentence = cue?.text ?? '';
+    // Mimic the real click path: anchor + highlight the token span itself so
+    // the popup opens next to the word, not the whole line. Token spans carry
+    // data-cell-start (both tokenize status spans and .js-cell-token trigger
+    // spans); fall back to a term match when tokenizers disagree on offsets.
+    let span: HTMLElement | null = null;
+    let termFallback: HTMLElement | null = null;
+    for (const el of target.querySelectorAll<HTMLElement>('[data-cell-start], .js-cell-token')) {
+      if (Number(el.getAttribute('data-cell-start')) === termOffset) { span = el; break; }
+      if (!termFallback && (el.textContent ?? '').toLowerCase() === term) termFallback = el;
+    }
+    span ??= termFallback;
+    const anchorEl = span ?? target;
     const request: LookupRequest = {
       term,
       langCode,
-      contextSentence: cue?.text ?? '',
-      cursorOffset: termOffset,
+      contextSentence: sentence,
+      cursorOffset: span ? Number(span.getAttribute('data-cell-start') ?? termOffset) : termOffset,
     };
     const requestId = `autopause-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    sharedWebTextCtrl.handleLookup(request, requestId, target.getBoundingClientRect(), target);
+    sharedWebTextCtrl.handleLookup(request, requestId, anchorEl.getBoundingClientRect(), anchorEl);
   };
   blockController.onAutoResume = () => {
     if (currentAdvanced?.popupCloseOnResume) sharedWebTextCtrl?.dismissLookup();
