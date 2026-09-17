@@ -15,6 +15,7 @@ import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
 import { StudyModesTab } from '@/features/studyModes/ui/StudyModesTab';
+import { VocabularyTab } from '@/features/vocabulary';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { openSettingsSection } from './deepLink';
 import { UNIVERSAL_PANEL_HOST_ID } from '@/shared/lib/dom/cellUiHosts';
@@ -60,7 +61,7 @@ async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
     const data = await getSessionStorage<Record<string, string>>(STORAGE_KEYS.UNIVERSAL_PANEL_TAB);
     const tab = data[STORAGE_KEYS.UNIVERSAL_PANEL_TAB];
-    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' ? tab : null;
+    return tab === 'dictionary' || tab === 'settings' || tab === 'studyModes' || tab === 'vocabulary' ? tab : null;
   } catch {
     return null;
   }
@@ -133,6 +134,9 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       pendingCardCreatorContext = context;
       pendingSearchTerm = context.term ?? null;
     },
+    onLookup: (term) => {
+      pendingSearchTerm = term;
+    },
   });
 
   const mountController: UniversalPanelMountController = {
@@ -196,6 +200,12 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       },
     }) as ReactElement;
 
+  const renderVocabularyPanel = (): ReactElement =>
+    createElement(ErrorBoundary, null, createElement(VocabularyTab, {
+      langCode: dictionaryLangCode,
+      onLookup: (term: string) => { void mountController.openDictionaryLookup(term); },
+    })) as ReactElement;
+
   const studyModesPanel = createElement(ErrorBoundary, null, createElement(StudyModesTab)) as ReactElement;
   const settingsPanel = createElement(ErrorBoundary, null, createElement(SettingsTab)) as ReactElement;
 
@@ -252,6 +262,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
             void saveSettings({ activeProfileId: id });
           },
           dictionaryPanel: renderDictionaryPanel(open),
+          vocabularyPanel: renderVocabularyPanel(),
           studyModesPanel,
           settingsPanel,
         }) as ReactElement,

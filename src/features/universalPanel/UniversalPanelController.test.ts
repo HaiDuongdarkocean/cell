@@ -116,4 +116,30 @@ describe('createUniversalPanelController', () => {
     expect(onSendToCard).toHaveBeenCalledTimes(1);
     expect(controller.isOpen()).toBe(false);
   });
+
+  it('openDictionaryLookup invokes onLookup and opens dictionary without arming the card creator', async () => {
+    const onLookup = jest.fn();
+    const onSendToCard = jest.fn();
+    const onOpen = jest.fn();
+    const { controller } = createUniversalPanelController({ onLookup, onSendToCard, onOpen });
+
+    await controller.openDictionaryLookup('apple');
+
+    expect(onLookup).toHaveBeenCalledWith('apple');
+    expect(onSendToCard).not.toHaveBeenCalled();
+    expect(onOpen).toHaveBeenCalledWith('dictionary');
+    expect(controller.isOpen()).toBe(true);
+  });
+
+  it('restores a persisted vocabulary tab on open', async () => {
+    const onOpen = jest.fn();
+    const { controller } = createUniversalPanelController({
+      getPersistedTab: () => Promise.resolve('vocabulary'),
+      onOpen,
+    });
+
+    await controller.open();
+
+    expect(onOpen).toHaveBeenCalledWith('vocabulary');
+  });
 });

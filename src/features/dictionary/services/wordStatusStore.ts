@@ -8,7 +8,9 @@
 // caller shows toast, lookup still works with existing data.
 
 import { getDB, getStore, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
-import type { WordStatus } from '@/entities/dictionary';
+import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+
+export { STATUS_CYCLE };
 
 /** Word status entry — 1 row per term (langWordStatus store). */
 export interface WordStatusEntry {
@@ -38,8 +40,7 @@ function isQuotaError(err: unknown): boolean {
   return false;
 }
 
-/** The 4-status cycle order (spec §D1). */
-export const STATUS_CYCLE: readonly WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
+/** The 4-status cycle order lives in entities/dictionary (spec §D1). */
 
 /** Get the next status in the cycle. */
 export function nextStatus(current: WordStatus): WordStatus {
@@ -131,6 +132,18 @@ export async function deleteWordStatus(langCode: string, term: string): Promise<
   const store = getStore(db, STORES.WORD_STATUS);
   store.delete(term);
   await awaitTx(store.transaction!);
+}
+
+/** Get every stored word-status entry for a lang. */
+export async function getAllWordStatuses(langCode: string): Promise<WordStatusEntry[]> {
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
+  const store = tx.objectStore(STORES.WORD_STATUS);
+  return new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result as WordStatusEntry[]);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 /** Get all terms with a given status. */

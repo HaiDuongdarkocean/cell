@@ -1,5 +1,6 @@
 /**
- * Word status message handlers — WORD_STATUS_GET / WORD_STATUS_SET.
+ * Word status message handlers — WORD_STATUS_GET / WORD_STATUS_SET /
+ * WORD_STATUS_LIST / WORD_STATUS_CYCLE / WORD_STATUS_DELETE.
  *
  * Content scripts ask the background to read/write word status because
  * IndexedDB is origin-isolated: the extension's IDB lives in the extension
@@ -12,11 +13,17 @@ import {
   WordStatusGetPayloadSchema,
   WordStatusesGetPayloadSchema,
   WordStatusSetPayloadSchema,
+  WordStatusListPayloadSchema,
+  WordStatusCyclePayloadSchema,
+  WordStatusDeletePayloadSchema,
 } from '@/entities/message/dictionarySchemas';
 import {
   getWordStatus,
   getWordStatuses,
+  getAllWordStatuses,
   setWordStatus,
+  cycleWordStatus,
+  deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
 import type { WordStatus } from '@/entities/dictionary';
 import {
@@ -24,25 +31,21 @@ import {
   sendMessageToAllFramesInTab,
 } from '@/shared/lib/chrome-apis/tabs';
 
-/** Broadcast a status change to content scripts in all other tabs. */
-async function broadcastWordStatusChanged(
+/** Broadcast a status change/delete to content scripts in all other tabs. */
+async function broadcastToOtherTabs(
   sourceTabId: number,
-  langCode: string,
-  term: string,
-  status: WordStatus,
+  type: string,
+  payload: Record<string, unknown>,
 ): Promise<void> {
   const tabs = await queryTabs({});
-  const message = {
-    type: MESSAGE_TYPES.WORD_STATUS_CHANGED,
-    payload: { tabId: sourceTabId, langCode, term, status },
-  };
+  const message = { type, payload: { tabId: sourceTabId, ...payload } };
   const targets = tabs.filter((tab) => tab.id !== undefined && tab.id !== sourceTabId);
   await Promise.allSettled(
     targets.map((tab) => sendMessageToAllFramesInTab(tab.id!, message)),
   );
 }
 
-/** Register word status GET/SET handlers. */
+/** Register word status handlers. */
 export function registerWordStatusHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.WORD_STATUS_SET, async (request): Promise<MessageResponse> => {
     const parsed = WordStatusSetPayloadSchema.safeParse(request.payload);
@@ -57,7 +60,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await setWordStatus(langCode, term, status);
       if (tabId !== undefined) {
-        void broadcastWordStatusChanged(tabId, langCode, term, status);
+        void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
       }
       return { success: true };
     } catch (err) {
@@ -102,6 +105,64 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
         statuses[term] = status;
       }
       return { success: true, data: { statuses } };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_LIST, async (request): Promise<MessageResponse<{ entries: { term: string; status: WordStatus; updatedAt: number }[] }>> => {
+    const parsed = WordStatusListPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_LIST payload: ${parsed.error.message}`,
+      };
+    }
+
+    try {
+      const entries = await getAllWordStatuses(parsed.data.langCode);
+      return { success: true, data: { entries: [...entries] } };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_CYCLE, async (request): Promise<MessageResponse<{ status: WordStatus }>> => {
+    const parsed = WordStatusCyclePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_CYCLE payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { term, langCode, tabId } = parsed.data;
+    try {
+      const status = await cycleWordStatus(langCode, term);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+      return { success: true, data: { status } };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_DELETE, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusDeletePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_DELETE payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { term, langCode, tabId } = parsed.data;
+    try {
+      await deleteWordStatus(langCode, term);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return { success: false, error: message };

@@ -15,9 +15,9 @@ export interface ToolAction {
 
 export interface UniversalPanelBottomNavProps {
   /** Currently active tab. */
-  activeTab: 'dictionary' | 'studyModes' | 'settings';
+  activeTab: 'dictionary' | 'studyModes' | 'settings' | 'vocabulary';
   /** Called when user switches tab. */
-  onTabChange: (tab: 'dictionary' | 'studyModes' | 'settings') => void;
+  onTabChange: (tab: 'dictionary' | 'studyModes' | 'settings' | 'vocabulary') => void;
   /** Tools shown in the bottom sheet. */
   tools: ToolAction[];
   /** Optional class name. */
@@ -26,6 +26,7 @@ export interface UniversalPanelBottomNavProps {
 
 const TABS = [
   { key: 'dictionary' as const, icon: 'bookOpen' as const, label: 'Dictionary' },
+  { key: 'vocabulary' as const, icon: 'scanText' as const, label: 'Vocab' },
   { key: 'studyModes' as const, icon: 'slidersHorizontal' as const, label: 'Study' },
   { key: 'settings' as const, icon: 'settings' as const, label: 'Settings' },
 ];

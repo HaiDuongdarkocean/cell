@@ -184,6 +184,21 @@ export const WordStatusChangedPayloadSchema = z.object({
   status: WordStatusSchema,
 });
 
+export const WordStatusListPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+});
+
+export const WordStatusCyclePayloadSchema = WordStatusGetPayloadSchema;
+
+export const WordStatusDeletePayloadSchema = WordStatusGetPayloadSchema;
+
+export const WordStatusDeletedPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  term: z.string().min(1).max(200),
+});
+
 // === Frequency lookup (spec §9.4 B — FREQUENCY_GET) ===
 
 export const FrequencyEntrySchema = z.object({

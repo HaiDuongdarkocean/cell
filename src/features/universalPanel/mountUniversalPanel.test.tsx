@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, beforeAll } from '@jest/globals';
 import { act, fireEvent, waitFor } from '@testing-library/react';
 import type { Settings } from '@/entities/media';
-import { DEFAULT_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 
 // Mock the heavy settings UI so the mount integration test stays focused on
 // controller/tab wiring.
@@ -33,6 +33,14 @@ jest.mock('./tabs/DictionaryTab', () => ({
       data-prefill-term={props.prefill?.term ?? ''}
     >
       <div data-cell-id="dictionary-panel">Dictionary panel</div>
+    </div>
+  ),
+}));
+
+jest.mock('@/features/vocabulary/ui/VocabularyTab', () => ({
+  VocabularyTab: (props: { langCode: string; onLookup: (term: string) => void }) => (
+    <div data-cell-id="vocabulary-tab" data-lang={props.langCode}>
+      <button type="button" data-cell-id="vocabulary-lookup-trigger" onClick={() => props.onLookup('apple')}>lookup</button>
     </div>
   ),
 }));
@@ -162,5 +170,32 @@ describe('mountUniversalPanel', () => {
     await act(async () => { await controller.switchTab('dictionary'); });
     await waitFor(() => expect(getByTestId('dictionary-tab')).toBeTruthy());
     expect(getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
+  });
+
+  it('restores a persisted vocabulary tab', async () => {
+    mockGetSessionStorage.mockResolvedValue({ [STORAGE_KEYS.UNIVERSAL_PANEL_TAB]: 'vocabulary' });
+    await act(async () => { controller.unmount(); });
+    document.body.innerHTML = '';
+    await act(async () => {
+      controller = mountUniversalPanel();
+      await Promise.resolve();
+    });
+
+    await act(async () => { await controller.open(); });
+
+    await waitFor(() => expect(getByTestId('universal-panel-content-vocabulary')).toBeTruthy());
+    expect(getByTestId('vocabulary-tab')).toBeTruthy();
+  });
+
+  it('openDictionaryLookup pre-fills the dictionary term without arming the card creator', async () => {
+    await act(async () => { await controller.open('vocabulary'); });
+    await waitFor(() => expect(getByTestId('vocabulary-tab')).toBeTruthy());
+
+    await act(async () => { fireEvent.click(getByTestId('vocabulary-lookup-trigger')); });
+
+    await waitFor(() => expect(getByTestId('dictionary-tab')).toBeTruthy());
+    const tab = getByTestId('dictionary-tab');
+    expect(tab).toHaveAttribute('data-initial-term', 'apple');
+    expect(tab).toHaveAttribute('data-prefill-term', '');
   });
 });
