@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SubtitlePanel } from './SubtitlePanel';
 import type { BilingualCue } from '@/entities/media';
 import type { WordStatus } from '@/entities/dictionary';
+import { emitWordStatusChanged } from '@/features/dictionary';
 import {
   DEFAULT_BAND_THRESHOLDS,
   resolveCueListTokenMetadata,
@@ -281,5 +282,60 @@ describe('SubtitlePanel cue filter', () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(screen.queryByTestId('cue-filter-fab')).toBeNull();
+  });
+});
+
+describe('SubtitlePanel cue heat', () => {
+  const heatBands = () =>
+    screen.getAllByTestId('cue-item').map((el) => el.getAttribute('data-heat'));
+
+  it('renders a heat band on every cue once difficulty resolves', async () => {
+    renderPanel();
+    await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
+
+    expect(heatBands()).toEqual(['easy', 'i1', 'dense']);
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(3);
+  });
+
+  it('keeps heat bands visible while a filter mode is active', async () => {
+    renderPanel();
+    await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('cue-filter-fab'));
+    fireEvent.click(
+      screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('3+'))!,
+    );
+
+    await waitFor(() => expect(screen.getAllByTestId('cue-item')).toHaveLength(1));
+    expect(heatBands()).toEqual(['dense']);
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(1);
+  });
+
+  it('renders no heat when tokenize is off, blurred, or in practice mode', async () => {
+    const { unmount } = renderPanel({ tokenize: null });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(0);
+    unmount();
+
+    const blurred = renderPanel({ panelBlurred: true });
+    await waitFor(() => expect(resolveMock).toHaveBeenCalled());
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(0);
+    blurred.unmount();
+
+    renderPanel({ practiceMode: 'dictation' });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(0);
+  });
+
+  it('rebands cues after a live word-status change', async () => {
+    renderPanel();
+    await waitFor(() => expect(heatBands()).toEqual(['easy', 'i1', 'dense']));
+
+    act(() => {
+      emitWordStatusChanged({ langCode: 'en', term: 'rare', status: 'known' });
+      emitWordStatusChanged({ langCode: 'en', term: 'words', status: 'known' });
+    });
+
+    await waitFor(() => expect(heatBands()).toEqual(['easy', 'easy', 'i1']));
   });
 });

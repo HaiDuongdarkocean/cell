@@ -512,6 +512,66 @@ describe('CueList', () => {
     });
   });
 
+  describe('cueHeat', () => {
+    const heat = new Map<number, { strange: number; tracking: number }>([
+      [1, { strange: 0, tracking: 0 }],
+      [2, { strange: 4, tracking: 1 }],
+    ]);
+
+    it('renders a heat bar + data-heat band on each mapped cue item', () => {
+      render(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} cueDifficulty={heat} />,
+      );
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].getAttribute('data-heat')).toBe('easy');
+      expect(items[1].getAttribute('data-heat')).toBe('dense');
+      expect(items[0].querySelectorAll('[data-heat]')).toHaveLength(0);
+
+      const bars = document.querySelectorAll('[data-cell-id="cue-heat"]');
+      expect(bars).toHaveLength(2);
+      expect(bars[0].getAttribute('aria-hidden')).toBe('true');
+      expect(bars[0].getAttribute('title')).toBe('No new words in level');
+      expect(bars[1].getAttribute('title')).toBe('New words: 4');
+    });
+
+    it('renders no indicator for cues missing from the map or without the prop', () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          cueDifficulty={new Map([[1, { strange: 2, tracking: 0 }]])}
+        />,
+      );
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].getAttribute('data-heat')).toBe('i1');
+      expect(items[1].getAttribute('data-heat')).toBeNull();
+      expect(items[1].querySelector('[data-cell-id="cue-heat"]')).toBeNull();
+
+      rerender(<CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} />);
+      for (const item of screen.getAllByTestId('cue-item')) {
+        expect(item.getAttribute('data-heat')).toBeNull();
+      }
+      expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(0);
+    });
+
+    it('wires screen-reader text and aria-describedby on the timestamp', () => {
+      render(
+        <CueList cues={sampleCues} currentTimeMs={0} onSeek={jest.fn()} cueDifficulty={heat} />,
+      );
+
+      const sr = document.getElementById('cue-heat-sr-2');
+      expect(sr).not.toBeNull();
+      expect(sr?.textContent).toBe('New words in cue: 4');
+
+      const timestamps = screen.getAllByTestId('cue-timestamp');
+      expect(timestamps[0].getAttribute('aria-describedby')).toBe('cue-heat-sr-1');
+      expect(timestamps[1].getAttribute('aria-describedby')).toBe('cue-heat-sr-2');
+    });
+  });
+
   describe('onTokensResolved meta', () => {
     it('does not emit while resolution is in flight; first emit carries resolved meta', async () => {
       const onTokensResolved = jest.fn();

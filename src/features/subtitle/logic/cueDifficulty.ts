@@ -74,6 +74,14 @@ export function cueMatchesMode(d: CueDifficulty, mode: CueFilterMode): boolean {
   }
 }
 
+export type CueHeatBand = 'easy' | 'i1' | 'dense';
+
+export function cueHeatBand(d: CueDifficulty): CueHeatBand {
+  if (d.strange === 0) return 'easy';
+  if (d.strange <= 2) return 'i1';
+  return 'dense';
+}
+
 export function countByMode(
   difficulties: ReadonlyMap<number, CueDifficulty>,
 ): Record<CueFilterMode, number> {

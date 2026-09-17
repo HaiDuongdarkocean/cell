@@ -5,6 +5,7 @@ import {
   CUE_FILTER_MODES,
   countByMode,
   cueDifficultyMap,
+  cueHeatBand,
   cueMatchesMode,
   isCueFilterMode,
   type CueDifficulty,
@@ -156,6 +157,16 @@ describe('countByMode', () => {
       dense: 1,
       tracking: 2,
     });
+  });
+});
+
+describe('cueHeatBand', () => {
+  it('maps strange counts to bands at boundaries', () => {
+    expect(cueHeatBand({ strange: 0, tracking: 0 })).toBe('easy');
+    expect(cueHeatBand({ strange: 1, tracking: 0 })).toBe('i1');
+    expect(cueHeatBand({ strange: 2, tracking: 0 })).toBe('i1');
+    expect(cueHeatBand({ strange: 3, tracking: 0 })).toBe('dense');
+    expect(cueHeatBand({ strange: 10, tracking: 4 })).toBe('dense');
   });
 });
 

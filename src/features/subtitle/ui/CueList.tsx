@@ -12,7 +12,10 @@ import {
   type CueListTokenMap,
   type ResolveMeta,
 } from '@/features/tokenize/logic/cueListTokens';
+import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDifficulty';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
+import { VisuallyHidden } from '@/shared/ui';
+import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
 const EMPTY_TOKEN_MAP: CueListTokenMap = new Map();
@@ -61,6 +64,8 @@ interface CueListProps {
   onTokensResolved?: (map: CueListTokenMap, meta: ResolveMeta) => void;
   cueFilter?: (cueIndex: number) => boolean;
   filterEpoch?: string;
+  /** Per-cue difficulty for the ambient heat bar. Omit → no indicator. */
+  cueDifficulty?: ReadonlyMap<number, CueDifficulty>;
 }
 
 // Human-friendly timestamp: drop leading zeros + millisecond noise.
@@ -131,7 +136,7 @@ const CueTokenText = memo(function CueTokenText({
   return <>{children}</>;
 });
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved, cueFilter, filterEpoch, cueDifficulty }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -292,6 +297,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       {filteredCues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         const customContent = renderCueContent?.(cue, i, isCurrent);
+        const heat = cueDifficulty?.get(cue.index);
+        const band = heat === undefined ? undefined : cueHeatBand(heat);
         return (
           <div
             key={cue.index}
@@ -302,8 +309,22 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
             data-cue-start={cue.start}
             data-cue-end={cue.end}
             data-current={isCurrent ? 'true' : 'false'}
+            data-heat={band}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
+            {heat !== undefined && band !== undefined && (
+              <>
+                <span
+                  className={`${styles.heat} ${styles[`heat_${band}`]}`}
+                  data-cell-id="cue-heat"
+                  title={t(`cueHeat.tooltip.${band}`, [heat.strange])}
+                  aria-hidden="true"
+                />
+                <VisuallyHidden id={`cue-heat-sr-${cue.index}`}>
+                  {t('cueHeat.srLabel', [heat.strange])}
+                </VisuallyHidden>
+              </>
+            )}
             {customContent !== undefined ? (
               customContent
             ) : (
@@ -335,6 +356,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 data-no-lookup
                 onClick={() => onSeek(cue.start)}
                 aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
+                aria-describedby={band !== undefined ? `cue-heat-sr-${cue.index}` : undefined}
                 className={styles.timestamp}
               >
                 {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the

@@ -254,6 +254,7 @@ function SubtitlePanelImpl({
         onTokensResolved={tokenize ? handleTokensResolved : undefined}
         cueFilter={cueFilter}
         filterEpoch={filterMode}
+        cueDifficulty={cueFilterEnabled ? difficulties ?? undefined : undefined}
       />
     ) : (
       <SubtitlePracticeSession
