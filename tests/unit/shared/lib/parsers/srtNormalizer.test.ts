@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { normalizeSrt, stripSubtitleTags } from '@/shared/lib/parsers/srtNormalizer';
 
@@ -262,9 +262,8 @@ describe('normalizeSrt', () => {
   });
 
   const vttFixturePath = join(__dirname, '..', '..', '..', '..', 'data-test', 'English.eng (1).vtt');
-  const VTT_FIXTURE_EXISTS = existsSync(vttFixturePath);
 
-  (VTT_FIXTURE_EXISTS ? it : it.skip)('converts the real English.eng VTT fixture to clean SRT', () => {
+  it('converts the real English.eng VTT fixture to clean SRT', () => {
     const vttPath = vttFixturePath;
     const vtt = readFileSync(vttPath, 'utf-8');
 

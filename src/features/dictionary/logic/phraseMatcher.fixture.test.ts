@@ -35,8 +35,14 @@ const TEST_VERBS = new Set([
 
 const FIXTURE_PATH = path.resolve(
   __dirname,
-  '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  process.env.CELL_FIXTURE_FULL === '1'
+    ? '../../../../data/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json'
+    : '../../../../tests/data-test/resource/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
 );
+const FIXTURE_MISSING = process.env.CELL_FIXTURE_FULL === '1' && !existsSync(FIXTURE_PATH);
+if (FIXTURE_MISSING) {
+  console.warn('[fixture] full Cambridge fixture missing — run without CELL_FIXTURE_FULL or restore data/resource/');
+}
 
 function loadFixtureInputs(): PhraseIndexInput[] {
   const entries = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8')) as { term?: string }[];
@@ -63,7 +69,7 @@ function loadFixtureInputs(): PhraseIndexInput[] {
   return inputs;
 }
 
-(existsSync(FIXTURE_PATH) ? describe : describe.skip)('phraseMatcher fixture strict test (ADR-037 §14)', () => {
+(FIXTURE_MISSING ? describe.skip : describe)('phraseMatcher fixture strict test (ADR-037 §14)', () => {
   let inputs: PhraseIndexInput[];
   let blob: ArrayBuffer;
 
