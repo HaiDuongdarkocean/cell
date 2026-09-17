@@ -101,10 +101,11 @@ loop:
 until: no icebox left · every remaining item blocked · stop condition
 ```
 
-**Rules specific to `all`:**
+**Rules specific to `all` — HARD RULES, no exceptions:**
 
-- **Autonomous elicitation.** No interview rounds mid-loop — infer the 8-field frame from `Pain`/`Infra`/`Source` + codebase evidence, document assumptions in the intent doc, and let spec-review-stakeholder be the gate. This is the only case where elicitation skips the user.
-- **No mid-loop questions.** Ask the user only for a hard stop condition (below) that repeats — a single blocked item does not pause the loop.
+- **ZERO QUESTIONS, start to finish.** In `all` mode the agent MUST NOT ask the user anything — no interview rounds, no frame confirmation, no "should I proceed" checks. The 8-field frame is inferred from `Pain`/`Infra`/`Source` + codebase evidence, assumptions documented in the intent doc, and spec-review-stakeholder is the only gate. If a decision is genuinely needed, pick the conservative option, record it as an accepted risk in the spec, and move on. Asking the user mid-loop is a contract violation — the loop is autonomous by definition.
+- **Autonomous elicitation.** This is the only case where elicitation skips the user entirely: no observation round, no interview, no explicit "yes". The confirmed frame = inferred frame + spec-review pass.
+- **No mid-loop questions.** Not even for a repeating hard stop condition — stop the loop and report instead of asking. A single blocked item never pauses the loop.
 - **Blocked item → skip, not stall.** Item blocked by unshipped deps or spec rejected 3 rounds → mark `Status: in-progress` + one-line blocking note in the Spec cell, move to the next unblocked item, list it in the final report.
 - **Gate red that survives a real fix attempt** → stop the whole loop and report — the tree must never accumulate unverified work.
 - **Item isolation.** Each item still gets its own commits grouped by subsystem; tree must be clean before claiming the next item. If the session convention is worktree-per-item, create/merge/remove one per item.

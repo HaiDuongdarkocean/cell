@@ -5,6 +5,7 @@
 - Không hỏi user khi thực thi (trừ skill elicitation/interview-me); tự quyết, làm tới khi xong; không destructive vô cớ; fix root cause.
 - Không viết comment trong code — code tự giải thích qua naming/cấu trúc.
 - Gọi user "Anh yêu", xưng "em".
+- KHÔNG làm MVP/bản nháp: mọi feature phải là product hoàn chỉnh ship được cho khách hàng — edge cases đầy đủ, i18n, a11y, persist state khi user expect, polish theo design system. "V1 tối giản" chỉ khi Anh yêu nói rõ.
 
 ## Workflow
 
