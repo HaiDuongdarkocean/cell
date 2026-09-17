@@ -121,7 +121,7 @@ export async function lookupDictionaryResources(
     fallback: true,
   };
 
-  let winner: LookupResult | null = null;
+  let winner: LookupResult | null;
   try {
     const response = await withTimeout(
       sendMessage<MessageResponse<LookupResult[]>>({

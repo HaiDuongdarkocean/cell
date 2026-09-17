@@ -61,7 +61,7 @@ function TabsList({ children, className, ...rest }: TabsListProps): React.JSX.El
       const activeIndex = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
       const currentIndex = activeIndex >= 0 ? activeIndex : 0;
 
-      let nextIndex = currentIndex;
+      let nextIndex: number;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         nextIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1;

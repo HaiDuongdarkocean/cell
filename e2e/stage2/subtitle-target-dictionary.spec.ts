@@ -7,7 +7,7 @@ async function wordPoint(locator: Locator): Promise<{ x: number; y: number } | n
   return locator.evaluate((el, wordReSource) => {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const re = new RegExp(wordReSource);
-    let node: Text | null = null;
+    let node: Text | null;
     while ((node = walker.nextNode() as Text | null)) {
       const match = re.exec(node.textContent ?? '');
       if (!match) continue;

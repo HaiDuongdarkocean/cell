@@ -473,7 +473,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
   useLayoutEffect(() => {
     const vw = getClientWidth();
     const vh = getClientHeight();
-    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
+    const sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
 
     const nextSize = clampPopupSize(sizeRef.current, vw, vh);
     sizeRef.current = nextSize;
@@ -495,7 +495,6 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       // Fallback: if desktop popup can't avoid covering the anchor word,
       // the viewport is too cramped for corner placement — switch to sheet.
       if (popupOverlapsAnchor(pos, nextSize.width, nextSize.maxHeight, anchorRef.current)) {
-        sheet = true;
         setIsSheet(true);
         const next = Math.max(
           POPUP_MIN_HEIGHT_PX,

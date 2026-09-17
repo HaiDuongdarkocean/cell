@@ -83,7 +83,11 @@ export default tseslint.config(
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,
-      ...reactHooksPlugin.configs.recommended.rules,
+      // react-hooks v7 `recommended` bundles the React Compiler rule set
+      // (refs, set-state-in-effect, purity, immutability...). Keep the
+      // classic v5 pair; adopting the compiler rules is a separate refactor.
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
     },

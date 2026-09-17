@@ -119,7 +119,7 @@ export class PaddleOcrEngine implements OcrEngine {
         (testImg as { delete?: () => void }).delete?.();
         break;
       } catch (matErr) {
-        if (i === 9) throw new Error('OpenCV Mat creation failed after 10 retries: ' + String(matErr));
+        if (i === 9) throw new Error('OpenCV Mat creation failed after 10 retries: ' + String(matErr), { cause: matErr });
         await new Promise((r) => setTimeout(r, 500));
       }
     }
@@ -155,7 +155,7 @@ export class PaddleOcrEngine implements OcrEngine {
       }
     }
     } catch (e) {
-      throw new Error(`[step=${step}] ${String(e)}`);
+      throw new Error(`[step=${step}] ${String(e)}`, { cause: e });
     }
   }
 
