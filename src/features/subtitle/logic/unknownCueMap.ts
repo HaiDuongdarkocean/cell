@@ -1,11 +1,11 @@
 import type { SrtCue } from '@/entities/media';
-import type { UnknownScope } from '@/entities/studyMode';
+import type { UnknownScope, UnknownCueHit } from '@/entities/studyMode';
 import type { WordStatus } from '@/entities/dictionary';
 import { createTokenList, applyTokenListStatus, type Token } from '@/features/tokenize';
 import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
 
 export interface UnknownCueResolver {
-  readonly probe: (cueIndex: number) => string | null;
+  readonly probe: (cueIndex: number) => UnknownCueHit | null;
   readonly findNext: (fromIndex: number) => number;
   readonly applyStatus: (term: string, status: WordStatus) => void;
   readonly destroy: () => void;
@@ -13,16 +13,16 @@ export interface UnknownCueResolver {
 
 type CueTokens = ReadonlyMap<number, readonly Token[]>;
 
-function firstPausableTerm(
+function firstPausableToken(
   tokens: readonly Token[],
   scope: UnknownScope,
   inFreqList: ReadonlySet<string>,
-): string | null {
+): Token | null {
   for (const token of tokens) {
     if (token.isSeparator) continue;
     if (token.status !== 'unknown' && token.status !== 'tracking') continue;
     if (scope === 'FREQ_LIST' && !inFreqList.has(token.term)) continue;
-    return token.term;
+    return token;
   }
   return null;
 }
@@ -31,11 +31,11 @@ function toUnknownMap(
   tokenMap: CueTokens,
   scope: UnknownScope,
   inFreqList: ReadonlySet<string>,
-): Map<number, string> {
-  const map = new Map<number, string>();
+): Map<number, UnknownCueHit> {
+  const map = new Map<number, UnknownCueHit>();
   for (const [cueIndex, tokens] of tokenMap) {
-    const term = firstPausableTerm(tokens, scope, inFreqList);
-    if (term !== null) map.set(cueIndex, term);
+    const token = firstPausableToken(tokens, scope, inFreqList);
+    if (token !== null) map.set(cueIndex, { term: token.term, offset: token.start });
   }
   return map;
 }
@@ -86,7 +86,7 @@ export async function createUnknownCueResolver(
     }
   }
 
-  let unknownMap = toUnknownMap(tokenMap, scope, inFreqList);
+  let unknownMap: Map<number, UnknownCueHit> = toUnknownMap(tokenMap, scope, inFreqList);
 
   return {
     probe: (cueIndex) => unknownMap.get(cueIndex) ?? null,

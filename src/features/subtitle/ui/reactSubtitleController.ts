@@ -110,7 +110,7 @@ export class ReactSubtitleController {
   /** Called when the user toggles hide/show for both subtitles in the overlay. */
   public onHideBoth?: () => void;
   /** Called when the study-mode machine auto-pauses on an unknown word. */
-  public onAutoPause?: (term: string, cueIndex: number) => void;
+  public onAutoPause?: (term: string, cueIndex: number, termOffset: number) => void;
   /** Called when playback resumes after an auto-pause (popup-close hook). */
   public onAutoResume?: () => void;
   private autoPausePending = false;
@@ -668,7 +668,7 @@ export class ReactSubtitleController {
           break;
         case 'autoPause':
           this.autoPausePending = true;
-          this.onAutoPause?.(action.term, action.cueIndex);
+          this.onAutoPause?.(action.term, action.cueIndex, action.termOffset);
           break;
         case 'play':
           if (this.autoPausePending) {

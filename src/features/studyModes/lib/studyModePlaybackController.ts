@@ -1,5 +1,5 @@
 import type { SrtCue } from '@/entities/media';
-import type { StudyMode, StudyModeAdvancedSettings, StudyStep, SubtitleVisibility } from '@/entities/studyMode';
+import type { StudyMode, StudyModeAdvancedSettings, StudyStep, SubtitleVisibility, UnknownCueHit } from '@/entities/studyMode';
 
 export type PlaybackAction =
   | { type: 'setSubtitle'; subtitle: SubtitleVisibility }
@@ -7,12 +7,14 @@ export type PlaybackAction =
   | { type: 'seek'; timeMs: number }
   | { type: 'pause' }
   | { type: 'play' }
-  | { type: 'autoPause'; term: string; cueIndex: number };
+  | { type: 'autoPause'; term: string; cueIndex: number; termOffset: number };
 
-/** Returns the first learnable term in a cue, or null. Injected by the
+/** Returns the first learnable token in a cue (term + UTF-16 offset inside
+ *  the cue text, so the dictionary lookup resolves that exact token), or
+ *  null. Injected by the
  *  composition root (subtitle feature) so the controller stays pure and
  *  feature-agnostic. */
-export type UnknownCueProbe = (cueIndex: number) => string | null;
+export type UnknownCueProbe = (cueIndex: number) => UnknownCueHit | null;
 
 type ContinueTarget = 'nextStep' | 'nextCue';
 
@@ -115,11 +117,11 @@ export class StudyModePlaybackController {
     if (!step) return [];
     this.repeatRemaining = step.repeat;
     const actions = this.applyStepEntry(step);
-    const unknownTerm = this.unknownTermAt(index);
-    if (unknownTerm !== null && this.advanced.pauseOnUnknown === 'START' && step.pause === 'none') {
+    const hit = this.unknownAt(index);
+    if (hit !== null && this.advanced.pauseOnUnknown === 'START' && step.pause === 'none') {
       this.state = { type: 'pausedStart' };
       actions.push({ type: 'pause' });
-      actions.push({ type: 'autoPause', term: unknownTerm, cueIndex: index });
+      actions.push({ type: 'autoPause', term: hit.term, cueIndex: index, termOffset: hit.offset });
     }
     return actions;
   }
@@ -249,16 +251,21 @@ export class StudyModePlaybackController {
     }
 
     if (isLastStep) {
-      const unknownTerm = this.unknownTermAt(this.activeCueIndex);
+      const hit = this.unknownAt(this.activeCueIndex);
       if (
-        unknownTerm !== null &&
+        hit !== null &&
         this.advanced.pauseOnUnknown === 'END' &&
         step.pause === 'none' &&
         step.after === 'continue'
       ) {
         this.state = { type: 'pausedEnd', continueTarget: 'nextCue' };
         actions.push({ type: 'pause' });
-        actions.push({ type: 'autoPause', term: unknownTerm, cueIndex: this.activeCueIndex });
+        actions.push({
+          type: 'autoPause',
+          term: hit.term,
+          cueIndex: this.activeCueIndex,
+          termOffset: hit.offset,
+        });
         return false;
       }
       this.activeCueIndex = -1;
@@ -315,7 +322,7 @@ export class StudyModePlaybackController {
     return match ? Number(match[1]) : 0;
   }
 
-  private unknownTermAt(index: number): string | null {
+  private unknownAt(index: number): UnknownCueHit | null {
     if (!this.probe || index < 0) return null;
     return this.probe(index);
   }

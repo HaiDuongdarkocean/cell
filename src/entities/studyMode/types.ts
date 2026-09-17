@@ -29,6 +29,11 @@ export interface StudyMode {
 export type PauseOnUnknownPoint = 'OFF' | 'START' | 'END';
 export type UnknownScope = 'FREQ_LIST' | 'ALL';
 
+export interface UnknownCueHit {
+  readonly term: string;
+  readonly offset: number;
+}
+
 export interface StudyModeAdvancedSettings {
   skipNoDialogue: 'OFF' | '2X' | '4X' | '6X' | '8X' | 'JUMP';
   removeBracketed: boolean;

@@ -207,7 +207,7 @@ export function init(
     unknownResolver?.applyStatus(term, status);
   });
 
-  blockController.onAutoPause = (term, cueIndex) => {
+  blockController.onAutoPause = (term, cueIndex, termOffset) => {
     if (!currentAdvanced?.popupOnAutoPause || !sharedWebTextCtrl) return;
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const { target } = blockController.getLineElements();
@@ -217,7 +217,7 @@ export function init(
       term,
       langCode,
       contextSentence: cue?.text ?? '',
-      cursorOffset: 0,
+      cursorOffset: termOffset,
     };
     const requestId = `autopause-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     sharedWebTextCtrl.handleLookup(request, requestId, target.getBoundingClientRect(), target);

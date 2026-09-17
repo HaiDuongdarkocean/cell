@@ -58,7 +58,7 @@ describe('createUnknownCueResolver', () => {
     const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
 
     // cue 0: hello (unknown, freq) and world (unknown, freq) — first wins.
-    expect(resolver.probe(0)).toBe('hello');
+    expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
     // cue 1: all known → null.
     expect(resolver.probe(1)).toBeNull();
     // cue 2: rare/xenoglossy/appears unknown but no frequency entries → not in list → filtered.
@@ -68,8 +68,8 @@ describe('createUnknownCueResolver', () => {
   it('scope ALL pauses on any unknown term, including unlisted ones', async () => {
     const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
 
-    expect(resolver.probe(0)).toBe('hello');
-    expect(resolver.probe(2)).toBe('rare');
+    expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
+    expect(resolver.probe(2)).toEqual({ term: 'rare', offset: 0 });
   });
 
   it('findNext returns the lowest cue index after fromIndex, else -1', async () => {
@@ -82,13 +82,21 @@ describe('createUnknownCueResolver', () => {
 
   it('applyStatus removes a term from the unknown map when marked known', async () => {
     const resolver = await createUnknownCueResolver(cues, 'en', 'FREQ_LIST');
-    expect(resolver.probe(0)).toBe('hello');
+    expect(resolver.probe(0)).toEqual({ term: 'hello', offset: 0 });
 
     resolver.applyStatus('hello', 'known');
-    expect(resolver.probe(0)).toBe('world');
+    expect(resolver.probe(0)).toEqual({ term: 'world', offset: 6 });
 
     resolver.applyStatus('world', 'known');
     expect(resolver.probe(0)).toBeNull();
+  });
+
+  it('probe offset lands on the pausable token mid-cue, not the cue start', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'ALL');
+    resolver.applyStatus('rare', 'known');
+    const hit = resolver.probe(2);
+    expect(hit).not.toBeNull();
+    expect(cues[2].text.slice(hit!.offset).toLowerCase()).toMatch(new RegExp(`^${hit!.term}`));
   });
 
   it('returns empty maps for empty cue lists', async () => {

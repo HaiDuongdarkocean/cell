@@ -101,12 +101,12 @@ describe('StudyModePlaybackController', () => {
     const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
     const normal = PRESET_LOOKUP.get('normal')!;
     const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
-    ctrl.setProbe((i) => (i === 0 ? 'unknown-term' : null));
+    ctrl.setProbe((i) => (i === 0 ? { term: 'unknown-term', offset: 3 } : null));
     ctrl.enterCue(cue, 0);
 
     const end = ctrl.onTimeUpdate(5000);
     expect(end).toContainEqual({ type: 'pause' });
-    expect(end).toContainEqual({ type: 'autoPause', term: 'unknown-term', cueIndex: 0 });
+    expect(end).toContainEqual({ type: 'autoPause', term: 'unknown-term', cueIndex: 0, termOffset: 3 });
 
     const resume = ctrl.continue();
     expect(resume).toEqual([{ type: 'play' }]);
@@ -130,11 +130,11 @@ describe('StudyModePlaybackController', () => {
     const advanced = { ...advancedOff, pauseOnUnknown: 'START' as const };
     const normal = PRESET_LOOKUP.get('normal')!;
     const ctrl = new StudyModePlaybackController(normal, advanced, [cue]);
-    ctrl.setProbe(() => 'term');
+    ctrl.setProbe(() => ({ term: 'term', offset: 0 }));
     const actions = ctrl.enterCue(cue, 0);
 
     expect(actions).toContainEqual({ type: 'pause' });
-    expect(actions).toContainEqual({ type: 'autoPause', term: 'term', cueIndex: 0 });
+    expect(actions).toContainEqual({ type: 'autoPause', term: 'term', cueIndex: 0, termOffset: 0 });
     expect(ctrl.continue()).toEqual([{ type: 'play' }]);
   });
 
@@ -143,7 +143,7 @@ describe('StudyModePlaybackController', () => {
     const dictation = PRESET_LOOKUP.get('dictation')!;
     const advanced = { ...advancedOff, pauseOnUnknown: 'END' as const };
     const ctrl = new StudyModePlaybackController(dictation, advanced, [cue]);
-    ctrl.setProbe(() => 'term');
+    ctrl.setProbe(() => ({ term: 'term', offset: 0 }));
     ctrl.enterCue(cue, 0);
 
     const end = ctrl.onTimeUpdate(5000);
