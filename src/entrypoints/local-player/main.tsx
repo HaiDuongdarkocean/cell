@@ -24,6 +24,10 @@ import { PlayerView } from './components/PlayerView';
 import { ThemeProvider } from '@/features/theme/ui/ThemeProvider';
 import { ErrorBoundary } from '@/shared/ui';
 import { installRippleDelegation } from '@/shared/lib/dom/ripple';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { mountComprehensionPill } from '@/features/tokenize/ui/mountComprehensionPill';
+import { comprehensionStore } from '@/features/tokenize/services/comprehensionStore';
+import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import './styles/global.css';
 
 installRippleDelegation(document);
@@ -217,3 +221,11 @@ if (rootEl) {
     </ThemeProvider>,
   );
 }
+
+void loadSettings().then((settings) => {
+  mountComprehensionPill();
+  startMediaScoreSource({
+    langCode: settings.subtitleOverlayTargetLanguage || 'en',
+    store: comprehensionStore,
+  });
+});

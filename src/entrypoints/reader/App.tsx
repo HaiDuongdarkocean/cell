@@ -17,6 +17,12 @@ import { getSentenceText } from '@/features/reader/logic/sentenceText';
 import { formatDuration } from '@/features/reader/logic/formatTime';
 import { tokenizeTextBlock } from '@/features/tokenize/logic/textTokenizer';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
+import { ComprehensionBadge } from '@/features/tokenize/ui/ComprehensionBadge';
+import { createBookScoreTracker } from '@/features/reader/logic/bookScore';
+import { emitWordStatusChanged, onWordStatusChanged } from '@/features/dictionary/services/wordStatusEvents';
+import { languageMatches } from '@/shared/config/languageRegistry';
+import type { ScoreTracker } from '@/features/tokenize/logic/comprehensionScore';
+import type { ComprehensionStats } from '@/entities/comprehension';
 import type { Token } from '@/features/tokenize/types';
 import styles from './App.module.css';
 
@@ -36,6 +42,8 @@ export function ReaderApp(): React.JSX.Element {
   const readStartAtRef = useRef<number>(Date.now());
   const isReadPausedRef = useRef<boolean>(false);
   const [, setTick] = useState<number>(0);
+  const [bookStats, setBookStats] = useState<ComprehensionStats | null>(null);
+  const bookTrackerRef = useRef<ScoreTracker | null>(null);
 
   const loadBooks = useCallback(async () => {
     try {
@@ -49,6 +57,34 @@ export function ReaderApp(): React.JSX.Element {
   useEffect(() => {
     void loadBooks();
   }, [loadBooks]);
+
+  useEffect(() => {
+    if (!selectedBook) {
+      bookTrackerRef.current = null;
+      setBookStats(null);
+      return;
+    }
+    const book = selectedBook;
+    const lang = book.languageCode ?? 'en';
+    let cancelled = false;
+    bookTrackerRef.current = null;
+    setBookStats(null);
+    void createBookScoreTracker(book.paragraphs, lang, () => cancelled).then((tracker) => {
+      if (cancelled) return;
+      bookTrackerRef.current = tracker;
+      setBookStats(tracker?.stats('text') ?? null);
+    });
+    const offStatus = onWordStatusChanged((e) => {
+      if (!languageMatches(lang, e.langCode)) return;
+      if (bookTrackerRef.current?.applyStatus(e.term, e.status)) {
+        setBookStats(bookTrackerRef.current.stats('text'));
+      }
+    });
+    return () => {
+      cancelled = true;
+      offStatus();
+    };
+  }, [selectedBook]);
 
   const handleFileChange = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,6 +314,7 @@ export function ReaderApp(): React.JSX.Element {
         </h1>
         {view === 'reader' && selectedBook && (
           <span className={styles.readerStats}>
+            {bookStats && <ComprehensionBadge stats={bookStats} />}
             {progressPercent}% · {formatDuration(readTimeSeconds)}
           </span>
         )}
@@ -375,6 +412,9 @@ export function ReaderApp(): React.JSX.Element {
                     selectedToken.sentenceIndex,
                   )}
                   cursorOffset={selectedToken.start}
+                  onStatusChange={(term, langCode, status) =>
+                    emitWordStatusChanged({ term, langCode, status })
+                  }
                 />
               </div>
             </footer>

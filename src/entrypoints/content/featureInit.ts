@@ -12,6 +12,10 @@ import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleToken
 import type { SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/entities/dictionary';
 import { findAndInitOverlay } from './videoOverlay';
+import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
+import { startTextScoreSource } from '@/features/tokenize/services/textScoreSource';
+import { mountComprehensionPill, type ComprehensionPillMount } from '@/features/tokenize/ui/mountComprehensionPill';
+import { comprehensionStore } from '@/features/tokenize/services/comprehensionStore';
 
 // Top-level web-text dictionary controller (independent of video presence).
 // Shared with subtitle overlay controller for token lookup + highlight.
@@ -191,6 +195,18 @@ export async function initTokenize(): Promise<void> {
       onStatusChange: (term, _langCode, status) => {
         ensureWebTextCtrl().syncStatus(term, status);
       },
+      onBlocksChanged: () => {
+        for (const listener of [...blocksChangedListeners]) listener();
+      },
+    });
+    stopTextScoreSource = startTextScoreSource({
+      controller: webTokenizeCtrl,
+      store: comprehensionStore,
+      langCode,
+      onBlocksChanged: (listener) => {
+        blocksChangedListeners.add(listener);
+        return () => blocksChangedListeners.delete(listener);
+      },
     });
     // ADR-061: Flush pending subscribers that were queued before
     // webTokenizeCtrl was initialized (mountSettingsDialog subscribes at
@@ -215,6 +231,7 @@ export function installSettingsReloader(): void {
     if (window.self !== window.top) return;
     if (area === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
       void initWebTextDictionary();
+      void initComprehension();
     }
   });
 }
@@ -253,6 +270,29 @@ export async function initHeavyFeatures(isTopFrame: boolean): Promise<void> {
   await studyModeInit.catch((err) => console.warn('[content-script] study mode init failed', err));
 }
 
+let stopMediaScoreSource: (() => void) | null = null;
+let mediaScoreLang: string | null = null;
+let comprehensionPill: ComprehensionPillMount | null = null;
+let stopTextScoreSource: (() => void) | null = null;
+const blocksChangedListeners = new Set<() => void>();
+
+export async function initComprehension(): Promise<void> {
+  try {
+    const settings = await loadSettings();
+    const langCode = settings.subtitleOverlayTargetLanguage || 'en';
+    if (!comprehensionPill) {
+      comprehensionPill = mountComprehensionPill({ store: comprehensionStore });
+    }
+    if (mediaScoreLang !== langCode) {
+      stopMediaScoreSource?.();
+      mediaScoreLang = langCode;
+      stopMediaScoreSource = startMediaScoreSource({ langCode, store: comprehensionStore });
+    }
+  } catch (err) {
+    console.warn('[content-script] initComprehension failed', err);
+  }
+}
+
 export function cleanupFeatureInit(): void {
   webTextCtrl?.destroy();
   webTextCtrl = null;
@@ -261,4 +301,12 @@ export function cleanupFeatureInit(): void {
   universalPanelMount?.unmount?.();
   universalPanelMount = null;
   pendingTokenizeSubs = [];
+  stopMediaScoreSource?.();
+  stopMediaScoreSource = null;
+  mediaScoreLang = null;
+  stopTextScoreSource?.();
+  stopTextScoreSource = null;
+  blocksChangedListeners.clear();
+  comprehensionPill?.destroy();
+  comprehensionPill = null;
 }

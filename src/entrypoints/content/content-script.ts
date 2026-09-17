@@ -17,6 +17,7 @@ import { cleanupVideoOverlay, findAndInitOverlay } from './videoOverlay';
 import { cleanupEpisodeWatcher, initEpisodeChangeWatcherOnReady } from './episodeWatcher';
 import {
   cleanupFeatureInit,
+  initComprehension,
   initHeavyFeatures,
   initTokenize,
   initWebTextDictionary,
@@ -106,12 +107,14 @@ if (document.readyState === 'loading') {
   if (isTopFrame) {
     document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
     document.addEventListener('DOMContentLoaded', () => { void initTokenize(); });
+    document.addEventListener('DOMContentLoaded', () => { void initComprehension(); });
   }
 } else {
   findAndInitOverlay();
   if (isTopFrame) {
     void initWebTextDictionary();
     void initTokenize();
+    void initComprehension();
   }
 }
 

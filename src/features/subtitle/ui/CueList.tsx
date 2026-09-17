@@ -48,6 +48,7 @@ interface CueListProps {
   renderCueContent?: (cue: BilingualCue, index: number, isCurrent: boolean) => ReactNode | undefined;
   showNative?: boolean;
   tokenize?: CueListTokenize | null;
+  onTokensResolved?: (map: CueListTokenMap) => void;
 }
 
 // Human-friendly timestamp: drop leading zeros + millisecond noise.
@@ -118,7 +119,7 @@ const CueTokenText = memo(function CueTokenText({
   return <>{children}</>;
 });
 
-export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueContent, showNative = true, tokenize, onTokensResolved }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
@@ -176,6 +177,10 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
       unsubscribe();
     };
   }, [visibleCues, tokenizeLangCode]);
+
+  useEffect(() => {
+    if (!resolving) onTokensResolved?.(tokenMap);
+  }, [tokenMap, resolving, onTokensResolved]);
 
   // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
   // Edge case: offset shift could push an earlier cue's display ≥ 1h while last

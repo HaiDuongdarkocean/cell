@@ -31,3 +31,4 @@ export {
   type ComprehensionStore,
   type ComprehensionState,
 } from './services/comprehensionStore';
+export { ComprehensionBadge } from './ui/ComprehensionBadge';

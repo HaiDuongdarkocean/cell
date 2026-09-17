@@ -8,11 +8,17 @@
 //   Split View + Playlist (local-player):
 //     <SubtitlePanel ... playlistContent={<LibraryView .../>} onOpenFile={...} onOpenFolder={...} />
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
 import type { StudyMode } from '@/entities/studyMode';
+import type { ComprehensionStats } from '@/entities/comprehension';
+
+
+
+import { computeStats, ComprehensionBadge, type Token, type CueListTokenMap } from '@/features/tokenize';
+import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
 import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
@@ -97,6 +103,18 @@ function SubtitlePanelImpl({
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
   const [activeTab, setActiveTab] = useState<PanelTab>(visibleCues.length > 0 ? 'subtitles' : 'playlist');
+  const [mediaStats, setMediaStats] = useState<ComprehensionStats | null>(null);
+
+  const scoreSuppressed = Boolean(tokenize?.langCode && languageMatches('zh', tokenize.langCode));
+  const handleTokensResolved = useCallback((map: CueListTokenMap): void => {
+    if (scoreSuppressed || map.size === 0) {
+      setMediaStats(null);
+      return;
+    }
+    const tokens: Token[] = [];
+    for (const list of map.values()) tokens.push(...list);
+    setMediaStats(computeStats(tokens, 'media'));
+  }, [scoreSuppressed]);
 
   const handlePreviousCue = (cue: BilingualCue): void => {
     if (onPreviousCue) {
@@ -136,6 +154,7 @@ function SubtitlePanelImpl({
         onSeek={onSeek}
         showNative={translationEnabled}
         tokenize={tokenize}
+        onTokensResolved={tokenize ? handleTokensResolved : undefined}
       />
     ) : (
       <SubtitlePracticeSession
@@ -177,6 +196,7 @@ function SubtitlePanelImpl({
           </Button>
         )}
         <span className={styles.title}>{filename ?? 'Subtitles'}</span>
+        {mediaStats && <ComprehensionBadge stats={mediaStats} />}
       </div>
       {onStudyModeChange ? (
         <StudyModeActionBar
