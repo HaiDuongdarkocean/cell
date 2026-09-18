@@ -161,6 +161,7 @@ const mockSubtitleActions = {
   onUpdateCurrentCard: jest.fn(),
   onGenerateNative: jest.fn(),
   generateNativeEnabled: false,
+  cueListTokenize: null,
 };
 
 function renderPlayerView(opts: RenderOpts = {}): {

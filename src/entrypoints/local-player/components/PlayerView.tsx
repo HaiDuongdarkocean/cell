@@ -258,6 +258,11 @@ export function PlayerView({
     void setStorage({ [STORAGE_KEYS.LOCAL_PLAYER_SUBTITLE_PANEL_OPEN]: open }).catch(() => undefined);
   }, []);
 
+  const cueListTokenize = subtitleActions.cueListTokenize;
+  useEffect(() => {
+    subtitlePanelsRef.current?.setTokenize(cueListTokenize);
+  }, [cueListTokenize]);
+
   useEffect(() => {
     if (!videoFile) return;
     const video = videoRef.current;

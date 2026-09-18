@@ -15,6 +15,8 @@ import {
 } from '@/shared/config/config';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import type { LookupRequest } from '@/entities/dictionary';
+import type { CueListTokenize } from '@/features/subtitle/ui/CueList';
 import { createCardCreatorActionPorts } from '@/features/cardCreator/service/cardCreatorActionPorts';
 import { handleCardCreatorAction } from '@/features/subtitle/actions/cardActions';
 import { startGenerateNative } from '@/features/subtitle/actions/generateNativeAction';
@@ -29,6 +31,7 @@ export interface SubtitleActionHandlers {
   onUpdateCurrentCard: () => void;
   onGenerateNative: () => void;
   generateNativeEnabled: boolean;
+  cueListTokenize: CueListTokenize | null;
 }
 
 export interface UseSubtitleActionsDeps {
@@ -45,6 +48,7 @@ function findCurrentCueText(cues: readonly SrtCue[], currentMs: number): string 
 export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleActionHandlers {
   const { videoRef, offsetMs } = deps;
   const [generateNativeEnabled, setGenerateNativeEnabled] = useState(false);
+  const [cueListTokenize, setCueListTokenize] = useState<CueListTokenize | null>(null);
   const webTextCtrlRef = useRef<WebTextDictionaryController | null>(null);
 
   // Cues from global store (driven by SubtitleCueEngine).
@@ -68,11 +72,32 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
         cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
         subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
       });
+      const langCode = settings.subtitleOverlayTargetLanguage ?? '';
+      if (langCode === '') return;
+      setCueListTokenize({
+        langCode,
+        onTokenClick: (term, element, contextSentence) => {
+          const request: LookupRequest = {
+            term,
+            langCode,
+            contextSentence,
+            cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+          };
+          const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+          webTextCtrlRef.current?.handleLookup(
+            request,
+            requestId,
+            element.getBoundingClientRect(),
+            element,
+          );
+        },
+      });
     });
 
     return () => {
       ctrl.destroy();
       webTextCtrlRef.current = null;
+      setCueListTokenize(null);
     };
   }, [videoRef]);
 
@@ -165,5 +190,6 @@ export function useSubtitleActions(deps: UseSubtitleActionsDeps): SubtitleAction
     onUpdateCurrentCard: () => handleAction('update-current'),
     onGenerateNative: handleGenerate,
     generateNativeEnabled,
-  }), [handleAction, handleGenerate, generateNativeEnabled]);
+    cueListTokenize,
+  }), [handleAction, handleGenerate, generateNativeEnabled, cueListTokenize]);
 }

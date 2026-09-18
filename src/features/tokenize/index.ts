@@ -15,7 +15,7 @@ export {
   type FrequencyBandOptions,
   type FrequencyBandThresholds,
 } from './utils/frequencyBand';
-export type { Token, TokenBlock, TokenizeController, TokenizeState } from './types';
+export type { Token, TokenBlock, TokenizeController, TokenizeState, TokenFrequencyBand } from './types';
 export { tokenizeTextBlock } from './logic/textTokenizer';
 export {
   createScoreTracker,

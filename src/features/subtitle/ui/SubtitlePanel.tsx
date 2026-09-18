@@ -8,7 +8,7 @@
 //   Split View + Playlist (local-player):
 //     <SubtitlePanel ... playlistContent={<LibraryView .../>} onOpenFile={...} onOpenFolder={...} />
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { PlaybackSpeed } from '@/entities/studyMode/types';
@@ -17,7 +17,10 @@ import type { ComprehensionStats } from '@/entities/comprehension';
 
 
 
-import { computeStats, ComprehensionBadge, type Token, type CueListTokenMap, type ResolveMeta, type FrequencyBandThresholds } from '@/features/tokenize';
+import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta, type FrequencyBandThresholds } from '@/features/tokenize';
+import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary';
+import { buildPrimerList } from '@/features/subtitle/logic/primerList';
+import { PrimerTab } from './PrimerTab';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
@@ -79,7 +82,7 @@ export interface SubtitlePanelProps {
   panelBlurred?: boolean;
 }
 
-type PanelTab = 'subtitles' | 'playlist';
+type PanelTab = 'subtitles' | 'playlist' | 'words';
 
 const noop = (): void => undefined;
 
@@ -116,13 +119,16 @@ function SubtitlePanelImpl({
   panelBlurred = false,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
+  const showTabs = hasPlaylist || Boolean(tokenize);
   const visibleCues = useMemo(
     () => cues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
     [cues],
   );
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
-  const [activeTab, setActiveTab] = useState<PanelTab>(visibleCues.length > 0 ? 'subtitles' : 'playlist');
+  const [activeTab, setActiveTab] = useState<PanelTab>(
+    visibleCues.length > 0 || !hasPlaylist ? 'subtitles' : 'playlist',
+  );
   const [mediaStats, setMediaStats] = useState<ComprehensionStats | null>(null);
 
   const scoreSuppressed = Boolean(tokenize?.langCode && languageMatches('zh', tokenize.langCode));
@@ -212,6 +218,57 @@ function SubtitlePanelImpl({
   useEffect(() => {
     if (!chipLive) setMediaStats(null);
   }, [chipLive]);
+
+  useEffect(() => {
+    const lang = tokenize?.langCode;
+    if (!lang) return;
+    const apply = (term: string, status: Token['status']): void => {
+      setLastGood((prev) =>
+        prev === null
+          ? prev
+          : { ...prev, tokenMap: applyCueListTokenStatus(prev.tokenMap, term, status ?? 'unknown') },
+      );
+    };
+    const offChanged = onWordStatusChanged((detail) => {
+      if (detail.langCode === lang) apply(detail.term, detail.status);
+    });
+    const offRemoved = onWordStatusRemoved((detail) => {
+      if (detail.langCode === lang) apply(detail.term, 'unknown');
+    });
+    return () => {
+      offChanged();
+      offRemoved();
+    };
+  }, [tokenize]);
+
+  const primerAvailable =
+    Boolean(tokenize) &&
+    !scoreSuppressed &&
+    !panelBlurred &&
+    practiceMode === 'off' &&
+    lastGood !== null &&
+    lastGood.cueSetKey === cueSetKey;
+
+  const primerRows = useMemo(
+    () =>
+      primerAvailable && lastGood !== null
+        ? buildPrimerList(lastGood.tokenMap, lastGood.rankByTerm, visibleCues)
+        : null,
+    [primerAvailable, lastGood, visibleCues],
+  );
+
+  useEffect(() => {
+    if (activeTab === 'words' && !primerAvailable) setActiveTab('subtitles');
+  }, [activeTab, primerAvailable]);
+
+  const prevCueCountRef = useRef(visibleCues.length);
+  useEffect(() => {
+    const hadNone = prevCueCountRef.current === 0;
+    prevCueCountRef.current = visibleCues.length;
+    if (hadNone && visibleCues.length > 0 && activeTab === 'playlist') {
+      setActiveTab('subtitles');
+    }
+  }, [visibleCues.length, activeTab]);
 
   const handlePreviousCue = (cue: BilingualCue): void => {
     if (onPreviousCue) {
@@ -372,15 +429,22 @@ function SubtitlePanelImpl({
         />
       ) : null}
 
-      {hasPlaylist ? (
+      {showTabs ? (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PanelTab)}>
           <Tabs.List className={styles.tabList}>
             <Tabs.Trigger value="subtitles" data-cell-id="subtitle-panel-tab-subtitles">
               Subtitles
             </Tabs.Trigger>
-            <Tabs.Trigger value="playlist" data-cell-id="subtitle-panel-tab-playlist">
-              Playlist
-            </Tabs.Trigger>
+            {hasPlaylist && (
+              <Tabs.Trigger value="playlist" data-cell-id="subtitle-panel-tab-playlist">
+                Playlist
+              </Tabs.Trigger>
+            )}
+            {primerAvailable && primerRows !== null && (
+              <Tabs.Trigger value="words" data-cell-id="subtitle-panel-tab-words">
+                {t('primer.tab')} · {primerRows.length}
+              </Tabs.Trigger>
+            )}
           </Tabs.List>
 
           <Tabs.Content value="subtitles" className={styles.tabContent}>
@@ -403,9 +467,21 @@ function SubtitlePanelImpl({
             </div>
           </Tabs.Content>
 
-          <Tabs.Content value="playlist" className={styles.tabContent}>
-            {playlistContent}
-          </Tabs.Content>
+          {hasPlaylist && (
+            <Tabs.Content value="playlist" className={styles.tabContent}>
+              {playlistContent}
+            </Tabs.Content>
+          )}
+
+          {primerAvailable && primerRows !== null && tokenize && (
+            <Tabs.Content value="words" className={styles.tabContent}>
+              <PrimerTab
+                rows={primerRows}
+                onTokenClick={tokenize.onTokenClick}
+                onSeek={onSeek}
+              />
+            </Tabs.Content>
+          )}
         </Tabs>
       ) : (
         <div
