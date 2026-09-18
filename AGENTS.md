@@ -37,6 +37,7 @@
 - `npm run mock` serve tất cả mock sites (KHÔNG `--youtube` — kill các site khác); `mock:stream` deprecated → `npm run dev` + entry URL trực tiếp.
 - `import.meta.env.DEV` luôn false trong build — dev-seed check `MODE === 'development'` (`src/shared/lib/env/devMode.ts`).
 - Tin được `src/`, `docs/`; phải kiểm `manifest.json`, `package.json`, `dist/`, `project-reference/`.
+- CẤM `robocopy /MIR` để xóa worktree/dir chứa `node_modules` — nó đi xuyên junction và xóa luôn content ở junction target (đã từng wipe `node_modules` repo chính). Xóa worktree: `git worktree remove`; nếu path-too-long thì xóa `node_modules` trong worktree trước bằng `rm -rf` rồi mới `git worktree remove --force`.
 
 ## Boundaries & updates
 
