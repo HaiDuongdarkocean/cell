@@ -20,7 +20,6 @@ import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/decl
 import type {
   DetectedVideo,
   DetectedSubtitle,
-  BilingualCue,
 } from '@/entities/media';
 import type {
   MessageResponse,
@@ -162,7 +161,7 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid SUBTITLE_CUES_LOADED payload: ${parsed.error.message}` };
     }
     const payload = parsed.data;
-    const cues = payload.cues as BilingualCue[];
+    const cues = payload.cues;
     if (payload.tabId !== undefined) {
       // Empty cue list (tracks deselected / cleared) must not count as an
       // active subtitle session — the immersion tracker gates on map.has().

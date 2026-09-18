@@ -48,7 +48,7 @@ import {
 import { saveSettings } from '@/shared/lib/storage/settingsStore';
 import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import type { SubtitleApiKey, SubtitleApiKeyProvider } from '@/entities/settings/types';
-import type { SubtitleSearchResult, SearchError } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SearchError } from '@/features/subtitle/logic/subtitleSearchTypes';
 
 /** Register subtitle search message handlers. */
 export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
@@ -170,12 +170,11 @@ export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {
           error: `Invalid RESOLVE_SUBTITLE_DOWNLOAD payload: ${parsed.error.message}`,
         };
       }
-      const { result: rawResult } = parsed.data;
-      const result = rawResult as unknown as SubtitleSearchResult;
+      const { result } = parsed.data;
 
       const settings = await loadSettings();
       const keys = settings.subtitleApiKeys ?? [];
-      const provider = result.source as SubtitleApiKeyProvider;
+      const provider = result.source;
       const key = pickDownloadKey(keys, provider);
       if (!key) {
         return {

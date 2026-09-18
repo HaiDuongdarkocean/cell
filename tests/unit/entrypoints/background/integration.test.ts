@@ -2307,8 +2307,8 @@ https://cdn.example.com/low.m3u8`;
     mockChrome.runtime.sendMessage.mockClear();
 
     const cues = [
-      { id: 0, start: 0, end: 1000, target: 'Hello', native: 'Xin chào' },
-      { id: 1, start: 1000, end: 2000, target: 'World', native: 'Thế giới' },
+      { index: 0, start: 0, end: 1000, targetText: 'Hello', nativeText: 'Xin chào' },
+      { index: 1, start: 1000, end: 2000, targetText: 'World', nativeText: 'Thế giới' },
     ];
 
     const request: MessageRequest = {
@@ -2331,7 +2331,7 @@ https://cdn.example.com/low.m3u8`;
 
   it('REQUEST_SUBTITLE_CUES returns cached cues for the tab', async () => {
     const cues = [
-      { id: 0, start: 0, end: 1000, target: 'Hello', native: 'Xin chào' },
+      { index: 0, start: 0, end: 1000, targetText: 'Hello', nativeText: 'Xin chào' },
     ];
 
     // First, send SUBTITLE_CUES_LOADED to cache the cues.
@@ -2450,7 +2450,7 @@ https://cdn.example.com/low.m3u8`;
     mockChrome.runtime.sendMessage.mockClear();
     (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
 
-    const cues = [{ id: 0, start: 0, end: 1000, target: 'Hi', native: 'Xin chào' }];
+    const cues = [{ index: 0, start: 0, end: 1000, targetText: 'Hi', nativeText: 'Xin chào' }];
     const request: MessageRequest = {
       type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
       payload: { tabId: 42, cues },
@@ -2470,7 +2470,7 @@ https://cdn.example.com/low.m3u8`;
     mockChrome.runtime.sendMessage.mockClear();
     (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
 
-    const cues = [{ id: 0, start: 0, end: 1000, target: 'Hi', native: 'Xin chào' }];
+    const cues = [{ index: 0, start: 0, end: 1000, targetText: 'Hi', nativeText: 'Xin chào' }];
     const request: MessageRequest = {
       type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
       payload: { tabId: 999, cues },

@@ -32,6 +32,14 @@ export {
   type NetflixSubtitleTrack,
 } from './logic/netflixSubtitleDetector';
 export {
+  youTubeCaptionTrackSchema,
+  iqiyiSubtitleTrackSchema,
+  netflixSubtitleTrackSchema,
+  youTubeCaptionTrackArraySchema,
+  iqiyiSubtitleTrackArraySchema,
+  netflixSubtitleTrackArraySchema,
+} from './logic/trackSchemas';
+export {
   fetchCaptionTracksViaInnerTube,
   extractInnertubeApiKey,
   extractClientVersion,

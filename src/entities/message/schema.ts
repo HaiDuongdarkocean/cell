@@ -4,7 +4,6 @@
 // Internal code trusts the types after validation.
 
 import { z } from 'zod';
-import type { Settings } from '@/entities/media';
 import { SrsFieldValueSchema } from '@/entities/srs/schemas';
 
 // === Reusable primitives ===
@@ -44,7 +43,7 @@ export const CancelDownloadPayloadSchema = z.object({
 // === Settings payloads ===
 
 export const UpdateSettingsPayloadSchema = z.object({
-  settings: z.custom<Partial<Settings>>((val) => typeof val === 'object' && val !== null && !Array.isArray(val)),
+  settings: z.record(z.string(), z.unknown()),
 });
 
 // === YouTube detection payloads ===
@@ -112,9 +111,17 @@ export const FetchSubtitleContentPayloadSchema = z.object({
   initiator: z.string().optional(),
 });
 
+export const bilingualCueSchema = z.object({
+  index: z.number(),
+  start: z.number(),
+  end: z.number(),
+  targetText: z.string(),
+  nativeText: z.string(),
+});
+
 export const SubtitleCuesLoadedPayloadSchema = z.object({
   tabId: z.number().int().optional(),
-  cues: z.array(z.unknown()),
+  cues: z.array(bilingualCueSchema),
 });
 
 export const RequestSubtitleCuesPayloadSchema = z.object({
@@ -213,8 +220,28 @@ export const SearchSubtitlesPayloadSchema = z.object({
   episode: z.number().int().min(0).optional(),
 });
 
+export const subtitleDownloadKindSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('direct'), url: z.string() }),
+  z.object({ kind: z.literal('handshake'), fileId: z.number() }),
+]);
+
+export const subtitleSearchResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  providerLanguage: z.string(),
+  isoLanguage: z.string(),
+  format: z.enum(['srt', 'vtt', 'ass']),
+  download: subtitleDownloadKindSchema,
+  source: z.enum(['subdl', 'opensubtitles']),
+  rating: z.number().optional(),
+  downloads: z.number().optional(),
+  sdh: z.boolean().optional(),
+  forced: z.boolean().optional(),
+  isArchive: z.boolean().optional(),
+});
+
 export const ResolveSubtitleDownloadPayloadSchema = z.object({
-  result: z.record(z.string(), z.unknown()),
+  result: subtitleSearchResultSchema,
   role: z.enum(['target', 'native']),
 });
 

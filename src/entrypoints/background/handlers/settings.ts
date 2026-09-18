@@ -15,6 +15,7 @@ import {
 import type { Settings } from '@/entities/media';
 import type { MessageResponse } from '@/entities/message';
 import { EmptyPayloadSchema, UpdateSettingsPayloadSchema } from '@/entities/message/schema';
+import { sanitizeSettingsPatch } from '@/entities/settings/settingsPatch';
 
 /** Register settings message handlers. */
 export function registerSettingsHandlers(ctx: BackgroundContext): void {
@@ -34,23 +35,23 @@ export function registerSettingsHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid UPDATE_SETTINGS payload: ${parsed.error.message}` };
     }
-    const payload = parsed.data;
+    const patch = sanitizeSettingsPatch(parsed.data.settings);
     const current = await loadSettings();
-    const merged: Settings = { ...current, ...payload.settings };
+    const merged: Settings = { ...current, ...patch };
 
     await saveSettings(ctx, merged);
 
-    if (payload.settings.concurrentDownloads !== undefined) {
-      ctx.downloadQueue.setMaxConcurrent(payload.settings.concurrentDownloads);
+    if (patch.concurrentDownloads !== undefined) {
+      ctx.downloadQueue.setMaxConcurrent(patch.concurrentDownloads);
     }
-    if (payload.settings.convertToMp4 !== undefined) {
-      ctx.downloader.setConvertMode(payload.settings.convertToMp4);
+    if (patch.convertToMp4 !== undefined) {
+      ctx.downloader.setConvertMode(patch.convertToMp4);
     }
-    if (payload.settings.segmentConcurrency !== undefined) {
-      ctx.downloader.setSegmentConcurrency(payload.settings.segmentConcurrency);
+    if (patch.segmentConcurrency !== undefined) {
+      ctx.downloader.setSegmentConcurrency(patch.segmentConcurrency);
     }
-    if (payload.settings.filenameSource !== undefined) {
-      ctx.downloader.setFilenameSource(payload.settings.filenameSource);
+    if (patch.filenameSource !== undefined) {
+      ctx.downloader.setFilenameSource(patch.filenameSource);
     }
     // parallelFallback is read by the offscreen conversion path when a
     // conversion starts; no immediate side-effect to apply here.

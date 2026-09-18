@@ -20,9 +20,9 @@ import {
   mapYouTubeCaptionTracks,
   mapIqiyiSubtitleTracks,
   mapNetflixSubtitleTracks,
-  type YouTubeCaptionTrack,
-  type IqiyiSubtitleTrack,
-  type NetflixSubtitleTrack,
+  youTubeCaptionTrackArraySchema,
+  iqiyiSubtitleTrackArraySchema,
+  netflixSubtitleTrackArraySchema,
 } from '@/features/detection';
 import type { BackgroundContext } from '../context';
 import {
@@ -34,8 +34,8 @@ import {
 import type {
   MessageResponse,
   AutoLoadSubtitlesPayload,
-  DetectedSubtitlesPayload,
 } from '@/entities/message';
+import { DetectedSubtitlesPayloadSchema } from '@/entities/message/schema';
 import type { DetectedMediaUpdatePayload } from '@/entities/message';
 import type { DetectedSubtitle } from '@/entities/media';
 
@@ -46,7 +46,11 @@ export function registerDetectionDispatchHandlers(
   ctx.on(
     MESSAGE_TYPES.DETECTED_SUBTITLES,
     async (request): Promise<MessageResponse> => {
-      const payload = request.payload as DetectedSubtitlesPayload;
+      const parsed = DetectedSubtitlesPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid DETECTED_SUBTITLES payload: ${parsed.error.message}` };
+      }
+      const payload = parsed.data;
       const tabId = payload.tabId ?? (await getActiveTabId(ctx));
       if (tabId === undefined) {
         return { success: false, error: 'Missing tabId for DETECTED_SUBTITLES' };
@@ -57,21 +61,33 @@ export function registerDetectionDispatchHandlers(
       if (source === 'iqiyi') {
         // IQ: origin from data.dstl (dynamic, MAIN world passes via payload).
         // Fallback is the canonical CDN host — MAIN world normally supplies it.
+        const tracks = iqiyiSubtitleTrackArraySchema.safeParse(payload.tracks);
+        if (!tracks.success) {
+          return { success: false, error: `Invalid iqiyi tracks: ${tracks.error.message}` };
+        }
         subtitles = mapIqiyiSubtitleTracks(
-          payload.tracks as IqiyiSubtitleTrack[],
+          tracks.data,
           tabId,
           payload.origin ?? 'https://meta.video.iqiyi.com',
         );
       } else if (source === 'netflix') {
         // Netflix (ADR-029): BCP 47 language directly, WebVTT-only, Netflix initiator.
+        const tracks = netflixSubtitleTrackArraySchema.safeParse(payload.tracks);
+        if (!tracks.success) {
+          return { success: false, error: `Invalid netflix tracks: ${tracks.error.message}` };
+        }
         subtitles = mapNetflixSubtitleTracks(
-          payload.tracks as NetflixSubtitleTrack[],
+          tracks.data,
           tabId,
         );
       } else {
         // YouTube (source === 'youtube' or undefined — backward compat ADR-020).
+        const tracks = youTubeCaptionTrackArraySchema.safeParse(payload.tracks);
+        if (!tracks.success) {
+          return { success: false, error: `Invalid youtube tracks: ${tracks.error.message}` };
+        }
         subtitles = mapYouTubeCaptionTracks(
-          payload.tracks as YouTubeCaptionTrack[],
+          tracks.data,
           tabId,
         );
       }

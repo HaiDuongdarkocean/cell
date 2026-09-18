@@ -6,6 +6,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   AudioItemSchema,
+  LookupRequestPayloadSchema,
   LookupRequestSchema,
   LookupResultSchema,
   PhraseMatchSchema,
@@ -645,5 +646,51 @@ describe('QuickAddPayloadMessage + Response', () => {
         error: 'Network error',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('LookupRequestPayloadSchema (MV3 boundary)', () => {
+  it('accepts a real lookup request without fallback', () => {
+    expect(
+      LookupRequestPayloadSchema.safeParse({
+        requestId: 'r1',
+        request: {
+          term: 'serendipity',
+          langCode: 'en',
+          contextSentence: 'a long sentence that exceeds two thousand characters'.repeat(60),
+          cursorOffset: 5,
+        },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts an optional fallback flag', () => {
+    expect(
+      LookupRequestPayloadSchema.safeParse({
+        requestId: 'r1',
+        request: {
+          term: 'x',
+          langCode: 'en',
+          contextSentence: '',
+          cursorOffset: 0,
+          fallback: true,
+        },
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a malformed request (non-string term)', () => {
+    expect(
+      LookupRequestPayloadSchema.safeParse({
+        requestId: 'r1',
+        request: { term: 42, langCode: 'en', contextSentence: '', cursorOffset: 0 },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects a missing request field', () => {
+    expect(
+      LookupRequestPayloadSchema.safeParse({ requestId: 'r1' }).success,
+    ).toBe(false);
   });
 });

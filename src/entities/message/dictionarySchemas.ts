@@ -4,7 +4,6 @@
 // storage edges. Internal code trusts the types after validation.
 
 import { z } from 'zod';
-import type { LookupRequest } from '@/entities/dictionary';
 
 // === Reusable primitives ===
 
@@ -367,9 +366,21 @@ export const QuickAddResponseSchema = z.object({
 
 // === Lookup (MV3 message boundary) ===
 
+// Mirrors `LookupRequest` (entities/dictionary/types.ts) verbatim — the
+// stricter LookupRequestSchema above has producer-hostile caps (term ≤200,
+// contextSentence ≤2000) that real senders exceed; this boundary schema
+// validates shape only.
+export const lookupRequestSchema = z.object({
+  term: z.string(),
+  langCode: z.string(),
+  contextSentence: z.string(),
+  cursorOffset: z.number(),
+  fallback: z.boolean().optional(),
+});
+
 export const LookupRequestPayloadSchema = z.object({
   requestId: z.string().min(1),
-  request: z.custom<LookupRequest>((val) => typeof val === 'object' && val !== null && !Array.isArray(val)),
+  request: lookupRequestSchema,
 });
 
 export const LookupCancelPayloadSchema = z.object({
