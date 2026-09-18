@@ -1,5 +1,7 @@
 # Verify — vocabulary-tab-redesign
 
+VERDICT: PASS
+
 Commit: `5ba88bb5` · Stage: deliver → shipped
 Spec: `docs/specs/vocabulary-tab-redesign.md` · Design: Concept B (compact toolbar)
 
