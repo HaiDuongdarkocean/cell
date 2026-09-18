@@ -11,7 +11,7 @@ import {
 } from '@/features/dictionary/services/wordStatusEvents';
 import { createVideoTokenMap, type VideoTokenMap } from '@/features/tokenize/logic/videoTokenMap';
 import { createVideoTokenPreloader, type VideoTokenPreloader } from '@/features/tokenize/logic/videoTokenPreloader';
-import { createStatusKeyControls } from '@/features/tokenize/logic/statusKeyControls';
+import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 
 const DEFAULT_WINDOW = 1;
 
@@ -39,6 +39,8 @@ export interface SubtitleTokenizeControllerOptions {
   readonly getExtraShadowRoots?: () => readonly ShadowRoot[];
   /** Called when the user clicks a token to open the Popup Dictionary. */
   readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
+  /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
+  readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
   /** Number of cues before/after the active cue to keep prepared. */
   readonly windowSize?: number;
 }
@@ -187,6 +189,7 @@ export function createSubtitleTokenizeController(
     stateStore,
     getShadowRoots,
     applyStatusToTerms,
+    getPopupTarget: options.getPopupStatusTarget,
   });
 
   return {

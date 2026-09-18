@@ -232,6 +232,72 @@ describe('createSubtitleTokenizeController', () => {
     controller.destroy();
   });
 
+  it('routes 1-4 keys to the popup target instead of the hovered token', async () => {
+    const apply = jest.fn();
+    const target = document.createElement('div');
+    const native = document.createElement('div');
+    document.body.append(target, native);
+    const cues: SrtCue[] = [{ index: 1, start: 0, end: 1000, text: 'Hello world.' }];
+    const controller = createSubtitleTokenizeController({
+      langCode: 'en',
+      getLineElements: () => ({ target, native }),
+      onOpenDictionary: jest.fn(),
+      getPopupStatusTarget: () => ({ term: 'lookup-term', langCode: 'en', apply }),
+      windowSize: 1,
+    });
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('3')).toBe(true);
+
+    // The popup path owns persistence + fan-out — the tokenize apply path
+    // must not run for the hovered word.
+    expect(apply).toHaveBeenCalledTimes(1);
+    expect(apply).toHaveBeenCalledWith('known');
+    expect(setWordStatus).not.toHaveBeenCalled();
+
+    controller.destroy();
+  });
+
+  it('falls back to the hovered token when the popup target returns null', async () => {
+    const target = document.createElement('div');
+    const native = document.createElement('div');
+    document.body.append(target, native);
+    const cues: SrtCue[] = [{ index: 1, start: 0, end: 1000, text: 'Hello world.' }];
+    const controller = createSubtitleTokenizeController({
+      langCode: 'en',
+      getLineElements: () => ({ target, native }),
+      onOpenDictionary: jest.fn(),
+      getPopupStatusTarget: () => null,
+      windowSize: 1,
+    });
+
+    target.textContent = cues[0]!.text;
+    controller.setCues(cues, []);
+    controller.enable();
+    controller.render(0, -1);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement | null;
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    setWordStatus.mockClear();
+    expect(controller.handleStatusKey('1')).toBe(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'unknown');
+
+    controller.destroy();
+  });
+
   it('applies status through handleStatusKey for player-mode keyboard routing', async () => {
     const { target, cues, controller } = setup();
 

@@ -99,6 +99,14 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
   const fullSnapshot = selectionSnapshot as (PopupSelectionSnapshot & Partial<PopupCardCreatorPrefill>) | undefined;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
+  const [prevCandidateStatus, setPrevCandidateStatus] = useState(candidate.status);
+  // Render-time resync: an external status edit (e.g. the 1-4 keyboard path →
+  // mount.setStatus → syncStatus) lands as a new candidate object — mirror it
+  // without the post-mount stomp a useEffect would cause on fresh mounts.
+  if (prevCandidateStatus !== candidate.status) {
+    setPrevCandidateStatus(candidate.status);
+    setStatus(candidate.status);
+  }
   const selectedDefinitionIds = fullSnapshot?.selectedDefinitionIds;
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(
     () => initDefinitionSelection(candidate, selectedDefinitionIds),

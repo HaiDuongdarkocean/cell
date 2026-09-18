@@ -21,6 +21,8 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { openSettingsSection, type PanelMountController } from './panelBridge';
 import { createPopupLevel, type PopupLevel } from './controllerTypes';
+import { setWordStatus } from '@/features/dictionary';
+import type { PopupStatusTarget } from '@/features/tokenize';
 import {
   applyTokenStatus,
   clearPopupTokenId,
@@ -85,6 +87,11 @@ export interface PopupLifecycle {
   readonly clearHighlight: () => void;
   readonly syncStatus: (term: string, status: WordStatus) => void;
   readonly syncMountSettings: (nativeLang: string, settings: DictionaryPopupSettings) => void;
+  /** The term the deepest open popup is showing + an apply() that routes a
+   *  status change through the popup path (persist + token repaint + cache +
+   *  popup pill sync). Null when no popup has a result yet — lets the 1-4
+   *  status keys target the looked-up word. */
+  readonly getPopupStatusTarget: () => PopupStatusTarget | null;
   readonly dispose: () => void;
 }
 
@@ -215,6 +222,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
   function handlePopupStatusChange(level: PopupLevel, term: string, langCode: string, status: WordStatus): void {
     emitWordStatusChanged({ term, langCode, status });
+    level.mount?.setStatus(term, status);
     deps.onStatusChange?.(term, langCode, status);
     const token = level.popupTokenEl ?? (level.popupTokenId ? getTokenById(level.popupTokenId) : null);
     if (token) {
@@ -224,6 +232,24 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       applyTokenStatus(level.highlightTarget, status);
     }
     deps.lookupCache.updateStatus(term, langCode, status);
+  }
+
+  function getPopupStatusTarget(): PopupStatusTarget | null {
+    for (let i = popupStack.length - 1; i >= 0; i--) {
+      const level = popupStack[i]!;
+      if (!level.mount || !level.term || !level.termLangCode) continue;
+      const term = level.term;
+      const langCode = level.termLangCode;
+      return {
+        term,
+        langCode,
+        apply: (status) => {
+          void setWordStatus(langCode, term, status).catch(() => { /* best-effort */ });
+          handlePopupStatusChange(level, term, langCode, status);
+        },
+      };
+    }
+    return null;
   }
 
   function renderLookupResult(
@@ -298,6 +324,9 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
       });
     }
 
+    level.term = result.term;
+    level.termLangCode = result.langCode;
+
     // Apply token status + popup-open pin to the looked-up token.
     const token = level.highlightTarget ? getTokenElement(level.highlightTarget) : null;
     if (token) {
@@ -362,6 +391,10 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
 
     level.highlightTarget = highlightTarget;
     level.originalHighlightTarget = highlightTarget;
+    // A new lookup is taking over this level — drop the previous term so 1-4
+    // keys can't hit the stale word while the new result is loading.
+    level.term = null;
+    level.termLangCode = null;
     if (highlightTarget instanceof Range && highlightTarget.startContainer instanceof Text) {
       const parent = highlightTarget.startContainer.parentElement;
       level.highlightAnchor = parent
@@ -548,6 +581,7 @@ export function createPopupLifecycle(deps: PopupLifecycleDeps): PopupLifecycle {
     clearHighlight,
     syncStatus,
     syncMountSettings,
+    getPopupStatusTarget,
     dispose,
   };
 }

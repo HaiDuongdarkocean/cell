@@ -366,6 +366,75 @@ describe('createWebTextDictionaryController', () => {
     act(() => { ctrl.destroy() });
   });
 
+  it('getPopupStatusTarget exposes the displayed term and routes 1-4 status through the popup path', async () => {
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+
+    const onStatusChange = jest.fn();
+    const emitted: WordStatusChangedDetail[] = [];
+    const unsubscribe = onWordStatusChanged((detail) => emitted.push(detail));
+    const ctrl = createWebTextDictionaryController(makeDeps({ onStatusChange }));
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-key', new DOMRect(0, 0, 0, 0), range) });
+
+    // While the lookup is in flight there is no displayed term — a stale
+    // target would apply the key to the previously looked-up word.
+    expect(ctrl.getPopupStatusTarget()).toBeNull();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const target = ctrl.getPopupStatusTarget();
+    expect(target).toEqual(expect.objectContaining({ term: 'take off', langCode: 'en' }));
+
+    mockSendMessage.mockClear();
+    act(() => { target!.apply('known') });
+
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      type: 'WORD_STATUS_SET',
+      payload: { tabId: -1, langCode: 'en', term: 'take off', status: 'known' },
+    });
+    expect(emitted).toContainEqual({ term: 'take off', langCode: 'en', status: 'known' });
+    expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'known');
+
+    unsubscribe();
+    act(() => { ctrl.destroy() });
+  });
+
+  it('getPopupStatusTarget clears the stale term when a new lookup starts', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    act(() => { ctrl.handleLookup(makeRequest(), 'req-a', new DOMRect(0, 0, 0, 0), range) });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(ctrl.getPopupStatusTarget()?.term).toBe('take off');
+
+    // A second lookup on the same level reuses the mount — the previous term
+    // must not be reachable while the new result is loading.
+    mockSendMessage.mockReturnValueOnce(new Promise(() => {}) as never);
+    act(() => { ctrl.handleLookup(makeRequest({ term: 'put' }), 'req-b', new DOMRect(0, 0, 0, 0), range) });
+
+    expect(ctrl.getPopupStatusTarget()).toBeNull();
+
+    act(() => { ctrl.destroy() });
+  });
+
   it('handleLookup logs warning on lookup failure', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: false, error: 'not found' } as unknown as never);
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});

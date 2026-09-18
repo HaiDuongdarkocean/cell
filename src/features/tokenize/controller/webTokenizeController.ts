@@ -21,7 +21,7 @@ import {
 } from '@/features/dictionary/services/wordStatusEvents';
 import type { WordStatus } from '@/entities/dictionary';
 import { entriesToBand, loadFrequencyBandOptions, DEFAULT_BAND_THRESHOLDS, type FrequencyBandOptions } from '@/features/tokenize/utils/frequencyBand';
-import { createStatusKeyControls } from '@/features/tokenize/logic/statusKeyControls';
+import { createStatusKeyControls, type PopupStatusTarget } from '@/features/tokenize/logic/statusKeyControls';
 import type { Token, TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -83,6 +83,8 @@ export interface WebTokenizeControllerOptions {
   /** Fired when the scanned block list changes (scan, dynamic adds, removals,
    *  token invalidation). Used by the comprehension text-score source. */
   readonly onBlocksChanged?: () => void;
+  /** Open popup's looked-up term — 1-4 status keys target it before selection/hover. */
+  readonly getPopupStatusTarget?: () => PopupStatusTarget | null;
 }
 
 export interface WebTokenizeController extends TokenizeController {
@@ -825,6 +827,7 @@ export async function createWebTokenizeController(
     stateStore,
     getShadowRoots,
     applyStatusToTerms,
+    getPopupTarget: options.getPopupStatusTarget,
   });
 
   function unbindAll(): void {

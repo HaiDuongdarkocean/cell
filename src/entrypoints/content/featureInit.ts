@@ -198,6 +198,7 @@ export async function initTokenize(): Promise<void> {
       onBlocksChanged: () => {
         for (const listener of [...blocksChangedListeners]) listener();
       },
+      getPopupStatusTarget: () => webTextCtrl?.getPopupStatusTarget() ?? null,
     });
     stopTextScoreSource = startTextScoreSource({
       controller: webTokenizeCtrl,

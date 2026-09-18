@@ -24,6 +24,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 import type { PanelMountController } from './panelBridge';
+import type { PopupStatusTarget } from '@/features/tokenize';
 import { type CueRange } from './controllerTypes';
 import { createLookupCache } from './lookupCache';
 import { createPopupLifecycle } from './popupLifecycle';
@@ -100,6 +101,9 @@ export interface WebTextDictionaryController {
   readonly clearHighlight: () => void;
   /** Sync the popup status with an external status change (e.g. keyboard shortcut). */
   readonly syncStatus: (term: string, status: WordStatus) => void;
+  /** The term the deepest open popup is showing + an apply() routing a status
+   *  change through the popup path. Lets 1-4 keys target the looked-up word. */
+  readonly getPopupStatusTarget: () => PopupStatusTarget | null;
   /** Update card creator settings (lazy-updates the dialog mount if it exists). */
   readonly updateCardCreatorSettings: (settings: CardCreatorSettings) => void;
   /** Open the Card Creator dialog with the given context + optional action. */
@@ -264,6 +268,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     showHighlight: lifecycle.showHighlight,
     clearHighlight: lifecycle.clearHighlight,
     syncStatus: lifecycle.syncStatus,
+    getPopupStatusTarget: lifecycle.getPopupStatusTarget,
     updateCardCreatorSettings: cardBridge.updateSettings,
     openCardCreator: (context, action?: CardCreatorAction) => cardBridge.open(context, action),
     sendToCard: cardBridge.sendToCard,

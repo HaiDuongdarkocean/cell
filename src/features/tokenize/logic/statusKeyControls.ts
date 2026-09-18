@@ -10,10 +10,21 @@ const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '4': 'ignore',
 };
 
+/** The word an open dictionary popup is currently showing — 1-4 keys apply to
+ *  it (and its own persist/render path) while the popup is up. */
+export interface PopupStatusTarget {
+  readonly term: string;
+  readonly langCode: string;
+  readonly apply: (status: WordStatus) => void;
+}
+
 export interface StatusKeyControlsOptions {
   readonly stateStore: TokenizeStateStore;
   readonly getShadowRoots: () => ShadowRoot[];
   readonly applyStatusToTerms: (terms: readonly string[], status: WordStatus) => void;
+  /** Open popup's looked-up term, when a result is displayed. Takes priority
+   *  over selection/hover because the popup is the user's current context. */
+  readonly getPopupTarget?: () => PopupStatusTarget | null;
 }
 
 export interface StatusKeyControls {
@@ -22,11 +33,16 @@ export interface StatusKeyControls {
 }
 
 export function createStatusKeyControls(options: StatusKeyControlsOptions): StatusKeyControls {
-  const { stateStore, getShadowRoots, applyStatusToTerms } = options;
+  const { stateStore, getShadowRoots, applyStatusToTerms, getPopupTarget } = options;
 
   function applyStatusKey(key: string): boolean {
     const status = STATUS_BY_KEY[key];
     if (!status) return false;
+    const popupTarget = getPopupTarget?.();
+    if (popupTarget) {
+      popupTarget.apply(status);
+      return true;
+    }
     const state = stateStore.getState();
     let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : [];
     let usedNativeSelection = false;

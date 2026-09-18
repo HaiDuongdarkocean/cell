@@ -354,6 +354,7 @@ export function init(
               const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
               sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
             },
+            getPopupStatusTarget: () => sharedWebTextCtrl?.getPopupStatusTarget?.() ?? null,
           });
         }
         subtitleTokenizeCtrl.enable();
