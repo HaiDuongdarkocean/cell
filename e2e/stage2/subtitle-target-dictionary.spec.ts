@@ -60,11 +60,13 @@ test.describe('Stage 2: Dictionary lookup on subtitle target text', () => {
     const targetLine = targetLayer.locator('span').first();
     await expect(targetLine).toContainText(/[A-Za-z]/, { timeout: 15_000 });
 
-    // Mock controls auto-hide ~3s into playback; wait them out before clicking.
-    await streamFlixPage.waitForTimeout(3400);
-
-    const point = await wordPoint(targetLine);
-    expect(point).not.toBeNull();
+    // The line cycles "Loading English #1…" (0-size) → "Loaded English #1" →
+    // cue text while the track loads; poll for a rendered word instead of a
+    // fixed wait so the click lands on whichever text is up.
+    let point: { x: number; y: number } | null = null;
+    await expect
+      .poll(async () => (point = await wordPoint(targetLine)), { timeout: 15_000 })
+      .not.toBeNull();
     await streamFlixPage.mouse.click(point!.x, point!.y);
 
     const popup = streamFlixPage.locator('.js-cell-popup-host');
