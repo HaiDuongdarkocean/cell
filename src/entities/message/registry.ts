@@ -70,6 +70,10 @@ import {
   WordStatusDeletedPayloadSchema,
   WordStatusGetPayloadSchema,
   WordStatusListPayloadSchema,
+  WordStatusRestorePayloadSchema,
+  WordStatusTrashDeletePayloadSchema,
+  WordStatusTrashListPayloadSchema,
+  WordStatusTrashPayloadSchema,
   WordStatusesGetPayloadSchema,
   WordStatusSetPayloadSchema,
 } from './dictionarySchemas';
@@ -471,6 +475,30 @@ export const MESSAGE_REGISTRY = {
     type: MESSAGE_TYPES.WORD_STATUS_DELETED,
     schema: WordStatusDeletedPayloadSchema,
     direction: 'bg->cs',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_TRASH]: {
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH,
+    schema: WordStatusTrashPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_TRASH_LIST]: {
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_LIST,
+    schema: WordStatusTrashListPayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_RESTORE]: {
+    type: MESSAGE_TYPES.WORD_STATUS_RESTORE,
+    schema: WordStatusRestorePayloadSchema,
+    direction: 'cs->bg',
+    owner: 'background/handlers/wordStatus',
+  },
+  [MESSAGE_TYPES.WORD_STATUS_TRASH_DELETE]: {
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_DELETE,
+    schema: WordStatusTrashDeletePayloadSchema,
+    direction: 'cs->bg',
     owner: 'background/handlers/wordStatus',
   },
   [MESSAGE_TYPES.FREQUENCY_GET]: {

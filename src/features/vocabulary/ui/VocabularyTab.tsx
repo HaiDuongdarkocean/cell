@@ -1,20 +1,27 @@
-import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { Chip } from '@/shared/ui/Chip';
 import { Dialog } from '@/shared/ui/Dialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Icon } from '@/shared/icons/Icon';
 import { Pagination } from '@/shared/ui/Pagination';
+import { Popover } from '@/shared/ui/Popover';
 import { SearchField } from '@/shared/ui/SearchField';
-import { Select } from '@/shared/ui/Select';
-import { Timestamp } from '@/shared/ui/Timestamp';
+import { Text } from '@/shared/ui/Text';
+import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import { t, type MessageKey } from '@/shared/i18n';
-import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
+import { TRASH_TTL_MS } from '@/features/dictionary';
+import { type WordStatus } from '@/entities/dictionary';
 import { createVocabularySource } from '../services/vocabularySource';
 import {
+  VOCABULARY_SEGMENTS,
+  countByStatus,
+  filterTrashEntries,
   selectEntries,
   paginateEntries,
+  statusesForSegment,
+  trashHoursLeft,
+  type VocabularySegment,
   type VocabularySort,
 } from '../logic/vocabularyList';
 import styles from './VocabularyTab.module.css';
@@ -35,6 +42,22 @@ const STATUS_CLASS: Record<WordStatus, string> = {
   ignore: styles.statusIgnore,
 };
 
+const SEGMENT_LABEL: Record<VocabularySegment, MessageKey> = {
+  all: 'vocabulary.segment.all',
+  tracking: 'vocabulary.status.tracking',
+  known: 'vocabulary.status.known',
+  ignore: 'vocabulary.status.ignore',
+  trash: 'vocabulary.segment.trash',
+};
+
+const SORT_OPTIONS: readonly { value: VocabularySort; label: MessageKey }[] = [
+  { value: 'recent', label: 'vocabulary.sort.recent' },
+  { value: 'alpha', label: 'vocabulary.sort.alpha' },
+  { value: 'grouped', label: 'vocabulary.sort.grouped' },
+];
+
+type ToolbarMenu = 'filter' | 'sort';
+
 export interface VocabularyTabProps {
   /** Base-2 language of the active profile — source refetches when it changes. */
   readonly langCode: string;
@@ -53,37 +76,103 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
   const getSnapshot = useCallback(() => source.getState(), [source]);
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-  const [statuses, setStatuses] = useState<ReadonlySet<WordStatus>>(() => new Set(STATUS_CYCLE));
+  const [segment, setSegment] = useState<VocabularySegment>('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<VocabularySort>('recent');
   const [pageIndex, setPageIndex] = useState(0);
+  const [editMode, setEditMode] = useState(false);
+  const [menu, setMenu] = useState<ToolbarMenu | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pendingPurge, setPendingPurge] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const filterTriggerRef = useRef<HTMLButtonElement>(null);
+  const sortTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const inTrash = segment === 'trash';
+
   useEffect(() => {
-    setStatuses(new Set(STATUS_CYCLE));
+    setSegment('all');
     setQuery('');
     setSort('recent');
     setPageIndex(0);
+    setEditMode(false);
+    setMenu(null);
     setError(null);
   }, [langCode]);
 
+  useEffect(() => {
+    if (inTrash) {
+      source.refreshTrash().catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
+    }
+  }, [inTrash, source]);
+
+  useEffect(() => {
+    if (menu === null) return;
+    const doc = rootRef.current?.ownerDocument ?? document;
+    const win = doc.defaultView ?? window;
+    const handleClickOutside = (e: Event): void => {
+      const path = e.composedPath();
+      if (
+        !path.includes(toolbarRef.current as Node) &&
+        !path.includes(menuRef.current as Node)
+      ) {
+        setMenu(null);
+      }
+    };
+    const handleScroll = (): void => setMenu(null);
+    doc.addEventListener('mousedown', handleClickOutside);
+    win.addEventListener('scroll', handleScroll, true);
+    return () => {
+      doc.removeEventListener('mousedown', handleClickOutside);
+      win.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [menu]);
+
+  useEffect(() => {
+    if (menu === null) return;
+    const doc = rootRef.current?.ownerDocument ?? document;
+    return pushEscapeLayer(() => setMenu(null), doc);
+  }, [menu]);
+
+  const statusCounts = useMemo(() => countByStatus(state.entries), [state.entries]);
+  const segmentCounts = useMemo<Record<VocabularySegment, number>>(
+    () => ({
+      all: state.entries.length,
+      tracking: statusCounts.tracking,
+      known: statusCounts.known,
+      ignore: statusCounts.ignore,
+      trash: state.trash.length,
+    }),
+    [state.entries.length, statusCounts, state.trash.length],
+  );
+
   const sorted = useMemo(
-    () => selectEntries(state.entries, { statuses, query }, sort),
-    [state.entries, statuses, query, sort],
+    () => selectEntries(state.entries, { statuses: statusesForSegment(segment), query }, sort),
+    [state.entries, segment, query, sort],
   );
   const page = useMemo(() => paginateEntries(sorted, PAGE_SIZE, pageIndex), [sorted, pageIndex]);
+
+  const trashVisible = useMemo(() => filterTrashEntries(state.trash, query), [state.trash, query]);
+  const trashPage = useMemo(
+    () => paginateEntries(trashVisible, PAGE_SIZE, pageIndex),
+    [trashVisible, pageIndex],
+  );
 
   useEffect(() => {
     if (page.pageIndex !== pageIndex) setPageIndex(page.pageIndex);
   }, [page.pageIndex, pageIndex]);
 
-  const toggleStatus = (status: WordStatus): void => {
-    const next = new Set(statuses);
-    if (next.has(status)) next.delete(status);
-    else next.add(status);
-    setStatuses(next);
+  const handleSegmentChange = (value: VocabularySegment): void => {
+    setSegment(value);
     setPageIndex(0);
+    setEditMode(false);
+    setMenu(null);
   };
 
   const handleCycle = (term: string): void => {
@@ -96,53 +185,153 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
     const term = pendingDelete;
     setPendingDelete(null);
     if (term === null) return;
-    source.remove(term).catch((err: unknown) => {
+    source.trash(term).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : String(err));
     });
   };
 
+  const handleRestore = (term: string): void => {
+    source.restore(term).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : String(err));
+    });
+  };
+
+  const confirmPurge = (): void => {
+    const term = pendingPurge;
+    setPendingPurge(null);
+    if (term === null) return;
+    source.deleteTrash(term).catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : String(err));
+    });
+  };
+
+  const filterSegments = VOCABULARY_SEGMENTS.filter((s) => s !== 'trash');
+  const activeSort = SORT_OPTIONS.find((o) => o.value === sort) ?? SORT_OPTIONS[0]!;
+
   let lastGroup: WordStatus | null = null;
 
   return (
-    <div className={styles.tab} data-cell-id="vocabulary-tab">
-      <div className={styles.controls}>
-        <div className={styles.chips}>
-          {STATUS_CYCLE.map((status) => (
-            <Chip
-              key={status}
-              as="button"
-              size="sm"
-              selected={statuses.has(status)}
-              onClick={() => toggleStatus(status)}
-              className={STATUS_CLASS[status]}
-              data-cell-id={`vocabulary-filter-${status}`}
+    <div ref={rootRef} className={styles.tab} data-cell-id="vocabulary-tab">
+      <div ref={toolbarRef} className={styles.toolbar}>
+        <Button
+          ref={filterTriggerRef}
+          variant="ghost"
+          size="sm"
+          className={styles.toolBtn}
+          aria-haspopup="menu"
+          aria-expanded={menu === 'filter'}
+          aria-label={t('vocabulary.segment.label')}
+          onClick={() => setMenu(menu === 'filter' ? null : 'filter')}
+          data-cell-id="vocabulary-filter"
+        >
+          <Icon name="slidersHorizontal" size={16} />
+          {t(SEGMENT_LABEL[segment])}
+          <Icon name="chevronDown" size={14} />
+        </Button>
+        {!inTrash && (
+          <Button
+            ref={sortTriggerRef}
+            variant="ghost"
+            size="sm"
+            className={styles.toolBtn}
+            aria-haspopup="menu"
+            aria-expanded={menu === 'sort'}
+            aria-label={t('vocabulary.sort.label')}
+            onClick={() => setMenu(menu === 'sort' ? null : 'sort')}
+            data-cell-id="vocabulary-sort"
+          >
+            {t(activeSort.label)}
+            <Icon name="chevronDown" size={14} />
+          </Button>
+        )}
+        <span className={styles.toolbarSpacer} />
+        {!inTrash && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={styles.toolBtn}
+            aria-pressed={editMode}
+            onClick={() => setEditMode((v) => !v)}
+            data-cell-id="vocabulary-edit-toggle"
+          >
+            <Icon name="pencil" size={16} />
+            {editMode ? t('vocabulary.done') : t('vocabulary.edit')}
+          </Button>
+        )}
+      </div>
+
+      <Popover
+        open={menu === 'filter'}
+        triggerRef={filterTriggerRef}
+        role="menu"
+        aria-label={t('vocabulary.segment.label')}
+        className={styles.menuSurface}
+      >
+        <div ref={menuRef} className={styles.menu}>
+          {filterSegments.map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="menuitemradio"
+              aria-checked={segment === s}
+              className={styles.menuItem}
+              onClick={() => handleSegmentChange(s)}
+              data-cell-id={`vocabulary-segment-${s}`}
             >
-              {t(STATUS_LABEL[status])}
-            </Chip>
+              <span className={styles.menuItemLabel}>{t(SEGMENT_LABEL[s])}</span>
+              <span className={styles.menuItemCount} data-cell-id={`vocabulary-segment-count-${s}`}>{segmentCounts[s]}</span>
+            </button>
+          ))}
+          <div className={styles.menuSep} />
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={inTrash}
+            className={styles.menuItem}
+            onClick={() => handleSegmentChange('trash')}
+            data-cell-id="vocabulary-segment-trash"
+          >
+            <span className={styles.menuItemLabel}>
+              <Icon name="trash2" size={16} />
+              {t('vocabulary.segment.trash')}
+            </span>
+            <span className={styles.menuItemCount} data-cell-id="vocabulary-segment-count-trash">{segmentCounts.trash}</span>
+          </button>
+        </div>
+      </Popover>
+
+      <Popover
+        open={menu === 'sort'}
+        triggerRef={sortTriggerRef}
+        role="menu"
+        aria-label={t('vocabulary.sort.label')}
+        className={styles.menuSurface}
+      >
+        <div ref={menu === 'sort' ? menuRef : undefined} className={styles.menu}>
+          {SORT_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={sort === o.value}
+              className={styles.menuItem}
+              onClick={() => { setSort(o.value); setPageIndex(0); setMenu(null); }}
+              data-cell-id={`vocabulary-sort-${o.value}`}
+            >
+              <span className={styles.menuItemLabel}>{t(o.label)}</span>
+              {sort === o.value && <Icon name="check" size={16} />}
+            </button>
           ))}
         </div>
-        <div className={styles.controlsRow}>
-          <SearchField
-            value={query}
-            onChange={(value) => { setQuery(value); setPageIndex(0); }}
-            placeholder={t('vocabulary.search.placeholder')}
-            className={styles.search}
-            data-cell-id="vocabulary-search"
-          />
-          <Select
-            value={sort}
-            onChange={(value) => { setSort(value as VocabularySort); setPageIndex(0); }}
-            options={[
-              { value: 'recent', label: t('vocabulary.sort.recent') },
-              { value: 'alpha', label: t('vocabulary.sort.alpha') },
-              { value: 'grouped', label: t('vocabulary.sort.grouped') },
-            ]}
-            size="sm"
-            aria-label={t('vocabulary.sort.label')}
-            data-cell-id="vocabulary-sort"
-          />
-        </div>
-      </div>
+      </Popover>
+
+      <SearchField
+        value={query}
+        onChange={(value) => { setQuery(value); setPageIndex(0); }}
+        placeholder={t('vocabulary.search.placeholder')}
+        className={styles.search}
+        data-cell-id="vocabulary-search"
+      />
 
       {error && (
         <Alert
@@ -153,7 +342,76 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
         />
       )}
 
-      {!state.loaded ? null : state.entries.length === 0 ? (
+      {!state.loaded ? null : inTrash ? (
+        <>
+          <Text variant="supporting" color="secondary" className={styles.retention}>
+            {t('vocabulary.trash.retention')}
+          </Text>
+          {trashVisible.length === 0 ? (
+            state.trash.length === 0 ? (
+              <EmptyState
+                title={t('vocabulary.emptyTrash')}
+                size="compact"
+                data-cell-id="vocabulary-trash-empty"
+              />
+            ) : (
+              <EmptyState title={t('vocabulary.emptyFiltered')} size="compact" />
+            )
+          ) : (
+            <>
+              <ul className={styles.list}>
+                {trashPage.entries.map((entry) => (
+                  <li key={entry.term} className={styles.row} data-cell-id={`vocabulary-trash-row-${entry.term}`}>
+                    <div className={styles.rowBody}>
+                      <Button
+                        variant="ghost"
+                        className={styles.term}
+                        onClick={() => onLookup(entry.term)}
+                        data-cell-id={`vocabulary-term-${entry.term}`}
+                      >
+                        {entry.term}
+                      </Button>
+                      <span className={`${styles.statusBadge} ${styles.statusBadgeStatic} ${STATUS_CLASS[entry.previousStatus]}`}>
+                        {t(STATUS_LABEL[entry.previousStatus])}
+                      </span>
+                      <Text variant="supporting" color="secondary" className={styles.time}>
+                        {t('vocabulary.trash.expiresIn', [String(trashHoursLeft(entry.trashedAt, Date.now(), TRASH_TTL_MS))])}
+                      </Text>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        shape="circle"
+                        onClick={() => handleRestore(entry.term)}
+                        aria-label={t('vocabulary.row.restore', [entry.term])}
+                        data-cell-id={`vocabulary-restore-${entry.term}`}
+                      >
+                        <Icon name="rotateCcw" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        shape="circle"
+                        aria-label={t('vocabulary.row.deleteForever', [entry.term])}
+                        onClick={() => setPendingPurge(entry.term)}
+                        data-cell-id={`vocabulary-trash-delete-${entry.term}`}
+                      >
+                        <Icon name="x" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <Pagination
+                current={trashPage.pageIndex}
+                total={trashPage.pageCount}
+                onChange={setPageIndex}
+                showJump={false}
+                className={styles.pagination}
+              />
+            </>
+          )}
+        </>
+      ) : state.entries.length === 0 ? (
         <EmptyState title={t('vocabulary.empty')} size="compact" />
       ) : page.entries.length === 0 ? (
         <EmptyState title={t('vocabulary.emptyFiltered')} size="compact" />
@@ -181,11 +439,8 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                     >
                       {entry.term}
                     </Button>
-                    <Timestamp value={entry.updatedAt} format="absolute" className={styles.time} />
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      shape="pill"
+                      variant="transparent"
                       className={`${styles.statusBadge} ${STATUS_CLASS[entry.status]}`}
                       aria-label={t('vocabulary.row.cycle', [entry.term])}
                       onClick={() => handleCycle(entry.term)}
@@ -193,16 +448,20 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
                     >
                       {t(STATUS_LABEL[entry.status])}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      shape="circle"
-                      aria-label={t('vocabulary.row.remove', [entry.term])}
-                      onClick={() => setPendingDelete(entry.term)}
-                      data-cell-id={`vocabulary-delete-${entry.term}`}
-                    >
-                      <Icon name="trash" />
-                    </Button>
+                    <span className={styles.actionSlot}>
+                      {editMode && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          shape="circle"
+                          aria-label={t('vocabulary.row.remove', [entry.term])}
+                          onClick={() => setPendingDelete(entry.term)}
+                          data-cell-id={`vocabulary-delete-${entry.term}`}
+                        >
+                          <Icon name="trash" />
+                        </Button>
+                      )}
+                    </span>
                     </div>
                   </li>
                 </Fragment>
@@ -233,6 +492,25 @@ export function VocabularyTab({ langCode, onLookup }: VocabularyTabProps): React
             </Button>
             <Button variant="destructive" onClick={confirmDelete} data-cell-id="vocabulary-delete-confirm">
               {t('vocabulary.delete.confirm')}
+            </Button>
+          </>
+        )}
+      />
+
+      <Dialog
+        open={pendingPurge !== null}
+        onOpenChange={(open) => { if (!open) setPendingPurge(null); }}
+        title={t('vocabulary.trashDelete.title')}
+        description={t('vocabulary.trashDelete.description', [pendingPurge ?? ''])}
+        showCloseButton
+        data-cell-id="vocabulary-trash-delete-dialog"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={() => setPendingPurge(null)}>
+              {t('vocabulary.delete.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={confirmPurge} data-cell-id="vocabulary-trash-delete-confirm">
+              {t('vocabulary.trashDelete.confirm')}
             </Button>
           </>
         )}

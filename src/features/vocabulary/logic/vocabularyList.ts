@@ -8,13 +8,47 @@ export interface VocabularyEntry {
 
 export type VocabularySort = 'recent' | 'alpha' | 'grouped';
 
+export const VOCABULARY_SEGMENTS = ['all', 'tracking', 'known', 'ignore', 'trash'] as const;
+export type VocabularySegment = (typeof VOCABULARY_SEGMENTS)[number];
+
+export const MARKED_STATUSES: readonly WordStatus[] = ['tracking', 'known', 'ignore'];
+
+export function nextMarkedStatus(status: WordStatus): WordStatus {
+  const index = MARKED_STATUSES.indexOf(status);
+  return MARKED_STATUSES[(index + 1) % MARKED_STATUSES.length] ?? 'tracking';
+}
+
+export function statusesForSegment(segment: VocabularySegment): ReadonlySet<WordStatus> {
+  if (segment === 'all') return new Set(MARKED_STATUSES);
+  if (segment === 'trash') return new Set();
+  return new Set([segment]);
+}
+
+export function countByStatus(entries: readonly VocabularyEntry[]): Record<WordStatus, number> {
+  const counts: Record<WordStatus, number> = { unknown: 0, tracking: 0, known: 0, ignore: 0 };
+  for (const entry of entries) counts[entry.status] += 1;
+  return counts;
+}
+
+export function filterTrashEntries<T extends { readonly term: string }>(
+  entries: readonly T[],
+  query: string,
+): T[] {
+  const q = query.trim().toLowerCase();
+  return q === '' ? [...entries] : entries.filter((e) => e.term.toLowerCase().includes(q));
+}
+
+export function trashHoursLeft(trashedAt: number, now: number, ttlMs: number): number {
+  return Math.max(0, Math.ceil((trashedAt + ttlMs - now) / (60 * 60 * 1000)));
+}
+
 export interface VocabularyFilter {
   readonly statuses: ReadonlySet<WordStatus>;
   readonly query: string;
 }
 
-export interface VocabularyPage {
-  readonly entries: readonly VocabularyEntry[];
+export interface VocabularyPage<T = VocabularyEntry> {
+  readonly entries: readonly T[];
   readonly pageIndex: number;
   readonly pageCount: number;
   readonly total: number;
@@ -65,11 +99,11 @@ export function selectEntries(
   return sorted;
 }
 
-export function paginateEntries(
-  sorted: readonly VocabularyEntry[],
+export function paginateEntries<T>(
+  sorted: readonly T[],
   pageSize: number,
   pageIndex: number,
-): VocabularyPage {
+): VocabularyPage<T> {
   const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
   const clamped = Math.min(Math.max(0, pageIndex), pageCount - 1);
   return {

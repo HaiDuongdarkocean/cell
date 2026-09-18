@@ -1,4 +1,66 @@
 {
-  "active": null,
-  "items": {}
+  "active": "debug-seam-hardening",
+  "items": {
+    "vocabulary-tab-redesign": {
+      "stage": "deliver",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {
+        "spec": "docs/specs/vocabulary-tab-redesign.md",
+        "designBrief": "docs/intent/vocabulary-tab-redesign-design-brief.md",
+        "componentMapping": "docs/intent/vocabulary-tab-redesign-component-mapping.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-18T17:17:13.759Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-18T17:17:06.616Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-18T17:18:19.004Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-18T17:19:23.366Z"
+        },
+        "briefLint": {
+          "v": "pass",
+          "at": "2026-09-18T17:08:32.902Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-18T17:09:20.238Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "User approved intent doc (ok)",
+          "at": "2026-09-18T14:46:31.513Z"
+        }
+      ],
+      "loops": 0,
+      "updated": "2026-09-18T17:19:23.367Z"
+    },
+    "debug-seam-hardening": {
+      "stage": "analyze",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {
+        "intent": "docs/intent/debug-seam-hardening.md"
+      },
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "updated": "2026-09-18T17:32:06.919Z"
+    }
+  }
 }

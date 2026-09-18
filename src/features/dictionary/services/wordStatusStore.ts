@@ -7,7 +7,7 @@
 // Quota exceeded (spec §10 failure path): graceful — status not saved,
 // caller shows toast, lookup still works with existing data.
 
-import { getDB, getStore, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
+import { getDB, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import { STATUS_CYCLE, type WordStatus } from '@/entities/dictionary';
 
 export { STATUS_CYCLE };
@@ -94,6 +94,11 @@ export async function getWordStatuses(
 
 /**
  * Set the status for a term (upsert).
+ * 'unknown' normalizes to a status-row delete — only tracking|known|ignore
+ * rows are ever persisted (single normalization point; 'unknown' writes do
+ * NOT touch pending trash records so an unmarked word keeps its recovery
+ * window). A successful real-status write clears any pending trash record —
+ * re-marking cancels pending deletion.
  * Throws WordStatusQuotaError on IDB quota exceeded (spec §10 failure path).
  * Caller should catch + show toast "Bộ nhớ đầy — xóa resource cũ".
  * Lookup still works with existing data — graceful degradation.
@@ -101,10 +106,16 @@ export async function getWordStatuses(
 export async function setWordStatus(langCode: string, term: string, status: WordStatus): Promise<void> {
   try {
     const db = await getDB(langCode);
-    const store = getStore(db, STORES.WORD_STATUS);
-    const entry: WordStatusEntry = { term, status, updatedAt: Date.now() };
-    store.put(entry);
-    await awaitTx(store.transaction!);
+    if (status === 'unknown') {
+      const tx = db.transaction(STORES.WORD_STATUS, 'readwrite');
+      tx.objectStore(STORES.WORD_STATUS).delete(term);
+      await awaitTx(tx);
+      return;
+    }
+    const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
+    tx.objectStore(STORES.WORD_STATUS).put({ term, status, updatedAt: Date.now() });
+    tx.objectStore(STORES.WORD_TRASH).delete(term);
+    await awaitTx(tx);
   } catch (err) {
     if (isQuotaError(err)) {
       throw new WordStatusQuotaError('Bộ nhớ đầy — xóa resource cũ trong Settings → Resources');
@@ -126,22 +137,35 @@ export async function cycleWordStatus(langCode: string, term: string): Promise<W
   return next;
 }
 
-/** Delete the status entry for a term (reset to unknown). */
+/** Delete the status entry for a term — also clears any pending trash record
+ *  so an intentionally deleted word keeps no restorable record (spec REQ-12). */
 export async function deleteWordStatus(langCode: string, term: string): Promise<void> {
   const db = await getDB(langCode);
-  const store = getStore(db, STORES.WORD_STATUS);
-  store.delete(term);
-  await awaitTx(store.transaction!);
+  const tx = db.transaction([STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
+  tx.objectStore(STORES.WORD_STATUS).delete(term);
+  tx.objectStore(STORES.WORD_TRASH).delete(term);
+  await awaitTx(tx);
 }
 
-/** Get every stored word-status entry for a lang. */
+/** Get every stored word-status entry for a lang. Legacy `unknown` rows found
+ *  on read are deleted in the same tx (sweep) — only the 3 statuses persist. */
 export async function getAllWordStatuses(langCode: string): Promise<WordStatusEntry[]> {
   const db = await getDB(langCode);
-  const tx = db.transaction(STORES.WORD_STATUS, 'readonly');
+  const tx = db.transaction(STORES.WORD_STATUS, 'readwrite');
   const store = tx.objectStore(STORES.WORD_STATUS);
   return new Promise((resolve, reject) => {
     const req = store.getAll();
-    req.onsuccess = () => resolve(req.result as WordStatusEntry[]);
+    req.onsuccess = () => {
+      const entries = req.result as WordStatusEntry[];
+      const live = entries.filter((e) => {
+        if (e.status === 'unknown') {
+          store.delete(e.term);
+          return false;
+        }
+        return true;
+      });
+      tx.oncomplete = () => resolve(live);
+    };
     req.onerror = () => reject(req.error);
   });
 }

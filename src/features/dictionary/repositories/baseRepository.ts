@@ -6,8 +6,8 @@
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex). */
-export const DB_SCHEMA_VERSION = 11;
+/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex, v12 adds langWordTrash). */
+export const DB_SCHEMA_VERSION = 12;
 
 /** Object store names. */
 export const STORES = {
@@ -16,6 +16,7 @@ export const STORES = {
   DICTIONARY: 'langDictionaryEntry',
   PHRASE_INDEX: 'langPhraseIndex',
   WORD_STATUS: 'langWordStatus',
+  WORD_TRASH: 'langWordTrash',
 } as const;
 
 /** Index names. */
@@ -44,6 +45,10 @@ export async function getDB(langCode: string): Promise<IDBDatabase> {
 
   const dbName = await getDbName(langCode);
   const db = await openDB(dbName);
+  db.onversionchange = () => {
+    db.close();
+    if (dbCache.get(langCode) === db) dbCache.delete(langCode);
+  };
   dbCache.set(langCode, db);
   return db;
 }
@@ -110,6 +115,10 @@ function createAllStores(db: IDBDatabase): void {
     const ws = db.createObjectStore(STORES.WORD_STATUS, { keyPath: 'term' });
     ws.createIndex('by_status', 'status', { unique: false });
   }
+  // langWordTrash — keyPath 'term' (unique); 24h soft-delete window, lazy purge
+  if (!db.objectStoreNames.contains(STORES.WORD_TRASH)) {
+    db.createObjectStore(STORES.WORD_TRASH, { keyPath: 'term' });
+  }
 }
 
 /** Open a transaction for 1 store (readwrite default). */
@@ -151,12 +160,13 @@ export async function deleteDB(dbName: string): Promise<void> {
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS, STORES.WORD_TRASH], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
     tx.objectStore(STORES.FREQUENCY).clear();
     tx.objectStore(STORES.DICTIONARY).clear();
     tx.objectStore(STORES.PHRASE_INDEX).clear();
     tx.objectStore(STORES.WORD_STATUS).clear();
+    tx.objectStore(STORES.WORD_TRASH).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);

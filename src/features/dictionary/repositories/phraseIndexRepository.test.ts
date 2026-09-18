@@ -49,11 +49,11 @@ function makeBlob(): ArrayBuffer {
 }
 
 describe('phraseIndexRepository', () => {
-  describe('schema v11 migration', () => {
-    it('opens DB with schema version 11', async () => {
+  describe('schema v12 migration', () => {
+    it('opens DB with schema version 12', async () => {
       const db = await getDB('en');
       expect(db.version).toBe(DB_SCHEMA_VERSION);
-      expect(DB_SCHEMA_VERSION).toBe(11);
+      expect(DB_SCHEMA_VERSION).toBe(12);
     });
 
     it('creates langPhraseIndex store with by_resource index', async () => {
@@ -62,6 +62,13 @@ describe('phraseIndexRepository', () => {
       const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
       const store = tx.objectStore(STORES.PHRASE_INDEX);
       expect(store.indexNames.contains('by_resource')).toBe(true);
+    });
+
+    it('creates langWordTrash store keyed by term', async () => {
+      const db = await getDB('en');
+      expect(db.objectStoreNames.contains(STORES.WORD_TRASH)).toBe(true);
+      const tx = db.transaction(STORES.WORD_TRASH, 'readonly');
+      expect(tx.objectStore(STORES.WORD_TRASH).keyPath).toBe('term');
     });
   });
 

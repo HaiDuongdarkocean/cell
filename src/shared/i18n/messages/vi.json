@@ -346,7 +346,21 @@
   "vocabulary.row.cycle": "Đổi trạng thái của $1",
   "vocabulary.row.remove": "Xóa $1",
   "vocabulary.delete.title": "Xóa từ?",
-  "vocabulary.delete.description": "Bỏ $1 khỏi từ vựng? Từ sẽ hiện lại là chưa biết.",
+  "vocabulary.delete.description": "Bỏ $1 khỏi từ vựng? Từ sẽ chuyển vào Thùng rác và bị xóa vĩnh viễn sau 24 giờ.",
   "vocabulary.delete.confirm": "Xóa",
-  "vocabulary.delete.cancel": "Hủy"
+  "vocabulary.delete.cancel": "Hủy",
+  "vocabulary.segment.label": "Bộ lọc từ vựng",
+  "vocabulary.segment.all": "Tất cả",
+  "vocabulary.segment.trash": "Thùng rác",
+  "vocabulary.edit": "Sửa",
+  "vocabulary.done": "Xong",
+  "vocabulary.emptyTrash": "Thùng rác trống",
+  "vocabulary.trash.retention": "Từ đã xóa nằm trong Thùng rác 24 giờ.",
+  "vocabulary.trash.expiresIn": "Còn $1 giờ",
+  "vocabulary.restore": "Khôi phục",
+  "vocabulary.row.restore": "Khôi phục $1",
+  "vocabulary.row.deleteForever": "Xóa vĩnh viễn $1",
+  "vocabulary.trashDelete.title": "Xóa vĩnh viễn?",
+  "vocabulary.trashDelete.description": "$1 sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
+  "vocabulary.trashDelete.confirm": "Xóa"
 }

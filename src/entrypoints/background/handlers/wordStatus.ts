@@ -16,6 +16,10 @@ import {
   WordStatusListPayloadSchema,
   WordStatusCyclePayloadSchema,
   WordStatusDeletePayloadSchema,
+  WordStatusTrashPayloadSchema,
+  WordStatusTrashListPayloadSchema,
+  WordStatusRestorePayloadSchema,
+  WordStatusTrashDeletePayloadSchema,
 } from '@/entities/message/dictionarySchemas';
 import {
   getWordStatus,
@@ -25,6 +29,14 @@ import {
   cycleWordStatus,
   deleteWordStatus,
 } from '@/features/dictionary/services/wordStatusStore';
+import {
+  trashWordStatus,
+  listWordTrash,
+  purgeExpiredTrash,
+  restoreWordStatus,
+  deleteWordTrash,
+  type TrashedWordEntry,
+} from '@/features/dictionary/services/wordTrashStore';
 import type { WordStatus } from '@/entities/dictionary';
 import {
   queryTabs,
@@ -121,6 +133,7 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     }
 
     try {
+      await purgeExpiredTrash(parsed.data.langCode).catch(() => undefined);
       const entries = await getAllWordStatuses(parsed.data.langCode);
       return { success: true, data: { entries: [...entries] } };
     } catch (err) {
@@ -162,6 +175,83 @@ export function registerWordStatusHandlers(ctx: BackgroundContext): void {
     try {
       await deleteWordStatus(langCode, term);
       void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_TRASH, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusTrashPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_TRASH payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { term, langCode, tabId } = parsed.data;
+    try {
+      await trashWordStatus(langCode, term);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_DELETED, { langCode, term });
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_TRASH_LIST, async (request): Promise<MessageResponse<{ entries: TrashedWordEntry[] }>> => {
+    const parsed = WordStatusTrashListPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_TRASH_LIST payload: ${parsed.error.message}`,
+      };
+    }
+
+    try {
+      const entries = await listWordTrash(parsed.data.langCode);
+      return { success: true, data: { entries } };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_RESTORE, async (request): Promise<MessageResponse<{ status: WordStatus }>> => {
+    const parsed = WordStatusRestorePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_RESTORE payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { term, langCode, tabId } = parsed.data;
+    try {
+      const status = await restoreWordStatus(langCode, term);
+      void broadcastToOtherTabs(tabId, MESSAGE_TYPES.WORD_STATUS_CHANGED, { langCode, term, status });
+      return { success: true, data: { status } };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { success: false, error: message };
+    }
+  });
+
+  ctx.on(MESSAGE_TYPES.WORD_STATUS_TRASH_DELETE, async (request): Promise<MessageResponse> => {
+    const parsed = WordStatusTrashDeletePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: `Invalid WORD_STATUS_TRASH_DELETE payload: ${parsed.error.message}`,
+      };
+    }
+
+    const { term, langCode } = parsed.data;
+    try {
+      await deleteWordTrash(langCode, term);
       return { success: true };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

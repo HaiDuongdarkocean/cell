@@ -10,6 +10,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import type { MessageResponse } from '@/entities/message';
 import type { WordStatus } from '@/entities/dictionary';
 import type { WordStatusEntry } from './wordStatusStore';
+import type { TrashedWordEntry } from './wordTrashStore';
 
 /** Normalize any incoming lang code to the base-2 form the schemas require. */
 export function normalizeLangCode(langCode: string): string {
@@ -94,5 +95,57 @@ export async function deleteWordStatus(langCode: string, term: string): Promise<
 
   if (!response?.success) {
     throw new Error(response?.error ?? 'Failed to delete word status');
+  }
+}
+
+/** Soft-delete a term's status into the 24h trash window. */
+export async function trashWordStatus(langCode: string, term: string): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? 'Failed to trash word status');
+  }
+}
+
+/** List surviving trash entries (expired records purged by the read). */
+export async function listWordTrash(langCode: string): Promise<TrashedWordEntry[]> {
+  const response = await sendMessage<MessageResponse<{ entries: TrashedWordEntry[] }>>({
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_LIST,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode) },
+  });
+
+  if (!response?.success || !response.data) {
+    return [];
+  }
+
+  return response.data.entries;
+}
+
+/** Restore a trashed term to its previous status; returns the restored status. */
+export async function restoreWordStatus(langCode: string, term: string): Promise<WordStatus> {
+  const response = await sendMessage<MessageResponse<{ status: WordStatus }>>({
+    type: MESSAGE_TYPES.WORD_STATUS_RESTORE,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+  });
+
+  if (!response?.success || !response.data) {
+    throw new Error(response?.error ?? 'Failed to restore word status');
+  }
+
+  return response.data.status;
+}
+
+/** Permanently delete a trash record (delete-forever). */
+export async function deleteWordTrash(langCode: string, term: string): Promise<void> {
+  const response = await sendMessage<MessageResponse>({
+    type: MESSAGE_TYPES.WORD_STATUS_TRASH_DELETE,
+    payload: { tabId: -1, langCode: normalizeLangCode(langCode), term },
+  });
+
+  if (!response?.success) {
+    throw new Error(response?.error ?? 'Failed to delete trashed word');
   }
 }

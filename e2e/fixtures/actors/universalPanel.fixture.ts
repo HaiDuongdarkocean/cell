@@ -11,16 +11,18 @@ export const SELECTORS = {
   tabDictionary: '[data-cell-id="universal-panel-tab-dictionary"]',
   tabStudyModes: '[data-cell-id="universal-panel-tab-studyModes"]',
   tabSettings: '[data-cell-id="universal-panel-tab-settings"]',
+  tabVocabulary: '[data-cell-id="universal-panel-tab-vocabulary"]',
   dictionarySearchInput: 'input[data-cell-id="dictionary-search-input"]',
   cardCreatorMobileSheet: '[data-cell-id="card-creator-mobile-sheet"]',
 } as const;
 
-export type UniversalPanelTab = 'dictionary' | 'studyModes' | 'settings';
+export type UniversalPanelTab = 'dictionary' | 'studyModes' | 'settings' | 'vocabulary';
 
 const TAB_SELECTORS: Record<UniversalPanelTab, string> = {
   dictionary: SELECTORS.tabDictionary,
   studyModes: SELECTORS.tabStudyModes,
   settings: SELECTORS.tabSettings,
+  vocabulary: SELECTORS.tabVocabulary,
 };
 
 /**

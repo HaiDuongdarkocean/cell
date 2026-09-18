@@ -199,6 +199,22 @@ export const WordStatusDeletedPayloadSchema = z.object({
   term: z.string().min(1).max(200),
 });
 
+// === Word trash (spec vocabulary-tab-redesign — 24h soft-delete window) ===
+
+export const WordStatusTrashPayloadSchema = WordStatusGetPayloadSchema;
+
+export const WordStatusTrashListPayloadSchema = WordStatusListPayloadSchema;
+
+export const WordStatusRestorePayloadSchema = WordStatusGetPayloadSchema;
+
+export const WordStatusTrashDeletePayloadSchema = WordStatusGetPayloadSchema;
+
+export const TrashedWordEntrySchema = z.object({
+  term: z.string().min(1).max(200),
+  previousStatus: WordStatusSchema,
+  trashedAt: z.number(),
+});
+
 // === Frequency lookup (spec §9.4 B — FREQUENCY_GET) ===
 
 export const FrequencyEntrySchema = z.object({

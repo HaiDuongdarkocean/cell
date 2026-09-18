@@ -346,7 +346,21 @@
   "vocabulary.row.cycle": "Cycle status for $1",
   "vocabulary.row.remove": "Remove $1",
   "vocabulary.delete.title": "Remove word?",
-  "vocabulary.delete.description": "Remove $1 from your vocabulary? It will show as unknown again.",
+  "vocabulary.delete.description": "Remove $1 from your vocabulary? It moves to Trash and is permanently deleted after 24 hours.",
   "vocabulary.delete.confirm": "Remove",
-  "vocabulary.delete.cancel": "Cancel"
+  "vocabulary.delete.cancel": "Cancel",
+  "vocabulary.segment.label": "Vocabulary filter",
+  "vocabulary.segment.all": "All",
+  "vocabulary.segment.trash": "Trash",
+  "vocabulary.edit": "Edit",
+  "vocabulary.done": "Done",
+  "vocabulary.emptyTrash": "Trash is empty",
+  "vocabulary.trash.retention": "Removed words stay in Trash for 24 hours.",
+  "vocabulary.trash.expiresIn": "$1h left",
+  "vocabulary.restore": "Restore",
+  "vocabulary.row.restore": "Restore $1",
+  "vocabulary.row.deleteForever": "Delete $1 forever",
+  "vocabulary.trashDelete.title": "Delete forever?",
+  "vocabulary.trashDelete.description": "$1 will be permanently deleted. This cannot be undone.",
+  "vocabulary.trashDelete.confirm": "Delete"
 }

@@ -7,27 +7,95 @@
   min-height: 0;
 }
 
-.controls {
+/* ---------- Compact toolbar (Concept B) ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.toolbarSpacer {
+  flex: 1;
+}
+
+.toolBtn {
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.toolBtn[aria-expanded="true"],
+.toolBtn[aria-pressed="true"] {
+  color: var(--color-primary);
+}
+
+.menuSurface.menuSurface {
+  border-radius: var(--radius-md);
+}
+
+.menu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  min-width: var(--space-24);
 }
 
-.chips {
+.menuItem {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font: inherit;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.controlsRow {
-  display: flex;
-  gap: var(--space-2);
   align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2-5);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  min-height: var(--touch-target);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
+}
+
+.menuItem:hover {
+  background: var(--color-surface-hover);
+}
+
+.menuItem[aria-checked="true"] {
+  color: var(--color-primary);
+}
+
+.menuItemLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.menuItemCount {
+  color: var(--color-muted-foreground);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.menuSep {
+  height: var(--border-width-hairline);
+  background: var(--color-border-subtle);
+  margin: var(--space-1) var(--space-2);
 }
 
 .search {
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.retention {
+  flex-shrink: 0;
 }
 
 .error {
@@ -54,10 +122,13 @@
   letter-spacing: 0.04em;
 }
 
+/* ---------- Rows ---------- */
+
 .rowBody {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: var(--touch-target);
   padding: var(--space-1) 0;
   border-bottom: 1px solid var(--color-border);
 }
@@ -74,34 +145,67 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.statusBadge {
+/* Reserved action slot — keeps row width stable when Edit mode reveals the
+   delete button (user refinement on Concept B). */
+.actionSlot {
+  width: var(--touch-target);
+  height: var(--touch-target);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Status chip — same pastel language as the dictionary popup's
+   .cellHeaderStatus (theme-invariant --chip-status-* tokens). */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: calc(var(--space-3) * 7);
+  min-height: 0;
+  height: var(--space-5);
+  padding: 0 var(--space-2);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-none);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: filter var(--duration-fast) var(--ease-out);
+}
+
+.statusBadge:not(.statusBadgeStatic) {
+  cursor: pointer;
+}
+
+.statusBadge:not(.statusBadgeStatic):hover {
+  filter: brightness(0.95);
 }
 
 .statusUnknown {
-  --vocab-status-color: var(--color-token-status-unknown);
-  color: var(--vocab-status-color);
-  border-color: var(--vocab-status-color);
+  background: var(--chip-status-unknown-bg);
+  color: var(--chip-status-unknown-fg);
 }
 
 .statusTracking {
-  --vocab-status-color: var(--color-token-status-tracking);
-  color: var(--vocab-status-color);
-  border-color: var(--vocab-status-color);
+  background: var(--chip-status-tracking-bg);
+  color: var(--chip-status-tracking-fg);
 }
 
 .statusKnown {
-  --vocab-status-color: var(--color-token-status-known);
-  color: var(--vocab-status-color);
-  border-color: var(--vocab-status-color);
+  background: var(--chip-status-known-bg);
+  color: var(--chip-status-known-fg);
 }
 
 .statusIgnore {
-  --vocab-status-color: var(--color-token-status-ignore);
-  color: var(--vocab-status-color);
-  border-color: var(--vocab-status-color);
+  background: var(--chip-status-ignore-bg);
+  color: var(--chip-status-ignore-fg);
 }
 
 .pagination {
