@@ -97,6 +97,9 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid VIDEO_TIME_UPDATE payload: ${parsed.error.message}` };
     }
     const payload = parsed.data;
+    if (payload.tabId !== undefined) {
+      ctx.immersionTracker.noteTimeUpdate(payload.tabId, payload.currentTimeMs, payload.isPlaying);
+    }
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
     }
@@ -125,6 +128,9 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid VIDEO_PLAY_STATE payload: ${parsed.error.message}` };
     }
     const payload = parsed.data;
+    if (payload.tabId !== undefined) {
+      ctx.immersionTracker.notePlayState(payload.tabId, payload.isPlaying);
+    }
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
     }

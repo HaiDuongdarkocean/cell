@@ -327,6 +327,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       ctx.networkInterceptor.clearTab(tabId);
       clearSessionMedia(ctx, tabId);
       ctx.lastCuesByTab.delete(tabId);
+      ctx.immersionTracker.closeTab(tabId);
       updateBadgeForTab(ctx, tabId);
     }
   };
@@ -346,6 +347,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     ctx.networkInterceptor.clearTab(details.tabId);
     clearSessionMedia(ctx, details.tabId);
     ctx.lastCuesByTab.delete(details.tabId);
+    ctx.immersionTracker.closeTab(details.tabId);
     updateBadgeForTab(ctx, details.tabId);
   };
   chrome.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated);
@@ -361,6 +363,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     ctx.autoDownloadedTabs.delete(tabId);
     saveSessionAutoDownloadedTabs(ctx);
     ctx.lastCuesByTab.delete(tabId);
+    ctx.immersionTracker.closeTab(tabId);
   };
 
   unsubscribers.push(

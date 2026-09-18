@@ -14,6 +14,7 @@ import type { Downloader } from '@/features/download';
 import type { OffscreenManager } from './offscreenManager';
 import type { MessageHandler } from '@/entities/message';
 import type { SubtitleDiscoveryService } from './subtitleDiscoveryService';
+import type { ImmersionTracker } from './helpers/immersionTracker';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -31,6 +32,7 @@ export interface BackgroundContext {
   readonly downloader: Downloader;
   readonly offscreenManager: OffscreenManager;
   readonly subtitleDiscoveryService: SubtitleDiscoveryService;
+  readonly immersionTracker: ImmersionTracker;
 
   // --- mutable shared state ---
   /** Maps a download id to the detected media it was created from. */

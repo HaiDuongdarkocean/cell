@@ -131,6 +131,29 @@ describe('LibraryView — real sample data (26 entries)', () => {
     expect(screen.queryByTestId('library-card')).not.toBeInTheDocument();
   });
 
+  it('renders immersion stats card even when the library is empty', () => {
+    render(
+      <LibraryView
+        videos={[]}
+        subtitles={[]}
+        sortBy="recent"
+        onSortChange={jest.fn()}
+        onVideoSelect={jest.fn()}
+        onSubtitleSelect={jest.fn()}
+        onSelectTrack={jest.fn()}
+        onOpenFile={jest.fn()}
+        onOpenFolder={jest.fn()}
+        onVideoDelete={jest.fn()}
+        onClearAll={jest.fn()}
+        currentVideoId={null}
+        currentSubtitles={emptySubs}
+      />,
+    );
+    expect(document.querySelector('[data-cell-id="immersion-stats"]')).toBeInTheDocument();
+    expect(screen.getByText('Level 1')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
   it('calls onVideoSelect with videoId when a card is clicked', () => {
     const onVideoSelect = jest.fn();
     renderView({ onVideoSelect });

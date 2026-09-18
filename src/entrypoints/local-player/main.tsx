@@ -30,6 +30,7 @@ import { comprehensionStore } from '@/features/tokenize/services/comprehensionSt
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
 import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
 import { useLibraryScores } from './hooks/useLibraryScores';
+import { useImmersionSession } from './hooks/useImmersionSession';
 import './styles/global.css';
 
 installRippleDelegation(document);
@@ -91,6 +92,8 @@ export function LocalPlayerApp(): React.JSX.Element {
     fileMapRef: caches.subtitleFileMapRef,
     setLibrary,
   });
+
+  useImmersionSession(videoRef, currentVideo?.id ?? null, videoFile);
 
   useEffect(() => {
     void (async (): Promise<void> => {

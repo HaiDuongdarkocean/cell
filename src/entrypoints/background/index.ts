@@ -26,7 +26,10 @@ import {
   onStartup,
   onInstalled,
   getExtensionId,
+  getTab,
 } from '@/shared/lib/chrome-apis';
+import { createImmersionTracker, type ImmersionTracker } from './helpers/immersionTracker';
+import { addHistoryEntry } from '@/features/local-player/services/mediaLibraryRepository';
 import type { BackgroundContext } from './context';
 import {
   loadSettings,
@@ -107,6 +110,7 @@ export interface BackgroundServiceOptions {
   readonly downloader?: Downloader;
   readonly offscreenManager?: OffscreenManager;
   readonly subtitleDiscoveryService?: SubtitleDiscoveryService;
+  readonly immersionTracker?: ImmersionTracker;
 }
 
 /**
@@ -122,6 +126,7 @@ export class BackgroundService implements BackgroundContext {
   readonly downloader: Downloader;
   readonly offscreenManager: OffscreenManager;
   readonly subtitleDiscoveryService: SubtitleDiscoveryService;
+  readonly immersionTracker: ImmersionTracker;
 
   readonly mediaMap: Map<string, DetectedVideo | DetectedSubtitle> = new Map();
   readonly autoDownloadedTabs: Map<number, {
@@ -154,6 +159,16 @@ export class BackgroundService implements BackgroundContext {
     this.subtitleDiscoveryService =
       options?.subtitleDiscoveryService ??
       new SubtitleDiscoveryService(this);
+    this.immersionTracker =
+      options?.immersionTracker ??
+      createImmersionTracker({
+        addEntry: addHistoryEntry,
+        getHost: async (tabId) => {
+          const tab = await getTab(tabId);
+          return tab.url ? new URL(tab.url).hostname : null;
+        },
+        hasSession: (tabId) => this.lastCuesByTab.has(tabId),
+      });
   }
 
   /**

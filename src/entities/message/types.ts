@@ -440,6 +440,8 @@ export interface VideoTimeUpdatePayload {
   readonly durationMs: number;
   /** ADR-019 sync: subtitle offset so side panel highlights the overlay cue. */
   readonly offsetMs?: number;
+  /** Immersion clock: paused-state at emit time — suppresses scrub-time counting. */
+  readonly isPlaying?: boolean;
 }
 
 /** Content-script → background → side panel: play/pause state. */

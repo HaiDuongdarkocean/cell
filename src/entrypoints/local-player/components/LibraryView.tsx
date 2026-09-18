@@ -7,6 +7,7 @@ import type { SubtitlesState } from '@/entrypoints/local-player/hooks/useLocalPl
 import { Button, EmptyState, Select } from '@/shared/ui';
 import { Icon } from '@/shared/ui/Icon';
 import { LibraryCard } from './LibraryCard';
+import { ImmersionStats } from './ImmersionStats';
 import styles from './LibraryView.module.css';
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -102,6 +103,7 @@ export function LibraryView({
 
   return (
     <div className={styles.root}>
+      <ImmersionStats />
       {videos.length === 0 ? (
         <EmptyState
           icon={<Icon name="video" size="lg" />}

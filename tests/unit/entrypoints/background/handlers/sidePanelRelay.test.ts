@@ -112,3 +112,45 @@ describe('SET_PLAYBACK_RATE relay', () => {
     expect(mockedSendTabMessage).not.toHaveBeenCalled();
   });
 });
+
+describe('immersion tracker observe calls', () => {
+  const makeTrackerCtx = (): { ctx: BackgroundContext; tracker: { noteTimeUpdate: jest.Mock; notePlayState: jest.Mock; closeTab: jest.Mock } } => {
+    const tracker = { noteTimeUpdate: jest.fn(), notePlayState: jest.fn(), closeTab: jest.fn() };
+    const ctx = { ...makeMockContext(), immersionTracker: tracker } as unknown as BackgroundContext;
+    return { ctx, tracker };
+  };
+
+  it('observes VIDEO_TIME_UPDATE even when tab is not the panel tab', async () => {
+    const { ctx, tracker } = makeTrackerCtx();
+    registerSidePanelRelayHandlers(ctx);
+    const handler = getHandler(ctx, MESSAGE_TYPES.VIDEO_TIME_UPDATE);
+    const response = await handler({
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: { tabId: 99, currentTimeMs: 47293.333, durationMs: 362000.5 },
+    });
+    expect(response.success).toBe(true);
+    expect(tracker.noteTimeUpdate).toHaveBeenCalledWith(99, 47293.333, undefined);
+  });
+
+  it('observes VIDEO_PLAY_STATE even when tab is not the panel tab', async () => {
+    const { ctx, tracker } = makeTrackerCtx();
+    registerSidePanelRelayHandlers(ctx);
+    const handler = getHandler(ctx, MESSAGE_TYPES.VIDEO_PLAY_STATE);
+    await handler({
+      type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+      payload: { tabId: 99, isPlaying: false },
+    });
+    expect(tracker.notePlayState).toHaveBeenCalledWith(99, false);
+  });
+
+  it('skips observe calls when tabId is undefined', async () => {
+    const { ctx, tracker } = makeTrackerCtx();
+    registerSidePanelRelayHandlers(ctx);
+    const handler = getHandler(ctx, MESSAGE_TYPES.VIDEO_TIME_UPDATE);
+    await handler({
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: { currentTimeMs: 1, durationMs: 2 },
+    });
+    expect(tracker.noteTimeUpdate).not.toHaveBeenCalled();
+  });
+});

@@ -161,9 +161,10 @@ export const CloseSidePanelPayloadSchema = z.object({
 
 export const VideoTimeUpdatePayloadSchema = z.object({
   tabId: z.number().int().optional(),
-  currentTimeMs: z.number().int(),
-  durationMs: z.number().int(),
-  offsetMs: z.number().int().optional(),
+  currentTimeMs: z.number(),
+  durationMs: z.number(),
+  offsetMs: z.number().optional(),
+  isPlaying: z.boolean().optional(),
 });
 
 export const VideoPlayStatePayloadSchema = z.object({

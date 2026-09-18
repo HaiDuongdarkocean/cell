@@ -287,6 +287,13 @@ export function init(
       lastFedNativeCues = nativeCues;
       subtitleTokenizeCtrl?.setCues(targetCues, nativeCues);
       void syncUnknownResolver();
+      // Every cue-list load funnels through here — broadcast so background's
+      // lastCuesByTab reflects "this tab has Cell cues" on all paths
+      // (auto-load, manual import, manager switch). Previously only
+      // generate-native/manager/visibility flows sent SUBTITLE_CUES_LOADED,
+      // so the background cue map stayed empty on the common auto-load path.
+      bilingualCues = mergeCuesForPanel(targetCues as SrtCue[], nativeCues as SrtCue[]);
+      broadcastCues(bilingualCues);
     }
     if (!subtitleTokenizeCtrl) return;
     let fired = false;
@@ -843,6 +850,10 @@ export function init(
         // overlay displays (effective = currentTimeMs + offsetMs), not the
         // raw-time cue. Lazy read — offset may change between updates.
         offsetMs: offsetController?.getOffsetMs() ?? 0,
+        // Immersion clock: paused-scrub emits timeupdate too — the tracker
+        // drops those. Covers autoplay-before-attach (no 'play' event ever
+        // fires) without an explicit initial-state message.
+        isPlaying: !video.paused,
       },
     });
   });

@@ -164,7 +164,10 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     const payload = parsed.data;
     const cues = payload.cues as BilingualCue[];
     if (payload.tabId !== undefined) {
-      ctx.lastCuesByTab.set(payload.tabId, cues);
+      // Empty cue list (tracks deselected / cleared) must not count as an
+      // active subtitle session — the immersion tracker gates on map.has().
+      if (cues.length > 0) ctx.lastCuesByTab.set(payload.tabId, cues);
+      else ctx.lastCuesByTab.delete(payload.tabId);
     }
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
