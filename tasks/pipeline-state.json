@@ -179,6 +179,18 @@
       "resolutions": [],
       "loops": 0,
       "updated": "2026-09-18T21:53:20.839Z"
+    },
+    "god-file-decomposition": {
+      "stage": "dropped",
+      "mode": "all",
+      "uiSurface": "unknown",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "updated": "2026-09-18T21:53:46.964Z"
     }
   }
 }
