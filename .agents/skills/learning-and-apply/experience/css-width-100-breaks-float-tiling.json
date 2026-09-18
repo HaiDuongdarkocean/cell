@@ -1,0 +1,20 @@
+{
+  "id": "css-width-100-breaks-float-tiling",
+  "title": "width:100% override trên per-segment children phá float tiling → stack dọc overflow",
+  "category": ["css", "rendering"],
+  "tags": ["host-css", "float", "width-100-percent", "inline-width", "per-segment", "chapters", "progress-bar", "youtube", "split-view", "video-player"],
+  "trigger": "Inject CSS override width trên element con mà host JS đã set inline px/% width per-segment và layout bằng float:left (chapter segments, markers, tick marks) — không phải container full-width.",
+  "principle": "Phân biệt CONTAINER (một instance, span full parent → width:100% an toàn) vs PER-SEGMENT child (nhiều instance tile ngang bằng float/inline-block + inline px width do host JS tính). Force width:100% trên per-segment child → mỗi segment chiếm full dòng → float wrap xuống dòng → stack dọc N bands trông như 'progress bar phân mảnh', overflow xuống dưới khỏi box (overflow:visible). Defense: khi viết override width cho host children, kiểm tra count của element trong DOM (querySelectorAll length > 1 → per-segment → không force 100%) + check computed 'float'/'display' trước khi quyết. Verify bằng getBoundingClientRect của TẤT CẢ instances — cùng y = tile ngang (đúng), y tăng dần = stack dọc (bug).",
+  "cases": [
+    {
+      "context": "YouTube Split View injected CSS: rule '[stage] .ytp-chapter-hover-container{width:100%!important}' override inline 'width:25px;margin-right:4px' mà YouTube JS set per-chapter. Chapters layout bằng float:left — ở 100% mỗi chapter wrap xuống dòng riêng → 18 chapter = 18 thanh 6px stack dọc (y=375..477), tràn xuống dưới video ('phân mảnh và tụt xuống dưới'). Cùng bug với .ytp-heat-map-chapter (absolute + inline left/width → 100% làm mọi chapter overlap full-width).",
+      "bad": "'[data-cell-split-view=\"stage\"] .ytp-heat-map-chapter,',\n'[data-cell-split-view=\"stage\"] .ytp-chapter-hover-container{width:100%!important}'\n// per-segment children → mỗi segment 100% → float wrap → stack dọc phân mảnh",
+      "good": "// per-segment selectors KHÔNG nằm trong rule width:100% — YouTube inline px widths recompute on resize vẫn đúng tỉ lệ\n'[data-cell-split-view=\"stage\"] .ytp-progress-bar-padding,',\n'[data-cell-split-view=\"stage\"] .ytp-progress-list,',\n'[data-cell-split-view=\"stage\"] .ytp-progress-linear-live-buffer{width:100%!important}'\n// chỉ full-width containers giữ 100%"
+    }
+  ],
+  "applyFor": [
+    "Inject <style> override width cho children của host video player (progress bar chapters, ad markers, timeline ticks)",
+    "Bất kỳ CSS width override lên element xuất hiện nhiều lần trong cùng container (querySelectorAll > 1)",
+    "Audit rule width:100% trên host DOM trước khi ship — verify rect của mọi instance cùng hàng"
+  ]
+}

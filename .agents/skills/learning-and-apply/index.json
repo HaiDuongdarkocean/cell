@@ -1611,6 +1611,28 @@
     },
     {
       "type": "experience",
+      "id": "css-width-100-breaks-float-tiling",
+      "title": "width:100% override trên per-segment children phá float tiling → stack dọc overflow",
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "host-css",
+        "float",
+        "width-100-percent",
+        "inline-width",
+        "per-segment",
+        "chapters",
+        "progress-bar",
+        "youtube",
+        "split-view",
+        "video-player"
+      ],
+      "trigger": "Inject CSS override width trên element con mà host JS đã set inline px/% width per-segment và layout bằng float:left (chapter segments, markers, tick marks) — không phải container full-width"
+    },
+    {
+      "type": "experience",
       "id": "css-percentage-height-follows-parent-on-resize",
       "title": "Hardcoded px height with !important freezes on resize — use percentage that follows parent",
       "category": [

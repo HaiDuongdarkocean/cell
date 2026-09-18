@@ -210,11 +210,13 @@
     '[data-cell-split-view="stage"] .ytp-chrome-controls{width:100%!important}',
     // Progress bar internals get explicit pixel widths from YouTube JS
     // (e.g. 2536px = movie_player width - 24). Override to 100% of parent.
+    // Per-chapter segments (.ytp-heat-map-chapter, .ytp-chapter-hover-container)
+    // must NOT be forced to 100%: YouTube sets inline px widths per chapter and
+    // tiles them via float:left — at 100% each chapter wraps to its own line,
+    // stacking into a striped block that overflows below the video.
     '[data-cell-split-view="stage"] .ytp-progress-bar-padding,',
     '[data-cell-split-view="stage"] .ytp-progress-list,',
-    '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer,',
-    '[data-cell-split-view="stage"] .ytp-heat-map-chapter,',
-    '[data-cell-split-view="stage"] .ytp-chapter-hover-container{width:100%!important}',
+    '[data-cell-split-view="stage"] .ytp-progress-linear-live-buffer{width:100%!important}',
   ].join('');
 
   document.addEventListener('__YT_SPLIT_VIEW_APPLY_CSS', () => {
