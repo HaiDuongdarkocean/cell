@@ -58,6 +58,8 @@ One item per run by default. `/idea-pick-off all` drains the queue — see **Loo
 
 **Guard:** item already in state with non-terminal stage → resume from `stage`, don't restart.
 
+**Guard — active held elsewhere:** `init` fails `item '<other>' already active` when another agent/session is driving a different item → never touch that item's files or state; `init <slug> --mode <m> --force` takes the `active` pointer instead (the held item's entry stays intact — `transition`/`set`/`gates` are slug-scoped and `active` is only the loop's claim marker). `activate <slug>` re-points to an existing non-terminal item; `seed --force` does the same for artifact-first items.
+
 ### Step 3 — ANALYZE (invoke `pipeline-analyze`)
 
 - Seed with row: `Pain`/`Nhóm`/`Infra`/`Source` + slug.
@@ -68,11 +70,11 @@ One item per run by default. `/idea-pick-off all` drains the queue — see **Loo
 
 ### Step 4 — SPECIFY (invoke `pipeline-specify`)
 
-- Intent → `docs/specs/<slug>.md` → spec-reviewer gate → fix ≤3 rounds.
+- Intent → `docs/specs/<slug>.md` → spec-reviewer gate — **one pass only** (APPROVE → go; APPROVE_WITH_CHANGES → apply fixes + append `## Applied fixes` to the review artifact → go; REJECT → backward edge).
 - `uiSurface=yes` → `transition --to design`; `uiSurface=no` → `transition --to deliver`.
 - Backlog `Status: specced`, `Spec:` = spec link, `UI` column filled.
 
-**Guard:** spec rejected 3 rounds → `transition --to analyze` (loop count), or stop with `awaiting` note in `all` mode → skip item.
+**Guard:** spec REJECT → `transition --to analyze` (loop count, cap 3), or stop with `awaiting` note in `all` mode → skip item.
 
 ### Step 5 — DESIGN (invoke `pipeline-design`, uiSurface=yes only)
 
@@ -95,6 +97,7 @@ Steps 1–6 per item, then re-enter Step 1 until drained or a stop condition hit
 - **ZERO QUESTIONS, start to finish.** No interviews, no frame confirmation, no "should I proceed". Decisions → conservative option recorded as accepted risk in the intent doc. Asking mid-loop is a contract violation.
 - **Self-interrogation is the gate.** ANALYZE infers via cite-or-assumption rules; SPECIFY's spec-reviewer is the only human-proxy gate; DESIGN uses brief-lint + vision-reader; DELIVER's transition re-runs npm gates itself.
 - **Blocked item → skip, not stall.** Deps unshipped, loop cap hit, or `awaiting` set → mark `Status: in-progress` + one-line blocking note, move to next unblocked item.
+- **In-flight item → hands off, keep moving.** An item whose `active` pointer is held by another agent/session (or user says it's being worked) is skipped entirely — no file edits, no state writes, no "help". `init --force` the next item and continue; the skipped item ships on its own and clears its entry itself.
 - **Gate red surviving a real fix** → stop the whole loop — the tree never accumulates unverified work.
 - **Item isolation.** Per-item commits grouped by subsystem; tree clean before next claim. Worktree-per-item when session convention says so.
 - **Never reorder.** Skipped items keep position, stay `in-progress` + note.

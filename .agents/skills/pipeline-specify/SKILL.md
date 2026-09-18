@@ -120,8 +120,11 @@ Reviewer rubric: `references/review-lenses.md` (BA/PO/TL lenses + merge + report
 
 1. Spawn `spec-reviewer` (fresh context — never self-review) against `docs/specs/<slug>.md`.
 2. Write its report to `docs/reviews/<slug>-spec.md`, ending `VERDICT: APPROVE|APPROVE_WITH_CHANGES|REJECT`.
-3. Auto-fix loop **≤3 rounds**: APPROVE → transition; APPROVE_WITH_CHANGES → fix + re-review; REJECT → rewrite + re-review; third non-approve → `set awaiting=flagged:spec-review` and surface to user.
-4. The artifact must be **newer than the spec** — transition refuses stale reviews.
+3. **Exactly one review pass** — no fix→re-review loop:
+   - APPROVE → transition.
+   - APPROVE_WITH_CHANGES → apply the listed fixes to the spec, then append an `## Applied fixes` section to the review artifact naming what was changed (refreshes its mtime past the spec's) → transition.
+   - REJECT → `transition --to analyze` (backward edge; the rewrite gets reviewed on the next SPECIFY pass, not re-reviewed now).
+4. The artifact must be **newer than the spec** — transition refuses stale reviews. Editing the spec after review without updating the artifact = stale.
 
 ## Backward edge
 

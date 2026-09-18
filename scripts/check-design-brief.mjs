@@ -59,7 +59,7 @@ function iconNames() {
 
 function extractTokens(text) {
   const names = new Set();
-  for (const m of text.matchAll(/`?--([a-z0-9-]+)`?/gi)) names.add(m[1]);
+  for (const m of text.matchAll(/`?--([a-z][a-z0-9-]*)`?/gi)) names.add(m[1]);
   for (const m of text.matchAll(/`((?:core|derived|static|component|composite|presets)\.[a-zA-Z0-9_.-]+)`/g)) {
     names.add(m[1]);
   }

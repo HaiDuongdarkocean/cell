@@ -207,11 +207,11 @@ function clearActiveIf(state, slug) {
   if (state.active === slug) state.active = null;
 }
 
-function doInit(slug, mode) {
-  if (!slug) fail('usage: pipeline-state.mjs init <slug> --mode <interactive|all>');
+function doInit(slug, mode, force) {
+  if (!slug) fail('usage: pipeline-state.mjs init <slug> --mode <interactive|all> [--force]');
   if (!MODES.has(mode)) fail(`pipeline-state: invalid --mode '${mode}'`);
   const state = readState();
-  if (state.active) fail(`pipeline-state: item '${state.active}' already active — ship/drop it first`);
+  if (state.active && !force) fail(`pipeline-state: item '${state.active}' already active — ship/drop it first (or --force to take the pointer while it is worked elsewhere)`);
   if (state.items[slug]) fail(`pipeline-state: item '${slug}' already exists — use a new slug to re-open`);
   state.items[slug] = {
     stage: 'analyze',
@@ -233,6 +233,16 @@ function doInit(slug, mode) {
 function doGet(slug) {
   const state = readState();
   process.stdout.write(`${JSON.stringify(getItem(state, slug), null, 2)}\n`);
+}
+
+function doActivate(slug) {
+  if (!slug) fail('usage: pipeline-state.mjs activate <slug>');
+  const state = readState();
+  const item = getItem(state, slug);
+  if (TERMINAL.has(item.stage)) fail(`pipeline-state: '${slug}' is ${item.stage} — cannot activate a terminal item`);
+  state.active = slug;
+  writeState(state);
+  process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
 }
 
 function doSet(slug, pairs) {
@@ -411,10 +421,10 @@ function inferStage(slug) {
   return null;
 }
 
-function doSeed(slug) {
-  if (!slug) fail('usage: pipeline-state.mjs seed <slug>');
+function doSeed(slug, force) {
+  if (!slug) fail('usage: pipeline-state.mjs seed <slug> [--force]');
   const state = readState();
-  if (state.active) fail(`pipeline-state: item '${state.active}' already active`);
+  if (state.active && !force) fail(`pipeline-state: item '${state.active}' already active`);
   if (state.items[slug]) fail(`pipeline-state: item '${slug}' already exists`);
   let stage = inferStage(slug);
   const gaps = [];
@@ -461,7 +471,10 @@ const flag = (name) => {
 
 switch (cmd) {
   case 'init':
-    doInit(slug, flag('--mode') || 'interactive');
+    doInit(slug, flag('--mode') || 'interactive', rest.includes('--force'));
+    break;
+  case 'activate':
+    doActivate(slug);
     break;
   case 'get':
     if (!slug) fail('usage: pipeline-state.mjs get <slug>');
@@ -480,8 +493,8 @@ switch (cmd) {
     doResolve(slug, rest.slice(1));
     break;
   case 'seed':
-    doSeed(slug);
+    doSeed(slug, rest.includes('--force'));
     break;
   default:
-    fail('usage: pipeline-state.mjs init|get|set|transition|gates|resolve|seed <slug> [args]');
+    fail('usage: pipeline-state.mjs init|activate|get|set|transition|gates|resolve|seed <slug> [args]');
 }
