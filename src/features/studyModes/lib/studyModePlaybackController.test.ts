@@ -435,3 +435,228 @@ describe('adaptive subtitle resolution', () => {
     expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
   });
 });
+
+const i1ReplayMode: StudyMode = {
+  id: 'i1-replay',
+  type: 'preset',
+  icon: 'repeat',
+  title: 'i+1 Replay',
+  description: '',
+  steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 3, speed: 1, after: 'continue', skip: 'non-i1' }],
+};
+
+const skipPlayMode: StudyMode = {
+  id: 'skip-once',
+  type: 'custom',
+  icon: 'repeat',
+  title: 'Skip Once',
+  description: '',
+  steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue', skip: 'non-i1' }],
+};
+
+describe('resolveStepSkip', () => {
+  const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 4000, 8000, 'b'), makeCue(2, 8000, 12000, 'c')];
+  const skipStep = { subtitle: 'adaptive', pause: 'none', repeat: 3, speed: 1, after: 'continue', skip: 'non-i1' } as const;
+
+  it('returns -1 without a skip rule or without a probe', async () => {
+    const { resolveStepSkip } = await import('./studyModePlaybackController');
+    const noSkip = { ...skipStep, skip: undefined };
+    expect(resolveStepSkip(noSkip, 0, cues, () => 'easy', new Set())).toBe(-1);
+    expect(resolveStepSkip(skipStep, 0, cues, null, new Set())).toBe(-1);
+  });
+
+  it('returns -1 when the entered cue is i1 or has no band', async () => {
+    const { resolveStepSkip } = await import('./studyModePlaybackController');
+    expect(resolveStepSkip(skipStep, 0, cues, () => 'i1', new Set())).toBe(-1);
+    expect(resolveStepSkip(skipStep, 0, cues, () => null, new Set())).toBe(-1);
+  });
+
+  it('returns the first i1 index ahead for easy and dense cues', async () => {
+    const { resolveStepSkip } = await import('./studyModePlaybackController');
+    const bands = ['easy', 'dense', 'i1'] as const;
+    expect(resolveStepSkip(skipStep, 0, cues, (i) => bands[i] ?? null, new Set())).toBe(2);
+    expect(resolveStepSkip(skipStep, 1, cues, (i) => bands[i] ?? null, new Set())).toBe(2);
+  });
+
+  it('returns -1 when no i1 cue follows', async () => {
+    const { resolveStepSkip } = await import('./studyModePlaybackController');
+    expect(resolveStepSkip(skipStep, 1, cues, () => 'dense', new Set())).toBe(-1);
+  });
+
+  it('skips bounced target indices during the scan', async () => {
+    const { resolveStepSkip } = await import('./studyModePlaybackController');
+    const bands = ['dense', 'i1', 'i1'] as const;
+    expect(resolveStepSkip(skipStep, 0, cues, (i) => bands[i] ?? null, new Set([1]))).toBe(2);
+  });
+});
+
+describe('skip non-i1 cue entry', () => {
+  it('emits exactly one seek to the first i1 cue for an easy cue', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 4000, 8000, 'b'), makeCue(2, 8000, 12000, 'c')];
+    const bands = ['easy', 'dense', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+  });
+
+  it('plays i1 cues through the normal path', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 4000, 8000, 'b')];
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe(() => 'i1');
+
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([
+      { type: 'setSubtitle', subtitle: 'target' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
+  });
+
+  it('plays everything when the probe is null', () => {
+    const cues = [makeCue(0, 0, 4000, 'a')];
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([
+      { type: 'setSubtitle', subtitle: 'both' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
+  });
+
+  it('retargets to the next i1 after a bounce lands in an overlapping cue', () => {
+    const cues = [
+      makeCue(0, 0, 4000, 'a'),
+      makeCue(1, 4000, 10500, 'b'),
+      makeCue(2, 9000, 10800, 'c'),
+      makeCue(3, 10000, 11000, 'd'),
+      makeCue(4, 12000, 14000, 'e'),
+    ];
+    const bands = ['dense', 'dense', 'dense', 'i1', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 10000 }]);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+    expect(ctrl.enterCue(cues[4], 4)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+
+  it('converges instead of looping when the only i1 target is unreachable', () => {
+    const cues = [
+      makeCue(0, 0, 4000, 'a'),
+      makeCue(1, 4000, 10500, 'b'),
+      makeCue(2, 9000, 10800, 'c'),
+      makeCue(3, 10000, 11000, 'd'),
+    ];
+    const bands = ['dense', 'dense', 'dense', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(skipPlayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([
+      { type: 'setSubtitle', subtitle: 'both' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
+    expect(ctrl.onTimeUpdate(10500)).toEqual([]);
+    expect(ctrl.enterCue(cues[2], 2)).toEqual([
+      { type: 'setSubtitle', subtitle: 'both' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
+    expect(ctrl.onTimeUpdate(10800)).toEqual([]);
+    expect(ctrl.enterCue(cues[3], 3)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+
+  it('suppresses silence skip while a skip seek is in transit', () => {
+    const cues = [makeCue(0, 5000, 9000, 'a'), makeCue(1, 20000, 24000, 'b')];
+    const bands = ['easy', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedJump, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    expect(ctrl.onTimeUpdate(1000)).toEqual([]);
+  });
+
+  it('clears the pending skip on abort so a landing is not misclassified', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 4000, 10500, 'b'), makeCue(2, 10000, 11000, 'c')];
+    const bands = ['dense', 'dense', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(skipPlayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    ctrl.abort();
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 10000 }]);
+  });
+
+  it('keeps bounced targets across abort and clears them on cue changes', () => {
+    const cues = [
+      makeCue(0, 0, 4000, 'a'),
+      makeCue(1, 4000, 10500, 'b'),
+      makeCue(2, 9000, 10800, 'c'),
+      makeCue(3, 10000, 11000, 'd'),
+      makeCue(4, 12000, 14000, 'e'),
+    ];
+    const bands = ['dense', 'dense', 'dense', 'i1', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(skipPlayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+    ctrl.abort();
+    expect(ctrl.enterCue(cues[2], 2)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+
+    const shifted = cues.map((c) => ({ ...c, start: c.start + 500, end: c.end + 500 }));
+    ctrl.setCues(shifted);
+    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500 }]);
+  });
+
+  it('clears bounced targets when cue boundaries change', () => {
+    const cues = [
+      makeCue(0, 0, 4000, 'a'),
+      makeCue(1, 4000, 10500, 'b'),
+      makeCue(2, 9000, 10800, 'c'),
+      makeCue(3, 10000, 11000, 'd'),
+      makeCue(4, 12000, 14000, 'e'),
+    ];
+    const bands = ['dense', 'dense', 'dense', 'i1', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    ctrl.enterCue(cues[1], 1);
+    const shifted = cues.map((c) => ({ ...c, start: c.start + 500, end: c.end + 500 }));
+    ctrl.setCues(shifted);
+    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500 }]);
+  });
+
+  it('re-skips when a user seek lands back in a non-i1 cue', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 8000, 12000, 'b')];
+    const bands = ['easy', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    ctrl.abort();
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+  });
+
+  it('does not re-evaluate skip during repeat loops', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 8000, 12000, 'b')];
+    const bands = ['i1', 'i1'] as const;
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    ctrl.enterCue(cues[0], 0);
+    const actions = ctrl.onTimeUpdate(4000);
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 0 });
+    expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+
+  it('skips a cue whose band flipped to easy on re-entry', () => {
+    const cues = [makeCue(0, 0, 4000, 'a'), makeCue(1, 8000, 12000, 'b')];
+    const bands: ('easy' | 'i1' | 'dense' | null)[] = ['i1', 'i1'];
+    const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    expect(ctrl.enterCue(cues[0], 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+    bands[0] = 'easy';
+    ctrl.abort();
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+  });
+});

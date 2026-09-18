@@ -28,6 +28,27 @@ export function resolveStepSubtitle(
   return 'both';
 }
 
+/** First reachable i1 cue index after `cueIndex`, or -1 when the entered
+ *  cue should play: no skip rule, no probe, unknown band (whitelist — never
+ *  skips the unknown), i1 band, or no i1 cue follows. `bounced` excludes
+ *  targets proven unreachable by an earlier seek landing short. */
+export function resolveStepSkip(
+  step: StudyStep,
+  cueIndex: number,
+  cues: readonly SrtCue[],
+  bandProbe: CueBandProbe | null,
+  bounced: ReadonlySet<number>,
+): number {
+  if (step.skip !== 'non-i1' || !bandProbe) return -1;
+  const band = bandProbe(cueIndex);
+  if (band !== 'easy' && band !== 'dense') return -1;
+  for (let j = cueIndex + 1; j < cues.length; j++) {
+    if (bounced.has(j)) continue;
+    if (bandProbe(j) === 'i1') return j;
+  }
+  return -1;
+}
+
 type ContinueTarget = 'nextStep' | 'nextCue';
 
 type PlaybackState =
@@ -62,6 +83,8 @@ export class StudyModePlaybackController {
   private state: PlaybackState = { type: 'idle' };
   private probe: UnknownCueProbe | null = null;
   private bandProbe: CueBandProbe | null = null;
+  private pendingSkipTo = -1;
+  private bouncedSkipTargets = new Set<number>();
 
   constructor(
     mode: StudyMode,
@@ -97,7 +120,10 @@ export class StudyModePlaybackController {
     this.cues = cues;
     this.offsetMs = offsetMs;
     this.silenceHandledIndex = -1;
-    if (boundariesChanged) this.abort();
+    if (boundariesChanged) {
+      this.bouncedSkipTargets.clear();
+      this.abort();
+    }
     return boundariesChanged;
   }
 
@@ -114,12 +140,15 @@ export class StudyModePlaybackController {
     this.advanced = advanced;
     this.activeCueIndex = -1;
     this.silenceHandledIndex = -1;
+    this.pendingSkipTo = -1;
+    this.bouncedSkipTargets.clear();
     this.state = { type: 'idle' };
   }
 
   abort(): void {
     this.activeCueIndex = -1;
     this.silenceHandledIndex = -1;
+    this.pendingSkipTo = -1;
     this.state = { type: 'idle' };
   }
 
@@ -130,8 +159,21 @@ export class StudyModePlaybackController {
     this.stepIndex = 0;
     this.loopCount = 0;
     this.silenceHandledIndex = -1;
+
+    if (this.pendingSkipTo >= 0) {
+      if (index < this.pendingSkipTo) this.bouncedSkipTargets.add(this.pendingSkipTo);
+      this.pendingSkipTo = -1;
+    }
+
     const step = this.currentStep();
     if (!step) return [];
+    const skipTo = resolveStepSkip(step, index, this.cues, this.bandProbe, this.bouncedSkipTargets);
+    if (skipTo >= 0) {
+      this.pendingSkipTo = skipTo;
+      this.activeCueIndex = -1;
+      this.state = { type: 'idle' };
+      return [{ type: 'seek', timeMs: this.cues[skipTo].start }];
+    }
     this.repeatRemaining = step.repeat;
     const actions = this.applyStepEntry(step);
     const hit = this.unknownAt(index);
@@ -315,6 +357,7 @@ export class StudyModePlaybackController {
   }
 
   private handleSilence(currentTimeMs: number): PlaybackAction[] {
+    if (this.pendingSkipTo >= 0) return [];
     if (this.advanced.skipNoDialogue === 'OFF') return [];
     if (this.cueIndexAt(currentTimeMs) >= 0) return [];
 

@@ -19,6 +19,11 @@ describe('formatStepSummary', () => {
     const s: StudyStep = { ...step, repeat: 1 };
     expect(formatStepSummary(s)).toBe('target, no pause, 0.75x');
   });
+
+  it('appends the skip rule when set', () => {
+    const s: StudyStep = { ...step, skip: 'non-i1' };
+    expect(formatStepSummary(s)).toBe('target, no pause, 0.75x, 2x, skip non-i1');
+  });
 });
 
 describe('formatModeDescription', () => {

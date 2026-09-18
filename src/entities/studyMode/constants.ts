@@ -20,6 +20,14 @@ export const PRESETS: readonly StudyMode[] = [
     steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
   },
   {
+    id: 'i1-replay',
+    type: 'preset',
+    icon: 'repeat',
+    title: 'i+1 Replay',
+    description: 'Play only i+1 cues — each loops 3×; easier and denser cues are skipped.',
+    steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 3, speed: 1, after: 'continue', skip: 'non-i1' }],
+  },
+  {
     id: 'listen',
     type: 'preset',
     icon: 'volumeHigh',

@@ -7,6 +7,10 @@ export type SubtitleVisibility = 'none' | 'native' | 'target' | 'both';
 export type StepSubtitle = SubtitleVisibility | 'adaptive';
 export type AdaptiveCueBand = 'easy' | 'i1' | 'dense';
 export type CueBandProbe = (cueIndex: number) => AdaptiveCueBand | null;
+/** Cue-entry skip policy resolved against the band probe. Evaluated only
+ *  at cue entry (first step); 'non-i1' seeks to the first reachable i1 cue
+ *  ahead. Distinct from `seek` (seek-back on step transitions). */
+export type StepSkipRule = 'non-i1';
 export type PausePoint = 'none' | 'start' | 'end';
 export type RepeatCount = 1 | 2 | 3;
 export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10] as const;
@@ -21,6 +25,7 @@ export interface StudyStep {
   speed: PlaybackSpeed;
   after: AfterCue;
   seek?: boolean;
+  skip?: StepSkipRule;
 }
 
 export interface StudyMode {

@@ -7,6 +7,7 @@ const PAUSE_VALUES = new Set(['none', 'start', 'end']);
 const REPEAT_VALUES = new Set([1, 2, 3]);
 const SPEED_VALUES = new Set<number>(PLAYBACK_SPEEDS);
 const AFTER_VALUES = new Set(['continue', 'wait', 'loop']);
+const STEP_SKIP_VALUES = new Set(['non-i1']);
 const SKIP_VALUES = new Set(['OFF', '2X', '4X', '6X', '8X', 'JUMP']);
 const PAUSE_UNKNOWN_VALUES = new Set(['OFF', 'START', 'END']);
 const UNKNOWN_LEVEL_VALUES = new Set(['core', 'common', 'general', 'advanced']);
@@ -39,7 +40,8 @@ function isValidStep(step: unknown): step is StudyStep {
     REPEAT_VALUES.has(step.repeat as number) &&
     SPEED_VALUES.has(step.speed as number) &&
     AFTER_VALUES.has(step.after as string) &&
-    (step.seek === undefined || typeof step.seek === 'boolean')
+    (step.seek === undefined || typeof step.seek === 'boolean') &&
+    (step.skip === undefined || STEP_SKIP_VALUES.has(step.skip as string))
   );
 }
 

@@ -8,6 +8,7 @@ const PAUSE_OPTIONS: StudyStep['pause'][] = ['none', 'start', 'end'];
 const REPEAT_OPTIONS: StudyStep['repeat'][] = [1, 2, 3];
 const SPEED_OPTIONS: StudyStep['speed'][] = [0.5, 0.75, 1, 1.25, 1.5];
 const AFTER_OPTIONS: StudyStep['after'][] = ['continue', 'wait', 'loop'];
+const SKIP_OPTIONS = ['never', 'non-i1'] as const;
 
 interface StepEditorProps {
   readonly index: number;
@@ -55,6 +56,27 @@ export function StepEditor({ index, step, onChange, onRemove }: StepEditorProps)
         {OptionGroup('Repeat', REPEAT_OPTIONS, step.repeat, 'repeat')}
         {OptionGroup('Speed', SPEED_OPTIONS, step.speed, 'speed')}
         {OptionGroup('After', AFTER_OPTIONS, step.after, 'after')}
+        {index === 0 && (
+          <div className={styles.stepOption} role="group" aria-label="Skip">
+            <Text as="span" variant="label" color="secondary" className={styles.stepOptionLabel}>
+              Skip
+            </Text>
+            <HStack gap="1" className={styles.stepChipGroup}>
+              {SKIP_OPTIONS.map((option) => (
+                <Chip
+                  key={option}
+                  as="button"
+                  size="sm"
+                  selected={(step.skip ?? 'never') === option}
+                  onClick={() => onChange({ ...step, skip: option === 'never' ? undefined : option })}
+                  data-cell-id={`step-${index}-skip-${option}`}
+                >
+                  {option}
+                </Chip>
+              ))}
+            </HStack>
+          </div>
+        )}
       </VStack>
       {onRemove && (
         <Button

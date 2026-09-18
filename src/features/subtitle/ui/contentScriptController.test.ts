@@ -895,6 +895,60 @@ describe('adaptive band probe wiring', () => {
     cleanup!();
     cleanupCalled = true;
   });
+
+  it('creates the resolver and wires bandProbe for a skip-only mode', async () => {
+    const skipStudyMode = {
+      id: 'skip-custom',
+      type: 'custom',
+      icon: 'repeat',
+      title: 'Skipper',
+      description: '',
+      steps: [{ subtitle: 'both' as const, pause: 'none' as const, repeat: 1 as const, speed: 1 as const, after: 'continue' as const, skip: 'non-i1' as const }],
+    } as unknown as ActiveStudyMode['activeMode'];
+    blockController.getTargetCues.mockReturnValue(adaptiveCues);
+    cleanup = init(video);
+    await flushPromises();
+
+    studyModeCallback!({
+      activeMode: skipStudyMode,
+      advanced: { ...fakeAdvanced, pauseOnUnknown: 'OFF' },
+    });
+    await flushPromises();
+
+    expect(blockController.setBandProbe).toHaveBeenCalledWith(expect.any(Function));
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('does not create the resolver when skip sits on a non-first step', async () => {
+    const deadSkipMode = {
+      id: 'dead-skip',
+      type: 'custom',
+      icon: 'repeat',
+      title: 'DeadSkip',
+      description: '',
+      steps: [
+        { subtitle: 'both' as const, pause: 'none' as const, repeat: 1 as const, speed: 1 as const, after: 'continue' as const },
+        { subtitle: 'both' as const, pause: 'none' as const, repeat: 1 as const, speed: 1 as const, after: 'continue' as const, skip: 'non-i1' as const },
+      ],
+    } as unknown as ActiveStudyMode['activeMode'];
+    blockController.getTargetCues.mockReturnValue(adaptiveCues);
+    cleanup = init(video);
+    await flushPromises();
+    blockController.setBandProbe.mockClear();
+
+    studyModeCallback!({
+      activeMode: deadSkipMode,
+      advanced: { ...fakeAdvanced, pauseOnUnknown: 'OFF' },
+    });
+    await flushPromises();
+
+    expect(blockController.setBandProbe).toHaveBeenCalledWith(null);
+
+    cleanup!();
+    cleanupCalled = true;
+  });
 });
 
 });

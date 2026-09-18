@@ -104,3 +104,31 @@ describe('adaptive step persistence', () => {
     expect(state.activeModeId).toBe('custom-adaptive');
   });
 });
+
+describe('skip rule persistence', () => {
+  const baseMode = {
+    id: 'custom-skip',
+    type: 'custom',
+    icon: 'repeat',
+    title: 'Skipper',
+    description: '',
+    steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 3, speed: 1, after: 'continue' }],
+  };
+  const wrap = (steps: unknown[]) => ({
+    version: 1,
+    activeModeId: 'custom-skip',
+    customModes: [{ ...baseMode, steps }],
+    advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'common', popupOnAutoPause: false, popupCloseOnResume: true },
+  });
+
+  it('keeps custom modes whose first step uses skip non-i1', () => {
+    const state = migrateStudyModeState(wrap([{ ...baseMode.steps[0], skip: 'non-i1' }]));
+    expect(state.customModes).toHaveLength(1);
+    expect(state.customModes[0]?.steps[0]?.skip).toBe('non-i1');
+  });
+
+  it('drops modes whose step carries an unknown skip value', () => {
+    const state = migrateStudyModeState(wrap([{ ...baseMode.steps[0], skip: 'always' }]));
+    expect(state.customModes).toHaveLength(0);
+  });
+});

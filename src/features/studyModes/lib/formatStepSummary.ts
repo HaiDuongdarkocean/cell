@@ -18,6 +18,7 @@ export function formatStepSummary(step: StudyStep, maxLen = 60): string {
   const speed = `${step.speed}x`;
   const repeat = step.repeat > 1 ? `, ${step.repeat}x` : '';
   const parts = [SUBTITLE_LABELS[step.subtitle], PAUSE_LABELS[step.pause], `${speed}${repeat}`];
+  if (step.skip !== undefined) parts.push('skip non-i1');
   const full = parts.join(', ');
   return full.length <= maxLen ? full : `${full.slice(0, maxLen - 1)}…`;
 }

@@ -108,6 +108,18 @@ describe('adaptive level chips', () => {
     expect(screen.getByText('Words up to frequency level count as difficult')).toBeInTheDocument();
   });
 
+  it('shows frequency level chips when the i1-replay mode is active', async () => {
+    storageGet.mockResolvedValue({ studyModes: { ...adaptiveState, activeModeId: 'i1-replay' } });
+    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
+    render(<StudyModesTab />);
+
+    await waitFor(() => {
+      expect(useStudyModeStore.getState().activeModeId).toBe('i1-replay');
+    });
+    const group = await screen.findByRole('group', { name: 'Unknown word frequency level' });
+    expect(group).toBeInTheDocument();
+  });
+
   it('keeps level chips hidden for non-adaptive modes with pauseOnUnknown OFF', async () => {
     useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
     render(<StudyModesTab />);

@@ -3,6 +3,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
+import { modeUsesBandProbe } from '@/features/studyModes';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import { createUnknownCueResolver, type UnknownCueResolver } from '@/features/subtitle/logic/unknownCueMap';
 import { onWordStatusChanged } from '@/features/dictionary';
@@ -175,7 +176,7 @@ export function init(
   async function syncUnknownResolver(): Promise<void> {
     const wantsResolver =
       (currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF') ||
-      (currentMode?.steps.some((step) => step.subtitle === 'adaptive') ?? false);
+      modeUsesBandProbe(currentMode);
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const cues = blockController.getTargetCues();
     if (!wantsResolver || !langCode || cues.length === 0) {
