@@ -72,9 +72,11 @@ describe('cueMatchesMode', () => {
   const cases: [CueDifficulty, Parameters<typeof cueMatchesMode>[1], boolean][] = [
     [{ unknown: 0, tracking: 0 }, 'all', true],
     [{ unknown: 1, tracking: 0 }, 'i1', true],
+    [{ unknown: 0, tracking: 1 }, 'i1', true],
+    [{ unknown: 1, tracking: 1 }, 'i1', false],
     [{ unknown: 1, tracking: 2 }, 'i1', false],
     [{ unknown: 2, tracking: 0 }, 'i1', false],
-    [{ unknown: 0, tracking: 1 }, 'i1', false],
+    [{ unknown: 0, tracking: 2 }, 'i1', false],
     [{ unknown: 0, tracking: 0 }, 'i1', false],
     [{ unknown: 1, tracking: 0 }, 'hasUnknown', true],
     [{ unknown: 0, tracking: 1 }, 'hasUnknown', false],
@@ -99,25 +101,27 @@ describe('countByMode', () => {
       [2, { unknown: 1, tracking: 0 }],
       [3, { unknown: 2, tracking: 1 }],
       [4, { unknown: 4, tracking: 1 }],
+      [5, { unknown: 0, tracking: 1 }],
     ]);
 
     expect(countByMode(difficulties)).toEqual({
-      all: 4,
-      i1: 1,
+      all: 5,
+      i1: 2,
       hasUnknown: 3,
       allKnown: 1,
-      tracking: 2,
+      tracking: 3,
     });
   });
 });
 
 describe('cueHeatBand', () => {
-  it('maps counts to bands — i1 means exactly one unknown and nothing else learnable', () => {
+  it('maps counts to bands — i1 means exactly one new word (unknown or tracking)', () => {
     expect(cueHeatBand({ unknown: 0, tracking: 0 })).toBe('easy');
     expect(cueHeatBand({ unknown: 1, tracking: 0 })).toBe('i1');
+    expect(cueHeatBand({ unknown: 0, tracking: 1 })).toBe('i1');
     expect(cueHeatBand({ unknown: 2, tracking: 0 })).toBe('dense');
     expect(cueHeatBand({ unknown: 1, tracking: 1 })).toBe('dense');
-    expect(cueHeatBand({ unknown: 0, tracking: 1 })).toBe('dense');
+    expect(cueHeatBand({ unknown: 0, tracking: 2 })).toBe('dense');
     expect(cueHeatBand({ unknown: 10, tracking: 4 })).toBe('dense');
   });
 });

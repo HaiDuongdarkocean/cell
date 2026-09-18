@@ -39,7 +39,7 @@ export function cueMatchesMode(d: CueDifficulty, mode: CueFilterMode): boolean {
     case 'all':
       return true;
     case 'i1':
-      return d.unknown === 1 && d.tracking === 0;
+      return d.unknown + d.tracking === 1;
     case 'hasUnknown':
       return d.unknown >= 1;
     case 'allKnown':
@@ -53,7 +53,7 @@ export type CueHeatBand = 'easy' | 'i1' | 'dense';
 
 export function cueHeatBand(d: CueDifficulty): CueHeatBand {
   if (d.unknown === 0 && d.tracking === 0) return 'easy';
-  if (d.unknown === 1 && d.tracking === 0) return 'i1';
+  if (d.unknown + d.tracking === 1) return 'i1';
   return 'dense';
 }
 
