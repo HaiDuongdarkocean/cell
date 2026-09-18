@@ -1007,4 +1007,57 @@ describe('ReactSubtitleController', () => {
 
     expect(fakeMount.setPanelBlurred).toHaveBeenLastCalledWith(false);
   });
+
+describe('adaptive band probe', () => {
+  const adaptiveMode: StudyMode = {
+    id: 'adaptive',
+    type: 'preset',
+    icon: 'gauge',
+    title: 'Adaptive',
+    description: '',
+    steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+  };
+  const adaptiveAdvanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true };
+  const adaptiveCues: SrtCue[] = [
+    { index: 1, start: 0, end: 5000, text: 'Easy cue' },
+    { index: 2, start: 5000, end: 10000, text: 'Dense cue' },
+  ];
+
+  it('resolves subtitle visibility per cue through setBandProbe', () => {
+    Object.defineProperty(video, 'paused', { value: false, configurable: true });
+    controller.loadCues(adaptiveCues);
+    controller.setBandProbe((i) => (i === 0 ? 'easy' : 'dense'));
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    controller.applyStudyMode(adaptiveMode, adaptiveAdvanced);
+
+    // easy → 'none' applied on cue-0 entry inside applyStudyMode's sync.
+    expect(fakeMount.setStyles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: false }),
+      expect.objectContaining({ visible: false }),
+    );
+
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 1, native: -1 });
+    video.currentTime = 6;
+    // First timeupdate ends cue 0's chain; the next enters cue 1.
+    video.dispatchEvent(new Event('timeupdate'));
+    video.dispatchEvent(new Event('timeupdate'));
+    // dense → 'both' → both lines visible.
+    expect(fakeMount.setStyles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: true }),
+      expect.objectContaining({ visible: true }),
+    );
+  });
+
+  it('falls back to both subtitles when no band probe is wired', () => {
+    controller.loadCues(adaptiveCues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+    controller.applyStudyMode(adaptiveMode, adaptiveAdvanced);
+
+    expect(fakeMount.setStyles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visible: true }),
+      expect.objectContaining({ visible: true }),
+    );
+  });
+});
+
 });

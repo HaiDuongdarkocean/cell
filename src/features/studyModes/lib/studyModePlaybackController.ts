@@ -1,5 +1,5 @@
 import type { SrtCue } from '@/entities/media';
-import type { StudyMode, StudyModeAdvancedSettings, StudyStep, SubtitleVisibility, UnknownCueHit } from '@/entities/studyMode';
+import type { CueBandProbe, StudyMode, StudyModeAdvancedSettings, StudyStep, SubtitleVisibility, UnknownCueHit } from '@/entities/studyMode';
 
 export type PlaybackAction =
   | { type: 'setSubtitle'; subtitle: SubtitleVisibility }
@@ -15,6 +15,18 @@ export type PlaybackAction =
  *  composition root (subtitle feature) so the controller stays pure and
  *  feature-agnostic. */
 export type UnknownCueProbe = (cueIndex: number) => UnknownCueHit | null;
+
+export function resolveStepSubtitle(
+  subtitle: StudyStep['subtitle'],
+  cueIndex: number,
+  bandProbe: CueBandProbe | null,
+): SubtitleVisibility {
+  if (subtitle !== 'adaptive') return subtitle;
+  const band = bandProbe?.(cueIndex) ?? null;
+  if (band === 'easy') return 'none';
+  if (band === 'i1') return 'target';
+  return 'both';
+}
 
 type ContinueTarget = 'nextStep' | 'nextCue';
 
@@ -49,6 +61,7 @@ export class StudyModePlaybackController {
   private silenceHandledIndex = -1;
   private state: PlaybackState = { type: 'idle' };
   private probe: UnknownCueProbe | null = null;
+  private bandProbe: CueBandProbe | null = null;
 
   constructor(
     mode: StudyMode,
@@ -90,6 +103,10 @@ export class StudyModePlaybackController {
 
   setProbe(probe: UnknownCueProbe | null): void {
     this.probe = probe;
+  }
+
+  setBandProbe(probe: CueBandProbe | null): void {
+    this.bandProbe = probe;
   }
 
   setMode(mode: StudyMode, advanced: StudyModeAdvancedSettings): void {
@@ -194,7 +211,7 @@ export class StudyModePlaybackController {
 
   private applyStepEntry(step: StudyStep): PlaybackAction[] {
     const actions: PlaybackAction[] = [];
-    actions.push({ type: 'setSubtitle', subtitle: step.subtitle });
+    actions.push({ type: 'setSubtitle', subtitle: resolveStepSubtitle(step.subtitle, this.activeCueIndex, this.bandProbe) });
     actions.push({ type: 'setSpeed', speed: step.speed });
 
     if (step.pause === 'start') {
@@ -292,7 +309,7 @@ export class StudyModePlaybackController {
 
   private reapplyStep(step: StudyStep): PlaybackAction[] {
     return [
-      { type: 'setSubtitle', subtitle: step.subtitle },
+      { type: 'setSubtitle', subtitle: resolveStepSubtitle(step.subtitle, this.activeCueIndex, this.bandProbe) },
       { type: 'setSpeed', speed: step.speed },
     ];
   }

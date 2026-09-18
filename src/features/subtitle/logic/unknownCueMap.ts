@@ -1,5 +1,5 @@
 import type { SrtCue } from '@/entities/media';
-import type { UnknownLevel, UnknownCueHit } from '@/entities/studyMode';
+import type { CueBandProbe, UnknownLevel, UnknownCueHit } from '@/entities/studyMode';
 import type { FrequencyEntry, WordStatus } from '@/entities/dictionary';
 import {
   createTokenList,
@@ -11,9 +11,11 @@ import {
   type Token,
 } from '@/features/tokenize';
 import { getWordStatuses, getFrequencyEntries } from '@/features/dictionary';
+import { cueDifficultyMap, cueHeatBand, type CueDifficulty } from './cueDifficulty';
 
 export interface UnknownCueResolver {
   readonly probe: (cueIndex: number) => UnknownCueHit | null;
+  readonly bandProbe: CueBandProbe;
   readonly applyStatus: (term: string, status: WordStatus) => void;
   readonly destroy: () => void;
 }
@@ -75,6 +77,24 @@ function toUnknownMap(
   return map;
 }
 
+function buildRankByTerm(
+  terms: ReadonlySet<string>,
+  freq: FreqContext,
+): ReadonlyMap<string, number | null> {
+  const map = new Map<string, number | null>();
+  for (const term of terms) map.set(term, bestRank(term, freq));
+  return map;
+}
+
+function toBandMap(
+  tokenMap: CueTokens,
+  rankByTerm: ReadonlyMap<string, number | null>,
+  level: UnknownLevel,
+  freq: FreqContext,
+): Map<number, CueDifficulty> {
+  return cueDifficultyMap(tokenMap, rankByTerm, freq.thresholds, level, freq.unfiltered);
+}
+
 export async function createUnknownCueResolver(
   cues: readonly SrtCue[],
   langCode: string,
@@ -130,10 +150,17 @@ export async function createUnknownCueResolver(
     }
   }
 
+  const rankByTerm = buildRankByTerm(terms, freq);
   let unknownMap: Map<number, UnknownCueHit> = toUnknownMap(tokenMap, level, freq);
+  let bandMap: Map<number, CueDifficulty> = toBandMap(tokenMap, rankByTerm, level, freq);
 
   return {
     probe: (cueIndex) => unknownMap.get(cueIndex) ?? null,
+
+    bandProbe: (cueIndex) => {
+      const d = bandMap.get(cueIndex);
+      return d ? cueHeatBand(d) : null;
+    },
 
     applyStatus: (term, status) => {
       const normalized = langCode === 'zh' ? term : term.toLowerCase();
@@ -147,11 +174,13 @@ export async function createUnknownCueResolver(
       if (!changed) return;
       tokenMap = next;
       unknownMap = toUnknownMap(tokenMap, level, freq);
+      bandMap = toBandMap(tokenMap, rankByTerm, level, freq);
     },
 
     destroy: () => {
       tokenMap = new Map();
       unknownMap = new Map();
+      bandMap = new Map();
       freq = { ...freq, byTerm: new Map() };
     },
   };

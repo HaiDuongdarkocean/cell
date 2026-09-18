@@ -3,7 +3,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { findVideoContainer } from '@/shared/lib/dom/findPlayerContainer';
 import type { SubtitleApiKey } from '@/entities/settings';
 import { getActiveStudyMode, subscribeToStudyMode } from '@/features/studyModes/content/studyModeController';
-import type { StudyModeAdvancedSettings } from '@/entities/studyMode';
+import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import { createUnknownCueResolver, type UnknownCueResolver } from '@/features/subtitle/logic/unknownCueMap';
 import { onWordStatusChanged } from '@/features/dictionary';
 import { injectThemeTokens } from '@/features/theme/logic/themeTokens';
@@ -158,6 +158,7 @@ export function init(
   const unsubscribeStudyMode = subscribeToStudyMode((next) => {
     if (!next) return;
     currentAdvanced = next.advanced;
+    currentMode = next.activeMode;
     blockController.applyStudyMode(next.activeMode, next.advanced);
     void syncUnknownResolver();
   });
@@ -169,21 +170,26 @@ export function init(
   let unknownResolver: UnknownCueResolver | null = null;
   let unknownResolverCueKey = '';
   let currentAdvanced: StudyModeAdvancedSettings | null = initialStudyMode?.advanced ?? null;
+  let currentMode: StudyMode | null = initialStudyMode?.activeMode ?? null;
 
   async function syncUnknownResolver(): Promise<void> {
-    const wantsProbe = currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF';
+    const wantsResolver =
+      (currentAdvanced !== null && currentAdvanced.pauseOnUnknown !== 'OFF') ||
+      (currentMode?.steps.some((step) => step.subtitle === 'adaptive') ?? false);
     const langCode = currentSettings?.subtitleOverlayTargetLanguage;
     const cues = blockController.getTargetCues();
-    if (!wantsProbe || !langCode || cues.length === 0) {
+    if (!wantsResolver || !langCode || cues.length === 0) {
       unknownResolver?.destroy();
       unknownResolver = null;
       unknownResolverCueKey = '';
       blockController.setUnknownCueProbe(null);
+      blockController.setBandProbe(null);
       return;
     }
     const key = `${cues.length}:${cues[0]?.start}:${cues[cues.length - 1]?.end}:${langCode}:${currentAdvanced?.unknownLevel ?? 'advanced'}`;
     if (unknownResolver && unknownResolverCueKey === key) {
       blockController.setUnknownCueProbe(unknownResolver.probe);
+      blockController.setBandProbe(unknownResolver.bandProbe);
       return;
     }
     unknownResolver?.destroy();
@@ -200,6 +206,7 @@ export function init(
     }
     unknownResolver = resolver;
     blockController.setUnknownCueProbe(resolver.probe);
+    blockController.setBandProbe(resolver.bandProbe);
   }
 
   const unsubscribeWordStatusForResolver = onWordStatusChanged(({ langCode: eventLangCode, term, status }) => {

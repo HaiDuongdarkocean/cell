@@ -3,7 +3,7 @@ import { Text, Button, Chip, HStack, VStack, Icon } from '@/shared/ui';
 import type { StudyStep } from '@/entities/studyMode';
 import styles from './StepEditor.module.css';
 
-const SUBTITLE_OPTIONS: StudyStep['subtitle'][] = ['none', 'native', 'target', 'both'];
+const SUBTITLE_OPTIONS: StudyStep['subtitle'][] = ['none', 'native', 'target', 'both', 'adaptive'];
 const PAUSE_OPTIONS: StudyStep['pause'][] = ['none', 'start', 'end'];
 const REPEAT_OPTIONS: StudyStep['repeat'][] = [1, 2, 3];
 const SPEED_OPTIONS: StudyStep['speed'][] = [0.5, 0.75, 1, 1.25, 1.5];

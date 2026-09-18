@@ -152,6 +152,7 @@ export function StudyModesTab(): ReactElement {
         {advancedOpen && (
           <AdvancedSection
             advanced={store.advanced}
+            modeUsesAdaptive={activeMode.steps.some((step) => step.subtitle === 'adaptive')}
             onChange={handleAdvancedChange}
           />
         )}
@@ -244,10 +245,11 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
 
 interface AdvancedSectionProps {
   readonly advanced: StudyModeAdvancedSettings;
+  readonly modeUsesAdaptive: boolean;
   readonly onChange: (advanced: StudyModeAdvancedSettings) => void;
 }
 
-function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactElement {
+function AdvancedSection({ advanced, modeUsesAdaptive, onChange }: AdvancedSectionProps): ReactElement {
   return (
     <Card className={styles.advancedCard} data-cell-id="advanced-settings">
       <Heading level={3} size={3} className={styles.sectionHeading}>
@@ -306,11 +308,13 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
             ))}
           </HStack>
         </div>
-        {advanced.pauseOnUnknown !== 'OFF' && (
+        {(advanced.pauseOnUnknown !== 'OFF' || modeUsesAdaptive) && (
           <>
             <div>
               <Text as="p" className={styles.advancedLabel}>
-                Pause on words up to frequency level
+                {advanced.pauseOnUnknown !== 'OFF'
+                  ? 'Pause on words up to frequency level'
+                  : 'Words up to frequency level count as difficult'}
               </Text>
               <HStack
                 gap="2"

@@ -1,5 +1,5 @@
 import type { SrtCue } from '@/entities/media';
-import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
+import type { CueBandProbe, StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import { StudyModePlaybackController, type PlaybackAction, type UnknownCueProbe } from './studyModePlaybackController';
 
 export interface SubtitleStudyModeTimeState {
@@ -25,6 +25,7 @@ const SEEK_LANDING_TOLERANCE_MS = 300;
 export class SubtitleStudyModeController {
   private playback: StudyModePlaybackController | null = null;
   private probe: UnknownCueProbe | null = null;
+  private bandProbe: CueBandProbe | null = null;
   private lastTargetIndex = -1;
   private offsetMs = 0;
   private internalSeekTargetMs: number | null = null;
@@ -51,6 +52,7 @@ export class SubtitleStudyModeController {
       ? null
       : new StudyModePlaybackController(activeMode, advanced, targetCues, offsetMs);
     this.playback?.setProbe(this.probe);
+    this.playback?.setBandProbe(this.bandProbe);
     this.offsetMs = offsetMs;
     this.lastTargetIndex = -1;
     this.internalSeekTargetMs = null;
@@ -67,6 +69,11 @@ export class SubtitleStudyModeController {
   setProbe(probe: UnknownCueProbe | null): void {
     this.probe = probe;
     this.playback?.setProbe(probe);
+  }
+
+  setBandProbe(probe: CueBandProbe | null): void {
+    this.bandProbe = probe;
+    this.playback?.setBandProbe(probe);
   }
 
   clearCues(offsetMs: number): void {

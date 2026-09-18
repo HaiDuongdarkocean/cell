@@ -1,6 +1,6 @@
 import type { SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings, BilingualCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { StudyMode, StudyModeAdvancedSettings, PlaybackSpeed } from '@/entities/studyMode';
+import type { CueBandProbe, StudyMode, StudyModeAdvancedSettings, PlaybackSpeed } from '@/entities/studyMode';
 import {
   DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   DEFAULT_OVERLAY_STYLE_TARGET,
@@ -629,6 +629,10 @@ export class ReactSubtitleController {
    *  (contentScriptController) owns the resolver built from cue tokens. */
   setUnknownCueProbe(probe: UnknownCueProbe | null): void {
     this.studyMode.setProbe(probe);
+  }
+
+  setBandProbe(probe: CueBandProbe | null): void {
+    this.studyMode.setBandProbe(probe);
   }
 
   private applySubtitleHidden(targetHidden: boolean, nativeHidden: boolean): void {

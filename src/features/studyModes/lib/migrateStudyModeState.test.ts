@@ -77,3 +77,30 @@ describe('migrateStudyModeState', () => {
     expect(state.customModes[0]?.steps[0].seek).toBe(false);
   });
 });
+
+describe('adaptive step persistence', () => {
+  it('keeps custom modes whose steps use the adaptive sentinel', () => {
+    const raw = {
+      version: 1,
+      activeModeId: 'custom-adaptive',
+      customModes: [
+        {
+          id: 'custom-adaptive',
+          type: 'custom',
+          icon: 'gauge',
+          title: 'Adaptive+',
+          description: '',
+          steps: [
+            { subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+            { subtitle: 'both', pause: 'end', repeat: 1, speed: 1, after: 'wait', seek: false },
+          ],
+        },
+      ],
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
+    };
+    const state = migrateStudyModeState(raw);
+    expect(state.customModes).toHaveLength(1);
+    expect(state.customModes[0]?.steps[0]?.subtitle).toBe('adaptive');
+    expect(state.activeModeId).toBe('custom-adaptive');
+  });
+});

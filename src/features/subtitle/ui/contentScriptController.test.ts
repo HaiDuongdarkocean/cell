@@ -156,6 +156,7 @@ interface MockController {
   getActiveIndices: jest.Mock;
   getLineElements: jest.Mock;
   setUnknownCueProbe: jest.Mock;
+  setBandProbe: jest.Mock;
   getOffsetMs: jest.Mock;
   loadBilingualCues: jest.Mock;
   loadCues: jest.Mock;
@@ -242,6 +243,7 @@ function createMockController(): MockController {
     getActiveIndices: jest.fn().mockReturnValue({ target: -1, native: -1 }),
     getLineElements: jest.fn().mockReturnValue({ target: null, native: null }),
     setUnknownCueProbe: jest.fn(),
+    setBandProbe: jest.fn(),
     getOffsetMs: jest.fn().mockReturnValue(0),
     loadBilingualCues: jest.fn(),
     loadCues: jest.fn(),
@@ -826,4 +828,73 @@ describe('contentScriptController', () => {
     cleanup!();
     cleanupCalled = true;
   });
+
+const adaptiveStudyMode = {
+  id: 'adaptive',
+  type: 'preset',
+  icon: 'gauge',
+  title: 'Adaptive',
+  description: '',
+  steps: [{ subtitle: 'adaptive' as const, pause: 'none' as const, repeat: 1 as const, speed: 1 as const, after: 'continue' as const }],
+} as unknown as ActiveStudyMode['activeMode'];
+
+const adaptiveCues = [
+  { index: 0, start: 0, end: 1000, text: 'hello world' },
+  { index: 1, start: 1000, end: 2000, text: 'second cue' },
+];
+
+describe('adaptive band probe wiring', () => {
+  it('creates the resolver and wires bandProbe when an adaptive mode is active with pauseOnUnknown OFF', async () => {
+    blockController.getTargetCues.mockReturnValue(adaptiveCues);
+    cleanup = init(video);
+    await flushPromises();
+
+    studyModeCallback!({
+      activeMode: adaptiveStudyMode,
+      advanced: { ...fakeAdvanced, pauseOnUnknown: 'OFF' },
+    });
+    await flushPromises();
+
+    expect(blockController.setBandProbe).toHaveBeenCalledWith(expect.any(Function));
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('does not create the resolver for a non-adaptive mode with pauseOnUnknown OFF', async () => {
+    blockController.getTargetCues.mockReturnValue(adaptiveCues);
+    cleanup = init(video);
+    await flushPromises();
+    blockController.setBandProbe.mockClear();
+
+    studyModeCallback!({
+      activeMode: fakeStudyMode,
+      advanced: { ...fakeAdvanced, pauseOnUnknown: 'OFF' },
+    });
+    await flushPromises();
+
+    expect(blockController.setBandProbe).toHaveBeenCalledWith(null);
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+
+  it('clears the band probe when cues are unavailable', async () => {
+    blockController.getTargetCues.mockReturnValue([]);
+    cleanup = init(video);
+    await flushPromises();
+
+    studyModeCallback!({
+      activeMode: adaptiveStudyMode,
+      advanced: { ...fakeAdvanced, pauseOnUnknown: 'OFF' },
+    });
+    await flushPromises();
+
+    expect(blockController.setBandProbe).toHaveBeenCalledWith(null);
+
+    cleanup!();
+    cleanupCalled = true;
+  });
+});
+
 });

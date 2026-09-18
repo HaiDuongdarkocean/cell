@@ -2,7 +2,7 @@ import { PLAYBACK_SPEEDS, type StudyMode, type StudyModeAdvancedSettings, type S
 
 const CURRENT_VERSION = 1;
 
-const SUBTITLE_VALUES = new Set(['none', 'native', 'target', 'both']);
+const SUBTITLE_VALUES = new Set(['none', 'native', 'target', 'both', 'adaptive']);
 const PAUSE_VALUES = new Set(['none', 'start', 'end']);
 const REPEAT_VALUES = new Set([1, 2, 3]);
 const SPEED_VALUES = new Set<number>(PLAYBACK_SPEEDS);

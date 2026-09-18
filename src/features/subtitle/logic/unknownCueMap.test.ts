@@ -136,3 +136,53 @@ describe('createUnknownCueResolver', () => {
     expect(resolver.probe(0)).toBeNull();
   });
 });
+
+describe('bandProbe', () => {
+  it('maps per-cue difficulty to heat bands', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
+
+    // cue 0: hello + world → 2 strange → i1.
+    expect(resolver.bandProbe(0)).toBe('i1');
+    // cue 1: all known → 0 strange → easy.
+    expect(resolver.bandProbe(1)).toBe('easy');
+    // cue 2: rare + appears unlisted (skipped), xenoglossy rank 15000 ≤ advanced → 1 strange → i1.
+    expect(resolver.bandProbe(2)).toBe('i1');
+  });
+
+  it('a stricter level excludes words beyond its threshold', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'general');
+
+    expect(resolver.bandProbe(0)).toBe('i1');
+    // xenoglossy rank 15000 > general cap → cue 2 has 0 countable words → easy.
+    expect(resolver.bandProbe(2)).toBe('easy');
+  });
+
+  it('counts every learnable token when no frequency resource is enabled', async () => {
+    loadFrequencyBandOptions.mockResolvedValue({
+      thresholds: DEFAULT_BAND_THRESHOLDS,
+      resourcePriority: [],
+    });
+    const resolver = await createUnknownCueResolver(cues, 'en', 'core');
+
+    // unfiltered: rare + appears + xenoglossy all count → dense.
+    expect(resolver.bandProbe(2)).toBe('dense');
+    expect(resolver.bandProbe(1)).toBe('easy');
+  });
+
+  it('rebuilds bands on applyStatus', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
+    expect(resolver.bandProbe(0)).toBe('i1');
+
+    resolver.applyStatus('hello', 'known');
+    resolver.applyStatus('world', 'known');
+    expect(resolver.bandProbe(0)).toBe('easy');
+  });
+
+  it('returns null for unknown indices and after destroy', async () => {
+    const resolver = await createUnknownCueResolver(cues, 'en', 'advanced');
+    expect(resolver.bandProbe(99)).toBeNull();
+
+    resolver.destroy();
+    expect(resolver.bandProbe(0)).toBeNull();
+  });
+});

@@ -12,6 +12,14 @@ export const PRESETS: readonly StudyMode[] = [
     steps: [{ subtitle: 'both', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
   },
   {
+    id: 'adaptive',
+    type: 'preset',
+    icon: 'gauge',
+    title: 'Adaptive',
+    description: 'Subtitles follow cue difficulty — hidden when easy, native added when dense.',
+    steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+  },
+  {
     id: 'listen',
     type: 'preset',
     icon: 'volumeHigh',

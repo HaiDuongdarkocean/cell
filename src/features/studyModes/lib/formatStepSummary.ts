@@ -5,6 +5,7 @@ const SUBTITLE_LABELS: Record<StudyStep['subtitle'], string> = {
   native: 'native',
   target: 'target',
   both: 'both',
+  adaptive: 'adaptive',
 };
 
 const PAUSE_LABELS: Record<StudyStep['pause'], string> = {

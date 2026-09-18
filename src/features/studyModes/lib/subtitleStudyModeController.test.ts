@@ -113,3 +113,49 @@ describe('SubtitleStudyModeController', () => {
     expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'native' });
   });
 });
+
+const adaptiveMode: StudyMode = {
+  id: 'adaptive',
+  type: 'preset',
+  icon: 'gauge',
+  title: 'Adaptive',
+  description: '',
+  steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+};
+
+describe('band probe forwarding', () => {
+  it('forwards the band probe to the playback machine and resolves per cue', () => {
+    const cues = [makeCue(1, 0, 4000, 'a'), makeCue(2, 4000, 8000, 'b')];
+    const ctrl = new SubtitleStudyModeController();
+    ctrl.setBandProbe((i) => (i === 0 ? 'easy' : 'dense'));
+    ctrl.applyStudyMode(adaptiveMode, advancedOff, cues, 0);
+
+    const first = ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
+    expect(first).toContainEqual({ type: 'setSubtitle', subtitle: 'none' });
+  });
+
+  it('re-forwards the cached band probe across applyStudyMode calls', () => {
+    const cues = [makeCue(1, 0, 4000, 'a')];
+    const ctrl = new SubtitleStudyModeController();
+    ctrl.setBandProbe(() => 'i1');
+
+    ctrl.applyStudyMode(adaptiveMode, advancedOff, cues, 0);
+    // Switching modes recreates the inner playback controller — the probe
+    // must survive the switch or adaptive silently degrades to 'both'.
+    ctrl.applyStudyMode(hybridMode, advancedOff, cues, 0);
+    ctrl.applyStudyMode(adaptiveMode, advancedOff, cues, 0);
+
+    const actions = ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
+    expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+
+  it('null band probe resolves adaptive to both', () => {
+    const cues = [makeCue(1, 0, 4000, 'a')];
+    const ctrl = new SubtitleStudyModeController();
+    ctrl.setBandProbe(null);
+    ctrl.applyStudyMode(adaptiveMode, advancedOff, cues, 0);
+
+    const actions = ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
+    expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'both' });
+  });
+});

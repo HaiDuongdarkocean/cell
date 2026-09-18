@@ -360,3 +360,78 @@ describe('StudyModePlaybackController', () => {
     expect(actions).toContainEqual({ type: 'seek', timeMs: 9000 });
   });
 });
+
+const adaptiveMode: StudyMode = {
+  id: 'adaptive',
+  type: 'preset',
+  icon: 'gauge',
+  title: 'Adaptive',
+  description: '',
+  steps: [{ subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue' }],
+};
+
+describe('resolveStepSubtitle', () => {
+  it('returns static subtitle values unchanged', async () => {
+    const { resolveStepSubtitle } = await import('./studyModePlaybackController');
+    expect(resolveStepSubtitle('none', 0, () => 'easy')).toBe('none');
+    expect(resolveStepSubtitle('both', 3, null)).toBe('both');
+    expect(resolveStepSubtitle('target', 1, () => 'dense')).toBe('target');
+  });
+
+  it('maps adaptive bands to concrete visibility', async () => {
+    const { resolveStepSubtitle } = await import('./studyModePlaybackController');
+    expect(resolveStepSubtitle('adaptive', 0, () => 'easy')).toBe('none');
+    expect(resolveStepSubtitle('adaptive', 0, () => 'i1')).toBe('target');
+    expect(resolveStepSubtitle('adaptive', 0, () => 'dense')).toBe('both');
+  });
+
+  it('falls back to both when probe is null or returns null', async () => {
+    const { resolveStepSubtitle } = await import('./studyModePlaybackController');
+    expect(resolveStepSubtitle('adaptive', 0, null)).toBe('both');
+    expect(resolveStepSubtitle('adaptive', 0, () => null)).toBe('both');
+  });
+});
+
+describe('adaptive subtitle resolution', () => {
+  it('resolves the step subtitle per cue band at entry', () => {
+    const cues = [makeCue(1, 0, 4000, 'a'), makeCue(2, 4000, 8000, 'b'), makeCue(3, 8000, 12000, 'c')];
+    const ctrl = new StudyModePlaybackController(adaptiveMode, advancedOff, cues);
+    const bands = ['easy', 'dense', 'i1'] as const;
+    ctrl.setBandProbe((i) => bands[i] ?? null);
+
+    expect(ctrl.enterCue(cues[0], 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'none' });
+    expect(ctrl.onTimeUpdate(4000)).toEqual([]);
+
+    expect(ctrl.enterCue(cues[1], 1)).toContainEqual({ type: 'setSubtitle', subtitle: 'both' });
+    expect(ctrl.onTimeUpdate(8000)).toEqual([]);
+
+    expect(ctrl.enterCue(cues[2], 2)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+
+  it('falls back to both when no band probe is set', () => {
+    const cue = makeCue(1, 0, 4000, 'a');
+    const ctrl = new StudyModePlaybackController(adaptiveMode, advancedOff, [cue]);
+    expect(ctrl.enterCue(cue, 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'both' });
+  });
+
+  it('re-resolves on a seek:false step entry (reapplyStep path)', () => {
+    const cue = makeCue(1, 0, 4000, 'a');
+    const twoStep: StudyMode = {
+      id: 'custom-adaptive',
+      type: 'custom',
+      icon: 'gauge',
+      title: 'TwoStep',
+      description: '',
+      steps: [
+        { subtitle: 'none', pause: 'none', repeat: 1, speed: 1, after: 'continue' },
+        { subtitle: 'adaptive', pause: 'none', repeat: 1, speed: 1, after: 'continue', seek: false },
+      ],
+    };
+    const ctrl = new StudyModePlaybackController(twoStep, advancedOff, [cue]);
+    ctrl.setBandProbe(() => 'i1');
+    ctrl.enterCue(cue, 0);
+
+    const actions = ctrl.onTimeUpdate(4000);
+    expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
+  });
+});

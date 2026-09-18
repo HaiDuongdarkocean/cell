@@ -69,3 +69,52 @@ describe('StudyModesTab', () => {
     expect(await screen.findByText('Skip when there is no dialogue')).toBeInTheDocument();
   });
 });
+
+describe('adaptive level chips', () => {
+  const storageGet = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
+
+  beforeAll(() => {
+    global.chrome = {
+      storage: {
+        local: { get: storageGet as unknown as typeof chrome.storage.local.get, set: jest.fn() },
+        onChanged: { addListener: jest.fn(), removeListener: jest.fn() },
+      },
+      runtime: { sendMessage: jest.fn() },
+    } as unknown as typeof chrome;
+    (globalThis as { __cellSendMessage?: unknown }).__cellSendMessage = jest.fn();
+  });
+
+  beforeEach(() => {
+    storageGet.mockReset().mockResolvedValue({});
+  });
+
+  const adaptiveState = {
+    version: 1,
+    activeModeId: 'adaptive',
+    customModes: [],
+    advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'common', popupOnAutoPause: false, popupCloseOnResume: true },
+  };
+
+  it('shows frequency level chips when the adaptive mode is active even with pauseOnUnknown OFF', async () => {
+    storageGet.mockResolvedValue({ studyModes: adaptiveState });
+    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
+    render(<StudyModesTab />);
+
+    await waitFor(() => {
+      expect(useStudyModeStore.getState().activeModeId).toBe('adaptive');
+    });
+    const group = await screen.findByRole('group', { name: 'Unknown word frequency level' });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByText('Words up to frequency level count as difficult')).toBeInTheDocument();
+  });
+
+  it('keeps level chips hidden for non-adaptive modes with pauseOnUnknown OFF', async () => {
+    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
+    render(<StudyModesTab />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Advanced' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('group', { name: 'Unknown word frequency level' })).not.toBeInTheDocument();
+  });
+});
