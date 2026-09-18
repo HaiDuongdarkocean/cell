@@ -9,7 +9,7 @@ const STREAMFLIX_SUBTITLE_KEYS = [
   'http://127.0.0.1:4321/index.html',
 ] as const;
 
-const DB_SCHEMA_VERSION = 11;
+const DB_SCHEMA_VERSION = 12;
 const CUE2_START_S = 20.2;
 const CUE2_END_S = 25.533;
 
@@ -121,6 +121,9 @@ async function seedDictionaryAndFrequency(
           if (!d.objectStoreNames.contains('langWordStatus')) {
             const s = d.createObjectStore('langWordStatus', { keyPath: 'term' });
             s.createIndex('by_status', 'status', { unique: false });
+          }
+          if (!d.objectStoreNames.contains('langWordTrash')) {
+            d.createObjectStore('langWordTrash', { keyPath: 'term' });
           }
         };
         req.onsuccess = () => resolve(req.result);

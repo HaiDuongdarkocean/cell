@@ -4,7 +4,7 @@ import { test, expect } from '../fixtures/actors/universalPanel.fixture';
 import { getE2EAgentPaths } from '../lib/agent-paths';
 
 const SETTINGS_KEY = 'settings';
-const DB_SCHEMA_VERSION = 11;
+const DB_SCHEMA_VERSION = 12;
 
 /** Minimal schema-v29 settings payload. `loadSettings` merges nested defaults. */
 function makeSettings(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -58,7 +58,7 @@ async function seedStorage(
 
 /** Seed one DICTIONARY resource + entries into the extension's IndexedDB so a
  *  live lookup resolves real definitions. Mirrors baseRepository
- *  (`orca-dict-{hash}-{lang}`, v11, createAllStores) — the create-all upgrade
+ *  (`orca-dict-{hash}-{lang}`, v12, createAllStores) — the create-all upgrade
  *  handler is replicated in case the worker has not opened the DB yet. */
 async function seedDictionary(
   context: BrowserContext,
@@ -102,6 +102,9 @@ async function seedDictionary(
           if (!d.objectStoreNames.contains('langWordStatus')) {
             const s = d.createObjectStore('langWordStatus', { keyPath: 'term' });
             s.createIndex('by_status', 'status', { unique: false });
+          }
+          if (!d.objectStoreNames.contains('langWordTrash')) {
+            d.createObjectStore('langWordTrash', { keyPath: 'term' });
           }
         };
         req.onsuccess = () => resolve(req.result);

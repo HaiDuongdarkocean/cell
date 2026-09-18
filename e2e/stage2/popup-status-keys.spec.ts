@@ -7,7 +7,7 @@ const STREAMFLIX_KEYS = [
   `http://127.0.0.1:${STREAMFLIX_PORT}/`,
   `http://127.0.0.1:${STREAMFLIX_PORT}/index.html`,
 ] as const;
-const DB_SCHEMA_VERSION = 11;
+const DB_SCHEMA_VERSION = 12;
 const WORD_RE = /[A-Za-zÀ-ɏ']+/;
 
 /**
@@ -85,6 +85,9 @@ async function seedDictionary(
           if (!d.objectStoreNames.contains('langWordStatus')) {
             const s = d.createObjectStore('langWordStatus', { keyPath: 'term' });
             s.createIndex('by_status', 'status', { unique: false });
+          }
+          if (!d.objectStoreNames.contains('langWordTrash')) {
+            d.createObjectStore('langWordTrash', { keyPath: 'term' });
           }
         };
         req.onsuccess = () => resolve(req.result);

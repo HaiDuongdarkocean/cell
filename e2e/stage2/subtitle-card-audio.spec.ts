@@ -2,7 +2,7 @@ import { expect, type BrowserContext, type Locator } from '@playwright/test';
 import { test } from '../fixtures/cellEnvironment.fixture';
 
 const SETTINGS_KEY = 'settings';
-const DB_SCHEMA_VERSION = 11;
+const DB_SCHEMA_VERSION = 12;
 
 function makeSettings(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -95,6 +95,9 @@ async function seedDictionary(
           if (!d.objectStoreNames.contains('langWordStatus')) {
             const s = d.createObjectStore('langWordStatus', { keyPath: 'term' });
             s.createIndex('by_status', 'status', { unique: false });
+          }
+          if (!d.objectStoreNames.contains('langWordTrash')) {
+            d.createObjectStore('langWordTrash', { keyPath: 'term' });
           }
         };
         req.onsuccess = () => resolve(req.result);
