@@ -513,9 +513,9 @@ describe('CueList', () => {
   });
 
   describe('cueHeat', () => {
-    const heat = new Map<number, { strange: number; tracking: number }>([
-      [1, { strange: 0, tracking: 0 }],
-      [2, { strange: 4, tracking: 1 }],
+    const heat = new Map<number, { unknown: number; tracking: number }>([
+      [1, { unknown: 0, tracking: 0 }],
+      [2, { unknown: 4, tracking: 1 }],
     ]);
 
     it('renders a heat bar + data-heat band on each mapped cue item', () => {
@@ -532,7 +532,7 @@ describe('CueList', () => {
       expect(bars).toHaveLength(2);
       expect(bars[0].getAttribute('aria-hidden')).toBe('true');
       expect(bars[0].getAttribute('title')).toBe('No new words in level');
-      expect(bars[1].getAttribute('title')).toBe('New words: 4');
+      expect(bars[1].getAttribute('title')).toBe('New words: 5');
     });
 
     it('renders no indicator for cues missing from the map or without the prop', () => {
@@ -541,7 +541,7 @@ describe('CueList', () => {
           cues={sampleCues}
           currentTimeMs={0}
           onSeek={jest.fn()}
-          cueDifficulty={new Map([[1, { strange: 2, tracking: 0 }]])}
+          cueDifficulty={new Map([[1, { unknown: 1, tracking: 0 }]])}
         />,
       );
 
@@ -564,7 +564,7 @@ describe('CueList', () => {
 
       const sr = document.getElementById('cue-heat-sr-2');
       expect(sr).not.toBeNull();
-      expect(sr?.textContent).toBe('New words in cue: 4');
+      expect(sr?.textContent).toBe('New words in cue: 5');
 
       const timestamps = screen.getAllByTestId('cue-timestamp');
       expect(timestamps[0].getAttribute('aria-describedby')).toBe('cue-heat-sr-1');

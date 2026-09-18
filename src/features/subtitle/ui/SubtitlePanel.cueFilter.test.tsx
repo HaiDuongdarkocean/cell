@@ -144,17 +144,17 @@ describe('SubtitlePanel cue filter', () => {
     await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
-    const dense = screen
+    const hasUnknown = screen
       .getAllByRole('menuitemradio')
-      .find((el) => el.textContent?.includes('3+'));
-    fireEvent.click(dense!);
+      .find((el) => el.textContent?.includes('Has new words'));
+    fireEvent.click(hasUnknown!);
 
     await waitFor(() => {
-      expect(screen.getAllByTestId('cue-item')).toHaveLength(1);
+      expect(screen.getAllByTestId('cue-item')).toHaveLength(2);
     });
     const strip = screen.getByTestId('cue-filter-strip');
-    expect(strip.textContent).toContain('1/3');
-    expect(setStorageMock).toHaveBeenCalledWith({ cueFilterMode: 'dense' });
+    expect(strip.textContent).toContain('2/3');
+    expect(setStorageMock).toHaveBeenCalledWith({ cueFilterMode: 'hasUnknown' });
   });
 
   it('reset from the strip restores all cues and hides the strip', async () => {
@@ -181,7 +181,7 @@ describe('SubtitlePanel cue filter', () => {
     fireEvent.click(
       screen
         .getAllByRole('menuitemradio')
-        .find((el) => el.textContent?.includes('Learning'))!,
+        .find((el) => el.textContent?.includes('learning'))!,
     );
 
     await waitFor(() => expect(screen.getByTestId('cue-filter-empty')).toBeInTheDocument());
@@ -193,11 +193,20 @@ describe('SubtitlePanel cue filter', () => {
   });
 
   it('restores a persisted mode on mount', async () => {
-    getStorageMock.mockResolvedValue({ cueFilterMode: 'dense' });
+    getStorageMock.mockResolvedValue({ cueFilterMode: 'i1' });
     renderPanel();
 
     await waitFor(() => expect(screen.getByTestId('cue-filter-strip')).toBeInTheDocument());
     expect(screen.getAllByTestId('cue-item')).toHaveLength(1);
+  });
+
+  it('falls back to all when a removed mode like dense is stored', async () => {
+    getStorageMock.mockResolvedValue({ cueFilterMode: 'dense' });
+    renderPanel();
+
+    await waitFor(() => expect(screen.getByTestId('cue-filter-fab')).toBeInTheDocument());
+    expect(screen.queryByTestId('cue-filter-strip')).toBeNull();
+    expect(screen.getAllByTestId('cue-item')).toHaveLength(3);
   });
 
   it('falls back to all when the stored mode is invalid', async () => {
@@ -241,37 +250,25 @@ describe('SubtitlePanel cue filter', () => {
     await waitFor(() => expect(screen.queryByTestId('cue-filter-fab')).toBeNull());
   });
 
-  it('recomputes counts when the unknown level changes', async () => {
+  it('counts every new word regardless of the unknown level — the badge matches the pills you see', async () => {
     resolveMock.mockImplementation((map) =>
       Promise.resolve({
         map: withStatuses(map),
         meta: resolvedMeta({
           freqUnfiltered: false,
-          rankByTerm: new Map([
-            ['rare', 5],
-            ['words', 5],
-            ['abound', 50_000],
-          ]),
+          rankByTerm: new Map([['abound', 50_000]]),
           thresholds: { core: 2, common: 4, general: 10, advanced: 100_000 },
         }),
       }),
     );
     const original = useStudyModeStore.getState().advanced;
     useStudyModeStore.setState({
-      advanced: { ...original, unknownLevel: 'general' },
+      advanced: { ...original, unknownLevel: 'core' },
     });
     renderPanel();
 
     await waitFor(() =>
-      expect(screen.getByTestId('cue-filter-badge').textContent).toBe('2'),
-    );
-
-    useStudyModeStore.setState({
-      advanced: { ...original, unknownLevel: 'core' },
-    });
-
-    await waitFor(() =>
-      expect(screen.getByTestId('cue-filter-badge').textContent).toBe('0'),
+      expect(screen.getByTestId('cue-filter-badge').textContent).toBe('1'),
     );
 
     useStudyModeStore.setState({ advanced: original });
@@ -303,12 +300,14 @@ describe('SubtitlePanel cue heat', () => {
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
     fireEvent.click(
-      screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('3+'))!,
+      screen
+        .getAllByRole('menuitemradio')
+        .find((el) => el.textContent?.includes('Has new words'))!,
     );
 
-    await waitFor(() => expect(screen.getAllByTestId('cue-item')).toHaveLength(1));
-    expect(heatBands()).toEqual(['dense']);
-    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(1);
+    await waitFor(() => expect(screen.getAllByTestId('cue-item')).toHaveLength(2));
+    expect(heatBands()).toEqual(['i1', 'dense']);
+    expect(document.querySelectorAll('[data-cell-id="cue-heat"]')).toHaveLength(2);
   });
 
   it('renders no heat when tokenize is off, blurred, or in practice mode', async () => {

@@ -7,7 +7,6 @@ const COUNTS: Record<CueFilterMode, number> = {
   i1: 4,
   hasUnknown: 6,
   allKnown: 4,
-  dense: 2,
   tracking: 1,
 };
 
@@ -46,13 +45,13 @@ describe('CueRecommendFab', () => {
     expect(screen.getByTestId('cue-filter-badge').textContent).toBe('99+');
   });
 
-  it('opens a menu with six menuitemradio options and the active mode checked', () => {
+  it('opens a menu with five menuitemradio options and the active mode checked', () => {
     renderFab({ mode: 'i1' });
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
 
     const items = screen.getAllByRole('menuitemradio');
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(5);
     const checked = items.filter((el) => el.getAttribute('aria-checked') === 'true');
     expect(checked).toHaveLength(1);
     expect(checked[0].textContent).toContain('i+1');
@@ -64,11 +63,11 @@ describe('CueRecommendFab', () => {
     const { onModeChange } = renderFab();
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
-    const dense = screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('3+'));
-    expect(dense).toBeDefined();
-    fireEvent.click(dense!);
+    const tracking = screen.getAllByRole('menuitemradio').find((el) => el.textContent?.includes('learning'));
+    expect(tracking).toBeDefined();
+    fireEvent.click(tracking!);
 
-    expect(onModeChange).toHaveBeenCalledWith('dense');
+    expect(onModeChange).toHaveBeenCalledWith('tracking');
     expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0);
     expect(document.activeElement).toBe(screen.getByTestId('cue-filter-fab'));
   });
@@ -77,7 +76,7 @@ describe('CueRecommendFab', () => {
     renderFab();
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
-    expect(screen.getAllByRole('menuitemradio')).toHaveLength(6);
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
@@ -89,14 +88,14 @@ describe('CueRecommendFab', () => {
     renderFab();
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
-    expect(screen.getAllByRole('menuitemradio')).toHaveLength(6);
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(5);
 
     fireEvent.mouseDown(document.body);
     expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0);
   });
 
   it('supports ArrowDown/Enter keyboard selection from the menu', () => {
-    const { onModeChange } = renderFab();
+    const { onModeChange } = renderFab({ mode: 'i1' });
 
     fireEvent.click(screen.getByTestId('cue-filter-fab'));
     const menu = screen.getByRole('menu');
@@ -105,7 +104,7 @@ describe('CueRecommendFab', () => {
     fireEvent.keyDown(menu, { key: 'ArrowDown' });
     fireEvent.keyDown(menu, { key: 'Enter' });
 
-    expect(onModeChange).toHaveBeenCalledWith('hasUnknown');
+    expect(onModeChange).toHaveBeenCalledWith('tracking');
     expect(screen.queryByRole('menu')).toBeNull();
   });
 

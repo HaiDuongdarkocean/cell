@@ -101,9 +101,7 @@ const CueTokenText = memo(function CueTokenText({
           'js-cell-token--word',
           resolving ? 'js-cell-token--resolving' : '',
           `js-cell-token--status-${token.status ?? 'unknown'}`,
-          token.frequencyBand && token.frequencyBand !== 'none'
-            ? `js-cell-token--frequency-${token.frequencyBand}`
-            : '',
+          'js-cell-token--frequency-off',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -309,11 +307,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 <span
                   className={`${styles.heat} ${styles[`heat_${band}`]}`}
                   data-cell-id="cue-heat"
-                  title={t(`cueHeat.tooltip.${band}`, [heat.strange])}
+                  title={t(`cueHeat.tooltip.${band}`, [heat.unknown + heat.tracking])}
                   aria-hidden="true"
                 />
                 <VisuallyHidden id={`cue-heat-sr-${cue.index}`}>
-                  {t('cueHeat.srLabel', [heat.strange])}
+                  {t('cueHeat.srLabel', [heat.unknown + heat.tracking])}
                 </VisuallyHidden>
               </>
             )}

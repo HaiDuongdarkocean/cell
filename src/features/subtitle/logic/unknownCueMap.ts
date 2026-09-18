@@ -77,22 +77,8 @@ function toUnknownMap(
   return map;
 }
 
-function buildRankByTerm(
-  terms: ReadonlySet<string>,
-  freq: FreqContext,
-): ReadonlyMap<string, number | null> {
-  const map = new Map<string, number | null>();
-  for (const term of terms) map.set(term, bestRank(term, freq));
-  return map;
-}
-
-function toBandMap(
-  tokenMap: CueTokens,
-  rankByTerm: ReadonlyMap<string, number | null>,
-  level: UnknownLevel,
-  freq: FreqContext,
-): Map<number, CueDifficulty> {
-  return cueDifficultyMap(tokenMap, rankByTerm, freq.thresholds, level, freq.unfiltered);
+function toBandMap(tokenMap: CueTokens): Map<number, CueDifficulty> {
+  return cueDifficultyMap(tokenMap);
 }
 
 export async function createUnknownCueResolver(
@@ -150,9 +136,8 @@ export async function createUnknownCueResolver(
     }
   }
 
-  const rankByTerm = buildRankByTerm(terms, freq);
   let unknownMap: Map<number, UnknownCueHit> = toUnknownMap(tokenMap, level, freq);
-  let bandMap: Map<number, CueDifficulty> = toBandMap(tokenMap, rankByTerm, level, freq);
+  let bandMap: Map<number, CueDifficulty> = toBandMap(tokenMap);
 
   return {
     probe: (cueIndex) => unknownMap.get(cueIndex) ?? null,
@@ -174,7 +159,7 @@ export async function createUnknownCueResolver(
       if (!changed) return;
       tokenMap = next;
       unknownMap = toUnknownMap(tokenMap, level, freq);
-      bandMap = toBandMap(tokenMap, rankByTerm, level, freq);
+      bandMap = toBandMap(tokenMap);
     },
 
     destroy: () => {

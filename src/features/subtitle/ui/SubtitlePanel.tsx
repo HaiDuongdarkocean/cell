@@ -25,7 +25,6 @@ import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
 import { StudyModeActionBar } from '@/features/studyModes/ui/StudyModeActionBar';
-import { useStudyModeStore } from '@/features/studyModes';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';
 import {
   countByMode,
@@ -133,7 +132,6 @@ function SubtitlePanelImpl({
 
   const scoreSuppressed = Boolean(tokenize?.langCode && languageMatches('zh', tokenize.langCode));
 
-  const unknownLevel = useStudyModeStore((s) => s.advanced.unknownLevel);
   const [filterMode, setFilterMode] = useState<CueFilterMode>('all');
   const [lastGood, setLastGood] = useState<LastGoodResolution | null>(null);
 
@@ -183,14 +181,8 @@ function SubtitlePanelImpl({
 
   const difficulties = useMemo(() => {
     if (!lastGood || lastGood.cueSetKey !== cueSetKey) return null;
-    return cueDifficultyMap(
-      lastGood.tokenMap,
-      lastGood.rankByTerm,
-      lastGood.thresholds,
-      unknownLevel,
-      lastGood.freqUnfiltered,
-    );
-  }, [lastGood, cueSetKey, unknownLevel]);
+    return cueDifficultyMap(lastGood.tokenMap);
+  }, [lastGood, cueSetKey]);
 
   const cueCounts = useMemo(
     () => (difficulties ? countByMode(difficulties) : null),

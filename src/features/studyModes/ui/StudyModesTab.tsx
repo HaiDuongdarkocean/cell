@@ -6,7 +6,6 @@ import { CustomModeBuilder } from './CustomModeBuilder';
 import { PRESETS } from '@/entities/studyMode';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import { formatModeDescription } from '../lib/formatStepSummary';
-import { modeUsesBandProbe } from '../lib/modeUsesBandProbe';
 import styles from './StudyModesTab.module.css';
 
 const SKIP_OPTIONS: StudyModeAdvancedSettings['skipNoDialogue'][] = ['OFF', '2X', '4X', '6X', '8X', 'JUMP'];
@@ -151,11 +150,7 @@ export function StudyModesTab(): ReactElement {
         </section>
 
         {advancedOpen && (
-          <AdvancedSection
-            advanced={store.advanced}
-            modeUsesBandProbe={modeUsesBandProbe(activeMode)}
-            onChange={handleAdvancedChange}
-          />
+          <AdvancedSection advanced={store.advanced} onChange={handleAdvancedChange} />
         )}
       </VStack>
 
@@ -246,11 +241,10 @@ function ModeCard({ mode, selected, onSelect, onEdit, onDelete }: ModeCardProps)
 
 interface AdvancedSectionProps {
   readonly advanced: StudyModeAdvancedSettings;
-  readonly modeUsesBandProbe: boolean;
   readonly onChange: (advanced: StudyModeAdvancedSettings) => void;
 }
 
-function AdvancedSection({ advanced, modeUsesBandProbe, onChange }: AdvancedSectionProps): ReactElement {
+function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactElement {
   return (
     <Card className={styles.advancedCard} data-cell-id="advanced-settings">
       <Heading level={3} size={3} className={styles.sectionHeading}>
@@ -309,13 +303,11 @@ function AdvancedSection({ advanced, modeUsesBandProbe, onChange }: AdvancedSect
             ))}
           </HStack>
         </div>
-        {(advanced.pauseOnUnknown !== 'OFF' || modeUsesBandProbe) && (
+        {advanced.pauseOnUnknown !== 'OFF' && (
           <>
             <div>
               <Text as="p" className={styles.advancedLabel}>
-                {advanced.pauseOnUnknown !== 'OFF'
-                  ? 'Pause on words up to frequency level'
-                  : 'Words up to frequency level count as difficult'}
+                Pause on words up to frequency level
               </Text>
               <HStack
                 gap="2"

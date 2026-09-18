@@ -70,7 +70,7 @@ describe('StudyModesTab', () => {
   });
 });
 
-describe('adaptive level chips', () => {
+describe('level chips', () => {
   const storageGet = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
   beforeAll(() => {
@@ -88,39 +88,7 @@ describe('adaptive level chips', () => {
     storageGet.mockReset().mockResolvedValue({});
   });
 
-  const adaptiveState = {
-    version: 1,
-    activeModeId: 'adaptive',
-    customModes: [],
-    advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'common', popupOnAutoPause: false, popupCloseOnResume: true },
-  };
-
-  it('shows frequency level chips when the adaptive mode is active even with pauseOnUnknown OFF', async () => {
-    storageGet.mockResolvedValue({ studyModes: adaptiveState });
-    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
-    render(<StudyModesTab />);
-
-    await waitFor(() => {
-      expect(useStudyModeStore.getState().activeModeId).toBe('adaptive');
-    });
-    const group = await screen.findByRole('group', { name: 'Unknown word frequency level' });
-    expect(group).toBeInTheDocument();
-    expect(screen.getByText('Words up to frequency level count as difficult')).toBeInTheDocument();
-  });
-
-  it('shows frequency level chips when the i1-replay mode is active', async () => {
-    storageGet.mockResolvedValue({ studyModes: { ...adaptiveState, activeModeId: 'i1-replay' } });
-    useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
-    render(<StudyModesTab />);
-
-    await waitFor(() => {
-      expect(useStudyModeStore.getState().activeModeId).toBe('i1-replay');
-    });
-    const group = await screen.findByRole('group', { name: 'Unknown word frequency level' });
-    expect(group).toBeInTheDocument();
-  });
-
-  it('keeps level chips hidden for non-adaptive modes with pauseOnUnknown OFF', async () => {
+  it('keeps level chips hidden with pauseOnUnknown OFF', async () => {
     useStudyModeStore.setState({ ...INITIAL_STUDY_MODE_STATE, isLoaded: true, advancedOpen: true });
     render(<StudyModesTab />);
 

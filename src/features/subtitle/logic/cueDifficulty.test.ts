@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Token, CueListTokenMap } from '@/features/tokenize';
-import type { FrequencyBandThresholds } from '@/shared/lib/frequencyBand';
 import {
   CUE_FILTER_MODES,
   countByMode,
@@ -10,13 +9,6 @@ import {
   isCueFilterMode,
   type CueDifficulty,
 } from './cueDifficulty';
-
-const THRESHOLDS: FrequencyBandThresholds = {
-  core: 10,
-  common: 20,
-  general: 30,
-  advanced: 40,
-};
 
 function token(
   term: string,
@@ -39,100 +31,60 @@ function cueMap(entries: Record<number, Token[]>): CueListTokenMap {
   return new Map(Object.entries(entries).map(([k, v]) => [Number(k), v]));
 }
 
-function ranks(entries: Record<string, number | null>): ReadonlyMap<string, number | null> {
-  return new Map(Object.entries(entries));
-}
-
 describe('cueDifficultyMap', () => {
-  it('counts unknown and tracking tokens within the level rank gate', () => {
-    const map = cueMap({
-      1: [token('cat', 'unknown'), token('dog', 'tracking'), token('hat', 'known')],
-    });
-    const rankByTerm = ranks({ cat: 5, dog: 15, hat: 5 });
-
-    const d = cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'common', false).get(1);
-
-    expect(d).toEqual({ strange: 2, tracking: 1 });
-  });
-
-  it('gates by the selected level threshold', () => {
-    const map = cueMap({ 1: [token('cat', 'unknown')] });
-    const rankByTerm = ranks({ cat: 15 });
-
-    expect(cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'core', false).get(1)?.strange).toBe(0);
-    expect(cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'common', false).get(1)?.strange).toBe(1);
-    expect(cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'general', false).get(1)?.strange).toBe(1);
-    expect(cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'advanced', false).get(1)?.strange).toBe(1);
-  });
-
-  it('excludes rank 0, null, and missing terms', () => {
-    const map = cueMap({
-      1: [token('zero', 'unknown'), token('none', 'unknown'), token('gone', 'tracking')],
-    });
-    const rankByTerm = ranks({ zero: 0, none: null });
-
-    const d = cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'advanced', false).get(1);
-
-    expect(d).toEqual({ strange: 0, tracking: 0 });
-  });
-
-  it('counts every unknown/tracking token when freqUnfiltered', () => {
+  it('counts every unknown and tracking token — what you see is what counts', () => {
     const map = cueMap({
       1: [token('cat', 'unknown'), token('dog', 'tracking'), token('hat', 'known')],
     });
 
-    const d = cueDifficultyMap(map, ranks({}), THRESHOLDS, 'core', true).get(1);
+    expect(cueDifficultyMap(map).get(1)).toEqual({ unknown: 1, tracking: 1 });
+  });
 
-    expect(d).toEqual({ strange: 2, tracking: 1 });
+  it('counts words without frequency data — an unranked word is still a new word', () => {
+    const map = cueMap({
+      1: [
+        { ...token('rare', 'unknown'), frequencyBand: 'rare' },
+        token('gone', 'tracking'),
+        token('ok', 'known'),
+      ],
+    });
+
+    expect(cueDifficultyMap(map).get(1)).toEqual({ unknown: 1, tracking: 1 });
   });
 
   it('skips separators and tokens without a resolved status', () => {
     const map = cueMap({
       1: [token(' ', 'unknown', true), token('word', undefined), token('cat', 'unknown')],
     });
-    const rankByTerm = ranks({ cat: 5, word: 5 });
 
-    const d = cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'common', false).get(1);
-
-    expect(d).toEqual({ strange: 1, tracking: 0 });
+    expect(cueDifficultyMap(map).get(1)).toEqual({ unknown: 1, tracking: 0 });
   });
 
-  it('divergence: a term absent from enabled resources is not counted even though frequencyBand may show a band', () => {
-    const map = cueMap({ 1: [{ ...token('rare', 'unknown'), frequencyBand: 'common' }] });
-    const rankByTerm = ranks({});
+  it('produces an entry per cue including empty cues', () => {
+    const map = cueMap({ 1: [], 2: [token('cat', 'ignore')] });
 
-    const d = cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'advanced', false).get(1);
-
-    expect(d).toEqual({ strange: 0, tracking: 0 });
-  });
-
-  it('counts tracking only when the token also passes the rank gate', () => {
-    const map = cueMap({
-      1: [token('near', 'tracking'), token('far', 'tracking'), token('way', 'unknown')],
-    });
-    const rankByTerm = ranks({ near: 5, far: 99, way: 5 });
-
-    const d = cueDifficultyMap(map, rankByTerm, THRESHOLDS, 'common', false).get(1);
-
-    expect(d).toEqual({ strange: 2, tracking: 1 });
+    expect(cueDifficultyMap(map).get(1)).toEqual({ unknown: 0, tracking: 0 });
+    expect(cueDifficultyMap(map).get(2)).toEqual({ unknown: 0, tracking: 0 });
   });
 });
 
 describe('cueMatchesMode', () => {
   const cases: [CueDifficulty, Parameters<typeof cueMatchesMode>[1], boolean][] = [
-    [{ strange: 0, tracking: 0 }, 'all', true],
-    [{ strange: 1, tracking: 0 }, 'i1', true],
-    [{ strange: 2, tracking: 2 }, 'i1', true],
-    [{ strange: 3, tracking: 0 }, 'i1', false],
-    [{ strange: 0, tracking: 0 }, 'i1', false],
-    [{ strange: 1, tracking: 0 }, 'hasUnknown', true],
-    [{ strange: 0, tracking: 0 }, 'hasUnknown', false],
-    [{ strange: 0, tracking: 0 }, 'allKnown', true],
-    [{ strange: 1, tracking: 0 }, 'allKnown', false],
-    [{ strange: 3, tracking: 0 }, 'dense', true],
-    [{ strange: 2, tracking: 0 }, 'dense', false],
-    [{ strange: 1, tracking: 1 }, 'tracking', true],
-    [{ strange: 1, tracking: 0 }, 'tracking', false],
+    [{ unknown: 0, tracking: 0 }, 'all', true],
+    [{ unknown: 1, tracking: 0 }, 'i1', true],
+    [{ unknown: 1, tracking: 2 }, 'i1', false],
+    [{ unknown: 2, tracking: 0 }, 'i1', false],
+    [{ unknown: 0, tracking: 1 }, 'i1', false],
+    [{ unknown: 0, tracking: 0 }, 'i1', false],
+    [{ unknown: 1, tracking: 0 }, 'hasUnknown', true],
+    [{ unknown: 0, tracking: 1 }, 'hasUnknown', false],
+    [{ unknown: 0, tracking: 0 }, 'hasUnknown', false],
+    [{ unknown: 0, tracking: 0 }, 'allKnown', true],
+    [{ unknown: 0, tracking: 1 }, 'allKnown', false],
+    [{ unknown: 1, tracking: 0 }, 'allKnown', false],
+    [{ unknown: 1, tracking: 1 }, 'tracking', true],
+    [{ unknown: 0, tracking: 1 }, 'tracking', true],
+    [{ unknown: 1, tracking: 0 }, 'tracking', false],
   ];
 
   it.each(cases)('%o matches %s → %s', (d, mode, expected) => {
@@ -143,37 +95,37 @@ describe('cueMatchesMode', () => {
 describe('countByMode', () => {
   it('counts every mode in one pass', () => {
     const difficulties = new Map<number, CueDifficulty>([
-      [1, { strange: 0, tracking: 0 }],
-      [2, { strange: 1, tracking: 0 }],
-      [3, { strange: 2, tracking: 1 }],
-      [4, { strange: 4, tracking: 1 }],
+      [1, { unknown: 0, tracking: 0 }],
+      [2, { unknown: 1, tracking: 0 }],
+      [3, { unknown: 2, tracking: 1 }],
+      [4, { unknown: 4, tracking: 1 }],
     ]);
 
     expect(countByMode(difficulties)).toEqual({
       all: 4,
-      i1: 2,
+      i1: 1,
       hasUnknown: 3,
       allKnown: 1,
-      dense: 1,
       tracking: 2,
     });
   });
 });
 
 describe('cueHeatBand', () => {
-  it('maps strange counts to bands at boundaries', () => {
-    expect(cueHeatBand({ strange: 0, tracking: 0 })).toBe('easy');
-    expect(cueHeatBand({ strange: 1, tracking: 0 })).toBe('i1');
-    expect(cueHeatBand({ strange: 2, tracking: 0 })).toBe('i1');
-    expect(cueHeatBand({ strange: 3, tracking: 0 })).toBe('dense');
-    expect(cueHeatBand({ strange: 10, tracking: 4 })).toBe('dense');
+  it('maps counts to bands — i1 means exactly one unknown and nothing else learnable', () => {
+    expect(cueHeatBand({ unknown: 0, tracking: 0 })).toBe('easy');
+    expect(cueHeatBand({ unknown: 1, tracking: 0 })).toBe('i1');
+    expect(cueHeatBand({ unknown: 2, tracking: 0 })).toBe('dense');
+    expect(cueHeatBand({ unknown: 1, tracking: 1 })).toBe('dense');
+    expect(cueHeatBand({ unknown: 0, tracking: 1 })).toBe('dense');
+    expect(cueHeatBand({ unknown: 10, tracking: 4 })).toBe('dense');
   });
 });
 
 describe('isCueFilterMode', () => {
   it('accepts known modes and rejects anything else', () => {
     for (const mode of CUE_FILTER_MODES) expect(isCueFilterMode(mode)).toBe(true);
-    for (const bad of ['xyz', '', 'I1', 0, null, undefined, {}]) {
+    for (const bad of ['xyz', '', 'I1', 'dense', 0, null, undefined, {}]) {
       expect(isCueFilterMode(bad)).toBe(false);
     }
   });

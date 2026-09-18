@@ -23,6 +23,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.menuSurface.menuSurface {
+  border-radius: var(--radius-md);
+}
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -37,6 +41,7 @@
   padding: var(--space-2) var(--space-2-5);
   border-radius: var(--radius-sm);
   cursor: pointer;
+  color: var(--color-text);
   font-size: var(--font-size-sm);
   min-height: var(--touch-target);
   transition: background var(--duration-fast) var(--ease-in-out), color var(--duration-fast) var(--ease-in-out);
@@ -61,7 +66,4 @@
   font-variant-numeric: tabular-nums;
 }
 
-.itemCheck {
-  flex-shrink: 0;
-  color: var(--color-primary);
-}
+

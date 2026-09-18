@@ -16,7 +16,6 @@ const MODE_LABEL_KEY: Record<CueFilterMode, MessageKey> = {
   i1: 'cueFilter.mode.i1',
   hasUnknown: 'cueFilter.mode.hasUnknown',
   allKnown: 'cueFilter.mode.allKnown',
-  dense: 'cueFilter.mode.dense',
   tracking: 'cueFilter.mode.tracking',
 };
 
@@ -150,7 +149,7 @@ export function CueRecommendFab({
       <span className={styles.badge} aria-hidden="true" data-cell-id="cue-filter-badge">
         {badgeText}
       </span>
-      <Popover open={isOpen} triggerRef={triggerRef} menuAlign="right">
+      <Popover open={isOpen} triggerRef={triggerRef} menuAlign="right" className={styles.menuSurface}>
         <div
           ref={menuRef}
           className={styles.menu}
@@ -180,7 +179,6 @@ export function CueRecommendFab({
             >
               <span className={styles.itemLabel}>{cueFilterModeLabel(m)}</span>
               <span className={styles.itemCount}>{counts[m]}</span>
-              {m === mode && <Icon name="check" className={styles.itemCheck} aria-hidden="true" />}
             </div>
           ))}
         </div>
