@@ -3,6 +3,11 @@ import {
   MGR_OPENED_MSG, MGR_CLOSED_MSG,
 } from './iframeManagerBridgeTypes';
 import type { SerializedManagerState, ManagerAction } from './iframeManagerBridgeTypes';
+import {
+  isIframeContentWindow,
+  isResolvableHttpOrigin,
+  resolveIframeOrigin,
+} from '@/shared/lib/dom/frameOrigin';
 
 interface HostSheetCallbacks {
   onOpen: (state: SerializedManagerState, frameSrc: string) => void;
@@ -20,9 +25,7 @@ export function setHostSheetCallbacks(cbs: HostSheetCallbacks): void {
 function findIframeByOrigin(origin: string): HTMLIFrameElement | null {
   const iframes = document.querySelectorAll('iframe');
   for (const iframe of iframes) {
-    try {
-      if (new URL(iframe.src).origin === origin) return iframe;
-    } catch { /* skip invalid src */ }
+    if (resolveIframeOrigin(iframe) === origin) return iframe;
   }
   return null;
 }
@@ -37,7 +40,7 @@ function postToIframe(origin: string, message: Record<string, unknown>): void {
   const iframe = findIframeByOrigin(origin);
   if (!iframe?.contentWindow) return;
   try {
-    iframe.contentWindow.postMessage(message, '*');
+    iframe.contentWindow.postMessage(message, origin);
   } catch { /* cross-origin — best effort */ }
 }
 
@@ -68,13 +71,29 @@ export function installManagerSheetBridge(): () => void {
     const data = e.data;
     if (!data?.type) return;
 
-    // Validate origin — must match an iframe on the page
+    // The sender must be an iframe actually present in the document — drops
+    // forged posts from the top window itself or detached/opaque frames.
+    if (!isIframeContentWindow(e.source as Window | null)) return;
+
+    // Origin must be a resolvable http(s) origin AND match an iframe on the
+    // page — 'null' (opaque/sandboxed) and foreign origins fail closed.
+    if (!isResolvableHttpOrigin(e.origin)) return;
     if (!hasIframeWithOrigin(e.origin)) return;
+
+    // Corroborate self-reported frameSrc against the real event origin —
+    // a hostile embed can pass hasIframeWithOrigin but must not lie about
+    // which frame it speaks for.
+    const frameSrc = data.frameSrc as string | undefined;
+    if (typeof frameSrc === 'string') {
+      try {
+        if (new URL(frameSrc).origin !== e.origin) return;
+      } catch { return; }
+    }
 
     switch (data.type) {
       case MGR_OPEN_MSG: {
         if (callbacks?.onOpen) {
-          callbacks.onOpen(data.state as SerializedManagerState, data.frameSrc as string);
+          callbacks.onOpen(data.state as SerializedManagerState, frameSrc as string);
         }
         // Acknowledge
         postToIframe(e.origin, { type: MGR_OPENED_MSG, ok: true });
@@ -82,13 +101,13 @@ export function installManagerSheetBridge(): () => void {
       }
       case MGR_STATE_MSG: {
         if (callbacks?.onStateUpdate) {
-          callbacks.onStateUpdate(data.state as Partial<SerializedManagerState>, data.frameSrc as string);
+          callbacks.onStateUpdate(data.state as Partial<SerializedManagerState>, frameSrc as string);
         }
         break;
       }
       case MGR_CLOSED_MSG: {
         if (callbacks?.onClose) {
-          callbacks.onClose(data.frameSrc as string);
+          callbacks.onClose(frameSrc as string);
         }
         break;
       }

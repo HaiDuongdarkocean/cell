@@ -1,11 +1,8 @@
-declare const __CELL_DEBUG__: string;
-
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
-export function isCellDebug(): boolean {
-  return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
-}
+export { isCellDebug } from '@/shared/lib/cellDebug';
+import { isCellDebug } from '@/shared/lib/cellDebug';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
 // cannot see this because ISOLATED world globals are not shared with MAIN).

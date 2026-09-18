@@ -86,6 +86,18 @@
     return null;
   }
 
+  function resolveParentOrigin(): string | undefined {
+    try {
+      const ancestor = window.location.ancestorOrigins?.[0];
+      if (ancestor && /^https?:/.test(ancestor)) return ancestor;
+    } catch { /* restricted */ }
+    try {
+      const referrer = new URL(document.referrer).origin;
+      if (/^https?:/.test(referrer)) return referrer;
+    } catch { /* empty/invalid */ }
+    return undefined;
+  }
+
   function postDiscovery(signal: object): void {
     try {
       window.postMessage(
@@ -98,9 +110,11 @@
       // load too quickly for their own content script to register before the
       // player state is set, or anti-bot frames block child-frame injection).
       if (window.parent && window.parent !== window) {
+        const parentOrigin = resolveParentOrigin();
+        if (!parentOrigin) return;
         window.parent.postMessage(
           { type: '__CELL_SUBTITLE_DISCOVERY', signal },
-          '*',
+          parentOrigin,
         );
       }
     } catch {
@@ -150,7 +164,7 @@
       })();
       const initiator = (() => {
         try {
-          return window.location.href;
+          return window.location.origin;
         } catch {
           return '';
         }
@@ -172,6 +186,14 @@
   }
 
   function scanTracks(node: Document | Element): void {
+    if (
+      node instanceof Element &&
+      node.tagName === 'TRACK' &&
+      node.getAttribute('src')
+    ) {
+      void fetchTrackBody(node.getAttribute('src')!);
+      return;
+    }
     const tracks = node.querySelectorAll?.('track[src]');
     if (!tracks) return;
     for (const track of tracks) {

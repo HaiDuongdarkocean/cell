@@ -1,8 +1,9 @@
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { cacheSubtitleBody } from '@/features/subtitle';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { SubtitleSignal } from '@/features/detection/subtitleDiscovery';
+import { subtitleSignalSchema } from '@/features/detection/subtitleDiscovery';
 import { isCellDebug } from './debugLog';
+import { isResolvableHttpOrigin } from '@/shared/lib/dom/frameOrigin';
 
 // Dedup state for the MAIN-world re-post handshakes (ADR-020/028/029). The
 // MAIN world re-posts the same video's tracks when it receives the readiness
@@ -35,31 +36,39 @@ export function postSiteReadyHandshakes(csInjectTime: number): void {
 export function installMainWorldBridge(): void {
   window.addEventListener('message', (event) => {
     const dataEarly = event.data as { type?: string } | null;
-    // === Subtitle discovery relay from cross-origin player iframe ===
-    // MAIN-world scripts inside player iframes (playembed.vip, vidnest, etc.)
-    // post discovery signals to window.parent. The parent frame cannot read
-    // the iframe DOM, but it can relay the observed signal to the background
-    // discovery pipeline. The signal carries its own origin/initiator so the
-    // adapter can match it to the correct player profile.
-    if (dataEarly?.type === '__CELL_SUBTITLE_DISCOVERY' && event.source !== window) {
+    // === Subtitle discovery relay (same-window MAIN-world + cross-origin iframe) ===
+    // MAIN-world scripts post discovery signals to their own window; player
+    // iframes (playembed.vip, vidnest, etc.) also post to window.parent.
+    // Both paths are untrusted: validate the signal schema and take the origin
+    // from event.origin (browser-enforced), never the self-reported fields.
+    if (dataEarly?.type === '__CELL_SUBTITLE_DISCOVERY') {
       try {
-        const signal = (event.data as { signal: SubtitleSignal }).signal;
-        if (signal) {
-          if (signal.kind === 'network-response' && signal.body) {
-            cacheSubtitleBody(signal.url, signal.body);
-          }
-          if (isCellDebug()) {
-            const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log');
-            const arr: unknown[] = raw ? JSON.parse(raw) : [];
-            arr.push({ t: Date.now(), kind: signal.kind, origin: (signal as { origin?: string }).origin });
-            if (arr.length > 200) arr.splice(0, arr.length - 200);
-            document.documentElement.setAttribute('data-cell-iframe-discovery-log', JSON.stringify(arr));
-          }
-          void sendMessage({
-            type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
-            payload: { origin: location.origin, signal },
-          }).catch((e) => console.warn('[content-script] cross-origin discovery relay error', e));
+        if (!isResolvableHttpOrigin(event.origin)) return;
+        const parsed = subtitleSignalSchema.safeParse(
+          (event.data as { signal?: unknown }).signal,
+        );
+        if (!parsed.success) return;
+        const signal = parsed.data;
+        const trustedOrigin = event.origin;
+        if (signal.kind === 'player-state') signal.origin = trustedOrigin;
+        signal.initiator = trustedOrigin;
+        if (signal.kind === 'network-response' && signal.body) {
+          cacheSubtitleBody(signal.url, signal.body);
         }
+        if (isCellDebug() && event.source !== window) {
+          const raw = document.documentElement.getAttribute('data-cell-iframe-discovery-log');
+          const arr: unknown[] = raw ? JSON.parse(raw) : [];
+          arr.push({ t: Date.now(), kind: signal.kind, origin: trustedOrigin });
+          if (arr.length > 200) arr.splice(0, arr.length - 200);
+          document.documentElement.setAttribute('data-cell-iframe-discovery-log', JSON.stringify(arr));
+        }
+        const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        void sendMessage({
+          type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+          payload: { nonce, origin: trustedOrigin, signal },
+        }).catch((e) => console.warn('[content-script] discovery relay error', e));
       } catch { /* best effort */ }
       return;
     }
@@ -132,26 +141,6 @@ export function installMainWorldBridge(): void {
         },
       });
     }
-    // === Generic subtitle-list discovery bridge (MAIN-world → background) ===
-    if (data?.type === '__CELL_SUBTITLE_DISCOVERY' && (data as { signal?: unknown }).signal) {
-      const signal = (data as { signal: SubtitleSignal }).signal;
-      if (signal.kind === 'network-response' && signal.body) {
-        cacheSubtitleBody(signal.url, signal.body);
-      }
-      const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      void sendMessage({
-        type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
-        payload: {
-          nonce,
-          origin: location.origin,
-          signal,
-        },
-      }).catch((e) => console.error('[content-script] SUBTITLE_DISCOVERY_SIGNAL bg error', e));
-      return;
-    }
-
     // === iQIYI MAIN-world bridge (ADR-028) ===
     // iqiyi-main-world.iife.ts reads `window.playerObject.stl` (MAIN world only)
     // and posts subtitle tracks. Relay to background as DETECTED_SUBTITLES with

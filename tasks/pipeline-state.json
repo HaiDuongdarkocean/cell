@@ -1,5 +1,5 @@
 {
-  "active": "debug-seam-hardening",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -49,18 +49,41 @@
       "updated": "2026-09-18T17:58:08.260Z"
     },
     "debug-seam-hardening": {
-      "stage": "analyze",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "no",
       "artifacts": {
-        "intent": "docs/intent/debug-seam-hardening.md"
+        "intent": "docs/intent/debug-seam-hardening.md",
+        "spec": "docs/specs/debug-seam-hardening.md",
+        "plan": "tasks/plan-debug-seam-hardening.md"
       },
-      "gates": {},
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-18T20:33:13.093Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-18T20:33:13.240Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-18T20:33:13.160Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-18T20:33:13.313Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-18T20:33:13.390Z"
+        }
+      },
       "confidence": "medium",
       "awaiting": null,
       "resolutions": [],
       "loops": 0,
-      "updated": "2026-09-18T17:32:06.919Z"
+      "updated": "2026-09-18T20:34:42.791Z"
     }
   }
 }

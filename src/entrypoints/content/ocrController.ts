@@ -6,6 +6,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
+import { isCellDebug } from '@/shared/lib/cellDebug';
 import type { MessageResponse } from '@/entities/message';
 import { OCR_DEFAULT_ENGINE_KEY } from '@/features/ocr/engine/types';
 import type { OcrBackend, OcrLanguageMode, ImageSource, OcrResult } from '@/features/ocr/engine/types';
@@ -27,20 +28,22 @@ export class OcrController {
   async init(languageMode: OcrLanguageMode = 'auto', backend: OcrBackend = 'webgpu', engineKey?: string): Promise<OcrInitResult> {
     const key = engineKey ?? OCR_DEFAULT_ENGINE_KEY;
     try {
-      document.body.dataset.ocrInitStep = 'a-before-send';
+      if (isCellDebug()) document.body.dataset.ocrInitStep = 'a-before-send';
       const msg = {
         type: MESSAGE_TYPES.OCR_INIT,
         payload: { languageMode, backend, ...(engineKey !== undefined ? { engineKey } : {}) },
       };
-      document.body.dataset.ocrInitStep = 'b-msg-built';
+      if (isCellDebug()) document.body.dataset.ocrInitStep = 'b-msg-built';
       const sendPromise = sendMessage<MessageResponse<OcrInitResult> | OcrInitResult>(msg);
-      document.body.dataset.ocrInitStep = 'c-send-returned-' + (typeof sendPromise?.then === 'function' ? 'promise' : 'non-promise');
+      if (isCellDebug()) document.body.dataset.ocrInitStep = 'c-send-returned-' + (typeof sendPromise?.then === 'function' ? 'promise' : 'non-promise');
       const response = await Promise.race([
         sendPromise,
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('OCR_INIT timeout (180s) — model download from Baidu CDN may be slow')), 180000)),
       ]);
-      document.body.dataset.ocrInitStep = 'd-race-resolved';
-      document.body.dataset.ocrBgResponse = JSON.stringify(response) ?? 'undefined_response';
+      if (isCellDebug()) {
+        document.body.dataset.ocrInitStep = 'd-race-resolved';
+        document.body.dataset.ocrBgResponse = JSON.stringify(response) ?? 'undefined_response';
+      }
       // Handle both response formats:
       // - Background wrapper: { success: true, data: { status: 'ready', backend: 'wasm' } }
       // - Direct offscreen: { status: 'ready', backend: 'wasm' }
@@ -56,7 +59,7 @@ export class OcrController {
       const error = isWrapper ? (response.error ?? data?.error ?? 'Init failed') : (data?.error ?? 'Init failed');
       return { status: 'error', backend: 'wasm', error };
     } catch (e) {
-      document.body.dataset.ocrBgException = String(e);
+      if (isCellDebug()) document.body.dataset.ocrBgException = String(e);
       this.initializedKeys.delete(key);
       return { status: 'error', backend: 'wasm', error: String(e) };
     }
@@ -88,16 +91,18 @@ export class OcrController {
       if (!response?.success && response?.error) throw new Error(response.error);
       const results = response?.data?.results ?? response?.results ?? [];
       const tDone = performance.now();
-      (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings = JSON.stringify({
-        pixels: image.width * image.height,
-        serializeMs: Math.round(tSerialize - t0),
-        roundtripMs: Math.round(tRoundtrip - tSerialize),
-        parseMs: Math.round(tDone - tRoundtrip),
-        totalMs: Math.round(tDone - t0),
-      });
+      if (isCellDebug()) {
+        (globalThis as { __ocrCtrlTimings?: string }).__ocrCtrlTimings = JSON.stringify({
+          pixels: image.width * image.height,
+          serializeMs: Math.round(tSerialize - t0),
+          roundtripMs: Math.round(tRoundtrip - tSerialize),
+          parseMs: Math.round(tDone - tRoundtrip),
+          totalMs: Math.round(tDone - t0),
+        });
+      }
       return results;
     } catch (e) {
-      document.body.dataset.ocrRecognizeError = String(e)?.slice(0, 200);
+      if (isCellDebug()) document.body.dataset.ocrRecognizeError = String(e)?.slice(0, 200);
       throw e;
     }
   }

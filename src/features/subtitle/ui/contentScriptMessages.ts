@@ -18,11 +18,8 @@ import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload } from '@/entities/message';
 
-declare const __CELL_DEBUG__: string;
-
-function cellDebug(): boolean {
-  return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
-}
+import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
+import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 
 export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
   onRuntimeMessage: (msg: unknown, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => boolean | void;
@@ -178,15 +175,20 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
 
       // Debug: notify the top frame that this iframe's controller received the
       // auto-load message. Helps verify broadcast-to-all-frames on moviepire.
-      try {
-        window.parent.postMessage({
-          type: '__CELL_AUTOLOAD_HANDLED',
-          href: location.href,
-          target: payload?.target?.url,
-          native: payload?.native?.url,
-        }, window.location.origin);
-      } catch {
-        // cross-origin parent may be unavailable in some embed contexts.
+      if (cellDebug()) {
+        const parentOrigin = resolveParentFrameOrigin();
+        if (parentOrigin) {
+          try {
+            window.parent.postMessage({
+              type: '__CELL_AUTOLOAD_HANDLED',
+              href: location.href,
+              target: payload?.target?.url,
+              native: payload?.native?.url,
+            }, parentOrigin);
+          } catch {
+            // cross-origin parent may be unavailable in some embed contexts.
+          }
+        }
       }
 
       // SPA navigation: URL changed → clear the previous video's cues before

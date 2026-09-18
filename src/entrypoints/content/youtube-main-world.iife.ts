@@ -24,7 +24,13 @@
 // Ceiling: if YouTube blocks ANDROID client or renames `ytcfg`, detection
 // fails silently. Upgrade: try IOS client as fallback (also returns tracks
 // without PO Token — verified 2026-07-04).
+declare const __CELL_DEBUG__: string | undefined;
+
 (() => {
+  function isDebug(): boolean {
+    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+  }
+
   // Marker for injection verification (visible from DevTools evaluate_script).
   (window as unknown as Record<string, unknown>).__YT_MAIN_WORLD_INJECTED = true;
 
@@ -125,7 +131,7 @@
     repostCount: 0,
     postTime: -1,
   };
-  (window as unknown as Record<string, unknown>).__YT_DEBUG = debug;
+  if (isDebug()) (window as unknown as Record<string, unknown>).__YT_DEBUG = debug;
 
   // Split View size bridge (mirrors Netflix __NF_SEEK / __NF_PLAY).
   // Isolated world cannot call #movie_player.setSize — YouTube player lives

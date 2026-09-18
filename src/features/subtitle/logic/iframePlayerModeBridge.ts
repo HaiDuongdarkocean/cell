@@ -2,6 +2,7 @@ import { handleShortcutKey, isEditableEvent } from '@/features/subtitle/ui/subti
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { isChildFrame } from '@/shared/lib/dom/isChildFrame';
+import { isResolvableHttpOrigin, resolveParentFrameOrigin, resolveIframeOrigin, isIframeContentWindow } from '@/shared/lib/dom/frameOrigin';
 
 export { isChildFrame };
 
@@ -175,11 +176,11 @@ async function exitTopFramePlayerMode(): Promise<boolean> {
 }
 
 /** Notify the child frame that top-frame Player Mode entered/exited. */
-function notifyChild(entered: boolean, childSource: Window): void {
+function notifyChild(entered: boolean, childSource: Window, childOrigin: string): void {
   try {
     childSource.postMessage(
       { type: entered ? ENTERED_MSG : EXITED_MSG },
-      '*',
+      childOrigin,
     );
   } catch { /* cross-origin — best effort */ }
 }
@@ -191,10 +192,12 @@ function notifyChild(entered: boolean, childSource: Window): void {
 function notifyChildByIframe(entered: boolean): void {
   const iframe = topState?.host?.querySelector('iframe')
     ?? document.querySelector('iframe');
+  const targetOrigin = resolveIframeOrigin(iframe);
+  if (!targetOrigin) return;
   try {
     iframe?.contentWindow?.postMessage(
       { type: entered ? ENTERED_MSG : EXITED_MSG },
-      '*',
+      targetOrigin,
     );
   } catch { /* cross-origin — best effort */ }
 }
@@ -218,6 +221,16 @@ export async function toggleTopFramePlayerMode(): Promise<void> {
   }
 }
 
+/** True when a frameSrc self-report corroborates the event's real origin. */
+function frameSrcMatchesOrigin(frameSrc: unknown, origin: string): boolean {
+  if (typeof frameSrc !== 'string' || !isResolvableHttpOrigin(origin)) return false;
+  try {
+    return new URL(frameSrc).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Install the top-frame listener. Call once at content-script init in the top
  * frame. Returns a cleanup function. Safe to call in child frames (no-op).
@@ -229,15 +242,18 @@ export function installIframePlayerModeBridge(): () => void {
     const data = e.data;
     if (!data || typeof data !== 'object') return;
     const childSource = e.source as Window | null;
-    if (!childSource) return;
+    if (!isIframeContentWindow(childSource)) return;
+    if (!isResolvableHttpOrigin(e.origin)) return;
 
     if (data.type === ENTER_MSG && typeof data.frameSrc === 'string') {
+      if (!frameSrcMatchesOrigin(data.frameSrc, e.origin)) return;
       void enterTopFramePlayerMode(data.frameSrc).then((ok) => {
-        if (ok) notifyChild(true, childSource);
+        if (ok) notifyChild(true, childSource, e.origin);
       });
     } else if (data.type === EXIT_MSG) {
+      if (!frameSrcMatchesOrigin(data.frameSrc, e.origin)) return;
       void exitTopFramePlayerMode().then((ok) => {
-        if (ok) notifyChild(false, childSource);
+        if (ok) notifyChild(false, childSource, e.origin);
       });
     }
   };
@@ -291,20 +307,26 @@ export function installIframePlayerModeBridge(): () => void {
  */
 export function requestIframePlayerModeEnter(timeoutMs = 2000): Promise<boolean> {
   if (!isChildFrame()) return Promise.resolve(false);
+  const parentOrigin = resolveParentFrameOrigin();
   return new Promise((resolve) => {
     let settled = false;
     const onMessage = (e: MessageEvent): void => {
-      if (e.data?.type === ENTERED_MSG && !settled) {
+      if (e.data?.type === ENTERED_MSG && e.origin === parentOrigin && !settled) {
         settled = true;
         window.removeEventListener('message', onMessage);
         resolve(true);
       }
     };
     window.addEventListener('message', onMessage);
+    if (!parentOrigin) {
+      window.removeEventListener('message', onMessage);
+      resolve(false);
+      return;
+    }
     try {
       window.parent.postMessage(
-        { type: ENTER_MSG, frameSrc: window.location.href },
-        '*',
+        { type: ENTER_MSG, frameSrc: window.location.origin + window.location.pathname },
+        parentOrigin,
       );
     } catch {
       window.removeEventListener('message', onMessage);
@@ -327,10 +349,12 @@ export function requestIframePlayerModeEnter(timeoutMs = 2000): Promise<boolean>
  */
 export function requestIframePlayerModeExit(): void {
   if (!isChildFrame()) return;
+  const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return;
   try {
     window.parent.postMessage(
-      { type: EXIT_MSG, frameSrc: window.location.href },
-      '*',
+      { type: EXIT_MSG, frameSrc: window.location.origin + window.location.pathname },
+      parentOrigin,
     );
   } catch { /* cross-origin — best effort */ }
 }

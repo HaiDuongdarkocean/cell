@@ -186,7 +186,7 @@ declare const __CELL_DEBUG__: string;
                 post('__DETECTED_SUBTITLE_FETCH', { url });
                 const initiator = (() => {
                   try {
-                    return window.location.href;
+                    return window.location.origin;
                   } catch {
                     return '';
                   }
@@ -235,7 +235,7 @@ declare const __CELL_DEBUG__: string;
               const body = decoder.decode(slice);
               const initiator = (() => {
                 try {
-                  return window.location.href;
+                  return window.location.origin;
                 } catch {
                   return '';
                 }

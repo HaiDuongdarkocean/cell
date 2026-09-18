@@ -32,6 +32,13 @@ jest.mock('@/features/subtitle', () => ({
   broadcastCues: jest.fn(),
 }));
 
+jest.mock('@/shared/lib/dom/frameOrigin', () => ({
+  resolveParentFrameOrigin: jest.fn(() => 'https://parent.example'),
+  isResolvableHttpOrigin: jest.requireActual<
+    typeof import('@/shared/lib/dom/frameOrigin')
+  >('@/shared/lib/dom/frameOrigin').isResolvableHttpOrigin,
+}));
+
 function createCtx(): ContentScriptContext {
   let lastAutoLoadUrl: string | undefined;
   let lastAutoLoadKey: string | undefined;
@@ -95,7 +102,8 @@ describe('createContentScriptMessageHandlers AUTO_LOAD_SUBTITLES', () => {
     jest.restoreAllMocks();
   });
 
-  it('posts __CELL_AUTOLOAD_HANDLED to the parent at window.location.origin', () => {
+  it('posts __CELL_AUTOLOAD_HANDLED to the resolved parent origin when debug is on', () => {
+    (globalThis as Record<string, unknown>).__CELL_DEBUG__ = 'true';
     const postSpy = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
     const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
 
@@ -109,8 +117,18 @@ describe('createContentScriptMessageHandlers AUTO_LOAD_SUBTITLES', () => {
         native: 'https://example.com/native.srt',
       }),
     );
-    expect(handled?.[1]).toBe(window.location.origin);
+    expect(handled?.[1]).toBe('https://parent.example');
     expect(calls.every((c) => c[1] !== '*')).toBe(true);
+  });
+
+  it('does not post __CELL_AUTOLOAD_HANDLED when debug is off', () => {
+    const postSpy = jest.spyOn(window, 'postMessage').mockImplementation(() => {});
+    const { onRuntimeMessage2 } = createContentScriptMessageHandlers(createCtx());
+
+    void onRuntimeMessage2(AUTO_LOAD_MSG, {}, jest.fn());
+
+    const calls = postSpy.mock.calls as unknown as [unknown, string | undefined][];
+    expect(calls.find((c) => (c[0] as { type?: string })?.type === '__CELL_AUTOLOAD_HANDLED')).toBeUndefined();
   });
 
   it('does not write data-cell-debug-autoload-arr when __CELL_DEBUG__ is off', () => {

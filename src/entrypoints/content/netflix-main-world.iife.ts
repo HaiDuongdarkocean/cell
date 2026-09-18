@@ -21,7 +21,13 @@
 // Ceiling: if Netflix renames `cadmiumPlayerRepository` or changes the
 // `type === 'timedtext'` node shape, traversal returns empty → hookMiss.
 // Diagnostic: `__NF_DEBUG.hookMiss` + console.warn after 30s.
+declare const __CELL_DEBUG__: string | undefined;
+
 (() => {
+  function isDebug(): boolean {
+    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+  }
+
   // === Types (erased at runtime) ===
   interface NetflixTrackMeta {
     readonly trackId: string;
@@ -53,7 +59,7 @@
 
   const globalWindow = window as unknown as Record<string, unknown>;
   globalWindow.__NF_MAIN_WORLD_INJECTED = __NF_MAIN_WORLD_INJECTED;
-  globalWindow.__NF_DEBUG = __NF_DEBUG;
+  if (isDebug()) globalWindow.__NF_DEBUG = __NF_DEBUG;
 
   // === State ===
   let lastDetectedTracks: (NetflixTrackMeta & { url: string })[] | null = null;

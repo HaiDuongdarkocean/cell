@@ -10,6 +10,10 @@ const workersEnv = process.env.PW_WORKERS
 
 const streamPort = 4321 + portOffset;
 const youtubePort = 4322 + portOffset;
+// The mock pages hardcode the iframe child origin at 127.0.0.1:4324
+// (streamFlixData.PLAYER_ORIGIN), so the cross-origin iframe servers cannot
+// take the port offset — PW_PORT_OFFSET runs skip iframe coverage.
+const iframePlayerPort = 4324;
 
 export default defineConfig({
   testDir: './e2e',
@@ -38,6 +42,12 @@ export default defineConfig({
     {
       command: 'node scripts/serve-mock-pages.mjs --stream --no-build',
       url: `http://127.0.0.1:${streamPort}/index.html`,
+      timeout: 120_000,
+      reuseExistingServer: false,
+    },
+    {
+      command: 'node scripts/serve-mock-pages.mjs --stream-iframe --no-build',
+      url: `http://127.0.0.1:${iframePlayerPort}/index.html`,
       timeout: 120_000,
       reuseExistingServer: false,
     },

@@ -1,7 +1,6 @@
-declare const __CELL_DEBUG__: string | undefined;
+import { isCellDebug } from './cellDebug';
 
-const DEBUG_ENABLED =
-  typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+const DEBUG_ENABLED = isCellDebug();
 
 const noop = (..._args: unknown[]): void => {};
 

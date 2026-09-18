@@ -3,6 +3,7 @@ import { PageScanner } from './pageScanner';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { findLargestPlayableVideo } from '@/shared/lib/dom/videoFinder';
 import { isCellDebug } from './debugLog';
+import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
@@ -43,14 +44,18 @@ export function runPageScan(): void {
   // Debug: surface scan results so browser tests can verify the content script
   // is finding media. Only enabled for E2E builds via CELL_E2E=1.
   if (isCellDebug()) {
-    const debugTarget = window.self === window.top ? window : window.parent;
-    debugTarget.postMessage({
-      type: '__CELL_DEBUG_PAGE_SCAN',
-      pageUrl: window.location.href,
-      videoUrls: urls.videoUrls,
-      subtitleUrls: urls.subtitleUrls,
-      trackSubtitles: urls.trackSubtitles,
-    }, '*');
+    const isTop = window.self === window.top;
+    const debugTarget = isTop ? window : window.parent;
+    const targetOrigin = isTop ? '*' : resolveParentFrameOrigin();
+    if (targetOrigin) {
+      debugTarget.postMessage({
+        type: '__CELL_DEBUG_PAGE_SCAN',
+        pageUrl: window.location.href,
+        videoUrls: urls.videoUrls,
+        subtitleUrls: urls.subtitleUrls,
+        trackSubtitles: urls.trackSubtitles,
+      }, targetOrigin);
+    }
     document.documentElement.setAttribute(
       'data-cell-runscan',
       JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length, tracks: urls.trackSubtitles.length }),

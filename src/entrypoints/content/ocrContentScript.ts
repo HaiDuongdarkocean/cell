@@ -27,11 +27,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { logger } from '@/shared/lib/logger';
 
-declare const __CELL_DEBUG__: string;
-
-function cellDebug(): boolean {
-  return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
-}
+import { isCellDebug as cellDebug } from '@/shared/lib/cellDebug';
 
 /** Session pipeline config = shared pipeline config + split dual-stream fields. */
 interface OcrSessionConfig extends OcrPipelineConfig {
@@ -899,7 +895,7 @@ export function initOcrContentScript(triggerFactory?: (() => SubtitleTriggerCont
   // Dev debug hook: page can request OCR init via postMessage (used by MCP browser tests).
   // Usage: postMessage({ type: '__CELL_OCR_DEBUG_INIT', origin: '127.0.0.1', languageMode: 'auto', splitEnabled: true, splitRatio: 0.5, splitTopIsTarget: true, customRegion: {xPct,yPct,widthPct,heightPct} }, '*')
   // Only compiled in for E2E builds (CELL_E2E=1) — production builds skip it.
-  if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+  if (cellDebug()) {
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const data = e.data as {

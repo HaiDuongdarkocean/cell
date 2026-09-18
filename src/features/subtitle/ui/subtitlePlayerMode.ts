@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { isChildFrame, requestIframePlayerModeEnter, requestIframePlayerModeExit } from '@/features/subtitle/logic/iframePlayerModeBridge';
+import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import type { ToastVariant } from './SubtitleToast';
 
 export interface PlayerModeParams {
@@ -26,7 +27,9 @@ export function usePlayerMode({
   // listener is redundant but harmless (setPlayerMode is idempotent).
   useEffect(() => {
     if (!isChildFrame()) return;
+    const parentOrigin = resolveParentFrameOrigin();
     const onMessage = (e: MessageEvent): void => {
+      if (e.origin !== parentOrigin) return;
       if (e.data?.type === '__CELL_PLAYER_MODE_ENTERED') {
         setPlayerMode(true);
       } else if (e.data?.type === '__CELL_PLAYER_MODE_EXITED') {

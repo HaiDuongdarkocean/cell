@@ -13,6 +13,7 @@ import {
   isTokenizeEnabledForUrl,
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { isCellDebug } from '@/shared/lib/cellDebug';
 import { getFrequencyEntries } from '@/features/dictionary/services/frequencyClient';
 import { getWordStatuses, setWordStatus } from '@/features/dictionary/services/wordStatusClient';
 import {
@@ -65,8 +66,6 @@ const HYDRATION_QUIET_MS = 500;
 // Upgrade path: replace polling debounce with a requestIdleCallback + budget.
 const MAX_ACTIVATION_DELAY_MS = 3000;
 const MAX_MUTATION_SCAN_DELAY_MS = 1500;
-
-declare const __CELL_DEBUG__: string;
 
 export interface WebTokenizeControllerOptions {
   /** Current page URL used for per-URL enable state. */
@@ -364,7 +363,7 @@ export async function createWebTokenizeController(
     for (const block of blocks) {
       if (block.element.isConnected) observeBlock(block);
     }
-    if (typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true') {
+    if (isCellDebug()) {
       const tagDistribution: Record<string, number> = {};
       for (const block of scanned) {
         const tag = block.element.tagName;

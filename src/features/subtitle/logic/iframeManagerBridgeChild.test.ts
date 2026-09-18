@@ -1,14 +1,3 @@
-/**
- * Unit tests for the child-frame side of the iframe subtitle-manager bridge.
- *
- * Co-located with iframeManagerBridgeChild.ts (repo convention).
- * Covers:
- *  - requestManagerOpenOnHost (no-op when !isChildFrame, sends MGR_OPEN,
- *    resolves true on MGR_OPENED {ok:true}, resolves false on timeout)
- *  - sendManagerStateUpdate (sends MGR_STATE only after manager opened)
- *  - onManagerAction (dispatches action + args on MGR_ACTION)
- *  - onManagerCloseFromHost (calls handler on MGR_CLOSE)
- */
 import {
   requestManagerOpenOnHost,
   sendManagerStateUpdate,
@@ -17,10 +6,19 @@ import {
 } from './iframeManagerBridgeChild';
 import type { SerializedManagerState } from './iframeManagerBridgeTypes';
 
+const PARENT_ORIGIN = 'https://host.example';
+
 // Mock isChildFrame so we control child-frame detection without touching
 // window.self/window.top. Hoisted before imports by jest.
 jest.mock('./iframePlayerModeBridge', () => ({
   isChildFrame: jest.fn(() => true),
+}));
+
+jest.mock('@/shared/lib/dom/frameOrigin', () => ({
+  resolveParentFrameOrigin: jest.fn(() => PARENT_ORIGIN),
+  isResolvableHttpOrigin: jest.requireActual<
+    typeof import('@/shared/lib/dom/frameOrigin')
+  >('@/shared/lib/dom/frameOrigin').isResolvableHttpOrigin,
 }));
 
 import { isChildFrame } from './iframePlayerModeBridge';
@@ -41,6 +39,10 @@ function createMockState(): SerializedManagerState {
   };
 }
 
+function dispatchParentMessage(data: Record<string, unknown>, origin = PARENT_ORIGIN): void {
+  window.dispatchEvent(new MessageEvent('message', { data, origin }));
+}
+
 describe('iframeManagerBridgeChild', () => {
   beforeEach(() => {
     mockIsChildFrame.mockReturnValue(true);
@@ -58,27 +60,32 @@ describe('iframeManagerBridgeChild', () => {
       expect(result).toBe(false);
     });
 
-    it('sends MGR_OPEN message to window.parent', async () => {
+    it('sends MGR_OPEN message to window.parent at the resolved origin', async () => {
       const postMessage = window.parent.postMessage as jest.Mock;
-      // Resolve immediately so no dangling listener lingers into later tests.
       const promise = requestManagerOpenOnHost(createMockState());
-      window.dispatchEvent(new MessageEvent('message', {
-        data: { type: '__CELL_MANAGER_OPENED', ok: true },
-      }));
+      dispatchParentMessage({ type: '__CELL_MANAGER_OPENED', ok: true });
       await promise;
       expect(postMessage).toHaveBeenCalledWith(
         expect.objectContaining({ type: '__CELL_MANAGER_OPEN' }),
-        '*',
+        PARENT_ORIGIN,
       );
     });
 
-    it('resolves true when MGR_OPENED {ok:true} received', async () => {
+    it('resolves true when MGR_OPENED {ok:true} received from parent origin', async () => {
       const promise = requestManagerOpenOnHost(createMockState());
-      window.dispatchEvent(new MessageEvent('message', {
-        data: { type: '__CELL_MANAGER_OPENED', ok: true },
-      }));
+      dispatchParentMessage({ type: '__CELL_MANAGER_OPENED', ok: true });
       const result = await promise;
       expect(result).toBe(true);
+    });
+
+    it('ignores MGR_OPENED from a foreign origin', async () => {
+      jest.useFakeTimers();
+      const promise = requestManagerOpenOnHost(createMockState(), 100);
+      dispatchParentMessage({ type: '__CELL_MANAGER_OPENED', ok: true }, 'https://evil.example');
+      jest.advanceTimersByTime(200);
+      const result = await promise;
+      expect(result).toBe(false);
+      jest.useRealTimers();
     });
 
     it('resolves false on timeout', async () => {
@@ -93,11 +100,8 @@ describe('iframeManagerBridgeChild', () => {
 
   describe('sendManagerStateUpdate', () => {
     it('sends MGR_STATE message after manager opened on host', async () => {
-      // managerOpenedOnHost is module-level state — open first to set it true.
       const openPromise = requestManagerOpenOnHost(createMockState());
-      window.dispatchEvent(new MessageEvent('message', {
-        data: { type: '__CELL_MANAGER_OPENED', ok: true },
-      }));
+      dispatchParentMessage({ type: '__CELL_MANAGER_OPENED', ok: true });
       await openPromise;
 
       const postMessage = window.parent.postMessage as jest.Mock;
@@ -105,18 +109,16 @@ describe('iframeManagerBridgeChild', () => {
       sendManagerStateUpdate({ targetActiveIndex: 1 });
       expect(postMessage).toHaveBeenCalledWith(
         expect.objectContaining({ type: '__CELL_MANAGER_STATE' }),
-        '*',
+        PARENT_ORIGIN,
       );
     });
   });
 
   describe('onManagerAction', () => {
-    it('calls handler with action + args on MGR_ACTION message', () => {
+    it('calls handler with action + args on MGR_ACTION from parent origin', () => {
       const handler = jest.fn();
       const off = onManagerAction(handler);
-      window.dispatchEvent(new MessageEvent('message', {
-        data: { type: '__CELL_MANAGER_ACTION', action: 'select', role: 'target', index: 0 },
-      }));
+      dispatchParentMessage({ type: '__CELL_MANAGER_ACTION', action: 'select', role: 'target', index: 0 });
       expect(handler).toHaveBeenCalledWith('select', {
         type: '__CELL_MANAGER_ACTION',
         role: 'target',
@@ -124,16 +126,33 @@ describe('iframeManagerBridgeChild', () => {
       });
       off();
     });
+
+    it('drops MGR_ACTION from a foreign origin', () => {
+      const handler = jest.fn();
+      const off = onManagerAction(handler);
+      dispatchParentMessage(
+        { type: '__CELL_MANAGER_ACTION', action: 'select', role: 'target', index: 0 },
+        'https://evil.example',
+      );
+      expect(handler).not.toHaveBeenCalled();
+      off();
+    });
   });
 
   describe('onManagerCloseFromHost', () => {
-    it('calls handler on MGR_CLOSE message', () => {
+    it('calls handler on MGR_CLOSE from parent origin', () => {
       const handler = jest.fn();
       const off = onManagerCloseFromHost(handler);
-      window.dispatchEvent(new MessageEvent('message', {
-        data: { type: '__CELL_MANAGER_CLOSE' },
-      }));
+      dispatchParentMessage({ type: '__CELL_MANAGER_CLOSE' });
       expect(handler).toHaveBeenCalled();
+      off();
+    });
+
+    it('drops MGR_CLOSE from a foreign origin', () => {
+      const handler = jest.fn();
+      const off = onManagerCloseFromHost(handler);
+      dispatchParentMessage({ type: '__CELL_MANAGER_CLOSE' }, 'https://evil.example');
+      expect(handler).not.toHaveBeenCalled();
       off();
     });
   });

@@ -1,4 +1,5 @@
 import { isChildFrame } from './iframePlayerModeBridge';
+import { resolveParentFrameOrigin } from '@/shared/lib/dom/frameOrigin';
 import {
   MGR_OPEN_MSG, MGR_CLOSE_MSG, MGR_STATE_MSG, MGR_ACTION_MSG,
   MGR_OPENED_MSG, MGR_CLOSED_MSG,
@@ -7,16 +8,22 @@ import type { SerializedManagerState, ManagerAction } from './iframeManagerBridg
 
 let managerOpenedOnHost = false;
 
+function frameSrcSelf(): string {
+  return window.location.origin + window.location.pathname;
+}
+
 export function requestManagerOpenOnHost(
   state: SerializedManagerState,
   timeoutMs = 3000,
 ): Promise<boolean> {
   if (!isChildFrame()) return Promise.resolve(false);
+  const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return Promise.resolve(false);
   ensureBeforeunloadListener();
   return new Promise((resolve) => {
     let settled = false;
     const onMessage = (e: MessageEvent): void => {
-      if (e.data?.type === MGR_OPENED_MSG && !settled) {
+      if (e.data?.type === MGR_OPENED_MSG && e.origin === parentOrigin && !settled) {
         settled = true;
         window.removeEventListener('message', onMessage);
         managerOpenedOnHost = true;
@@ -26,8 +33,8 @@ export function requestManagerOpenOnHost(
     window.addEventListener('message', onMessage);
     try {
       window.parent.postMessage(
-        { type: MGR_OPEN_MSG, frameSrc: window.location.href, state },
-        '*',
+        { type: MGR_OPEN_MSG, frameSrc: frameSrcSelf(), state },
+        parentOrigin,
       );
     } catch {
       window.removeEventListener('message', onMessage);
@@ -46,10 +53,12 @@ export function requestManagerOpenOnHost(
 
 export function sendManagerStateUpdate(state: Partial<SerializedManagerState>): void {
   if (!isChildFrame() || !managerOpenedOnHost) return;
+  const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return;
   try {
     window.parent.postMessage(
-      { type: MGR_STATE_MSG, frameSrc: window.location.href, state },
-      '*',
+      { type: MGR_STATE_MSG, frameSrc: frameSrcSelf(), state },
+      parentOrigin,
     );
   } catch { /* cross-origin — best effort */ }
 }
@@ -57,10 +66,12 @@ export function sendManagerStateUpdate(state: Partial<SerializedManagerState>): 
 export function confirmManagerClosed(): void {
   if (!isChildFrame() || !managerOpenedOnHost) return;
   managerOpenedOnHost = false;
+  const parentOrigin = resolveParentFrameOrigin();
+  if (!parentOrigin) return;
   try {
     window.parent.postMessage(
-      { type: MGR_CLOSED_MSG, frameSrc: window.location.href },
-      '*',
+      { type: MGR_CLOSED_MSG, frameSrc: frameSrcSelf() },
+      parentOrigin,
     );
   } catch { /* cross-origin — best effort */ }
 }
@@ -69,8 +80,9 @@ export function onManagerAction(
   handler: (action: ManagerAction, args: Record<string, unknown>) => void,
 ): () => void {
   if (!isChildFrame()) return () => {};
+  const parentOrigin = resolveParentFrameOrigin();
   const onMessage = (e: MessageEvent): void => {
-    if (e.data?.type === MGR_ACTION_MSG && e.data?.action) {
+    if (e.data?.type === MGR_ACTION_MSG && e.data?.action && e.origin === parentOrigin) {
       const { action, ...args } = e.data;
       handler(action as ManagerAction, args as Record<string, unknown>);
     }
@@ -81,8 +93,9 @@ export function onManagerAction(
 
 export function onManagerCloseFromHost(handler: () => void): () => void {
   if (!isChildFrame()) return () => {};
+  const parentOrigin = resolveParentFrameOrigin();
   const onMessage = (e: MessageEvent): void => {
-    if (e.data?.type === MGR_CLOSE_MSG) {
+    if (e.data?.type === MGR_CLOSE_MSG && e.origin === parentOrigin) {
       handler();
     }
   };
@@ -99,10 +112,12 @@ function ensureBeforeunloadListener(): void {
   beforeunloadInstalled = true;
   window.addEventListener('beforeunload', () => {
     if (managerOpenedOnHost) {
+      const parentOrigin = resolveParentFrameOrigin();
+      if (!parentOrigin) return;
       try {
         window.parent.postMessage(
-          { type: MGR_CLOSED_MSG, frameSrc: window.location.href },
-          '*',
+          { type: MGR_CLOSED_MSG, frameSrc: frameSrcSelf() },
+          parentOrigin,
         );
       } catch { /* best effort */ }
     }

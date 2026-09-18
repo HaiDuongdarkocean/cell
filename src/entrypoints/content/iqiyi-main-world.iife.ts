@@ -25,7 +25,13 @@
 // CRXJS emits this as a standalone bundle via the `.iife.ts` suffix.
 // Ceiling: if iQIYI renames `playerObject` or restructures the deep path,
 // detection fails silently. Upgrade: re-verify via MCP + update path.
+declare const __CELL_DEBUG__: string | undefined;
+
 (() => {
+  function isDebug(): boolean {
+    return typeof __CELL_DEBUG__ !== 'undefined' && __CELL_DEBUG__ === 'true';
+  }
+
   // Marker for injection verification (visible from DevTools evaluate_script).
   (window as unknown as Record<string, unknown>).__IQ_MAIN_WORLD_INJECTED = true;
 
@@ -46,7 +52,7 @@
     repostCount: 0,
     postTime: -1,
   };
-  (window as unknown as Record<string, unknown>).__IQ_DEBUG = debug;
+  if (isDebug()) (window as unknown as Record<string, unknown>).__IQ_DEBUG = debug;
 
   let lastTvid: string | null = null;
   // Cache last detected tracks so a late-injecting content-script can request
