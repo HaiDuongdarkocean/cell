@@ -407,12 +407,12 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 | 4 | `shipping-and-launch` thêm post-ship step: human confirm business outcome | Đóng gap "did we build the right thing" | ✅ Done — § Post-Launch Business Review |
 | 5 | `.devin/hooks.v1.json` → hook auto-regen `index.json` khi SKILL.md đổi | Enforcement bằng hook > convention — index stale 3 tuần là bằng chứng | ✅ Done — PostToolUse hook + `scripts/hook-skill-index.mjs` |
 | 6 | `UserPromptSubmit` → ponytail mode-tracker (`scripts/hook-ponytail.mjs`) | Ponytail plugin (rules+skills) cần mode state — hook duy nhất biến `/ponytail` command thành context injection | ✅ Done (2026-09-17) — plugin `devin plugins install --local`, wrapper resolve plugin cache động |
-| 7 | `SessionStart` hook → inject active `tasks/plan.md` + todo + debt count | Mỗi session agent phải tự nhớ đọc state — session priming biến nó thành automatic | 🔲 Chưa làm |
-| 8 | `PreToolUse` hook → warn khi `edit` vào `docs/specs/*` mà không có review artifact mới | Step 1.6 warn adoption vẫn 8% sau 4 ngày — siết lên event-level (vẫn warn, không block, để giữ fail-open semantics) | 🔲 Chưa làm |
-| 9 | `PostCompaction` hook → re-inject AGENTS.md mandate + active plan | Context compaction làm mất mandate — "drift back to over-building" là chế độ hỏng đã biết của ponytail | 🔲 Chưa làm |
-| 10 | `Stop` hook → block khi working tree dirty mà gates chưa chạy | "On the loop" chỉ đúng nếu điểm dừng được kiểm — hiện agent tự quyết khi nào stop | 🔲 Chưa làm — cẩn thận loop, phải có exit condition rõ |
+| 7 | `SessionStart` hook → inject active `tasks/plan.md` + todo + debt count | Mỗi session agent phải tự nhớ đọc state — session priming biến nó thành automatic | ✅ Done (pipeline-redesign) — `hook-session-prime.mjs`: inject `pipeline-state.json` active item + stage pointer |
+| 8 | `PreToolUse` hook → warn khi `edit` vào `docs/specs/*` mà không có review artifact mới | Step 1.6 warn adoption vẫn 8% sau 4 ngày — siết lên event-level (vẫn warn, không block, để giữ fail-open semantics) | ✅ Done (pipeline-redesign) — `hook-stage-guard.mjs`: warn khi edit `src/` trước stage hợp lệ, edit spec stale, edit state file tay |
+| 9 | `PostCompaction` hook → re-inject AGENTS.md mandate + active plan | Context compaction làm mất mandate — "drift back to over-building" là chế độ hỏng đã biết của ponytail | ✅ Done (pipeline-redesign) — `hook-context-restore.mjs`: re-inject pipeline state sau compaction |
+| 10 | `Stop` hook → block khi working tree dirty mà gates chưa chạy | "On the loop" chỉ đúng nếu điểm dừng được kiểm — hiện agent tự quyết khi nào stop | ✅ Done (pipeline-redesign) — `hook-stop-gate.mjs`: one-shot block (`stop_hook_active` guard) khi deliver item còn dirty + gates stale |
 | 11 | `update-skill-index.mjs` validate frontmatter theo rule loader thật (unquoted `: `, thiếu `name`, thiếu frontmatter) → exit 1 | 2 skill chết thầm lặng 4 ngày chứng minh disk↔index sync không đủ — check phải bắt lỗi mà consumer thật sẽ gặp | ✅ Done (2026-09-17) — regen script tự fail-open qua hook nhưng exit 1 khi chạy tay/CI |
-| 12 | `check-skills` trong CI hoặc pre-commit-gate: chạy `node scripts/update-skill-index.mjs` + `git diff --exit-code .agents/skills/index.json` | Biến "index + frontmatter hợp lệ" thành deterministic gate thay vì chỉ nhờ hook local | 🔲 Chưa làm |
+| 12 | `check-skills` trong CI hoặc pre-commit-gate: chạy `node scripts/update-skill-index.mjs` + `git diff --exit-code .agents/skills/index.json` | Biến "index + frontmatter hợp lệ" thành deterministic gate thay vì chỉ nhờ hook local | ✅ Done (pipeline-redesign) — `pre-commit-gate` Step 1.8 |
 
 ### 10.2. Rot đã fix trong audit 2026-09-13
 
@@ -428,6 +428,14 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 - `tasks/` hygiene: `plan-immersion-playback.md`, `plan-pre-tokenize-subtitle.md`, `todo-pre-tokenize-subtitle.md` nằm ở root `tasks/` thay vì `plans/`/`todos/` — convention "plan.md/todo.md active + thư mục archive" đang bị bypass bởi per-feature file. Cần quyết: hoặc siết rule, hoặc đổi convention thành "mọi plan theo feature, `plan.md` chỉ là pointer".
 - Spec ordering: `b3770b8f` chứa cả intent + spec + plan + implementation của immersion-playback trong 1 commit → artifacts được tạo đủ nhưng không phải gate tuần tự. Spec-driven row trong §10 được đổi thành ⚠️ theo bằng chứng này.
 
+### 10.2c. Pipeline redesign (branch `refactor/pipeline-redesign`)
+
+- Gap gốc: pipeline chạy nhờ agent tự nhớ route (soft), thiếu enforcement; BA yếu về đặt câu hỏi (thiếu IIBA/BACCM); nhiều gate review rải rác; UI/UX không được quyết định trước implement (FAB: danh sách bo góc quá tròn, màu lệch design system).
+- Fix: state machine `tasks/pipeline-state.json` + `scripts/pipeline-state.mjs` — transitions validate evidence **lúc gọi** (review fresh, journey structure, verdict `APPROVE*`, gates re-run thật ở `all` mode), không tin flag. Terminal `shipped`/`dropped`; `analyze → dropped` kill sớm qua `## Decision: no-go`.
+- 4 stage skills: `pipeline-analyze` (BA: BACCM → stakeholders → root-cause → go/no-go → FURPS+ → stories → journey → logic), `pipeline-specify` (use-case requirements → flows/states → function/feature → traceability), `pipeline-design` (concepts → mockup → brief → component mapping, `check-design-brief.mjs` deterministic), `pipeline-deliver` (plan → engine `autonomous-pipeline` → gates → verify → ship). Driver: `idea-pick-off`.
+- 6 skills cũ absorbed thành stubs — `/elicitation` vẫn resolve.
+- 8 hooks trên 7 events (§10.3) — fail-open warn; enforcement thật nằm ở transition-refuse, đúng nguyên tắc "hook guardrail không phải correctness".
+
 ### 10.3. Primitives — rules / skills / hooks / subagents / plugins
 
 > Pipeline không phải "dùng skill nào" mà là "primitive nào giữ phase nào". 5 primitives của Devin CLI có vai trò khác nhau căn bản — nhầm vai trò = pipeline mềm.
@@ -435,9 +443,9 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
 | Primitive | Bản chất | Vai trò trong pipeline | Cell đang dùng |
 |---|---|---|---|
 | **Rule** | Text luôn trong context, mọi turn | Luật bất biến: conventions, boundaries, mandate | `AGENTS.md` (project) + Ponytail plugin `AGENTS.md` |
-| **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 48 skills `.agents/skills/` + 6 `/ponytail:*` |
-| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 2 hooks (xem bảng event dưới) |
-| **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` custom (`.devin/agents/`) + built-in `subagent_general`/`subagent_explore`/`spec-reviewer`/`spec-reviewer-glm` |
+| **Skill** | Playbook nạp on-demand khi task match | Tri thức chuyên sâu theo phase — không phải luật | 52 skills `.agents/skills/` + 6 `/ponytail:*` |
+| **Hook** | Code chạy thật ở lifecycle event, fail-open | **Enforcement** — thứ duy nhất agent không skip được | 8 hooks trên 7 events (xem bảng event dưới) |
+| **Subagent** | Agent con, context tách, quyền hẹp hơn | Fresh-eyes verify + parallel lanes | `vision-reader` (`.devin/agents/`) + `spec-reviewer{,-swe,-glm}` (`.agents/agents/`) + built-in `subagent_general`/`subagent_explore` |
 | **Plugin** | Package gồm cả 4 thứ trên | Phân phối workflow qua git | `ponytail` v4.10.0 (`devin plugins install --local`) |
 
 #### Bản đồ wiring hiện tại — cái gì nối cái gì
@@ -448,40 +456,52 @@ Audit 2026-09-17 bổ sung 1 lớp gap nữa — **silent failure ở ranh giớ
                     │  AGENTS.md ── mandate + conventions │
                     │  ponytail AGENTS.md ── lazy ladder  │
                     └──────────────┬──────────────────────┘
-                                   │ khai báo "phải route qua skill"
-                                   ▼
-User prompt ──► UserPromptSubmit hook ──► scripts/hook-ponytail.mjs
-                    (event-driven)         └─► bắt /ponytail cmd → inject
-                                             "MODE CHANGED" vào context
+                                   │
+        SessionStart ──► hook-session-prime ──► inject pipeline
+                                                   state + stage
+User prompt ──► UserPromptSubmit ──► hook-ponytail (mode tracker)
                     │
                     ▼
-              Agent plan ──► invoke SKILL theo phase
-                    │          (48 skills, router: using-agent-skills)
+              Router (using-agent-skills) ──► stage check:
+              `tasks/pipeline-state.json` stage quyết định
+              pipeline-analyze → specify → design → deliver
+                    │
                     ▼
-              write/edit tool ──► PostToolUse hook
-                    │              └─► hook-skill-index.mjs regen
-                    │                  index.json nếu SKILL.md đổi
+        PreToolUse ──► hook-stage-guard ──► warn: src/ edit
+                    trước stage, spec stale, state edit tay
+                    │
+        write/edit ──► PostToolUse ──► hook-skill-index (regen)
+        exec       ──► PostToolUse ──► hook-gates-tracker
+                                       (ghi gates.* khi deliver)
+                    │
                     ▼
-              pre-commit-gate (skill, agent tự chạy)
+        pipeline-state.mjs transition ──► ENFORCEMENT THẬT:
+        validate evidence lúc gọi (review fresh, verdict,
+        journey, gates re-run) — refuse = không đủ điều kiện
+                    │
+                    ▼
+        PostCompaction ──► hook-context-restore (re-inject state)
+        Stop ──► hook-stop-gate (one-shot block: dirty + gates stale)
+        SessionEnd ──► hook-session-report (tasks/reports/)
                     │
                     ▼
               commit → CI (design-system-ci.yml)
 ```
 
-#### Hook event surface — 8 events, dùng 2
+#### Hook event surface — 8 events, dùng 7 (9 hooks: 2× PostToolUse)
 
-| Event | Trạng thái | Đang làm | Có thể enforce |
-|---|---|---|---|
-| `SessionStart` | ⬜ trống | — | Inject active plan + debt summary + "session protocol" (skill routing reminder) |
-| `UserPromptSubmit` | ✅ | Ponytail mode-tracker | Detect intent keywords → nhắc skill phù hợp ("fix bug" → debugging skill) |
-| `PreToolUse` | ⬜ trống | — | **Block** `exec` với lệnh destructive; block `edit` vào `manifest.json` khi chưa có browser-verify evidence; warn khi edit `docs/specs/*` mà không có `docs/reviews/` artifact (siết Step 1.6 thành hard gate) |
-| `PostToolUse` | ✅ | Regen `index.json` khi SKILL.md đổi | Lint file vừa edit; append file-touch log cho session summary |
-| `PermissionRequest` | ⬜ trống | — | Auto-approve read-only commands (`git status`, `npm test`), giảm friction |
-| `Stop` | ⬜ trống | — | Chặn stop khi `git status` còn file chưa commit mà chưa chạy gates |
-| `PostCompaction` | ⬜ trống | — | Re-inject AGENTS.md mandate + active plan sau khi context bị nén (context rot guard) |
-| `SessionEnd` | ⬜ trống | — | Log session metrics (files touched, skills invoked) vào `tasks/reports/` |
+| Event | Trạng thái | Đang làm |
+|---|---|---|
+| `SessionStart` | ✅ | `hook-session-prime` — inject `pipeline-state.json` active item + stage pointer |
+| `UserPromptSubmit` | ✅ | `hook-ponytail` — ponytail mode-tracker |
+| `PreToolUse` | ✅ | `hook-stage-guard` — warn: `src/` edit trước stage hợp lệ, spec edit stale, state-file edit tay |
+| `PostToolUse` | ✅ ×2 | `hook-skill-index` (regen index khi SKILL.md đổi) + `hook-gates-tracker` (ghi `gates.*` từ exec output khi stage=deliver) |
+| `PermissionRequest` | ⬜ trống | — |
+| `Stop` | ✅ | `hook-stop-gate` — one-shot block (`stop_hook_active` guard) khi deliver dirty + gates stale |
+| `PostCompaction` | ✅ | `hook-context-restore` — re-inject pipeline state sau nén context |
+| `SessionEnd` | ✅ | `hook-session-report` — append report `tasks/reports/` |
 
-> Đây là gap thật của pipeline hiện tại: mọi "phải làm X" đều nằm ở skill text (agent có thể quên). Hook là primitive duy nhất biến convention thành enforcement — nhưng fail-open nên chỉ dùng cho guardrail, không dùng làm correctness.
+> Pattern sau redesign: hooks (fail-open warn) lo observability + nhắc việc; **correctness enforcement nằm ở `pipeline-state.mjs transition`** — code path duy nhất validate evidence lúc gọi và refuse khi thiếu. Hook block chỉ dùng one-shot ở `Stop` để inject reason, không làm gate thật.
 
 #### Vì sao phân biệt 3 loại "instruction"
 
@@ -499,34 +519,39 @@ User prompt ──► UserPromptSubmit hook ──► scripts/hook-ponytail.mjs
 
 > Ánh xạ lý thuyết sang commands, skills, và output files cụ thể trong repo. Đây là SSOT vận hành; khi skill hoặc command thay đổi, cập nhật section này.
 
-### 11.1. Phase — Skill — Output
+### 11.1. Stage — Skill — Output
 
-| Phase | Khi nào | Skill / Command | Output / SSOT |
+| Stage | Khi nào | Skill / Command | Output / SSOT |
 |---|---|---|---|
-| **Define** | Idea mơ hồ, chưa rõ yêu cầu | `interview-me` / `idea-refine` | `docs/intent/[topic].md` |
-| **Specify** | Feature xác định | `spec-driven-development` | `docs/specs/[feature].md` |
-| **Adversarial review** | Trước implement | `spec-review-stakeholder` | `docs/reviews/[feature]-adversarial.md` |
-| **Plan** | Spec approved | `planning-and-task-breakdown` | `tasks/plan.md` + `tasks/todo.md` (priority + parallel + blocked_strategy) |
-| **Autonomous run** | Spec confirmed, "just do it" | `autonomous-pipeline` (orchestrator: dispatch `subagent_general` lanes → `subagent_explore` verify) | shipped feature + verify evidence |
-| **Build** | Implement từng task | `incremental-implementation` + `learning-and-apply` (APPLY) | `src/` + `tests/` |
-| **Local verify** | Code sửa xong | `pre-commit-gate` | build + test pass, không file mới |
+| **Pick** | Item tiếp theo từ backlog | `idea-pick-off` + `pipeline-state.mjs init <slug>` | state `active=<slug>`, stage `analyze` |
+| **Analyze** | Pain/idea → intent | `pipeline-analyze` | `docs/intent/<slug>.md` (`## Decision`: go/no-go) |
+| **Analyze review** | Trước specify | self-review / `spec-reviewer` (analyze lens) | `docs/reviews/<slug>-analyze.md` `VERDICT:` |
+| **Specify** | Intent `go` | `pipeline-specify` | `docs/specs/<slug>.md` + `docs/reviews/<slug>-spec.md` `VERDICT:` |
+| **Design** | `uiSurface=yes` | `pipeline-design` | `docs/intent/<slug>-design-brief.md` + `-component-mapping.md` + mockup `src/entrypoints/mockup-<slug>/` + `docs/reviews/<slug>-design.md` |
+| **Deliver** | Spec/design xong | `pipeline-deliver` (engine `autonomous-pipeline` cho M+ lanes) | `tasks/plan-<slug>.md` + `src/` + `docs/reviews/<slug>-verify.md` |
+| **Ship** | Verify PASS + gates green | `pipeline-state.mjs transition <slug> --to shipped` (+ `shipping-and-launch`) | `shipped`, backlog + wiki, `active` cleared |
+| **Drop** | `## Decision: no-go` hoặc veto | `transition --to dropped` | `dropped` + lý do trong backlog |
+| **Local verify** | Code sửa xong | `pre-commit-gate` (+= brief-lint Step 1.7, skills-index Step 1.8) | build + test pass |
 | **Browser verify** | Cần real page | `testing-with-playwright` (e2e) / `testing-extension-browser` (interactive) | spec pass / DOM evidence |
 | **Code review** | Pre-merge | `code-review-and-quality` | PR comments / approval |
 | **Commit** | Ready | `git-workflow-and-versioning` | clean commit |
-| **Ship** | Release | `shipping-and-launch` | release notes + tag |
 | **Accumulate** | Sau bug/feature insight | `learning-and-apply` (ACCUMULATE) | `.agents/skills/learning-and-apply/experience/[id].json` |
 | **Skill change** | Thêm/sửa/xóa skill | `write-skill` + `node scripts/update-skill-index.mjs` | `SKILL.md` + `index.json` regen |
-| **Enforcement** | Convention "phải xảy ra" | `.devin/hooks.v1.json` + `scripts/hook-*.mjs` | Event-driven guardrail |
-| **Fresh-eyes verify** | Cần review tách context | `run_subagent` (`subagent_explore`/`vision-reader`) | Verify report độc lập |
+| **Enforcement** | Convention "phải xảy ra" | `scripts/pipeline-state.mjs` (transitions) + `.devin/hooks.v1.json` + `scripts/hook-*.mjs` | Evidence-validated stage moves + event guardrail |
+| **Fresh-eyes verify** | Cần review tách context | `run_subagent` (`subagent_explore`/`spec-reviewer`/`vision-reader`) | Verify report độc lập |
 | **Share workflow** | Reuse system cho repo khác | Plugin packaging (§10.3) | `owner/repo` installable |
 
 ### 11.2. Skill routing cheat sheet
 
 | Tình huống | Skill | Ghi chú |
 |---|---|---|
-| Không biết dùng skill nào | `using-agent-skills` | Meta-router, re-run khi task đổi |
+| Không biết dùng skill nào | `using-agent-skills` | Meta-router 2 lớp: task-type → pipeline-stage, re-run khi task đổi |
+| Feature/backlog item | `idea-pick-off` → `pipeline-*` theo `tasks/pipeline-state.json` stage | Stage file là truth, không đoán phase |
+| Ý tưởng mơ hồ / cần hỏi user | `pipeline-analyze` (interactive) | Stubs `/elicitation` `/interview-me` trỏ về đây |
+| Spec từ intent | `pipeline-specify` | Stubs `/spec-driven-development` `/spec-review-stakeholder` trỏ về đây |
+| UI trước implement | `pipeline-design` | Stub `/idea-to-interface` trỏ về đây |
 | Sửa CSS/TS | `learning-and-apply` (APPLY) | Grep `index.json` theo tags trước code |
-| Bug | `debugging-and-error-recovery` -> `test-driven-development` | Reproduce trước fix |
+| Bug | `debugging-and-error-recovery` -> `test-driven-development` | Reproduce trước fix; tsx/css → UI component-check |
 | UI task | `design-system-guardian` | Build theo `DESIGN.md`, audit token/component sau |
 | Performance | `performance-optimization` | Measure first |
 
@@ -545,12 +570,15 @@ Mỗi change phải pass trước khi commit:
 | Artifact | Path | Update khi |
 |---|---|---|
 | Skill catalog | `.agents/skills/index.json` | Chạy `node scripts/update-skill-index.mjs` (skills chỉ sống ở `.agents/skills/`) |
+| Pipeline state | `tasks/pipeline-state.json` | Chỉ qua `node scripts/pipeline-state.mjs` — stage truth, atomic writes, main-worktree only |
 | Kiến trúc | `docs/2-architechture-system.md` | Thêm/xóa/sửa `src/` |
 | Wiki | `docs/0-wiki.md` | Thêm/xóa `docs/` |
 | Glossary | `docs/1-share-language.md` | Thêm/sửa term |
 | Specs | `docs/specs/[feature].md` | Feature mới hoặc scope đổi |
+| Intent + design artifacts | `docs/intent/<slug>{,-design-brief,-component-mapping}.md` | ANALYZE/DESIGN outputs |
+| Review artifacts | `docs/reviews/<slug>-{analyze,spec,design,verify,signoff}.md` | Mỗi gate; `VERDICT:` là dòng cuối |
 | Hook wiring | `.devin/hooks.v1.json` + `scripts/hook-*.mjs` | Thêm/sửa lifecycle enforcement |
-| Subagent profiles | `.devin/agents/*.md` | Thêm/sửa custom profile |
+| Subagent profiles | `.devin/agents/*.md` (vision-reader) + `.agents/agents/*/AGENT.md` (spec-reviewer*) | Thêm/sửa custom profile |
 | Plugin manifest | `devin plugins list` (user scope, lockfile ở `%APPDATA%/devin/cli/plugins/`) | Cài/gỡ plugin |
 
 ---
