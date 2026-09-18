@@ -167,6 +167,18 @@
       "resolutions": [],
       "loops": 0,
       "updated": "2026-09-18T21:52:27.794Z"
+    },
+    "ui-layer-ssot": {
+      "stage": "dropped",
+      "mode": "all",
+      "uiSurface": "unknown",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "updated": "2026-09-18T21:53:20.839Z"
     }
   }
 }
