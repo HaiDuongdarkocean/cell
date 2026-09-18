@@ -89,7 +89,7 @@ From Meta Horizon OS icon guidelines + Nucleus best practices.
 
 **Actions:**
 
-Ask the user (one question at a time, per `interview-me` style):
+Ask the user (one question at a time, per `pipeline-analyze` (interactive) style):
 
 1. What action or concept should this icon communicate?
 2. Where will it appear? (popup, subtitle overlay, settings, toolbar)
@@ -98,7 +98,7 @@ Ask the user (one question at a time, per `interview-me` style):
 
 **Guard:** User has named the concept, the placement, and the metaphor direction.
 
-**Loop back:** If the user cannot answer #1 or #2, ask `interview-me` to extract intent.
+**Loop back:** If the user cannot answer #1 or #2, ask `pipeline-analyze` (interactive) to extract intent.
 
 ### Step 2: Analyze Project Style
 

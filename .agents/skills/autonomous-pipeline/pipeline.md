@@ -4,7 +4,7 @@
 
 ## No-question defaults
 
-- **Spec missing:** stop → route to `elicitation` first. This skill requires a confirmed spec in `docs/specs/`.
+- **Spec missing or unreviewed:** stop → route back to `pipeline-specify` (or `pipeline-analyze` if no intent). This engine requires a reviewed spec in `docs/specs/` plus `docs/reviews/<slug>-spec.md` verdict `APPROVE*`.
 - **Plan missing or stale:** run `planning-and-task-breakdown` against the spec before dispatching.
 - **Tasks missing `priority`/`parallel`/`blocked_strategy` fields:** infer them — priority from spec Success Criteria order (first criterion = P0); `parallel: true` when the task's "Files likely touched" are disjoint from same-level tasks; `blocked_strategy` defaults to `mock-contract` for interface-shaped dependencies, `wait` for shared-state dependencies.
 - **Lane cap:** maximum 3 concurrent build subagents.
@@ -15,13 +15,14 @@
 - **Worktree threshold:** provision a worktree per parallel lane of scope M or larger. XS/S parallel lanes run sequentially in the main session — they are already disjoint on files and the setup cost exceeds the benefit.
 - **Worktree location:** `../cell-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
 - **Lane dependencies:** junction `node_modules` into the worktree (Windows: `mklink /J`). Lanes must not run `npm install` — any task touching `package.json`, lockfiles, or `manifest.json` is `parallel: false` by rule (shared state cannot be mocked).
+- **Pipeline state:** lanes never run `pipeline-state.mjs` — the CLI refuses writes outside the main worktree. Stage transitions happen in the main session only, after merge.
 
 ## Phase 1 — Load
 
 **Purpose:** Gather the contract every lane will be judged against.
 
 1. Read `docs/specs/[feature].md` — extract Success Criteria verbatim.
-2. Read `tasks/plan.md` + `tasks/todo.md` for this feature.
+2. Read `tasks/plan-<slug>.md` + `tasks/todo-<slug>.md` for this feature.
 3. Grep `.agents/skills/learning-and-apply/index.json` by the feature's domain keywords; open every matching `experience/` and `process/` atom (APPLY).
 4. Build the dispatch table:
 

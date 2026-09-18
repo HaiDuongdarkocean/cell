@@ -1,4 +1,28 @@
 {
+  "SessionStart": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-session-prime.mjs",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "^(write|edit|notebook_edit)$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-stage-guard.mjs",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
   "PostToolUse": [
     {
       "matcher": "^(write|edit|notebook_edit)$",
@@ -7,6 +31,52 @@
           "type": "command",
           "command": "node scripts/hook-skill-index.mjs",
           "timeout": 15
+        }
+      ]
+    },
+    {
+      "matcher": "^exec$",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-gates-tracker.mjs",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "PostCompaction": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-context-restore.mjs",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-stop-gate.mjs",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node scripts/hook-session-report.mjs",
+          "timeout": 5
         }
       ]
     }

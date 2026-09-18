@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "generated": "2026-09-17T16:16:50.881Z",
-  "count": 48,
+  "generated": "2026-09-18T05:05:37.558Z",
+  "count": 52,
   "skills": [
     {
       "name": "animation-vocabulary",
@@ -115,7 +115,7 @@
     },
     {
       "name": "idea-pick-off",
-      "description": "Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. `all` mode loops the pipeline across every unblocked item until the backlog is drained. Use when asked to start the next backlog feature, \"làm item #N\", \"làm hết backlog\", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).",
+      "description": "Pops the top unblocked item from docs/ideas/product-backlog.md and drives it through the stage pipeline (analyze → specify → design → deliver → shipped). `all` mode loops until the backlog is drained. Use when asked to start the next backlog feature, \"làm item #N\", \"làm hết backlog\", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).",
       "path": ".agents/skills/idea-pick-off/SKILL.md"
     },
     {
@@ -150,7 +150,7 @@
     },
     {
       "name": "learning-and-apply",
-      "description": "Cell's accumulated lessons - grep before coding, distill principles after fixing. Use on every Build/Verify/Review task.",
+      "description": "Cell's accumulated lessons - grep before coding, distill principles after fixing. Use on every DELIVER/Verify/Review task — inside pipeline-deliver build and on standalone fixes.",
       "path": ".agents/skills/learning-and-apply/SKILL.md"
     },
     {
@@ -162,6 +162,26 @@
       "name": "performance-optimization",
       "description": "Measure-driven optimization across frontend, backend, queries. Use for perf regressions, CWV, or suspected bottlenecks.",
       "path": ".agents/skills/performance-optimization/SKILL.md"
+    },
+    {
+      "name": "pipeline-analyze",
+      "description": "ANALYZE stage of the agentic SDLC — business analysis that produces a confirmed intent doc (needs, journeys, scope, go/no-go decision) or kills the item early. Use for any new feature/backlog item before specification. Absorbs elicitation, interview-me, idea-refine.",
+      "path": ".agents/skills/pipeline-analyze/SKILL.md"
+    },
+    {
+      "name": "pipeline-deliver",
+      "description": "DELIVER stage of the agentic SDLC — plan → build → deterministic gates → verify → ship. Stage contract only; orchestration lives in autonomous-pipeline (engine). Use when active item reaches stage=deliver.",
+      "path": ".agents/skills/pipeline-deliver/SKILL.md"
+    },
+    {
+      "name": "pipeline-design",
+      "description": "DESIGN stage of the agentic SDLC — UI/UX decided and verified BEFORE implementation (design brief + component mapping + mockup + approval/vision gate). Only for items with ui_surface=yes. Absorbs idea-to-interface.",
+      "path": ".agents/skills/pipeline-design/SKILL.md"
+    },
+    {
+      "name": "pipeline-specify",
+      "description": "SPECIFY stage of the agentic SDLC — system analysis that converts a confirmed intent doc into a reviewable spec (actor/system boundary, use-case-like requirements, flows/states, function/feature map, traceability). Absorbs spec-driven-development + spec-review-stakeholder.",
+      "path": ".agents/skills/pipeline-specify/SKILL.md"
     },
     {
       "name": "planning-and-task-breakdown",

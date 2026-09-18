@@ -16,7 +16,7 @@ A question-first design audit: don't list what looks wrong — ask *what problem
 - Validating a UI against the project's design system
 - Before implementation, you need a redesign brief
 
-**When NOT to use:** logic bugs → `debugging-and-error-recovery`; raw idea with no target → `idea-to-interface`; no design system and no user context; pure copy tasks → `audit-text-in-ui`.
+**When NOT to use:** logic bugs → `debugging-and-error-recovery`; raw idea with no target → `pipeline-design`; no design system and no user context; pure copy tasks → `audit-text-in-ui`.
 
 ## Core Principle
 
@@ -55,7 +55,7 @@ Strategy & Purpose · Information Architecture · Visual System · Layout & Resp
 - **Scope:** mobile-first by default (persona: 5–80 on any device). Produce a one-sentence Design Read.
 - **Classify:** every element → reuse `src/shared/ui/*` / extend / create / remove.
 - **Stop rule:** one P0 or two P1 findings that explain the user's feedback. Don't chase P2/P3 unless asked.
-- **Verify:** design-system audit commands from `DESIGN.md` §8; `npm run typecheck && npm run build` if code changed; append `## Hand-off to idea-to-interface` when the audit feeds a redesign.
+- **Verify:** design-system audit commands from `DESIGN.md` §8; `npm run typecheck && npm run build` if code changed; append `## Hand-off to pipeline-design` when the audit feeds a redesign.
 
 Severity: **P0** blocker (function/a11y/SSOT) · **P1** major · **P2** minor · **P3** suggestion.
 

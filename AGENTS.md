@@ -2,7 +2,7 @@
 
 ## Mandate
 
-- Không hỏi user khi thực thi (trừ skill elicitation/interview-me); tự quyết, làm tới khi xong; không destructive vô cớ; fix root cause.
+- Không hỏi user khi thực thi (trừ `pipeline-analyze` interactive mode + `pipeline-design` approval gate); tự quyết, làm tới khi xong; không destructive vô cớ; fix root cause.
 - Không viết comment trong code — code tự giải thích qua naming/cấu trúc.
 - Gọi user "Anh yêu", xưng "em".
 - KHÔNG làm MVP/bản nháp: mọi feature phải là product hoàn chỉnh ship được cho khách hàng — edge cases đầy đủ, i18n, a11y, persist state khi user expect, polish theo design system. "V1 tối giản" chỉ khi Anh yêu nói rõ.
@@ -10,6 +10,7 @@
 ## Workflow
 
 - Mọi task → route qua skill `using-agent-skills` (skills ở `.agents/skills/`); task đổi → re-route.
+- Feature work chạy stage pipeline `analyze → specify → design (UI only) → deliver` qua skills `pipeline-*`; stage truth = `tasks/pipeline-state.json`, mutate chỉ qua `scripts/pipeline-state.mjs` (transitions enforce evidence — không nhảy stage tay). Backlog items vào qua `idea-pick-off`.
 - Context theo nhu cầu, không đọc trước toàn bộ: `docs/2-architechture-system.md` khi đụng `src/`; `docs/1-share-language.md` khi gặp thuật ngữ domain lạ; `docs/0-wiki.md` khi cần map repo hoặc changelog. Trước khi viết logic mới: grep `.agents/skills/learning-and-apply/index.json` theo tags.
 - Sau khi code: `npm run typecheck && npm run test:unit && npm run build` (build bắt lỗi Vite mà tsc không thấy) → verify trên Chrome thật → mới commit (`git-workflow-and-versioning`).
 
@@ -23,10 +24,10 @@
 
 ## Output hygiene
 
-- Root chỉ chứa file tool/project bắt buộc (manifest, config, lockfile). File do mình quyết định tạo → đúng thư mục cùng loại: test → `tests/`/`e2e/`, plan → `tasks/` (hoặc `animation-plans/` cho skill improve-animations), docs → `docs/`, script → `scripts/`, mockup → `docs/mockups/`; skill có dòng Output → theo skill.
+- Root chỉ chứa file tool/project bắt buộc (manifest, config, lockfile). File do mình quyết định tạo → đúng thư mục cùng loại: test → `tests/`/`e2e/`, plan → `tasks/` (hoặc `animation-plans/` cho skill improve-animations), docs → `docs/`, script → `scripts/`, mockup → `src/entrypoints/mockup-<slug>/` (design-time, xóa khi ship); skill có dòng Output → theo skill.
 - Scratch/screenshot/log → `tmp/<task-slug>/` (gitignored); xong việc không cần reproduce thì xóa. Output tool vào path cố định đã gitignore (`dist/`, `build/`, `coverage/`, `e2e-results/`, `.playwright-mcp/`) thì để nguyên.
 - Trước commit check `git status`: file lạ ở root là rác → dời/xóa, KHÔNG vá `.gitignore` cho one-off. File lạ không phải mình tạo → check `git ls-files` + imports trước khi đụng.
-- `docs/`: canon `0,1,2` + `adr|audits|context|design-system|ideas|intent|knowledge-base|mockups|research|reviews|specs`; `tasks/`: `plan.md`/`todo.md` active + `plans|todos|reports`; `tests/`: `unit|integration|data-test|mocks`.
+- `docs/`: canon `0,1,2` + `adr|audits|context|design-system|ideas|intent|knowledge-base|mockups|research|reviews|specs`; `tasks/`: `pipeline-state.json` (pipeline SSOT) + `plan|todo|reports`; `tests/`: `unit|integration|data-test|mocks`.
 - Mọi skill chỉ sống ở `.agents/skills/` — không tạo skill ở `.devin/` hay chỗ khác.
 
 ## Environment quirks

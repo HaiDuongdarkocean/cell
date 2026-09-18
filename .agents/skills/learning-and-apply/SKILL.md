@@ -1,6 +1,6 @@
 ---
 name: learning-and-apply
-description: Cell's accumulated lessons - grep before coding, distill principles after fixing. Use on every Build/Verify/Review task.
+description: Cell's accumulated lessons - grep before coding, distill principles after fixing. Use on every DELIVER/Verify/Review task — inside pipeline-deliver build and on standalone fixes.
 ---
 
 # Learning and Apply

@@ -17,7 +17,7 @@ Turns any topic into precise questions → verified knowledge from **two sources
 
 ## When NOT to Use
 
-- Concrete bounded task → just do it. Single fact → `web_search` directly. Code → `spec-driven-development`/`source-driven-development`. UI feeling → `idea-to-interface`. UI audit → `audit-ui-ux-then-redesign`.
+- Concrete bounded task → just do it. Single fact → `web_search` directly. Code → `pipeline-specify`/`source-driven-development`. UI feeling → `pipeline-design`. UI audit → `audit-ui-ux-then-redesign`.
 
 ## Core principle
 
@@ -61,8 +61,8 @@ Every topic answered from **both**: (1) codebase — `docs/`, `src/shared/`, `AG
 - [ ] Bloom target declared and reached (or gap explained); sources cited with authority scores
 - [ ] Decision tasks: ≥3 options, weighted matrix, 5 Whys, confidence + risk stated
 - [ ] First-principles option scored; tie-break applied; 80% stop rule respected
-- [ ] Output uses a template; next skill named (`idea-to-interface`, `spec-driven-development`, ...)
+- [ ] Output uses a template; next skill named (`pipeline-design`, `pipeline-specify`, ...)
 
 ## Router boomerang
 
-Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. UI brief → `idea-to-interface`; implement → `spec-driven-development`; extract requirements → `interview-me`/`elicitation`; stress-test → `doubt-driven-development`.
+Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. UI brief → `pipeline-design`; implement → `pipeline-specify`; extract requirements → `interview-me`/`elicitation`; stress-test → `doubt-driven-development`.

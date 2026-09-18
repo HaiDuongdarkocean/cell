@@ -18,7 +18,7 @@ When: click word on subtitle target line
 Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 ```
 
-Loop back: request is vague → invoke `/interview-me` on yourself; only ask the user if that fails.
+Loop back: request is vague → invoke `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
 
 ## Step 1: Build
 

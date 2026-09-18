@@ -1,122 +1,111 @@
 ---
 name: idea-pick-off
-description: Pops the top unblocked item from docs/ideas/product-backlog.md and runs it through the spec→plan→build→ship pipeline. `all` mode loops the pipeline across every unblocked item until the backlog is drained. Use when asked to start the next backlog feature, "làm item #N", "làm hết backlog", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).
+description: Pops the top unblocked item from docs/ideas/product-backlog.md and drives it through the stage pipeline (analyze → specify → design → deliver → shipped). `all` mode loops until the backlog is drained. Use when asked to start the next backlog feature, "làm item #N", "làm hết backlog", or continue the roadmap. Not for adding new ideas (→ idea-grab) or fixing bugs (→ debugging-and-error-recovery).
 ---
 
 # Idea Pick-Off — Backlog Top → Shipped
 
 ## Overview
 
-`idea-pick-off` is the **execution half** of the product pipeline. It reads `docs/ideas/product-backlog.md` as a single ordered queue, claims the top unblocked item, and drives it through the existing skill chain — it orchestrates, never reimplements.
+`idea-pick-off` is the **driver** of the agentic SDLC. It reads `docs/ideas/product-backlog.md` as a single ordered queue, claims the top unblocked item, and routes it through the stage skills — it orchestrates, never reimplements stage work.
 
 ```
-read backlog → pick top unblocked icebox → claim
-  → /elicitation → spec (specced)
-  → /planning-and-task-breakdown → tasks (planned)
-  → build + gates (in-progress)
-  → ship + links (shipped)
+read backlog → pick top unblocked icebox → state init
+  → pipeline-analyze   (decision: no-go → dropped · go → analyzed)
+  → pipeline-specify   (spec reviewed → specced)
+  → pipeline-design    (only when uiSurface=yes → designed)
+  → pipeline-deliver   (plan → build → gates → verify → shipped)
 ```
 
-One item per run by default. `/idea-pick-off all` runs the whole queue — see **Loop mode** below. The queue order is the contract — never reorder mid-build.
+One item per run by default. `/idea-pick-off all` drains the queue — see **Loop mode**. Queue order is the contract — never reorder mid-build.
+
+**SSOT split:** `tasks/pipeline-state.json` is the machine-readable stage truth (transitions enforced by `scripts/pipeline-state.mjs`); the backlog `Status` column is the human mirror. State wins on conflict.
 
 ## When to Use
 
 - "Làm item tiếp theo", "pick next idea", "làm #N", "continue roadmap"
-- "làm hết backlog", "idea-pick-off all", "run the whole queue" → Loop mode
+- "làm hết backlog", "idea-pick-off all" → Loop mode
 - After `idea-grab` inserts items and user wants the top one built
-- After a wave lands and the next item should start
 
 ## When NOT to Use
 
 - Adding ideas → `idea-grab`
 - Bug/regression → `debugging-and-error-recovery`
 - Debt/refactor → `audit-technical-debt`
-- Backlog item is a question, not a feature → `interview-me`/`elicitation` directly
+- Raw idea not in backlog → `pipeline-analyze` directly
 
 ## Pre-conditions
 
-- `docs/ideas/product-backlog.md` exists with the Item schema (Slug/Pain/Cost/Value/Infra/Deps/Source/Status/Spec).
-- Working tree clean or unrelated-to-backlog — never claim on top of a dirty tree.
+- `docs/ideas/product-backlog.md` exists with the Item schema.
+- Working tree clean or unrelated — never claim on top of a dirty tree.
+- `tasks/pipeline-state.json` exists; `active` is `null` or points to the item being resumed.
 
 ## Steps
 
 ### Step 1 — Read the queue
 
-**Actions:**
-- Parse the backlog table. Build the list of rows with `status=icebox`.
-- Top item = lowest `#` whose every `Deps` ID is `shipped` or `—`.
+- Parse the backlog table → rows with `Status=icebox`.
+- Top item = lowest `#` whose every `Deps` is `shipped` or `—`.
+- Also check `pipeline-state.json` for `awaiting`/non-terminal items — resume beats new picks.
 
-**Guard:**
-- No icebox items → report "backlog empty — run /idea-grab" and stop.
-- Top item blocked by unshipped deps → try next item; if ALL icebox items blocked → report blocked list and stop.
+**Guard:** no icebox → report "backlog empty — run /idea-grab" and stop. Top blocked by unshipped deps → try next; all blocked → report and stop.
 
-### Step 2 — Claim
+### Step 2 — Claim + init state
 
-**Actions:**
-- If user named a specific item (`#N` or slug), use that — still verify deps; if blocked, ask before proceeding.
-- Set the chosen row `Status: in-progress`, commit that alone? — No: edit in place, commit together with spec artifacts later (Step 5). For now, remember the claim.
+- User named `#N`/slug → use that; verify deps, ask before proceeding if blocked.
+- `node scripts/pipeline-state.mjs init <slug> --mode interactive` (`--mode all` inside loop mode).
+- Backlog row → `Status: in-progress` is premature — keep `icebox` until analyze confirms `go`. Mark claim in state only.
 
-**Guard:** item already `in-progress`/`specced`/`planned` → resume from its stage, don't restart.
+**Guard:** item already in state with non-terminal stage → resume from `stage`, don't restart.
 
-### Step 3 — Spec (invoke `/elicitation`)
+### Step 3 — ANALYZE (invoke `pipeline-analyze`)
 
-**Actions:**
-- Seed elicitation with the row: `Pain` = raw statement seed, `Nhóm`/`Slug`/`Infra`/`Source` as context. The 8-field frame fills from these + one observation/interview round with the user.
-- After confirmed frame → auto-spec writes `docs/specs/<slug>.md`, auto-review + fix ≤3 rounds.
-- On success: set `Status: specced`, `Spec: docs/specs/<slug>.md`.
+- Seed with row: `Pain`/`Nhóm`/`Infra`/`Source` + slug.
+- Outcome `go` → `transition --to specify`; backlog `Status: analyzed`, `Spec:` cell += intent link.
+- Outcome `no-go`/`defer` → `transition --to dropped`; backlog `Status: dropped` + reason (the CLI updates the row itself when it can match it); pick next item in `all` mode, stop in single mode.
 
-**Guard:** spec rejected 3 rounds → stop, present spec + review to user, status stays `in-progress` with note.
+**Guard:** `awaiting` non-null → surface to user, resolve via `resolve <slug> --note`, never proceed past it.
 
-### Step 4 — Plan (invoke `/planning-and-task-breakdown`)
+### Step 4 — SPECIFY (invoke `pipeline-specify`)
 
-**Actions:** spec → `tasks/plan-<slug>.md` (or repo convention). Set `Status: planned`.
+- Intent → `docs/specs/<slug>.md` → spec-reviewer gate → fix ≤3 rounds.
+- `uiSurface=yes` → `transition --to design`; `uiSurface=no` → `transition --to deliver`.
+- Backlog `Status: specced`, `Spec:` = spec link, `UI` column filled.
 
-### Step 5 — Build
+**Guard:** spec rejected 3 rounds → `transition --to analyze` (loop count), or stop with `awaiting` note in `all` mode → skip item.
 
-**Actions:**
-- Execute the plan. Follow AGENTS.md: named exports, no comments, FSD boundaries, reuse > rewrite.
-- Required gates before commit: `npm run typecheck` + `npm run lint` + `npm run test:unit` + `npm run build`. If runtime wiring changed → real-Chrome smoke via `testing-extension-browser`.
-- `src/` changed → update `docs/2-architechture-system.md`.
+### Step 5 — DESIGN (invoke `pipeline-design`, uiSurface=yes only)
 
-**Guard:** any gate red → fix root cause or stop and report — never commit a red gate. Never silently drop a task from the plan; blocked → message user + keep `in-progress`.
+- Concepts → mockup → brief → approval (interactive) or vision-reader verdict (`all`).
+- `transition --to deliver`; backlog `Status: designed`.
 
-### Step 6 — Ship
+### Step 6 — DELIVER (invoke `pipeline-deliver`)
 
-**Actions:**
-- Commit(s) grouped by subsystem, no attribution trailers.
-- Backlog row: `Status: shipped`, `Spec` stays linked — append commit hash in the Spec cell or a short note.
-- `docs/0-wiki.md` changelog line (follow existing table format).
-- Report: item shipped, next top item named.
+- Plan → build (engine: `autonomous-pipeline` for M+ lanes, in-session for XS/S) → gates → fresh-context verify → ship.
+- `transition --to shipped`; backlog `Status: shipped` + commit hash; `docs/0-wiki.md` changelog.
 
-**Guard:** partial ship (some sub-features deferred) → keep the row `in-progress`, move deferred sub-features into a new icebox row or note under the item — don't fake `shipped`.
+**Guard:** any gate red that survives a real fix → stop and report — never commit red. Never silently drop a plan task; blocked → `awaiting` + message user.
 
 ## Loop mode (`/idea-pick-off all`)
 
-Runs Steps 1–6 per item, then immediately re-enters Step 1 for the next item, until the queue is drained or a stop condition hits.
+Steps 1–6 per item, then re-enter Step 1 until drained or a stop condition hits. Every item in the loop runs `--mode all`: `pipeline-state.mjs init <slug> --mode all`.
 
-```
-loop:
-  pick top unblocked icebox → spec → plan → build → ship → commit
-  → tree clean? → next item
-until: no icebox left · every remaining item blocked · stop condition
-```
+**HARD RULES for `all` — no exceptions:**
 
-**Rules specific to `all` — HARD RULES, no exceptions:**
+- **ZERO QUESTIONS, start to finish.** No interviews, no frame confirmation, no "should I proceed". Decisions → conservative option recorded as accepted risk in the intent doc. Asking mid-loop is a contract violation.
+- **Self-interrogation is the gate.** ANALYZE infers via cite-or-assumption rules; SPECIFY's spec-reviewer is the only human-proxy gate; DESIGN uses brief-lint + vision-reader; DELIVER's transition re-runs npm gates itself.
+- **Blocked item → skip, not stall.** Deps unshipped, loop cap hit, or `awaiting` set → mark `Status: in-progress` + one-line blocking note, move to next unblocked item.
+- **Gate red surviving a real fix** → stop the whole loop — the tree never accumulates unverified work.
+- **Item isolation.** Per-item commits grouped by subsystem; tree clean before next claim. Worktree-per-item when session convention says so.
+- **Never reorder.** Skipped items keep position, stay `in-progress` + note.
+- **Stop conditions** (any → stop + report): drained · all remaining blocked · unfixable gate red · 3 consecutive skips · user interrupt.
 
-- **ZERO QUESTIONS, start to finish.** In `all` mode the agent MUST NOT ask the user anything — no interview rounds, no frame confirmation, no "should I proceed" checks. The 8-field frame is inferred from `Pain`/`Infra`/`Source` + codebase evidence, assumptions documented in the intent doc, and spec-review-stakeholder is the only gate. If a decision is genuinely needed, pick the conservative option, record it as an accepted risk in the spec, and move on. Asking the user mid-loop is a contract violation — the loop is autonomous by definition.
-- **Autonomous elicitation.** This is the only case where elicitation skips the user entirely: no observation round, no interview, no explicit "yes". The confirmed frame = inferred frame + spec-review pass.
-- **No mid-loop questions.** Not even for a repeating hard stop condition — stop the loop and report instead of asking. A single blocked item never pauses the loop.
-- **Blocked item → skip, not stall.** Item blocked by unshipped deps or spec rejected 3 rounds → mark `Status: in-progress` + one-line blocking note in the Spec cell, move to the next unblocked item, list it in the final report.
-- **Gate red that survives a real fix attempt** → stop the whole loop and report — the tree must never accumulate unverified work.
-- **Item isolation.** Each item still gets its own commits grouped by subsystem; tree must be clean before claiming the next item. If the session convention is worktree-per-item, create/merge/remove one per item.
-- **Never reorder.** Loop consumes the queue top-down; skipped items keep their position and stay `in-progress` with a note.
-- **Stop conditions** (any → stop, report): backlog drained · every remaining item blocked · a gate that can't be fixed · 3 consecutive items skipped · user interrupt.
-
-**Loop report (end of run):**
+**Loop report:**
 
 ```markdown
 ## Pick-off all — <date>
 - Shipped: <slug ×N with commit hashes>
+- Dropped: <slug — no-go reason>
 - Skipped/blocked: <slug — reason>
 - Stopped because: <drained | all blocked | gate red | interrupt>
 - Next top item: <slug or "backlog empty — /idea-grab">
@@ -124,36 +113,40 @@ until: no icebox left · every remaining item blocked · stop condition
 
 ## Resume rules
 
-| Found status | Resume at |
+Read `tasks/pipeline-state.json` first; backlog status is the fallback mirror.
+
+| Found stage/status | Resume at |
 |---|---|
-| `icebox` | Step 3 (spec) |
-| `specced` | Step 4 (plan) |
-| `planned` | Step 5 (build) |
-| `in-progress` | Inspect tasks/commits → resume mid-build, don't redo spec |
+| `icebox` / no state | `init` → pipeline-analyze |
+| `analyze` / `analyzed` | pipeline-analyze (finish or continue to specify) |
+| `specify` / `specced` | pipeline-specify (fix rounds or transition out) |
+| `design` / `designed` | pipeline-design |
+| `deliver` / `in-progress` | pipeline-deliver — inspect plan/todos/commits, resume mid-build |
+| `awaiting` non-null | Resolve the flag first (`resolve <slug> --note`) |
+| `shipped` / `dropped` | Terminal — pick next item |
 
 ## Anti-patterns
 
 | Don't | Why |
 |---|---|
-| Skip spec and build straight from the Pain line | Pain is a seed, not requirements — elicitation exists for this |
-| Pick multiple items at once | Queue is single-sequence; `all` mode is sequential items, not parallel — parallelism is inside the plan, not the backlog |
-| Interview the user mid-loop in `all` mode | The loop is autonomous — infer the frame, let spec-review gate it; asking blocks the pipeline |
-| Fake-skip a failing item as `dropped`/`shipped` to keep the loop moving | Skipped = `in-progress` + blocking note; only the user vetoes |
+| Build straight from the Pain line | Pain is a seed — analyze/specify exist for this |
+| Skip DESIGN on a `uiSurface=yes` item | The FAB lesson: UI decided before implementation or it gets redone by hand |
+| Ask the user mid-loop in `all` mode | Loop is autonomous — infer, record risk, let gates catch it |
+| Fake-skip a failing item as `shipped` | Skipped = `in-progress` + blocking note; only `no-go` analysis or user veto drops |
+| Edit `tasks/pipeline-state.json` by hand | Mutations only via `pipeline-state.mjs` — enforcement lives there |
 | Reorder rows mid-build | Breaks the pick contract; reorder only at wave boundaries |
-| Mark shipped without all gates green | Fake completion; the next audit finds it |
-| Rename a slug after spec exists | Breaks intent/spec file links |
-| Silently drop a blocked item | Keep it in-progress, tell the user what's blocking |
+| Rename a slug after intent exists | Breaks intent/spec/design file links |
+| Silently drop a blocked item | `awaiting` + in-progress note — tell the user what's blocking |
 
 ## Verification
 
 - [ ] Picked item = lowest unblocked `icebox` (or user-named, deps verified)
-- [ ] Status transitions logged in the backlog at each stage
-- [ ] Spec exists at `docs/specs/<slug>.md` and passed review
-- [ ] All gates green before commit
-- [ ] `shipped` only when everything in scope landed; partial → deferred sub-features tracked
-- [ ] Wiki changelog + commit done
-- [ ] `all` mode: loop report produced, skipped items carry blocking notes, tree clean at exit
+- [ ] `pipeline-state.json` stage and backlog `Status` agree at every transition
+- [ ] `no-go` items land `dropped` with reason — never silently skipped
+- [ ] `uiSurface=yes` items passed DESIGN before `deliver`
+- [ ] `shipped` only on transition success + gates green; partial → deferred tracked
+- [ ] Wiki changelog + commits done; `all` mode: loop report + skipped notes + clean tree
 
 ## Router boomerang
 
-Need new ideas? → `/idea-grab`. Spec exists but unclear? → `/spec-review-stakeholder`. Build broke? → `/debugging-and-error-recovery`.
+Need new ideas? → `/idea-grab`. Wrong need mid-flight? → `transition --to analyze`. Build broke? → `/debugging-and-error-recovery`.

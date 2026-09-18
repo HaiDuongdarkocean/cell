@@ -45,6 +45,16 @@ Change ready
     │
     ▼
 ┌─────────────────────┐
+│ 1.7 Brief lint      │ design-brief/mapping đổi → check-design-brief.mjs
+└─────────────────────┘
+    │
+    ▼
+┌─────────────────────┐
+│ 1.8 Skills index    │ SKILL.md đổi → index regen + diff clean
+└─────────────────────┘
+    │
+    ▼
+┌─────────────────────┐
 │ 2. Lint             │ npm run lint (if .ts/.tsx/.css changed)
 └─────────────────────┘
     │
@@ -92,6 +102,8 @@ git status --short
 | `tokens.json` | build (regenerates tokens.css), typecheck |
 | `package.json`, `*.config.*` | build, typecheck |
 | `docs/specs/*.md` | spec→review check (Step 1.6) |
+| `docs/intent/*-design-brief.md`, `*-component-mapping.md` | brief lint (Step 1.7) |
+| `.agents/skills/*/SKILL.md`, `.agents/agents/` | skills index check (Step 1.8) |
 | `.md`, `.txt` | skip (no build impact) |
 
 ## Step 1.5: Debt Smell Check
@@ -112,14 +124,41 @@ git status --short
 
 ## Step 1.6: Spec→Review Artifact Check (warn)
 
-**Purpose:** Đóng gap adversarial-review adoption — spec đổi scope/AC mà không qua `spec-review-stakeholder` thì review principle chỉ trên giấy (evidence: 3/33 spec có artifact).
+**Purpose:** Đóng gap adversarial-review adoption — spec đổi scope/AC mà không qua SPECIFY gate (`spec-reviewer` trong `pipeline-specify`) thì review principle chỉ trên giấy (evidence: 3/33 spec có artifact).
 
 **Actions:**
 - Nếu `git status` có file đổi/thêm dưới `docs/specs/` nhưng không có file nào đổi/thêm dưới `docs/reviews/` trong cùng commit → **WARN**, liệt kê spec nào thiếu review.
-- Recommend chạy `/spec-review-stakeholder` trước khi commit.
+- Recommend chạy `spec-reviewer` gate (`pipeline-specify`) trước khi commit.
 - Skip warn khi: change là typo/format rõ ràng, hoặc spec đó đã có review artifact và change không đụng scope/AC.
 
 **Guard:** WARN, không FAIL — report ghi rõ spec thiếu review.
+
+## Step 1.7: Design Brief Lint (fail)
+
+**Purpose:** Design artifacts reference real tokens/components/icons — the FAB lesson was a brief drifting from the design system; the lint is deterministic, not taste.
+
+**Actions:**
+- Nếu change set có `docs/intent/<slug>-design-brief.md` hoặc `<slug>-component-mapping.md` →
+  ```bash
+  node scripts/check-design-brief.mjs <slug>
+  ```
+- Exit non-zero → **FAIL**, liệt kê missing token/component/icon.
+
+**Guard:** FAIL — ship-blocking; brief và mapping phải resolve được mọi reference.
+
+## Step 1.8: Skills Index Check (fail)
+
+**Purpose:** `.agents/skills/index.json` là generated — SKILL.md đổi mà index cũ thì routing/search đọc stale metadata.
+
+**Actions:**
+- Nếu change set có `.agents/skills/*/SKILL.md` hoặc `.agents/agents/` →
+  ```bash
+  node scripts/update-skill-index.mjs
+  git diff --exit-code .agents/skills/index.json
+  ```
+- Diff non-empty → **FAIL** — commit kèm index đã regen.
+
+**Guard:** FAIL — index phải đi cùng commit với SKILL.md thay đổi.
 
 ## Step 2: Lint
 
@@ -211,6 +250,8 @@ npm run build
 | Build | ✅ pass |
 | UI audit | ✅ pass (not needed) |
 | Spec→review | ✅ pass / ⚠️ warn (n specs thiếu artifact) |
+| Brief lint | ✅ pass / ⏸️ n/a |
+| Skills index | ✅ pass / ⏸️ n/a |
 
 Ready for commit.
 ```
@@ -245,7 +286,12 @@ Fix `src/features/X.tsx:42` then re-run pre-commit gate.
 - [ ] Unit tests pass.
 - [ ] Build passes.
 - [ ] UI audit passes (if CSS/TSX UI changed).
+- [ ] Brief lint passes (if design-brief/mapping changed).
+- [ ] Skills index clean (if SKILL.md/agents changed).
 - [ ] Report written with specific pass/fail status.
+- [ ] Gate results recorded to pipeline state when a `deliver` item is active:
+      `node scripts/pipeline-state.mjs gates <slug> --set typecheck=pass` (etc.) —
+      cache for observability; the ship transition re-validates anyway.
 
 ## Anti-patterns
 

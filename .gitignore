@@ -171,6 +171,8 @@ loop/
 # Generated / one-off task artifacts (keep plan/*.md; ignore generated inventories).
 tasks/*.mjs
 tasks/*.json
+!tasks/pipeline-state.json
+tasks/.pipeline-state-*.tmp
 tasks/inventory-*.md
 
 # Stale runtime assets that leak into docs/design-system from public/ but are not

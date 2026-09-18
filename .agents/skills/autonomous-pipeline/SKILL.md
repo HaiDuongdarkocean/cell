@@ -11,14 +11,14 @@ Chains the Cell skill pipeline into one orchestrated run: spec → plan → para
 
 ## When to Use
 
-- A confirmed spec exists in `docs/specs/` (from `elicitation` or `spec-driven-development`) and the feature is multi-task
-- The user confirmed intent and wants end-to-end execution ("just do it")
+- Invoked **from `pipeline-deliver`** (DELIVER stage) — the stage contract decides when the engine runs; this skill is never the entry point for backlog items
+- A reviewed spec exists in `docs/specs/` and the feature is multi-task
 - Work decomposes into independent slices that can be built in parallel
 
 **When NOT to use:**
 
-- Single-file or XS/S changes — implement directly
-- No spec yet → `elicitation` first
+- Single-file or XS/S changes — implement directly inside DELIVER
+- No spec yet → `pipeline-analyze` / `pipeline-specify` first
 - Destructive/irreversible operations — those always need explicit human confirmation
 
 ## How It Works
@@ -29,10 +29,11 @@ Run `pipeline.md` top to bottom. It encodes no-question defaults, per-phase guar
 
 | Gate | Type | Position |
 |---|---|---|
-| Intent frame ("yes") | Blocking | Before this skill (in `elicitation`) |
-| Spec / plan | Async veto | Presented, not waited on — veto anytime before commit |
+| Intent `## Decision: go` | Blocking | Before this skill (ANALYZE, in `pipeline-analyze`) |
+| Spec review verdict | Blocking | Before this skill (SPECIFY gate, `docs/reviews/<slug>-spec.md`) |
+| Plan | Async veto | Presented, not waited on — veto anytime before commit |
 | Build / verify | None | Subagents execute and verify |
-| Business sign-off | Blocking | `shipping-and-launch` post-launch review |
+| Business sign-off | Blocking (interactive) / async (`all`) | `pipeline-deliver` ship step |
 
 ## Orchestration rules
 

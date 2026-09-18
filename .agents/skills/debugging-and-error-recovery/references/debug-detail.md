@@ -12,7 +12,7 @@ Then: <exact visible or measurable outcome>
 
 Critical: the Given must capture EVERY condition the user described — timing ("when X runs to the end"), layout ("when the page is scrolled"), mode ("in mode A, not mode B"). Dropping a precondition means reproducing a different bug or no bug.
 
-Loop back: request vague → `/interview-me` on yourself; only ask the user if that fails.
+Loop back: request vague → `/pipeline-analyze` (interactive) on yourself; only ask the user if that fails.
 
 ## Step 1: Preserve
 
