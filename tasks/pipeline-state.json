@@ -155,6 +155,18 @@
       "resolutions": [],
       "loops": 0,
       "updated": "2026-09-18T21:51:35.181Z"
+    },
+    "dead-code-purge": {
+      "stage": "dropped",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "updated": "2026-09-18T21:52:27.794Z"
     }
   }
 }
