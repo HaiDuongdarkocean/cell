@@ -5,13 +5,16 @@ import type { Token } from '@/features/tokenize/types';
 const TRACKING_WEIGHT = 0.5;
 const NUMERIC_RE = /^\p{N}+$/u;
 
-const BAND_MIN: Record<ComprehensionKind, { comfortable: number; stretch: number }> = {
+export const COMPREHENSION_BAND_MIN: Record<
+  ComprehensionKind,
+  { comfortable: number; stretch: number }
+> = {
   media: { comfortable: 95, stretch: 90 },
   text: { comfortable: 98, stretch: 95 },
 };
 
 export function bandForCoverage(coverage: number, kind: ComprehensionKind): ComprehensionBand {
-  const t = BAND_MIN[kind];
+  const t = COMPREHENSION_BAND_MIN[kind];
   if (coverage >= t.comfortable) return 'comfortable';
   if (coverage >= t.stretch) return 'stretch';
   return 'hard';

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { VideoRecord, SubtitleRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
 
-export type LibrarySort = 'recent' | 'title' | 'added';
+export type LibrarySort = 'recent' | 'title' | 'added' | 'fit';
 
 export type SubtitleStatus = 'idle' | 'searching' | 'loaded' | 'not-found' | 'error';
 

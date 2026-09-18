@@ -181,6 +181,8 @@ export function registerLocalPlayerHandlers(ctx: BackgroundContext): void {
         lastWatchedAt: now,
         resumePositionMs: 0,
       };
+      const existing = await getVideo(payload.videoId).catch(() => undefined);
+      if (existing?.comprehension) record.comprehension = existing.comprehension;
       await saveVideo(record);
       await addHistoryEntry({
         id: `${payload.videoId}-${Date.now()}`,

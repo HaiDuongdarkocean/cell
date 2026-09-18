@@ -28,9 +28,12 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { mountComprehensionPill } from '@/features/tokenize/ui/mountComprehensionPill';
 import { comprehensionStore } from '@/features/tokenize/services/comprehensionStore';
 import { startMediaScoreSource } from '@/features/subtitle/logic/mediaScoreSource';
+import { startWordStatusCrossTabRelay } from '@/features/dictionary/services/wordStatusCrossTab';
+import { useLibraryScores } from './hooks/useLibraryScores';
 import './styles/global.css';
 
 installRippleDelegation(document);
+startWordStatusCrossTabRelay();
 
 export function LocalPlayerApp(): React.JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -81,6 +84,13 @@ export function LocalPlayerApp(): React.JSX.Element {
     matchPendingSubsForCurrentVideo,
   });
   const controls = useManagerControls(subtitleEngine);
+
+  useLibraryScores({
+    videos: library,
+    subtitles: subtitlesLibrary,
+    fileMapRef: caches.subtitleFileMapRef,
+    setLibrary,
+  });
 
   useEffect(() => {
     void (async (): Promise<void> => {
@@ -183,7 +193,7 @@ export function LocalPlayerApp(): React.JSX.Element {
       filename={videoFile?.name ?? null}
       subtitles={subtitles}
       subtitleStatus={subtitleStatus}
-      library={library}
+      library={sortedLibrary}
       subtitlesLibrary={subtitlesLibrary}
       librarySort={librarySort as SortBy}
       targetStyle={subtitleEngine.targetStyle}

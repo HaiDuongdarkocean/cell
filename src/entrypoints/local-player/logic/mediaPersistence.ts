@@ -46,6 +46,12 @@ export function buildSubtitleRecord(
 }
 
 export async function persistVideoRecord(record: VideoRecord): Promise<void> {
+  if (record.comprehension === undefined) {
+    const existing = await getVideo(record.id).catch(() => undefined);
+    if (existing?.comprehension) {
+      record = { ...record, comprehension: existing.comprehension };
+    }
+  }
   await saveVideo(record).catch(() => {
     const { fileHandle, dirHandle, ...rest } = record;
     void fileHandle;

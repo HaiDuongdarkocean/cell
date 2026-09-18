@@ -10,6 +10,8 @@
 // API), so it can be stored directly in a video/subtitle record.
 // source: https://developer.mozilla.org/en-US/docs/Web/API/structuredClone
 
+import type { ComprehensionBand } from '@/entities/comprehension';
+
 // ─── Schema constants ────────────────────────────────────────────────────────
 
 export const DB_NAME = 'orca-local-player';
@@ -27,6 +29,14 @@ export const INDEXES = {
 } as const;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+export type VideoComprehension = {
+  coverage: number;
+  band: ComprehensionBand;
+  newTerms: number;
+  subtitleFilename: string;
+  computedAt: string;
+};
 
 export type VideoRecord = {
   id: string;
@@ -47,6 +57,9 @@ export type VideoRecord = {
   dirHandle?: FileSystemDirectoryHandle;
   /** Whether a matching subtitle was found during folder scan. */
   hasSubtitle?: boolean;
+  /** Cached comprehension score of the matched target subtitle (i1-content-queue).
+   *  Optional — old records lack it; statuses are the source of truth. */
+  comprehension?: VideoComprehension;
 };
 
 export type HistoryRecord = {
@@ -189,6 +202,27 @@ export async function updateResumePosition(
   if (!existing) throw new Error(`Video not found: ${id}`);
   store.put({ ...existing, resumePositionMs, lastWatchedAt });
   await txDone(tx);
+}
+
+/** Merge a fresh comprehension score onto the current record in one tx.
+ *  No-op when the video no longer exists (deleted mid-scoring-run). */
+export async function updateVideoComprehension(
+  id: string,
+  comprehension: VideoComprehension,
+): Promise<boolean> {
+  const db = await getDB();
+  const tx = db.transaction(STORES.VIDEOS, 'readwrite');
+  const store = tx.objectStore(STORES.VIDEOS);
+  const existing = (await reqToPromise(store.get(id))) as
+    | VideoRecord
+    | undefined;
+  if (!existing) {
+    await txDone(tx).catch(() => {});
+    return false;
+  }
+  store.put({ ...existing, comprehension });
+  await txDone(tx);
+  return true;
 }
 
 // ─── History ─────────────────────────────────────────────────────────────────

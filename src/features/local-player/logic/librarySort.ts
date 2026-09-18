@@ -1,4 +1,6 @@
-export type SortBy = 'recent' | 'title' | 'added' | 'duration';
+import { COMPREHENSION_BAND_MIN } from '@/features/tokenize';
+
+export type SortBy = 'recent' | 'title' | 'added' | 'duration' | 'fit';
 
 export type VideoEntry = {
   id: string;
@@ -7,7 +9,14 @@ export type VideoEntry = {
   lastWatchedAt: string | null;
   durationMs: number;
   resumePositionMs: number;
+  comprehension?: { coverage: number };
 };
+
+const FIT_TARGET = COMPREHENSION_BAND_MIN.media.comfortable;
+
+export function fitDistance(coverage: number): number {
+  return Math.abs(coverage - FIT_TARGET);
+}
 
 const compareDesc = (a: string, b: string): number => (a > b ? -1 : a < b ? 1 : 0);
 
@@ -81,14 +90,27 @@ const compareAdded = (a: VideoEntry, b: VideoEntry): number => {
 const compareDuration = (a: VideoEntry, b: VideoEntry): number =>
   a.durationMs - b.durationMs;
 
+const compareFit = (a: VideoEntry, b: VideoEntry): number => {
+  const aCov = a.comprehension?.coverage;
+  const bCov = b.comprehension?.coverage;
+  if (aCov === undefined && bCov === undefined) return compareRecent(a, b);
+  if (aCov === undefined) return 1;
+  if (bCov === undefined) return -1;
+  const dist = fitDistance(aCov) - fitDistance(bCov);
+  if (dist !== 0) return dist;
+  if (aCov !== bCov) return aCov - bCov;
+  return compareRecent(a, b);
+};
+
 const comparators: Record<SortBy, (a: VideoEntry, b: VideoEntry) => number> = {
   recent: compareRecent,
   title: compareTitle,
   added: compareAdded,
   duration: compareDuration,
+  fit: compareFit,
 };
 
-export function sortLibrary(videos: VideoEntry[], sortBy: SortBy): VideoEntry[] {
+export function sortLibrary<T extends VideoEntry>(videos: T[], sortBy: SortBy): T[] {
   const compare = comparators[sortBy];
   // Array.prototype.sort is stable in modern engines (V8/Node ≥11).
   // Copy first so the input is never mutated.

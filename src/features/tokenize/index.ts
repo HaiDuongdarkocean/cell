@@ -21,6 +21,7 @@ export {
   createScoreTracker,
   isScorableToken,
   computeStats,
+  COMPREHENSION_BAND_MIN,
   type ScoreTracker,
 } from './logic/comprehensionScore';
 export { fetchTermStatuses } from './services/scoreStatusFetch';

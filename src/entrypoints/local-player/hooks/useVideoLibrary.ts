@@ -75,9 +75,10 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
       videos: readonly VideoScanResult[],
       subtitles: ReadonlyMap<string, File>,
       dirHandle: FileSystemDirectoryHandle | null,
+      subtitleHandles?: ReadonlyMap<string, FileSystemFileHandle>,
     ): Promise<void> => {
       for (const [filename, file] of subtitles) {
-        const subRecord = buildSubtitleRecord(file);
+        const subRecord = buildSubtitleRecord(file, subtitleHandles?.get(filename));
         subRecord.id = filename;
         await persistSubtitleRecord(subRecord);
       }
@@ -157,13 +158,18 @@ export function useVideoLibrary(deps: VideoLibraryDeps): VideoLibrary {
     if (videoPicks.length === 0 && subtitlePicks.length === 0) return;
 
     const subtitleFileMap = new Map<string, File>();
-    for (const s of subtitlePicks) subtitleFileMap.set(s.file.name, s.file);
+    const subtitleHandles = new Map<string, FileSystemFileHandle>();
+    for (const s of subtitlePicks) {
+      subtitleFileMap.set(s.file.name, s.file);
+      if (s.handle) subtitleHandles.set(s.file.name, s.handle);
+    }
     caches.subtitleFileMapRef.current = createFileCache(subtitleFileMap);
 
     await savePickedMedia(
       videoPicks.map((p) => ({ file: p.file, handle: p.handle, filename: p.file.name })),
       subtitleFileMap,
       null,
+      subtitleHandles,
     );
 
     if (videoPicks.length > 0) {

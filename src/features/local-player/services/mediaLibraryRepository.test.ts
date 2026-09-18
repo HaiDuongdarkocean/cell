@@ -5,6 +5,7 @@ import {
   getAllVideos,
   deleteVideo,
   updateResumePosition,
+  updateVideoComprehension,
   addHistoryEntry,
   getHistory,
   clearHistory,
@@ -370,5 +371,50 @@ describe('mediaLibraryRepository — FileSystemFileHandle storage', () => {
     expect(got!.fileHandle).toBeDefined();
     expect(got!.fileHandle?.name).toBe('preserve-handle.mkv');
     expect(got!.resumePositionMs).toBe(3000);
+  });
+});
+
+describe('mediaLibraryRepository — updateVideoComprehension', () => {
+  const baseVideo = (id: string): VideoRecord => ({
+    id,
+    filename: `${id}.mkv`,
+    title: id,
+    durationMs: 5000,
+    addedAt: '2026-01-01T00:00:00.000Z',
+    lastWatchedAt: null,
+    resumePositionMs: 0,
+  });
+
+  const comp = (coverage: number) => ({
+    coverage,
+    band: 'stretch' as const,
+    newTerms: 7,
+    subtitleFilename: 'show.en.srt',
+    computedAt: '2026-10-03T00:00:00.000Z',
+  });
+
+  it('merges comprehension onto the existing record in place', async () => {
+    await saveVideo(baseVideo('vid-comp'));
+    const ok = await updateVideoComprehension('vid-comp', comp(92.4));
+
+    const got = await getVideo('vid-comp');
+    expect(ok).toBe(true);
+    expect(got!.comprehension).toEqual(comp(92.4));
+    expect(got!.title).toBe('vid-comp');
+    expect(got!.filename).toBe('vid-comp.mkv');
+  });
+
+  it('is a no-op when the video does not exist', async () => {
+    const ok = await updateVideoComprehension('ghost', comp(90));
+    expect(ok).toBe(false);
+    expect(await getVideo('ghost')).toBeUndefined();
+  });
+
+  it('overwrites a prior comprehension score', async () => {
+    await saveVideo({ ...baseVideo('vid-rec'), comprehension: comp(80) });
+    await updateVideoComprehension('vid-rec', comp(96.1));
+
+    const got = await getVideo('vid-rec');
+    expect(got!.comprehension!.coverage).toBe(96.1);
   });
 });

@@ -13,6 +13,7 @@ const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'recent', label: 'Recently watched' },
   { value: 'title', label: 'Title' },
   { value: 'added', label: 'Date added' },
+  { value: 'fit', label: 'Best fit (i+1)' },
 ];
 
 const TARGET_LANG = 'en';

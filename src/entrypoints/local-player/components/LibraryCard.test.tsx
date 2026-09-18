@@ -262,3 +262,41 @@ describe('resumePercentValue', () => {
     expect(resumePercentValue({ ...findEntry('vid-001'), durationMs: 0, resumePositionMs: 1000 })).toBe(0);
   });
 });
+
+describe('LibraryCard — comprehension badge', () => {
+  const comp = {
+    coverage: 96.2,
+    band: 'comfortable' as const,
+    newTerms: 4,
+    subtitleFilename: 'show.en.srt',
+    computedAt: '2026-10-03T00:00:00.000Z',
+  };
+
+  const renderCard = (video: Parameters<typeof LibraryCard>[0]['video']) =>
+    render(
+      <LibraryCard
+        video={video}
+        isActive={false}
+        subtitleMatches={[]}
+        selectedTarget={null}
+        selectedNative={null}
+        onVideoSelect={jest.fn()}
+        onSelectTrack={jest.fn()}
+        onVideoDelete={jest.fn()}
+      />,
+    );
+
+  it('renders the badge when the record carries a comprehension score', () => {
+    renderCard({ ...findEntry('vid-001'), comprehension: comp });
+    const badge = screen.getByTestId('comprehension-badge');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent('96.2%');
+    expect(badge.getAttribute('data-band')).toBe('comfortable');
+    expect(badge.getAttribute('title')).toContain('4');
+  });
+
+  it('renders no badge when comprehension is absent', () => {
+    renderCard(findEntry('vid-001'));
+    expect(screen.queryByTestId('comprehension-badge')).not.toBeInTheDocument();
+  });
+});

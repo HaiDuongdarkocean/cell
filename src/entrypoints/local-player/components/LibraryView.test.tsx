@@ -101,6 +101,14 @@ describe('LibraryView — real sample data (26 entries)', () => {
     expect(onSortChange).toHaveBeenCalledWith('added');
   });
 
+  it('offers a "Best fit (i+1)" sort option', () => {
+    const onSortChange = jest.fn();
+    renderView({ onSortChange });
+    fireEvent.click(screen.getByRole('button', { name: 'Sort library' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Best fit (i+1)' }));
+    expect(onSortChange).toHaveBeenCalledWith('fit');
+  });
+
   it('renders empty state message when videos array is empty', () => {
     render(
       <LibraryView

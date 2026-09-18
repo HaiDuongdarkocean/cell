@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import type { VideoRecord } from '@/features/local-player/services/mediaLibraryRepository';
 import type { SubtitleMatch } from '@/features/local-player/logic/subtitleMatch';
+import type { ComprehensionStats } from '@/entities/comprehension';
 import { Icon } from '@/shared/ui/Icon';
 import { Button, Select } from '@/shared/ui';
+import { ComprehensionBadge } from '@/features/tokenize';
 import styles from './LibraryCard.module.css';
 
 /**
@@ -98,6 +100,21 @@ export function LibraryCard({
   const watchedLabel = formatLastWatched(video.lastWatchedAt, new Date());
   const dashOffset = RING_CIRCUMFERENCE * (1 - pct / 100);
 
+  const comprehensionStats = useMemo<ComprehensionStats | null>(() => {
+    const c = video.comprehension;
+    if (!c) return null;
+    return {
+      kind: 'media',
+      totalTokens: 0,
+      knownTokens: 0,
+      trackingTokens: 0,
+      unknownTokens: 0,
+      coverage: c.coverage,
+      band: c.band,
+      newTerms: c.newTerms,
+    };
+  }, [video.comprehension]);
+
   const subtitleOptions = useMemo(
     () =>
       subtitleMatches.map((m) => {
@@ -161,6 +178,9 @@ export function LibraryCard({
             <span className={styles.metaItem} data-cell-id="library-card-watched">
               {watchedLabel}
             </span>
+            {comprehensionStats && (
+              <ComprehensionBadge stats={comprehensionStats} size="xs" />
+            )}
           </span>
         </span>
 

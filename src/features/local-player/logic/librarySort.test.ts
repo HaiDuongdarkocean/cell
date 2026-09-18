@@ -100,3 +100,64 @@ describe('librarySort — video-entries.json (26 real entries)', () => {
     expect(input).toEqual(snapshot);
   });
 });
+
+describe('librarySort — fit (i+1 queue)', () => {
+  const entry = (
+    id: string,
+    coverage?: number,
+    overrides: Partial<VideoEntry> = {},
+  ): VideoEntry => ({
+    id,
+    title: id,
+    addedAt: '2026-01-01T00:00:00.000Z',
+    lastWatchedAt: null,
+    durationMs: 0,
+    resumePositionMs: 0,
+    ...(coverage === undefined ? {} : { comprehension: { coverage } }),
+    ...overrides,
+  });
+
+  it('orders scored videos by distance to the 95% sweet spot', () => {
+    const result = sortLibrary(
+      [entry('far', 70), entry('spot', 94.8), entry('mid', 88), entry('over', 99.9)],
+      'fit',
+    );
+    expect(result.map((v) => v.id)).toEqual(['spot', 'over', 'mid', 'far']);
+  });
+
+  it('unscored videos sort last, among themselves by recent', () => {
+    const result = sortLibrary(
+      [
+        entry('plain-old', undefined, { addedAt: '2026-01-01T00:00:00.000Z' }),
+        entry('scored', 90),
+        entry('plain-new', undefined, { addedAt: '2026-02-01T00:00:00.000Z' }),
+      ],
+      'fit',
+    );
+    expect(result.map((v) => v.id)).toEqual(['scored', 'plain-new', 'plain-old']);
+  });
+
+  it('equal distance prefers the lower coverage (deeper i+1)', () => {
+    const result = sortLibrary([entry('easy', 97), entry('stretch', 93)], 'fit');
+    expect(result.map((v) => v.id)).toEqual(['stretch', 'easy']);
+  });
+
+  it('exact target coverage sorts before everything scored', () => {
+    const result = sortLibrary(
+      [entry('a', 94.9), entry('bullseye', 95), entry('b', 95.1)],
+      'fit',
+    );
+    expect(result[0].id).toBe('bullseye');
+  });
+
+  it('falls back to recent when all unscored', () => {
+    const result = sortLibrary(
+      [
+        entry('old', undefined, { addedAt: '2026-01-01T00:00:00.000Z' }),
+        entry('new', undefined, { addedAt: '2026-02-01T00:00:00.000Z' }),
+      ],
+      'fit',
+    );
+    expect(result.map((v) => v.id)).toEqual(['new', 'old']);
+  });
+});
