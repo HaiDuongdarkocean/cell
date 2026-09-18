@@ -61,7 +61,9 @@ describe('ImmersionStats', () => {
   });
 
   it('shows streak only when consecutive-day streak is positive', async () => {
-    const now = Date.now();
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    const now = noon.getTime();
     mockGetHistory.mockResolvedValue([
       rec('watch-v-1', 'v', now - 2 * HOUR_MS, HOUR_MS),
       rec('watch-v-2', 'v', now - DAY_MS, HOUR_MS),
