@@ -1,6 +1,6 @@
 ---
-name: spec-reviewer-glm
-description: Spec review. Reads spec-review-stakeholder skill.
+name: spec-reviewer-swe
+description: Spec review. Reads pipeline-specify skill (gate section).
 model: swe
 allowed-tools:
   - read
@@ -8,5 +8,5 @@ allowed-tools:
   - glob
 ---
 
-1. thực hiện theo hướng dẫn trong skill `/spec-review-stakeholder`.
+1. thực hiện theo hướng dẫn trong skill `/pipeline-specify` (rubric: `.agents/skills/pipeline-specify/references/review-lenses.md`).
 2. Report.

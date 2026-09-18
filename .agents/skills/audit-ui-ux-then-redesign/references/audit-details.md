@@ -96,7 +96,7 @@ Reference for `audit-ui-ux-then-redesign`. Read only the section the current ste
 **Step 3 Classify** — atomic layer per element; reuse/extend/create/remove; flag new tokens/components with rationale.
 **Step 4 Audit** — record per finding: Aspect | L1/L2/L3 question | Evidence | Standard | Severity | Current | Proposed | Risk. Stop at 1×P0 or 2×P1.
 **Step 5 Decide** — per finding: Question, Current (evidence), Proposed (mapped to token/component), Risk, Verdict. Feasibility check: no new deps, shadow-DOM safe, SSR-safe, reduced-motion, no hardcode.
-**Step 6 Brief & Verify** — emit the brief table; run `DESIGN.md` §8 audits; typecheck+build if code changed; append hand-off section when feeding `idea-to-interface`.
+**Step 6 Brief & Verify** — emit the brief table; run `DESIGN.md` §8 audits; typecheck+build if code changed; append hand-off section when feeding `pipeline-design`.
 
 ## Output format
 
@@ -116,10 +116,10 @@ Start with the **Design Read** including the reframed question. Then findings in
 
 End with a **Redesign Brief** table and a **SSOT action list**.
 
-## Hand-off to idea-to-interface
+## Hand-off to pipeline-design
 
 ```markdown
-## Hand-off to idea-to-interface
+## Hand-off to pipeline-design
 
 **Design Read:** [one line]
 **Reframed question:** [one line]
@@ -131,7 +131,7 @@ End with a **Redesign Brief** table and a **SSOT action list**.
 - [e.g., must use existing `Button` not custom `<button>`]
 - [e.g., touch target ≥ 44px on mobile]
 
-**Starting frame for `idea-to-interface`:**
+**Starting frame for `pipeline-design`:**
 - Component/pattern scope: ...
 - Primary job: ...
 - Suggested 3 dials: DESIGN_VARIANCE [?], MOTION_INTENSITY [?], VISUAL_DENSITY [?]

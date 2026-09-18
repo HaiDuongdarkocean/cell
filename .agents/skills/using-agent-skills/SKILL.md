@@ -18,46 +18,60 @@ Skill này là **router** — entry point duy nhất để chọn skill:
 
 ## Skill Discovery
 
-When a task arrives, identify the development phase and apply the corresponding skill:
+Routing is **two-layer**: first the task type, then (for feature work) the pipeline stage.
 
 > **Knowledge hook (automatic):** Before routing to any Build/Verify/Review skill, if a `learning-and-apply` skill exists in `.agents/skills/`, grep its `index.json` by the task's domain keywords (css, async, messaging, state, data, detection, ux, build, testing, rendering). Open every matching `experience/<id>.json` or `knowledge/<topic>.json` and check `cases[].bad` against the code you are about to write. If your code matches a bad pattern, apply `cases[].good` before proceeding. This is not optional — known patterns must be checked before new code is written, not after a bug surfaces.
+
+### Layer 1 — Task type
 
 ```
 Task arrives
     │
-    ├── Vague idea → final spec? ───────────→ elicitation (idea-refine → observation → interview → spec → review → auto-fix)
-    ├── Don't know what you want yet? ──────→ interview-me
-    ├── Can't articulate abstract questions? → interview-me (elicitation mode: context + domain scoping + prototype)
-    ├── Have a rough concept, need variants? → idea-refine
-    ├── New project/feature/change? ──→ spec-driven-development
-    ├── Spec confirmed, "just do it" end-to-end? → autonomous-pipeline (plan → parallel subagent build → subagent verify → ship)
-    ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
+    ├── Feature / backlog item / vague idea? ──→ LAYER 2 (pipeline stage) below
+    │     └── From the backlog queue? ─────────→ idea-pick-off (driver, owns the loop)
+    ├── Something broke? ──────────────→ debugging-and-error-recovery
+    │   └── Root cause found + fix verified? → learning-and-apply (ACCUMULATE)
     ├── Audit or assess technical debt? ─→ audit-technical-debt
     │   └── Need to plan remediation? ──→ planning-and-task-breakdown
-    ├── Implementing code? ────────────→ learning-and-apply (APPLY) ← grep knowledge first
-    │   └── incremental-implementation
-    │       ├── UI work? ─────────────────→ design-system-guardian (build theo DESIGN.md, audit sau)
-    │       ├── Need better context? ─────→ context-engineering
-    │       ├── Need doc-verified code? ───→ source-driven-development
-    │       └── Stakes high / unfamiliar code? ──→ doubt-driven-development
-    ├── Writing/running tests? ────────→ test-driven-development
-    │   └── Browser-based? ───────────→ testing-with-playwright (e2e specs)
-    │       ├── Interactive/stealth session? → testing-extension-browser
-    │       └── Model can't see images? → vision-reader
-    ├── Something broke? ──────────────→ debugging-and-error-recovery
-    │   └── Root cause found + fix verified? → learning-and-apply (ACCUMULATE) ← extract principle
+    ├── Audit UI/UX before redesign? ──→ audit-ui-ux-then-redesign
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
     │   └── Performance concerns? ────→ performance-optimization
+    ├── Reviewing UI text? ────────────→ audit-text-in-ui
+    ├── Reviewing motion? ────────────→ review-animations / improve-animations / find-animation-opportunities
+    ├── Writing/running tests? ────────→ test-driven-development
+    │   └── Browser-based? ───────────→ testing-with-playwright
+    │       ├── Interactive/stealth session? → testing-extension-browser
+    │       └── Model can't see images? → vision-reader
+    ├── Research / new ideas for backlog? → idea-grab / inquiry-creativity / subtitle-player-research
     ├── Committing/branching? ─────────→ git-workflow-and-versioning
     ├── CI/CD pipeline work? ──────────→ ci-cd-and-automation
     ├── Deprecating/migrating? ────────→ deprecation-and-migration
-    ├── Paying down technical debt? ───→ audit-technical-debt → planning-and-task-breakdown → incremental-implementation
     ├── Writing docs/ADRs? ───────────→ documentation-and-adrs
+    ├── Writing a skill? ─────────────→ write-skill
     ├── Adding logs/metrics/alerts? ───→ observability-and-instrumentation
     └── Deploying/launching? ─────────→ shipping-and-launch
 ```
+
+### Layer 2 — Pipeline stage (feature work)
+
+Check `tasks/pipeline-state.json` (`node scripts/pipeline-state.mjs get <slug>`) — the `stage` field is the truth; route to the stage skill, not to the absorbed legacy names:
+
+```
+item stage          → skill               → produces
+──────────────────────────────────────────────────────────────
+(new / analyze)     → pipeline-analyze    → docs/intent/<slug>.md + ## Decision
+                      (interactive: interview rounds; all: self-interrogation)
+specify             → pipeline-specify    → docs/specs/<slug>.md + spec review
+design (uiSurface=yes) → pipeline-design  → concepts + mockup + brief + mapping
+deliver             → pipeline-deliver    → plan → build → gates → verify → ship
+shipped / dropped   → terminal — pick next item via idea-pick-off
+```
+
+Inside DELIVER the supporting skills apply unchanged: `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `context-engineering`, `source-driven-development`, `learning-and-apply`, `design-system-guardian`, `doubt-driven-development`, `pre-commit-gate`, `code-review-and-quality`, `git-workflow-and-versioning`, `documentation-and-adrs`, `shipping-and-launch`. The build engine for M+ parallel work is `autonomous-pipeline` — invoked **from** `pipeline-deliver`, never directly for backlog items.
+
+**Legacy names still resolve as stubs:** `elicitation`/`interview-me`/`idea-refine` → `pipeline-analyze`; `spec-driven-development`/`spec-review-stakeholder` → `pipeline-specify`; `idea-to-interface` → `pipeline-design`.
 
 ## Core Operating Behaviors
 
@@ -151,9 +165,9 @@ These are the subtle errors that look like productivity but create problems:
 
 2. **Skills are workflows, not suggestions.** Follow the steps in order. Don't skip verification steps.
 
-3. **Multiple skills can apply.** A feature implementation might involve `idea-refine` → `spec-driven-development` → `planning-and-task-breakdown` → `incremental-implementation` → `test-driven-development` → `code-review-and-quality` → `code-simplification` → `shipping-and-launch` in sequence.
+3. **Multiple skills can apply.** A backlog feature runs the stage chain `pipeline-analyze` → `pipeline-specify` → (`pipeline-design`) → `pipeline-deliver`, with supporting skills nested inside DELIVER.
 
-4. **When in doubt, start with a spec.** If the task is non-trivial and there's no spec, begin with `spec-driven-development`.
+4. **When in doubt, start with ANALYZE.** If the task is non-trivial and there's no confirmed intent, begin with `pipeline-analyze` — jumping to code from a raw ask is the classic failure this pipeline exists to prevent.
 
 ## Lifecycle Sequence
 
@@ -170,30 +184,26 @@ For paying down technical debt, the typical skill sequence is:
 8.  documentation-and-adrs       → Debt Payback ADR / update audit RUNBOOK
 ```
 
-For a complete feature, the typical skill sequence is:
+For a complete feature, the stage sequence is:
 
 ```
-1.  elicitation                → Orchestrate: idea → observation → interview → confirmed 8-field frame
-2.  interview-me                → Extract what the user actually wants (interview mode: CAN articulate / elicitation mode: CANNOT + context + domain scoping + prototype)
-3.  idea-refine                 → Refine vague ideas
-4.  spec-driven-development     → Define what we're building
-5.  planning-and-task-breakdown → Break into verifiable chunks
-6.  context-engineering         → Load the right context
-7.  source-driven-development   → Verify against official docs
-8.  learning-and-apply (APPLY)  → Grep knowledge index.json, check bad patterns before coding
-9.  incremental-implementation  → Build slice by slice
-10.  observability-and-instrumentation → Instrument as you build (runs parallel with 8-10, not after)
-11.  doubt-driven-development    → Cross-examine non-trivial decisions in-flight
-12.  design-system-guardian      → Audit UI against DESIGN.md (token, component, layout)
-13.  test-driven-development     → Prove each slice works
-14.  pre-commit-gate             → Run local quality checks before any commit
-15.  learning-and-apply (ACCUMULATE) → Extract reusable principle to atom JSON (after test pass + root cause understood)
-16.  code-review-and-quality     → Review before merge
-17.  code-simplification         → Reduce unnecessary complexity while preserving behavior
-18.  git-workflow-and-versioning → Clean commit history
-19.  documentation-and-adrs      → Document decisions
-20.  deprecation-and-migration   → Retire old systems and move users safely when needed
-21.  shipping-and-launch         → Deploy safely
+ANALYZE   pipeline-analyze           → intent doc (needs/journey/scope/decision) or early drop
+SPECIFY   pipeline-specify           → spec + spec-reviewer verdict
+DESIGN    pipeline-design            → (uiSurface=yes) concepts → mockup → brief → mapping → approval/vision
+DELIVER   pipeline-deliver           → owns the rest:
+            planning-and-task-breakdown → verifiable chunks
+            context-engineering / source-driven-development → right context, doc-verified
+            learning-and-apply (APPLY) → grep index.json, check bad patterns before coding
+            incremental-implementation + test-driven-development → slices
+            autonomous-pipeline (engine, M+ lanes) → parallel build + fresh-context verify
+            observability-and-instrumentation → instrument as you build
+            doubt-driven-development → cross-examine non-trivial decisions in-flight
+            design-system-guardian → UI audit vs DESIGN.md
+            pre-commit-gate → deterministic local checks
+            code-review-and-quality + code-simplification → review
+            git-workflow-and-versioning → clean history
+            documentation-and-adrs → document the why
+            shipping-and-launch → deploy + business sign-off
 ```
 
 Not every task needs every skill. A bug fix might only need: `debugging-and-error-recovery` → `test-driven-development` → `learning-and-apply (ACCUMULATE)` → `code-review-and-quality`.
@@ -202,14 +212,17 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 
 | Phase | Skill | One-Line Summary |
 |-------|-------|-----------------|
-| Define | elicitation | Orchestrate vague idea → confirmed 8-field frame → auto-spec → review → auto-fix → final spec |
-| Define | interview-me | Surface what the user actually wants — interview mode (CAN articulate) + elicitation mode (CANNOT: context + domain scoping + dependency mapping + prototype) |
-| Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
-| Define | spec-driven-development | Requirements and acceptance criteria before code |
-| Define | spec-review-stakeholder | BA/PO/TL adversarial review of a spec before implementation |
+| Pipeline | idea-pick-off | Driver: pop backlog top → route qua stages → loop `all` mode |
+| ANALYZE | pipeline-analyze | BA (BACCM, stakeholders, root-cause, go/no-go, FURPS+, stories, journey, logic) → intent doc |
+| SPECIFY | pipeline-specify | Intent → use-case requirements → flows/states → function/feature → spec + review gate |
+| DESIGN | pipeline-design | (uiSurface=yes) 3 concepts → mockup → brief → mapping → approval/vision verdict |
+| DELIVER | pipeline-deliver | Stage contract: plan → build → gates → verify → ship (engine = autonomous-pipeline) |
+| Legacy | elicitation / interview-me / idea-refine | Stubs → `pipeline-analyze` |
+| Legacy | spec-driven-development / spec-review-stakeholder | Stubs → `pipeline-specify` |
+| Legacy | idea-to-interface | Stub → `pipeline-design` |
 | Plan | audit-technical-debt | Score and prioritize technical debt with a remediation roadmap |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks (priority + parallel + blocked_strategy fields) |
-| Plan→Ship | autonomous-pipeline | Orchestrate spec → parallel subagent lanes → fresh-context verify → ship; async veto, blocking chỉ ở business sign-off |
+| Plan→Ship | autonomous-pipeline | Engine invoked from `pipeline-deliver`: parallel subagent lanes → fresh-context verify → ship |
 | Build | learning-and-apply (APPLY) | Grep knowledge index.json, check bad patterns before coding |
 | Build | incremental-implementation | Thin vertical slices, test each before expanding |
 | Build | source-driven-development | Verify against official docs before implementing |

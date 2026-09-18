@@ -25,7 +25,7 @@ The human picks. The skill never self-approves candidates into the backlog.
 ## When NOT to Use
 
 - Item already in backlog → `idea-pick-off` to build it
-- User described a concrete pain they want built → `elicitation` directly
+- User described a concrete pain they want built → `pipeline-analyze` directly
 - Bug or debt fix → `audit-technical-debt` / `debugging-and-error-recovery`
 
 ## Source policy
@@ -117,7 +117,7 @@ Every candidate answered from **both**:
 | Insert without user pick | Backlog is human-prioritized, not agent-prioritized |
 | Add candidate without Pain | Empty pain = unbuildable spec seed downstream |
 | Reorder shipped/icebox rows while an item is in-progress | Mid-build reorder breaks the pick contract |
-| Write specs here | Grab produces backlog rows, not specs — specs are `idea-pick-off`/`elicitation` |
+| Write specs here | Grab produces backlog rows, not specs — specs are `idea-pick-off`/`pipeline-analyze` |
 
 ## Verification
 
@@ -130,4 +130,4 @@ Every candidate answered from **both**:
 
 ## Router boomerang
 
-Picked an item to build now? → `/idea-pick-off`. Pain known already? → `/elicitation`. Direction unclear? → `/idea-refine`.
+Picked an item to build now? → `/idea-pick-off`. Pain known already? → `/pipeline-analyze`. Direction unclear? → `/pipeline-analyze`.

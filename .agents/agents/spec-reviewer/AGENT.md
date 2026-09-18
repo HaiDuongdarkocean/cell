@@ -17,7 +17,7 @@ Spec-review orchestrator. Input: đường dẫn spec. Hai phase.
 Phase 1 — Spawn child subagents song song (`is_background: true`): `spec-reviewer-swe`. Task cho mỗi child:
 
 ```
-Review spec tại <path>. làm theo skill /spec-review-stakeholder. Đọc spec kỹ, report findings, cite sections. Independent review only.
+Review spec tại <path>. làm theo `.agents/skills/pipeline-specify/references/review-lenses.md`. Đọc spec kỹ, report findings, cite sections. Independent review only.
 ```
 
 Đợi hoàn thành.

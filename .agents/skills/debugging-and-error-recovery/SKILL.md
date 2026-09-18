@@ -37,7 +37,7 @@ Each arrow has a guard — do not advance until it passes.
 | 3. Localize | One code path named that produces the bad output |
 | 4. Falsify | Hypothesis survived ≥1 experiment designed to disprove it |
 | 5. Snippet Verify | Injected patch removes the symptom ≥2× under the **real** flow, state logged over time |
-| 6. Fix | Smallest change matching what the snippet proved; explainable in plain language |
+| 6. Fix | Smallest change matching what the snippet proved; explainable in plain language. Fix touching `.tsx`/`.css` → UI component-check first |
 | 7. Verify | Original + variant matrix + existing tests + build green; fix visible in build output |
 | 8. Guard | Regression test fails without the fix, passes with it |
 
@@ -46,6 +46,7 @@ Each arrow has a guard — do not advance until it passes.
 1. **Isolated API call ≠ reproduction.** If the contract describes a continuous process with side effects (lifecycle hooks, timing, ancestor state), calling one function once and measuring output is NOT reproduction. Run the real flow; log state over time (interval polling) — a single before/after snapshot misses the transition.
 2. **Skipped precondition.** If the contract names a layout, timing, or mode condition, set it up before triggering. A bug that only appears under that condition won't reproduce without it — and you'll "fix" a different bug.
 3. **Editing source before the snippet proves it.** A rebuild costs minutes; a snippet costs seconds. If the hypothesis is wrong you've wasted the rebuild. If the snippet fixes the symptom but the source fix doesn't, the snippet patched a different code path — re-localize.
+4. **UI fix that invents instead of reusing.** When the fix touches `.tsx`/`.css`, run the component check before writing markup: does the element exist in `src/shared/ui/`? Is the icon in `ICON_CATALOG`? Is the value a token in `tokens.json`? Fix markup before patching CSS; never hardcode what the design system already names. `design-system-guardian` audits the result.
 
 → Full step detail (preserve checklist, reproduce rules, falsify experiments, snippet patch methods by bug type, verify variant matrix): `references/debug-detail.md`
 → Root-cause patterns table, extension traps, evidence-by-category, Socratic questions, evidence board, full anti-patterns: `references/patterns.md`

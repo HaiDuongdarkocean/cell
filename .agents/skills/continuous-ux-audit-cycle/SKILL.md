@@ -17,7 +17,7 @@ Bad:   "Redesign lại, nó quá xấu."            → hỏi lại: scope nào?
 Good:  "Audit UX 11 surfaces vì user không biết dùng màu/component nào cho ngữ cảnh nào. Chuẩn: DESIGN.md + L-BORDER. Giới hạn: không phá chức năng."
 ```
 
-Missing input → route to `interview-me`/`elicitation` before stage 1.
+Missing input → route to `pipeline-analyze` (interactive) before stage 1.
 **Always `reprompt` before stage 1 — even with complete input.** Handoff always loses context and breeds misunderstanding, so restate scope/problem/standard/constraints back to the user and wait for edit or approval before doing anything.
 
 | # | Stage | Actions | Guard → next |
