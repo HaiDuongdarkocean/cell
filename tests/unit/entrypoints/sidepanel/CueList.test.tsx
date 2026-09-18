@@ -299,6 +299,32 @@ describe('CueList', () => {
       expect(hello.className).not.toContain('js-cell-token--status-unknown');
     });
 
+    it('emits the resolved frequency band class on word tokens', async () => {
+      render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={0}
+          onSeek={jest.fn()}
+          tokenize={{ langCode: 'en', onTokenClick: jest.fn() }}
+        />,
+      );
+
+      const target = screen.getAllByTestId('cue-target-text')[0];
+      // No frequency data in the test env → rarest-band fallback, but the
+      // frequency modifier must be emitted so the background layer renders.
+      await waitFor(() => {
+        const hello = target.querySelector('[data-cell-term="hello"]');
+        expect(hello?.className).toContain('js-cell-token--frequency-rare');
+      });
+      const hello = target.querySelector('[data-cell-term="hello"]') as HTMLElement;
+      expect(hello.className).not.toContain('js-cell-token--frequency-off');
+      expect(hello.className).toContain('js-cell-token--status-unknown');
+
+      for (const sep of target.querySelectorAll('.js-cell-token--separator')) {
+        expect(sep.className).not.toContain('js-cell-token--frequency-');
+      }
+    });
+
     it('still applies live status updates after an equal-content cues rerender', async () => {
       const { rerender } = render(
         <CueList

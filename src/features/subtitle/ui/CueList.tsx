@@ -101,7 +101,9 @@ const CueTokenText = memo(function CueTokenText({
           'js-cell-token--word',
           resolving ? 'js-cell-token--resolving' : '',
           `js-cell-token--status-${token.status ?? 'unknown'}`,
-          'js-cell-token--frequency-off',
+          token.frequencyBand && token.frequencyBand !== 'none'
+            ? `js-cell-token--frequency-${token.frequencyBand}`
+            : '',
         ]
           .filter(Boolean)
           .join(' ')}
