@@ -107,7 +107,15 @@ export async function runLibraryScoring(
   const targetLang = input.targetLang ?? 'en';
   const nativeLang = input.nativeLang ?? 'vi';
   const result: LibraryScoreResult = { writes: 0, scored: 0, skipped: 0, aborted: false };
-  if (videos.length === 0) return result;
+  if (videos.length === 0) {
+    tokenCache.clear();
+    return result;
+  }
+
+  const liveVideoIds = new Set(videos.map((v) => v.id));
+  for (const key of tokenCache.keys()) {
+    if (!liveVideoIds.has(key)) tokenCache.delete(key);
+  }
 
   const libFilenames = subtitles.map((s) => s.filename);
   const subByFilename = new Map(subtitles.map((s) => [s.filename, s]));

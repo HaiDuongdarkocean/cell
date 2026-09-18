@@ -84,6 +84,18 @@
       "resolutions": [],
       "loops": 0,
       "updated": "2026-09-18T20:34:42.791Z"
+    },
+    "local-player-hygiene": {
+      "stage": "dropped",
+      "mode": "all",
+      "uiSurface": "no",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "updated": "2026-09-18T20:42:31.015Z"
     }
   }
 }

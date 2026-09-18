@@ -338,4 +338,38 @@ describe('runLibraryScoring — token cache', () => {
     await run(d, [v], s, new Map([['show.en.srt', file('show.en.srt', srt('Hello'), 2000)]]), cache);
     expect(d.parseCalls).toHaveLength(2);
   });
+
+  it('prunes cache entries for videos no longer in the library', async () => {
+    const d = makeDeps();
+    const cache: TokenCache = new Map();
+    const v = video();
+    const s = [sub('show.en.srt')];
+    const m = new Map([['show.en.srt', file('show.en.srt', srt('Hello'))]]);
+
+    await run(d, [v], s, m, cache);
+    expect(cache.has('v1')).toBe(true);
+
+    await run(d, [], s, m, cache);
+    expect(cache.size).toBe(0);
+  });
+
+  it('prunes only the removed video entries and keeps live ones', async () => {
+    const d = makeDeps();
+    const cache: TokenCache = new Map();
+    const v = video();
+    const s = [sub('show.en.srt')];
+    const m = new Map([['show.en.srt', file('show.en.srt', srt('Hello'))]]);
+
+    await run(d, [v], s, m, cache);
+    cache.set('deleted-video', {
+      subtitleFilename: 'gone.en.srt',
+      mtimeMs: 1,
+      tokens: [],
+      terms: [],
+    });
+
+    await run(d, [v], s, m, cache);
+    expect(cache.has('v1')).toBe(true);
+    expect(cache.has('deleted-video')).toBe(false);
+  });
 });
