@@ -2,7 +2,7 @@
   "active": "debug-seam-hardening",
   "items": {
     "vocabulary-tab-redesign": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -13,27 +13,27 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-18T17:17:13.759Z"
+          "at": "2026-09-18T17:58:07.783Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-18T17:17:06.616Z"
+          "at": "2026-09-18T17:58:07.930Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-18T17:18:19.004Z"
+          "at": "2026-09-18T17:58:07.857Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-18T17:19:23.366Z"
+          "at": "2026-09-18T17:58:07.995Z"
         },
         "briefLint": {
           "v": "pass",
-          "at": "2026-09-18T17:08:32.902Z"
+          "at": "2026-09-18T17:58:08.075Z"
         },
         "browser": {
           "v": "pass",
-          "at": "2026-09-18T17:09:20.238Z"
+          "at": "2026-09-18T17:58:08.151Z"
         }
       },
       "confidence": "medium",
@@ -46,7 +46,7 @@
         }
       ],
       "loops": 0,
-      "updated": "2026-09-18T17:19:23.367Z"
+      "updated": "2026-09-18T17:58:08.260Z"
     },
     "debug-seam-hardening": {
       "stage": "analyze",
