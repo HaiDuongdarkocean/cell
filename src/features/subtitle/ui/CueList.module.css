@@ -20,7 +20,7 @@
   padding: var(--space-1);
 }
 
-.listDesynced {
+.list.listDesynced {
   padding-bottom: calc(var(--touch-target) + var(--space-4));
 }
 
