@@ -14,7 +14,7 @@ import type {
   SearchQuery,
   SubtitleSearchProvider,
   SubtitleSearchResult,
-} from '../subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 
 const OS_BASE = 'https://api.opensubtitles.com/api/v1';
 const USER_AGENT = 'Cell v1.0';

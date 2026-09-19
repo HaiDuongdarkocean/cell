@@ -16,7 +16,7 @@ import type {
   SearchQuery,
   SubtitleSearchProvider,
   SubtitleSearchResult,
-} from '../subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 
 const SUBDL_BASE_URL = 'https://api.subdl.com' as const;
 

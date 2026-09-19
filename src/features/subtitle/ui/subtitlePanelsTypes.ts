@@ -12,7 +12,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings, SubtitleApiKey } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import type { ReactNode, RefObject } from 'react';
-import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { ToastVariant } from './SubtitleToast';
 import type { SubtitlePracticeMode } from '@/features/studyModes/lib/subtitlePractice';

@@ -1,31 +1,19 @@
-import type { IconProps } from '@phosphor-icons/react';
-import {
-  ArrowCircleLeftIcon,
-  ArrowCircleRightIcon,
-  ArrowClockwiseIcon,
-  ArrowCounterClockwiseIcon,
-  PauseCircleIcon,
-  PlayCircleIcon,
-  ProhibitIcon,
-  RepeatIcon,
-  RepeatOnceIcon,
-} from '@phosphor-icons/react';
+import type { IconRenderProps } from './index';
 
-/**
- * Filled Phosphor nav icons for the subtitle overlay cluster.
- *
- * These use Phosphor's `fill` weight so they stay visible on translucent
- * liquid-glass buttons. Source: @phosphor-icons/react (MIT).
- */
-type NavIconProps = Omit<IconProps, 'ref' | 'weight'>;
+const makeFillIcon = (d: string) => {
+  const FillIcon = ({ size = 24, className, style, 'aria-hidden': ariaHidden }: IconRenderProps): React.JSX.Element => (
+    <svg className={className} style={style} aria-hidden={ariaHidden ?? true} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 256 256" fill="currentColor"><path d={d} /></svg>
+  );
+  return FillIcon;
+};
 
-export const NavPrev = (props: NavIconProps) => <ArrowCircleLeftIcon {...props} weight="fill" />;
-export const NavNext = (props: NavIconProps) => <ArrowCircleRightIcon {...props} weight="fill" />;
-export const NavRepeat = (props: NavIconProps) => <RepeatIcon {...props} weight="fill" />;
-export const NavRepeatA = (props: NavIconProps) => <RepeatOnceIcon {...props} weight="fill" />;
-export const NavRepeatB = (props: NavIconProps) => <RepeatIcon {...props} weight="fill" />;
-export const NavRepeatCancel = (props: NavIconProps) => <ProhibitIcon {...props} weight="fill" />;
-export const NavRewind = (props: NavIconProps) => <ArrowCounterClockwiseIcon {...props} weight="fill" />;
-export const NavForward = (props: NavIconProps) => <ArrowClockwiseIcon {...props} weight="fill" />;
-export const NavPlay = (props: NavIconProps) => <PlayCircleIcon {...props} weight="fill" />;
-export const NavPause = (props: NavIconProps) => <PauseCircleIcon {...props} weight="fill" />;
+export const NavPrev = makeFillIcon('M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm40,112H107.31l18.35,18.34a8,8,0,0,1-11.32,11.32l-32-32a8,8,0,0,1,0-11.32l32-32a8,8,0,0,1,11.32,11.32L107.31,120H168a8,8,0,0,1,0,16Z');
+export const NavNext = makeFillIcon('M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,109.66-32,32a8,8,0,0,1-11.32-11.32L148.69,136H88a8,8,0,0,1,0-16h60.69l-18.35-18.34a8,8,0,0,1,11.32-11.32l32,32A8,8,0,0,1,173.66,133.66Z');
+export const NavRepeat = makeFillIcon('M24,128A72.08,72.08,0,0,1,96,56h96V40a8,8,0,0,1,13.66-5.66l24,24a8,8,0,0,1,0,11.32l-24,24A8,8,0,0,1,192,88V72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H64V168a8,8,0,0,0-13.66-5.66l-24,24a8,8,0,0,0,0,11.32l24,24A8,8,0,0,0,64,216V200h96a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z');
+export const NavRepeatA = makeFillIcon('M24,128A72.08,72.08,0,0,1,96,56h96V40a8,8,0,0,1,13.66-5.66l24,24a8,8,0,0,1,0,11.32l-24,24A8,8,0,0,1,192,88V72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H64V168a8,8,0,0,0-13.66-5.66l-24,24a8,8,0,0,0,0,11.32l24,24A8,8,0,0,0,64,216V200h96a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Zm-88,40a8,8,0,0,0,8-8V104a8,8,0,0,0-11.58-7.16l-16,8a8,8,0,1,0,7.16,14.31l4.42-2.21V152A8,8,0,0,0,136,160Z');
+export const NavRepeatB = makeFillIcon('M24,128A72.08,72.08,0,0,1,96,56h96V40a8,8,0,0,1,13.66-5.66l24,24a8,8,0,0,1,0,11.32l-24,24A8,8,0,0,1,192,88V72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H64V168a8,8,0,0,0-13.66-5.66l-24,24a8,8,0,0,0,0,11.32l24,24A8,8,0,0,0,64,216V200h96a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z');
+export const NavRepeatCancel = makeFillIcon('M200,128a71.69,71.69,0,0,1-15.78,44.91L83.09,71.78A71.95,71.95,0,0,1,200,128ZM56,128a71.95,71.95,0,0,0,116.91,56.22L71.78,83.09A71.69,71.69,0,0,0,56,128Zm180,0A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-20,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z');
+export const NavRewind = makeFillIcon('M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L60.63,81.29l17,17A8,8,0,0,1,72,112H24a8,8,0,0,1-8-8V56A8,8,0,0,1,29.66,50.3L49.31,70,60.25,60A96,96,0,0,1,224,128Z');
+export const NavForward = makeFillIcon('M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1-5.66-13.66l17-17-10.55-9.65-.25-.24a80,80,0,1,0-1.67,114.78,8,8,0,1,1,11,11.63A95.44,95.44,0,0,1,128,224h-1.32A96,96,0,1,1,195.75,60l10.93,10L226.34,50.3A8,8,0,0,1,240,56Z');
+export const NavPlay = makeFillIcon('M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm40.55,110.58-52,36A8,8,0,0,1,104,164V92a8,8,0,0,1,12.55-6.58l52,36a8,8,0,0,1,0,13.16Z');
+export const NavPause = makeFillIcon('M128,24A104,104,0,1,0,232,128,104.13,104.13,0,0,0,128,24ZM112,160a8,8,0,0,1-16,0V96a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V96a8,8,0,0,1,16,0Z');

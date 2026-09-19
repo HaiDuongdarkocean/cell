@@ -12,7 +12,7 @@ import {
 import { Button, InkTabs, Input, Label } from '@/shared/ui';
 import { pushEscapeLayer } from '@/shared/ui/escapeLayerStack';
 import type { SubtitlePanelItem} from './subtitlePanelModel';
-import { formatBytes } from './subtitlePanelModel';
+import { formatBytes } from '@/shared/lib/formatBytes';
 import { SubtitleSearchPanel } from './SubtitleSearchPanel';
 import { SubtitleManagerFooter } from './SubtitleManagerFooter';
 import { SubtitleStylePanel } from './appearance/SubtitleStylePanel';
@@ -21,7 +21,7 @@ import { NavClusterSettingsPanel } from './appearance/NavClusterSettingsPanel';
 import { OverlayPreview } from './appearance/OverlayPreview';
 import { OcrSettingsPanel } from '@/features/ocr/ui/OcrSettingsPanel';
 import type { SubtitleApiKey } from '@/entities/settings';
-import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import styles from './SubtitleManagerPanel.module.css';
 import type { AppearanceState } from './subtitlePanelsTypes';
 

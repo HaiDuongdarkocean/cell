@@ -15,7 +15,7 @@ import type {
   SearchQuery,
   SubtitleSearchProvider,
   SubtitleSearchResult,
-} from './subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 
 // === Provider registry — single source of truth ===
 

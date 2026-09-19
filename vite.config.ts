@@ -182,7 +182,6 @@ const FULL_INPUT = {
   sidepanel: resolve(import.meta.dirname, 'src/entrypoints/sidepanel/index.html'),
   localPlayer: resolve(import.meta.dirname, 'src/entrypoints/local-player/index.html'),
   reader: resolve(import.meta.dirname, 'src/entrypoints/reader/index.html'),
-  launcherDashboard: resolve(import.meta.dirname, 'src/entrypoints/launcher-dashboard/index.html'),
   srsStudy: resolve(import.meta.dirname, 'src/entrypoints/srs-study/index.html'),
 };
 

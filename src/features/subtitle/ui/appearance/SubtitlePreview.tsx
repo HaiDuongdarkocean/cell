@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
+import { buildTextShadow, hexToRgba } from '../subtitleUI';
 import styles from './SubtitlePreview.module.css';
 
 interface SubtitlePreviewProps {
@@ -47,18 +48,3 @@ export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JS
   );
 }
 
-/** Convert hex (#rrggbb) + alpha (0-1) → rgba string. Falls back to hex if parse fails. */
-function hexToRgba(hex: string, alpha: number): string {
-  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!match) return hex;
-  const r = parseInt(match[1], 16);
-  const g = parseInt(match[2], 16);
-  const b = parseInt(match[3], 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-/** Build CSS text-shadow string from TextShadowConfig. Returns 'none' if preset='none'. */
-function buildTextShadow(shadow: OverlayStyleConfig['textShadow']): string {
-  if (shadow.preset === 'none') return 'none';
-  return `${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px ${shadow.color}`;
-}

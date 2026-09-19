@@ -1,25 +1,5 @@
 import type { ConversionPhase } from '@/entities/media';
-
-/**
- * Format a byte count into a human-readable string with binary units.
- *
- * @example formatBytes(0) → '0 B'
- * @example formatBytes(1024) → '1.0 KB'
- * @example formatBytes(1048576) → '1.0 MB'
- * @example formatBytes(445.6 * 1024 * 1024) → '445.6 MB'
- */
-export function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'] as const;
-  const i = Math.min(
-    units.length - 1,
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-  );
-  const value = bytes / Math.pow(1024, i);
-  // Show 1 decimal for KB+, no decimals for B
-  const formatted = i === 0 ? value.toFixed(0) : value.toFixed(1);
-  return `${formatted} ${units[i]}`;
-}
+import { formatBytes } from '@/shared/lib/formatBytes';
 
 /**
  * Format an optional byte count for display. Returns empty string for
@@ -30,15 +10,7 @@ export function formatBytes(bytes: number): string {
  * @example formatFileSize(1024) → '1.0 KB'
  */
 export function formatFileSize(bytes?: number): string {
-  if (!bytes) return '';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
+  return bytes ? formatBytes(bytes) : '';
 }
 
 /**

@@ -48,7 +48,7 @@ import {
 import { saveSettings } from '@/shared/lib/storage/settingsStore';
 import { decodeBase64ToArrayBuffer } from '@/shared/lib/base64';
 import type { SubtitleApiKey, SubtitleApiKeyProvider } from '@/entities/settings/types';
-import type { SearchError } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SearchError } from '@/entities/subtitle/searchTypes';
 
 /** Register subtitle search message handlers. */
 export function registerSubtitleSearchHandlers(ctx: BackgroundContext): void {

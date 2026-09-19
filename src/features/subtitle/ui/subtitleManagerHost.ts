@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { SubtitleApiKey } from '@/entities/settings';
-import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import { serializeManagerState } from '@/features/subtitle/logic/managerStateSerializer';
 import {
   requestManagerOpenOnHost,

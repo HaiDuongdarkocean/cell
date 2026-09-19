@@ -79,7 +79,6 @@ export {
   createOverlayLayer,
   createTranslateFunction,
   extractLanguageName,
-  formatBytes,
   handleShortcutKey,
   hexToRgba,
   hideOverlay,

@@ -47,7 +47,6 @@ export { SubtitleToast } from './SubtitleToast';
 export { SubtitleHint } from './SubtitleHint';
 export {
   extractLanguageName,
-  formatBytes,
   type SubtitlePanelItem,
 } from './subtitlePanelModel';
 export {

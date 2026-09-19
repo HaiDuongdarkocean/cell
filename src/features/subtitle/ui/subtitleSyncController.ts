@@ -1,6 +1,6 @@
 import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
 import type { ParsedFile } from '@/features/subtitle/logic/subtitleImport';
-import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import type { SrtCue } from '@/entities/media';
 import type { Settings } from '@/entities/media';
 import type { SubtitleForOverlayResult } from '@/entities/message';

@@ -1,6 +1,6 @@
+import { formatBytes } from '@/shared/lib/formatBytes';
 import {
   validateFile,
-  formatBytes,
   readMagicBytes,
   isGzip,
   isZip,
@@ -35,10 +35,10 @@ describe('fileDetector', () => {
   });
 
   describe('formatBytes', () => {
-    it('formats B', () => expect(formatBytes(500)).toBe('500B'));
-    it('formats KB', () => expect(formatBytes(2048)).toBe('2.0KB'));
-    it('formats MB', () => expect(formatBytes(5 * 1024 * 1024)).toBe('5.0MB'));
-    it('formats GB', () => expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2.0GB'));
+    it('formats B', () => expect(formatBytes(500)).toBe('500 B'));
+    it('formats KB', () => expect(formatBytes(2048)).toBe('2.0 KB'));
+    it('formats MB', () => expect(formatBytes(5 * 1024 * 1024)).toBe('5.0 MB'));
+    it('formats GB', () => expect(formatBytes(2 * 1024 * 1024 * 1024)).toBe('2.0 GB'));
   });
 
   describe('readMagicBytes', () => {

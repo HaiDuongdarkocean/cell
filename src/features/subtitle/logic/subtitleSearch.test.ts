@@ -27,7 +27,7 @@ import {
 import type {
   SearchQuery,
   SubtitleSearchResult,
-} from './subtitleSearchTypes';
+} from '@/entities/subtitle/searchTypes';
 import type {
   SubtitleApiKey,
   SubtitleApiKeyProvider,

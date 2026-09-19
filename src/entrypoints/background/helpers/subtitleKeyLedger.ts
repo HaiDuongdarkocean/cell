@@ -14,7 +14,7 @@
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import type { SubtitleApiKey } from '@/entities/settings/types';
-import type { KeyQuotaInfo } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { KeyQuotaInfo } from '@/entities/subtitle/searchTypes';
 
 // === Internal ledger entry ===
 

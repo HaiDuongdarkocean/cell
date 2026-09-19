@@ -14,7 +14,7 @@ import type { SubtitlePanelItem } from '@/features/subtitle';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { ResolveSubtitleDownloadResult } from '@/entities/message';
-import type { SubtitleSearchResult } from '@/features/subtitle/logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 
 export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
   onManagerSelect: (role: 'target' | 'native', index: number) => Promise<void>;

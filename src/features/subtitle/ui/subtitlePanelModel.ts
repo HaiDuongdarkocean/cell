@@ -20,12 +20,6 @@ export interface SubtitlePanelItem {
   readonly isAsr?: boolean;
 }
 
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
-
 export function extractLanguageName(name: string): string {
   // "English #2" → "English"; "vietnamese (translated)" → "Vietnamese".
   const match = name.match(/^([A-Za-z\s]+?)(?:\s*#|\s*\()/);

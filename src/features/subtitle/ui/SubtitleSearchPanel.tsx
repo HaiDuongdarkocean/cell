@@ -32,7 +32,7 @@ import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { LANGUAGES } from '@/shared/config/languageRegistry';
 import { ApiKeyManager } from './ApiKeyManager';
-import type { SubtitleSearchResult, SearchQuery, SearchError } from '../logic/subtitleSearchTypes';
+import type { SubtitleSearchResult, SearchQuery, SearchError } from '@/entities/subtitle/searchTypes';
 import type { SubtitleApiKey } from '@/entities/settings';
 import styles from './SubtitleSearchPanel.module.css';
 

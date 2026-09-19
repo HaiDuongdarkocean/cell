@@ -3,7 +3,7 @@ import { SubtitleManagerPanel, type AppearanceState } from './SubtitleManagerPan
 import type { SubtitlePanelItem } from './subtitlePanelModel';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings, SubtitleApiKey, SubtitleApiKeyProvider, SubtitleApiKeyStatus } from '@/entities/settings';
-import type { SubtitleSearchResult } from '../logic/subtitleSearchTypes';
+import type { SubtitleSearchResult } from '@/entities/subtitle/searchTypes';
 import {
   DEFAULT_OVERLAY_STYLE_TARGET,
   DEFAULT_OVERLAY_STYLE_NATIVE,

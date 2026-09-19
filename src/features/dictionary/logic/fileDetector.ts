@@ -5,6 +5,7 @@
 
 import { gunzipSync, unzipSync, strFromU8 } from 'fflate';
 import type { ImportFormat } from '@/entities/dictionary';
+import { formatBytes } from '@/shared/lib/formatBytes';
 
 /** Max file size: 500MB (spec F8). */
 export const MAX_FILE_SIZE = 500 * 1024 * 1024;
@@ -25,14 +26,6 @@ export function validateFile(file: { size: number; name: string }): void {
       `File "${file.name}" is ${formatBytes(file.size)} — exceeds 500MB limit (spec F8).`,
     );
   }
-}
-
-/** Format bytes as human-readable string. */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)}GB`;
 }
 
 /** Read first N magic bytes from a Uint8Array. */

@@ -40,7 +40,7 @@ describe('SubtitlePreview — settings-controls-restyle spec F4', () => {
       textShadow: { preset: 'soft', color: '#000000', blur: 4, offsetX: 1, offsetY: 1 },
     };
     render(<SubtitlePreview style={config} role="target" />);
-    expect(screen.getByTestId('subtitle-preview-target').style.textShadow).toBe('1px 1px 4px #000000');
+    expect(screen.getByTestId('subtitle-preview-target').style.textShadow).toBe('var(--shadow-textSoft) #000000');
   });
 
   it('returns none for textShadow when preset = none', () => {
