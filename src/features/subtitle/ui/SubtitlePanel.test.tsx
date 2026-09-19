@@ -33,3 +33,29 @@ describe('SubtitlePanel blur overlay', () => {
     expect(container.querySelector('[data-panel-blurred="true"]')).not.toBeInTheDocument();
   });
 });
+
+describe('SubtitlePanel practice cues', () => {
+  beforeEach(() => {
+    global.ResizeObserver = class ResizeObserverMock {
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    } as unknown as typeof ResizeObserver;
+  });
+
+  it('hides cues with no target text and never lands the review focus on them', () => {
+    const mixed: BilingualCue[] = [
+      { index: 1, start: 0, end: 1000, targetText: 'one', nativeText: '' },
+      { index: 2, start: 1000, end: 2000, targetText: '', nativeText: 'native only' },
+      { index: 3, start: 2000, end: 3000, targetText: 'three', nativeText: '' },
+    ];
+    const { container } = render(
+      <SubtitlePanel cues={mixed} currentTimeMs={1500} onSeek={jest.fn()} practiceMode="dictation" />,
+    );
+
+    expect(container.querySelectorAll('[data-cell-id="cue-item"]')).toHaveLength(2);
+    const current = container.querySelector('[data-cell-id="cue-item"][data-current="true"]');
+    expect(current).not.toBeNull();
+    expect(current?.getAttribute('data-cue-index')).toBe('1');
+  });
+});

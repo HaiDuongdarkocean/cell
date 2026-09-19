@@ -325,6 +325,32 @@ describe('StudyModePlaybackController', () => {
     expect(ctrl.heldCueIndex).toBe(-1);
   });
 
+  it('skips textless cues — they play through instead of becoming a pause stop', () => {
+    const dictation = PRESET_LOOKUP.get('dictation')!;
+    const cues = [
+      makeCue(1, 0, 5000, 'one'),
+      makeCue(2, 5000, 7000, ''),
+      makeCue(3, 7000, 12000, 'three'),
+    ];
+    const ctrl = new StudyModePlaybackController(dictation, advancedOff, cues);
+
+    ctrl.enterCue(cues[0], 0);
+    expect(ctrl.onTimeUpdate(5000)).toContainEqual({ type: 'pause' });
+    expect(ctrl.heldCueIndex).toBe(0);
+    ctrl.continue();
+
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([]);
+    expect(ctrl.hasActiveCue).toBe(false);
+    expect(ctrl.onTimeUpdate(7000)).toEqual([]);
+
+    expect(ctrl.enterCue(cues[2], 2)).toEqual([
+      { type: 'setSubtitle', subtitle: 'none' },
+      { type: 'setSpeed', speed: 1 },
+    ]);
+    expect(ctrl.onTimeUpdate(12000)).toContainEqual({ type: 'pause' });
+    expect(ctrl.heldCueIndex).toBe(2);
+  });
+
   it('abort() clears the active cue and pause state', () => {
     const cue = makeCue(1, 1000, 5000, 'hi');
     const ctrl = new StudyModePlaybackController(readMode, advancedOff, [cue]);

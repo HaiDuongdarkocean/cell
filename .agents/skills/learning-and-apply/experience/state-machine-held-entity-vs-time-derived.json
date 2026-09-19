@@ -1,0 +1,21 @@
+{
+  "id": "state-machine-held-entity-vs-time-derived",
+  "title": "When a state machine pins an entity, UI must consume the pinned identity — not re-derive it from raw time",
+  "category": ["state", "ux"],
+  "tags": ["state-machine", "held-state", "time-derived", "single-source-of-truth", "cue-matching", "half-open-interval", "focus-management", "pause-at-end"],
+  "trigger": "Playback/study machine pause ở end của item (cue, segment, step) giữ item đang review, nhưng UI derive current item từ raw clock → focus/selection nhảy sang item kế hoặc mất hẳn tại boundary/gap",
+  "principle": "Half-open [start,end) matching là đúng cho playback liên tục, nhưng 'item đang được review khi paused-at-end' là semantic riêng chỉ state machine biết (heldCueIndex). Nếu UI tự derive lại từ raw time: tại end-boundary time thuộc item kế (hoặc không item nào trong gap) → UI disagree với machine. Fix: propagate held identity xuống UI — re-base display time về held item's start thì mọi time-derived consumer tự resolve đúng item.",
+  "cases": [
+    {
+      "context": "Dictation/cloze pause-at-end: machine pausedEnd + heldCueIndex=cue N, nhưng SubtitlePracticeSession derive activeCue từ video.currentTime — cue N end = 25.533, cue N+1 start = 29.266 (gap) → activeIndex=-1 → input disabled; cues liền nhau thì activeCue=N+1 → 'focus nhảy xuống cue dưới'",
+      "bad": "// session tự tính từ raw clock — không biết machine đang hold cue nào\nconst activeIndex = cues.findIndex(\n  (c) => c.start <= effectiveMs && c.end > effectiveMs\n);\n// paused tại cue N.end → effectiveMs = cue N.end\n// gap: không cue nào chứa t → activeCue=undefined → input disabled\n// contiguous: match cue N+1 → input focus sai cue",
+      "good": "// controller re-base display time về held cue — mọi consumer by-time tự đúng\nconst held = this.studyMode.heldCueIndex;\nthis.engine.setHeldCue(held);\nconst heldCue = held >= 0 ? this.engine.getTargetCues()[held] : undefined;\nthis.mount.setCurrentTimeMs(\n  heldCue ? heldCue.start - this.getOffsetMs() : this.video.currentTime * 1000,\n);\n// effectiveMs = heldCue.start → half-open match đúng held cue, input enabled"
+    }
+  ],
+  "applyFor": [
+    "Study/practice modes pause-at-end (dictation, cloze, review)",
+    "Any paused-at-boundary state vs time-derived current item (chapters, segments, playlist)",
+    "Anchored selection that must survive a boundary the raw position already crossed",
+    "Gap handling: raw time inside a gap between items resolves no item while machine still holds the last one"
+  ]
+}

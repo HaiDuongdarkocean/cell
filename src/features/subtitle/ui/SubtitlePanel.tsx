@@ -123,6 +123,10 @@ function SubtitlePanelImpl({
     () => cues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
     [cues],
   );
+  const practiceCues = useMemo(
+    () => visibleCues.filter((c) => c.targetText.trim().length > 0),
+    [visibleCues],
+  );
   // Default to 'playlist' when no cues (e.g. local player just opened, no video
   // loaded yet) so the user can pick a video to resume. Otherwise 'subtitles'.
   const [activeTab, setActiveTab] = useState<PanelTab>(
@@ -267,8 +271,8 @@ function SubtitlePanelImpl({
       onPreviousCue(cue);
       return;
     }
-    const i = visibleCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    if (i > 0) onSeek(visibleCues[i - 1].start);
+    const i = practiceCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    if (i > 0) onSeek(practiceCues[i - 1].start);
   };
 
   const handleReplayCue = (cue: BilingualCue): void => {
@@ -284,8 +288,8 @@ function SubtitlePanelImpl({
       onContinueCue(cue);
       return;
     }
-    const i = visibleCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    const next = i >= 0 ? visibleCues[i + 1] : undefined;
+    const i = practiceCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const next = i >= 0 ? practiceCues[i + 1] : undefined;
     if (next) onSeek(next.start);
   };
 
@@ -308,7 +312,7 @@ function SubtitlePanelImpl({
     ) : (
       <SubtitlePracticeSession
         mode={practiceMode}
-        cues={visibleCues}
+        cues={practiceCues}
         currentTimeMs={currentTimeMs}
         offsetMs={offsetMs}
         translationEnabled={translationEnabled}

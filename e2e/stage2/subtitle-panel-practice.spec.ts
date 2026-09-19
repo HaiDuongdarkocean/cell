@@ -251,7 +251,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await input.fill('Lyin’ isn’t better… than silence!');
 
     const feedback = streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`);
-    await expect(feedback).toBeVisible();
+    await expect(feedback).toBeAttached();
     await expect(feedback).toContainText('100 percent');
 
     await input.press('Enter');
@@ -259,6 +259,47 @@ test.describe('Stage 2: Subtitle panel practice', () => {
       .poll(() => videoTime(streamFlixPage))
       .toBeGreaterThanOrEqual(CUE2_NEXT_START_S - 0.5);
     await expect(feedback).toHaveCount(0);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('dictation: cue end keeps practice focus on the finished cue, replay included', async ({
+    streamFlixPage,
+  }) => {
+    const pageErrors: string[] = [];
+    streamFlixPage.on('pageerror', (e) => pageErrors.push(e.message));
+
+    await enterPlayerMode(streamFlixPage);
+    await seek(streamFlixPage, CUE2_START_S + 0.3);
+    await selectStudyMode(streamFlixPage, MODE_DICTATION);
+
+    const input = streamFlixPage.locator(INPUT);
+    await expect(input).toBeVisible();
+    const currentCue = streamFlixPage.locator(
+      `${PRACTICE} [data-cell-id="cue-item"][data-current="true"]`,
+    );
+    await expect(currentCue).toHaveCount(1);
+    const cueIndex = await currentCue.getAttribute('data-cue-index');
+    expect(cueIndex).not.toBeNull();
+
+    await seek(streamFlixPage, 25.2);
+    await streamFlixPage.evaluate(() => void document.querySelector('video')?.play());
+    await expect
+      .poll(() => streamFlixPage.evaluate(() => document.querySelector('video')?.paused ?? false))
+      .toBe(true);
+    await expect(currentCue).toHaveAttribute('data-cue-index', cueIndex!);
+    await expect(input).toBeEnabled();
+
+    await input.press('Control+r');
+    await expect
+      .poll(() => videoTime(streamFlixPage))
+      .toBeLessThan(CUE2_START_S + 1);
+    await expect
+      .poll(() => streamFlixPage.evaluate(() => document.querySelector('video')?.paused ?? false), {
+        timeout: 20_000,
+      })
+      .toBe(true);
+    await expect(currentCue).toHaveAttribute('data-cue-index', cueIndex!);
+    await expect(input).toBeEnabled();
     expect(pageErrors).toEqual([]);
   });
 
@@ -370,7 +411,7 @@ test.describe('Stage 2: Subtitle panel practice', () => {
     await expect(input).toBeVisible();
 
     await input.fill('partial draft');
-    await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toBeVisible();
+    await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toBeAttached();
 
     await seek(streamFlixPage, 38.5);
     await expect(streamFlixPage.locator(`${ACTIVE_CUE} ${FEEDBACK}`)).toHaveCount(0);

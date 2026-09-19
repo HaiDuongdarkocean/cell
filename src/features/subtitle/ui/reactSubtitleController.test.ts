@@ -887,6 +887,36 @@ describe('ReactSubtitleController', () => {
     expect(fakeEngine.setHeldCue).toHaveBeenLastCalledWith(-1);
   });
 
+  it('feeds the held cue start as panel time while paused at its end, raw time otherwise', () => {
+    const cues: SrtCue[] = [
+      { index: 1, start: 0, end: 5000, text: 'One' },
+      { index: 2, start: 5000, end: 10000, text: 'Two' },
+    ];
+    controller.loadCues(cues);
+    fakeEngine.getActiveIndices.mockReturnValue({ target: 0, native: -1 });
+
+    const dictationMode: StudyMode = {
+      id: 'dictation',
+      type: 'preset',
+      icon: 'pencil',
+      title: 'Dictation',
+      description: '',
+      steps: [{ subtitle: 'none', pause: 'end', repeat: 1, speed: 1, after: 'wait' }],
+    };
+    const advanced: StudyModeAdvancedSettings = { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true };
+    controller.applyStudyMode(dictationMode, advanced);
+
+    // Cue 0 ends at 5.0; the pausing timeupdate lands inside cue 1's interval.
+    // The panel must keep showing cue 0 (the cue under review), not cue 1.
+    Object.defineProperty(video, 'paused', { value: false, configurable: true, writable: true });
+    video.currentTime = 5.2;
+    video.dispatchEvent(new Event('timeupdate'));
+    expect(fakeMount.setCurrentTimeMs).toHaveBeenLastCalledWith(0);
+
+    video.dispatchEvent(new Event('play'));
+    expect(fakeMount.setCurrentTimeMs).toHaveBeenLastCalledWith(5200);
+  });
+
   it('seek actions convert raw cue time through offset and landing epsilon', () => {
     controller.setOffsetMs(500);
     const cue: SrtCue = { index: 1, start: 2000, end: 5000, text: 'Hello' };

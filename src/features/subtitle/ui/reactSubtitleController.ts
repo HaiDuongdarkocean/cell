@@ -405,8 +405,9 @@ export class ReactSubtitleController {
   }
 
   private handlePreviousCue(cue: BilingualCue): void {
-    const index = this.panelCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    const prev = index > 0 ? this.panelCues[index - 1] : undefined;
+    const textCues = this.panelCues.filter((c) => c.targetText.trim().length > 0);
+    const index = textCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const prev = index > 0 ? textCues[index - 1] : undefined;
     if (prev) {
       this.video.currentTime = (prev.start - this.offsetMs) / 1000;
     }
@@ -419,8 +420,9 @@ export class ReactSubtitleController {
   }
 
   private handleContinueCue(cue: BilingualCue): void {
-    const index = this.panelCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    const next = index >= 0 ? this.panelCues[index + 1] : undefined;
+    const textCues = this.panelCues.filter((c) => c.targetText.trim().length > 0);
+    const index = textCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
+    const next = index >= 0 ? textCues[index + 1] : undefined;
     if (next) {
       this.video.currentTime = (next.start - this.offsetMs) / 1000;
     }
@@ -622,7 +624,12 @@ export class ReactSubtitleController {
   }
 
   private syncHeldCue(): void {
-    this.engine.setHeldCue(this.studyMode.heldCueIndex);
+    const held = this.studyMode.heldCueIndex;
+    this.engine.setHeldCue(held);
+    const heldCue = held >= 0 ? this.engine.getTargetCues()[held] : undefined;
+    this.mount.setCurrentTimeMs(
+      heldCue ? heldCue.start - this.getOffsetMs() : this.video.currentTime * 1000,
+    );
   }
 
   /** Inject the unknown-cue probe used by pauseOnUnknown. Composition root

@@ -439,6 +439,26 @@
     },
     {
       "type": "experience",
+      "id": "state-machine-held-entity-vs-time-derived",
+      "title": "When a state machine pins an entity, UI must consume the pinned identity — not re-derive it from raw time",
+      "category": [
+        "state",
+        "ux"
+      ],
+      "tags": [
+        "state-machine",
+        "held-state",
+        "time-derived",
+        "single-source-of-truth",
+        "cue-matching",
+        "half-open-interval",
+        "focus-management",
+        "pause-at-end"
+      ],
+      "trigger": "Playback/study machine pause ở end của item giữ item đang review, nhưng UI derive current item từ raw clock → focus/selection nhảy sang item kế hoặc mất hẳn tại boundary/gap"
+    },
+    {
+      "type": "experience",
       "id": "dedup-separate-from-catchup",
       "title": "Separate dedup from catch-up",
       "category": [

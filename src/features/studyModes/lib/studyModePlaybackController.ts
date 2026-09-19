@@ -154,16 +154,18 @@ export class StudyModePlaybackController {
 
   /** Called when the engine reports a new active cue. */
   enterCue(cue: SrtCue, index: number): PlaybackAction[] {
+    if (this.pendingSkipTo >= 0) {
+      if (index < this.pendingSkipTo) this.bouncedSkipTargets.add(this.pendingSkipTo);
+      this.pendingSkipTo = -1;
+    }
+
+    if (cue.text.trim().length === 0) return [];
+
     this.activeCueIndex = index;
     this.activeCueEnd = cue.end - this.offsetMs;
     this.stepIndex = 0;
     this.loopCount = 0;
     this.silenceHandledIndex = -1;
-
-    if (this.pendingSkipTo >= 0) {
-      if (index < this.pendingSkipTo) this.bouncedSkipTargets.add(this.pendingSkipTo);
-      this.pendingSkipTo = -1;
-    }
 
     const step = this.currentStep();
     if (!step) return [];
