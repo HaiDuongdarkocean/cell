@@ -49,7 +49,7 @@ describe('SubtitlePanel tab strip', () => {
     );
 
     expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
-    expect(container.querySelector('[role="tablist"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-cell-id^="subtitle-panel-tab-"]')).not.toBeInTheDocument();
     expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
   });
 

@@ -12,6 +12,7 @@
   min-height: 0;
   container-type: size;
   overflow-y: auto;
+  overflow-anchor: none;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
