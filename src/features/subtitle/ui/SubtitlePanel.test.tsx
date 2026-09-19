@@ -53,7 +53,7 @@ describe('SubtitlePanel tab strip', () => {
     expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
   });
 
-  it('renders no tab strip when tokenize is set but the Words tab is not renderable', () => {
+  it('renders no tab strip when tokenize is set without a playlist', () => {
     const { container } = render(
       <SubtitlePanel
         cues={cues}

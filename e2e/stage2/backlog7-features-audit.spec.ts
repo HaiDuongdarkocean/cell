@@ -147,7 +147,7 @@ async function pauseAt(page: Page, t: number): Promise<void> {
 }
 
 test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
-  test('full journey: tokenize → heat + FAB + Words + adaptive + i1-replay → local player', async ({
+  test('full journey: tokenize → heat + FAB + adaptive + i1-replay → local player', async ({
     cellContext,
     streamFlixPage: page,
   }) => {
@@ -292,30 +292,7 @@ test.describe('Stage 2: Backlog-7 features audit on StreamFlix', () => {
       }
     });
 
-    await test.step('pre-watch-primer: Words tab', async () => {
-      const hasTab = await panel.click('[data-cell-id="subtitle-panel-tab-words"]');
-      console.log(`[audit] words tab present=${hasTab}`);
-      if (hasTab) {
-        await page.waitForTimeout(600);
-        const primer = await panel.eval((root) => {
-          if (!root) return null;
-          const header = root.querySelector('[data-cell-id="primer-header"]');
-          const rows = [...root.querySelectorAll('[data-cell-id="primer-row"]')];
-          const first = rows[0];
-          return {
-            header: header?.textContent?.trim() ?? null,
-            rowCount: rows.length,
-            firstRowText: first?.textContent?.trim() ?? null,
-            hasSeek: !!first?.querySelector('[data-cell-id="primer-seek"]'),
-          };
-        });
-        console.log(`[audit] primer: ${JSON.stringify(primer)}`);
-        await shot(page, '05-words-tab');
-      }
-    });
-
     await test.step('adaptive-subtitles: visibility follows band', async () => {
-      await panel.click('[data-cell-id="subtitle-panel-tab-subtitles"]');
       await writeStudyModes(cellContext, 'adaptive');
       await page.waitForTimeout(500);
       const overlayState = async () =>

@@ -19,8 +19,6 @@ import type { ComprehensionStats } from '@/entities/comprehension';
 
 import { computeStats, ComprehensionBadge, applyCueListTokenStatus, type Token, type CueListTokenMap, type ResolveMeta, type FrequencyBandThresholds } from '@/features/tokenize';
 import { onWordStatusChanged, onWordStatusRemoved } from '@/features/dictionary';
-import { buildPrimerList } from '@/features/subtitle/logic/primerList';
-import { PrimerTab } from './PrimerTab';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { CueList, type CueListTokenize } from './CueList';
 import { PracticeOptions, SubtitlePracticeSession } from '@/features/studyModes/ui/SubtitlePractice';
@@ -81,14 +79,13 @@ export interface SubtitlePanelProps {
   panelBlurred?: boolean;
 }
 
-type PanelTab = 'subtitles' | 'playlist' | 'words';
+type PanelTab = 'subtitles' | 'playlist';
 
 const noop = (): void => undefined;
 
 interface LastGoodResolution {
   readonly cueSetKey: string;
   readonly tokenMap: CueListTokenMap;
-  readonly rankByTerm: ReadonlyMap<string, number | null>;
   readonly thresholds: FrequencyBandThresholds;
   readonly freqUnfiltered: boolean;
 }
@@ -175,7 +172,6 @@ function SubtitlePanelImpl({
       setLastGood({
         cueSetKey,
         tokenMap: map,
-        rankByTerm: meta.rankByTerm,
         thresholds: meta.thresholds,
         freqUnfiltered: meta.freqUnfiltered,
       });
@@ -236,27 +232,7 @@ function SubtitlePanelImpl({
     };
   }, [tokenize]);
 
-  const primerAvailable =
-    Boolean(tokenize) &&
-    !scoreSuppressed &&
-    !panelBlurred &&
-    practiceMode === 'off' &&
-    lastGood !== null &&
-    lastGood.cueSetKey === cueSetKey;
-
-  const primerRows = useMemo(
-    () =>
-      primerAvailable && lastGood !== null
-        ? buildPrimerList(lastGood.tokenMap, lastGood.rankByTerm, visibleCues)
-        : null,
-    [primerAvailable, lastGood, visibleCues],
-  );
-
-  const showTabs = hasPlaylist || (primerAvailable && primerRows !== null);
-
-  useEffect(() => {
-    if (activeTab === 'words' && !primerAvailable) setActiveTab('subtitles');
-  }, [activeTab, primerAvailable]);
+  const showTabs = hasPlaylist;
 
   const prevCueCountRef = useRef(visibleCues.length);
   useEffect(() => {
@@ -437,11 +413,6 @@ function SubtitlePanelImpl({
                 Playlist
               </Tabs.Trigger>
             )}
-            {primerAvailable && primerRows !== null && (
-              <Tabs.Trigger value="words" data-cell-id="subtitle-panel-tab-words">
-                {t('primer.tab')} · {primerRows.length}
-              </Tabs.Trigger>
-            )}
           </Tabs.List>
 
           <Tabs.Content value="subtitles" className={styles.tabContent}>
@@ -467,16 +438,6 @@ function SubtitlePanelImpl({
           {hasPlaylist && (
             <Tabs.Content value="playlist" className={styles.tabContent}>
               {playlistContent}
-            </Tabs.Content>
-          )}
-
-          {primerAvailable && primerRows !== null && tokenize && (
-            <Tabs.Content value="words" className={styles.tabContent}>
-              <PrimerTab
-                rows={primerRows}
-                onTokenClick={tokenize.onTokenClick}
-                onSeek={onSeek}
-              />
             </Tabs.Content>
           )}
         </Tabs>
