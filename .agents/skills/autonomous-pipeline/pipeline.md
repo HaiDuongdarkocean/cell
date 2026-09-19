@@ -16,6 +16,7 @@
 - **Worktree location:** `../cell-worktrees/<feature-slug>/lane-<task-N>` — outside the repo so eslint/jest/`git status` never scan it.
 - **Lane dependencies:** junction `node_modules` into the worktree (Windows: `mklink /J`). Lanes must not run `npm install` — any task touching `package.json`, lockfiles, or `manifest.json` is `parallel: false` by rule (shared state cannot be mocked).
 - **Pipeline state:** lanes never run `pipeline-state.mjs` — the CLI refuses writes outside the main worktree. Stage transitions happen in the main session only, after merge.
+- **Ownership:** the orchestrator's `CELL_AGENT_ID` owns the item (claimed at `init`/`activate`); lane shells inherit the env, so hook-recorded gates still count as the same owner. Write `.cell-owner` (`{"agent","slug"}`) at each provisioned worktree root — agents outside this orchestration must not write into it at all. An item owned by another `CELL_AGENT_ID` refuses all mutations; redirect goes through `request-handoff`, never a direct `transition`.
 
 ## Phase 1 — Load
 

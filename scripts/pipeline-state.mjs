@@ -17,7 +17,7 @@ const CONFIDENCE = new Set(['high', 'medium', 'low']);
 const GATES = new Set(['typecheck', 'lint', 'testUnit', 'build', 'browser', 'briefLint']);
 const GATE_VERDICTS = new Set(['pass', 'fail']);
 const ARTIFACT_KEYS = new Set(['intent', 'spec', 'designBrief', 'componentMapping', 'mockup', 'plan', 'reviews']);
-const SETTABLE = new Set(['uiSurface', 'confidence', 'mode', 'awaiting']);
+const SETTABLE = new Set(['uiSurface', 'confidence', 'mode', 'awaiting', 'worktree']);
 const PASS_VERDICTS = {
   analyze: new Set(['APPROVE', 'APPROVE_WITH_CHANGES', 'PASS']),
   spec: new Set(['APPROVE', 'APPROVE_WITH_CHANGES']),
@@ -73,6 +73,39 @@ function getItem(state, slug) {
   const item = state.items[slug];
   if (!item) fail(`pipeline-state: no item '${slug}'`);
   return item;
+}
+
+function takeFlag(args, name) {
+  const i = args.indexOf(name);
+  if (i < 0) return null;
+  const v = args[i + 1] ?? null;
+  args.splice(i, v === null ? 1 : 2);
+  return v;
+}
+
+function callerId(args) {
+  const explicit = takeFlag(args, '--owner');
+  if (explicit) return explicit;
+  return process.env.CELL_AGENT_ID || 'human';
+}
+
+function claimIfUnowned(item, slug, caller) {
+  if (caller === 'human') return;
+  item.owner = { id: caller, since: new Date().toISOString() };
+  process.stderr.write(`pipeline-state: '${slug}' claimed by '${caller}'\n`);
+}
+
+function requireOwner(item, slug, caller) {
+  if (!item.owner) {
+    claimIfUnowned(item, slug, caller);
+    return;
+  }
+  if (item.owner.id === caller) return;
+  if (caller === 'human') {
+    process.stderr.write(`pipeline-state: warning — '${slug}' is owned by '${item.owner.id}'; proceeding as human override\n`);
+    return;
+  }
+  fail(`pipeline-state: '${slug}' is owned by '${item.owner.id}' — only that agent may mutate it; use request-handoff, or ask the owner/human to handoff or release`);
 }
 
 function touch(item) {
@@ -207,8 +240,8 @@ function clearActiveIf(state, slug) {
   if (state.active === slug) state.active = null;
 }
 
-function doInit(slug, mode, force) {
-  if (!slug) fail('usage: pipeline-state.mjs init <slug> --mode <interactive|all> [--force]');
+function doInit(slug, mode, force, caller) {
+  if (!slug) fail('usage: pipeline-state.mjs init <slug> --mode <interactive|all> [--force] [--owner <id>]');
   if (!MODES.has(mode)) fail(`pipeline-state: invalid --mode '${mode}'`);
   const state = readState();
   if (state.active && !force) fail(`pipeline-state: item '${state.active}' already active — ship/drop it first (or --force to take the pointer while it is worked elsewhere)`);
@@ -223,6 +256,8 @@ function doInit(slug, mode, force) {
     awaiting: null,
     resolutions: [],
     loops: 0,
+    owner: caller === 'human' ? null : { id: caller, since: new Date().toISOString() },
+    worktree: null,
     updated: new Date().toISOString(),
   };
   state.active = slug;
@@ -235,19 +270,23 @@ function doGet(slug) {
   process.stdout.write(`${JSON.stringify(getItem(state, slug), null, 2)}\n`);
 }
 
-function doActivate(slug) {
-  if (!slug) fail('usage: pipeline-state.mjs activate <slug>');
+function doActivate(slug, args) {
+  if (!slug) fail('usage: pipeline-state.mjs activate <slug> [--owner <id>]');
+  const caller = callerId(args);
   const state = readState();
   const item = getItem(state, slug);
   if (TERMINAL.has(item.stage)) fail(`pipeline-state: '${slug}' is ${item.stage} — cannot activate a terminal item`);
+  requireOwner(item, slug, caller);
   state.active = slug;
   writeState(state);
   process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
 }
 
 function doSet(slug, pairs) {
+  const caller = callerId(pairs);
   const state = readState();
   const item = getItem(state, slug);
+  requireOwner(item, slug, caller);
   if (!pairs.length) fail('usage: pipeline-state.mjs set <slug> <field>=<value> [...]');
   for (const pair of pairs) {
     const eq = pair.indexOf('=');
@@ -271,8 +310,8 @@ function doSet(slug, pairs) {
       continue;
     }
     if (field === 'stage' || field === 'loops' || field === 'resolutions' || field === 'active' || field === 'updated'
-      || field.startsWith('gates')) {
-      fail(`pipeline-state: field '${field}' is not settable (stage→transition, gates→gates --set, awaiting=null→resolve)`);
+      || field === 'owner' || field.startsWith('gates')) {
+      fail(`pipeline-state: field '${field}' is not settable (stage→transition, gates→gates --set, owner→handoff|release, awaiting=null→resolve)`);
     }
     if (!SETTABLE.has(field)) fail(`pipeline-state: unknown field '${field}'`);
     if (field === 'uiSurface' && !UI_SURFACE.has(value)) fail(`pipeline-state: uiSurface must be yes|no|unknown`);
@@ -286,8 +325,10 @@ function doSet(slug, pairs) {
 }
 
 function doGates(slug, args) {
+  const caller = callerId(args);
   const state = readState();
   const item = getItem(state, slug);
+  requireOwner(item, slug, caller);
   const si = args.indexOf('--set');
   if (si < 0 || !args[si + 1]) fail('usage: pipeline-state.mjs gates <slug> --set <gate>=<pass|fail>');
   const [gate, v] = args[si + 1].split('=');
@@ -301,8 +342,10 @@ function doGates(slug, args) {
 }
 
 function doResolve(slug, args) {
+  const caller = callerId(args);
   const state = readState();
   const item = getItem(state, slug);
+  requireOwner(item, slug, caller);
   const ni = args.indexOf('--note');
   const note = ni >= 0 ? args[ni + 1] : null;
   if (!note) fail('usage: pipeline-state.mjs resolve <slug> --note "<reason>"');
@@ -324,8 +367,10 @@ function requireNoAwaiting(item, slug) {
 }
 
 function doTransition(slug, args) {
+  const caller = callerId(args);
   const state = readState();
   const item = getItem(state, slug);
+  requireOwner(item, slug, caller);
   const ti = args.indexOf('--to');
   const to = ti >= 0 ? args[ti + 1] : null;
   if (!STAGES.has(to)) fail(`pipeline-state: invalid --to '${to}' (analyze|specify|design|deliver|shipped|dropped)`);
@@ -408,6 +453,7 @@ function doTransition(slug, args) {
   } else {
     fail(`pipeline-state: no transition ${from} → ${to}`);
   }
+  if (TERMINAL.has(item.stage)) item.owner = null;
   touch(item);
   writeState(state);
   process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
@@ -421,8 +467,8 @@ function inferStage(slug) {
   return null;
 }
 
-function doSeed(slug, force) {
-  if (!slug) fail('usage: pipeline-state.mjs seed <slug> [--force]');
+function doSeed(slug, force, caller) {
+  if (!slug) fail('usage: pipeline-state.mjs seed <slug> [--force] [--owner <id>]');
   const state = readState();
   if (state.active && !force) fail(`pipeline-state: item '${state.active}' already active`);
   if (state.items[slug]) fail(`pipeline-state: item '${slug}' already exists`);
@@ -452,6 +498,8 @@ function doSeed(slug, force) {
     awaiting: gaps.length ? 'flagged:seeded' : null,
     resolutions: [],
     loops: 0,
+    owner: caller === 'human' ? null : { id: caller, since: new Date().toISOString() },
+    worktree: null,
     updated: new Date().toISOString(),
   };
   state.active = slug;
@@ -460,6 +508,69 @@ function doSeed(slug, force) {
     process.stderr.write(`pipeline-state: seeded '${slug}' at '${stage}' flagged:seeded — ${gaps.join('; ')}\n`);
   }
   process.stdout.write(`${JSON.stringify(state.items[slug], null, 2)}\n`);
+}
+
+function doRequestHandoff(slug, args) {
+  const note = takeFlag(args, '--note');
+  const caller = callerId(args);
+  if (!slug || !note) fail('usage: pipeline-state.mjs request-handoff <slug> --note "<reason>" [--owner <id>]');
+  if (caller === 'human') fail('pipeline-state: request-handoff needs an agent identity (--owner or CELL_AGENT_ID); humans can run handoff directly');
+  const state = readState();
+  const item = getItem(state, slug);
+  if (TERMINAL.has(item.stage)) fail(`pipeline-state: '${slug}' is ${item.stage} — nothing to hand off`);
+  if (!item.owner) fail(`pipeline-state: '${slug}' is unowned — activate or handoff it directly, no request needed`);
+  if (item.owner.id === caller) fail(`pipeline-state: you already own '${slug}'`);
+  if (item.awaiting) fail(`pipeline-state: '${slug}' awaiting '${item.awaiting}' — owner must resolve first`);
+  item.awaiting = `handoff:${caller}`;
+  item.resolutions = item.resolutions || [];
+  item.resolutions.push({ flag: 'handoff-requested', note: `${caller}: ${note}`, at: new Date().toISOString() });
+  touch(item);
+  writeState(state);
+  process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
+}
+
+function doHandoff(slug, args) {
+  const to = takeFlag(args, '--to');
+  const note = takeFlag(args, '--note');
+  const caller = callerId(args);
+  if (!slug || !to) fail('usage: pipeline-state.mjs handoff <slug> --to <new-owner> [--note "<reason>"]');
+  const state = readState();
+  const item = getItem(state, slug);
+  if (TERMINAL.has(item.stage)) fail(`pipeline-state: '${slug}' is ${item.stage} — cannot hand off a terminal item`);
+  if (item.owner && item.owner.id !== caller && caller !== 'human') {
+    fail(`pipeline-state: '${slug}' is owned by '${item.owner.id}' — only the owner or a human may hand it off`);
+  }
+  const prev = item.owner?.id ?? 'unowned';
+  item.owner = { id: to, since: new Date().toISOString() };
+  item.resolutions = item.resolutions || [];
+  if (item.awaiting?.startsWith('handoff:')) {
+    item.resolutions.push({ flag: item.awaiting, note: note || `handed off to ${to}`, at: new Date().toISOString() });
+    item.awaiting = null;
+  }
+  item.resolutions.push({ flag: 'ownership-handoff', note: `${prev} → ${to}${note ? ` — ${note}` : ''}`, at: new Date().toISOString() });
+  touch(item);
+  writeState(state);
+  process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
+}
+
+function doRelease(slug, args) {
+  const fi = args.indexOf('--force');
+  const force = fi >= 0;
+  if (force) args.splice(fi, 1);
+  const note = takeFlag(args, '--note');
+  const caller = callerId(args);
+  if (!slug || !force || !note) fail('usage: pipeline-state.mjs release <slug> --force --note "<reason>"');
+  const state = readState();
+  const item = getItem(state, slug);
+  const prev = item.owner?.id ?? null;
+  if (!prev) fail(`pipeline-state: '${slug}' has no owner to release`);
+  item.owner = null;
+  if (item.awaiting?.startsWith('handoff:')) item.awaiting = null;
+  item.resolutions = item.resolutions || [];
+  item.resolutions.push({ flag: 'ownership-released', note: `${prev} released by ${caller} — ${note}`, at: new Date().toISOString() });
+  touch(item);
+  writeState(state);
+  process.stdout.write(`${JSON.stringify(item, null, 2)}\n`);
 }
 
 const [, , cmd, ...rest] = process.argv;
@@ -471,10 +582,10 @@ const flag = (name) => {
 
 switch (cmd) {
   case 'init':
-    doInit(slug, flag('--mode') || 'interactive', rest.includes('--force'));
+    doInit(slug, flag('--mode') || 'interactive', rest.includes('--force'), callerId(rest.slice(1)));
     break;
   case 'activate':
-    doActivate(slug);
+    doActivate(slug, rest.slice(1));
     break;
   case 'get':
     if (!slug) fail('usage: pipeline-state.mjs get <slug>');
@@ -493,8 +604,17 @@ switch (cmd) {
     doResolve(slug, rest.slice(1));
     break;
   case 'seed':
-    doSeed(slug, rest.includes('--force'));
+    doSeed(slug, rest.includes('--force'), callerId(rest.slice(1)));
+    break;
+  case 'request-handoff':
+    doRequestHandoff(slug, rest.slice(1));
+    break;
+  case 'handoff':
+    doHandoff(slug, rest.slice(1));
+    break;
+  case 'release':
+    doRelease(slug, rest.slice(1));
     break;
   default:
-    fail('usage: pipeline-state.mjs init|activate|get|set|transition|gates|resolve|seed <slug> [args]');
+    fail('usage: pipeline-state.mjs init|activate|get|set|transition|gates|resolve|seed|request-handoff|handoff|release <slug> [args]');
 }

@@ -28,6 +28,15 @@ function run(root: string, ...args: string[]): Result {
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
 }
 
+function runEnv(root: string, env: Record<string, string>, ...args: string[]): Result {
+  const r = spawnSync(process.execPath, [SCRIPT, ...args], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+  });
+  return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
+}
+
 function init(root: string, mode = 'interactive') {
   return run(root, 'init', SLUG, '--mode', mode);
 }
@@ -594,5 +603,157 @@ describe('guards', () => {
     writeFileSync(join(root, 'tasks/pipeline-state.json'), '{not json');
     expect(run(root, 'get', SLUG).status).toBe(1);
     expect(run(root, 'get', SLUG).stderr).toMatch(/corrupt/);
+  });
+});
+
+describe('ownership', () => {
+  const A = 'agent-a';
+  const B = 'agent-b';
+
+  function initOwned(root: string, owner = A) {
+    return run(root, 'init', SLUG, '--mode', 'interactive', '--owner', owner);
+  }
+
+  it('init with --owner records owner; other agent cannot set/gates/transition', () => {
+    const root = makeRoot();
+    expect(initOwned(root).status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner.id).toBe(A);
+    for (const args of [
+      ['set', SLUG, 'uiSurface=yes'],
+      ['gates', SLUG, '--set', 'typecheck=pass'],
+      ['transition', SLUG, '--to', 'specify'],
+      ['resolve', SLUG, '--note', 'x'],
+      ['activate', SLUG],
+    ]) {
+      const r = run(root, ...args, '--owner', B);
+      expect(r.status).toBe(1);
+      expect(r.stderr).toMatch(/owned by 'agent-a'/);
+    }
+  });
+
+  it('same owner passes; owner is required even on set', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = run(root, 'set', SLUG, 'uiSurface=yes', '--owner', A);
+    expect(r.status).toBe(0);
+  });
+
+  it('CELL_AGENT_ID env identifies the caller', () => {
+    const root = makeRoot();
+    runEnv(root, { CELL_AGENT_ID: A }, 'init', SLUG, '--mode', 'interactive');
+    expect(stateOf(root).items[SLUG].owner.id).toBe(A);
+    const r = runEnv(root, { CELL_AGENT_ID: B }, 'set', SLUG, 'uiSurface=yes');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/owned by 'agent-a'/);
+  });
+
+  it('human caller (no id) may mutate owned item with a warning', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = runEnv(root, { CELL_AGENT_ID: '' }, 'set', SLUG, 'uiSurface=yes');
+    expect(r.status).toBe(0);
+    expect(r.stderr).toMatch(/human override/);
+    expect(stateOf(root).items[SLUG].owner.id).toBe(A);
+  });
+
+  it('unowned item is claimed by first identified mutator', () => {
+    const root = makeRoot();
+    init(root); // human — stays unowned
+    expect(stateOf(root).items[SLUG].owner).toBeNull();
+    const r = run(root, 'set', SLUG, 'uiSurface=yes', '--owner', A);
+    expect(r.status).toBe(0);
+    expect(r.stderr).toMatch(/claimed by 'agent-a'/);
+    expect(stateOf(root).items[SLUG].owner.id).toBe(A);
+  });
+
+  it('set rejects owner= field (handoff|release only)', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = run(root, 'set', SLUG, 'owner=agent-b', '--owner', A);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/not settable/);
+  });
+
+  it('request-handoff sets awaiting, blocks transition, owner resolves', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = run(root, 'request-handoff', SLUG, '--note', 'user pivoted scope', '--owner', B);
+    expect(r.status).toBe(0);
+    const item = stateOf(root).items[SLUG];
+    expect(item.awaiting).toBe('handoff:agent-b');
+    const tr = run(root, 'transition', SLUG, '--to', 'specify', '--owner', A);
+    expect(tr.status).toBe(1);
+    expect(tr.stderr).toMatch(/resolve first/);
+    // non-owner still cannot resolve
+    expect(run(root, 'resolve', SLUG, '--note', 'denied', '--owner', B).status).toBe(1);
+    expect(run(root, 'resolve', SLUG, '--note', 'denied — keeping it', '--owner', A).status).toBe(0);
+    expect(stateOf(root).items[SLUG].awaiting).toBeNull();
+  });
+
+  it('request-handoff refuses self, unowned, and clobbering existing awaiting', () => {
+    const root = makeRoot();
+    initOwned(root);
+    expect(run(root, 'request-handoff', SLUG, '--note', 'x', '--owner', A).status).toBe(1);
+    expect(run(root, 'request-handoff', SLUG, '--note', 'x', '--owner', B).status).toBe(0);
+    expect(run(root, 'request-handoff', SLUG, '--note', 'y', '--owner', 'agent-c').status).toBe(1);
+  });
+
+  it('request-handoff requires an agent identity', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = runEnv(root, { CELL_AGENT_ID: '' }, 'request-handoff', SLUG, '--note', 'x');
+    expect(r.status).toBe(1);
+    expect(r.stderr).toMatch(/agent identity/);
+  });
+
+  it('handoff transfers ownership; pending handoff awaiting is resolved', () => {
+    const root = makeRoot();
+    initOwned(root);
+    run(root, 'request-handoff', SLUG, '--note', 'take it', '--owner', B);
+    const r = run(root, 'handoff', SLUG, '--to', B, '--note', 'user redirect', '--owner', A);
+    expect(r.status).toBe(0);
+    const item = stateOf(root).items[SLUG];
+    expect(item.owner.id).toBe(B);
+    expect(item.awaiting).toBeNull();
+    // old owner locked out, new owner in
+    expect(run(root, 'set', SLUG, 'confidence=high', '--owner', A).status).toBe(1);
+    expect(run(root, 'set', SLUG, 'confidence=high', '--owner', B).status).toBe(0);
+  });
+
+  it('handoff refused for non-owner agent; allowed for human', () => {
+    const root = makeRoot();
+    initOwned(root);
+    const r = run(root, 'handoff', SLUG, '--to', B, '--owner', 'agent-c');
+    expect(r.status).toBe(1);
+    const h = runEnv(root, { CELL_AGENT_ID: '' }, 'handoff', SLUG, '--to', B);
+    expect(h.status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner.id).toBe(B);
+  });
+
+  it('release --force --note clears owner; anyone can then claim', () => {
+    const root = makeRoot();
+    initOwned(root);
+    expect(run(root, 'release', SLUG, '--note', 'x', '--owner', B).status).toBe(1); // no --force
+    const r = run(root, 'release', SLUG, '--force', '--note', 'owner session died', '--owner', B);
+    expect(r.status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner).toBeNull();
+    expect(run(root, 'set', SLUG, 'uiSurface=yes', '--owner', B).status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner.id).toBe(B);
+  });
+
+  it('terminal transition clears owner', () => {
+    const root = makeRoot();
+    initOwned(root);
+    writeIntent(root, 'no-go — scope moved', );
+    const r = run(root, 'transition', SLUG, '--to', 'dropped', '--owner', A);
+    expect(r.status).toBe(0);
+    expect(stateOf(root).items[SLUG].owner).toBeNull();
+  });
+
+  it('worktree is settable by owner', () => {
+    const root = makeRoot();
+    initOwned(root);
+    expect(run(root, 'set', SLUG, 'worktree=../cell-worktrees/feat-x', '--owner', A).status).toBe(0);
+    expect(stateOf(root).items[SLUG].worktree).toBe('../cell-worktrees/feat-x');
   });
 });

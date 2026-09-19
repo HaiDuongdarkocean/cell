@@ -60,6 +60,8 @@ One item per run by default. `/idea-pick-off all` drains the queue — see **Loo
 
 **Guard — active held elsewhere:** `init` fails `item '<other>' already active` when another agent/session is driving a different item → never touch that item's files or state; `init <slug> --mode <m> --force` takes the `active` pointer instead (the held item's entry stays intact — `transition`/`set`/`gates` are slug-scoped and `active` is only the loop's claim marker). `activate <slug>` re-points to an existing non-terminal item; `seed --force` does the same for artifact-first items.
 
+**Guard — item ownership:** every item has `owner` (set at `init`/`activate`/first mutation via `CELL_AGENT_ID` env or `--owner <id>`). Mutations (`set`/`gates`/`resolve`/`transition`/`activate`) on an item owned by another agent fail hard — that is the signal to STOP touching it entirely (its files, worktree, docs). If the user redirects you to an owned item, use `request-handoff <slug> --note` instead of mutating; the owner or a human decides (`handoff --to`/`release --force --note`). Always pass the same `CELL_AGENT_ID` for the whole session — subagent shells inherit it, so lanes under your session still count as you.
+
 ### Step 3 — ANALYZE (invoke `pipeline-analyze`)
 
 - Seed with row: `Pain`/`Nhóm`/`Infra`/`Source` + slug.
