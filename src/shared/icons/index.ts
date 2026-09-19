@@ -31,6 +31,7 @@ import {
   Component,
   Copy,
   Crop,
+  Crosshair,
   Download,
   EllipsisVertical,
   ExternalLink,
@@ -182,6 +183,7 @@ import volumeMuteSvg from './svg/volume-x.svg?raw';
 import captionsSvg from './svg/captions.svg?raw';
 import maximizeSvg from './svg/maximize.svg?raw';
 import cropSvg from './svg/crop.svg?raw';
+import crosshairSvg from './svg/crosshair.svg?raw';
 import moveSvg from './svg/move.svg?raw';
 import moveVerticalSvg from './svg/arrow-up-down.svg?raw';
 import moveHorizontalSvg from './svg/arrow-left-right.svg?raw';
@@ -307,6 +309,7 @@ export const ICON_CATALOG = {
   captions: { component: Captions, svg: captionsSvg, source: 'lucide/captions', tags: ['captions', 'subtitle', 'cc', 'closed-caption', 'text', 'accessibility'] } as IconEntry,
   maximize: { component: Maximize, svg: maximizeSvg, source: 'lucide/maximize', tags: ['maximize', 'expand', 'fullscreen', 'enlarge', 'scale-up'] } as IconEntry,
   crop: { component: Crop, svg: cropSvg, source: 'lucide/crop', tags: ['crop', 'select-region', 'area', 'frame', 'capture', 'marquee'] } as IconEntry,
+  crosshair: { component: Crosshair, svg: crosshairSvg, source: 'lucide/crosshair', tags: ['sync', 'target', 'locate', 'crosshair', 'align', 'position', 'video-time'] } as IconEntry,
   move: { component: Move, svg: moveSvg, source: 'lucide/move', tags: ['move', 'drag', 'reposition', 'pan', 'all-directions'] } as IconEntry,
   moveVertical: { component: ArrowUpDown, svg: moveVerticalSvg, source: 'lucide/arrow-up-down', tags: ['move', 'vertical', 'height', 'resize-vertical', 'up-down'] } as IconEntry,
   moveHorizontal: { component: ArrowLeftRight, svg: moveHorizontalSvg, source: 'lucide/arrow-left-right', tags: ['move', 'horizontal', 'width', 'resize-horizontal', 'left-right'] } as IconEntry,

@@ -84,6 +84,7 @@
   "cueFilter.indicator.showAll": "Hiện tất cả cue",
   "cueFilter.emptyTitle": "Không có cue khớp bộ lọc",
   "cueFilter.emptyAction": "Hiện tất cả cue",
+  "cueList.syncToVideo": "Đồng bộ với video",
   "cueHeat.tooltip.easy": "Không có từ lạ trong tầm",
   "cueHeat.tooltip.i1": "Từ lạ: $1",
   "cueHeat.tooltip.dense": "Từ lạ: $1",

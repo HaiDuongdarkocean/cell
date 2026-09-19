@@ -118,7 +118,6 @@ function SubtitlePanelImpl({
   panelBlurred = false,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
-  const showTabs = hasPlaylist || Boolean(tokenize);
   const visibleCues = useMemo(
     () => cues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
     [cues],
@@ -252,6 +251,8 @@ function SubtitlePanelImpl({
         : null,
     [primerAvailable, lastGood, visibleCues],
   );
+
+  const showTabs = hasPlaylist || (primerAvailable && primerRows !== null);
 
   useEffect(() => {
     if (activeTab === 'words' && !primerAvailable) setActiveTab('subtitles');

@@ -718,4 +718,130 @@ describe('CueList', () => {
       expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
     });
   });
+
+  describe('scroll desync + sync pill', () => {
+    const scrollListTo = (list: HTMLElement, top: number): void => {
+      list.scrollTop = top;
+      fireEvent.scroll(list);
+    };
+
+    it('shows no sync pill while the list follows playback', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      expect(screen.queryByTestId('cue-list-sync')).toBeNull();
+    });
+
+    it('shows the sync pill after a user scroll away from the followed position', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+
+      scrollListTo(list, 200);
+
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+    });
+
+    it('treats an external scrollTop restore as a desync', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+
+      scrollListTo(list, 180);
+
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+    });
+
+    it('does not desync when a scroll event matches the programmatic alignment', () => {
+      const { rerender } = render(
+        <CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+
+      rerender(<CueList cues={sampleCues} currentTimeMs={4000} onSeek={jest.fn()} />);
+      fireEvent.scroll(list);
+
+      expect(screen.queryByTestId('cue-list-sync')).toBeNull();
+    });
+
+    it('stops auto-aligning on cue change while desynced but keeps highlighting', () => {
+      const { rerender } = render(
+        <CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      scrollListTo(list, 200);
+
+      rerender(<CueList cues={sampleCues} currentTimeMs={4000} onSeek={jest.fn()} />);
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[1].getAttribute('data-current')).toBe('true');
+      expect(list.scrollTop).toBe(200);
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+    });
+
+    it('re-aligns to the current cue and hides the pill on sync click, then resumes follow', () => {
+      const { rerender } = render(
+        <CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      scrollListTo(list, 200);
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+
+      fireEvent.click(screen.getByTestId('cue-list-sync'));
+
+      expect(screen.queryByTestId('cue-list-sync')).toBeNull();
+      expect(list.scrollTop).not.toBe(200);
+
+      const aligned = list.scrollTop;
+      rerender(<CueList cues={sampleCues} currentTimeMs={4000} onSeek={jest.fn()} />);
+      expect(list.scrollTop).not.toBe(aligned);
+    });
+
+    it('sync pill is a real button reachable by role', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      scrollListTo(list, 200);
+
+      const pill = screen.getByRole('button', { name: 'Sync to video' });
+      expect(pill).toBeTruthy();
+      expect(pill.getAttribute('data-cell-id')).toBe('cue-list-sync');
+    });
+
+    it('resumes following when a cue timestamp is clicked while desynced', () => {
+      const onSeek = jest.fn();
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={onSeek} />);
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      scrollListTo(list, 200);
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+
+      fireEvent.click(screen.getAllByTestId('cue-timestamp')[1]);
+
+      expect(onSeek).toHaveBeenCalledWith(3500);
+      expect(screen.queryByTestId('cue-list-sync')).toBeNull();
+    });
+
+    it('resets to the top and resumes following when filterEpoch changes while desynced', () => {
+      const { rerender } = render(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={2000}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="all"
+        />,
+      );
+      const list = screen.getByTestId('cue-list-scroll') as HTMLElement;
+      scrollListTo(list, 200);
+      expect(screen.getByTestId('cue-list-sync')).toBeTruthy();
+
+      rerender(
+        <CueList
+          cues={sampleCues}
+          currentTimeMs={2000}
+          onSeek={jest.fn()}
+          cueFilter={() => true}
+          filterEpoch="i1"
+        />,
+      );
+
+      expect(list.scrollTop).toBe(0);
+      expect(screen.queryByTestId('cue-list-sync')).toBeNull();
+    });
+  });
 });

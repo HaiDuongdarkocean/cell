@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BilingualCue } from '@/entities/media';
 import type { WordStatus } from '@/entities/dictionary';
@@ -15,7 +15,7 @@ import {
 import { cueHeatBand, type CueDifficulty } from '@/features/subtitle/logic/cueDifficulty';
 import { formatCueTimestamp } from '@/features/subtitle/logic/cueTime';
 import { DEFAULT_BAND_THRESHOLDS } from '@/shared/lib/frequencyBand';
-import { VisuallyHidden } from '@/shared/ui';
+import { Button, Icon, VisuallyHidden } from '@/shared/ui';
 import { t } from '@/shared/i18n';
 import styles from './CueList.module.css';
 
@@ -137,6 +137,8 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   const resolvingRef = useRef(false);
   const [tokenMap, setTokenMap] = useState<CueListTokenMap>(EMPTY_TOKEN_MAP);
   const [resolving, setResolving] = useState(false);
+  const [desynced, setDesynced] = useState(false);
+  const expectedScrollTopRef = useRef(0);
 
   const visibleCues = useMemo(
     () => cues.filter((c) => c.targetText.trim().length > 0),
@@ -238,8 +240,12 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
 
   useEffect(() => {
     const list = listRef.current;
-    if (list) list.scrollTop = 0;
+    if (list) {
+      list.scrollTop = 0;
+      expectedScrollTopRef.current = 0;
+    }
     highlightedRef.current = null;
+    setDesynced(false);
   }, [filterEpoch]);
 
   // Auto-scroll current cue into view. Manual scrollTop on the list container
@@ -251,7 +257,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
   // center the panel in the viewport → page jumps ("giật màn hình").
   // Manual scrollTop only scrolls the list, clamped to [0, maxScrollTop].
   useEffect(() => {
-    if (currentIndex < 0) return;
+    if (desynced || currentIndex < 0) return;
     const el = itemRefs.current[currentIndex];
     const list = listRef.current;
     if (!el || !list) return;
@@ -266,6 +272,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
         ? top
         : top - (list.clientHeight - el.offsetHeight) / 2;
       list.scrollTop = Math.max(0, Math.min(targetScroll, list.scrollHeight - list.clientHeight));
+      expectedScrollTopRef.current = list.scrollTop;
     };
     if (highlightedRef.current !== currentCueIndex) {
       highlightedRef.current = currentCueIndex;
@@ -278,14 +285,32 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [currentIndex, currentCueIndex, effectiveMs, filterEpoch]);
+  }, [currentIndex, currentCueIndex, effectiveMs, filterEpoch, desynced]);
+
+  const handleListScroll = (): void => {
+    const list = listRef.current;
+    if (!list) return;
+    if (Math.abs(list.scrollTop - expectedScrollTopRef.current) > 2) setDesynced(true);
+  };
+
+  const resumeFollow = useCallback((realign: boolean): void => {
+    if (realign) highlightedRef.current = null;
+    setDesynced(false);
+  }, []);
 
 
 
   itemRefs.current.length = filteredCues.length;
 
   return (
-    <div ref={listRef} className={styles.list} role="list" data-cell-id="cue-list-scroll">
+    <div className={styles.cueWrap}>
+      <div
+        ref={listRef}
+        className={`${styles.list} ${desynced ? styles.listDesynced : ''}`}
+        role="list"
+        data-cell-id="cue-list-scroll"
+        onScroll={handleListScroll}
+      >
       {filteredCues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         const customContent = renderCueContent?.(cue, i, isCurrent);
@@ -346,7 +371,10 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
                 data-cell-id="cue-timestamp"
                 data-cue-index={cue.index}
                 data-no-lookup
-                onClick={() => onSeek(cue.start)}
+                onClick={() => {
+                  resumeFollow(false);
+                  onSeek(cue.start);
+                }}
                 aria-label={`Seek to ${formatTimestamp(cue.start - offsetMs, hasHours)}`}
                 aria-describedby={band !== undefined ? `cue-heat-sr-${cue.index}` : undefined}
                 className={styles.timestamp}
@@ -361,6 +389,20 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek, renderCueCo
           </div>
         );
       })}
+      </div>
+      {desynced && (
+        <Button
+          variant="overlay"
+          size="sm"
+          elevation="med"
+          className={styles.syncPill}
+          leadingIcon={<Icon name="crosshair" size="xs" />}
+          onClick={() => resumeFollow(true)}
+          data-cell-id="cue-list-sync"
+        >
+          {t('cueList.syncToVideo')}
+        </Button>
+      )}
     </div>
   );
 }

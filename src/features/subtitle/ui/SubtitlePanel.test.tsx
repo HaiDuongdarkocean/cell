@@ -34,6 +34,55 @@ describe('SubtitlePanel blur overlay', () => {
   });
 });
 
+describe('SubtitlePanel tab strip', () => {
+  beforeEach(() => {
+    global.ResizeObserver = class ResizeObserverMock {
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    } as unknown as typeof ResizeObserver;
+  });
+
+  it('renders no tab strip when only the Subtitles tab is renderable', () => {
+    const { container } = render(
+      <SubtitlePanel cues={cues} currentTimeMs={0} onSeek={jest.fn()} />,
+    );
+
+    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[role="tablist"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+  });
+
+  it('renders no tab strip when tokenize is set but the Words tab is not renderable', () => {
+    const { container } = render(
+      <SubtitlePanel
+        cues={cues}
+        currentTimeMs={0}
+        onSeek={jest.fn()}
+        tokenize={{ langCode: 'zh', onTokenClick: jest.fn() }}
+      />,
+    );
+
+    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+  });
+
+  it('renders the tab strip when a Playlist tab exists', () => {
+    const { container } = render(
+      <SubtitlePanel
+        cues={cues}
+        currentTimeMs={0}
+        onSeek={jest.fn()}
+        playlistContent={<div data-testid="playlist-content" />}
+      />,
+    );
+
+    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-subtitles"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-cell-id="subtitle-panel-tab-playlist"]')).toBeInTheDocument();
+    expect(container.querySelector('[data-cell-id="cue-list-scroll"]')).toBeInTheDocument();
+  });
+});
+
 describe('SubtitlePanel practice cues', () => {
   beforeEach(() => {
     global.ResizeObserver = class ResizeObserverMock {

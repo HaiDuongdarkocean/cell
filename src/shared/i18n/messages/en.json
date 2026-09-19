@@ -84,6 +84,7 @@
   "cueFilter.indicator.showAll": "Show all cues",
   "cueFilter.emptyTitle": "No cues match this filter",
   "cueFilter.emptyAction": "Show all cues",
+  "cueList.syncToVideo": "Sync to video",
   "cueHeat.tooltip.easy": "No new words in level",
   "cueHeat.tooltip.i1": "New words: $1",
   "cueHeat.tooltip.dense": "New words: $1",

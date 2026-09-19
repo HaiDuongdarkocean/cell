@@ -1,4 +1,12 @@
 /* === CueList — subtitle cue list with Windows 11 Settings nav style === */
+.cueWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .list {
   flex: 1;
   min-height: 0;
@@ -9,6 +17,18 @@
   flex-direction: column;
   gap: var(--cue-list-item-gap);
   padding: var(--space-1);
+}
+
+.listDesynced {
+  padding-bottom: calc(var(--touch-target) + var(--space-4));
+}
+
+.syncPill {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-3);
+  transform: translateX(-50%);
+  z-index: var(--z-overlay-base);
 }
 
 .cue {

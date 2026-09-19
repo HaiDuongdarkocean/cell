@@ -176,6 +176,14 @@ describe('SubtitlePanel Words tab', () => {
     expect(resolveMock).not.toHaveBeenCalled();
   });
 
+  it('renders no tab strip when only the Subtitles tab is renderable', async () => {
+    renderPanel({ tokenize: null });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.queryByTestId('subtitle-panel-tab-subtitles')).toBeNull();
+    expect(screen.getAllByTestId('cue-item')).toHaveLength(3);
+  });
+
   it('does not render the tab when blurred, in practice mode, or zh', async () => {
     const blurred = renderPanel({ panelBlurred: true });
     await waitFor(() => expect(resolveMock).toHaveBeenCalled());
@@ -201,7 +209,12 @@ describe('SubtitlePanel Words tab', () => {
     const nextCues: BilingualCue[] = [
       { index: 1, start: 0, end: 1000, targetText: 'totally new set', nativeText: '' },
     ];
-    resolveMock.mockReturnValue(new Promise(() => undefined));
+    let resolvePending:
+      | ((value: { map: CueListTokenMap; meta: ResolveMeta }) => void)
+      | undefined;
+    resolveMock.mockImplementation(
+      () => new Promise((r) => { resolvePending = r; }),
+    );
     rerender(
       <SubtitlePanel
         cues={nextCues}
@@ -212,12 +225,20 @@ describe('SubtitlePanel Words tab', () => {
     );
 
     await waitFor(() => expect(wordsTab()).toBeNull());
+    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(screen.getAllByTestId('cue-item')).toHaveLength(1);
+    expect(screen.queryByTestId('primer-list')).toBeNull();
+
+    const pendingMap = resolveMock.mock.calls.at(-1)?.[0];
+    act(() => {
+      resolvePending?.({ map: withStatuses(pendingMap!), meta: resolvedMeta() });
+    });
+    await waitFor(() => expect(wordsTab()).toBeInTheDocument());
     await waitFor(() =>
       expect(
         screen.getByTestId('subtitle-panel-tab-subtitles').getAttribute('aria-selected'),
       ).toBe('true'),
     );
-    expect(screen.queryByTestId('primer-list')).toBeNull();
   });
 
   it('auto-switches from Playlist to Subtitles when the first cues arrive', async () => {
