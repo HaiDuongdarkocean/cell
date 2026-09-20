@@ -1,6 +1,6 @@
 # Sign-off Review — subtitle-cleanup-rules
 
-**VERDICT: SIGN_OFF**
+VERDICT: SIGN_OFF
 
 ## Scope verified
 

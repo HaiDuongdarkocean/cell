@@ -270,15 +270,15 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-20T13:56:25.579Z"
+          "at": "2026-09-20T14:01:26.970Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-20T13:09:07.137Z"
+          "at": "2026-09-20T14:01:27.125Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-20T13:58:47.354Z"
+          "at": "2026-09-20T14:01:27.204Z"
         },
         "briefLint": {
           "v": "pass",
@@ -286,15 +286,15 @@
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-20T13:59:59.056Z"
+          "at": "2026-09-20T14:01:27.043Z"
         },
         "browser": {
           "v": "pass",
-          "at": "2026-09-20T13:07:54.914Z"
+          "at": "2026-09-20T14:01:27.281Z"
         }
       },
       "confidence": "medium",
-      "awaiting": null,
+      "awaiting": "flagged:gate-blocked-foreign-test",
       "resolutions": [],
       "loops": 0,
       "owner": {
@@ -302,7 +302,7 @@
         "since": "2026-09-20T05:02:08.392Z"
       },
       "worktree": null,
-      "updated": "2026-09-20T13:59:59.056Z"
+      "updated": "2026-09-20T14:09:40.662Z"
     }
   }
 }
