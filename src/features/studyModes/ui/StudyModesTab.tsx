@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard } from '@/shared/ui';
+import { Heading, Text, Button, Card, Chip, Checkbox, HStack, VStack, Toggle, Dialog, Icon, SelectableCard, SliderRow } from '@/shared/ui';
 import { loadStudyModeState, useStudyModeStore } from '../studyModeStore';
 import { findActiveMode } from '../lib/findActiveMode';
 import { CustomModeBuilder } from './CustomModeBuilder';
+import { CleanupRulesSection } from './CleanupRulesSection';
+import { cleanupT } from '../lib/cleanupRuleMessages';
+import { DEFAULT_CLEANUP_RULES_SETTING } from '@/entities/studyMode';
 import { PRESETS } from '@/entities/studyMode';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 import { formatModeDescription } from '../lib/formatStepSummary';
@@ -274,11 +277,21 @@ function AdvancedSection({ advanced, onChange }: AdvancedSectionProps): ReactEle
             ))}
           </HStack>
         </div>
-        <Checkbox
-          label="Remove text in brackets ( ), [ ], { } from target subtitle"
-          checked={advanced.removeBracketed}
-          onChange={(e) => onChange({ ...advanced, removeBracketed: e.target.checked })}
-          data-cell-id="remove-bracketed-checkbox"
+        <CleanupRulesSection
+          setting={advanced.cleanupRules ?? DEFAULT_CLEANUP_RULES_SETTING}
+          onChange={(cleanupRules) => onChange({ ...advanced, cleanupRules })}
+        />
+        <SliderRow
+          icon={<Icon name="clock" size="sm" />}
+          label={cleanupT('cleanup.leadIn.label')}
+          hint={cleanupT('cleanup.leadIn.hint')}
+          value={advanced.cueLeadInMs ?? 0}
+          min={0}
+          max={2000}
+          step={50}
+          onChange={(cueLeadInMs) => onChange({ ...advanced, cueLeadInMs })}
+          aria-label={cleanupT('cleanup.leadIn.aria')}
+          formatValue={(v) => cleanupT('cleanup.leadIn.value', [v])}
         />
         <div>
           <Text as="p" className={styles.advancedLabel}>

@@ -120,6 +120,113 @@
   flex-wrap: wrap;
 }
 
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  border: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.ruleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.ruleRow + .ruleRow {
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+}
+
+.ruleBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ruleNameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ruleName {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.builtinTag {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.ruleDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.ruleBody .rulePattern {
+  display: block;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ruleActions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.ruleActions button {
+  min-height: var(--touch-target);
+}
+
+.customsDivider {
+  padding: var(--space-2) var(--space-3) 0;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-top: var(--borderWidth-hairline, 1px) solid var(--color-border-subtle);
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.groupText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.addButton {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .ruleRow {
+    flex-wrap: wrap;
+  }
+  .ruleActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media (max-width: 639px) {
   .tab {
     padding: var(--space-4);

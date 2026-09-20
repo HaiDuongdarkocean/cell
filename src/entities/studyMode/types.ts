@@ -49,6 +49,21 @@ export interface UnknownCueHit {
   readonly offset: number;
 }
 
+export interface SubtitleCleanupRule {
+  id: string;
+  name: string;
+  description: string;
+  pattern: string;
+  enabled: boolean;
+  builtin: boolean;
+  repeatUntilStable?: boolean;
+}
+
+export interface CleanupRulesSetting {
+  builtinEnabled: Record<string, boolean>;
+  custom: SubtitleCleanupRule[];
+}
+
 export interface StudyModeAdvancedSettings {
   skipNoDialogue: 'OFF' | '2X' | '4X' | '6X' | '8X' | 'JUMP';
   removeBracketed: boolean;
@@ -56,6 +71,8 @@ export interface StudyModeAdvancedSettings {
   unknownLevel: UnknownLevel;
   popupOnAutoPause: boolean;
   popupCloseOnResume: boolean;
+  cleanupRules?: CleanupRulesSetting;
+  cueLeadInMs?: number;
 }
 
 export interface StudyModeState {

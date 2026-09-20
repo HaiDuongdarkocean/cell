@@ -72,7 +72,7 @@ describe('StudyModePlaybackController', () => {
     ctrl.enterCue(cue, 0);
 
     const first = ctrl.onTimeUpdate(5000);
-    expect(first).toContainEqual({ type: 'seek', timeMs: 1000 });
+    expect(first).toContainEqual({ type: 'seek', timeMs: 1000, cueSeq: 1 });
 
     const second = ctrl.onTimeUpdate(5000);
     expect(second).toEqual([]);
@@ -86,7 +86,7 @@ describe('StudyModePlaybackController', () => {
 
     const a = ctrl.onTimeUpdate(5000);
     expect(a).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
-    expect(a).toContainEqual({ type: 'seek', timeMs: 1000 });
+    expect(a).toContainEqual({ type: 'seek', timeMs: 1000, cueSeq: 1 });
 
     const b = ctrl.onTimeUpdate(5000);
     expect(b).toContainEqual({ type: 'setSubtitle', subtitle: 'none' });
@@ -188,7 +188,7 @@ describe('StudyModePlaybackController', () => {
 
     for (let i = 0; i < 5; i++) {
       const a = ctrl.onTimeUpdate(5000);
-      expect(a).toContainEqual({ type: 'seek', timeMs: 1000 });
+      expect(a).toContainEqual({ type: 'seek', timeMs: 1000, cueSeq: 1 });
     }
 
     const final = ctrl.onTimeUpdate(5000);
@@ -200,7 +200,7 @@ describe('StudyModePlaybackController', () => {
     const cues = [makeCue(1, 0, 1000, 'a'), makeCue(2, 5000, 8000, 'b')];
     const ctrl = new StudyModePlaybackController(hybridMode, advancedJump, cues);
     const actions = ctrl.onTimeUpdate(2500);
-    expect(actions).toEqual([{ type: 'seek', timeMs: 5000 }]);
+    expect(actions).toEqual([{ type: 'seek', timeMs: 5000, cueSeq: 2 }]);
   });
 
   it('speeds up during silence when skipNoDialogue is 2X', () => {
@@ -215,13 +215,13 @@ describe('StudyModePlaybackController', () => {
     const ctrl = new StudyModePlaybackController(repeatMode, advancedOff, [cue], 500);
     ctrl.enterCue(cue, 0);
     const actions = ctrl.onTimeUpdate(4500);
-    expect(actions).toContainEqual({ type: 'seek', timeMs: 1000 });
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 1000, cueSeq: 1 });
   });
 
   it('JUMP seeks to the raw start of the next cue, once per gap', () => {
     const cues = [makeCue(1, 0, 1000, 'a'), makeCue(2, 5000, 8000, 'b')];
     const ctrl = new StudyModePlaybackController(hybridMode, advancedJump, cues, 500);
-    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'seek', timeMs: 5000 }]);
+    expect(ctrl.onTimeUpdate(2500)).toEqual([{ type: 'seek', timeMs: 5000, cueSeq: 2 }]);
     expect(ctrl.onTimeUpdate(2600)).toEqual([]);
   });
 
@@ -375,7 +375,7 @@ describe('StudyModePlaybackController', () => {
     // Once playing resumes past the end, the step-end runs normally and the
     // repeat is consumed exactly once.
     const resumed = ctrl.onTimeUpdate(5000, false);
-    expect(resumed).toContainEqual({ type: 'seek', timeMs: 1000 });
+    expect(resumed).toContainEqual({ type: 'seek', timeMs: 1000, cueSeq: 1 });
   });
 
   it('keeps silence handling active while paused (JUMP still fires)', () => {
@@ -383,7 +383,25 @@ describe('StudyModePlaybackController', () => {
     const ctrl = new StudyModePlaybackController(readMode, advancedJump, cues);
     // Paused in the gap between cues — JUMP should still seek to the next cue.
     const actions = ctrl.onTimeUpdate(5000, true);
-    expect(actions).toContainEqual({ type: 'seek', timeMs: 9000 });
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 9000, cueSeq: 2 });
+  });
+
+  it('shifts cue seeks earlier by cueLeadInMs, clamped at zero', () => {
+    const cue = makeCue(1, 1000, 5000, 'hi');
+    const leadIn = { ...advancedOff, cueLeadInMs: 300 };
+    const ctrl = new StudyModePlaybackController(repeatMode, leadIn, [cue]);
+    ctrl.enterCue(cue, 0);
+
+    expect(ctrl.onTimeUpdate(5000)).toContainEqual({ type: 'seek', timeMs: 700, cueSeq: 1 });
+  });
+
+  it('clamps lead-in seeks at zero for cues starting near t=0', () => {
+    const cue = makeCue(1, 100, 4000, 'hi');
+    const leadIn = { ...advancedOff, cueLeadInMs: 500 };
+    const ctrl = new StudyModePlaybackController(repeatMode, leadIn, [cue]);
+    ctrl.enterCue(cue, 0);
+
+    expect(ctrl.onTimeUpdate(4000)).toContainEqual({ type: 'seek', timeMs: 0, cueSeq: 1 });
   });
 });
 
@@ -523,7 +541,7 @@ describe('skip non-i1 cue entry', () => {
     const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
     ctrl.setBandProbe((i) => bands[i] ?? null);
 
-    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000, cueSeq: 2 }]);
   });
 
   it('plays i1 cues through the normal path', () => {
@@ -559,8 +577,8 @@ describe('skip non-i1 cue entry', () => {
     const ctrl = new StudyModePlaybackController(i1ReplayMode, advancedOff, cues);
     ctrl.setBandProbe((i) => bands[i] ?? null);
 
-    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 10000 }]);
-    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 10000, cueSeq: 3 }]);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000, cueSeq: 4 }]);
     expect(ctrl.enterCue(cues[4], 4)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
   });
 
@@ -607,7 +625,7 @@ describe('skip non-i1 cue entry', () => {
 
     ctrl.enterCue(cues[0], 0);
     ctrl.abort();
-    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 10000 }]);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 10000, cueSeq: 2 }]);
   });
 
   it('keeps bounced targets across abort and clears them on cue changes', () => {
@@ -623,13 +641,13 @@ describe('skip non-i1 cue entry', () => {
     ctrl.setBandProbe((i) => bands[i] ?? null);
 
     ctrl.enterCue(cues[0], 0);
-    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+    expect(ctrl.enterCue(cues[1], 1)).toEqual([{ type: 'seek', timeMs: 12000, cueSeq: 4 }]);
     ctrl.abort();
-    expect(ctrl.enterCue(cues[2], 2)).toEqual([{ type: 'seek', timeMs: 12000 }]);
+    expect(ctrl.enterCue(cues[2], 2)).toEqual([{ type: 'seek', timeMs: 12000, cueSeq: 4 }]);
 
     const shifted = cues.map((c) => ({ ...c, start: c.start + 500, end: c.end + 500 }));
     ctrl.setCues(shifted);
-    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500 }]);
+    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500, cueSeq: 3 }]);
   });
 
   it('clears bounced targets when cue boundaries change', () => {
@@ -648,7 +666,7 @@ describe('skip non-i1 cue entry', () => {
     ctrl.enterCue(cues[1], 1);
     const shifted = cues.map((c) => ({ ...c, start: c.start + 500, end: c.end + 500 }));
     ctrl.setCues(shifted);
-    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500 }]);
+    expect(ctrl.enterCue(shifted[0], 0)).toEqual([{ type: 'seek', timeMs: 10500, cueSeq: 3 }]);
   });
 
   it('re-skips when a user seek lands back in a non-i1 cue', () => {
@@ -659,7 +677,7 @@ describe('skip non-i1 cue entry', () => {
 
     ctrl.enterCue(cues[0], 0);
     ctrl.abort();
-    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000, cueSeq: 1 }]);
   });
 
   it('does not re-evaluate skip during repeat loops', () => {
@@ -670,7 +688,7 @@ describe('skip non-i1 cue entry', () => {
 
     ctrl.enterCue(cues[0], 0);
     const actions = ctrl.onTimeUpdate(4000);
-    expect(actions).toContainEqual({ type: 'seek', timeMs: 0 });
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 0, cueSeq: 0 });
     expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
   });
 
@@ -683,6 +701,6 @@ describe('skip non-i1 cue entry', () => {
     expect(ctrl.enterCue(cues[0], 0)).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
     bands[0] = 'easy';
     ctrl.abort();
-    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000 }]);
+    expect(ctrl.enterCue(cues[0], 0)).toEqual([{ type: 'seek', timeMs: 8000, cueSeq: 1 }]);
   });
 });

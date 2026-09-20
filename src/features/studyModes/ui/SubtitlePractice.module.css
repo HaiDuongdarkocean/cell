@@ -195,10 +195,6 @@
   .feedbackTokens {
     max-inline-size: 70ch;
   }
-
-  .answerInput {
-    max-inline-size: 60ch;
-  }
 }
 
 @media (max-height: 568px) {

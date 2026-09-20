@@ -180,8 +180,8 @@ export function App() {
     void sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
   };
 
-  const seekAndResume = (timeMs: number): void => {
-    void sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
+  const seekAndResume = (timeMs: number, cueSeq?: number): void => {
+    void sendMessage({ type: 'SEEK_TO', payload: { timeMs, ...(cueSeq !== undefined ? { cueSeq } : {}) } });
     if (!useSidePanelStore.getState().isPlaying) {
       void sendMessage({ type: 'TOGGLE_PLAY' });
     }
@@ -191,11 +191,11 @@ export function App() {
     const store = useSidePanelStore.getState();
     const index = store.cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
     const prev = index > 0 ? store.cues[index - 1] : undefined;
-    if (prev) seekAndResume(prev.start);
+    if (prev) seekAndResume(prev.start, prev.index);
   };
 
   const handleReplayCue = (cue: BilingualCue): void => {
-    seekAndResume(cue.start);
+    seekAndResume(cue.start, cue.index);
   };
 
   const handleContinueCue = (cue: BilingualCue): void => {
@@ -203,7 +203,7 @@ export function App() {
     const index = store.cues.findIndex((c) => c.index === cue.index && c.start === cue.start);
     const next = index >= 0 ? store.cues[index + 1] : undefined;
     if (next) {
-      seekAndResume(next.start);
+      seekAndResume(next.start, next.index);
     } else if (!store.isPlaying) {
       void sendMessage({ type: 'TOGGLE_PLAY' });
     }

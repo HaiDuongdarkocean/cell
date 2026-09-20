@@ -78,7 +78,7 @@ type SkipDirection = 'forward' | 'backward';
 function buildBilingualCues(target: readonly SrtCue[], native: readonly SrtCue[]): BilingualCue[] {
   if (target.length === 0) return [];
   if (native.length === 0) {
-    return target.map((c) => ({ index: c.index, start: c.start, end: c.end, targetText: c.text, nativeText: '' }));
+    return target.map((c) => ({ index: c.index, start: c.start, end: c.end, targetText: c.text, nativeText: '', rawTargetText: c.rawText }));
   }
   // ponytail: naive O(n) merge by index — cues are aligned 1:1 in bilingual SRT.
   // Ceiling: misaligned cues (different timing) show empty native text. Upgrade: merge by time overlap.
@@ -88,6 +88,7 @@ function buildBilingualCues(target: readonly SrtCue[], native: readonly SrtCue[]
     end: c.end,
     targetText: c.text,
     nativeText: native[i]?.text ?? '',
+    rawTargetText: c.rawText,
   }));
 }
 

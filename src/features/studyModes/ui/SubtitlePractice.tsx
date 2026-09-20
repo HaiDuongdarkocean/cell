@@ -67,6 +67,7 @@ export function SubtitlePracticeSession({
   const [attempts, setAttempts] = useState<Map<string, { draft: string; result: PracticeResult | null }>>(new Map());
   const inputRef = useRef<HTMLInputElement>(null);
   const hasTypedRef = useRef(false);
+  const ctrlPendingRef = useRef(false);
 
   const effectiveMs = currentTimeMs + offsetMs;
   const activeIndex = useMemo(() => {
@@ -159,7 +160,16 @@ export function SubtitlePracticeSession({
   };
 
   const handleInputKeyDown = useCallback((e: ReactKeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Escape') return;
+    if (e.key === 'Escape') {
+      ctrlPendingRef.current = false;
+      return;
+    }
+    if (e.key === 'Control') {
+      if (!e.repeat) ctrlPendingRef.current = true;
+      stopKeyboardLeak(e);
+      return;
+    }
+    if (ctrlPendingRef.current) ctrlPendingRef.current = false;
 
     if (activeCue) {
       if (e.key === 'Enter' && e.shiftKey) {
@@ -193,8 +203,16 @@ export function SubtitlePracticeSession({
 
   const handleInputKeyUp = useCallback((e: ReactKeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Escape') return;
+    if (e.key === 'Control' && ctrlPendingRef.current) {
+      ctrlPendingRef.current = false;
+      if (activeCue) onReplay(activeCue);
+    }
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
+  }, [activeCue, onReplay]);
+
+  const handleInputBlur = useCallback((): void => {
+    ctrlPendingRef.current = false;
   }, []);
 
   const renderCueContent = (
@@ -241,7 +259,7 @@ export function SubtitlePracticeSession({
       />
       <div className={styles.footer} data-cell-id="practice-footer">
         <div className={styles.shortcuts} data-cell-id="practice-shortcuts">
-          <span><Kbd>Ctrl+R</Kbd> Phát lại</span>
+          <span><Kbd>Ctrl</Kbd> Phát lại</span>
           <span><Kbd>Enter</Kbd> Câu tiếp</span>
           <span><Kbd>Shift+Enter</Kbd> Câu trước</span>
           <span><Kbd>Shift+Space</Kbd> Tạm dừng</span>
@@ -285,6 +303,7 @@ export function SubtitlePracticeSession({
               onChange={(e) => handleInputChange(e.currentTarget.value)}
               onKeyDown={handleInputKeyDown}
               onKeyUp={handleInputKeyUp}
+              onBlur={handleInputBlur}
             />
           </div>
           <Button

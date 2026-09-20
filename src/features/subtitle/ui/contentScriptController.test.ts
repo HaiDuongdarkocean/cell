@@ -424,7 +424,10 @@ describe('contentScriptController', () => {
       origin: window.location.origin,
     }));
 
-    expect(blockController.loadBilingualCues).toHaveBeenCalledWith(targetCues, nativeCues);
+    expect(blockController.loadBilingualCues).toHaveBeenCalledWith(
+      targetCues.map((cue) => ({ ...cue, rawText: cue.text })),
+      nativeCues,
+    );
     expect(blockController.loadCues).toHaveBeenCalledWith(true);
     expect(broadcastCues).toHaveBeenCalledWith(merged);
     expect(blockController.updateManagerItems).toHaveBeenCalledWith(

@@ -11,6 +11,7 @@ import {
   showToast,
 } from '@/features/subtitle';
 import type { SubtitlePanelItem } from '@/features/subtitle';
+import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { ResolveSubtitleDownloadResult } from '@/entities/message';
@@ -42,8 +43,9 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
     if (!parsed) return;
 
     if (role === 'target') {
-      blockController?.loadBilingualCues(parsed.cues, []);
-      syncController.latestTargetCues = parsed.cues;
+      const cues = cleanTargetCues(parsed.cues);
+      blockController?.loadBilingualCues(cues, []);
+      syncController.latestTargetCues = cues;
       ctx.clearTranslatedNativeState();
       syncController.activeNativeSource = 'auto';
       syncController.activeNativeIndex = 0;
@@ -85,9 +87,10 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
       // D1 merge: loadBilingualCues keeps other side when this side is empty.
       // We only update the selected side by passing its cues + empty other side.
       if (role === 'target') {
-        blockController?.loadBilingualCues(result.cues, []);
+        const cues = cleanTargetCues(result.cues);
+        blockController?.loadBilingualCues(cues, []);
         // ADR-018: update nav cluster — keep native side, replace target
-        syncController.latestTargetCues = result.cues;
+        syncController.latestTargetCues = cues;
         ctx.clearTranslatedNativeState();
         syncController.activeNativeSource = 'auto';
         syncController.activeNativeIndex = 0;
@@ -138,8 +141,9 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
 
     // Retrieve cues from cache by result.id (encoded in item.id).
     const resultId = item.id.replace(`searched-${role}-`, '');
-    const cues = syncController.parsedSearchCache.get(resultId);
-    if (!cues) return;
+    const cachedCues = syncController.parsedSearchCache.get(resultId);
+    if (!cachedCues) return;
+    const cues = role === 'target' ? cleanTargetCues(cachedCues) : cachedCues;
 
     if (role === 'target') {
       blockController?.loadBilingualCues(cues, []);
@@ -287,8 +291,9 @@ export function createSubtitleSelectionHandlers(ctx: ContentScriptContext): {
 
     // Load cues (D1 merge keeps the other side).
     if (role === 'target') {
-      blockController?.loadBilingualCues(cues, []);
-      syncController.latestTargetCues = cues;
+      const cleanedCues = cleanTargetCues(cues);
+      blockController?.loadBilingualCues(cleanedCues, []);
+      syncController.latestTargetCues = cleanedCues;
     } else {
       blockController?.loadBilingualCues([], cues);
     }

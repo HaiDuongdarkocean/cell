@@ -40,6 +40,7 @@ export function mergeCuesForPanel(
       end: target.end,
       targetText: target.text,
       nativeText: native?.text ?? '',
+      ...(target.rawText !== undefined ? { rawTargetText: target.rawText } : {}),
     };
   });
 }

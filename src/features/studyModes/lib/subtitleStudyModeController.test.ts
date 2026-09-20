@@ -1,5 +1,6 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import { SubtitleStudyModeController } from './subtitleStudyModeController';
+import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
 import type { SrtCue } from '@/entities/media';
 import type { StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
 
@@ -49,7 +50,7 @@ describe('SubtitleStudyModeController', () => {
     // Engine already reports cue B at the boundary — cue A's chain must
     // still finish instead of being replaced by cue B's entry.
     actions = ctrl.onTimeUpdate({ targetIndex: 1, targetCues: cues, currentTimeMs: 4100 });
-    expect(actions).toContainEqual({ type: 'seek', timeMs: 0 });
+    expect(actions).toContainEqual({ type: 'seek', timeMs: 0, cueSeq: 1 });
     expect(actions).toContainEqual({ type: 'setSubtitle', subtitle: 'target' });
 
     ctrl.onSeeking(200);
@@ -91,7 +92,7 @@ describe('SubtitleStudyModeController', () => {
 
     ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
     const repeat = ctrl.onTimeUpdate({ targetIndex: 1, targetCues: cues, currentTimeMs: 4100 });
-    expect(repeat).toContainEqual({ type: 'seek', timeMs: 0 });
+    expect(repeat).toContainEqual({ type: 'seek', timeMs: 0, cueSeq: 1 });
 
     ctrl.onSeeking(80);
     const actions = ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 500 });
@@ -99,6 +100,46 @@ describe('SubtitleStudyModeController', () => {
 
     const done = ctrl.onTimeUpdate({ targetIndex: 1, targetCues: cues, currentTimeMs: 4100 });
     expect(done).toEqual([]);
+  });
+
+  it('suppresses foreign cues en route to a marked cue seek', () => {
+    const cues = [makeCue(3, 0, 4000, 'a'), makeCue(4, 4000, 8000, 'b'), makeCue(5, 8000, 12000, 'c')];
+    const ctrl = new SubtitleStudyModeController();
+    ctrl.applyStudyMode(repeatMode, advancedOff, cues, 0);
+    ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
+
+    // The seek was issued for cue 5 but lands inside cue 4 first — cue 4
+    // must not arm the state machine while the marked cue is still en route.
+    markCueSeekIntent(5);
+    ctrl.onSeeking(9500);
+    const enRoute = ctrl.onTimeUpdate({ targetIndex: 1, targetCues: cues, currentTimeMs: 9500 });
+    expect(enRoute).toEqual([]);
+
+    const actions = ctrl.onTimeUpdate({ targetIndex: 2, targetCues: cues, currentTimeMs: 9800 });
+    expect(actions).toEqual([
+      { type: 'setSubtitle', subtitle: 'target' },
+      { type: 'setSpeed', speed: 0.75 },
+    ]);
+  });
+
+  it('ignores a stale cue-seek intent older than the freshness window', () => {
+    const cues = [makeCue(3, 0, 4000, 'a'), makeCue(4, 4000, 8000, 'b')];
+    const ctrl = new SubtitleStudyModeController();
+    ctrl.applyStudyMode(repeatMode, advancedOff, cues, 0);
+    ctrl.onTimeUpdate({ targetIndex: 0, targetCues: cues, currentTimeMs: 1200 });
+
+    markCueSeekIntent(4);
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 300);
+    try {
+      ctrl.onSeeking(6500);
+    } finally {
+      spy.mockRestore();
+    }
+    const actions = ctrl.onTimeUpdate({ targetIndex: 1, targetCues: cues, currentTimeMs: 6500 });
+    expect(actions).toEqual([
+      { type: 'setSubtitle', subtitle: 'target' },
+      { type: 'setSpeed', speed: 0.75 },
+    ]);
   });
 
   it('re-enters the current cue after the cue list is reloaded', () => {

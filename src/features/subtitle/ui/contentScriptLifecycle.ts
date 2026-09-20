@@ -1,5 +1,6 @@
 import { useCuesStore } from '../cuesStore';
 import { mergeCuesForPanel, broadcastCues } from '@/features/subtitle';
+import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
 import { canonicalNavUrl } from './contentScriptShared';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
@@ -91,15 +92,16 @@ export function createContentScriptLifecycleHandlers(ctx: ContentScriptContext):
         syncController.ocrTargetSlot = { item: syncController.makeOcrPanelItem('ocr-target', 'OCR Target (live)', 'target'), cues: [] };
         syncController.ocrNativeSlot = { item: syncController.makeOcrPanelItem('ocr-native', 'OCR Native (live)', 'native'), cues: [] };
       }
-      syncController.ocrTargetSlot.cues = d.targetCues;
+      const targetCues = cleanTargetCues(d.targetCues);
+      syncController.ocrTargetSlot.cues = targetCues;
       syncController.ocrNativeSlot.cues = d.nativeCues;
       syncController.activeTargetSource = 'ocr';
       syncController.activeNativeSource = 'ocr';
-      blockController?.loadBilingualCues(d.targetCues, d.nativeCues);
+      blockController?.loadBilingualCues(targetCues, d.nativeCues);
       ctx.showOverlay();
-      syncController.latestTargetCues = d.targetCues;
+      syncController.latestTargetCues = targetCues;
       ctx.getOffsetController()?.loadCues(true);
-      ctx.setBilingualCues(mergeCuesForPanel(d.targetCues, d.nativeCues));
+      ctx.setBilingualCues(mergeCuesForPanel(targetCues, d.nativeCues));
       broadcastCues(ctx.getBilingualCues());
       ctx.refreshPanel('target');
       ctx.refreshPanel('native');

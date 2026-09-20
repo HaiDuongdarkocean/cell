@@ -17,7 +17,7 @@ import { useOverlayPortals } from './subtitlePortals';
 import { useSplitView } from './subtitleSplitView';
 import { ShadowThemeProvider } from '@/features/theme/ui/ShadowThemeProvider';
 import { useIsMobile } from '@/shared/ui/useIsMobile';
-import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes/studyModeStore';
+import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes';
 import { BREAKPOINTS } from '@/shared/lib/tokens';
 import { buildClusterCssVars } from './subtitleUI';
 import styles from './SubtitlePanels.module.css';

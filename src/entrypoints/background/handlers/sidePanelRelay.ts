@@ -171,7 +171,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     try {
       await sendTabMessage(tabId, {
         type: MESSAGE_TYPES.SEEK_TO,
-        payload: { timeMs },
+        payload: { timeMs, ...(payload.cueSeq !== undefined ? { cueSeq: payload.cueSeq } : {}) },
       });
       return { success: true };
     } catch (error) {
@@ -249,7 +249,6 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: false, error: `Invalid SHORTCUT_ACTION payload: ${parsed.error.message}` };
     }
     const payload = parsed.data;
-    const { action } = payload;
     let tabId = payload.tabId;
     if (tabId === undefined) {
       try {
@@ -265,7 +264,10 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     try {
       await sendTabMessage(tabId, {
         type: MESSAGE_TYPES.SHORTCUT_ACTION,
-        payload: { action },
+        payload: {
+          action: payload.action,
+          ...(payload.seekTime !== undefined ? { seekTime: payload.seekTime } : {}),
+        },
       });
       return { success: true };
     } catch (error) {

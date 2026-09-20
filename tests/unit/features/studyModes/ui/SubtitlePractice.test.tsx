@@ -221,6 +221,33 @@ describe('SubtitlePracticeSession — dictation', () => {
     expect((input as HTMLInputElement).value).toBe('');
   });
 
+  it('Ctrl tap replays the active cue; chords, Escape, and blur cancel it', () => {
+    const { props } = renderSession();
+    const input = screen.getByTestId('practice-input');
+
+    fireEvent.keyDown(input, { key: 'Control' });
+    fireEvent.keyUp(input, { key: 'Control' });
+    expect(props.onReplay).toHaveBeenCalledWith(cues[1]);
+    expect(props.onReplay).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(input, { key: 'Control' });
+    fireEvent.keyDown(input, { key: 'c', ctrlKey: true });
+    fireEvent.keyUp(input, { key: 'Control' });
+    expect(props.onReplay).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(input, { key: 'Control' });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    fireEvent.keyUp(input, { key: 'Control' });
+    expect(props.onReplay).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(input, { key: 'Control' });
+    fireEvent.blur(input);
+    fireEvent.keyUp(input, { key: 'Control' });
+    expect(props.onReplay).toHaveBeenCalledTimes(1);
+
+    expect((input as HTMLInputElement).value).toBe('');
+  });
+
   it('blocks host/project shortcut keys like f and t from leaving the input', () => {
     renderSession();
     const input = screen.getByTestId('practice-input');

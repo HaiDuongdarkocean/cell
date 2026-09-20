@@ -9,6 +9,7 @@ import {
   type ParsedFile,
 } from '@/features/subtitle';
 import { loadTargetNativeLangs } from './contentScriptShared';
+import { cleanTargetCues } from '../logic/subtitleCleanupRuntime';
 import type { ContentScriptContext } from './contentScriptContext';
 
 export function createProcessImportedFiles(ctx: ContentScriptContext): (files: File[], _container: HTMLElement) => Promise<void> {
@@ -85,7 +86,7 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
     ctx.refreshPanel('native');
 
     // Load cues: first new target + first new native (D1 merge keeps other side)
-    const targetCues = newTarget[0]?.cues ?? [];
+    const targetCues = cleanTargetCues(newTarget[0]?.cues ?? []);
     const nativeCues = newNative[0]?.cues ?? [];
     if (targetCues.length > 0 || nativeCues.length > 0) {
       blockController?.loadBilingualCues(targetCues, nativeCues);
@@ -95,9 +96,10 @@ export function createProcessImportedFiles(ctx: ContentScriptContext): (files: F
       ctx.setBilingualCues(mergeCuesForPanel(targetCues, nativeCues));
       broadcastCues(ctx.getBilingualCues());
     } else if (newTarget.length === 0 && newNative.length === 0) {
-      blockController?.loadCues(parsed[0].cues); // fallback: single mode
+      const fallbackCues = cleanTargetCues(parsed[0].cues);
+      blockController?.loadCues(fallbackCues); // fallback: single mode
       ctx.showOverlay();
-      syncController.latestTargetCues = parsed[0].cues;
+      syncController.latestTargetCues = fallbackCues;
       ctx.getOffsetController()?.loadCues(true);
     }
     ctx.updateGenerateNativeEnabled();

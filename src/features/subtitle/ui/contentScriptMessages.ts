@@ -14,6 +14,7 @@ import {
   broadcastCues,
 } from '@/features/subtitle';
 import { shouldDedupeCueSeek, canonicalNavUrl } from './contentScriptShared';
+import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
 import type { ContentScriptContext } from './contentScriptContext';
 import type { SrtCue } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload } from '@/entities/message';
@@ -40,8 +41,10 @@ export function createContentScriptMessageHandlers(ctx: ContentScriptContext): {
       ctx.setSidePanelOpen(false);
     }
     if (m?.type === MESSAGE_TYPES.SEEK_TO) {
-      const timeMs = (m.payload as { timeMs: number })?.timeMs;
+      const payload = m.payload as { timeMs?: number; cueSeq?: number };
+      const timeMs = payload?.timeMs;
       if (timeMs !== undefined) {
+        if (typeof payload?.cueSeq === 'number') markCueSeekIntent(payload.cueSeq);
         // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
         // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
         // ADR-030: route through seekVideo to avoid Netflix M7375.

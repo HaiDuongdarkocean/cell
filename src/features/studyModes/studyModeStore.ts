@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { applyStudyModeState } from './content/studyModeController';
 import { migrateStudyModeState, INITIAL_STUDY_MODE_STATE } from './lib/migrateStudyModeState';
+import { deriveRemoveBracketed } from '@/entities/studyMode';
 import { validateModeName } from './lib/validateModeName';
 import { generateModeId } from './lib/generateModeId';
 import { formatModeDescription } from './lib/formatStepSummary';
@@ -64,7 +65,10 @@ export const useStudyModeStore = create<StudyModeStore>((set, get) => ({
 
   setAdvanced: (advanced) => {
     const state = get();
-    const next: StudyModeState = { ...state, advanced };
+    const next: StudyModeState = {
+      ...state,
+      advanced: { ...advanced, removeBracketed: deriveRemoveBracketed(advanced.cleanupRules) },
+    };
     set(next);
     void persist(next);
     applyToPlayer(next);

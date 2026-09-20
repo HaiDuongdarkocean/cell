@@ -1,4 +1,5 @@
 import { PLAYBACK_SPEEDS, type StudyMode, type StudyModeAdvancedSettings, type StudyModeState, type StudyStep } from '@/entities/studyMode';
+import { DEFAULT_CLEANUP_RULES_SETTING, deriveRemoveBracketed, sanitizeCleanupRulesSetting } from '@/entities/studyMode';
 
 const CURRENT_VERSION = 1;
 
@@ -20,11 +21,13 @@ export const INITIAL_STUDY_MODE_STATE: StudyModeState = {
   customModes: [],
   advanced: {
     skipNoDialogue: 'OFF',
-    removeBracketed: false,
+    removeBracketed: true,
     pauseOnUnknown: 'OFF',
     unknownLevel: 'common',
     popupOnAutoPause: false,
     popupCloseOnResume: true,
+    cleanupRules: DEFAULT_CLEANUP_RULES_SETTING,
+    cueLeadInMs: 0,
   },
 };
 
@@ -56,15 +59,21 @@ function isValidMode(mode: unknown): mode is StudyMode {
   );
 }
 
+function sanitizeCueLeadInMs(raw: unknown): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 0;
+  return Math.min(2000, Math.max(0, Math.round(raw)));
+}
+
 function sanitizeAdvanced(raw: unknown): StudyModeAdvancedSettings {
   const fallback = INITIAL_STUDY_MODE_STATE.advanced;
   if (!isRecord(raw)) return { ...fallback };
+  const legacyBrackets = typeof raw.removeBracketed === 'boolean' ? raw.removeBracketed : true;
+  const cleanupRules = sanitizeCleanupRulesSetting(raw.cleanupRules, legacyBrackets);
   return {
     skipNoDialogue: SKIP_VALUES.has(raw.skipNoDialogue as string)
       ? (raw.skipNoDialogue as StudyModeAdvancedSettings['skipNoDialogue'])
       : fallback.skipNoDialogue,
-    removeBracketed:
-      typeof raw.removeBracketed === 'boolean' ? raw.removeBracketed : fallback.removeBracketed,
+    removeBracketed: deriveRemoveBracketed(cleanupRules),
     pauseOnUnknown: PAUSE_UNKNOWN_VALUES.has(raw.pauseOnUnknown as string)
       ? (raw.pauseOnUnknown as StudyModeAdvancedSettings['pauseOnUnknown'])
       : fallback.pauseOnUnknown,
@@ -77,6 +86,8 @@ function sanitizeAdvanced(raw: unknown): StudyModeAdvancedSettings {
       typeof raw.popupOnAutoPause === 'boolean' ? raw.popupOnAutoPause : fallback.popupOnAutoPause,
     popupCloseOnResume:
       typeof raw.popupCloseOnResume === 'boolean' ? raw.popupCloseOnResume : fallback.popupCloseOnResume,
+    cleanupRules,
+    cueLeadInMs: sanitizeCueLeadInMs(raw.cueLeadInMs),
   };
 }
 

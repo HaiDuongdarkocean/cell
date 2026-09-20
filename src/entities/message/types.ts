@@ -458,6 +458,9 @@ export interface VideoPlayStatePayload {
 export interface SeekToPayload {
   readonly tabId?: number;
   readonly timeMs: number;
+  /** SRT sequence index of the intended cue for study-driven seeks — marks the
+   *  seek intent so a lead-in landing in an earlier cue doesn't arm it. */
+  readonly cueSeq?: number;
 }
 
 export interface SetPlaybackRatePayload {
@@ -473,6 +476,9 @@ export interface SetPlaybackRatePayload {
 export interface ShortcutActionPayload {
   readonly tabId?: number;
   readonly action: 'prev-cue' | 'next-cue' | 'replay-cue' | 'toggle-overlay' | 'play-pause';
+  /** Pre-resolved cue start time (ms) from the side panel's own cue map —
+   *  ADR-021 D8 fast path; the content script skips its own lookup. */
+  readonly seekTime?: number;
 }
 
 /** Content-script → background: the active `<video>` element was REPLACED by

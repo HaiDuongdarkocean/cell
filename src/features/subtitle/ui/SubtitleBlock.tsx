@@ -115,9 +115,7 @@ function SubtitleBlockInner({
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];
 
-  const targetText = targetCue
-    ? (removeBracketed ? removeBracketedText(targetCue.text) : targetCue.text)
-    : null;
+  const targetText = targetCue ? targetCue.text : null;
   const nativeText = nativeCue
     ? (removeBracketed ? removeBracketedText(nativeCue.text) : nativeCue.text)
     : null;
@@ -183,8 +181,8 @@ function SubtitleBlockInner({
   // ADR-025: block container luôn render để giữ 3-zone layout shape khi cues rỗng.
   // Layer background chỉ hiện khi có cue → không có subtitle = không có background.
   // Load status (loading/error/none) shows a muted background so the message is readable.
-  const hasTargetCue = targetStyle.visible && targetCue;
-  const hasNativeCue = nativeStyle.visible && nativeCue;
+  const hasTargetCue = targetStyle.visible && !!targetText?.trim();
+  const hasNativeCue = nativeStyle.visible && !!nativeText?.trim();
   const hasTargetStatus = targetStyle.visible && !editable && showTargetStatus;
   const hasNativeStatus = nativeStyle.visible && !editable && showNativeStatus;
   const handleTextBlur = (role: 'target' | 'native', event: React.FocusEvent<HTMLSpanElement>): void => {

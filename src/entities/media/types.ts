@@ -78,6 +78,8 @@ export interface SrtCue {
   readonly start: number; // milliseconds
   readonly end: number; // milliseconds
   readonly text: string;
+  /** Original subtitle text before cleanup rules ran. Absent on raw cues. */
+  readonly rawText?: string;
 }
 
 export interface SrtSubtitle {
@@ -93,6 +95,9 @@ export interface BilingualCue {
   readonly end: number;   // milliseconds
   readonly targetText: string;
   readonly nativeText: string;
+  /** Original target text before cleanup rules ran — lets receivers re-derive
+   *  cleaned text when rules change without a re-broadcast. */
+  readonly rawTargetText?: string;
 }
 
 // === Download Types ===

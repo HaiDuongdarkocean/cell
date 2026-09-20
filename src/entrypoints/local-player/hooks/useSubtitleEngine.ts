@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SubtitleCueEngine, type NavClusterIconName } from '@/features/subtitle/ui/subtitleCueEngine';
 import { useCuesStore } from '@/features/subtitle/cuesStore';
+import { cleanTargetCues } from '@/features/subtitle/logic/subtitleCleanupRuntime';
 import type { SrtCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { SubtitleBlockSettings, NavClusterSettings } from '@/entities/settings';
@@ -147,10 +148,11 @@ export function useSubtitleEngine(
   const loadCues = useCallback((targetCues: SrtCue[], nativeCues: SrtCue[]): void => {
     const engine = engineRef.current;
     if (!engine) return;
+    const cleaned = cleanTargetCues(targetCues);
     if (nativeCues.length > 0) {
-      engine.loadBilingualCues(targetCues, nativeCues);
+      engine.loadBilingualCues(cleaned, nativeCues);
     } else {
-      engine.loadCues(targetCues);
+      engine.loadCues(cleaned);
     }
     setHasSubtitles(engine.hasSubtitles());
   }, []);

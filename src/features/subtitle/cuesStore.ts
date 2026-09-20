@@ -45,6 +45,9 @@ interface CuesState {
   setActiveIndex(targetActiveIndex: number, nativeActiveIndex: number): void;
   /** Set the inline load status for a role (target or native). */
   setLoadStatus(role: 'target' | 'native', status: LoadStatus): void;
+  /** Re-derive target cue text from `rawText` after a rules change so React
+   *  subscribers re-render without resetting active indices. */
+  recleanTargetText(clean: (rawText: string) => string): void;
 }
 
 const IDLE_STATUS: LoadStatus = { state: 'idle' };
@@ -83,6 +86,12 @@ export const useCuesStore = create<CuesState>()(
       set(role === 'target'
         ? { targetLoadStatus: status }
         : { nativeLoadStatus: status }),
+    recleanTargetText: (clean) =>
+      set((prev) => ({
+        targetCues: prev.targetCues.map((cue) =>
+          cue.rawText !== undefined ? { ...cue, text: clean(cue.rawText) } : { ...cue },
+        ),
+      })),
   })),
 );
 

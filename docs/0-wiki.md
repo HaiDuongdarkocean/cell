@@ -26,7 +26,8 @@ docs/           # Tài liệu dự án
 │   ├── 090-foundation-grid-breakpoints.md       # WHY: mobile-first 320→1280, 4/12 column
 │   ├── 091-atomic-design-taxonomy.md            # WHY: atoms are functional UI components; color/typography/spacing/shape/motion/iconography/grid are design tokens (subatomic)
 │   ├── 103-queue-lazy-dictionary-lookup.md      # WHY: mở Queue trước, lookup từng từ qua Dictionary, rồi Send to Card / Quick Add
-│   └── 104-pre-tokenize-subtitle-and-cross-tab-sync.md # WHY: pre-tokenize toàn bộ subtitle theo tầng ưu tiên; cross-tab word status sync qua background broadcast; không lưu toàn bộ token map
+│   ├── 104-pre-tokenize-subtitle-and-cross-tab-sync.md # WHY: pre-tokenize toàn bộ subtitle theo tầng ưu tiên; cross-tab word status sync qua background broadcast; không lưu toàn bộ token map
+│   └── 105-subtitle-cleanup-rule-layering.md     # WHY: cleanup logic ở entities/studyMode + intent ở shared/lib giữ edge subtitle→studyModes một chiều; runtime tự subscribe store thay vì controller push
 ├── audits/                             # Audit reports (design system, tech debt, UI/UX)
 │   ├── 20260913_src-features-entrypoints-shared.md  # Tech-debt audit: 14 items scored — top: SW-state fragility 4.20, layer boundaries 4.05, production debug seams 4.05, god files 4.00; roadmap quick-wins/pay-down/watch
 ├── ideas/

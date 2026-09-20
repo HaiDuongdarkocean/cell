@@ -221,7 +221,6 @@
     ],
     "features/subtitle/ui/SubtitlePanels.tsx": [
       "@/features/studyModes/lib/subtitlePractice",
-      "@/features/studyModes/studyModeStore",
       "@/features/theme/ui/ShadowThemeProvider"
     ],
     "features/subtitle/ui/contentScriptContext.ts": [

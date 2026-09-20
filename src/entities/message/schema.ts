@@ -117,6 +117,7 @@ export const bilingualCueSchema = z.object({
   end: z.number(),
   targetText: z.string(),
   nativeText: z.string(),
+  rawTargetText: z.string().optional(),
 });
 
 export const SubtitleCuesLoadedPayloadSchema = z.object({
@@ -182,6 +183,7 @@ export const VideoPlayStatePayloadSchema = z.object({
 export const SeekToPayloadSchema = z.object({
   tabId: z.number().int().optional(),
   timeMs: z.number().int(),
+  cueSeq: z.number().int().optional(),
 });
 
 export const SetPlaybackRatePayloadSchema = z.object({
@@ -192,6 +194,7 @@ export const SetPlaybackRatePayloadSchema = z.object({
 export const ShortcutActionPayloadSchema = z.object({
   tabId: z.number().int().optional(),
   action: z.enum(['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'play-pause']),
+  seekTime: z.number().optional(),
 });
 
 export const VideoEpisodeChangedPayloadSchema = z.object({

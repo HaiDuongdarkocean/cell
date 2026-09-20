@@ -18,9 +18,43 @@ describe('migrateStudyModeState', () => {
       version: 1,
       activeModeId: 'custom-1',
       customModes: [],
-      advanced: { skipNoDialogue: 'JUMP', removeBracketed: true, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true },
+      advanced: {
+        skipNoDialogue: 'JUMP',
+        removeBracketed: false,
+        pauseOnUnknown: 'OFF',
+        unknownLevel: 'advanced',
+        popupOnAutoPause: false,
+        popupCloseOnResume: true,
+        cleanupRules: { builtinEnabled: { brackets: false }, custom: [] },
+        cueLeadInMs: 300,
+      },
     };
     expect(migrateStudyModeState(state)).toEqual({ ...state, version: 1 });
+  });
+
+  it('seeds cleanup rules from legacy removeBracketed and clamps lead-in', () => {
+    const raw = {
+      version: 1,
+      activeModeId: 'normal',
+      customModes: [],
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: false, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true, cueLeadInMs: 99999 },
+    };
+    const state = migrateStudyModeState(raw);
+    expect(state.advanced.cleanupRules).toEqual({ builtinEnabled: { brackets: false }, custom: [] });
+    expect(state.advanced.removeBracketed).toBe(false);
+    expect(state.advanced.cueLeadInMs).toBe(2000);
+  });
+
+  it('derives removeBracketed from the brackets rule and drops malformed cleanup blobs', () => {
+    const raw = {
+      version: 1,
+      activeModeId: 'normal',
+      customModes: [],
+      advanced: { skipNoDialogue: 'OFF', removeBracketed: true, pauseOnUnknown: 'OFF', unknownLevel: 'advanced', popupOnAutoPause: false, popupCloseOnResume: true, cleanupRules: 'garbage' },
+    };
+    const state = migrateStudyModeState(raw);
+    expect(state.advanced.cleanupRules).toEqual({ builtinEnabled: { brackets: true }, custom: [] });
+    expect(state.advanced.removeBracketed).toBe(true);
   });
 
   it('drops malformed custom modes from storage', () => {

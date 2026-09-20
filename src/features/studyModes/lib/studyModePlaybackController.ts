@@ -4,7 +4,7 @@ import type { CueBandProbe, StudyMode, StudyModeAdvancedSettings, StudyStep, Sub
 export type PlaybackAction =
   | { type: 'setSubtitle'; subtitle: SubtitleVisibility }
   | { type: 'setSpeed'; speed: number; transient?: boolean }
-  | { type: 'seek'; timeMs: number }
+  | { type: 'seek'; timeMs: number; cueSeq?: number }
   | { type: 'pause' }
   | { type: 'play' }
   | { type: 'autoPause'; term: string; cueIndex: number; termOffset: number };
@@ -174,7 +174,7 @@ export class StudyModePlaybackController {
       this.pendingSkipTo = skipTo;
       this.activeCueIndex = -1;
       this.state = { type: 'idle' };
-      return [{ type: 'seek', timeMs: this.cues[skipTo].start }];
+      return [this.cueSeek(skipTo)];
     }
     this.repeatRemaining = step.repeat;
     const actions = this.applyStepEntry(step);
@@ -233,7 +233,7 @@ export class StudyModePlaybackController {
         }
         this.repeatRemaining = step.repeat;
         if (step.seek !== false) {
-          actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+          actions.push(this.cueSeek(this.activeCueIndex));
           actions.push(...this.applyStepEntry(step));
           return actions;
         }
@@ -282,7 +282,7 @@ export class StudyModePlaybackController {
     if (this.repeatRemaining > 1) {
       this.repeatRemaining -= 1;
       if (step.seek !== false) {
-        actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+        actions.push(this.cueSeek(this.activeCueIndex));
       }
       actions.push(...this.reapplyStep(step));
       return false;
@@ -295,7 +295,7 @@ export class StudyModePlaybackController {
       if (!firstStep) return false;
       this.repeatRemaining = firstStep.repeat;
       if (firstStep.seek !== false) {
-        actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+        actions.push(this.cueSeek(this.activeCueIndex));
       }
       actions.push(...this.applyStepEntry(firstStep));
       return false;
@@ -343,7 +343,7 @@ export class StudyModePlaybackController {
     }
     this.repeatRemaining = nextStep.repeat;
     if (nextStep.seek !== false) {
-      actions.push({ type: 'seek', timeMs: this.cueStartMs() });
+      actions.push(this.cueSeek(this.activeCueIndex));
       actions.push(...this.applyStepEntry(nextStep));
       return false;
     }
@@ -368,7 +368,7 @@ export class StudyModePlaybackController {
     this.silenceHandledIndex = nextIndex;
 
     if (this.advanced.skipNoDialogue === 'JUMP') {
-      return [{ type: 'seek', timeMs: this.cues[nextIndex].start }];
+      return [this.cueSeek(nextIndex)];
     }
 
     const multiplier = this.parseSkipMultiplier(this.advanced.skipNoDialogue);
@@ -389,8 +389,10 @@ export class StudyModePlaybackController {
     return this.probe(index);
   }
 
-  private cueStartMs(): number {
-    return this.cues[this.activeCueIndex]?.start ?? 0;
+  private cueSeek(index: number): PlaybackAction {
+    const cue = this.cues[index];
+    const leadIn = this.advanced.cueLeadInMs ?? 0;
+    return { type: 'seek', timeMs: Math.max(0, (cue?.start ?? 0) - leadIn), cueSeq: cue?.index };
   }
 
   private cueIndexAt(currentTimeMs: number): number {

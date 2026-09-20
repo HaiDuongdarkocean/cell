@@ -20,6 +20,7 @@ export interface OverrideResult {
 }
 
 import { parseSubtitle } from './subtitleParser';
+import { cleanTargetCues } from './subtitleCleanupRuntime';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import {
   isPhimwarSubtitleUrl,
@@ -408,7 +409,7 @@ export async function handleAutoLoadSubtitles(
     target ? fetchAndParseSubtitle(target.url, resolveFormat(target.format, target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
     native ? fetchAndParseSubtitle(native.url, resolveFormat(native.format, native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
   ]);
-  const targetCues = targetResult?.success ? targetResult.cues : [];
+  const targetCues = targetResult?.success ? cleanTargetCues(targetResult.cues) : [];
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
 
   // Report fetch/parse failure via inline status (spec F8). Never log full

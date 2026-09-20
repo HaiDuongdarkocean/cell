@@ -1,5 +1,5 @@
 {
-  "active": null,
+  "active": "subtitle-cleanup-rules",
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -235,6 +235,74 @@
       ],
       "loops": 1,
       "updated": "2026-09-19T03:28:20.050Z"
+    },
+    "migaku-dict-catalog": {
+      "stage": "dropped",
+      "mode": "interactive",
+      "uiSurface": "yes",
+      "artifacts": {},
+      "gates": {},
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [
+        {
+          "flag": "user-approval:intent",
+          "note": "user redirected: skip pipeline, direct CLI testing",
+          "at": "2026-09-20T02:46:38.932Z"
+        }
+      ],
+      "loops": 0,
+      "owner": null,
+      "worktree": null,
+      "updated": "2026-09-20T02:48:03.721Z"
+    },
+    "subtitle-cleanup-rules": {
+      "stage": "deliver",
+      "mode": "all",
+      "uiSurface": "yes",
+      "artifacts": {
+        "intent": "docs/intent/subtitle-cleanup-rules.md",
+        "spec": "docs/specs/subtitle-cleanup-rules.md",
+        "designBrief": "docs/intent/subtitle-cleanup-rules-design-brief.md",
+        "componentMapping": "docs/intent/subtitle-cleanup-rules-component-mapping.md",
+        "plan": "tasks/plan-subtitle-cleanup-rules.md"
+      },
+      "gates": {
+        "typecheck": {
+          "v": "pass",
+          "at": "2026-09-20T13:56:25.579Z"
+        },
+        "testUnit": {
+          "v": "pass",
+          "at": "2026-09-20T13:09:07.137Z"
+        },
+        "build": {
+          "v": "pass",
+          "at": "2026-09-20T13:58:47.354Z"
+        },
+        "briefLint": {
+          "v": "pass",
+          "at": "2026-09-20T13:06:31.419Z"
+        },
+        "lint": {
+          "v": "pass",
+          "at": "2026-09-20T13:59:59.056Z"
+        },
+        "browser": {
+          "v": "pass",
+          "at": "2026-09-20T13:07:54.914Z"
+        }
+      },
+      "confidence": "medium",
+      "awaiting": null,
+      "resolutions": [],
+      "loops": 0,
+      "owner": {
+        "id": "devin-cli",
+        "since": "2026-09-20T05:02:08.392Z"
+      },
+      "worktree": null,
+      "updated": "2026-09-20T13:59:59.056Z"
     }
   }
 }

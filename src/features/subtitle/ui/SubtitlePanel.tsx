@@ -32,6 +32,9 @@ import {
   type CueFilterMode,
 } from '@/features/subtitle/logic/cueDifficulty';
 import { CueRecommendFab, cueFilterModeLabel } from './CueRecommendFab';
+import { applyCleanupRules, resolveCleanupRules } from '@/entities/studyMode';
+import { markCueSeekIntent } from '@/shared/lib/cueSeekIntent';
+import { loadStudyModeState, useStudyModeStore } from '@/features/studyModes';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { t } from '@/shared/i18n';
@@ -107,7 +110,6 @@ function SubtitlePanelImpl({
   playbackSpeed = 1,
   onPlaybackSpeedChange,
   onPlayPause,
-  onPreviousCue,
   onReplayCue,
   onContinueCue,
   translationEnabled = true,
@@ -115,9 +117,22 @@ function SubtitlePanelImpl({
   panelBlurred = false,
 }: SubtitlePanelProps): React.JSX.Element {
   const hasPlaylist = playlistContent !== undefined;
+  const cleanupRulesSetting = useStudyModeStore((s) => s.advanced.cleanupRules);
+  const cueLeadInMs = useStudyModeStore((s) => s.advanced.cueLeadInMs);
+  useEffect(() => {
+    if (!useStudyModeStore.getState().isLoaded) void loadStudyModeState();
+  }, []);
+  const displayCues = useMemo(() => {
+    const rules = resolveCleanupRules(cleanupRulesSetting);
+    return cues.map((c) =>
+      c.rawTargetText !== undefined
+        ? { ...c, targetText: applyCleanupRules(c.rawTargetText, rules) }
+        : c,
+    );
+  }, [cues, cleanupRulesSetting]);
   const visibleCues = useMemo(
-    () => cues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
-    [cues],
+    () => displayCues.filter((c) => c.targetText.trim().length > 0 || c.nativeText.trim().length > 0),
+    [displayCues],
   );
   const practiceCues = useMemo(
     () => visibleCues.filter((c) => c.targetText.trim().length > 0),
@@ -243,31 +258,34 @@ function SubtitlePanelImpl({
     }
   }, [visibleCues.length, activeTab]);
 
-  const handlePreviousCue = (cue: BilingualCue): void => {
-    if (onPreviousCue) {
-      onPreviousCue(cue);
+  const emitCueSeek = (target: BilingualCue): void => {
+    markCueSeekIntent(target.index);
+    const shifted = { ...target, start: Math.max(0, target.start - (cueLeadInMs ?? 0)) };
+    if (onReplayCue) {
+      onReplayCue(shifted);
       return;
     }
+    onSeek(shifted.start);
+  };
+
+  const handlePreviousCue = (cue: BilingualCue): void => {
     const i = practiceCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
-    if (i > 0) onSeek(practiceCues[i - 1].start);
+    const prev = i > 0 ? practiceCues[i - 1] : undefined;
+    if (prev) emitCueSeek(prev);
   };
 
   const handleReplayCue = (cue: BilingualCue): void => {
-    if (onReplayCue) {
-      onReplayCue(cue);
-      return;
-    }
-    onSeek(cue.start);
+    emitCueSeek(cue);
   };
 
   const handleContinueCue = (cue: BilingualCue): void => {
-    if (onContinueCue) {
-      onContinueCue(cue);
-      return;
-    }
     const i = practiceCues.findIndex((c) => c.index === cue.index && c.start === cue.start);
     const next = i >= 0 ? practiceCues[i + 1] : undefined;
-    if (next) onSeek(next.start);
+    if (next) {
+      emitCueSeek(next);
+      return;
+    }
+    onContinueCue?.(cue);
   };
 
   // Empty cue list → EmptyState instead of a blank area (same copy as the

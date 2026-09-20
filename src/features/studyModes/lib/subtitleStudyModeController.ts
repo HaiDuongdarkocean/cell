@@ -1,5 +1,6 @@
 import type { SrtCue } from '@/entities/media';
 import type { CueBandProbe, StudyMode, StudyModeAdvancedSettings } from '@/entities/studyMode';
+import { takeCueSeekIntent } from '@/shared/lib/cueSeekIntent';
 import { StudyModePlaybackController, type PlaybackAction, type UnknownCueProbe } from './studyModePlaybackController';
 
 export interface SubtitleStudyModeTimeState {
@@ -14,6 +15,7 @@ export interface SubtitleStudyModeTimeState {
 }
 
 const SEEK_LANDING_TOLERANCE_MS = 300;
+const SEEK_INTENT_MAX_AGE_MS = 250;
 
 /** Coordinates study-mode playback for the React subtitle controller.
  *
@@ -29,6 +31,8 @@ export class SubtitleStudyModeController {
   private lastTargetIndex = -1;
   private offsetMs = 0;
   private internalSeekTargetMs: number | null = null;
+  private pendingCueSeq: number | null = null;
+  private pendingCueSeqAt = 0;
 
   get isActive(): boolean {
     return this.playback !== null;
@@ -56,6 +60,7 @@ export class SubtitleStudyModeController {
     this.offsetMs = offsetMs;
     this.lastTargetIndex = -1;
     this.internalSeekTargetMs = null;
+    this.pendingCueSeq = null;
   }
 
   setCues(targetCues: readonly SrtCue[], offsetMs: number): void {
@@ -63,6 +68,7 @@ export class SubtitleStudyModeController {
     if (this.playback?.setCues(targetCues, offsetMs)) {
       this.lastTargetIndex = -1;
       this.internalSeekTargetMs = null;
+      this.pendingCueSeq = null;
     }
   }
 
@@ -81,6 +87,7 @@ export class SubtitleStudyModeController {
     this.playback?.setCues([], offsetMs);
     this.lastTargetIndex = -1;
     this.internalSeekTargetMs = null;
+    this.pendingCueSeq = null;
   }
 
   /** Called on the video 'seeking' event. Seeks the state machine issued
@@ -95,6 +102,13 @@ export class SubtitleStudyModeController {
       return;
     }
     this.internalSeekTargetMs = null;
+    const intent = takeCueSeekIntent();
+    if (intent && Date.now() - intent.markedAt <= SEEK_INTENT_MAX_AGE_MS) {
+      this.pendingCueSeq = intent.cueSeq;
+      this.pendingCueSeqAt = intent.markedAt;
+    } else if (this.pendingCueSeq !== null && Date.now() - this.pendingCueSeqAt > SEEK_INTENT_MAX_AGE_MS) {
+      this.pendingCueSeq = null;
+    }
     this.playback?.abort();
     this.lastTargetIndex = -1;
   }
@@ -111,6 +125,14 @@ export class SubtitleStudyModeController {
 
     const actions: PlaybackAction[] = [];
 
+    if (
+      this.pendingCueSeq !== null &&
+      (targetCues[targetIndex]?.index === this.pendingCueSeq ||
+        Date.now() - this.pendingCueSeqAt > SEEK_INTENT_MAX_AGE_MS)
+    ) {
+      this.pendingCueSeq = null;
+    }
+
     // A new engine cue index only enters the state machine once the previous
     // cue's step chain has finished (or was aborted by a user seek). Contiguous
     // cues flip the index at the boundary while the machine still owns the
@@ -122,7 +144,9 @@ export class SubtitleStudyModeController {
       !this.playback.hasActiveCue
     ) {
       this.lastTargetIndex = targetIndex;
-      actions.push(...this.playback.enterCue(targetCues[targetIndex], targetIndex));
+      if (this.pendingCueSeq === null) {
+        actions.push(...this.playback.enterCue(targetCues[targetIndex], targetIndex));
+      }
     }
 
     actions.push(...this.playback.onTimeUpdate(currentTimeMs, isPaused ?? false));
@@ -134,12 +158,17 @@ export class SubtitleStudyModeController {
     this.playback = null;
     this.lastTargetIndex = -1;
     this.internalSeekTargetMs = null;
+    this.pendingCueSeq = null;
   }
 
   private trackInternalSeek(actions: readonly PlaybackAction[]): void {
     for (const action of actions) {
       if (action.type === 'seek') {
         this.internalSeekTargetMs = action.timeMs - this.offsetMs;
+        if (action.cueSeq !== undefined) {
+          this.pendingCueSeq = action.cueSeq;
+          this.pendingCueSeqAt = Date.now();
+        }
       }
     }
   }
