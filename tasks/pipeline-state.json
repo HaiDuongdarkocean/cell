@@ -295,14 +295,20 @@
       },
       "confidence": "medium",
       "awaiting": "flagged:gate-blocked-foreign-test",
-      "resolutions": [],
+      "resolutions": [
+        {
+          "flag": "flagged:gate-blocked-foreign-test",
+          "note": "user instructed continue; foreign migakuFixtures.test.ts flake under parallel load — standalone pass verified",
+          "at": "2026-09-20T18:28:05.467Z"
+        }
+      ],
       "loops": 0,
       "owner": {
         "id": "devin-cli",
         "since": "2026-09-20T05:02:08.392Z"
       },
       "worktree": null,
-      "updated": "2026-09-20T14:09:40.662Z"
+      "updated": "2026-09-20T18:32:01.519Z"
     }
   }
 }
