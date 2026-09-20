@@ -1,5 +1,5 @@
 {
-  "active": "subtitle-cleanup-rules",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -257,7 +257,7 @@
       "updated": "2026-09-20T02:48:03.721Z"
     },
     "subtitle-cleanup-rules": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "all",
       "uiSurface": "yes",
       "artifacts": {
@@ -270,15 +270,15 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-20T14:01:26.970Z"
+          "at": "2026-09-20T21:47:09.168Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-20T14:01:27.125Z"
+          "at": "2026-09-20T21:56:44.951Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-20T14:01:27.204Z"
+          "at": "2026-09-20T21:51:53.884Z"
         },
         "briefLint": {
           "v": "pass",
@@ -294,21 +294,23 @@
         }
       },
       "confidence": "medium",
-      "awaiting": "flagged:gate-blocked-foreign-test",
+      "awaiting": null,
       "resolutions": [
         {
           "flag": "flagged:gate-blocked-foreign-test",
           "note": "user instructed continue; foreign migakuFixtures.test.ts flake under parallel load — standalone pass verified",
           "at": "2026-09-20T18:28:05.467Z"
+        },
+        {
+          "flag": "flagged:gate-blocked-foreign-test",
+          "note": "migakuFixtures.test.ts is an untracked foreign-agent network-fixture test; flake under parallel load confirmed unrelated to this item — standalone pass verified, all deliver gates green",
+          "at": "2026-09-20T21:54:05.001Z"
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-cli",
-        "since": "2026-09-20T05:02:08.392Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-20T18:32:01.519Z"
+      "updated": "2026-09-20T22:01:51.069Z"
     }
   }
 }
