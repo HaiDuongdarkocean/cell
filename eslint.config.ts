@@ -37,6 +37,7 @@ export default tseslint.config(
       // Local-only prototype/seed scratch dirs (not committed).
       'prototype/',
       'seed/',
+      'loop/',
     ],
   },
 
