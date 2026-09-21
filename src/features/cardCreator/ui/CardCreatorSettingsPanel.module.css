@@ -15,11 +15,67 @@
 }
 
 .fieldLabel {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   letter-spacing: var(--tracking-normal);
   user-select: none;
+}
+
+/* Note type + Deck wrapped as one tight pair */
+.pairGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pairGroup .field {
+  gap: var(--space-1);
+}
+
+/* === Advanced disclosure === */
+.advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.advancedToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  align-self: flex-start;
+  padding: var(--space-1) 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.advancedToggle:hover {
+  color: var(--color-text);
+}
+
+.advancedToggle:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
+.advancedChevron {
+  transition: transform var(--duration-150) ease;
+}
+
+.advancedToggle[aria-expanded="true"] .advancedChevron {
+  transform: rotate(180deg);
+}
+
+.advancedBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 
@@ -125,8 +181,8 @@
 .mappingList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+  gap: var(--space-1-5);
+  margin: 0;
 }
 
 .mappingRow {
@@ -138,8 +194,8 @@
 }
 
 .mappingLabel {
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;

@@ -16,6 +16,7 @@ import {
 import { SOURCE_FIELD_ORDER, autoMapFields } from '@/features/cardCreator/service/fieldMapping';
 import { t, type MessageKey } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
+import { Icon } from '@/shared/ui/Icon';
 import { Input } from '@/shared/ui/Input';
 import { Select } from '@/shared/ui/Select';
 import { Text } from '@/shared/ui/Text';
@@ -84,6 +85,7 @@ export function CardCreatorSettingsPanel({
   const [models, setModels] = useState<readonly string[]>([]);
   const [fields, setFields] = useState<readonly string[]>([]);
   const [loadingFields, setLoadingFields] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const isAnki = srsDestination === 'anki';
   const noteType = settings.defaultNoteType;
@@ -231,78 +233,38 @@ export function CardCreatorSettingsPanel({
 
       {isAnki && (
         <>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor="cc-anki-url">
-              {t('cardCreator.settings.ankiUrl')}
-            </label>
-            <Input
-              id="cc-anki-url"
-              type="text"
-              value={settings.ankiConnectUrl}
-              onChange={handleUrlChange}
-              placeholder={t('cardCreator.settings.ankiUrlPlaceholder')}
-              aria-label={t('cardCreator.settings.ankiUrlAria')}
-              data-cell-id="cc-anki-url-input"
-            />
-            <Text as="p" color="secondary" className={styles.hint}>
-              {t('cardCreator.settings.ankiUrlHint')}
-            </Text>
-          </div>
-
-          <div className={styles.connectionStatus}>
-            <div
-              className={`${styles.statusIndicator} ${indicatorClass}`}
-              aria-live="polite"
-              data-cell-id="cc-connection-status"
-            >
-              <span className={styles.statusDot} aria-hidden="true" />
-              <span className={styles.statusLabel}>{statusLabel(status)}</span>
-              <span className={styles.statusDetail}>
-                {buildStatusDetail(status, version, settings.ankiConnectUrl)}
-              </span>
+          <div className={styles.pairGroup} data-cell-id="cc-destination-pair">
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="cc-note-type">
+                {t('cardCreator.destination.noteType')}
+              </label>
+              <Select
+                id="cc-note-type"
+                value={noteType}
+                onChange={(v) => { void handleNoteTypeChange(v); }}
+                options={models.map((m) => ({ value: m, label: m }))}
+                placeholder={t('cardCreator.settings.noteTypePlaceholder')}
+                disabled={models.length === 0}
+                aria-label={t('cardCreator.destination.noteType')}
+                data-cell-id="cc-note-type-select"
+              />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { void handleTest(); }}
-              disabled={status === 'testing'}
-              aria-label={t('cardCreator.settings.test.againAria')}
-              data-cell-id="cc-test-again-button"
-            >
-              {status === 'testing' ? t('cardCreator.settings.test.testing') : t('cardCreator.settings.test.again')}
-            </Button>
-          </div>
 
-          <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor="cc-note-type">
-              {t('cardCreator.destination.noteType')}
-            </label>
-            <Select
-              id="cc-note-type"
-              value={noteType}
-              onChange={(v) => { void handleNoteTypeChange(v); }}
-              options={models.map((m) => ({ value: m, label: m }))}
-              placeholder={t('cardCreator.settings.noteTypePlaceholder')}
-              disabled={models.length === 0}
-              aria-label={t('cardCreator.destination.noteType')}
-              data-cell-id="cc-note-type-select"
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.fieldLabel} htmlFor="cc-deck">
-              {t('cardCreator.destination.deck')}
-            </label>
-            <Select
-              id="cc-deck"
-              value={settings.defaultDeck}
-              onChange={handleDeckChange}
-              options={decks.map((d) => ({ value: d, label: d }))}
-              placeholder={t('cardCreator.settings.deckPlaceholder')}
-              disabled={decks.length === 0}
-              aria-label={t('cardCreator.destination.deck')}
-              data-cell-id="cc-deck-select"
-            />
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="cc-deck">
+                {t('cardCreator.destination.deck')}
+              </label>
+              <Select
+                id="cc-deck"
+                value={settings.defaultDeck}
+                onChange={handleDeckChange}
+                options={decks.map((d) => ({ value: d, label: d }))}
+                placeholder={t('cardCreator.settings.deckPlaceholder')}
+                disabled={decks.length === 0}
+                aria-label={t('cardCreator.destination.deck')}
+                data-cell-id="cc-deck-select"
+              />
+            </div>
           </div>
 
           <div className={styles.field}>
@@ -333,6 +295,64 @@ export function CardCreatorSettingsPanel({
                     />
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div className={styles.advanced}>
+            <button
+              type="button"
+              className={styles.advancedToggle}
+              aria-expanded={advancedOpen}
+              onClick={() => setAdvancedOpen((v) => !v)}
+              data-cell-id="cc-advanced-toggle"
+            >
+              <Icon name="chevronDown" size="xs" className={styles.advancedChevron} />
+              {t('settings.profiles.form.advanced')}
+            </button>
+            {advancedOpen && (
+              <div className={styles.advancedBody} data-cell-id="cc-advanced-body">
+                <div className={styles.field}>
+                  <label className={styles.fieldLabel} htmlFor="cc-anki-url">
+                    {t('cardCreator.settings.ankiUrl')}
+                  </label>
+                  <Input
+                    id="cc-anki-url"
+                    type="text"
+                    value={settings.ankiConnectUrl}
+                    onChange={handleUrlChange}
+                    placeholder={t('cardCreator.settings.ankiUrlPlaceholder')}
+                    aria-label={t('cardCreator.settings.ankiUrlAria')}
+                    data-cell-id="cc-anki-url-input"
+                  />
+                  <Text as="p" color="secondary" className={styles.hint}>
+                    {t('cardCreator.settings.ankiUrlHint')}
+                  </Text>
+                </div>
+
+                <div className={styles.connectionStatus}>
+                  <div
+                    className={`${styles.statusIndicator} ${indicatorClass}`}
+                    aria-live="polite"
+                    data-cell-id="cc-connection-status"
+                  >
+                    <span className={styles.statusDot} aria-hidden="true" />
+                    <span className={styles.statusLabel}>{statusLabel(status)}</span>
+                    <span className={styles.statusDetail}>
+                      {buildStatusDetail(status, version, settings.ankiConnectUrl)}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { void handleTest(); }}
+                    disabled={status === 'testing'}
+                    aria-label={t('cardCreator.settings.test.againAria')}
+                    data-cell-id="cc-test-again-button"
+                  >
+                    {status === 'testing' ? t('cardCreator.settings.test.testing') : t('cardCreator.settings.test.again')}
+                  </Button>
+                </div>
               </div>
             )}
           </div>

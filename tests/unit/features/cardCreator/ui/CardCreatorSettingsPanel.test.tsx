@@ -76,6 +76,7 @@ describe('CardCreatorSettingsPanel', () => {
     const { rerender } = render(<CardCreatorSettingsPanel {...props} />);
     await waitFor(() => expect(mockLoadCache).toHaveBeenCalled());
 
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
     expect(screen.getByLabelText('AnkiConnect URL')).toBeInTheDocument();
 
     rerender(<CardCreatorSettingsPanel {...props} srsDestination="ocean-srs" />);
@@ -136,11 +137,14 @@ describe('CardCreatorSettingsPanel', () => {
     });
   });
 
-  it('tests AnkiConnect and refreshes the schema cache', async () => {
+  it('keeps AnkiConnect URL and test behind the Advanced disclosure', async () => {
     const props = makeProps();
     render(<CardCreatorSettingsPanel {...props} />);
     await waitFor(() => expect(mockLoadCache).toHaveBeenCalled());
 
+    expect(screen.queryByLabelText('AnkiConnect URL')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
+    expect(screen.getByLabelText('AnkiConnect URL')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Test AnkiConnect connection again' }));
     await waitFor(() => {
       expect(mockTestConnection).toHaveBeenCalledWith(props.settings.ankiConnectUrl);
