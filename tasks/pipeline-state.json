@@ -1,5 +1,5 @@
 {
-  "active": "resources-import-ux",
+  "active": null,
   "items": {
     "vocabulary-tab-redesign": {
       "stage": "shipped",
@@ -313,7 +313,7 @@
       "updated": "2026-09-20T22:01:51.069Z"
     },
     "resources-import-ux": {
-      "stage": "deliver",
+      "stage": "shipped",
       "mode": "interactive",
       "uiSurface": "yes",
       "artifacts": {
@@ -323,23 +323,23 @@
       "gates": {
         "typecheck": {
           "v": "pass",
-          "at": "2026-09-21T08:25:53.232Z"
+          "at": "2026-09-21T08:53:45.735Z"
         },
         "lint": {
           "v": "pass",
-          "at": "2026-09-21T08:14:03.160Z"
+          "at": "2026-09-21T08:53:45.823Z"
         },
         "testUnit": {
           "v": "pass",
-          "at": "2026-09-21T08:14:03.242Z"
+          "at": "2026-09-21T08:53:45.903Z"
         },
         "build": {
           "v": "pass",
-          "at": "2026-09-21T08:14:03.319Z"
+          "at": "2026-09-21T08:53:45.975Z"
         },
         "browser": {
           "v": "pass",
-          "at": "2026-09-21T08:14:03.403Z"
+          "at": "2026-09-21T08:53:46.062Z"
         }
       },
       "confidence": "medium",
@@ -357,12 +357,9 @@
         }
       ],
       "loops": 0,
-      "owner": {
-        "id": "devin-1-1789951811",
-        "since": "2026-09-21T07:19:01.071Z"
-      },
+      "owner": null,
       "worktree": null,
-      "updated": "2026-09-21T08:25:53.233Z"
+      "updated": "2026-09-21T08:53:46.171Z"
     }
   }
 }
