@@ -5,6 +5,9 @@
   padding: var(--space-3);
   height: 100%;
   min-height: 0;
+  background: var(--color-surface);
+  --card-background: var(--color-surface-elevated);
+  --color-surface-card: var(--color-surface-elevated);
 }
 
 /* ---------- Compact toolbar (Concept B) ---------- */

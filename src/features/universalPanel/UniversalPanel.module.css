@@ -52,6 +52,7 @@
 /* Tabs that own their own padding leave the content wrapper flush. */
 .content[data-cell-id="universal-panel-content-dictionary"],
 .content[data-cell-id="universal-panel-content-studyModes"],
+.content[data-cell-id="universal-panel-content-vocabulary"],
 .content[data-cell-id="universal-panel-content-settings"] {
   padding: var(--space-0);
 }
