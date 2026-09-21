@@ -77,7 +77,6 @@ export function CleanupRulesSection({ setting, onChange }: CleanupRulesSectionPr
     <div className={styles.ruleRow} key={rule.id}>
       <Toggle
         checked={rule.enabled}
-        size="md"
         onChange={() => handleToggle(rule)}
         ariaLabel={cleanupT('cleanup.enableRule', [rule.name])}
       />

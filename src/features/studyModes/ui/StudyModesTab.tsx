@@ -86,7 +86,7 @@ export function StudyModesTab(): ReactElement {
   return (
     <div className={styles.tab} data-cell-id="study-modes-tab">
       <VStack gap="5">
-        <header className={styles.tabHeader}>
+        <header>
           <HStack justify="between" align="center" className={styles.tabHeaderInner}>
             <Heading level={2} size={2} className={styles.tabTitle}>
               Study Modes
@@ -105,7 +105,7 @@ export function StudyModesTab(): ReactElement {
           </HStack>
         </header>
 
-        <section className={styles.section}>
+        <section>
           <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
             Playback settings
           </Text>
@@ -124,7 +124,7 @@ export function StudyModesTab(): ReactElement {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section>
           <HStack justify="between" align="center" className={styles.sectionHeader}>
             <div>
               <Text variant="label" color="secondary" as="span" className={styles.eyebrow}>
@@ -138,18 +138,24 @@ export function StudyModesTab(): ReactElement {
               New mode
             </Button>
           </HStack>
-          <div className={styles.grid} role="group" aria-label="Custom study modes">
-            {store.customModes.map((mode) => (
-              <ModeCard
-                key={mode.id}
-                mode={mode}
-                selected={activeMode.id === mode.id}
-                onSelect={handleSelect}
-                onEdit={handleEditMode}
-                onDelete={handleDeleteMode}
-              />
-            ))}
-          </div>
+          {store.customModes.length > 0 ? (
+            <div className={styles.grid} role="group" aria-label="Custom study modes">
+              {store.customModes.map((mode) => (
+                <ModeCard
+                  key={mode.id}
+                  mode={mode}
+                  selected={activeMode.id === mode.id}
+                  onSelect={handleSelect}
+                  onEdit={handleEditMode}
+                  onDelete={handleDeleteMode}
+                />
+              ))}
+            </div>
+          ) : (
+            <Text color="secondary" as="p" variant="supporting">
+              No custom modes yet — use New mode to combine steps.
+            </Text>
+          )}
         </section>
 
         {advancedOpen && (

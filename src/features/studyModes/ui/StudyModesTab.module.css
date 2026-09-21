@@ -4,10 +4,8 @@
   min-height: 100%;
   box-sizing: border-box;
   overflow-y: auto;
-}
-
-.tabHeader {
-  margin-bottom: var(--space-4);
+  background: var(--color-surface);
+  --card-background: var(--color-surface-elevated);
 }
 
 .tabHeaderInner {
@@ -27,10 +25,6 @@
   display: block;
   margin-bottom: var(--space-1);
   text-transform: uppercase;
-}
-
-.section {
-  margin-bottom: var(--space-6);
 }
 
 .sectionHeader {
